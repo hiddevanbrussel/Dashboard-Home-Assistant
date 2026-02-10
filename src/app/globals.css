@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --page-bg: #f7f4ea;
+    --hero-overlay: rgba(100, 120, 140, 0.35);
+    --accent-yellow: #f6d25c;
+    --accent-purple: #b48bff;
+    --accent-orange: #f2a654;
+    --card-radius: 24px;
+    --glass-blur: 12px;
+    --glass-border-light: rgba(255, 255, 255, 0.6);
+    --glass-border-dark: rgba(255, 255, 255, 0.08);
+  }
+
+  .dark {
+    --page-bg: #1f2f3a;
+    --card-bg: rgba(43, 63, 75, 0.85);
+    --glass-border-light: rgba(255, 255, 255, 0.08);
+    --glass-border-dark: rgba(255, 255, 255, 0.12);
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-page-light text-gray-900 dark:bg-dark-page dark:text-gray-100;
+    background-color: var(--page-bg);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+/* Verberg scrollbalk maar behoud scroll (o.a. climate card temperatuurrij) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@layer utilities {
+  .glass-card {
+    @apply rounded-card backdrop-blur-glass shadow-glass;
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid var(--glass-border-light);
+  }
+
+  .dark .glass-card {
+    background: var(--card-bg);
+    border-color: var(--glass-border-dark);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  }
+}
+
+/* Vacuum card: icoon “stofzuigen” wanneer actief */
+@keyframes vacuum-move {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(4px) translateY(-2px); }
+  50% { transform: translateX(-2px) translateY(2px); }
+  75% { transform: translateX(2px) translateY(-1px); }
+}
+.animate-vacuum {
+  animation: vacuum-move 1.4s ease-in-out infinite;
+}
+
+/* Dashboard grid: same spacing horizontal and vertical (controlled by margin prop) */
+.react-grid-layout .react-grid-item {
+  margin: 0 !important;
+  padding: 0;
+}

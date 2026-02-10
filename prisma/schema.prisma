@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Connection {
+  id             String   @id @default(cuid())
+  baseUrl        String
+  encryptedToken String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Dashboard {
+  id              String   @id @default(cuid())
+  name            String
+  theme           String   @default("auto")
+  background      String?
+  layout          String?
+  widgets         String?
+  welcomeTitle    String?
+  welcomeSubtitle String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Room {
+  id         String   @id @default(cuid())
+  name       String
+  entityIds  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

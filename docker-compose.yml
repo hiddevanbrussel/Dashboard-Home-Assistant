@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - APP_SECRET=${APP_SECRET:-your-32-byte-secret-for-encryption-change-in-production}
+      - DATABASE_URL=file:/data/app.db
+      - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME:-Home Assistant Dashboard Builder}
+    volumes:
+      - app-data:/data
+
+volumes:
+  app-data:

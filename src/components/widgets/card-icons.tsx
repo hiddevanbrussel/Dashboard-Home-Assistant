@@ -1,0 +1,68 @@
+"use client";
+
+import {
+  Activity,
+  Bath,
+  BedDouble,
+  Bot,
+  Box,
+  Building2,
+  Car,
+  Circle,
+  CircleDot,
+  DoorOpen,
+  Droplets,
+  Eye,
+  Gauge,
+  GaugeCircle,
+  Home,
+  Lamp,
+  Lightbulb,
+  Shirt,
+  Sofa,
+  Sparkles,
+  Star,
+  Sun,
+  Thermometer,
+  TreePine,
+  Trash2,
+  UtensilsCrossed,
+  Wind,
+  Zap,
+} from "lucide-react";
+
+export type CardIconComponent = React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+
+/** Eén gedeelde iconenset voor kaarten (vacuum, sensor, etc.) zodat overal dezelfde keuze is. */
+export const CARD_ICONS: Record<string, CardIconComponent> = {
+  Activity,
+  Bath,
+  BedDouble,
+  Bot,
+  Box,
+  Building2,
+  Car,
+  Circle,
+  CircleDot,
+  DoorOpen,
+  Droplets,
+  Eye,
+  Gauge,
+  GaugeCircle,
+  Home,
+  Lamp,
+  Lightbulb,
+  Shirt,
+  Sofa,
+  Sparkles,
+  Star,
+  Sun,
+  Thermometer,
+  TreePine,
+  Trash2,
+  UtensilsCrossed,
+  Wind,
+  Zap,
+};
+
+export const CARD_ICON_OPTIONS = Object.keys(CARD_ICONS).sort();
