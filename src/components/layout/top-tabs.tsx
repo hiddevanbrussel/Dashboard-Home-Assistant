@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
-  DoorOpen,
+  Music2,
   Smartphone,
   Zap,
 } from "lucide-react";
@@ -12,7 +12,7 @@ import Link from "next/link";
 const tabs = [
   { href: "/dashboards", label: "Dashboard", icon: LayoutDashboard },
   { href: "/energy", label: "Energy", icon: Zap },
-  { href: "/rooms", label: "Rooms", icon: DoorOpen },
+  { href: "/music", label: "Music", icon: Music2 },
   { href: "/devices", label: "Devices", icon: Smartphone },
 ] as const;
 

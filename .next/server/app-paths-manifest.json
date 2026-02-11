@@ -1,0 +1,16 @@
+{
+  "/api/dashboard/route": "app/api/dashboard/route.js",
+  "/api/dashboards/[id]/route": "app/api/dashboards/[id]/route.js",
+  "/api/ha/call-service/route": "app/api/ha/call-service/route.js",
+  "/api/ha/connection/route": "app/api/ha/connection/route.js",
+  "/api/ha/entities/route": "app/api/ha/entities/route.js",
+  "/api/ha/media-image/route": "app/api/ha/media-image/route.js",
+  "/api/ha/state/route": "app/api/ha/state/route.js",
+  "/api/upload/route": "app/api/upload/route.js",
+  "/dashboards/[id]/page": "app/dashboards/[id]/page.js",
+  "/dashboards/page": "app/dashboards/page.js",
+  "/energy/page": "app/energy/page.js",
+  "/music/page": "app/music/page.js",
+  "/page": "app/page.js",
+  "/settings/page": "app/settings/page.js"
+}

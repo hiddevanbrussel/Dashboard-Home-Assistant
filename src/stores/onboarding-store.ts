@@ -53,6 +53,10 @@ export type WidgetConfig = {
   alignment?: "start" | "center" | "end" | "between";
   /** Card group: geneste kaarten (bijv. pill cards). */
   children?: WidgetConfig[];
+  /** Room card: entity_id voor lichtstatus (bijv. light.groep). */
+  light_entity_id?: string;
+  /** Room card: optionele achtergrondafbeelding (URL). */
+  background_image?: string;
   thresholds?: string;
   unit?: string;
   refresh?: number;

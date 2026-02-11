@@ -8,7 +8,7 @@ import { createPortal } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Bot, Check, CircleDot, CloudSun, Gauge, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, X } from "lucide-react";
+import { Bot, Check, CircleDot, CloudSun, Gauge, Home, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, X } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
@@ -43,6 +43,8 @@ import {
   SENSOR_CONDITION_OPERATORS,
   FloatingPillCard,
   FloatingCardGroup,
+  RoomCardWidget,
+  FloatingRoomCard,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -51,7 +53,7 @@ import { OfflinePill } from "@/components/offline-pill";
 import { cn, generateId } from "@/lib/utils";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["title_card", "climate_card_2", "light_card", "media_card", "solar_card", "sensor_card", "weather_card", "vacuum_card", "pill_card", "card_group"] as const;
+const ADDABLE_WIDGET_TYPES = ["title_card", "climate_card_2", "light_card", "media_card", "solar_card", "sensor_card", "weather_card", "vacuum_card", "pill_card", "room_card", "card_group"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "title_card", label: "Titel", Icon: Type },
@@ -63,6 +65,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "weather_card", label: "Weer", Icon: CloudSun },
   { type: "vacuum_card", label: "Stofzuiger", Icon: Bot },
   { type: "pill_card", label: "Pill", Icon: CircleDot },
+  { type: "room_card", label: "Kamer", Icon: Home },
   { type: "card_group", label: "Kaartgroep", Icon: LayoutGrid },
 ];
 
@@ -84,6 +87,7 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   weather_card: "weather",
   vacuum_card: "vacuum",
   pill_card: "switch",
+  room_card: "",
   card_group: "",
 };
 
@@ -130,6 +134,8 @@ function WidgetByType({
   script_ids,
   script_names,
   cleaned_area_entity_id,
+  light_entity_id,
+  background_image,
   icon,
   size,
   conditions,
@@ -143,6 +149,8 @@ function WidgetByType({
   script_ids?: string[];
   script_names?: Record<string, string>;
   cleaned_area_entity_id?: string;
+  light_entity_id?: string;
+  background_image?: string;
   icon?: string;
   size?: string;
   conditions?: { operator: string; value: string; color: string }[];
@@ -244,6 +252,16 @@ function WidgetByType({
           conditions={conditions}
         />
       );
+    case "room_card":
+      return (
+        <RoomCardWidget
+          title={title}
+          entity_id={entity_id}
+          icon={icon}
+          light_entity_id={light_entity_id}
+          background_image={background_image}
+        />
+      );
     default:
       return (
         <div className="rounded-card border border-dashed p-4 text-sm text-gray-500">
@@ -286,6 +304,11 @@ export default function DashboardEditPage() {
     script_ids?: string[];
     script_names?: Record<string, string>;
     cleaned_area_entity_id?: string;
+    light_entity_id?: string;
+    background_image?: string;
+    icon_background_color?: string;
+    width?: number;
+    height?: number;
     icon?: string;
     size?: string;
     conditions?: { operator: string; value: string; color: string }[];
@@ -299,6 +322,11 @@ export default function DashboardEditPage() {
     script_ids: [],
     script_names: {},
     cleaned_area_entity_id: "",
+    light_entity_id: "",
+    background_image: "",
+    icon_background_color: "",
+    width: undefined as number | undefined,
+    height: undefined as number | undefined,
     icon: "",
     size: "md",
     conditions: [],
@@ -374,6 +402,11 @@ export default function DashboardEditPage() {
         script_ids: editingWidget.script_ids ?? [],
         script_names: editingWidget.script_names ?? {},
         cleaned_area_entity_id: editingWidget.cleaned_area_entity_id ?? "",
+        light_entity_id: editingWidget.light_entity_id ?? "",
+        background_image: editingWidget.background_image ?? "",
+        icon_background_color: editingWidget.icon_background_color ?? "",
+        width: editingWidget.width ?? undefined,
+        height: editingWidget.height ?? undefined,
         icon: editingWidget.icon ?? "",
         size: editingWidget.size ?? "md",
         conditions: editingWidget.conditions ?? [],
@@ -387,7 +420,7 @@ export default function DashboardEditPage() {
       setEditEntitySearch("");
       if (editingWidget.type === "sensor_card") setSensorCardEditTab("general");
     }
-  }, [editingWidget?.id, editingWidget?.title, editingWidget?.entity_id, editingWidget?.consumption_entity_id, editingWidget?.humidity_entity_id, editingWidget?.show_icon, editingWidget?.show_state, editingWidget?.script_ids, editingWidget?.script_names, editingWidget?.cleaned_area_entity_id, editingWidget?.icon, editingWidget?.size, editingWidget?.conditions, editingWidget?.type, editingWidget?.children, editingGroupChildId]);
+  }, [editingWidget?.id, editingWidget?.title, editingWidget?.entity_id, editingWidget?.consumption_entity_id, editingWidget?.humidity_entity_id, editingWidget?.show_icon, editingWidget?.show_state, editingWidget?.script_ids, editingWidget?.script_names, editingWidget?.cleaned_area_entity_id, editingWidget?.light_entity_id, editingWidget?.background_image, editingWidget?.icon_background_color, editingWidget?.width, editingWidget?.height, editingWidget?.icon, editingWidget?.size, editingWidget?.conditions, editingWidget?.type, editingWidget?.children, editingGroupChildId]);
 
   const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["dashboard", id],
@@ -461,7 +494,7 @@ export default function DashboardEditPage() {
     setLayout((prev) => {
       const floatingItems = prev.filter((item) => {
         const type = widgets.find((w) => w.id === item.i)?.type;
-        return type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "title_card" || type === "pill_card" || type === "card_group";
+        return type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "card_group";
       });
       return [...newLayout, ...floatingItems];
     });
@@ -469,7 +502,7 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "title_card" && type !== "pill_card" && type !== "card_group";
+    return type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "title_card" && type !== "pill_card" && type !== "room_card" && type !== "card_group";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
@@ -478,7 +511,7 @@ export default function DashboardEditPage() {
     setEditMode(false);
   };
 
-  function handleAddTile(type: string, entityId: string, titleOverride?: string) {
+  function handleAddTile(type: string, entityId: string, titleOverride?: string): string | undefined {
     const newId = generateId();
     const newWidget: WidgetConfig = {
       id: newId,
@@ -498,7 +531,7 @@ export default function DashboardEditPage() {
     };
     const newWidgets = [...widgets, newWidget];
     const newLayout =
-      type === "solar_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "title_card" || type === "pill_card" || type === "card_group"
+      type === "solar_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "card_group"
         ? layout
         : [...layout, newLayoutItem];
     setWidgets(newWidgets);
@@ -507,6 +540,7 @@ export default function DashboardEditPage() {
     setAddTileStep("type");
     setAddTileSelectedType(null);
     saveMutation.mutate({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    return type === "room_card" ? newId : undefined;
   }
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
@@ -524,7 +558,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; entity_id?: string; consumption_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[] }
+    updates: { title?: string; entity_id?: string; consumption_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[] }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -616,6 +650,11 @@ export default function DashboardEditPage() {
                               setAddTileOpen(false);
                               return;
                             }
+                            if (type === "room_card") {
+                              const newId = handleAddTile("room_card", "", "Kamer");
+                              if (newId) setEditingWidgetId(newId);
+                              return;
+                            }
                             setAddTileSelectedType(type);
                             setAddTileStep("entity");
                           }}
@@ -645,7 +684,7 @@ export default function DashboardEditPage() {
                         type="text"
                         value={addTileEntitySearch}
                         onChange={(e) => setAddTileEntitySearch(e.target.value)}
-                        placeholder="Zoek op naam of entity_id…"
+                        placeholder="Zoek op naam of entity_id (bijv. sensor.woonkamer)…"
                         className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         autoFocus
                       />
@@ -758,7 +797,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "title_card" && w.type !== "pill_card" && w.type !== "card_group")
+            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "title_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "card_group")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -806,6 +845,8 @@ export default function DashboardEditPage() {
                       script_ids={w.script_ids}
                       script_names={w.script_names}
                       cleaned_area_entity_id={w.cleaned_area_entity_id}
+                      light_entity_id={w.light_entity_id}
+                      background_image={w.background_image}
                       icon={w.icon}
                       size={w.size}
                       conditions={w.conditions}
@@ -852,6 +893,7 @@ export default function DashboardEditPage() {
                 humidity_entity_id: w.humidity_entity_id,
                 icon: w.icon,
                 type: w.type === "climate_card_2" ? "climate_card_2" : "climate_card",
+                width: w.width,
               }))}
               editMode={editMode}
               onEnterEditMode={() => setEditMode(true)}
@@ -875,7 +917,10 @@ export default function DashboardEditPage() {
               widgetIndex={i}
               editMode={editMode}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={() => {
+                setEditMode(true);
+                setEditingWidgetId(w.id);
+              }}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -935,6 +980,7 @@ export default function DashboardEditPage() {
               title={firstWeather.title ?? "Weather"}
               entity_id={firstWeather.entity_id}
               show_icon={firstWeather.show_icon}
+              width={firstWeather.width}
               editMode={editMode}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
@@ -976,6 +1022,30 @@ export default function DashboardEditPage() {
             />
           ) : null;
         })()}
+
+        {widgets
+          .filter((w) => w.type === "room_card")
+          .map((w, i) => (
+            <FloatingRoomCard
+              key={w.id}
+              widget={{
+                id: w.id,
+                title: w.title ?? "Kamer",
+                entity_id: w.entity_id,
+                icon: w.icon,
+                light_entity_id: w.light_entity_id,
+                background_image: w.background_image,
+                icon_background_color: w.icon_background_color,
+                width: w.width,
+                height: w.height,
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
 
         {(() => {
           const titleCards = widgets.filter((w) => w.type === "title_card");
@@ -1303,7 +1373,7 @@ export default function DashboardEditPage() {
                       type="text"
                       value={groupAddEntitySearch}
                       onChange={(e) => setGroupAddEntitySearch(e.target.value)}
-                      placeholder="Zoek entity…"
+                      placeholder="Zoek op naam of entity_id (bijv. sensor.woonkamer)…"
                       className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                     />
                     <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
@@ -1364,6 +1434,13 @@ export default function DashboardEditPage() {
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       {editingWidget.type === "solar_card" ? "Yield (opbrengst)" : "Entity"}
                     </label>
+                    <input
+                      type="text"
+                      value={editEntitySearch}
+                      onChange={(e) => setEditEntitySearch(e.target.value)}
+                      placeholder="Zoek op naam of entity_id (bijv. sensor.woonkamer)…"
+                      className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                    />
                     <select
                       value={editForm.entity_id}
                       onChange={(e) =>
@@ -1372,18 +1449,32 @@ export default function DashboardEditPage() {
                       className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                     >
                       {(() => {
-                        const options =
+                        let options =
                           editingWidget.type === "pill_card"
                             ? entities.filter((e) =>
                                 PILL_CARD_DOMAINS.some((d) =>
                                   e.entity_id.startsWith(d + ".")
                                 )
                               )
-                            : entities.filter((e) =>
-                                e.entity_id.startsWith(
-                                  (WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + "."
-                                )
-                              );
+                            : editingWidget.type === "room_card"
+                              ? entities
+                              : entities.filter((e) =>
+                                  e.entity_id.startsWith(
+                                    (WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + "."
+                                  )
+                                );
+                        const q = editEntitySearch.trim().toLowerCase();
+                        if (q) {
+                          options = options.filter((e) => {
+                            const name = ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase();
+                            return name.includes(q) || e.entity_id.toLowerCase().includes(q);
+                          });
+                          const currentId = editForm.entity_id;
+                          if (currentId && !options.some((e) => e.entity_id === currentId)) {
+                            const current = entities.find((e) => e.entity_id === currentId);
+                            if (current) options = [current, ...options];
+                          }
+                        }
                         return options.map((e) => {
                           const name =
                             (e.attributes as { friendly_name?: string })
@@ -1442,36 +1533,211 @@ export default function DashboardEditPage() {
                     </div>
                   </div>
                 )}
+                {editingWidget.type === "room_card" && (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Icoon
+                      </label>
+                      <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto">
+                        {SENSOR_ICON_OPTIONS.filter((name) =>
+                          name.toLowerCase().includes((iconSearch || "").toLowerCase())
+                        ).map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() =>
+                              setEditForm((prev) => ({ ...prev, icon: name }))
+                            }
+                            className={cn(
+                              "rounded-md px-2 py-1 text-xs",
+                              (editForm.icon ?? "Home") === name
+                                ? "bg-[#4D2FB2] text-white"
+                                : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                            )}
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Licht-entiteit (optioneel)
+                      </label>
+                      <select
+                        value={editForm.light_entity_id ?? ""}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            light_entity_id: e.target.value || undefined,
+                          }))
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      >
+                        <option value="">Geen</option>
+                        {entities
+                          .filter((e) =>
+                            e.entity_id.startsWith("light.") || e.entity_id.startsWith("group.")
+                          )
+                          .map((e) => {
+                            const name =
+                              (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                            return (
+                              <option key={e.entity_id} value={e.entity_id}>
+                                {name}
+                              </option>
+                            );
+                          })}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Achtergrondafbeelding (URL, optioneel)
+                      </label>
+                      <input
+                        type="url"
+                        value={editForm.background_image ?? ""}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            background_image: e.target.value || undefined,
+                          }))
+                        }
+                        placeholder="https://..."
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Kleur icoon-badge
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : "#3B82F6"}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              icon_background_color: e.target.value,
+                            }))
+                          }
+                          className="h-10 w-14 cursor-pointer rounded border border-gray-200 dark:border-white/10 bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={editForm.icon_background_color ?? ""}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              icon_background_color: e.target.value || undefined,
+                            }))
+                          }
+                          placeholder="#3B82F6"
+                          className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Breedte kaart (px)
+                      </label>
+                      <input
+                        type="number"
+                        min={200}
+                        max={500}
+                        step={10}
+                        value={editForm.width ?? 280}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            width: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        placeholder="280"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–500 px (standaard 280)</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Hoogte kaart (px)
+                      </label>
+                      <input
+                        type="number"
+                        min={80}
+                        max={300}
+                        step={10}
+                        value={editForm.height ?? 120}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            height: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        placeholder="120"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">80–300 px (standaard 120)</p>
+                    </div>
+                  </>
+                )}
                 {(editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      Luchtvochtigheid (optioneel)
-                    </label>
-                    <select
-                      value={editForm.humidity_entity_id ?? ""}
-                      onChange={(e) =>
-                        setEditForm((prev) => ({
-                          ...prev,
-                          humidity_entity_id: e.target.value || undefined,
-                        }))
-                      }
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                    >
-                      <option value="">Geen</option>
-                      {entities
-                        .filter((e) => e.entity_id.startsWith("sensor."))
-                        .map((e) => {
-                          const name =
-                            (e.attributes as { friendly_name?: string })
-                              ?.friendly_name ?? e.entity_id;
-                          return (
-                            <option key={e.entity_id} value={e.entity_id}>
-                              {name}
-                            </option>
-                          );
-                        })}
-                    </select>
-                  </div>
+                  <>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Luchtvochtigheid (optioneel)
+                      </label>
+                      <select
+                        value={editForm.humidity_entity_id ?? ""}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            humidity_entity_id: e.target.value || undefined,
+                          }))
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      >
+                        <option value="">Geen</option>
+                        {entities
+                          .filter((e) => e.entity_id.startsWith("sensor."))
+                          .map((e) => {
+                            const name =
+                              (e.attributes as { friendly_name?: string })
+                                ?.friendly_name ?? e.entity_id;
+                            return (
+                              <option key={e.entity_id} value={e.entity_id}>
+                                {name}
+                              </option>
+                            );
+                          })}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Breedte kaart (px)
+                      </label>
+                      <input
+                        type="number"
+                        min={200}
+                        max={500}
+                        step={10}
+                        value={editForm.width ?? 320}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            width: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        placeholder="320"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–500 px (standaard 320)</p>
+                    </div>
+                  </>
                 )}
                 {editingWidget.type === "solar_card" && (
                   <div>
@@ -2019,32 +2285,56 @@ export default function DashboardEditPage() {
                   </div>
                 )}
                 {editingWidget.type === "weather_card" && (
-                  <div className="flex items-center justify-between gap-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Toon icoon
-                    </label>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={editForm.show_icon !== false}
-                      onClick={() =>
-                        setEditForm((prev) => ({ ...prev, show_icon: !(prev.show_icon !== false) }))
-                      }
-                      className={cn(
-                        "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2",
-                        editForm.show_icon !== false
-                          ? "bg-[#4D2FB2]"
-                          : "bg-gray-200 dark:bg-gray-600"
-                      )}
-                    >
-                      <span
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Toon icoon
+                      </label>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={editForm.show_icon !== false}
+                        onClick={() =>
+                          setEditForm((prev) => ({ ...prev, show_icon: !(prev.show_icon !== false) }))
+                        }
                         className={cn(
-                          "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition",
-                          editForm.show_icon !== false ? "translate-x-5" : "translate-x-1"
+                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2",
+                          editForm.show_icon !== false
+                            ? "bg-[#4D2FB2]"
+                            : "bg-gray-200 dark:bg-gray-600"
                         )}
+                      >
+                        <span
+                          className={cn(
+                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition",
+                            editForm.show_icon !== false ? "translate-x-5" : "translate-x-1"
+                          )}
+                        />
+                      </button>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Breedte kaart (px)
+                      </label>
+                      <input
+                        type="number"
+                        min={200}
+                        max={500}
+                        step={10}
+                        value={editForm.width ?? 320}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            width: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        placeholder="320"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                    </button>
-                  </div>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–500 px (standaard 320)</p>
+                    </div>
+                  </>
                 )}
                   </>
                 )}
@@ -2170,12 +2460,14 @@ export default function DashboardEditPage() {
                         }),
                         ...((editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && {
                           humidity_entity_id: editForm.humidity_entity_id || undefined,
+                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
                         }),
                         ...(editingWidget.type === "light_card" && {
                           icon: editForm.icon || undefined,
                         }),
                         ...(editingWidget.type === "weather_card" && {
                           show_icon: editForm.show_icon !== false,
+                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
                         }),
                         ...(editingWidget.type === "vacuum_card" && {
                           script_ids: editForm.script_ids ?? [],
@@ -2192,6 +2484,14 @@ export default function DashboardEditPage() {
                           icon: editForm.icon || undefined,
                           conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined,
                           show_state: editForm.show_state !== false,
+                        }),
+                        ...(editingWidget.type === "room_card" && {
+                          icon: editForm.icon || undefined,
+                          light_entity_id: editForm.light_entity_id || undefined,
+                          background_image: editForm.background_image || undefined,
+                          icon_background_color: editForm.icon_background_color || undefined,
+                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
                         }),
                       };
                       handleUpdateTile(editingWidgetId, updates);

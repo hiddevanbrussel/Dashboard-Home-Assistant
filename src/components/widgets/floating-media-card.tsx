@@ -38,10 +38,9 @@ function savePosition(p: Position) {
 
 function defaultPosition(): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  return {
-    left: window.innerWidth - CARD_WIDTH - DEFAULT_OFFSET,
-    bottom: DEFAULT_OFFSET,
-  };
+  const maxLeft = window.innerWidth - CARD_WIDTH;
+  const maxBottom = window.innerHeight - 120;
+  return { left: maxLeft / 2, bottom: maxBottom / 2 };
 }
 
 const LONG_PRESS_MS = 500;
@@ -63,6 +62,7 @@ export function FloatingMediaCard({
 }) {
   const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, top: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -168,7 +168,8 @@ export function FloatingMediaCard({
   return (
     <div
       className={cn(
-        "fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "fixed w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        isExpanded ? "z-50" : "z-30",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -195,7 +196,13 @@ export function FloatingMediaCard({
       })}
     >
       <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-        <MediaCardWidget title={title} entity_id={entity_id} size="md" onMoreClick={editMode ? onEdit : undefined} />
+        <MediaCardWidget
+          title={title}
+          entity_id={entity_id}
+          size="md"
+          onMoreClick={editMode ? onEdit : undefined}
+          onExpandedChange={setIsExpanded}
+        />
       </div>
     </div>
   );

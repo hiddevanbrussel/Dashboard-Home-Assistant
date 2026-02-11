@@ -38,10 +38,9 @@ function savePosition(p: Position) {
 
 function defaultPosition(): Position {
   if (typeof window === "undefined") return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET };
-  return {
-    left: DEFAULT_OFFSET,
-    bottom: window.innerHeight - 200,
-  };
+  const maxLeft = window.innerWidth - PANEL_WIDTH;
+  const maxBottom = window.innerHeight - 120;
+  return { left: maxLeft / 2, bottom: maxBottom / 2 };
 }
 
 export type TitleCardWidgetItem = {

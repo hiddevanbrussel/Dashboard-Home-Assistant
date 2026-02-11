@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 import { useThemeStore } from "@/stores/theme-store";
+import { getScreensaverMinutes, setScreensaverMinutes, getScreensaverBackgroundImage, setScreensaverBackgroundImage } from "@/stores/screensaver-store";
 import { Image, Link2, List, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +52,14 @@ export default function SettingsPage() {
   const [pageBackground, setPageBackground] = useState<string | null>(null);
   const [uploadingBg, setUploadingBg] = useState(false);
   const [section, setSection] = useState<SettingsSection>("appearance");
+  const [screensaverMinutes, setScreensaverMinutesState] = useState(0);
+  const [screensaverBackground, setScreensaverBackgroundState] = useState("");
+  const [uploadingScreensaverBg, setUploadingScreensaverBg] = useState(false);
+
+  useEffect(() => {
+    setScreensaverMinutesState(getScreensaverMinutes());
+    setScreensaverBackgroundState(getScreensaverBackgroundImage());
+  }, []);
 
   useEffect(() => {
     fetch("/api/ha/connection")
@@ -253,6 +262,91 @@ export default function SettingsPage() {
                   Use system preference (auto)
                 </span>
               </label>
+
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Screensaver</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Na inactiviteit gaat een schermbeveiliging aan met klok. Aanraken of bewegen sluit hem.
+                </p>
+                <select
+                  value={screensaverMinutes}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setScreensaverMinutesState(v);
+                    setScreensaverMinutes(v);
+                  }}
+                  className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                >
+                  <option value={0}>Uit</option>
+                  <option value={1}>1 minuut</option>
+                  <option value={2}>2 minuten</option>
+                  <option value={5}>5 minuten</option>
+                  <option value={10}>10 minuten</option>
+                  <option value={15}>15 minuten</option>
+                  <option value={30}>30 minuten</option>
+                </select>
+
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-4 mb-2">
+                  Achtergrondafbeelding (optioneel)
+                </p>
+                {screensaverBackground && (
+                  <div
+                    className="mb-3 h-24 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
+                    style={{ backgroundImage: `url(${screensaverBackground})` }}
+                  />
+                )}
+                <div className="flex flex-wrap gap-2 items-center">
+                  <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
+                    {uploadingScreensaverBg ? "Uploaden…" : "Afbeelding uploaden"}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="sr-only"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingScreensaverBg(true);
+                        try {
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          const res = await fetch("/api/upload", { method: "POST", body: formData });
+                          const json = await res.json();
+                          if (json?.url) {
+                            setScreensaverBackgroundState(json.url);
+                            setScreensaverBackgroundImage(json.url);
+                          }
+                        } finally {
+                          setUploadingScreensaverBg(false);
+                        }
+                      }}
+                      disabled={uploadingScreensaverBg}
+                    />
+                  </label>
+                  <input
+                    type="url"
+                    value={screensaverBackground}
+                    onChange={(e) => {
+                      const v = e.target.value.trim();
+                      setScreensaverBackgroundState(v);
+                      setScreensaverBackgroundImage(v);
+                    }}
+                    placeholder="Of plak een afbeeldings-URL"
+                    className="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
+                  />
+                  {screensaverBackground && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScreensaverBackgroundState("");
+                        setScreensaverBackgroundImage("");
+                      }}
+                      className="rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      Verwijderen
+                    </button>
+                  )}
+                </div>
+              </div>
             </GlassCard>
           )}
 

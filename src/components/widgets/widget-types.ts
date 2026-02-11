@@ -113,3 +113,19 @@ export type CardGroupProps = {
   alignment?: "start" | "center" | "end" | "between";
   children?: WidgetConfig[];
 };
+
+/** Room card: kamer met icoon, naam, entity-waarde en lichtstatus. */
+export type RoomCardProps = WidgetBaseProps & {
+  /** Optioneel icoon (Lucide-naam uit card-icons). */
+  icon?: string;
+  /** Entity voor lichtstatus (bijv. light.badkamer of group.badkamer_lights). */
+  light_entity_id?: string;
+  /** Optionele achtergrondafbeelding voor de kaart (URL). */
+  background_image?: string;
+  /** Achtergrondkleur van het icoon-badge (hex, bijv. #3B82F6). */
+  icon_background_color?: string;
+  /** Breedte van de kaart in pixels (bijv. 240–500). */
+  width?: number;
+  /** Hoogte van de kaart in pixels (bijv. 80–300). */
+  height?: number;
+};

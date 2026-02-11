@@ -37,12 +37,11 @@ function savePosition(widgetId: string, p: Position) {
   }
 }
 
-function defaultPosition(widgetIndex: number): Position {
+function defaultPosition(_widgetIndex: number): Position {
   if (typeof window === "undefined") return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET };
-  return {
-    left: DEFAULT_OFFSET + widgetIndex * (CARD_WIDTH + 12),
-    bottom: DEFAULT_OFFSET,
-  };
+  const maxLeft = window.innerWidth - CARD_WIDTH;
+  const maxBottom = window.innerHeight - 120;
+  return { left: maxLeft / 2, bottom: maxBottom / 2 };
 }
 
 export type LightCardWidgetItem = {
@@ -75,6 +74,7 @@ export function FloatingLightCard({
   const [position, setPosition] = useState<Position>(() => loadPosition(widget.id) ?? { left: 0, bottom: DEFAULT_OFFSET });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
+  const isPointerDownOnCard = useRef(false);
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -88,6 +88,8 @@ export function FloatingLightCard({
   const startLongPress = useCallback(
     (e: React.PointerEvent) => {
       if (editMode || !onEnterEditMode) return;
+      const target = e.target as HTMLElement;
+      if (target?.closest?.("button") ?? false) return;
       clearLongPress();
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       longPressTimerRef.current = setTimeout(() => {
@@ -129,6 +131,7 @@ export function FloatingLightCard({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode) return;
+      isPointerDownOnCard.current = true;
       dragStart.current = {
         x: e.clientX,
         y: e.clientY,
@@ -144,6 +147,7 @@ export function FloatingLightCard({
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
+      if (!isPointerDownOnCard.current) return;
       if (!isDragging) {
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
@@ -166,6 +170,7 @@ export function FloatingLightCard({
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
+      isPointerDownOnCard.current = false;
       if (isDragging) {
         e.preventDefault();
         setIsDragging(false);
@@ -213,6 +218,7 @@ export function FloatingLightCard({
         onPointerMove: handlePointerMove,
         onPointerUp: handlePointerUp,
         onPointerLeave: (e: React.PointerEvent) => {
+          isPointerDownOnCard.current = false;
           if (isDragging) handlePointerUp(e);
         },
         onPointerCancel: handlePointerUp,
@@ -225,7 +231,7 @@ export function FloatingLightCard({
             entity_id={widget.entity_id}
             icon={widget.icon}
             size="md"
-            onMoreClick={editMode ? onEdit : undefined}
+            onMoreClick={onEdit}
           />
         </div>
       </div>

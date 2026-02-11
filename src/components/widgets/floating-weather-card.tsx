@@ -7,7 +7,15 @@ import { WeatherCardWidget } from "./weather-card-widget";
 
 const STORAGE_KEY = "dashboard.floatingWeatherCardPosition";
 const DEFAULT_OFFSET = 24;
-const CARD_WIDTH = 320;
+const DEFAULT_CARD_WIDTH = 320;
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 500;
+
+function clampWidth(w: unknown): number {
+  const n = Number(w);
+  if (!Number.isFinite(n)) return DEFAULT_CARD_WIDTH;
+  return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n)));
+}
 
 type Position = { left: number; bottom: number };
 
@@ -36,12 +44,11 @@ function savePosition(p: Position) {
   }
 }
 
-function defaultPosition(): Position {
+function defaultPosition(cardWidth: number): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  return {
-    left: window.innerWidth - CARD_WIDTH - DEFAULT_OFFSET - 80,
-    bottom: DEFAULT_OFFSET,
-  };
+  const maxLeft = window.innerWidth - cardWidth;
+  const maxBottom = window.innerHeight - 120;
+  return { left: maxLeft / 2, bottom: maxBottom / 2 };
 }
 
 const LONG_PRESS_MS = 500;
@@ -50,6 +57,7 @@ export function FloatingWeatherCard({
   title,
   entity_id,
   show_icon = true,
+  width,
   editMode = false,
   onRemove,
   onEdit,
@@ -58,11 +66,13 @@ export function FloatingWeatherCard({
   title: string;
   entity_id: string;
   show_icon?: boolean;
+  width?: number;
   editMode?: boolean;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
+  const totalWidth = clampWidth(width);
   const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, top: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
@@ -100,7 +110,7 @@ export function FloatingWeatherCard({
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
     const bounds = { maxLeft, maxBottom };
     const saved = loadPosition();
@@ -108,10 +118,10 @@ export function FloatingWeatherCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(), bounds);
+    const p = snapToGrid(defaultPosition(totalWidth), bounds);
     setPosition(p);
     savePosition(p);
-  }, []);
+  }, [totalWidth]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -130,12 +140,13 @@ export function FloatingWeatherCard({
     [position, editMode]
   );
 
+  const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!isDragging) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
       const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
       const raw = {
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
@@ -143,7 +154,7 @@ export function FloatingWeatherCard({
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging]
+    [isDragging, maxLeft]
   );
 
   const handlePointerUp = useCallback(
@@ -152,7 +163,6 @@ export function FloatingWeatherCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
         const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
@@ -164,19 +174,20 @@ export function FloatingWeatherCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging]
+    [isDragging, maxLeft]
   );
 
   return (
     <div
       className={cn(
-        "fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
       style={{
         left: position.left,
         bottom: position.bottom,
+        width: totalWidth,
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&

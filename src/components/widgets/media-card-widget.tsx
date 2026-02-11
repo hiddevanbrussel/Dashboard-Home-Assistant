@@ -27,8 +27,14 @@ export function MediaCardWidget({
   size = "md",
   className,
   onMoreClick,
-}: MediaCardProps & { className?: string; onMoreClick?: () => void }) {
+  onExpandedChange,
+}: MediaCardProps & { className?: string; onMoreClick?: () => void; onExpandedChange?: (expanded: boolean) => void }) {
   const [expanded, setExpanded] = useState(false);
+
+  const setExpandedWithCallback = (value: boolean) => {
+    setExpanded(value);
+    onExpandedChange?.(value);
+  };
   const [loading, setLoading] = useState(false);
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const setStates = useEntityStateStore((s) => s.setStates);
@@ -118,7 +124,7 @@ export function MediaCardWidget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/10 dark:bg-black/50 text-white shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/10 dark:bg-black/50 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
@@ -133,7 +139,7 @@ export function MediaCardWidget({
               <button
                 key={trackKey}
                 type="button"
-                onClick={() => setExpanded(false)}
+                onClick={() => setExpandedWithCallback(false)}
                 className="block relative w-full aspect-square max-h-48 mx-auto rounded-xl overflow-hidden bg-white/5 hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-white/50"
                 aria-label="Inklappen"
               >
@@ -169,7 +175,7 @@ export function MediaCardWidget({
           </div>
           <button
             type="button"
-            onClick={() => setExpanded(false)}
+            onClick={() => setExpandedWithCallback(false)}
             className="flex items-center justify-center gap-1 py-1 text-white/50 hover:text-white/80 transition-colors"
             aria-label="Inklappen"
           >
@@ -218,7 +224,7 @@ export function MediaCardWidget({
             <button
               key={trackKey}
               type="button"
-              onClick={() => setExpanded(true)}
+              onClick={() => setExpandedWithCallback(true)}
               className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-white/5 border border-white/20 hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-white/50"
               aria-label="Uitklappen"
             >
@@ -240,7 +246,7 @@ export function MediaCardWidget({
         ) : !expanded ? (
           <button
             type="button"
-            onClick={() => setExpanded(true)}
+            onClick={() => setExpandedWithCallback(true)}
             className="h-10 w-10 shrink-0 rounded-lg bg-white/5 border border-white/20 flex items-center justify-center hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-white/50"
             aria-label="Uitklappen"
           >
@@ -255,12 +261,12 @@ export function MediaCardWidget({
       </div>
 
       {/* Onderste balk: track + controls — altijd hetzelfde */}
-      <div className="flex items-center justify-between gap-2 px-4 py-3 bg-black/20 dark:bg-black/30 backdrop-blur-md rounded-b-2xl">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 bg-black/10 dark:bg-black/30 backdrop-blur-md rounded-b-2xl">
         <div className="min-w-0 flex-1">
-          <p className="font-medium truncate text-sm">
+          <p className="font-medium truncate text-sm text-gray-900 dark:text-white">
             {mediaTitle || "—"}
           </p>
-          <p className="text-xs text-white/60 truncate">
+          <p className="text-xs text-gray-600 dark:text-white/60 truncate">
             {mediaArtist || "—"}
           </p>
         </div>

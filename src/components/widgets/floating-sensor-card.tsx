@@ -38,10 +38,9 @@ function savePosition(p: Position) {
 
 function defaultPosition(): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  return {
-    left: window.innerWidth - CARD_WIDTH - DEFAULT_OFFSET - 160,
-    bottom: DEFAULT_OFFSET,
-  };
+  const maxLeft = window.innerWidth - CARD_WIDTH;
+  const maxBottom = window.innerHeight - 120;
+  return { left: maxLeft / 2, bottom: maxBottom / 2 };
 }
 
 type SensorCondition = { operator: string; value: string; color: string };

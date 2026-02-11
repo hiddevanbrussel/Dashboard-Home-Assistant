@@ -126,13 +126,13 @@ export function LightCardWidget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl shadow-xl border transition-colors duration-200",
+        "flex w-full flex-col overflow-hidden rounded-2xl transition-colors duration-200",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
         isOn
-          ? "bg-white dark:bg-gray-100 text-gray-900 border-gray-200 dark:border-gray-200/80"
-          : "bg-white/25 dark:bg-black/40 backdrop-blur-2xl border border-white/30 dark:border-white/10 text-gray-800 dark:text-gray-200 opacity-95",
+          ? "text-gray-900"
+          : "text-gray-800 dark:text-gray-200 opacity-95",
         className
       )}
     >
@@ -175,7 +175,7 @@ export function LightCardWidget({
             <p className="font-medium truncate text-inherit">{title}</p>
             <p className={cn(
               "text-xs truncate",
-              isOn ? "text-gray-600 dark:text-gray-600" : "text-gray-500 dark:text-gray-400"
+              isOn ? "text-gray-600" : "text-gray-500 dark:text-gray-400"
             )}>
               {statusText}
             </p>
@@ -198,24 +198,25 @@ export function LightCardWidget({
         typeof document !== "undefined" &&
         createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div
-              className="absolute inset-0 bg-black/40 dark:bg-black/50 backdrop-blur-md"
-              aria-hidden
+            <button
+              type="button"
+              className="absolute inset-0 z-[100] bg-black/40 dark:bg-black/50 backdrop-blur-md cursor-pointer"
+              aria-label="Modal sluiten"
               onClick={() => setModalOpen(false)}
             />
             <div
               className={cn(
-                "relative z-[101] w-full max-w-sm p-5 flex flex-col items-center text-center rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/50 dark:backdrop-blur-xl shadow-xl",
+                "relative z-[101] w-full max-w-sm p-5 flex flex-col items-center text-center",
                 isOn && supportsBrightness ? "min-h-[420px]" : "min-h-[380px]"
               )}
               onClick={(e) => e.stopPropagation()}
             >
               {isOn && supportsBrightness ? (
                 <>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                  <h3 className="text-xl font-semibold text-white mb-1">
                     {title}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                  <p className="text-sm text-gray-300 mb-6">
                     {sliderBrightness}%
                   </p>
                   <div className="flex flex-col items-center gap-4">
@@ -246,10 +247,10 @@ export function LightCardWidget({
                 </>
               ) : supportsBrightness ? (
                 <>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                  <h3 className="text-xl font-semibold text-white mb-1">
                     {title}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  <p className="text-sm text-gray-300 mb-4">
                     {isOn ? "Aan" : "Uit"}
                   </p>
                   <div className="flex gap-3 w-full max-w-xs mx-auto">
@@ -279,10 +280,10 @@ export function LightCardWidget({
                 </>
               ) : (
                 <>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                  <h3 className="text-xl font-semibold text-white mb-1">
                     {title}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                  <p className="text-sm text-gray-300 mb-6">
                     {isOn ? "Aan" : "Uit"}
                   </p>
                   <div

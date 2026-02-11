@@ -41,12 +41,11 @@ function savePosition(widgetId: string, p: Position) {
   }
 }
 
-function defaultPosition(widgetIndex: number): Position {
+function defaultPosition(_widgetIndex: number): Position {
   if (typeof window === "undefined") return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET };
-  return {
-    left: DEFAULT_OFFSET + widgetIndex * 80,
-    bottom: DEFAULT_OFFSET,
-  };
+  const maxLeft = window.innerWidth - CARD_MIN_WIDTH;
+  const maxBottom = window.innerHeight - 120;
+  return { left: maxLeft / 2, bottom: maxBottom / 2 };
 }
 
 const JUSTIFY_MAP = {

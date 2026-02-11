@@ -10,8 +10,16 @@ export const CLIMATE_ICON_OPTIONS: readonly string[] = [];
 
 const STORAGE_KEY = "dashboard.floatingClimateCardPosition";
 const DEFAULT_OFFSET = 24;
-const CARD_WIDTH = 320;
+const DEFAULT_CARD_WIDTH = 320;
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 500;
 const SWIPE_THRESHOLD_PX = 50;
+
+function clampWidth(w: unknown): number {
+  const n = Number(w);
+  if (!Number.isFinite(n)) return DEFAULT_CARD_WIDTH;
+  return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n)));
+}
 const SLIDE_DURATION_MS = 280;
 
 type Position = { left: number; bottom: number };
@@ -42,12 +50,11 @@ function savePosition(p: Position) {
   }
 }
 
-function defaultPosition(): Position {
+function defaultPosition(cardWidth: number): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  return {
-    left: window.innerWidth - CARD_WIDTH - DEFAULT_OFFSET,
-    bottom: DEFAULT_OFFSET,
-  };
+  const maxLeft = window.innerWidth - cardWidth;
+  const maxBottom = window.innerHeight - 120;
+  return { left: maxLeft / 2, bottom: maxBottom / 2 };
 }
 
 export type ClimateCardWidgetItem = {
@@ -56,6 +63,7 @@ export type ClimateCardWidgetItem = {
   entity_id: string;
   humidity_entity_id?: string;
   type?: "climate_card" | "climate_card_2";
+  width?: number;
 };
 
 const LONG_PRESS_MS = 500;
@@ -79,6 +87,7 @@ export function FloatingClimateCard({
   onEnterEditMode?: () => void;
 }) {
   const widgets = widgetsProp ?? (titleProp != null && entityIdProp != null ? [{ id: "", title: titleProp, entity_id: entityIdProp, type: "climate_card_2" as const }] : []);
+  const totalWidth = clampWidth(widgets[0]?.width);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [flipDeg, setFlipDeg] = useState(0);
   const [nextIndex, setNextIndex] = useState<number | null>(null);
@@ -135,8 +144,6 @@ export function FloatingClimateCard({
   const initialized = useRef(false);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
-  const totalWidth = CARD_WIDTH;
-
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -148,7 +155,7 @@ export function FloatingClimateCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(), bounds);
+    const p = snapToGrid(defaultPosition(totalWidth), bounds);
     setPosition(p);
     savePosition(p);
   }, [totalWidth]);
@@ -218,7 +225,7 @@ export function FloatingClimateCard({
   return (
     <div
       className={cn(
-        "fixed z-30 flex shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "fixed z-30 flex shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
