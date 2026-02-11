@@ -8,5 +8,6 @@
   "/dashboards/[id]/page": "app/dashboards/[id]/page.js",
   "/dashboards/page": "app/dashboards/page.js",
   "/energy/page": "app/energy/page.js",
+  "/page": "app/page.js",
   "/settings/page": "app/settings/page.js"
 }
