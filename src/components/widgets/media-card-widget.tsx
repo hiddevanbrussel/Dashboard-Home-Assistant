@@ -8,6 +8,7 @@ import {
   SkipBack,
   SkipForward,
   Disc3,
+  MoreVertical,
 } from "lucide-react";
 import type { MediaCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,8 @@ export function MediaCardWidget({
   entity_id,
   size = "md",
   className,
-}: MediaCardProps & { className?: string }) {
+  onMoreClick,
+}: MediaCardProps & { className?: string; onMoreClick?: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const entity = useEntityStateStore((s) => s.getState(entity_id));
@@ -201,6 +203,16 @@ export function MediaCardWidget({
             <p className="font-medium truncate text-white/90">{title}</p>
             <p className="text-xs text-white/60 truncate">{deviceName}</p>
           </div>
+          {onMoreClick && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
+              className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Opties"
+            >
+              <MoreVertical className="h-5 w-5" aria-hidden />
+            </button>
+          )}
           {mediaImageSrc ? (
           !expanded ? (
             <button

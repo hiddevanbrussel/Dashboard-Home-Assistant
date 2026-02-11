@@ -1,3 +1,5 @@
+import type { WidgetConfig } from "@/stores/onboarding-store";
+
 export type WidgetBaseProps = {
   title: string;
   entity_id: string;
@@ -87,4 +89,27 @@ export type SensorCardProps = WidgetBaseProps & {
   icon?: string;
   /** Conditionele kleuren: eerste voorwaarde die klopt bepaalt de kaartkleur. */
   conditions?: SensorCondition[];
+};
+
+export type TitleCardProps = {
+  title: string;
+};
+
+/** Pill/badge card: compact weergave van entity met icoon, waarde en optioneel aan/uit. */
+export type PillCardProps = WidgetBaseProps & {
+  /** Optioneel icoon (Lucide-naam uit card-icons). */
+  icon?: string;
+  /** Conditionele kleuren op basis van state (eerste match wint). */
+  conditions?: SensorCondition[];
+  /** Toon entiteitstatus (aan/uit of waarde); default true. */
+  show_state?: boolean;
+};
+
+/** Card group: container met uitlijning en geneste kaarten (bijv. pills). */
+export type CardGroupProps = {
+  id: string;
+  type: "card_group";
+  title?: string;
+  alignment?: "start" | "center" | "end" | "between";
+  children?: WidgetConfig[];
 };

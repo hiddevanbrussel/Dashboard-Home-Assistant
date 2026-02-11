@@ -6,7 +6,9 @@ __turbopack_context__.s([
     "capitalizeFirst",
     ()=>capitalizeFirst,
     "cn",
-    ()=>cn
+    ()=>cn,
+    "generateId",
+    ()=>generateId
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$clsx$2f$dist$2f$clsx$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/clsx/dist/clsx.mjs [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$tailwind$2d$merge$2f$dist$2f$bundle$2d$mjs$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/tailwind-merge/dist/bundle-mjs.mjs [app-ssr] (ecmascript)");
@@ -18,6 +20,23 @@ function cn(...inputs) {
 function capitalizeFirst(s) {
     if (s == null || s === "") return s ?? "";
     return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+function generateId() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+    }
+    const bytes = new Uint8Array(16);
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+        crypto.getRandomValues(bytes);
+    } else {
+        for(let i = 0; i < 16; i++)bytes[i] = Math.floor(Math.random() * 256);
+    }
+    bytes[6] = bytes[6] & 0x0f | 0x40;
+    bytes[8] = bytes[8] & 0x3f | 0x80;
+    const hex = [
+        ...bytes
+    ].map((b)=>b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 }),
 "[project]/src/components/layout/top-tabs.tsx [app-ssr] (ecmascript)", ((__turbopack_context__) => {
@@ -350,6 +369,20 @@ const useEntityStateStore = (0, __TURBOPACK__imported__module__$5b$project$5d2f$
                 error: null
             });
         },
+        updateEntityState: (entityId, patch)=>{
+            const current = get().states[entityId];
+            if (!current) return;
+            set({
+                states: {
+                    ...get().states,
+                    [entityId]: {
+                        ...current,
+                        ...patch
+                    }
+                },
+                updatedAt: Date.now()
+            });
+        },
         setError: (error)=>set({
                 error
             }),
@@ -366,12 +399,10 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-dom.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$bell$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Bell$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/bell.js [app-ssr] (ecmascript) <export default as Bell>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/x.js [app-ssr] (ecmascript) <export default as X>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$state$2d$store$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/stores/entity-state-store.ts [app-ssr] (ecmascript)");
 "use client";
-;
 ;
 ;
 ;
@@ -470,7 +501,7 @@ function HeaderNotifications() {
                         "aria-hidden": true
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                        lineNumber: 103,
+                        lineNumber: 102,
                         columnNumber: 9
                     }, this),
                     count > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -479,17 +510,17 @@ function HeaderNotifications() {
                         children: count > 99 ? "99+" : count
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                        lineNumber: 105,
+                        lineNumber: 104,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                lineNumber: 96,
+                lineNumber: 95,
                 columnNumber: 7
             }, this),
-            open && typeof document !== "undefined" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "absolute right-0 top-full z-[100] mt-1 w-[320px] max-h-[70vh] flex flex-col rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-gray-800",
+            open && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "absolute right-0 top-full z-[100] mt-1 w-[320px] max-h-[70vh] flex flex-col rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "flex items-center justify-between gap-2 border-b border-gray-100 dark:border-white/10 px-4 py-3",
@@ -499,7 +530,7 @@ function HeaderNotifications() {
                                 children: "Meldingen"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                lineNumber: 119,
+                                lineNumber: 116,
                                 columnNumber: 15
                             }, this),
                             count > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -528,13 +559,13 @@ function HeaderNotifications() {
                                 children: "Alles wissen"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                lineNumber: 123,
+                                lineNumber: 120,
                                 columnNumber: 17
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                        lineNumber: 118,
+                        lineNumber: 115,
                         columnNumber: 13
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -544,7 +575,7 @@ function HeaderNotifications() {
                             children: "Geen meldingen"
                         }, void 0, false, {
                             fileName: "[project]/src/components/layout/header-notifications.tsx",
-                            lineNumber: 151,
+                            lineNumber: 148,
                             columnNumber: 17
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
                             className: "py-1",
@@ -566,7 +597,7 @@ function HeaderNotifications() {
                                                         children: title
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                                        lineNumber: 168,
+                                                        lineNumber: 165,
                                                         columnNumber: 29
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -579,18 +610,18 @@ function HeaderNotifications() {
                                                             className: "h-4 w-4"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                                            lineNumber: 178,
+                                                            lineNumber: 175,
                                                             columnNumber: 31
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                                        lineNumber: 171,
+                                                        lineNumber: 168,
                                                         columnNumber: 29
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                                lineNumber: 167,
+                                                lineNumber: 164,
                                                 columnNumber: 27
                                             }, this),
                                             message && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -598,41 +629,41 @@ function HeaderNotifications() {
                                                 children: message
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                                lineNumber: 182,
+                                                lineNumber: 179,
                                                 columnNumber: 29
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                        lineNumber: 166,
+                                        lineNumber: 163,
                                         columnNumber: 25
                                     }, this)
                                 }, n.entity_id, false, {
                                     fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                    lineNumber: 162,
+                                    lineNumber: 159,
                                     columnNumber: 23
                                 }, this);
                             })
                         }, void 0, false, {
                             fileName: "[project]/src/components/layout/header-notifications.tsx",
-                            lineNumber: 155,
+                            lineNumber: 152,
                             columnNumber: 17
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                        lineNumber: 149,
+                        lineNumber: 146,
                         columnNumber: 13
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                lineNumber: 117,
+                lineNumber: 114,
                 columnNumber: 11
-            }, this), document.body)
+            }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/layout/header-notifications.tsx",
-        lineNumber: 95,
+        lineNumber: 94,
         columnNumber: 5
     }, this);
 }
@@ -652,6 +683,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2d$lightning$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CloudLightning$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/cloud-lightning.js [app-ssr] (ecmascript) <export default as CloudLightning>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2d$rain$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CloudRain$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/cloud-rain.js [app-ssr] (ecmascript) <export default as CloudRain>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2d$snow$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CloudSnow$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/cloud-snow.js [app-ssr] (ecmascript) <export default as CloudSnow>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$menu$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Menu$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/menu.js [app-ssr] (ecmascript) <export default as Menu>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$moon$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Moon$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/moon.js [app-ssr] (ecmascript) <export default as Moon>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$sun$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Sun$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/sun.js [app-ssr] (ecmascript) <export default as Sun>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$thermometer$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Thermometer$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/thermometer.js [app-ssr] (ecmascript) <export default as Thermometer>");
@@ -698,7 +730,7 @@ function WeatherIcon({ state }) {
         "aria-hidden": true
     }, void 0, false, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 67,
+        lineNumber: 70,
         columnNumber: 46
     }, this);
     if (s === "clear-night") return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$moon$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Moon$3e$__["Moon"], {
@@ -706,7 +738,7 @@ function WeatherIcon({ state }) {
         "aria-hidden": true
     }, void 0, false, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 68,
+        lineNumber: 71,
         columnNumber: 35
     }, this);
     if (s === "fog" || s === "mist") return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2d$fog$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CloudFog$3e$__["CloudFog"], {
@@ -714,7 +746,7 @@ function WeatherIcon({ state }) {
         "aria-hidden": true
     }, void 0, false, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 69,
+        lineNumber: 72,
         columnNumber: 43
     }, this);
     if (s === "rainy" || s === "pouring" || s === "hail") return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2d$rain$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CloudRain$3e$__["CloudRain"], {
@@ -722,7 +754,7 @@ function WeatherIcon({ state }) {
         "aria-hidden": true
     }, void 0, false, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 70,
+        lineNumber: 73,
         columnNumber: 64
     }, this);
     if (s === "snowy" || s === "snowy-rainy") return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2d$snow$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CloudSnow$3e$__["CloudSnow"], {
@@ -730,7 +762,7 @@ function WeatherIcon({ state }) {
         "aria-hidden": true
     }, void 0, false, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 71,
+        lineNumber: 74,
         columnNumber: 52
     }, this);
     if (s === "lightning" || s === "lightning-rainy") return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2d$lightning$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CloudLightning$3e$__["CloudLightning"], {
@@ -738,7 +770,7 @@ function WeatherIcon({ state }) {
         "aria-hidden": true
     }, void 0, false, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 72,
+        lineNumber: 75,
         columnNumber: 60
     }, this);
     if (s === "windy" || s === "windy-variant") return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$wind$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Wind$3e$__["Wind"], {
@@ -746,7 +778,7 @@ function WeatherIcon({ state }) {
         "aria-hidden": true
     }, void 0, false, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 73,
+        lineNumber: 76,
         columnNumber: 54
     }, this);
     if (s === "cloudy" || s === "partlycloudy" || s === "exceptional") return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Cloud$3e$__["Cloud"], {
@@ -754,7 +786,7 @@ function WeatherIcon({ state }) {
         "aria-hidden": true
     }, void 0, false, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 74,
+        lineNumber: 77,
         columnNumber: 77
     }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Cloud$3e$__["Cloud"], {
@@ -762,7 +794,7 @@ function WeatherIcon({ state }) {
         "aria-hidden": true
     }, void 0, false, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 75,
+        lineNumber: 78,
         columnNumber: 10
     }, this);
 }
@@ -789,11 +821,11 @@ function TemperatureEntityModal({ onClose, onSelect }) {
                 onClick: onClose
             }, void 0, false, {
                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                lineNumber: 106,
+                lineNumber: 109,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "relative z-[102] w-full max-w-sm rounded-2xl border-0 bg-white p-5 shadow-xl dark:bg-gray-800",
+                className: "relative z-[102] w-full max-w-sm rounded-2xl border-0 bg-white p-5 shadow-xl dark:bg-black/50 dark:backdrop-blur-xl dark:border dark:border-white/10",
                 onClick: (e)=>e.stopPropagation(),
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -804,7 +836,7 @@ function TemperatureEntityModal({ onClose, onSelect }) {
                                 children: "Choose weather for temperature"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                                lineNumber: 116,
+                                lineNumber: 119,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -816,18 +848,18 @@ function TemperatureEntityModal({ onClose, onSelect }) {
                                     className: "h-4 w-4"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/layout/app-shell.tsx",
-                                    lineNumber: 125,
+                                    lineNumber: 128,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                                lineNumber: 119,
+                                lineNumber: 122,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 115,
+                        lineNumber: 118,
                         columnNumber: 9
                     }, this),
                     loading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -835,21 +867,21 @@ function TemperatureEntityModal({ onClose, onSelect }) {
                         children: "Loading…"
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 129,
+                        lineNumber: 132,
                         columnNumber: 11
                     }, this) : error ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         className: "text-sm text-red-600 dark:text-red-400",
                         children: error
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 131,
+                        lineNumber: 134,
                         columnNumber: 11
                     }, this) : entities.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         className: "text-sm text-gray-500 dark:text-gray-400",
                         children: "No weather entities found. Check your Home Assistant connection."
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 133,
+                        lineNumber: 136,
                         columnNumber: 11
                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
                         className: "max-h-64 overflow-auto space-y-1",
@@ -868,30 +900,30 @@ function TemperatureEntityModal({ onClose, onSelect }) {
                                     children: name
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/layout/app-shell.tsx",
-                                    lineNumber: 143,
+                                    lineNumber: 146,
                                     columnNumber: 19
                                 }, this)
                             }, e.entity_id, false, {
                                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                                lineNumber: 142,
+                                lineNumber: 145,
                                 columnNumber: 17
                             }, this);
                         })
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 137,
+                        lineNumber: 140,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                lineNumber: 111,
+                lineNumber: 114,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 105,
+        lineNumber: 108,
         columnNumber: 5
     }, this);
 }
@@ -913,7 +945,7 @@ function useTime24() {
     }, []);
     return time;
 }
-function AppShell({ children, activeTab = "/dashboards", showSidebar = true, showFloatingToolbar = false, welcomeBarAction, headerEndAction, welcomeTitle: welcomeTitleProp, welcomeSubtitle: welcomeSubtitleProp, welcomeEditable = false, onWelcomeChange, temperatureEntityId, className }) {
+function AppShell({ children, activeTab = "/dashboards", showSidebar = true, showFloatingToolbar = false, welcomeBarAction, headerEndAction, welcomeTitle: welcomeTitleProp, welcomeSubtitle: welcomeSubtitleProp, welcomeEditable = false, onWelcomeChange, temperatureEntityId, contentNoScroll = false, className }) {
     const defaultWelcomeTitle = "Hey, Fam van Brussel!";
     const defaultWelcomeSubtitle = "Control your home in one place!";
     const welcomeTitle = welcomeTitleProp ?? defaultWelcomeTitle;
@@ -922,6 +954,7 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
     const time24 = useTime24();
     const [temperatureModalOpen, setTemperatureModalOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [chosenTemperatureEntityId, setChosenTemperatureEntityId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [sidebarOpen, setSidebarOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         if ("TURBOPACK compile-time truthy", 1) return;
         //TURBOPACK unreachable
@@ -950,13 +983,31 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "flex-1 min-w-0 flex items-center gap-4",
                         children: [
+                            showSidebar && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                type: "button",
+                                onClick: ()=>setSidebarOpen((v)=>!v),
+                                className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors",
+                                "aria-label": sidebarOpen ? "Menu sluiten" : "Menu openen",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$menu$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Menu$3e$__["Menu"], {
+                                    className: "h-5 w-5",
+                                    "aria-hidden": true
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/layout/app-shell.tsx",
+                                    lineNumber: 257,
+                                    columnNumber: 15
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "[project]/src/components/layout/app-shell.tsx",
+                                lineNumber: 251,
+                                columnNumber: 13
+                            }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 className: "text-sm font-medium tabular-nums text-gray-700 dark:text-gray-300",
                                 "aria-live": "polite",
                                 children: time24
                             }, void 0, false, {
                                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                                lineNumber: 245,
+                                lineNumber: 260,
                                 columnNumber: 11
                             }, this),
                             effectiveTempEntity != null && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -969,27 +1020,27 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
                                         state: temperatureState.state
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                                        lineNumber: 256,
+                                        lineNumber: 271,
                                         columnNumber: 17
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$thermometer$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Thermometer$3e$__["Thermometer"], {
                                         className: "h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400",
                                         "aria-hidden": true
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                                        lineNumber: 258,
+                                        lineNumber: 273,
                                         columnNumber: 17
                                     }, this),
                                     temperatureDisplay ?? "—"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                                lineNumber: 249,
+                                lineNumber: 264,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 244,
+                        lineNumber: 249,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -998,12 +1049,12 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
                             activeHref: activeTab
                         }, void 0, false, {
                             fileName: "[project]/src/components/layout/app-shell.tsx",
-                            lineNumber: 265,
+                            lineNumber: 280,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 264,
+                        lineNumber: 279,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1012,24 +1063,24 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
                             headerEndAction,
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$2f$header$2d$notifications$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["HeaderNotifications"], {}, void 0, false, {
                                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                                lineNumber: 269,
+                                lineNumber: 284,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$theme$2d$switcher$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ThemeSwitcher"], {}, void 0, false, {
                                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                                lineNumber: 270,
+                                lineNumber: 285,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 267,
+                        lineNumber: 282,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                lineNumber: 243,
+                lineNumber: 248,
                 columnNumber: 7
             }, this),
             temperatureModalOpen && typeof document !== "undefined" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(TemperatureEntityModal, {
@@ -1037,7 +1088,7 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
                 onSelect: saveChosenTemperatureEntity
             }, void 0, false, {
                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                lineNumber: 277,
+                lineNumber: 292,
                 columnNumber: 11
             }, this), document.body),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1059,7 +1110,7 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
                                     placeholder: "Welkomsttitel"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/layout/app-shell.tsx",
-                                    lineNumber: 288,
+                                    lineNumber: 303,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1073,13 +1124,13 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
                                     placeholder: "Ondertitel"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/layout/app-shell.tsx",
-                                    lineNumber: 300,
+                                    lineNumber: 315,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/layout/app-shell.tsx",
-                            lineNumber: 287,
+                            lineNumber: 302,
                             columnNumber: 13
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                             children: [
@@ -1088,7 +1139,7 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
                                     children: welcomeTitle
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/layout/app-shell.tsx",
-                                    lineNumber: 315,
+                                    lineNumber: 330,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1096,14 +1147,14 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
                                     children: welcomeSubtitle
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/layout/app-shell.tsx",
-                                    lineNumber: 318,
+                                    lineNumber: 333,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true)
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 285,
+                        lineNumber: 300,
                         columnNumber: 9
                     }, this),
                     welcomeBarAction != null ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1111,55 +1162,55 @@ function AppShell({ children, activeTab = "/dashboards", showSidebar = true, sho
                         children: welcomeBarAction
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 325,
+                        lineNumber: 340,
                         columnNumber: 11
                     }, this) : null
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                lineNumber: 284,
+                lineNumber: 299,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "flex flex-1 overflow-hidden relative",
                 children: [
                     showSidebar && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "fixed left-0 top-[8rem] bottom-0 z-10 w-[88px] pl-8 flex flex-col items-center justify-center",
+                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("fixed left-0 top-[8rem] bottom-0 z-10 w-[88px] pl-8 flex flex-col items-center justify-center transition-[transform,opacity] duration-200 ease-out", sidebarOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"),
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$2f$sidebar$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Sidebar"], {
                             activeHref: activeTab
                         }, void 0, false, {
                             fileName: "[project]/src/components/layout/app-shell.tsx",
-                            lineNumber: 334,
+                            lineNumber: 354,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 333,
+                        lineNumber: 348,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
-                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("flex-1 overflow-auto p-4 min-w-0", showSidebar && "ml-[88px]"),
+                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("flex-1 p-4 min-w-0 transition-[margin] duration-200", contentNoScroll ? "overflow-hidden" : "overflow-auto", showSidebar && sidebarOpen && "ml-[88px]"),
                         children: children
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/app-shell.tsx",
-                        lineNumber: 337,
+                        lineNumber: 357,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                lineNumber: 331,
+                lineNumber: 346,
                 columnNumber: 7
             }, this),
             showFloatingToolbar && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$2f$floating$2d$toolbar$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingToolbar"], {}, void 0, false, {
                 fileName: "[project]/src/components/layout/app-shell.tsx",
-                lineNumber: 347,
+                lineNumber: 368,
                 columnNumber: 31
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/layout/app-shell.tsx",
-        lineNumber: 234,
+        lineNumber: 239,
         columnNumber: 5
     }, this);
 }

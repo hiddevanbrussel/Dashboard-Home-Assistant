@@ -4,10 +4,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/app-shell";
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Check, Pencil, Plus, X } from "lucide-react";
+import { Bot, Check, CircleDot, CloudSun, Gauge, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, X } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
@@ -23,7 +24,6 @@ import {
   LightCardWidget,
   FloatingLightCard,
   LIGHT_ICON_OPTIONS,
-  ClimateCardWidget,
   ClimateCard2Widget,
   SolarCardWidget,
   FloatingClimateCard,
@@ -34,23 +34,41 @@ import {
   FloatingVacuumCard,
   SensorCardWidget,
   FloatingSensorCard,
+  TitleCardWidget,
+  FloatingTitleCard,
   CLIMATE_ICON_OPTIONS,
   VACUUM_ICON_OPTIONS,
   SENSOR_ICON_OPTIONS,
   SENSOR_CONDITION_COLORS,
   SENSOR_CONDITION_OPERATORS,
+  FloatingPillCard,
+  FloatingCardGroup,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useEntityStatePolling } from "@/hooks/use-entity-state";
 import { OfflinePill } from "@/components/offline-pill";
-import { cn } from "@/lib/utils";
+import { cn, generateId } from "@/lib/utils";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["climate_card", "climate_card_2", "light_card", "media_card", "solar_card", "sensor_card", "weather_card", "vacuum_card"] as const;
+const ADDABLE_WIDGET_TYPES = ["title_card", "climate_card_2", "light_card", "media_card", "solar_card", "sensor_card", "weather_card", "vacuum_card", "pill_card", "card_group"] as const;
+
+const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { type: "title_card", label: "Titel", Icon: Type },
+  { type: "climate_card_2", label: "Klimaat", Icon: Thermometer },
+  { type: "light_card", label: "Lamp", Icon: Lightbulb },
+  { type: "media_card", label: "Media", Icon: Music2 },
+  { type: "solar_card", label: "Zonnepanelen", Icon: Sun },
+  { type: "sensor_card", label: "Sensor", Icon: Gauge },
+  { type: "weather_card", label: "Weer", Icon: CloudSun },
+  { type: "vacuum_card", label: "Stofzuiger", Icon: Bot },
+  { type: "pill_card", label: "Pill", Icon: CircleDot },
+  { type: "card_group", label: "Kaartgroep", Icon: LayoutGrid },
+];
 
 /** Map widget type to HA domain for filtering entities */
 const WIDGET_TYPE_DOMAIN: Record<string, string> = {
+  title_card: "",
   energy_usage: "sensor",
   light_control: "light",
   wifi: "sensor",
@@ -65,7 +83,11 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   sensor_card: "sensor",
   weather_card: "weather",
   vacuum_card: "vacuum",
+  pill_card: "switch",
+  card_group: "",
 };
+
+const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor"];
 
 type DashboardData = {
   id: string;
@@ -131,6 +153,8 @@ function WidgetByType({
   const onOff = live?.state === "on" ? "on" : "off";
 
   switch (type) {
+    case "title_card":
+      return <TitleCardWidget title={title} />;
     case "energy_usage":
       return <EnergyUsageWidget title={title} entity_id={entity_id} size={sizeProp} value={num} />;
     case "light_control":
@@ -154,7 +178,14 @@ function WidgetByType({
     case "media_card":
       return <MediaCardWidget title={title} entity_id={entity_id} size={sizeProp} />;
     case "climate_card":
-      return <ClimateCardWidget title={title} entity_id={entity_id} size={sizeProp} />;
+      return (
+        <ClimateCard2Widget
+          title={title}
+          entity_id={entity_id}
+          humidity_entity_id={humidity_entity_id}
+          size={sizeProp}
+        />
+      );
     case "climate_card_2":
       return (
         <ClimateCard2Widget
@@ -239,13 +270,19 @@ export default function DashboardEditPage() {
   const [addTileOpen, setAddTileOpen] = useState(false);
   const [addTileStep, setAddTileStep] = useState<"type" | "entity">("type");
   const [addTileSelectedType, setAddTileSelectedType] = useState<string | null>(null);
+  const [addTileEntitySearch, setAddTileEntitySearch] = useState("");
+  const [editEntitySearch, setEditEntitySearch] = useState("");
+  const [groupAddEntitySearch, setGroupAddEntitySearch] = useState("");
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
+  /** When editing a card_group, id of the child pill being edited (null = editing group itself). */
+  const [editingGroupChildId, setEditingGroupChildId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
     title: string;
     entity_id: string;
     consumption_entity_id?: string;
     humidity_entity_id?: string;
     show_icon?: boolean;
+    show_state?: boolean;
     script_ids?: string[];
     script_names?: Record<string, string>;
     cleaned_area_entity_id?: string;
@@ -258,6 +295,7 @@ export default function DashboardEditPage() {
     consumption_entity_id: "",
     humidity_entity_id: "",
     show_icon: true,
+    show_state: true,
     script_ids: [],
     script_names: {},
     cleaned_area_entity_id: "",
@@ -265,17 +303,67 @@ export default function DashboardEditPage() {
     size: "md",
     conditions: [],
   });
-  const addTileRef = useRef<HTMLDivElement>(null);
   const [iconSearch, setIconSearch] = useState("");
   const [vacuumIconSearch, setVacuumIconSearch] = useState("");
   const [sensorIconSearch, setSensorIconSearch] = useState("");
+  const [pillIconSearch, setPillIconSearch] = useState("");
   const [sensorCardEditTab, setSensorCardEditTab] = useState<"general" | "conditions">("general");
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const LONG_PRESS_MS = 500;
+
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current != null) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  function startLongPressForEdit(e: React.PointerEvent) {
+    if (editMode) return;
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null;
+      setEditMode(true);
+    }, LONG_PRESS_MS);
+  }
+
+  function clearLongPressTimerAndRelease(e: React.PointerEvent) {
+    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    clearLongPressTimer();
+  }
 
   const editingWidget = editingWidgetId
     ? widgets.find((w) => w.id === editingWidgetId)
     : null;
 
   useEffect(() => {
+    if (!editingWidgetId) setEditingGroupChildId(null);
+  }, [editingWidgetId]);
+
+  useEffect(() => {
+    if (editingWidget?.type === "card_group" && editingGroupChildId) {
+      const child = (editingWidget.children ?? []).find((c) => c.id === editingGroupChildId);
+      if (child) {
+        setEditForm({
+          title: child.title ?? "",
+          entity_id: child.entity_id ?? "",
+          consumption_entity_id: "",
+          humidity_entity_id: "",
+          show_icon: true,
+          script_ids: [],
+          script_names: {},
+          cleaned_area_entity_id: "",
+          icon: child.icon ?? "",
+          size: "md",
+          conditions: child.conditions ?? [],
+          show_state: child.show_state !== false,
+        });
+        setPillIconSearch(child.icon ?? "");
+      }
+      return;
+    }
     if (editingWidget) {
       setEditForm({
         title: editingWidget.title ?? "",
@@ -289,13 +377,17 @@ export default function DashboardEditPage() {
         icon: editingWidget.icon ?? "",
         size: editingWidget.size ?? "md",
         conditions: editingWidget.conditions ?? [],
+        show_state: editingWidget.show_state !== false,
       });
       setIconSearch("");
       setVacuumIconSearch(editingWidget.type === "vacuum_card" ? (editingWidget.icon ?? "") : "");
       setSensorIconSearch(editingWidget.type === "sensor_card" ? (editingWidget.icon ?? "") : "");
+      setPillIconSearch(editingWidget.type === "pill_card" ? (editingWidget.icon ?? "") : "");
+      setGroupAddEntitySearch("");
+      setEditEntitySearch("");
       if (editingWidget.type === "sensor_card") setSensorCardEditTab("general");
     }
-  }, [editingWidget?.id, editingWidget?.title, editingWidget?.entity_id, editingWidget?.consumption_entity_id, editingWidget?.humidity_entity_id, editingWidget?.show_icon, editingWidget?.script_ids, editingWidget?.script_names, editingWidget?.cleaned_area_entity_id, editingWidget?.icon, editingWidget?.size, editingWidget?.conditions, editingWidget?.type]);
+  }, [editingWidget?.id, editingWidget?.title, editingWidget?.entity_id, editingWidget?.consumption_entity_id, editingWidget?.humidity_entity_id, editingWidget?.show_icon, editingWidget?.show_state, editingWidget?.script_ids, editingWidget?.script_names, editingWidget?.cleaned_area_entity_id, editingWidget?.icon, editingWidget?.size, editingWidget?.conditions, editingWidget?.type, editingWidget?.children, editingGroupChildId]);
 
   const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["dashboard", id],
@@ -369,7 +461,7 @@ export default function DashboardEditPage() {
     setLayout((prev) => {
       const floatingItems = prev.filter((item) => {
         const type = widgets.find((w) => w.id === item.i)?.type;
-        return type === "media_card" || type === "climate_card";
+        return type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "title_card" || type === "pill_card" || type === "card_group";
       });
       return [...newLayout, ...floatingItems];
     });
@@ -377,7 +469,7 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card";
+    return type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "title_card" && type !== "pill_card" && type !== "card_group";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
@@ -386,25 +478,27 @@ export default function DashboardEditPage() {
     setEditMode(false);
   };
 
-  function handleAddTile(type: string, entityId: string) {
-    const newId = crypto.randomUUID();
+  function handleAddTile(type: string, entityId: string, titleOverride?: string) {
+    const newId = generateId();
     const newWidget: WidgetConfig = {
       id: newId,
       type,
-      title: type.replace(/_/g, " "),
+      title: titleOverride ?? type.replace(/_/g, " "),
       entity_id: entityId,
+      ...(type === "card_group" && { children: [], alignment: "start" as const }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
+    const isTitleCard = type === "title_card";
     const newLayoutItem: LayoutItem = {
       i: newId,
       x: 0,
       y: maxY,
-      w: 4,
-      h: 2,
+      w: isTitleCard ? 12 : 4,
+      h: isTitleCard ? 1 : 2,
     };
     const newWidgets = [...widgets, newWidget];
     const newLayout =
-      type === "solar_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card"
+      type === "solar_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "title_card" || type === "pill_card" || type === "card_group"
         ? layout
         : [...layout, newLayoutItem];
     setWidgets(newWidgets);
@@ -417,9 +511,11 @@ export default function DashboardEditPage() {
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
   const entitiesToShow =
-    domain != null
-      ? entities.filter((e) => e.entity_id.startsWith(domain + "."))
-      : entities;
+    addTileSelectedType === "pill_card"
+      ? entities.filter((e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + ".")))
+      : domain != null
+        ? entities.filter((e) => e.entity_id.startsWith(domain + "."))
+        : entities;
 
   function handleRemoveTile(widgetId: string) {
     setWidgets((prev) => prev.filter((w) => w.id !== widgetId));
@@ -428,7 +524,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; entity_id?: string; consumption_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[] }
+    updates: { title?: string; entity_id?: string; consumption_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[] }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -462,63 +558,117 @@ export default function DashboardEditPage() {
     <>
       {editMode ? (
         <>
-          <div className="relative" ref={addTileRef}>
+          <>
             <button
               type="button"
-              onClick={() => setAddTileOpen((o) => !o)}
+              onClick={() => setAddTileOpen(true)}
               className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
               style={{ backgroundColor: "#4D2FB2" }}
-              aria-label="Add tile"
+              aria-label="Kaart toevoegen"
             >
               <Plus className="h-4 w-4" />
             </button>
-            {addTileOpen && (
+            {addTileOpen && typeof document !== "undefined" && createPortal(
               <>
                 <div
-                  className="fixed inset-0 z-20"
+                  className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xl"
                   aria-hidden
                   onClick={() => {
                     setAddTileOpen(false);
                     setAddTileStep("type");
                     setAddTileSelectedType(null);
+                    setAddTileEntitySearch("");
                   }}
                 />
-                <div className="absolute right-0 top-full z-30 mt-1 w-64 max-h-80 flex flex-col rounded-xl border border-gray-200 bg-white shadow-lg dark:border-white/10 dark:bg-gray-800">
+                <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {addTileStep === "type" ? "Kaart toevoegen" : "Kies entity"}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddTileOpen(false);
+                        setAddTileStep("type");
+                        setAddTileSelectedType(null);
+                        setAddTileEntitySearch("");
+                      }}
+                      className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
+                      aria-label="Sluiten"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
                   {addTileStep === "type" ? (
-                    <div className="py-1">
-                      {ADDABLE_WIDGET_TYPES.map((type) => (
+                    <div className="grid grid-cols-3 gap-2">
+                      {ADDABLE_WIDGET_TILES.map(({ type, label, Icon }) => (
                         <button
                           key={type}
                           type="button"
                           onClick={() => {
+                            if (type === "title_card") {
+                              handleAddTile("title_card", "", "Titel");
+                              setAddTileOpen(false);
+                              return;
+                            }
+                            if (type === "card_group") {
+                              handleAddTile("card_group", "", "Kaartgroep");
+                              setAddTileOpen(false);
+                              return;
+                            }
                             setAddTileSelectedType(type);
                             setAddTileStep("entity");
                           }}
-                          className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10"
+                          className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4D2FB2]/40 hover:bg-[#4D2FB2]/5 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4D2FB2]/50 dark:hover:bg-[#4D2FB2]/10"
                         >
-                          {type.replace(/_/g, " ")}
+                          <Icon className="h-7 w-7 text-gray-600 dark:text-gray-400" />
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight">
+                            {label}
+                          </span>
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <>
+                    <div className="flex flex-col max-h-[60vh]">
                       <button
                         type="button"
                         onClick={() => {
                           setAddTileStep("type");
                           setAddTileSelectedType(null);
+                          setAddTileEntitySearch("");
                         }}
-                        className="sticky top-0 px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 border-b border-gray-100 dark:border-white/10"
+                        className="mb-3 self-start px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg"
                       >
-                        ← {addTileSelectedType?.replace(/_/g, " ")} – choose entity
+                        ← Terug
                       </button>
-                      <div className="overflow-auto py-1 max-h-56">
-                        {entitiesToShow.length === 0 ? (
-                          <p className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                            No entities found. Check Settings for your HA connection.
-                          </p>
-                        ) : (
-                          entitiesToShow.map((e) => {
+                      <input
+                        type="text"
+                        value={addTileEntitySearch}
+                        onChange={(e) => setAddTileEntitySearch(e.target.value)}
+                        placeholder="Zoek op naam of entity_id…"
+                        className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                        autoFocus
+                      />
+                      <div className="overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5 max-h-[50vh]">
+                        {(() => {
+                          const q = addTileEntitySearch.trim().toLowerCase();
+                          const filtered = q
+                            ? entitiesToShow.filter((e) => {
+                                const name =
+                                  ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase();
+                                return name.includes(q) || e.entity_id.toLowerCase().includes(q);
+                              })
+                            : entitiesToShow;
+                          if (filtered.length === 0) {
+                            return (
+                              <p className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400 text-center">
+                                {entitiesToShow.length === 0
+                                  ? "Geen entities gevonden. Controleer je HA-verbinding in Instellingen."
+                                  : "Geen resultaten voor je zoekopdracht."}
+                              </p>
+                            );
+                          }
+                          return filtered.map((e) => {
                             const name =
                               (e.attributes as { friendly_name?: string })?.friendly_name ??
                               e.entity_id;
@@ -526,25 +676,29 @@ export default function DashboardEditPage() {
                               <button
                                 key={e.entity_id}
                                 type="button"
-                                onClick={() =>
-                                  addTileSelectedType &&
-                                  handleAddTile(addTileSelectedType, e.entity_id)
-                                }
-                                className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate"
+                                onClick={() => {
+                                  addTileSelectedType && handleAddTile(addTileSelectedType, e.entity_id);
+                                  setAddTileOpen(false);
+                                  setAddTileStep("type");
+                                  setAddTileSelectedType(null);
+                                  setAddTileEntitySearch("");
+                                }}
+                                className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate"
                                 title={e.entity_id}
                               >
                                 {name}
                               </button>
                             );
-                          })
-                        )}
+                          });
+                        })()}
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
-              </>
+              </>,
+              document.body
             )}
-          </div>
+          </>
           <button
             type="button"
             onClick={handleSave}
@@ -569,6 +723,8 @@ export default function DashboardEditPage() {
     </>
   );
 
+  const hasCardGroup = widgets.some((w) => w.type === "card_group");
+
   return (
     <AppShell
         activeTab="/dashboards"
@@ -580,8 +736,9 @@ export default function DashboardEditPage() {
           setWelcomeTitle(title);
           setWelcomeSubtitle(subtitle);
         } : undefined}
+        contentNoScroll={hasCardGroup}
       >
-      <div className="space-y-6">
+      <div className="space-y-6 overflow-x-hidden min-h-0">
         <div className="flex items-center justify-end">
           <OfflinePill />
         </div>
@@ -601,12 +758,23 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "weather_card" && w.type !== "vacuum_card")
+            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "title_card" && w.type !== "pill_card" && w.type !== "card_group")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
               return (
-                <div key={w.id} className="relative h-full w-full">
+                <div
+                  key={w.id}
+                  className="relative h-full w-full"
+                  {...(!editMode && {
+                    onPointerDown: startLongPressForEdit,
+                    onPointerUp: clearLongPressTimerAndRelease,
+                    onPointerLeave: clearLongPressTimerAndRelease,
+                    onPointerCancel: clearLongPressTimerAndRelease,
+                    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+                    style: { touchAction: "none" },
+                  })}
+                >
                   {editMode && (
                     <>
                       <button
@@ -627,7 +795,7 @@ export default function DashboardEditPage() {
                       </button>
                     </>
                   )}
-                  <div className={cn("h-full w-full", editMode && "tile-drag-handle cursor-grab")}>
+                  <div className={cn("h-full w-full", editMode && "tile-drag-handle cursor-grab touch-none")}>
                     <WidgetByType
                       type={w.type}
                       title={w.title}
@@ -656,6 +824,7 @@ export default function DashboardEditPage() {
               title={firstMedia.title ?? "Media"}
               entity_id={firstMedia.entity_id}
               editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
                   ? () => setEditingWidgetId(firstMedia.id)
@@ -685,28 +854,31 @@ export default function DashboardEditPage() {
                 type: w.type === "climate_card_2" ? "climate_card_2" : "climate_card",
               }))}
               editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? (id) => setEditingWidgetId(id) : undefined}
               onRemove={editMode ? (id) => handleRemoveTile(id) : undefined}
             />
           ) : null;
         })()}
 
-        {(() => {
-          const lightCards = widgets.filter((w) => w.type === "light_card");
-          return lightCards.length > 0 ? (
+        {widgets
+          .filter((w) => w.type === "light_card")
+          .map((w, i) => (
             <FloatingLightCard
-              widgets={lightCards.map((w) => ({
+              key={w.id}
+              widget={{
                 id: w.id,
                 title: w.title ?? "Lamp",
                 entity_id: w.entity_id,
                 icon: w.icon,
-              }))}
+              }}
+              widgetIndex={i}
               editMode={editMode}
-              onEdit={editMode ? (id) => setEditingWidgetId(id) : undefined}
-              onRemove={editMode ? (id) => handleRemoveTile(id) : undefined}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
-          ) : null;
-        })()}
+          ))}
 
         {(() => {
           const firstSolar = widgets.find((w) => w.type === "solar_card");
@@ -716,6 +888,7 @@ export default function DashboardEditPage() {
               entity_id={firstSolar.entity_id}
               consumption_entity_id={firstSolar.consumption_entity_id}
               editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
                   ? () => setEditingWidgetId(firstSolar.id)
@@ -740,6 +913,7 @@ export default function DashboardEditPage() {
               size={(firstSensor.size as "sm" | "md" | "lg") ?? "md"}
               conditions={firstSensor.conditions}
               editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
                   ? () => setEditingWidgetId(firstSensor.id)
@@ -762,6 +936,7 @@ export default function DashboardEditPage() {
               entity_id={firstWeather.entity_id}
               show_icon={firstWeather.show_icon}
               editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
                   ? () => setEditingWidgetId(firstWeather.id)
@@ -787,6 +962,7 @@ export default function DashboardEditPage() {
               cleaned_area_entity_id={firstVacuum.cleaned_area_entity_id}
               icon={firstVacuum.icon}
               editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
                   ? () => setEditingWidgetId(firstVacuum.id)
@@ -801,18 +977,374 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {editingWidgetId && editingWidget && (
+        {(() => {
+          const titleCards = widgets.filter((w) => w.type === "title_card");
+          return titleCards.length > 0 ? (
+            <FloatingTitleCard
+              widgets={titleCards.map((w) => ({
+                id: w.id,
+                title: w.title ?? "Titel",
+              }))}
+              editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? (id) => setEditingWidgetId(id) : undefined}
+              onRemove={editMode ? (id) => handleRemoveTile(id) : undefined}
+            />
+          ) : null;
+        })()}
+
+        {widgets
+          .filter((w) => w.type === "pill_card")
+          .map((w, i) => (
+            <FloatingPillCard
+              key={w.id}
+              widget={{
+                id: w.id,
+                title: w.title ?? "Pill",
+                entity_id: w.entity_id,
+                icon: w.icon,
+                conditions: w.conditions,
+                show_state: w.show_state,
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
+
+        {typeof document !== "undefined" &&
+          createPortal(
+            widgets
+              .filter((w) => w.type === "card_group")
+              .map((g, i) => (
+                <FloatingCardGroup
+                  key={g.id}
+                  group={g}
+                  widgetIndex={i}
+                  editMode={editMode}
+                  onEnterEditMode={() => setEditMode(true)}
+                  onEdit={editMode ? () => setEditingWidgetId(g.id) : undefined}
+                  onRemove={editMode ? () => handleRemoveTile(g.id) : undefined}
+                />
+              )),
+            document.body
+          )}
+
+        {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
           <>
             <div
-              className="fixed inset-0 z-40 bg-black/50"
+              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xl"
               aria-hidden
-              onClick={() => setEditingWidgetId(null)}
+              onClick={() => {
+                if (editingWidget?.type === "card_group" && editingGroupChildId) {
+                  setEditingGroupChildId(null);
+                } else {
+                  setEditingWidgetId(null);
+                }
+              }}
             />
-            <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-gray-800">
+            <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl">
               <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                Edit tile
+                {editingWidget.type === "title_card"
+                  ? "Titel bewerken"
+                  : editingWidget.type === "card_group"
+                    ? editingGroupChildId
+                      ? "Kaart in groep bewerken"
+                      : "Kaartgroep bewerken"
+                    : "Edit tile"}
               </h3>
               <div className="space-y-3">
+                {editingWidget.type === "title_card" ? (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                      Tekst
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.title}
+                      onChange={(e) =>
+                        setEditForm((prev) => ({ ...prev, title: e.target.value }))
+                      }
+                      placeholder="Bijv. Woonkamer, Verlichting"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                    />
+                  </div>
+                ) : editingWidget.type === "card_group" ? (
+                  editingGroupChildId ? (
+                    <>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Naam</label>
+                        <input
+                          type="text"
+                          value={editForm.title}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                          placeholder="Bijv. Woonkamer, Verlichting"
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Entity</label>
+                        <select
+                          value={editForm.entity_id}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, entity_id: e.target.value }))}
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                        >
+                          {entities
+                            .filter((e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + ".")))
+                            .map((e) => {
+                              const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                              return (
+                                <option key={e.entity_id} value={e.entity_id}>
+                                  {name}
+                                </option>
+                              );
+                            })}
+                        </select>
+                      </div>
+                      <label className="flex items-center justify-between gap-3 cursor-pointer">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Toon entiteitstatus</span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={editForm.show_state !== false}
+                          onClick={() => setEditForm((prev) => ({ ...prev, show_state: prev.show_state === false }))}
+                          className={cn(
+                            "relative inline-flex h-6 w-11 shrink-0 rounded-full border border-gray-200 dark:border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2 dark:focus:ring-offset-gray-900",
+                            editForm.show_state !== false ? "bg-[#4D2FB2] border-transparent" : "bg-gray-200 dark:bg-gray-600"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition translate-x-0.5",
+                              editForm.show_state !== false ? "translate-x-5" : "translate-x-1"
+                            )}
+                          />
+                        </button>
+                      </label>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Icoon</label>
+                        <input
+                          type="text"
+                          value={pillIconSearch}
+                          onChange={(e) => setPillIconSearch(e.target.value)}
+                          onFocus={() => setPillIconSearch(pillIconSearch || editForm.icon ?? "")}
+                          placeholder="Zoek icoon (bijv. CircleDot, Sun…)"
+                          className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                        />
+                        <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditForm((prev) => ({ ...prev, icon: undefined }));
+                              setPillIconSearch("");
+                            }}
+                            className={cn(
+                              "rounded-md px-2 py-1 text-xs",
+                              !editForm.icon ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                            )}
+                          >
+                            Default (CircleDot)
+                          </button>
+                          {SENSOR_ICON_OPTIONS.filter((name) => name.toLowerCase().includes((pillIconSearch || "").toLowerCase())).map((name) => (
+                            <button
+                              key={name}
+                              type="button"
+                              onClick={() => {
+                                setEditForm((prev) => ({ ...prev, icon: name }));
+                                setPillIconSearch(name);
+                              }}
+                              className={cn(
+                                "rounded-md px-2 py-1 text-xs",
+                                (editForm.icon ?? "CircleDot") === name ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                              )}
+                            >
+                              {name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Voorwaardelijke kleur (eerste match)</p>
+                        {(editForm.conditions ?? []).map((cond, idx) => (
+                          <div key={idx} className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2 mb-1.5">
+                            <select
+                              value={cond.operator}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  conditions: (prev.conditions ?? []).map((c, i) => (i === idx ? { ...c, operator: e.target.value } : c)),
+                                }))
+                              }
+                              className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                            >
+                              {SENSOR_CONDITION_OPERATORS.map((op) => (
+                                <option key={op} value={op}>
+                                  {op === "eq" ? "=" : op === "neq" ? "≠" : op === "gte" ? "≥" : op === "lte" ? "≤" : op === "gt" ? ">" : op === "lt" ? "<" : "bevat"}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              type="text"
+                              value={cond.value}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  conditions: (prev.conditions ?? []).map((c, i) => (i === idx ? { ...c, value: e.target.value } : c)),
+                                }))
+                              }
+                              placeholder="Waarde"
+                              className="w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                            />
+                            <select
+                              value={cond.color}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  conditions: (prev.conditions ?? []).map((c, i) => (i === idx ? { ...c, color: e.target.value } : c)),
+                                }))
+                              }
+                              className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                            >
+                              {SENSOR_CONDITION_COLORS.map((color) => (
+                                <option key={color} value={color}>
+                                  {color}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  conditions: (prev.conditions ?? []).filter((_, i) => i !== idx),
+                                }))
+                              }
+                              className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              aria-label="Verwijder voorwaarde"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              conditions: [...(prev.conditions ?? []), { operator: "eq", value: "", color: "green" }],
+                            }))
+                          }
+                          className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full"
+                        >
+                          + Voeg voorwaarde toe
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Uitlijning</p>
+                    <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5">
+                      {(["start", "center", "end", "between"] as const).map((align) => (
+                        <button
+                          key={align}
+                          type="button"
+                          onClick={() => {
+                            const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, alignment: align } : w));
+                            setWidgets(nextWidgets);
+                            saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                          }}
+                          className={cn(
+                            "rounded-md px-2 py-1 text-xs",
+                            (editingWidget.alignment ?? "start") === align
+                              ? "bg-[#4D2FB2] text-white"
+                              : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                          )}
+                        >
+                          {align === "start" ? "Links" : align === "center" ? "Midden" : align === "end" ? "Rechts" : "Tussen"}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 pt-1">Kaarten in groep</p>
+                    <ul className="space-y-1 max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
+                      {(editingWidget.children ?? []).map((c) => (
+                        <li key={c.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                          <span className="truncate text-gray-900 dark:text-gray-100">{c.title || c.entity_id}</span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setEditingGroupChildId(c.id)}
+                              className="p-1 rounded text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
+                              aria-label="Bewerken"
+                              title="Kaart bewerken"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextChildren = (editingWidget.children ?? []).filter((x) => x.id !== c.id);
+                                const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
+                                setWidgets(nextWidgets);
+                                saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                              }}
+                              className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              aria-label="Verwijderen"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Kaart toevoegen</p>
+                    <input
+                      type="text"
+                      value={groupAddEntitySearch}
+                      onChange={(e) => setGroupAddEntitySearch(e.target.value)}
+                      placeholder="Zoek entity…"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                    />
+                    <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
+                      {entities
+                        .filter((e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + ".")))
+                        .filter((e) => {
+                          const q = groupAddEntitySearch.trim().toLowerCase();
+                          if (!q) return true;
+                          const name = ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase();
+                          return name.includes(q) || e.entity_id.toLowerCase().includes(q);
+                        })
+                        .map((e) => {
+                          const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                          return (
+                            <button
+                              key={e.entity_id}
+                              type="button"
+                              onClick={() => {
+                                const newPill: WidgetConfig = {
+                                  id: generateId(),
+                                  type: "pill_card",
+                                  title: name,
+                                  entity_id: e.entity_id,
+                                };
+                                const nextChildren = [...(editingWidget.children ?? []), newPill];
+                                const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
+                                setWidgets(nextWidgets);
+                                saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                setGroupAddEntitySearch("");
+                              }}
+                              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate"
+                            >
+                              {name}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                  )
+                ) : (
+                  <>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                     Name
@@ -824,62 +1356,10 @@ export default function DashboardEditPage() {
                       setEditForm((prev) => ({ ...prev, title: e.target.value }))
                     }
                     placeholder="Tile name"
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-700 dark:text-gray-100"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                   />
                 </div>
-                {editingWidget.type === "climate_card" && (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      Icoon (optioneel, i.p.v. naam in tab)
-                    </label>
-                    <input
-                      type="text"
-                      value={iconSearch}
-                      onChange={(e) => setIconSearch(e.target.value)}
-                      onFocus={() => setIconSearch(editForm.icon ?? "")}
-                      placeholder="Zoek icoon (bijv. air, therm…)"
-                      className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-700 dark:text-gray-100"
-                    />
-                    <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditForm((prev) => ({ ...prev, icon: undefined }));
-                          setIconSearch("");
-                        }}
-                        className={cn(
-                          "rounded-md px-2 py-1 text-xs",
-                          !editForm.icon
-                            ? "bg-[#4D2FB2] text-white"
-                            : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
-                        )}
-                      >
-                        Geen
-                      </button>
-                      {CLIMATE_ICON_OPTIONS.filter((name) =>
-                        name.toLowerCase().includes((iconSearch || "").toLowerCase())
-                      ).map((name) => (
-                        <button
-                          key={name}
-                          type="button"
-                          onClick={() => {
-                            setEditForm((prev) => ({ ...prev, icon: name }));
-                            setIconSearch(name);
-                          }}
-                          className={cn(
-                            "rounded-md px-2 py-1 text-xs",
-                            editForm.icon === name
-                              ? "bg-[#4D2FB2] text-white"
-                              : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
-                          )}
-                        >
-                          {name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {editingWidget.entity_id != null && (
+                {editingWidget.entity_id != null && editingWidget.type !== "title_card" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       {editingWidget.type === "solar_card" ? "Yield (opbrengst)" : "Entity"}
@@ -889,14 +1369,21 @@ export default function DashboardEditPage() {
                       onChange={(e) =>
                         setEditForm((prev) => ({ ...prev, entity_id: e.target.value }))
                       }
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-700 dark:text-gray-100"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                     >
                       {(() => {
-                        const domain =
-                          WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor";
-                        const options = entities.filter((e) =>
-                          e.entity_id.startsWith(domain + ".")
-                        );
+                        const options =
+                          editingWidget.type === "pill_card"
+                            ? entities.filter((e) =>
+                                PILL_CARD_DOMAINS.some((d) =>
+                                  e.entity_id.startsWith(d + ".")
+                                )
+                              )
+                            : entities.filter((e) =>
+                                e.entity_id.startsWith(
+                                  (WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + "."
+                                )
+                              );
                         return options.map((e) => {
                           const name =
                             (e.attributes as { friendly_name?: string })
@@ -955,7 +1442,7 @@ export default function DashboardEditPage() {
                     </div>
                   </div>
                 )}
-                {editingWidget.type === "climate_card_2" && (
+                {(editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       Luchtvochtigheid (optioneel)
@@ -968,7 +1455,7 @@ export default function DashboardEditPage() {
                           humidity_entity_id: e.target.value || undefined,
                         }))
                       }
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-700 dark:text-gray-100"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                     >
                       <option value="">Geen</option>
                       {entities
@@ -999,7 +1486,7 @@ export default function DashboardEditPage() {
                           consumption_entity_id: e.target.value || undefined,
                         }))
                       }
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-700 dark:text-gray-100"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                     >
                       <option value="">Geen</option>
                       {entities
@@ -1085,7 +1572,7 @@ export default function DashboardEditPage() {
                                   }))
                                 }
                                 placeholder={defaultName}
-                                className="flex-1 min-w-0 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm"
+                                className="flex-1 min-w-0 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1.5 text-sm"
                               />
                             </div>
                           );
@@ -1104,7 +1591,7 @@ export default function DashboardEditPage() {
                             cleaned_area_entity_id: e.target.value || undefined,
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-700 dark:text-gray-100"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       >
                         <option value="">Geen</option>
                         {entities
@@ -1129,7 +1616,7 @@ export default function DashboardEditPage() {
                         onChange={(e) => setVacuumIconSearch(e.target.value)}
                         onFocus={() => setVacuumIconSearch(vacuumIconSearch || editForm.icon ?? "")}
                         placeholder="Zoek icoon (bijv. home, bot, sparkles…)"
-                        className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-700 dark:text-gray-100"
+                        className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                       <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
                         <button
@@ -1210,7 +1697,7 @@ export default function DashboardEditPage() {
                           onChange={(e) => setSensorIconSearch(e.target.value)}
                           onFocus={() => setSensorIconSearch(sensorIconSearch || editForm.icon ?? "")}
                           placeholder="Zoek icoon (bijv. gauge, thermometer…)"
-                          className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-700 dark:text-gray-100"
+                          className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         />
                         <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
                           <button
@@ -1258,7 +1745,7 @@ export default function DashboardEditPage() {
                             onChange={(e) =>
                               setEditForm((prev) => ({ ...prev, size: e.target.value }))
                             }
-                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-gray-700 dark:text-gray-100"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                           >
                             <option value="sm">Klein</option>
                             <option value="md">Normaal</option>
@@ -1287,7 +1774,7 @@ export default function DashboardEditPage() {
                                   ),
                                 }))
                               }
-                              className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-700 px-2 py-1 text-xs"
+                              className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                             >
                               {SENSOR_CONDITION_OPERATORS.map((op) => (
                                 <option key={op} value={op}>
@@ -1307,7 +1794,7 @@ export default function DashboardEditPage() {
                                 }))
                               }
                               placeholder="Waarde"
-                              className="w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-700 px-2 py-1 text-xs"
+                              className="w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                             />
                             <select
                               value={cond.color}
@@ -1319,7 +1806,7 @@ export default function DashboardEditPage() {
                                   ),
                                 }))
                               }
-                              className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-700 px-2 py-1 text-xs"
+                              className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                             >
                               {SENSOR_CONDITION_COLORS.map((color) => (
                                 <option key={color} value={color}>
@@ -1358,6 +1845,179 @@ export default function DashboardEditPage() {
                     )}
                   </div>
                 )}
+                {editingWidget.type === "pill_card" && (
+                  <div className="space-y-3">
+                    <label className="flex items-center justify-between gap-3 cursor-pointer">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Toon entiteitstatus
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={editForm.show_state !== false}
+                        onClick={() =>
+                          setEditForm((prev) => ({ ...prev, show_state: prev.show_state === false }))
+                        }
+                        className={cn(
+                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border border-gray-200 dark:border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2 dark:focus:ring-offset-gray-900",
+                          editForm.show_state !== false
+                            ? "bg-[#4D2FB2] border-transparent"
+                            : "bg-gray-200 dark:bg-gray-600"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition translate-x-0.5",
+                            editForm.show_state !== false ? "translate-x-5" : "translate-x-1"
+                          )}
+                        />
+                      </button>
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
+                      Toon of verberg de waarde (Aan/Uit of sensorwaarde) op de pill.
+                    </p>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Icoon
+                      </label>
+                      <input
+                        type="text"
+                        value={pillIconSearch}
+                        onChange={(e) => setPillIconSearch(e.target.value)}
+                        onFocus={() => setPillIconSearch(pillIconSearch || editForm.icon ?? "")}
+                        placeholder="Zoek icoon (bijv. CircleDot, Sun…)"
+                        className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditForm((prev) => ({ ...prev, icon: undefined }));
+                            setPillIconSearch("");
+                          }}
+                          className={cn(
+                            "rounded-md px-2 py-1 text-xs",
+                            !editForm.icon
+                              ? "bg-[#4D2FB2] text-white"
+                              : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                          )}
+                        >
+                          Default (CircleDot)
+                        </button>
+                        {SENSOR_ICON_OPTIONS.filter((name) =>
+                          name.toLowerCase().includes((pillIconSearch || "").toLowerCase())
+                        ).map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() => {
+                              setEditForm((prev) => ({ ...prev, icon: name }));
+                              setPillIconSearch(name);
+                            }}
+                            className={cn(
+                              "rounded-md px-2 py-1 text-xs",
+                              (editForm.icon ?? "CircleDot") === name
+                                ? "bg-[#4D2FB2] text-white"
+                                : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                            )}
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Voorwaardelijke kleur (eerste match)
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        Bepaal de pill-kleur op basis van de entity state.
+                      </p>
+                      {(editForm.conditions ?? []).map((cond, idx) => (
+                        <div
+                          key={idx}
+                          className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2 mb-1.5"
+                        >
+                          <select
+                            value={cond.operator}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                conditions: (prev.conditions ?? []).map((c, i) =>
+                                  i === idx ? { ...c, operator: e.target.value } : c
+                                ),
+                              }))
+                            }
+                            className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                          >
+                            {SENSOR_CONDITION_OPERATORS.map((op) => (
+                              <option key={op} value={op}>
+                                {op === "eq" ? "=" : op === "neq" ? "≠" : op === "gte" ? "≥" : op === "lte" ? "≤" : op === "gt" ? ">" : op === "lt" ? "<" : "bevat"}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            value={cond.value}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                conditions: (prev.conditions ?? []).map((c, i) =>
+                                  i === idx ? { ...c, value: e.target.value } : c
+                                ),
+                              }))
+                            }
+                            placeholder="Waarde"
+                            className="w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                          />
+                          <select
+                            value={cond.color}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                conditions: (prev.conditions ?? []).map((c, i) =>
+                                  i === idx ? { ...c, color: e.target.value } : c
+                                ),
+                              }))
+                            }
+                            className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                          >
+                            {SENSOR_CONDITION_COLORS.map((color) => (
+                              <option key={color} value={color}>
+                                {color}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                conditions: (prev.conditions ?? []).filter((_, i) => i !== idx),
+                              }))
+                            }
+                            className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            aria-label="Verwijder voorwaarde"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            conditions: [...(prev.conditions ?? []), { operator: "eq", value: "", color: "green" }],
+                          }))
+                        }
+                        className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full"
+                      >
+                        + Voeg voorwaarde toe
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {editingWidget.type === "weather_card" && (
                   <div className="flex items-center justify-between gap-3">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1386,13 +2046,116 @@ export default function DashboardEditPage() {
                     </button>
                   </div>
                 )}
-                <div className="flex justify-end gap-2 pt-1">
+                  </>
+                )}
+                <div className="flex justify-between gap-2 pt-1">
+                  {editingWidget.type === "card_group" && editingGroupChildId ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setEditingGroupChildId(null)}
+                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300"
+                      >
+                        Terug
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextChildren = (editingWidget.children ?? []).filter((c) => c.id !== editingGroupChildId);
+                            const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
+                            setWidgets(nextWidgets);
+                            setEditingGroupChildId(null);
+                            saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                          }}
+                          className="rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          aria-label="Kaart uit groep verwijderen"
+                        >
+                          Verwijderen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updates = {
+                              title: editForm.title,
+                              entity_id: editForm.entity_id,
+                              icon: editForm.icon || undefined,
+                              conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined,
+                              show_state: editForm.show_state !== false,
+                            };
+                            const nextChildren = (editingWidget.children ?? []).map((c) =>
+                              c.id === editingGroupChildId ? { ...c, ...updates } : c
+                            );
+                            const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
+                            setWidgets(nextWidgets);
+                            setEditingGroupChildId(null);
+                            saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                          }}
+                          className="rounded-lg bg-[#4D2FB2] px-3 py-1.5 text-sm text-white hover:opacity-90"
+                        >
+                          Opslaan
+                        </button>
+                      </div>
+                    </>
+                  ) : editingWidget.type === "card_group" ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newWidgets = widgets.filter((w) => w.id !== editingWidgetId);
+                          const newLayout = layout.filter((item) => item.i !== editingWidgetId);
+                          setWidgets(newWidgets);
+                          setLayout(newLayout);
+                          setEditingWidgetId(null);
+                          saveMutation.mutate({
+                            layout: newLayout,
+                            widgets: newWidgets,
+                            welcomeTitle,
+                            welcomeSubtitle,
+                          });
+                        }}
+                        className="rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        aria-label="Kaartgroep verwijderen"
+                      >
+                        Verwijderen
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingWidgetId(null)}
+                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300"
+                      >
+                        Annuleren
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newWidgets = widgets.filter((w) => w.id !== editingWidgetId);
+                      const newLayout = layout.filter((item) => item.i !== editingWidgetId);
+                      setWidgets(newWidgets);
+                      setLayout(newLayout);
+                      setEditingWidgetId(null);
+                      saveMutation.mutate({
+                        layout: newLayout,
+                        widgets: newWidgets,
+                        welcomeTitle,
+                        welcomeSubtitle,
+                      });
+                    }}
+                    className="rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    aria-label="Kaart verwijderen"
+                  >
+                    Verwijderen
+                  </button>
+                  <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setEditingWidgetId(null)}
                     className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300"
                   >
-                    Cancel
+                    Annuleren
                   </button>
                   <button
                     type="button"
@@ -1402,13 +2165,10 @@ export default function DashboardEditPage() {
                         ...(editingWidget.entity_id != null && {
                           entity_id: editForm.entity_id,
                         }),
-                        ...(editingWidget.type === "climate_card" && {
-                          icon: editForm.icon || undefined,
-                        }),
                         ...(editingWidget.type === "solar_card" && {
                           consumption_entity_id: editForm.consumption_entity_id || undefined,
                         }),
-                        ...(editingWidget.type === "climate_card_2" && {
+                        ...((editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && {
                           humidity_entity_id: editForm.humidity_entity_id || undefined,
                         }),
                         ...(editingWidget.type === "light_card" && {
@@ -1428,6 +2188,11 @@ export default function DashboardEditPage() {
                           size: editForm.size || undefined,
                           conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined,
                         }),
+                        ...(editingWidget.type === "pill_card" && {
+                          icon: editForm.icon || undefined,
+                          conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined,
+                          show_state: editForm.show_state !== false,
+                        }),
                       };
                       handleUpdateTile(editingWidgetId, updates);
                       const newWidgets = widgets.map((w) =>
@@ -1442,12 +2207,16 @@ export default function DashboardEditPage() {
                     }}
                     className="rounded-lg bg-[#4D2FB2] px-3 py-1.5 text-sm text-white hover:opacity-90"
                   >
-                    Save
+                    Opslaan
                   </button>
+                  </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
-          </>
+          </>,
+          document.body
         )}
       </div>
     </AppShell>

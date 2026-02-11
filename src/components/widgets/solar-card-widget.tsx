@@ -1,5 +1,6 @@
 "use client";
 
+import { MoreVertical } from "lucide-react";
 import type { SolarCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -25,7 +26,8 @@ export function SolarCardWidget({
   consumption_entity_id,
   size = "md",
   className,
-}: SolarCardProps & { className?: string }) {
+  onMoreClick,
+}: SolarCardProps & { className?: string; onMoreClick?: () => void }) {
   const yieldData = useEntityValue(entity_id);
   const consumptionData = useEntityValue(consumption_entity_id ?? "");
 
@@ -44,6 +46,16 @@ export function SolarCardWidget({
           <p className="font-medium truncate text-white/90">{title}</p>
           <p className="text-xs text-white/60 truncate">{yieldData.friendlyName}</p>
         </div>
+        {onMoreClick && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
+            className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Opties"
+          >
+            <MoreVertical className="h-5 w-5" aria-hidden />
+          </button>
+        )}
       </div>
       <div className="px-4 pb-4 pt-0 space-y-3">
         <div>

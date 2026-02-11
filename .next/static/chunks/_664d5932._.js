@@ -1130,7 +1130,7 @@ function StepRooms() {
         columnNumber: 5
     }, this);
 }
-_s(StepRooms, "EiwNkpCUmAO/FshQLIUoCU+u7VA=", false, function() {
+_s(StepRooms, "V/uA0mybG8plzB0BJxlNUrcL+mo=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$onboarding$2d$store$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useOnboardingStore"]
     ];

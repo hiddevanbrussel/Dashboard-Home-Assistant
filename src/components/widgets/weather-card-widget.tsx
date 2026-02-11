@@ -10,6 +10,7 @@ import {
   Sun,
   Wind,
   Droplets,
+  MoreVertical,
 } from "lucide-react";
 import type { WeatherCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
@@ -97,7 +98,8 @@ export function WeatherCardWidget({
   size = "md",
   show_icon = true,
   className,
-}: WeatherCardProps & { className?: string }) {
+  onMoreClick,
+}: WeatherCardProps & { className?: string; onMoreClick?: () => void }) {
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const condition = (entity?.state as string) ?? "";
   const temperature = entity?.attributes?.temperature != null
@@ -113,7 +115,7 @@ export function WeatherCardWidget({
   return (
     <div
       className={cn(
-        "relative flex w-full flex-col overflow-hidden rounded-2xl text-white shadow-xl border border-white/20 dark:border-white/10",
+        "relative flex w-full min-h-[125px] flex-col overflow-hidden rounded-2xl text-white shadow-xl border border-white/20 dark:border-white/10",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
@@ -137,7 +139,7 @@ export function WeatherCardWidget({
           />
         </div>
       )}
-      <div className="absolute inset-0 bg-black/25 dark:bg-black/35 rounded-2xl" />
+      <div className="absolute inset-0 bg-black/25 dark:bg-black/50 rounded-2xl" />
       <div className="relative flex flex-col z-10">
         <div className="flex items-start justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -156,6 +158,16 @@ export function WeatherCardWidget({
               <Droplets className="h-4 w-4" aria-hidden />
               <span>{Math.round(humidity)}%</span>
             </div>
+          )}
+          {onMoreClick && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
+              className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 drop-shadow-sm transition-colors"
+              aria-label="Opties"
+            >
+              <MoreVertical className="h-5 w-5" aria-hidden />
+            </button>
           )}
         </div>
         <div className="px-4 pb-4 pt-1">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { VacuumCardWidget } from "./vacuum-card-widget";
@@ -42,6 +41,8 @@ function defaultPosition(): Position {
   return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET + 120 };
 }
 
+const LONG_PRESS_MS = 500;
+
 export function FloatingVacuumCard({
   title,
   entity_id,
@@ -52,6 +53,7 @@ export function FloatingVacuumCard({
   editMode = false,
   onRemove,
   onEdit,
+  onEnterEditMode,
 }: {
   title: string;
   entity_id: string;
@@ -62,11 +64,41 @@ export function FloatingVacuumCard({
   editMode?: boolean;
   onRemove?: () => void;
   onEdit?: () => void;
+  onEnterEditMode?: () => void;
 }) {
   const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, top: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current != null) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const startLongPress = useCallback(
+    (e: React.PointerEvent) => {
+      if (editMode || !onEnterEditMode) return;
+      clearLongPress();
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      longPressTimerRef.current = setTimeout(() => {
+        longPressTimerRef.current = null;
+        onEnterEditMode();
+      }, LONG_PRESS_MS);
+    },
+    [editMode, onEnterEditMode, clearLongPress]
+  );
+
+  const endLongPress = useCallback(
+    (e: React.PointerEvent) => {
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      clearLongPress();
+    },
+    [clearLongPress]
+  );
 
   useEffect(() => {
     if (initialized.current) return;
@@ -87,10 +119,11 @@ export function FloatingVacuumCard({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode) return;
+      if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
       setIsDragging(true);
       dragStart.current = { x: e.clientX, y: e.clientY, left: position.left, bottom: position.bottom };
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
     [position, editMode]
   );
@@ -127,44 +160,42 @@ export function FloatingVacuumCard({
         setPosition(next);
         savePosition(next);
       }
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
     [isDragging]
   );
 
   return (
     <div
-      className="fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10"
-      style={{ left: position.left, bottom: position.bottom }}
-    >
-      {editMode && (
-        <div className="flex items-center justify-between gap-2 border-b border-white/10 py-1.5 px-2">
-          <div
-            role="button"
-            tabIndex={0}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={(e) => { if (isDragging) handlePointerUp(e); }}
-            className="select-none touch-none flex-1 flex items-center justify-center text-white/50 text-xs hover:text-white/70 cursor-grab active:cursor-grabbing"
-            aria-label="Sleep om te verplaatsen"
-          >
-            Sleep om te verplaatsen
-          </div>
-          {onEdit && (
-            <button type="button" onClick={onEdit} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white" aria-label="Edit vacuum card">
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-          )}
-          {onRemove && (
-            <button type="button" onClick={onRemove} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white" aria-label="Remove vacuum card">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
+      className={cn(
+        "fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        editMode && "cursor-grab touch-none active:cursor-grabbing",
+        editMode && !isDragging && "animate-edit-wiggle"
       )}
+      style={{
+        left: position.left,
+        bottom: position.bottom,
+        ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
+      }}
+      {...(!editMode &&
+        onEnterEditMode && {
+          onPointerDown: startLongPress,
+          onPointerUp: endLongPress,
+          onPointerLeave: endLongPress,
+          onPointerCancel: endLongPress,
+        })}
+      {...(editMode && {
+        onPointerDown: handlePointerDown,
+        onPointerMove: handlePointerMove,
+        onPointerUp: handlePointerUp,
+        onPointerLeave: (e: React.PointerEvent) => {
+          if (isDragging) handlePointerUp(e);
+        },
+        onPointerCancel: handlePointerUp,
+      })}
+    >
       <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-        <VacuumCardWidget title={title} entity_id={entity_id} script_ids={script_ids} script_names={script_names} cleaned_area_entity_id={cleaned_area_entity_id} icon={icon} size="md" />
+        <VacuumCardWidget title={title} entity_id={entity_id} script_ids={script_ids} script_names={script_names} cleaned_area_entity_id={cleaned_area_entity_id} icon={icon} size="md" onMoreClick={editMode ? onEdit : undefined} />
       </div>
     </div>
   );

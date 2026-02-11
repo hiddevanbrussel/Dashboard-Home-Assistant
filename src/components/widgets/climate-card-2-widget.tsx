@@ -200,7 +200,7 @@ export function ClimateCard2Widget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/15 dark:bg-black/40 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-white/30 dark:border-white/10",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/15 dark:bg-black/50 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-white/30 dark:border-white/10",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
@@ -313,7 +313,7 @@ export function ClimateCard2Widget({
                   />
                   <ul
                     role="listbox"
-                    className="fixed z-[101] rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 shadow-lg py-1 max-h-48 overflow-auto"
+                    className="fixed z-[101] rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/50 dark:backdrop-blur-xl shadow-lg py-1 max-h-48 overflow-auto"
                     style={{
                       top: menuPosition.top,
                       left: menuPosition.left,

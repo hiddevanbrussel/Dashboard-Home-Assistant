@@ -393,6 +393,20 @@ const useEntityStateStore = (0, __TURBOPACK__imported__module__$5b$project$5d2f$
                 error: null
             });
         },
+        updateEntityState: (entityId, patch)=>{
+            const current = get().states[entityId];
+            if (!current) return;
+            set({
+                states: {
+                    ...get().states,
+                    [entityId]: {
+                        ...current,
+                        ...patch
+                    }
+                },
+                updatedAt: Date.now()
+            });
+        },
         setError: (error)=>set({
                 error
             }),
@@ -412,14 +426,12 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2d$dom$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react-dom/index.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$bell$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Bell$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/bell.js [app-client] (ecmascript) <export default as Bell>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/x.js [app-client] (ecmascript) <export default as X>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$state$2d$store$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/stores/entity-state-store.ts [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
 "use client";
-;
 ;
 ;
 ;
@@ -534,7 +546,7 @@ function HeaderNotifications() {
                         "aria-hidden": true
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                        lineNumber: 103,
+                        lineNumber: 102,
                         columnNumber: 9
                     }, this),
                     count > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -543,16 +555,16 @@ function HeaderNotifications() {
                         children: count > 99 ? "99+" : count
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                        lineNumber: 105,
+                        lineNumber: 104,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                lineNumber: 96,
+                lineNumber: 95,
                 columnNumber: 7
             }, this),
-            open && typeof document !== "undefined" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2d$dom$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createPortal"])(/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            open && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "absolute right-0 top-full z-[100] mt-1 w-[320px] max-h-[70vh] flex flex-col rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-gray-800",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -563,7 +575,7 @@ function HeaderNotifications() {
                                 children: "Meldingen"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                lineNumber: 119,
+                                lineNumber: 116,
                                 columnNumber: 15
                             }, this),
                             count > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -592,13 +604,13 @@ function HeaderNotifications() {
                                 children: "Alles wissen"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                lineNumber: 123,
+                                lineNumber: 120,
                                 columnNumber: 17
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                        lineNumber: 118,
+                        lineNumber: 115,
                         columnNumber: 13
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -608,7 +620,7 @@ function HeaderNotifications() {
                             children: "Geen meldingen"
                         }, void 0, false, {
                             fileName: "[project]/src/components/layout/header-notifications.tsx",
-                            lineNumber: 151,
+                            lineNumber: 148,
                             columnNumber: 17
                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
                             className: "py-1",
@@ -631,7 +643,7 @@ function HeaderNotifications() {
                                                         children: title
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                                        lineNumber: 168,
+                                                        lineNumber: 165,
                                                         columnNumber: 29
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -644,18 +656,18 @@ function HeaderNotifications() {
                                                             className: "h-4 w-4"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                                            lineNumber: 178,
+                                                            lineNumber: 175,
                                                             columnNumber: 31
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                                        lineNumber: 171,
+                                                        lineNumber: 168,
                                                         columnNumber: 29
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                                lineNumber: 167,
+                                                lineNumber: 164,
                                                 columnNumber: 27
                                             }, this),
                                             message && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -663,41 +675,41 @@ function HeaderNotifications() {
                                                 children: message
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                                lineNumber: 182,
+                                                lineNumber: 179,
                                                 columnNumber: 29
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                        lineNumber: 166,
+                                        lineNumber: 163,
                                         columnNumber: 25
                                     }, this)
                                 }, n.entity_id, false, {
                                     fileName: "[project]/src/components/layout/header-notifications.tsx",
-                                    lineNumber: 162,
+                                    lineNumber: 159,
                                     columnNumber: 23
                                 }, this);
                             })
                         }, void 0, false, {
                             fileName: "[project]/src/components/layout/header-notifications.tsx",
-                            lineNumber: 155,
+                            lineNumber: 152,
                             columnNumber: 17
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/components/layout/header-notifications.tsx",
-                        lineNumber: 149,
+                        lineNumber: 146,
                         columnNumber: 13
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/layout/header-notifications.tsx",
-                lineNumber: 117,
+                lineNumber: 114,
                 columnNumber: 11
-            }, this), document.body)
+            }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/layout/header-notifications.tsx",
-        lineNumber: 95,
+        lineNumber: 94,
         columnNumber: 5
     }, this);
 }
@@ -3019,6 +3031,7 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2d$dom$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react-dom/index.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$lightbulb$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Lightbulb$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/lightbulb.js [app-client] (ecmascript) <export default as Lightbulb>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$lamp$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Lamp$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/lamp.js [app-client] (ecmascript) <export default as Lamp>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$lamp$2d$ceiling$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__LampCeiling$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/lamp-ceiling.js [app-client] (ecmascript) <export default as LampCeiling>");
@@ -3032,6 +3045,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$s
 ;
 var _s = __turbopack_context__.k.signature();
 "use client";
+;
 ;
 ;
 ;
@@ -3066,12 +3080,21 @@ function LightCardWidget(param) {
     const setStates = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$state$2d$store$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEntityStateStore"])({
         "LightCardWidget.useEntityStateStore[setStates]": (s)=>s.setStates
     }["LightCardWidget.useEntityStateStore[setStates]"]);
+    const updateEntityState = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$state$2d$store$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEntityStateStore"])({
+        "LightCardWidget.useEntityStateStore[updateEntityState]": (s)=>s.updateEntityState
+    }["LightCardWidget.useEntityStateStore[updateEntityState]"]);
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [modalOpen, setModalOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [sliderBrightness, setSliderBrightness] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(100);
     const brightnessDebounceRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
+    const [slidePosition, setSlidePosition] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const dragStartRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
+    const SWITCH_TRACK_PX = 72;
+    const SWITCH_AREA_HEIGHT_PX = 200; /* hoogte van het sleepgebied; doos wordt hierop + padding berekend */ 
     const isOn = (entity === null || entity === void 0 ? void 0 : entity.state) === "on";
+    const displayPosition = slidePosition !== null && slidePosition !== void 0 ? slidePosition : isOn ? 1 : 0;
     var _ref;
-    const brightnessRaw = (_ref = entity === null || entity === void 0 ? void 0 : (_entity_attributes = entity.attributes) === null || _entity_attributes === void 0 ? void 0 : _entity_attributes.brightness) !== null && _ref !== void 0 ? _ref : 255;
+    /* 0 = bottom (uit), 1 = top (aan); transform uses (1 - position) so thumb moves up when on */ const brightnessRaw = (_ref = entity === null || entity === void 0 ? void 0 : (_entity_attributes = entity.attributes) === null || _entity_attributes === void 0 ? void 0 : _entity_attributes.brightness) !== null && _ref !== void 0 ? _ref : 255;
     const brightnessPct = Math.round(brightnessRaw / 255 * 100);
     var _ref1;
     const supportedFeatures = (_ref1 = entity === null || entity === void 0 ? void 0 : (_entity_attributes1 = entity.attributes) === null || _entity_attributes1 === void 0 ? void 0 : _entity_attributes1.supported_features) !== null && _ref1 !== void 0 ? _ref1 : 0;
@@ -3114,9 +3137,13 @@ function LightCardWidget(param) {
         }
     }
     function handleToggle() {
-        callLight(isOn ? "turn_off" : "turn_on", isOn ? undefined : {
-            brightness_pct: brightnessPct || 100
+        const nextOn = !isOn;
+        updateEntityState(entity_id, {
+            state: nextOn ? "on" : "off"
         });
+        callLight(nextOn ? "turn_on" : "turn_off", nextOn ? {
+            brightness_pct: brightnessPct || 100
+        } : undefined);
     }
     function handleBrightnessChange(pct) {
         setSliderBrightness(pct);
@@ -3139,7 +3166,7 @@ function LightCardWidget(param) {
     const IconComponent = (_LIGHT_ICON_MAP_iconKey = LIGHT_ICON_MAP[iconKey]) !== null && _LIGHT_ICON_MAP_iconKey !== void 0 ? _LIGHT_ICON_MAP_iconKey : __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$lightbulb$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Lightbulb$3e$__["Lightbulb"];
     const statusText = isOn ? supportsBrightness ? "".concat(brightnessPct, "%") : "Aan" : "Uit";
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("flex w-full flex-col overflow-hidden rounded-2xl shadow-xl border transition-colors duration-200", size === "sm" && "text-sm", size === "md" && "text-base", size === "lg" && "text-lg", isOn ? "bg-white/95 dark:bg-gray-100/95 text-gray-900 border-white/40 dark:border-gray-200/40" : "bg-white/15 dark:bg-black/40 backdrop-blur-2xl border border-white/30 dark:border-white/10 text-gray-800 dark:text-gray-200", className),
+        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("flex w-full flex-col overflow-hidden rounded-2xl shadow-xl border transition-colors duration-200", size === "sm" && "text-sm", size === "md" && "text-base", size === "lg" && "text-lg", isOn ? "bg-white dark:bg-gray-100 text-gray-900 border-gray-200 dark:border-gray-200/80" : "bg-white/25 dark:bg-white/10 backdrop-blur-2xl border border-white/30 dark:border-white/10 text-gray-800 dark:text-gray-200", className),
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "flex items-center gap-4 px-4 py-3",
@@ -3148,56 +3175,64 @@ function LightCardWidget(param) {
                         type: "button",
                         onClick: handleToggle,
                         disabled: loading,
-                        className: "flex flex-1 min-w-0 items-center gap-4 text-left rounded-xl cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 disabled:opacity-70 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 -mx-1 px-1 py-0.5 transition-colors",
+                        className: "flex shrink-0 items-center justify-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 disabled:opacity-70 h-10 w-10",
                         "aria-label": isOn ? "Lamp uitzetten" : "Lamp aanzetten",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("flex shrink-0 items-center justify-center rounded-full transition-all duration-200", size === "sm" && "h-12 w-12", size === "md" && "h-14 w-14", size === "lg" && "h-16 w-16", isOn ? "bg-[#FFD41D] shadow-sm" : "bg-white/30 dark:bg-white/10 shadow-inner"),
-                                "aria-hidden": true,
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(IconComponent, {
-                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("shrink-0 transition-colors", size === "sm" && "h-6 w-6", size === "md" && "h-7 w-7", size === "lg" && "h-8 w-8", isOn ? "text-white drop-shadow" : "text-gray-500 dark:text-gray-400"),
-                                    strokeWidth: 1.5,
-                                    fill: isOn ? "currentColor" : "none",
-                                    "aria-hidden": true
-                                }, void 0, false, {
-                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                                    lineNumber: 147,
-                                    columnNumber: 13
-                                }, this)
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200", isOn ? "bg-[#FFD41D] shadow-sm" : "bg-white/30 dark:bg-white/10 shadow-inner"),
+                            "aria-hidden": true,
+                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(IconComponent, {
+                                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("h-5 w-5 shrink-0 transition-colors", isOn ? "text-white drop-shadow" : "text-gray-500 dark:text-gray-400"),
+                                strokeWidth: 1.5,
+                                fill: isOn ? "currentColor" : "none",
+                                "aria-hidden": true
                             }, void 0, false, {
                                 fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                                lineNumber: 135,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "min-w-0 flex-1 flex flex-col justify-center",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "font-semibold truncate text-inherit",
-                                        children: title
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                                        lineNumber: 162,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("text-sm font-medium truncate", isOn ? "text-gray-600 dark:text-gray-700" : "text-gray-500 dark:text-gray-400"),
-                                        children: statusText
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                                        lineNumber: 163,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                                lineNumber: 161,
-                                columnNumber: 11
+                                lineNumber: 156,
+                                columnNumber: 13
                             }, this)
-                        ]
-                    }, void 0, true, {
+                        }, void 0, false, {
+                            fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                            lineNumber: 147,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
                         fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                        lineNumber: 128,
+                        lineNumber: 140,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                        type: "button",
+                        onClick: ()=>setModalOpen(true),
+                        className: "flex flex-1 min-w-0 items-center gap-2 text-left rounded-xl cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 -mx-1 px-1 py-0.5 transition-colors",
+                        "aria-label": "Verlichting bedienen",
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "min-w-0 flex-1 flex flex-col justify-center",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "font-medium truncate text-inherit",
+                                    children: title
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 175,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("text-xs truncate", isOn ? "text-gray-600 dark:text-gray-600" : "text-gray-500 dark:text-gray-400"),
+                                    children: statusText
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 176,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                            lineNumber: 174,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                        lineNumber: 168,
                         columnNumber: 9
                     }, this),
                     onMoreClick && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3213,20 +3248,319 @@ function LightCardWidget(param) {
                             "aria-hidden": true
                         }, void 0, false, {
                             fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                            lineNumber: 179,
+                            lineNumber: 192,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                        lineNumber: 173,
+                        lineNumber: 186,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                lineNumber: 127,
+                lineNumber: 139,
                 columnNumber: 7
             }, this),
+            modalOpen && typeof document !== "undefined" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2d$dom$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createPortal"])(/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "fixed inset-0 z-[100] flex items-center justify-center p-4",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "absolute inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-sm",
+                        "aria-hidden": true,
+                        onClick: ()=>setModalOpen(false)
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                        lineNumber: 201,
+                        columnNumber: 13
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("relative z-[101] w-full max-w-sm p-5 flex flex-col items-center text-center", isOn && supportsBrightness ? "min-h-[420px]" : "min-h-[380px]"),
+                        onClick: (e)=>e.stopPropagation(),
+                        children: isOn && supportsBrightness ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                    className: "text-xl font-semibold text-gray-900 dark:text-white mb-1",
+                                    children: title
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 215,
+                                    columnNumber: 19
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "text-sm text-gray-600 dark:text-gray-400 mb-6",
+                                    children: [
+                                        sliderBrightness,
+                                        "%"
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 218,
+                                    columnNumber: 19
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "flex flex-col items-center gap-4",
+                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "relative flex flex-col items-center w-20 h-64",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "absolute top-0 left-1/2 -translate-x-1/2 w-16 h-64 rounded-2xl bg-slate-700/80 dark:bg-slate-800/80 flex flex-col justify-end overflow-hidden",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "w-full rounded-b-2xl bg-[#FFD41D] min-h-0 transition-[height] duration-150 ease-out",
+                                                    style: {
+                                                        height: "".concat(sliderBrightness, "%")
+                                                    }
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                                    lineNumber: 224,
+                                                    columnNumber: 25
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                                lineNumber: 223,
+                                                columnNumber: 23
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                type: "range",
+                                                min: 0,
+                                                max: 100,
+                                                value: sliderBrightness,
+                                                onChange: (e)=>handleBrightnessChange(Number(e.target.value)),
+                                                onInput: (e)=>handleBrightnessChange(Number(e.target.value)),
+                                                disabled: loading,
+                                                className: "absolute top-1/2 left-1/2 w-64 h-20 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize opacity-0 [&::-webkit-slider-thumb]:cursor-ns-resize",
+                                                style: {
+                                                    transform: "translate(-50%, -50%) rotate(-90deg)"
+                                                },
+                                                "aria-label": "Helderheid"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                                lineNumber: 229,
+                                                columnNumber: 23
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none flex items-center justify-center w-10 h-10 rounded-full bg-amber-400/40",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(IconComponent, {
+                                                    className: "h-5 w-5 text-white drop-shadow",
+                                                    strokeWidth: 1.5,
+                                                    fill: "currentColor",
+                                                    "aria-hidden": true
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                                    lineNumber: 242,
+                                                    columnNumber: 25
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                                lineNumber: 241,
+                                                columnNumber: 23
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                        lineNumber: 222,
+                                        columnNumber: 21
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 221,
+                                    columnNumber: 19
+                                }, this)
+                            ]
+                        }, void 0, true) : supportsBrightness ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                    className: "text-xl font-semibold text-gray-900 dark:text-white mb-1",
+                                    children: title
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 249,
+                                    columnNumber: 19
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "text-sm text-gray-600 dark:text-gray-400 mb-4",
+                                    children: isOn ? "Aan" : "Uit"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 252,
+                                    columnNumber: 19
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "flex gap-3 w-full max-w-xs mx-auto",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                            type: "button",
+                                            onClick: ()=>{
+                                                if (!isOn) handleToggle();
+                                                setModalOpen(false);
+                                            },
+                                            disabled: loading,
+                                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("flex-1 rounded-xl py-3 px-4 text-sm font-medium transition-colors", isOn ? "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" : "bg-[#FFD41D] text-gray-900 hover:opacity-90"),
+                                            children: "Aan"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                            lineNumber: 256,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                            type: "button",
+                                            onClick: ()=>{
+                                                if (isOn) handleToggle();
+                                                setModalOpen(false);
+                                            },
+                                            disabled: loading,
+                                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("flex-1 rounded-xl py-3 px-4 text-sm font-medium transition-colors", !isOn ? "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" : "bg-gray-800 text-white dark:bg-gray-600 dark:text-white hover:opacity-90"),
+                                            children: "Uit"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                            lineNumber: 267,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 255,
+                                    columnNumber: 19
+                                }, this)
+                            ]
+                        }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                    className: "text-xl font-semibold text-gray-900 dark:text-white mb-1",
+                                    children: title
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 282,
+                                    columnNumber: 19
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "text-sm text-gray-600 dark:text-gray-400 mb-6",
+                                    children: isOn ? "Aan" : "Uit"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 285,
+                                    columnNumber: 19
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "flex flex-col items-center rounded-3xl bg-gradient-to-br from-slate-700/60 to-slate-800/80 dark:from-slate-800/70 dark:to-slate-900/90 pt-3 pb-4 w-[100px]",
+                                    style: {
+                                        height: SWITCH_AREA_HEIGHT_PX + 12 + 16
+                                    },
+                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "relative w-[100px] flex flex-col justify-end select-none shrink-0",
+                                        style: {
+                                            height: SWITCH_AREA_HEIGHT_PX,
+                                            paddingBottom: SWITCH_TRACK_PX,
+                                            touchAction: "none"
+                                        },
+                                        onPointerDown: (e)=>{
+                                            var _setPointerCapture, _this;
+                                            if (loading) return;
+                                            e.preventDefault();
+                                            (_setPointerCapture = (_this = e.currentTarget).setPointerCapture) === null || _setPointerCapture === void 0 ? void 0 : _setPointerCapture.call(_this, e.pointerId);
+                                            dragStartRef.current = {
+                                                y: e.clientY,
+                                                position: displayPosition
+                                            };
+                                            setSlidePosition(displayPosition);
+                                        },
+                                        onPointerMove: (e)=>{
+                                            if (dragStartRef.current == null) return;
+                                            e.preventDefault();
+                                            const deltaY = dragStartRef.current.y - e.clientY;
+                                            const deltaPos = deltaY / SWITCH_TRACK_PX;
+                                            const next = Math.max(0, Math.min(1, dragStartRef.current.position + deltaPos));
+                                            setSlidePosition(next);
+                                        },
+                                        onPointerUp: (e)=>{
+                                            var _releasePointerCapture, _this;
+                                            (_releasePointerCapture = (_this = e.currentTarget).releasePointerCapture) === null || _releasePointerCapture === void 0 ? void 0 : _releasePointerCapture.call(_this, e.pointerId);
+                                            if (dragStartRef.current == null) return;
+                                            const startPos = dragStartRef.current.position;
+                                            const moved = Math.abs(displayPosition - startPos) > 0.15;
+                                            if (!moved) {
+                                                handleToggle();
+                                            } else {
+                                                const committedOn = displayPosition > 0.5;
+                                                if (committedOn !== isOn) {
+                                                    updateEntityState(entity_id, {
+                                                        state: committedOn ? "on" : "off"
+                                                    });
+                                                    callLight(committedOn ? "turn_on" : "turn_off", committedOn ? {
+                                                        brightness_pct: 100
+                                                    } : undefined);
+                                                }
+                                            }
+                                            dragStartRef.current = null;
+                                            setSlidePosition(null);
+                                        },
+                                        onPointerCancel: (e)=>{
+                                            var _releasePointerCapture, _this;
+                                            (_releasePointerCapture = (_this = e.currentTarget).releasePointerCapture) === null || _releasePointerCapture === void 0 ? void 0 : _releasePointerCapture.call(_this, e.pointerId);
+                                            dragStartRef.current = null;
+                                            setSlidePosition(null);
+                                        },
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "absolute left-0 right-0 bottom-0 flex items-center justify-center pointer-events-none",
+                                                style: {
+                                                    height: SWITCH_TRACK_PX
+                                                },
+                                                "aria-hidden": true
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                                lineNumber: 333,
+                                                columnNumber: 23
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                type: "button",
+                                                disabled: loading,
+                                                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("absolute left-1/2 -translate-x-1/2 w-20 h-[131px] rounded-xl flex items-center justify-center shadow-lg select-none touch-none", "transition-colors duration-200 disabled:opacity-70", displayPosition > 0.5 ? "bg-[#FFD41D]" : "bg-slate-600/80 dark:bg-slate-700/80"),
+                                                style: {
+                                                    bottom: SWITCH_TRACK_PX,
+                                                    transform: "translate(-50%, ".concat((1 - displayPosition) * SWITCH_TRACK_PX, "px)"),
+                                                    transition: slidePosition != null ? "none" : "transform 0.15s ease-out"
+                                                },
+                                                "aria-label": displayPosition > 0.5 ? "Lamp uitzetten" : "Lamp aanzetten",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(IconComponent, {
+                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("h-9 w-9 shrink-0 transition-colors", displayPosition > 0.5 ? "text-white drop-shadow" : "text-white/70"),
+                                                    strokeWidth: 1.5,
+                                                    fill: displayPosition > 0.5 ? "currentColor" : "none",
+                                                    "aria-hidden": true
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                                    lineNumber: 353,
+                                                    columnNumber: 25
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                                lineNumber: 338,
+                                                columnNumber: 23
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                        lineNumber: 292,
+                                        columnNumber: 21
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                                    lineNumber: 288,
+                                    columnNumber: 19
+                                }, this)
+                            ]
+                        }, void 0, true)
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                        lineNumber: 206,
+                        columnNumber: 13
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/src/components/widgets/light-card-widget.tsx",
+                lineNumber: 200,
+                columnNumber: 11
+            }, this), document.body),
             isOn && supportsBrightness && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "px-4 pb-3 pt-0 flex items-center gap-2",
                 children: [
@@ -3235,7 +3569,7 @@ function LightCardWidget(param) {
                         children: "Helderheid"
                     }, void 0, false, {
                         fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                        lineNumber: 186,
+                        lineNumber: 374,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3249,7 +3583,7 @@ function LightCardWidget(param) {
                         "aria-label": "Helderheid"
                     }, void 0, false, {
                         fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                        lineNumber: 187,
+                        lineNumber: 375,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3260,24 +3594,25 @@ function LightCardWidget(param) {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                        lineNumber: 197,
+                        lineNumber: 385,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-                lineNumber: 185,
+                lineNumber: 373,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/widgets/light-card-widget.tsx",
-        lineNumber: 115,
+        lineNumber: 127,
         columnNumber: 5
     }, this);
 }
-_s(LightCardWidget, "D0LjjPtYyGPkDVUaBShzLRTbBaA=", false, function() {
+_s(LightCardWidget, "NtivO+nC7wCoIK0cyly7ooFhEp0=", false, function() {
     return [
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$state$2d$store$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEntityStateStore"],
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$state$2d$store$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEntityStateStore"],
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$state$2d$store$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEntityStateStore"]
     ];
@@ -5826,7 +6161,7 @@ function ScriptTag(param) {
         className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-normal transition-colors", active ? "border-amber-400/40 bg-amber-500/20 text-amber-200/95" : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white/85 hover:border-white/20", (loading || disabled) && !active && "opacity-50 cursor-not-allowed"),
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
             className: "truncate max-w-[7rem]",
-            children: loading ? "…" : active ? "".concat(label, " (bezig)") : label
+            children: loading ? "…" : label
         }, void 0, false, {
             fileName: "[project]/src/components/widgets/vacuum-card-widget.tsx",
             lineNumber: 180,

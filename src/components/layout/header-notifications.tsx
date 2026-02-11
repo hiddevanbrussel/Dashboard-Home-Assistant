@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { Bell, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -111,10 +110,8 @@ export function HeaderNotifications() {
         )}
       </button>
 
-      {open &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div className="absolute right-0 top-full z-[100] mt-1 w-[320px] max-h-[70vh] flex flex-col rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-gray-800">
+      {open && (
+          <div className="absolute right-0 top-full z-[100] mt-1 w-[320px] max-h-[70vh] flex flex-col rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl">
             <div className="flex items-center justify-between gap-2 border-b border-gray-100 dark:border-white/10 px-4 py-3">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                 Meldingen
@@ -190,9 +187,8 @@ export function HeaderNotifications() {
                 </ul>
               )}
             </div>
-          </div>,
-          document.body
-        )}
+          </div>
+      )}
     </div>
   );
 }

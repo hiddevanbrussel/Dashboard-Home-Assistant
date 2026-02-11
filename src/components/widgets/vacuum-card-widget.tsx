@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { MoreVertical } from "lucide-react";
 import type { VacuumCardProps } from "./widget-types";
 import { cn, capitalizeFirst } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -27,7 +28,8 @@ export function VacuumCardWidget({
   icon: iconName,
   size = "md",
   className,
-}: VacuumCardProps & { className?: string }) {
+  onMoreClick,
+}: VacuumCardProps & { className?: string; onMoreClick?: () => void }) {
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const cleanedAreaEntity = useEntityStateStore((s) =>
     cleaned_area_entity_id ? s.getState(cleaned_area_entity_id) : null
@@ -103,7 +105,18 @@ export function VacuumCardWidget({
             <p className="text-xs text-white/60 truncate">{friendlyName}</p>
           </div>
         </div>
-        <div className="flex flex-col items-end shrink-0 min-w-0 max-w-[45%]">
+        <div className="flex items-center gap-2 shrink-0 min-w-0 max-w-[45%]">
+          {onMoreClick && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
+              className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Opties"
+            >
+              <MoreVertical className="h-5 w-5" aria-hidden />
+            </button>
+          )}
+          <div className="flex flex-col items-end min-w-0 flex-1">
           <p
             className={cn(
               "text-sm font-medium truncate w-full text-right",
@@ -121,6 +134,7 @@ export function VacuumCardWidget({
               {cleanedAreaValue}{cleanedAreaUnit ? ` ${cleanedAreaUnit}` : ""}
             </p>
           )}
+          </div>
         </div>
       </div>
 
@@ -178,7 +192,7 @@ function ScriptTag({
       )}
     >
       <span className="truncate max-w-[7rem]">
-        {loading ? "…" : active ? `${label} (bezig)` : label}
+        {loading ? "…" : label}
       </span>
     </button>
   );

@@ -1,29 +1,18 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Pencil, X, Thermometer, Snowflake, Flame, Wind, Sun, Home, AirVent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
-import { ClimateCardWidget } from "./climate-card-widget";
 import { ClimateCard2Widget } from "./climate-card-2-widget";
 
-const CLIMATE_ICONS: Record<string, React.ReactNode> = {
-  AirVent: <AirVent className="h-3.5 w-3.5" aria-hidden />,
-  Thermometer: <Thermometer className="h-3.5 w-3.5" aria-hidden />,
-  Snowflake: <Snowflake className="h-3.5 w-3.5" aria-hidden />,
-  Flame: <Flame className="h-3.5 w-3.5" aria-hidden />,
-  Wind: <Wind className="h-3.5 w-3.5" aria-hidden />,
-  Sun: <Sun className="h-3.5 w-3.5" aria-hidden />,
-  Home: <Home className="h-3.5 w-3.5" aria-hidden />,
-};
-
-/** Beschikbare iconen voor climate-card tab; te gebruiken in de edit-modal met zoekfunctie. */
-export const CLIMATE_ICON_OPTIONS = Object.keys(CLIMATE_ICONS).sort();
+/** Voor backwards compatibility (icon picker verwijderd). */
+export const CLIMATE_ICON_OPTIONS: readonly string[] = [];
 
 const STORAGE_KEY = "dashboard.floatingClimateCardPosition";
 const DEFAULT_OFFSET = 24;
 const CARD_WIDTH = 320;
-const PILL_BAR_WIDTH = 52;
+const SWIPE_THRESHOLD_PX = 50;
+const SLIDE_DURATION_MS = 280;
 
 type Position = { left: number; bottom: number };
 
@@ -56,7 +45,7 @@ function savePosition(p: Position) {
 function defaultPosition(): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
   return {
-    left: window.innerWidth - CARD_WIDTH - DEFAULT_OFFSET - 344,
+    left: window.innerWidth - CARD_WIDTH - DEFAULT_OFFSET,
     bottom: DEFAULT_OFFSET,
   };
 }
@@ -66,9 +55,10 @@ export type ClimateCardWidgetItem = {
   title: string;
   entity_id: string;
   humidity_entity_id?: string;
-  icon?: string;
   type?: "climate_card" | "climate_card_2";
 };
+
+const LONG_PRESS_MS = 500;
 
 export function FloatingClimateCard({
   widgets: widgetsProp,
@@ -77,29 +67,65 @@ export function FloatingClimateCard({
   editMode = false,
   onRemove,
   onEdit,
+  onEnterEditMode,
 }: {
-  /** Meerdere climate widgets: toont pillbox om te wisselen. Bij één widget mag je title + entity_id gebruiken. */
+  /** Meerdere climate widgets: swipe om te wisselen. Bij één widget mag je title + entity_id gebruiken. */
   widgets?: ClimateCardWidgetItem[];
   title?: string;
   entity_id?: string;
   editMode?: boolean;
   onRemove?: (widgetId: string) => void;
   onEdit?: (widgetId: string) => void;
+  onEnterEditMode?: () => void;
 }) {
-  const widgets = widgetsProp ?? (titleProp != null && entityIdProp != null ? [{ id: "", title: titleProp, entity_id: entityIdProp, type: "climate_card" as const }] : []);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const widgets = widgetsProp ?? (titleProp != null && entityIdProp != null ? [{ id: "", title: titleProp, entity_id: entityIdProp, type: "climate_card_2" as const }] : []);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [flipDeg, setFlipDeg] = useState(0);
+  const [nextIndex, setNextIndex] = useState<number | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const swipeAreaLongPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current != null) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const startLongPress = useCallback(
+    (e: React.PointerEvent) => {
+      if (editMode || !onEnterEditMode) return;
+      if ((e.target as HTMLElement).closest?.("[data-climate-swipe-area]")) return;
+      clearLongPress();
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      longPressTimerRef.current = setTimeout(() => {
+        longPressTimerRef.current = null;
+        onEnterEditMode();
+      }, LONG_PRESS_MS);
+    },
+    [editMode, onEnterEditMode, clearLongPress]
+  );
+
+  const endLongPress = useCallback(
+    (e: React.PointerEvent) => {
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      clearLongPress();
+    },
+    [clearLongPress]
+  );
 
   useEffect(() => {
     if (widgets.length === 0) return;
-    setSelectedId((prev) => {
-      const stillValid = prev != null && widgets.some((w) => w.id === prev);
-      if (stillValid) return prev;
-      return widgets[0]?.id ?? null;
-    });
-  }, [widgets]);
+    setSelectedIndex((prev) => Math.min(prev, Math.max(0, widgets.length - 1)));
+  }, [widgets.length]);
 
-  const effectiveSelectedId = selectedId ?? widgets[0]?.id ?? null;
-  const selected = widgets.find((w) => w.id === effectiveSelectedId) ?? widgets[0];
+  const selected = widgets[selectedIndex] ?? widgets[0];
+  const hasMultiple = widgets.length > 1;
+
+  const goToIndex = useCallback((index: number) => {
+    if (index === selectedIndex || index < 0 || index >= widgets.length) return;
+    setSelectedIndex(index);
+  }, [selectedIndex, widgets.length]);
 
   const [position, setPosition] = useState<Position>(() =>
     loadPosition() ?? { left: 0, bottom: DEFAULT_OFFSET }
@@ -107,9 +133,9 @@ export function FloatingClimateCard({
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
-  const hasPills = widgets.length > 1;
-  const totalWidth = hasPills ? CARD_WIDTH + PILL_BAR_WIDTH : CARD_WIDTH;
+  const totalWidth = CARD_WIDTH;
 
   useEffect(() => {
     if (initialized.current) return;
@@ -130,6 +156,7 @@ export function FloatingClimateCard({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode) return;
+      if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
       setIsDragging(true);
       dragStart.current = {
@@ -138,7 +165,7 @@ export function FloatingClimateCard({
         left: position.left,
         bottom: position.bottom,
       };
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
     [position, editMode]
   );
@@ -183,99 +210,146 @@ export function FloatingClimateCard({
         setPosition(next);
         savePosition(next);
       }
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
     [isDragging, maxLeft]
   );
 
   return (
     <div
-      className="fixed z-30 flex shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10"
+      className={cn(
+        "fixed z-30 flex shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        editMode && "cursor-grab touch-none active:cursor-grabbing",
+        editMode && !isDragging && "animate-edit-wiggle"
+      )}
       style={{
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
+        ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
+      {...(!editMode &&
+        onEnterEditMode && {
+          onPointerDown: startLongPress,
+          onPointerUp: endLongPress,
+          onPointerLeave: endLongPress,
+          onPointerCancel: endLongPress,
+        })}
+      {...(editMode && {
+        onPointerDown: handlePointerDown,
+        onPointerMove: handlePointerMove,
+        onPointerUp: handlePointerUp,
+        onPointerLeave: (e: React.PointerEvent) => {
+          if (isDragging) handlePointerUp(e);
+        },
+        onPointerCancel: handlePointerUp,
+      })}
     >
-      {hasPills && (
-        <div className="flex flex-col gap-0.5 py-2 pl-2 pr-1.5 border-r border-white/10 shrink-0 w-[52px]">
-          {widgets.map((w) => {
-            const isSelected = w.id === effectiveSelectedId;
-            return (
-              <button
-                key={w.id}
-                type="button"
-                onClick={() => setSelectedId(w.id)}
-                className={cn(
-                  "flex items-center justify-center rounded-lg p-2 text-xs font-medium transition-colors",
-                  isSelected
-                    ? "bg-[#4D2FB2] text-white shadow-md"
-                    : "text-white/70 hover:text-white hover:bg-white/10"
-                )}
-                aria-label={w.title || "Climate"}
-                title={w.title || "Climate"}
-              >
-                {w.icon && CLIMATE_ICONS[w.icon] ? (
-                  <span className="flex shrink-0">{CLIMATE_ICONS[w.icon]}</span>
-                ) : (
-                  <span>{w.title?.charAt(0)?.toUpperCase() || "—"}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
       <div className="flex flex-col min-w-0 flex-1 w-[320px]">
-        {editMode && (
-          <div className="flex items-center justify-between gap-2 border-b border-white/10 py-1.5 px-2">
+        <div
+          data-climate-swipe-area
+          className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none [&_.rounded-2xl]:rounded-b-none", "relative touch-pan-y overflow-hidden")}
+          style={{ touchAction: hasMultiple ? "pan-y" : undefined, perspective: "1000px" }}
+          onPointerDown={hasMultiple ? (e) => {
+            if (!editMode) {
+              swipeStart.current = { x: e.clientX, y: e.clientY };
+              (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+              if (onEnterEditMode) {
+                if (swipeAreaLongPressRef.current) clearTimeout(swipeAreaLongPressRef.current);
+                swipeAreaLongPressRef.current = setTimeout(() => {
+                  swipeAreaLongPressRef.current = null;
+                  onEnterEditMode();
+                }, LONG_PRESS_MS);
+              }
+            }
+          } : undefined}
+          onPointerMove={hasMultiple ? (e) => {
+            if (swipeStart.current && !editMode) {
+              const dx = e.clientX - swipeStart.current.x;
+              const dy = e.clientY - swipeStart.current.y;
+              if (Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy)) {
+                e.preventDefault();
+                if (swipeAreaLongPressRef.current) {
+                  clearTimeout(swipeAreaLongPressRef.current);
+                  swipeAreaLongPressRef.current = null;
+                }
+              }
+            }
+          } : undefined}
+          onPointerUp={hasMultiple ? (e) => {
+            if (swipeAreaLongPressRef.current) {
+              clearTimeout(swipeAreaLongPressRef.current);
+              swipeAreaLongPressRef.current = null;
+            }
+            if (!swipeStart.current || editMode) return;
+            const dx = e.clientX - swipeStart.current.x;
+            const dy = e.clientY - swipeStart.current.y;
+            if (Math.abs(dx) > SWIPE_THRESHOLD_PX && Math.abs(dx) > Math.abs(dy)) {
+              if (dx > 0) goToIndex(selectedIndex - 1);
+              else goToIndex(selectedIndex + 1);
+            }
+            swipeStart.current = null;
+            (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+          } : undefined}
+          onPointerCancel={hasMultiple ? (e) => {
+            if (swipeAreaLongPressRef.current) {
+              clearTimeout(swipeAreaLongPressRef.current);
+              swipeAreaLongPressRef.current = null;
+            }
+            swipeStart.current = null;
+            (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+          } : undefined}
+          onPointerLeave={hasMultiple ? () => {
+            if (swipeAreaLongPressRef.current) {
+              clearTimeout(swipeAreaLongPressRef.current);
+              swipeAreaLongPressRef.current = null;
+            }
+            swipeStart.current = null;
+          } : undefined}
+        >
+          <div
+            className="relative w-full overflow-hidden"
+            style={{ minHeight: 200 }}
+          >
             <div
-              role="button"
-              tabIndex={0}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={(e) => {
-                if (isDragging) handlePointerUp(e);
+              className="flex w-full h-full"
+              style={{
+                width: hasMultiple ? `${widgets.length * 100}%` : "100%",
+                transform: hasMultiple ? `translateX(-${selectedIndex * (100 / widgets.length)}%)` : "none",
+                transition: `transform ${SLIDE_DURATION_MS}ms ease-out`,
               }}
-              className="select-none touch-none flex-1 flex items-center justify-center text-white/50 text-xs hover:text-white/70 cursor-grab active:cursor-grabbing"
-              aria-label="Sleep om te verplaatsen"
             >
-              Sleep om te verplaatsen
+              {widgets.map((w, i) => (
+                <div
+                  key={w.id}
+                  className="shrink-0 w-full"
+                  style={hasMultiple ? { width: `${100 / widgets.length}%` } : undefined}
+                >
+                  <ClimateCard2Widget
+                    title={w.title}
+                    entity_id={w.entity_id}
+                    humidity_entity_id={w.humidity_entity_id}
+                    size="md"
+                    onMoreClick={editMode ? () => w.id && onEdit?.(w.id) : undefined}
+                  />
+                </div>
+              ))}
             </div>
-            {onEdit && selected && (
-              <button
-                type="button"
-                onClick={() => onEdit(selected.id)}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white"
-                aria-label="Edit climate card"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {onRemove && selected && (
-              <button
-                type="button"
-                onClick={() => onRemove(selected.id)}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white"
-                aria-label="Remove climate card"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
           </div>
-        )}
-        <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-          {selected && selected.type === "climate_card_2" ? (
-            <ClimateCard2Widget
-              title={selected.title}
-              entity_id={selected.entity_id}
-              humidity_entity_id={selected.humidity_entity_id}
-              size="md"
-              onMoreClick={editMode ? () => selected.id && onEdit?.(selected.id) : undefined}
-            />
-          ) : selected ? (
-            <ClimateCardWidget title={selected.title} entity_id={selected.entity_id} size="md" />
-          ) : null}
+          {hasMultiple && (
+            <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+              {widgets.map((_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full transition-colors duration-300",
+                    i === selectedIndex ? "bg-white" : "bg-white/40"
+                  )}
+                  aria-hidden
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

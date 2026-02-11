@@ -1,6 +1,6 @@
 "use client";
 
-import { Info } from "lucide-react";
+import { Info, MoreVertical } from "lucide-react";
 import type { SensorCardProps, SensorCondition } from "./widget-types";
 import { cn, capitalizeFirst } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -82,7 +82,8 @@ export function SensorCardWidget({
   size = "md",
   conditions,
   className,
-}: SensorCardProps & { className?: string }) {
+  onMoreClick,
+}: SensorCardProps & { className?: string; onMoreClick?: () => void }) {
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const state = entity?.state as string | undefined;
   const unit = (entity?.attributes?.unit_of_measurement as string) ?? "";
@@ -113,9 +114,20 @@ export function SensorCardWidget({
             <p className="text-xs text-white/60 truncate">{friendlyName}</p>
           </div>
         </div>
-        <div className="shrink-0 rounded-full p-1 text-white/50 hover:text-white/70" aria-label="Info">
-          <Info className="h-4 w-4" aria-hidden />
-        </div>
+        {onMoreClick ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
+            className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Opties"
+          >
+            <MoreVertical className="h-5 w-5" aria-hidden />
+          </button>
+        ) : (
+          <div className="shrink-0 rounded-full p-1 text-white/50 hover:text-white/70" aria-label="Info">
+            <Info className="h-4 w-4" aria-hidden />
+          </div>
+        )}
       </div>
       <div className="px-4 pb-4 pt-3 flex flex-col gap-2">
         <div className="flex items-baseline gap-2 flex-wrap">

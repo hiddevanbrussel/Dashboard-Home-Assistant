@@ -9,18 +9,20 @@ export type Position = { left: number; bottom: number };
 
 /**
  * Snapt een positie naar het dichtstbijzijnde grid (links en onder).
- * Optioneel clampen binnen maxLeft en maxBottom.
+ * Optioneel clampen binnen [minLeft, maxLeft] en [minBottom, maxBottom].
  */
 export function snapToGrid(
   position: Position,
-  bounds?: { maxLeft: number; maxBottom: number }
+  bounds?: { maxLeft: number; maxBottom: number; minLeft?: number; minBottom?: number }
 ): Position {
   const step = FLOATING_CARD_GRID_STEP;
   let left = Math.round(position.left / step) * step;
   let bottom = Math.round(position.bottom / step) * step;
   if (bounds != null) {
-    left = Math.max(0, Math.min(left, bounds.maxLeft));
-    bottom = Math.max(0, Math.min(bottom, bounds.maxBottom));
+    const minL = bounds.minLeft ?? 0;
+    const minB = bounds.minBottom ?? 0;
+    left = Math.max(minL, Math.min(left, bounds.maxLeft));
+    bottom = Math.max(minB, Math.min(bottom, bounds.maxBottom));
   }
   return { left, bottom };
 }

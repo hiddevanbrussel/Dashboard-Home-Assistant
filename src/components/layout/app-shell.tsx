@@ -8,6 +8,7 @@ import {
     CloudLightning,
     CloudRain,
     CloudSnow,
+    Menu,
     Moon,
     Sun,
     Thermometer,
@@ -53,6 +54,8 @@ type AppShellProps = {
   onWelcomeChange?: (value: { title: string; subtitle: string }) => void;
   /** Entity ID for temperature shown in header. If not set, uses chosen value from localStorage or default. Set to null to hide. */
   temperatureEntityId?: string | null;
+  /** When true, main content does not scroll (overflow hidden). */
+  contentNoScroll?: boolean;
   className?: string;
 };
 
@@ -109,7 +112,7 @@ function TemperatureEntityModal({
         onClick={onClose}
       />
       <div
-        className="relative z-[102] w-full max-w-sm rounded-2xl border-0 bg-white p-5 shadow-xl dark:bg-gray-800"
+        className="relative z-[102] w-full max-w-sm rounded-2xl border-0 bg-white p-5 shadow-xl dark:bg-black/50 dark:backdrop-blur-xl dark:border dark:border-white/10"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 mb-4">
@@ -188,6 +191,7 @@ export function AppShell({
   welcomeEditable = false,
   onWelcomeChange,
   temperatureEntityId,
+  contentNoScroll = false,
   className,
 }: AppShellProps) {
   const defaultWelcomeTitle = "Hey, Fam van Brussel!";
@@ -198,6 +202,7 @@ export function AppShell({
   const time24 = useTime24();
   const [temperatureModalOpen, setTemperatureModalOpen] = useState(false);
   const [chosenTemperatureEntityId, setChosenTemperatureEntityId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -242,6 +247,16 @@ export function AppShell({
     >
       <header className="flex shrink-0 items-center border-b border-gray-200/50 px-4 py-3 dark:border-white/10">
         <div className="flex-1 min-w-0 flex items-center gap-4">
+          {showSidebar && (
+            <button
+              type="button"
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+              aria-label={sidebarOpen ? "Menu sluiten" : "Menu openen"}
+            >
+              <Menu className="h-5 w-5" aria-hidden />
+            </button>
+          )}
           <span className="text-sm font-medium tabular-nums text-gray-700 dark:text-gray-300" aria-live="polite">
             {time24}
           </span>
@@ -330,14 +345,20 @@ export function AppShell({
 
       <div className="flex flex-1 overflow-hidden relative">
         {showSidebar && (
-          <div className="fixed left-0 top-[8rem] bottom-0 z-10 w-[88px] pl-8 flex flex-col items-center justify-center">
+          <div
+            className={cn(
+              "fixed left-0 top-[8rem] bottom-0 z-10 w-[88px] pl-8 flex flex-col items-center justify-center transition-[transform,opacity] duration-200 ease-out",
+              sidebarOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"
+            )}
+          >
             <Sidebar activeHref={activeTab} />
           </div>
         )}
         <main
           className={cn(
-            "flex-1 overflow-auto p-4 min-w-0",
-            showSidebar && "ml-[88px]"
+            "flex-1 p-4 min-w-0 transition-[margin] duration-200",
+            contentNoScroll ? "overflow-hidden" : "overflow-auto",
+            showSidebar && sidebarOpen && "ml-[88px]"
           )}
         >
           {children}

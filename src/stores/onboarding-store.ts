@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { generateId } from "@/lib/utils";
 
 export type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -46,6 +47,12 @@ export type WidgetConfig = {
   size?: string;
   /** Sensor card: conditionele voorwaarden (operator, value, color). */
   conditions?: { operator: string; value: string; color: string }[];
+  /** Pill card: toon entiteitstatus (aan/uit of waarde); default true. */
+  show_state?: boolean;
+  /** Card group: uitlijning van kaarten (flex justify). */
+  alignment?: "start" | "center" | "end" | "between";
+  /** Card group: geneste kaarten (bijv. pill cards). */
+  children?: WidgetConfig[];
   thresholds?: string;
   unit?: string;
   refresh?: number;
@@ -133,7 +140,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     set((s) => ({
       rooms: [
         ...s.rooms,
-        { id: crypto.randomUUID(), name, entityIds: [] },
+        { id: generateId(), name, entityIds: [] },
       ],
     })),
   assignEntityToRoom: (roomId, entityId) =>
@@ -159,7 +166,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   setWidgets: (widgets) => set({ widgets }),
   addWidget: (w) =>
     set((s) => ({
-      widgets: [...s.widgets, { ...w, id: crypto.randomUUID() }],
+      widgets: [...s.widgets, { ...w, id: generateId() }],
     })),
   updateWidget: (id, updates) =>
     set((s) => ({

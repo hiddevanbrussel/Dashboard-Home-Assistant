@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { SensorCardWidget } from "./sensor-card-widget";
@@ -47,6 +46,8 @@ function defaultPosition(): Position {
 
 type SensorCondition = { operator: string; value: string; color: string };
 
+const LONG_PRESS_MS = 500;
+
 export function FloatingSensorCard({
   title,
   entity_id,
@@ -56,6 +57,7 @@ export function FloatingSensorCard({
   editMode = false,
   onRemove,
   onEdit,
+  onEnterEditMode,
 }: {
   title: string;
   entity_id: string;
@@ -65,11 +67,41 @@ export function FloatingSensorCard({
   editMode?: boolean;
   onRemove?: () => void;
   onEdit?: () => void;
+  onEnterEditMode?: () => void;
 }) {
   const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, top: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current != null) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const startLongPress = useCallback(
+    (e: React.PointerEvent) => {
+      if (editMode || !onEnterEditMode) return;
+      clearLongPress();
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      longPressTimerRef.current = setTimeout(() => {
+        longPressTimerRef.current = null;
+        onEnterEditMode();
+      }, LONG_PRESS_MS);
+    },
+    [editMode, onEnterEditMode, clearLongPress]
+  );
+
+  const endLongPress = useCallback(
+    (e: React.PointerEvent) => {
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      clearLongPress();
+    },
+    [clearLongPress]
+  );
 
   useEffect(() => {
     if (initialized.current) return;
@@ -90,6 +122,7 @@ export function FloatingSensorCard({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode) return;
+      if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
       setIsDragging(true);
       dragStart.current = {
@@ -98,7 +131,7 @@ export function FloatingSensorCard({
         left: position.left,
         bottom: position.bottom,
       };
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
     [position, editMode]
   );
@@ -135,59 +168,42 @@ export function FloatingSensorCard({
         setPosition(next);
         savePosition(next);
       }
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
     [isDragging]
   );
 
   return (
     <div
-      className="fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10"
+      className={cn(
+        "fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        editMode && "cursor-grab touch-none active:cursor-grabbing",
+        editMode && !isDragging && "animate-edit-wiggle"
+      )}
       style={{
         left: position.left,
         bottom: position.bottom,
+        ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
+      {...(!editMode &&
+        onEnterEditMode && {
+          onPointerDown: startLongPress,
+          onPointerUp: endLongPress,
+          onPointerLeave: endLongPress,
+          onPointerCancel: endLongPress,
+        })}
+      {...(editMode && {
+        onPointerDown: handlePointerDown,
+        onPointerMove: handlePointerMove,
+        onPointerUp: handlePointerUp,
+        onPointerLeave: (e: React.PointerEvent) => {
+          if (isDragging) handlePointerUp(e);
+        },
+        onPointerCancel: handlePointerUp,
+      })}
     >
-      {editMode && (
-        <div className="flex items-center justify-between gap-2 border-b border-white/10 py-1.5 px-2">
-          <div
-            role="button"
-            tabIndex={0}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={(e) => {
-              if (isDragging) handlePointerUp(e);
-            }}
-            className="select-none touch-none flex-1 flex items-center justify-center text-white/50 text-xs hover:text-white/70 cursor-grab active:cursor-grabbing"
-            aria-label="Drag to move"
-          >
-            Sleep om te verplaatsen
-          </div>
-          {onEdit && (
-            <button
-              type="button"
-              onClick={onEdit}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white"
-              aria-label="Edit sensor card"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-          )}
-          {onRemove && (
-            <button
-              type="button"
-              onClick={onRemove}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white"
-              aria-label="Remove sensor card"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-      )}
       <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-        <SensorCardWidget title={title} entity_id={entity_id} icon={icon} size={size} conditions={conditions} />
+        <SensorCardWidget title={title} entity_id={entity_id} icon={icon} size={size} conditions={conditions} onMoreClick={editMode ? onEdit : undefined} />
       </div>
     </div>
   );
