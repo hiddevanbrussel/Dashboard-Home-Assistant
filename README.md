@@ -2,6 +2,8 @@
 
 Set up a working dashboard with live Home Assistant data in 5–10 minutes.
 
+<img width="1234" height="689" alt="image" src="https://github.com/user-attachments/assets/cf92e71b-15b3-48c5-925e-f43cc083af4a" />
+
 ## Requirements
 
 - Node 20+
