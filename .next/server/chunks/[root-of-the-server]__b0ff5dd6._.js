@@ -105,6 +105,8 @@ async function GET(_request, { params }) {
         layout: dashboard.layout,
         widgets: dashboard.widgets,
         background: dashboard.background,
+        backgroundLight: dashboard.backgroundLight ?? null,
+        backgroundDark: dashboard.backgroundDark ?? null,
         welcomeTitle: dashboard.welcomeTitle ?? null,
         welcomeSubtitle: dashboard.welcomeSubtitle ?? null,
         createdAt: dashboard.createdAt.toISOString(),
@@ -138,6 +140,12 @@ async function PUT(request, { params }) {
         },
         ...body.background !== undefined && {
             background: body.background
+        },
+        ...body.backgroundLight !== undefined && {
+            backgroundLight: body.backgroundLight
+        },
+        ...body.backgroundDark !== undefined && {
+            backgroundDark: body.backgroundDark
         }
     };
     const welcomeData = {

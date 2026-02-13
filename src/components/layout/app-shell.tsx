@@ -22,7 +22,8 @@ import { FloatingToolbar } from "./floating-toolbar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { usePageBackground } from "@/components/page-background";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-import { HeaderNotifications } from "./header-notifications";
+import { getScreensaverClock24h } from "@/stores/screensaver-store";
+import { HeaderMediaPlaying } from "./header-media-playing";
 
 async function fetchAndMergeEntityState(setStates: (entities: { entity_id: string; state: string; attributes: Record<string, unknown> }[]) => void) {
   try {
@@ -165,12 +166,17 @@ function TemperatureEntityModal({
   );
 }
 
-function useTime24() {
+function useHeaderClock() {
   const [time, setTime] = useState("");
   useEffect(() => {
     function update() {
       const now = new Date();
-      setTime(now.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }));
+      const use24h = typeof window !== "undefined" && getScreensaverClock24h();
+      setTime(
+        use24h
+          ? now.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })
+          : now.toLocaleTimeString("nl-NL", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })
+      );
     }
     update();
     const id = setInterval(update, 1000);
@@ -194,12 +200,11 @@ export function AppShell({
   contentNoScroll = false,
   className,
 }: AppShellProps) {
-  const defaultWelcomeTitle = "Hey, Fam van Brussel!";
-  const defaultWelcomeSubtitle = "Control your home in one place!";
-  const welcomeTitle = welcomeTitleProp ?? defaultWelcomeTitle;
-  const welcomeSubtitle = welcomeSubtitleProp ?? defaultWelcomeSubtitle;
+  const welcomeTitle = welcomeTitleProp ?? "";
+  const welcomeSubtitle = welcomeSubtitleProp ?? "";
+  const hasWelcomeText = Boolean(welcomeTitle || welcomeSubtitle);
   const pageBackground = usePageBackground();
-  const time24 = useTime24();
+  const headerTime = useHeaderClock();
   const [temperatureModalOpen, setTemperatureModalOpen] = useState(false);
   const [chosenTemperatureEntityId, setChosenTemperatureEntityId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -245,7 +250,7 @@ export function AppShell({
         className
       )}
     >
-      <header className="flex shrink-0 items-center border-b border-gray-200/50 px-4 py-3 dark:border-white/10">
+      <header className="relative z-50 flex shrink-0 items-center border-b border-gray-200/50 px-4 py-3 dark:border-white/10">
         <div className="flex-1 min-w-0 flex items-center gap-4">
           {showSidebar && (
             <button
@@ -258,7 +263,7 @@ export function AppShell({
             </button>
           )}
           <span className="text-sm font-medium tabular-nums text-gray-700 dark:text-gray-300" aria-live="polite">
-            {time24}
+            {headerTime}
           </span>
           {effectiveTempEntity != null && (
             <button
@@ -281,7 +286,7 @@ export function AppShell({
         </div>
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
           {headerEndAction}
-          <HeaderNotifications />
+          <HeaderMediaPlaying />
           <ThemeSwitcher />
         </div>
       </header>
@@ -296,6 +301,7 @@ export function AppShell({
           document.body
         )}
 
+      {hasWelcomeText && (
       <div className="shrink-0 flex items-center justify-between gap-4 pl-10 pr-4 py-4">
         <div className="min-w-0 flex-1">
           {welcomeEditable && onWelcomeChange ? (
@@ -325,7 +331,7 @@ export function AppShell({
                 placeholder="Ondertitel"
               />
             </div>
-          ) : (
+          ) : hasWelcomeText ? (
             <>
               <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
                 {welcomeTitle}
@@ -334,7 +340,7 @@ export function AppShell({
                 {welcomeSubtitle}
               </p>
             </>
-          )}
+          ) : null}
         </div>
         {welcomeBarAction != null ? (
           <div className="flex items-center gap-2 shrink-0">
@@ -342,12 +348,13 @@ export function AppShell({
           </div>
         ) : null}
       </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden relative">
         {showSidebar && (
           <div
             className={cn(
-              "fixed left-0 top-[8rem] bottom-0 z-10 w-[88px] pl-8 flex flex-col items-center justify-center transition-[transform,opacity] duration-200 ease-out",
+              "fixed left-0 top-[8rem] bottom-0 z-[60] w-[88px] pl-8 flex flex-col items-center justify-center transition-[transform,opacity] duration-200 ease-out",
               sidebarOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"
             )}
           >

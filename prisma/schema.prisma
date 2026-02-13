@@ -16,15 +16,17 @@ model Connection {
 }
 
 model Dashboard {
-  id              String   @id @default(cuid())
-  name            String
-  theme           String   @default("auto")
-  background      String?
-  layout          String?
-  widgets         String?
-  welcomeTitle    String?
-  welcomeSubtitle String?
-  createdAt       DateTime @default(now())
+  id               String   @id @default(cuid())
+  name             String
+  theme            String   @default("auto")
+  background       String?
+  backgroundLight  String?
+  backgroundDark   String?
+  layout           String?
+  widgets          String?
+  welcomeTitle     String?
+  welcomeSubtitle  String?
+  createdAt        DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 

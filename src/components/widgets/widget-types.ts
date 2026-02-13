@@ -51,6 +51,17 @@ export type SolarCardProps = WidgetBaseProps & {
   consumption_entity_id?: string;
 };
 
+/** Afbeeldingskaart: alleen een afbeelding, geen entity-overlays. */
+export type EnergyMonitorCardProps = Omit<WidgetBaseProps, "entity_id"> & {
+  entity_id?: string;
+  /** Optionele achtergrondafbeelding (URL). */
+  background_image?: string;
+  /** Zonder kaart-styling: geen achtergrond en rand om de floating card. */
+  minimal?: boolean;
+  /** Schaalfactor voor de kaart (0.5–1.5). */
+  scale?: number;
+};
+
 export type WeatherCardProps = WidgetBaseProps & {
   temperature?: number;
   humidity?: number;
@@ -95,6 +106,18 @@ export type TitleCardProps = {
   title: string;
 };
 
+/** Stat pill card: één waarde in Energy Monitor pill-stijl (icoon + waarde boven, label onder). */
+export type StatPillCardProps = WidgetBaseProps & {
+  /** Label onder de waarde (bijv. "Opbrengst", "Verbruik"). */
+  label?: string;
+  /** Icoon (Lucide-naam uit card-icons); default Sun. */
+  icon?: string;
+  /** Kleurthema: amber, purple, emerald, red. */
+  color?: "amber" | "purple" | "emerald" | "red";
+  /** Conditionele kleuren: eerste voorwaarde die klopt bepaalt de pillkleur. */
+  conditions?: SensorCondition[];
+};
+
 /** Pill/badge card: compact weergave van entity met icoon, waarde en optioneel aan/uit. */
 export type PillCardProps = WidgetBaseProps & {
   /** Optioneel icoon (Lucide-naam uit card-icons). */
@@ -112,6 +135,24 @@ export type CardGroupProps = {
   title?: string;
   alignment?: "start" | "center" | "end" | "between";
   children?: WidgetConfig[];
+};
+
+/** Nuts/utility card: gas, water, etc. met icoon, naam, huidig verbruik, dagtotaal en verticale bar. */
+export type NutsCardProps = WidgetBaseProps & {
+  /** Optioneel icoon (Lucide-naam); default Fuel. */
+  icon?: string;
+  /** Achtergrondkleur van het icoon (hex, bijv. #3B82F6). */
+  icon_background_color?: string;
+  /** Entity voor dagverbruik (totaal over de dag). */
+  entity_id: string;
+  /** Optioneel: entity voor huidig/actueel verbruik. Zonder: toont 0 voor huidig. */
+  current_entity_id?: string;
+  /** Maxwaarde voor schaal van de verticale bar (optioneel). */
+  max_value?: number;
+  /** Breedte kaart in px (standaard 250). */
+  width?: number;
+  /** Hoogte kaart in px (standaard 130). */
+  height?: number;
 };
 
 /** Room card: kamer met icoon, naam, entity-waarde en lichtstatus. */

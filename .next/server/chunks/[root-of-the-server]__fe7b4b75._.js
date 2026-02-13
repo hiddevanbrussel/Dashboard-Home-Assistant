@@ -96,6 +96,8 @@ async function GET() {
         layout: dashboard.layout,
         widgets: dashboard.widgets,
         background: dashboard.background,
+        backgroundLight: dashboard.backgroundLight ?? null,
+        backgroundDark: dashboard.backgroundDark ?? null,
         createdAt: dashboard.createdAt.toISOString(),
         updatedAt: dashboard.updatedAt.toISOString()
     });

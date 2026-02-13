@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { MediaCardWidget } from "@/components/widgets";
-import { useEntityStatePolling } from "@/hooks/use-entity-state";
 import { OfflinePill } from "@/components/offline-pill";
 import { Music2 } from "lucide-react";
 
@@ -13,8 +12,6 @@ export default function MusicPage() {
   const [entities, setEntities] = useState<HaEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEntityStatePolling();
 
   useEffect(() => {
     setLoading(true);

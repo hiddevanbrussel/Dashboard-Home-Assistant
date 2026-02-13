@@ -40,7 +40,7 @@ export function SolarChargeWidget({
       )}
     >
       <h3 className="text-card-title font-medium mb-2">{title}</h3>
-      <p className="text-2xl font-bold text-accent-orange mb-4">
+      <p className="text-2xl font-bold text-accent-orange dark:text-accent-green mb-4">
         {value} {unit}
       </p>
       <div className="h-32 w-full">

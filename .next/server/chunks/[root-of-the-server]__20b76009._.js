@@ -176,6 +176,8 @@ async function getHaConnection(connectionId) {
 /**
  * Home Assistant REST API client. Use only on the server.
  */ __turbopack_context__.s([
+    "callService",
+    ()=>callService,
     "getAreas",
     ()=>getAreas,
     "getEntities",
@@ -261,6 +263,29 @@ async function getAreas(config) {
             area_id: a.area_id,
             name: a.name
         }));
+}
+async function callService(config, domain, service, data = {}) {
+    try {
+        const res = await haFetch(config.baseUrl, config.token, `/api/services/${domain}/${service}`, {
+            method: "POST",
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const text = await res.text();
+            return {
+                ok: false,
+                error: text || res.statusText
+            };
+        }
+        return {
+            ok: true
+        };
+    } catch (err) {
+        return {
+            ok: false,
+            error: err instanceof Error ? err.message : String(err)
+        };
+    }
 }
 }),
 "[project]/src/app/api/ha/areas/route.ts [app-route] (ecmascript)", ((__turbopack_context__) => {

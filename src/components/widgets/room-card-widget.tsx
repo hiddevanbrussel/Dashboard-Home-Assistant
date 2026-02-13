@@ -82,8 +82,8 @@ export function RoomCardWidget({
         "relative flex h-full w-full min-h-0 overflow-hidden rounded-2xl",
         embedded
           ? "bg-transparent"
-          : "bg-white shadow-md dark:bg-gray-100",
-        !embedded && !isConfigured && "border-2 border-dashed border-gray-300 dark:border-gray-500",
+          : "bg-white/10 dark:bg-black/50 shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        !embedded && !isConfigured && "border-2 border-dashed border-gray-300 dark:border-white/20",
         className
       )}
       style={height != null ? { minHeight: height } : undefined}
@@ -108,13 +108,13 @@ export function RoomCardWidget({
             <div className="min-w-0 flex-1 flex flex-col items-end">
               <p className={cn(
                 "text-base font-medium truncate w-full",
-                embedded ? "text-gray-900 dark:text-white/90" : "text-gray-900 dark:text-gray-900"
+                embedded ? "text-gray-900 dark:text-white/90" : "text-gray-900 dark:text-white"
               )}>
                 {title}
               </p>
               <p className={cn(
                 "text-xs truncate w-full mt-0.5",
-                embedded ? "text-gray-600 dark:text-white/70" : "text-gray-500 dark:text-gray-600"
+                embedded ? "text-gray-600 dark:text-white/70" : "text-gray-500 dark:text-gray-400"
               )}>
                 {isConfigured ? entityValue : (!light_entity_id ? "Kies entiteiten in bewerken" : null)}
               </p>

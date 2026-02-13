@@ -2,28 +2,47 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { getScreensaverMinutes, getScreensaverBackgroundImage } from "@/stores/screensaver-store";
+import {
+  Cloud,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudSnow,
+  Moon,
+  Sun,
+  Wind,
+} from "lucide-react";
+import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey } from "@/stores/screensaver-store";
+import { useEntityStateStore } from "@/stores/entity-state-store";
+
+/** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
+const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
 
 const ACTIVITY_EVENTS = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "click"] as const;
 
 function useIdleScreensaver() {
   const [active, setActive] = useState(false);
-  const [timeoutMinutes, setTimeoutMinutes] = useState(0);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(0);
 
   useEffect(() => {
-    const minutes = getScreensaverMinutes();
-    setTimeoutMinutes(minutes);
-    const onSettingChange = () => setTimeoutMinutes(getScreensaverMinutes());
+    const sec = getScreensaverDelaySeconds();
+    setTimeoutSeconds(sec);
+    const onSettingChange = () => setTimeoutSeconds(getScreensaverDelaySeconds());
+    const onActivate = () => setActive(true);
     window.addEventListener("screensaver-setting-changed", onSettingChange);
-    return () => window.removeEventListener("screensaver-setting-changed", onSettingChange);
+    window.addEventListener("screensaver-activate", onActivate);
+    return () => {
+      window.removeEventListener("screensaver-setting-changed", onSettingChange);
+      window.removeEventListener("screensaver-activate", onActivate);
+    };
   }, []);
 
   useEffect(() => {
-    if (timeoutMinutes <= 0) {
+    if (timeoutSeconds <= 0) {
       setActive(false);
       return;
     }
-    const delayMs = timeoutMinutes * 60 * 1000;
+    const delayMs = timeoutSeconds * 1000;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const resetTimer = () => {
@@ -45,20 +64,70 @@ function useIdleScreensaver() {
       }
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [timeoutMinutes]);
+  }, [timeoutSeconds]);
 
   return { active, setActive };
 }
 
+function ScreensaverWeatherIcon({ state }: { state: string }) {
+  const s = state?.toLowerCase() ?? "";
+  const iconClass = "h-6 w-6 shrink-0 text-white/90";
+  if (s === "sunny" || s === "clear") return <Sun className={iconClass} aria-hidden />;
+  if (s === "clear-night") return <Moon className={iconClass} aria-hidden />;
+  if (s === "fog" || s === "mist") return <CloudFog className={iconClass} aria-hidden />;
+  if (s === "rainy" || s === "pouring" || s === "hail") return <CloudRain className={iconClass} aria-hidden />;
+  if (s === "snowy" || s === "snowy-rainy") return <CloudSnow className={iconClass} aria-hidden />;
+  if (s === "lightning" || s === "lightning-rainy") return <CloudLightning className={iconClass} aria-hidden />;
+  if (s === "windy" || s === "windy-variant") return <Wind className={iconClass} aria-hidden />;
+  if (s === "cloudy" || s === "partlycloudy" || s === "exceptional") return <Cloud className={iconClass} aria-hidden />;
+  return <Cloud className={iconClass} aria-hidden />;
+}
+
+function ScreensaverWeather() {
+  const entityId =
+    getScreensaverWeatherEntityId() ??
+    (typeof window !== "undefined" ? localStorage.getItem("dashboard.headerTemperatureEntityId") : null) ??
+    "weather.home";
+  const entity = useEntityStateStore((s) => s.getState(entityId));
+
+  const condition = (entity?.state as string) ?? "";
+  const temperature =
+    entity?.attributes?.temperature != null
+      ? Number(entity.attributes.temperature)
+      : (entity?.state != null && entityId.startsWith("sensor.") ? Number(entity.state) : undefined);
+  const tempStr =
+    temperature != null && !Number.isNaN(temperature)
+      ? `${Math.round(temperature)}°`
+      : null;
+
+  if (!tempStr && !condition) return null;
+
+  return (
+    <div className="flex items-center gap-2 text-white/90 drop-shadow-md">
+      {(condition || entityId.startsWith("weather.")) && (
+        <ScreensaverWeatherIcon state={condition} />
+      )}
+      {tempStr && (
+        <span className="text-xl font-light tabular-nums">{tempStr}</span>
+      )}
+    </div>
+  );
+}
+
 function ScreensaverClock() {
   const [time, setTime] = useState(() => new Date());
+  const use24h = getScreensaverClock24h();
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const str = `${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`;
+  const timeStr = use24h
+    ? `${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`
+    : `${(time.getHours() % 12 || 12)}:${time.getMinutes().toString().padStart(2, "0")}`;
+  const ampm = use24h ? null : (time.getHours() < 12 ? "am" : "pm");
+
   const dateStr = time.toLocaleDateString("nl-NL", {
     weekday: "long",
     day: "numeric",
@@ -71,7 +140,12 @@ function ScreensaverClock() {
         dateTime={time.toISOString()}
         className="text-5xl sm:text-6xl font-light tabular-nums text-white/90 drop-shadow-md"
       >
-        {str}
+        {timeStr}
+        {ampm != null && (
+          <span className="ml-1.5 text-lg sm:text-xl font-normal text-white/70">
+            {ampm}
+          </span>
+        )}
       </time>
       <span className="text-sm text-white/50 tabular-nums">{dateStr}</span>
     </div>
@@ -79,7 +153,36 @@ function ScreensaverClock() {
 }
 
 function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
-  const backgroundImage = getScreensaverBackgroundImage();
+  const customBg = getScreensaverBackgroundImage();
+  const pexelsEnabled = getScreensaverPexelsEnabled();
+  const pexelsQuery = getScreensaverPexelsQuery();
+  const [pexelsImage, setPexelsImage] = useState<string | null>(null);
+  const [pexelsAttribution, setPexelsAttribution] = useState<{ url: string; photographer: string } | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+  const [pexelsError, setPexelsError] = useState(false);
+
+  const pexelsApiKey = getScreensaverPexelsApiKey();
+
+  useEffect(() => {
+    if (customBg || !pexelsEnabled || !pexelsApiKey) return;
+    setPexelsError(false);
+    fetch(`/api/pexels/photo?query=${encodeURIComponent(pexelsQuery)}`, {
+      headers: { "X-Pexels-Api-Key": pexelsApiKey },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.imageUrl) {
+          setPexelsImage(data.imageUrl);
+          setPexelsAttribution(data.pexelsUrl && data.photographer ? { url: data.pexelsUrl, photographer: data.photographer } : null);
+        } else {
+          setPexelsError(true);
+        }
+      })
+      .catch(() => setPexelsError(true));
+  }, [customBg, pexelsEnabled, pexelsQuery, pexelsApiKey]);
+
+  const backgroundImage = customBg || pexelsImage || DEFAULT_SCREENSAVER_IMAGE;
+  const useGradient = imageFailed || (pexelsEnabled && !customBg && (pexelsError && !pexelsImage || !pexelsApiKey));
 
   return (
     <div
@@ -88,27 +191,56 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       aria-label="Screensaver aanraken om te sluiten"
       className="fixed inset-0 z-[9999] flex items-end justify-end p-8 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
       style={
-        backgroundImage
-          ? undefined
-          : { background: "linear-gradient(to bottom right, #111827, #1f2937, #000)" }
+        useGradient
+          ? { background: "linear-gradient(to bottom right, #111827, #1f2937, #000)" }
+          : undefined
       }
       onClick={onDismiss}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") onDismiss();
       }}
     >
-      {backgroundImage && (
+      {!useGradient && (
         <>
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url(${backgroundImage})` }}
             aria-hidden
           />
+          <img
+            src={backgroundImage}
+            alt=""
+            className="sr-only"
+            onError={() => setImageFailed(true)}
+          />
           <div className="absolute inset-0 bg-black/50" aria-hidden />
         </>
       )}
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col items-end gap-4">
+        <ScreensaverWeather />
         <ScreensaverClock />
+        {pexelsAttribution && (
+          <a
+            href={pexelsAttribution.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-white/50 hover:text-white/70 transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Photo by {pexelsAttribution.photographer} on Pexels
+          </a>
+        )}
+        {pexelsEnabled && !pexelsAttribution && !pexelsError && (
+          <a
+            href="https://www.pexels.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-white/50 hover:text-white/70 transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Photos provided by Pexels
+          </a>
+        )}
       </div>
     </div>
   );

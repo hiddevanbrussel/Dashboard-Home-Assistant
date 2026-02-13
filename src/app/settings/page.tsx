@@ -4,14 +4,15 @@ import { useEffect, useState, useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 import { useThemeStore } from "@/stores/theme-store";
-import { getScreensaverMinutes, setScreensaverMinutes, getScreensaverBackgroundImage, setScreensaverBackgroundImage } from "@/stores/screensaver-store";
-import { Image, Link2, List, Palette } from "lucide-react";
+import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey } from "@/stores/screensaver-store";
+import { Image, Link2, List, Monitor, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type SettingsSection = "appearance" | "page-background" | "connection" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "page-background" | "connection" | "entities";
 
 const SECTIONS: { id: SettingsSection; label: string; icon: React.ElementType }[] = [
   { id: "appearance", label: "Appearance", icon: Palette },
+  { id: "screensaver", label: "Screensaver", icon: Monitor },
   { id: "page-background", label: "Page Background", icon: Image },
   { id: "connection", label: "Connection", icon: Link2 },
   { id: "entities", label: "Entities by Type", icon: List },
@@ -50,15 +51,29 @@ export default function SettingsPage() {
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [dashboardId, setDashboardId] = useState<string | null>(null);
   const [pageBackground, setPageBackground] = useState<string | null>(null);
+  const [pageBackgroundLight, setPageBackgroundLight] = useState<string | null>(null);
+  const [pageBackgroundDark, setPageBackgroundDark] = useState<string | null>(null);
   const [uploadingBg, setUploadingBg] = useState(false);
+  const [uploadingBgLight, setUploadingBgLight] = useState(false);
+  const [uploadingBgDark, setUploadingBgDark] = useState(false);
   const [section, setSection] = useState<SettingsSection>("appearance");
-  const [screensaverMinutes, setScreensaverMinutesState] = useState(0);
+  const [screensaverDelaySeconds, setScreensaverDelaySecondsState] = useState(0);
   const [screensaverBackground, setScreensaverBackgroundState] = useState("");
+  const [screensaverClock24h, setScreensaverClock24hState] = useState(true);
+  const [screensaverWeatherEntityId, setScreensaverWeatherEntityIdState] = useState<string | null>(null);
+  const [screensaverPexelsEnabled, setScreensaverPexelsEnabledState] = useState(false);
+  const [screensaverPexelsQuery, setScreensaverPexelsQueryState] = useState("nature landscape");
+  const [screensaverPexelsApiKey, setScreensaverPexelsApiKeyState] = useState("");
   const [uploadingScreensaverBg, setUploadingScreensaverBg] = useState(false);
 
   useEffect(() => {
-    setScreensaverMinutesState(getScreensaverMinutes());
+    setScreensaverDelaySecondsState(getScreensaverDelaySeconds());
     setScreensaverBackgroundState(getScreensaverBackgroundImage());
+    setScreensaverClock24hState(getScreensaverClock24h());
+    setScreensaverWeatherEntityIdState(getScreensaverWeatherEntityId());
+    setScreensaverPexelsEnabledState(getScreensaverPexelsEnabled());
+    setScreensaverPexelsQueryState(getScreensaverPexelsQuery());
+    setScreensaverPexelsApiKeyState(getScreensaverPexelsApiKey());
   }, []);
 
   useEffect(() => {
@@ -76,6 +91,8 @@ export default function SettingsPage() {
       .then((d) => {
         if (d?.id) setDashboardId(d.id);
         if (d?.background != null) setPageBackground(d.background);
+        if (d?.backgroundLight != null) setPageBackgroundLight(d.backgroundLight);
+        if (d?.backgroundDark != null) setPageBackgroundDark(d.backgroundDark);
       })
       .catch(() => {});
   }, []);
@@ -213,6 +230,86 @@ export default function SettingsPage() {
     }
   }
 
+  async function handlePageBackgroundLightUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !dashboardId) return;
+    e.target.value = "";
+    setUploadingBgLight(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Upload failed");
+      await fetch(`/api/dashboards/${dashboardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backgroundLight: json.url }),
+      });
+      setPageBackgroundLight(json.url);
+      window.dispatchEvent(new Event("page-background-changed"));
+    } catch {
+      // error could be shown in UI
+    } finally {
+      setUploadingBgLight(false);
+    }
+  }
+
+  async function handlePageBackgroundLightRemove() {
+    if (!dashboardId) return;
+    try {
+      await fetch(`/api/dashboards/${dashboardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backgroundLight: null }),
+      });
+      setPageBackgroundLight(null);
+      window.dispatchEvent(new Event("page-background-changed"));
+    } finally {
+      setUploadingBgLight(false);
+    }
+  }
+
+  async function handlePageBackgroundDarkUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !dashboardId) return;
+    e.target.value = "";
+    setUploadingBgDark(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Upload failed");
+      await fetch(`/api/dashboards/${dashboardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backgroundDark: json.url }),
+      });
+      setPageBackgroundDark(json.url);
+      window.dispatchEvent(new Event("page-background-changed"));
+    } catch {
+      // error could be shown in UI
+    } finally {
+      setUploadingBgDark(false);
+    }
+  }
+
+  async function handlePageBackgroundDarkRemove() {
+    if (!dashboardId) return;
+    try {
+      await fetch(`/api/dashboards/${dashboardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backgroundDark: null }),
+      });
+      setPageBackgroundDark(null);
+      window.dispatchEvent(new Event("page-background-changed"));
+    } finally {
+      setUploadingBgDark(false);
+    }
+  }
+
   const { mode, setMode, resolved } = useThemeStore();
 
   return (
@@ -262,33 +359,133 @@ export default function SettingsPage() {
                   Use system preference (auto)
                 </span>
               </label>
+            </GlassCard>
+          )}
 
-              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Screensaver</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Na inactiviteit gaat een schermbeveiliging aan met klok. Aanraken of bewegen sluit hem.
-                </p>
+          {section === "screensaver" && (
+            <GlassCard>
+              <h3 className="text-card-title font-medium mb-3">Screensaver</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Na inactiviteit gaat een schermbeveiliging aan met klok en weer. Aanraken of bewegen sluit hem.
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Na hoeveel inactiviteit</label>
                 <select
-                  value={screensaverMinutes}
+                  value={screensaverDelaySeconds}
                   onChange={(e) => {
                     const v = parseInt(e.target.value, 10);
-                    setScreensaverMinutesState(v);
-                    setScreensaverMinutes(v);
+                    setScreensaverDelaySecondsState(v);
+                    setScreensaverDelaySeconds(v);
                   }}
                   className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
                 >
                   <option value={0}>Uit</option>
-                  <option value={1}>1 minuut</option>
-                  <option value={2}>2 minuten</option>
-                  <option value={5}>5 minuten</option>
-                  <option value={10}>10 minuten</option>
-                  <option value={15}>15 minuten</option>
-                  <option value={30}>30 minuten</option>
+                  <option value={10}>10 seconden</option>
+                  <option value={30}>30 seconden</option>
+                  <option value={60}>1 minuut</option>
+                  <option value={120}>2 minuten</option>
+                  <option value={300}>5 minuten</option>
+                  <option value={600}>10 minuten</option>
+                  <option value={900}>15 minuten</option>
+                  <option value={1800}>30 minuten</option>
                 </select>
+              </div>
 
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-4 mb-2">
-                  Achtergrondafbeelding (optioneel)
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Klokformaat</label>
+                <select
+                  value={screensaverClock24h ? "24" : "12"}
+                  onChange={(e) => {
+                    const v = e.target.value === "24";
+                    setScreensaverClock24hState(v);
+                    setScreensaverClock24h(v);
+                  }}
+                  className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                >
+                  <option value="24">24 uur</option>
+                  <option value="12">12 uur (am/pm)</option>
+                </select>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Weer op screensaver</label>
+                <select
+                  value={screensaverWeatherEntityId ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value || null;
+                    setScreensaverWeatherEntityIdState(v);
+                    setScreensaverWeatherEntityId(v);
+                  }}
+                  className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 w-full"
+                >
+                  <option value="">Standaard (zelfde als temperatuur in header)</option>
+                  {entities
+                    .filter((e) => e.entity_id.startsWith("weather.") || (e.entity_id.startsWith("sensor.") && /temp|weather|graden/i.test(e.entity_id)))
+                    .map((e) => {
+                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
+                      return (
+                        <option key={e.entity_id} value={e.entity_id}>
+                          {name}
+                        </option>
+                      );
+                    })}
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Toont temperatuur en weersicoon op de screensaver.
                 </p>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Pexels-foto&apos;s (optioneel)</label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Gebruik gratis stockfoto&apos;s van Pexels als achtergrond. Alleen actief als er geen eigen afbeelding is geüpload. API-key gratis op <a href="https://www.pexels.com/api" target="_blank" rel="noopener noreferrer" className="text-[#4D2FB2] hover:underline">pexels.com/api</a>.
+                </p>
+                <div className="flex items-center gap-3 mb-2">
+                  <input
+                    type="checkbox"
+                    id="pexels-enabled"
+                    checked={screensaverPexelsEnabled}
+                    onChange={(e) => {
+                      const v = e.target.checked;
+                      setScreensaverPexelsEnabledState(v);
+                      setScreensaverPexelsEnabled(v);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                  />
+                  <label htmlFor="pexels-enabled" className="text-sm font-medium text-gray-700 dark:text-gray-200">Pexels gebruiken</label>
+                </div>
+                {screensaverPexelsEnabled && (
+                  <div className="space-y-2 mt-3">
+                    <input
+                      type="password"
+                      value={screensaverPexelsApiKey}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setScreensaverPexelsApiKeyState(v);
+                        setScreensaverPexelsApiKey(v);
+                      }}
+                      placeholder="Pexels API-key"
+                      className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
+                      autoComplete="off"
+                    />
+                    <input
+                      type="text"
+                      value={screensaverPexelsQuery}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setScreensaverPexelsQueryState(v);
+                        setScreensaverPexelsQuery(v);
+                      }}
+                      placeholder="Zoekterm (bijv. nature landscape, mountains)"
+                      className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Achtergrondafbeelding (optioneel)</label>
                 {screensaverBackground && (
                   <div
                     className="mb-3 h-24 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
@@ -352,39 +549,107 @@ export default function SettingsPage() {
 
           {section === "page-background" && (
             dashboardId ? (
-              <GlassCard>
-                <h3 className="text-card-title font-medium mb-3">Page Background</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  Choose an image as the background for the whole app. Shown on all pages.
-                </p>
-                {pageBackground && (
-                  <div
-                    className="mb-3 h-32 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                    style={{ backgroundImage: `url(${pageBackground})` }}
-                  />
-                )}
-                <div className="flex gap-2">
-                  <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
-                    {uploadingBg ? "Uploading…" : "Upload image"}
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      className="sr-only"
-                      onChange={handlePageBackgroundUpload}
-                      disabled={uploadingBg}
+              <div className="space-y-6">
+                <GlassCard>
+                  <h3 className="text-card-title font-medium mb-3">Page Background</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Kies een afbeelding per thema. Als je alleen één achtergrond instelt, wordt die als fallback gebruikt.
+                  </p>
+                </GlassCard>
+                <GlassCard>
+                  <h3 className="text-card-title font-medium mb-3">Achtergrond light mode</h3>
+                  {pageBackgroundLight && (
+                    <div
+                      className="mb-3 h-32 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
+                      style={{ backgroundImage: `url(${pageBackgroundLight})` }}
                     />
-                  </label>
-                  {pageBackground && (
-                    <button
-                      type="button"
-                      onClick={handlePageBackgroundRemove}
-                      className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
-                    >
-                      Remove
-                    </button>
                   )}
-                </div>
-              </GlassCard>
+                  <div className="flex gap-2">
+                    <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
+                      {uploadingBgLight ? "Uploaden…" : "Upload afbeelding"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="sr-only"
+                        onChange={handlePageBackgroundLightUpload}
+                        disabled={uploadingBgLight}
+                      />
+                    </label>
+                    {pageBackgroundLight && (
+                      <button
+                        type="button"
+                        onClick={handlePageBackgroundLightRemove}
+                        className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
+                      >
+                        Verwijderen
+                      </button>
+                    )}
+                  </div>
+                </GlassCard>
+                <GlassCard>
+                  <h3 className="text-card-title font-medium mb-3">Achtergrond dark mode</h3>
+                  {pageBackgroundDark && (
+                    <div
+                      className="mb-3 h-32 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
+                      style={{ backgroundImage: `url(${pageBackgroundDark})` }}
+                    />
+                  )}
+                  <div className="flex gap-2">
+                    <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
+                      {uploadingBgDark ? "Uploaden…" : "Upload afbeelding"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="sr-only"
+                        onChange={handlePageBackgroundDarkUpload}
+                        disabled={uploadingBgDark}
+                      />
+                    </label>
+                    {pageBackgroundDark && (
+                      <button
+                        type="button"
+                        onClick={handlePageBackgroundDarkRemove}
+                        className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
+                      >
+                        Verwijderen
+                      </button>
+                    )}
+                  </div>
+                </GlassCard>
+                <GlassCard>
+                  <h3 className="text-card-title font-medium mb-3">Fallback-achtergrond (optioneel)</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Gebruikt wanneer er geen light/dark-specifieke achtergrond is ingesteld.
+                  </p>
+                  {pageBackground && (
+                    <div
+                      className="mb-3 h-32 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
+                      style={{ backgroundImage: `url(${pageBackground})` }}
+                    />
+                  )}
+                  <div className="flex gap-2">
+                    <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
+                      {uploadingBg ? "Uploaden…" : "Upload afbeelding"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="sr-only"
+                        onChange={handlePageBackgroundUpload}
+                        disabled={uploadingBg}
+                      />
+                    </label>
+                    {pageBackground && (
+                      <button
+                        type="button"
+                        onClick={handlePageBackgroundRemove}
+                        className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
+                      >
+                        Verwijderen
+                      </button>
+                    )}
+                  </div>
+                </GlassCard>
+              </div>
             ) : (
               <GlassCard>
                 <p className="text-sm text-gray-600 dark:text-gray-400">

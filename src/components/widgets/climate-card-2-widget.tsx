@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { ClimateProps } from "./widget-types";
 import { cn, capitalizeFirst } from "@/lib/utils";
+import { CARD_ICONS } from "./card-icons";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 
 const SELECTOR_STEP = 0.5;
@@ -54,10 +55,12 @@ export function ClimateCard2Widget({
   title = "Air Conditioner",
   entity_id,
   humidity_entity_id,
+  icon: iconName,
   size = "md",
   className,
   onMoreClick,
 }: ClimateProps & { className?: string; onMoreClick?: () => void }) {
+  const IconComponent = iconName && CARD_ICONS[iconName] ? CARD_ICONS[iconName] : Thermometer;
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const humidityEntity = useEntityStateStore((s) =>
     humidity_entity_id ? s.getState(humidity_entity_id) : null
@@ -211,7 +214,7 @@ export function ClimateCard2Widget({
       <div className="flex items-start justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 dark:bg-white/10">
-            <Thermometer className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
+            <IconComponent className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-medium truncate text-gray-900 dark:text-white/90">{title}</p>

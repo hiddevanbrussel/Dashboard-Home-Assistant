@@ -20,6 +20,8 @@ export async function GET(
     layout: dashboard.layout,
     widgets: dashboard.widgets,
     background: dashboard.background,
+    backgroundLight: dashboard.backgroundLight ?? null,
+    backgroundDark: dashboard.backgroundDark ?? null,
     welcomeTitle: dashboard.welcomeTitle ?? null,
     welcomeSubtitle: dashboard.welcomeSubtitle ?? null,
     createdAt: dashboard.createdAt.toISOString(),
@@ -41,6 +43,8 @@ export async function PUT(
     layout?: string | null;
     widgets?: string | null;
     background?: string | null;
+    backgroundLight?: string | null;
+    backgroundDark?: string | null;
     welcomeTitle?: string | null;
     welcomeSubtitle?: string | null;
   } = {};
@@ -56,6 +60,8 @@ export async function PUT(
     ...(body.layout !== undefined && { layout: body.layout }),
     ...(body.widgets !== undefined && { widgets: body.widgets }),
     ...(body.background !== undefined && { background: body.background }),
+    ...(body.backgroundLight !== undefined && { backgroundLight: body.backgroundLight }),
+    ...(body.backgroundDark !== undefined && { backgroundDark: body.backgroundDark }),
   };
   const welcomeData = {
     ...(body.welcomeTitle !== undefined && { welcomeTitle: body.welcomeTitle }),

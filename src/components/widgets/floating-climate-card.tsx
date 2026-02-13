@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { ClimateCard2Widget } from "./climate-card-2-widget";
 
-/** Voor backwards compatibility (icon picker verwijderd). */
+/** Voor backwards compatibility. Icon picker gebruikt CARD_ICON_OPTIONS. */
 export const CLIMATE_ICON_OPTIONS: readonly string[] = [];
 
 const STORAGE_KEY = "dashboard.floatingClimateCardPosition";
@@ -13,12 +13,21 @@ const DEFAULT_OFFSET = 24;
 const DEFAULT_CARD_WIDTH = 320;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 500;
+const DEFAULT_CARD_HEIGHT = 180;
+const MIN_HEIGHT = 100;
+const MAX_HEIGHT = 400;
 const SWIPE_THRESHOLD_PX = 50;
 
 function clampWidth(w: unknown): number {
   const n = Number(w);
   if (!Number.isFinite(n)) return DEFAULT_CARD_WIDTH;
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n)));
+}
+
+function clampHeight(w: unknown): number {
+  const n = Number(w);
+  if (!Number.isFinite(n)) return DEFAULT_CARD_HEIGHT;
+  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.round(n)));
 }
 const SLIDE_DURATION_MS = 280;
 
@@ -50,10 +59,10 @@ function savePosition(p: Position) {
   }
 }
 
-function defaultPosition(cardWidth: number): Position {
+function defaultPosition(cardWidth: number, cardHeight: number): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
   const maxLeft = window.innerWidth - cardWidth;
-  const maxBottom = window.innerHeight - 120;
+  const maxBottom = window.innerHeight - cardHeight - 24;
   return { left: maxLeft / 2, bottom: maxBottom / 2 };
 }
 
@@ -62,8 +71,10 @@ export type ClimateCardWidgetItem = {
   title: string;
   entity_id: string;
   humidity_entity_id?: string;
+  icon?: string;
   type?: "climate_card" | "climate_card_2";
   width?: number;
+  height?: number;
 };
 
 const LONG_PRESS_MS = 500;
@@ -88,6 +99,7 @@ export function FloatingClimateCard({
 }) {
   const widgets = widgetsProp ?? (titleProp != null && entityIdProp != null ? [{ id: "", title: titleProp, entity_id: entityIdProp, type: "climate_card_2" as const }] : []);
   const totalWidth = clampWidth(widgets[0]?.width);
+  const totalHeight = clampHeight(widgets[0]?.height);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [flipDeg, setFlipDeg] = useState(0);
   const [nextIndex, setNextIndex] = useState<number | null>(null);
@@ -145,20 +157,32 @@ export function FloatingClimateCard({
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-    const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
     const bounds = { maxLeft, maxBottom };
-    const saved = loadPosition();
-    if (saved) {
-      setPosition(snapToGrid(saved, bounds));
-      return;
+    if (!initialized.current) {
+      initialized.current = true;
+      const saved = loadPosition();
+      if (saved) {
+        const clamped = snapToGrid(saved, bounds);
+        setPosition(clamped);
+        savePosition(clamped);
+        return;
+      }
+      const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
+      setPosition(p);
+      savePosition(p);
+    } else {
+      setPosition((prev) => {
+        const clamped = snapToGrid(prev, bounds);
+        if (clamped.left !== prev.left || clamped.bottom !== prev.bottom) {
+          savePosition(clamped);
+          return clamped;
+        }
+        return prev;
+      });
     }
-    const p = snapToGrid(defaultPosition(totalWidth), bounds);
-    setPosition(p);
-    savePosition(p);
-  }, [totalWidth]);
+  }, [totalWidth, totalHeight]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -178,14 +202,13 @@ export function FloatingClimateCard({
   );
 
   const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+  const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!isDragging) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxBottom =
-        typeof window !== "undefined" ? window.innerHeight - 120 : 400;
       const raw = {
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
         bottom: Math.max(
@@ -195,7 +218,7 @@ export function FloatingClimateCard({
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging, maxLeft]
+    [isDragging, maxLeft, maxBottom]
   );
 
   const handlePointerUp = useCallback(
@@ -204,8 +227,6 @@ export function FloatingClimateCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxBottom =
-          typeof window !== "undefined" ? window.innerHeight - 120 : 400;
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
           bottom: Math.max(
@@ -219,7 +240,7 @@ export function FloatingClimateCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft]
+    [isDragging, maxLeft, maxBottom]
   );
 
   return (
@@ -233,6 +254,7 @@ export function FloatingClimateCard({
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
+        height: totalHeight,
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -252,11 +274,11 @@ export function FloatingClimateCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className="flex flex-col min-w-0 flex-1 w-[320px]">
+      <div className="flex flex-col min-w-0 flex-1 w-full h-full">
         <div
           data-climate-swipe-area
-          className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none [&_.rounded-2xl]:rounded-b-none", "relative touch-pan-y overflow-hidden")}
-          style={{ touchAction: hasMultiple ? "pan-y" : undefined, perspective: "1000px" }}
+          className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none [&_.rounded-2xl]:rounded-b-none", "relative overflow-hidden", hasMultiple && "touch-none")}
+          style={{ touchAction: hasMultiple ? "none" : undefined, perspective: "1000px", minHeight: totalHeight }}
           onPointerDown={hasMultiple ? (e) => {
             if (!editMode) {
               swipeStart.current = { x: e.clientX, y: e.clientY };
@@ -274,11 +296,13 @@ export function FloatingClimateCard({
             if (swipeStart.current && !editMode) {
               const dx = e.clientX - swipeStart.current.x;
               const dy = e.clientY - swipeStart.current.y;
-              if (Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy)) {
-                e.preventDefault();
+              if (Math.abs(dx) > 15 || Math.abs(dy) > 15) {
                 if (swipeAreaLongPressRef.current) {
                   clearTimeout(swipeAreaLongPressRef.current);
                   swipeAreaLongPressRef.current = null;
+                }
+                if (Math.abs(dx) > Math.abs(dy)) {
+                  e.preventDefault();
                 }
               }
             }
@@ -316,7 +340,7 @@ export function FloatingClimateCard({
         >
           <div
             className="relative w-full overflow-hidden"
-            style={{ minHeight: 200 }}
+            style={{ minHeight: totalHeight }}
           >
             <div
               className="flex w-full h-full"
@@ -336,6 +360,7 @@ export function FloatingClimateCard({
                     title={w.title}
                     entity_id={w.entity_id}
                     humidity_entity_id={w.humidity_entity_id}
+                    icon={w.icon}
                     size="md"
                     onMoreClick={editMode ? () => w.id && onEdit?.(w.id) : undefined}
                   />

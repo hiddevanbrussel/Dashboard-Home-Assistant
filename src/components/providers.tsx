@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { ThemeProvider } from "./theme-provider";
 import { ScreensaverProvider } from "./screensaver";
+import { useEntityStatePolling } from "@/hooks/use-entity-state";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -18,8 +19,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
+        <EntityStatePoller />
         <ScreensaverProvider>{children}</ScreensaverProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
+}
+
+function EntityStatePoller() {
+  useEntityStatePolling();
+  return null;
 }

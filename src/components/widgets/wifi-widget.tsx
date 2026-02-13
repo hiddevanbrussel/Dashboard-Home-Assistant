@@ -24,8 +24,8 @@ export function WifiWidget({
       <div className="flex items-center gap-3">
         <Wifi
           className={cn(
-            "h-6 w-6 text-accent-orange",
-            !on && "opacity-50 text-gray-400"
+            "h-6 w-6 text-accent-orange dark:text-accent-green",
+            !on && "opacity-50 text-gray-400 dark:text-gray-500"
           )}
         />
         <h3 className="text-card-title font-medium">{title}</h3>

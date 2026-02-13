@@ -8,7 +8,7 @@ import { createPortal } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Bot, Check, CircleDot, CloudSun, Gauge, Home, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, X } from "lucide-react";
+import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, X } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
@@ -45,15 +45,21 @@ import {
   FloatingCardGroup,
   RoomCardWidget,
   FloatingRoomCard,
+  NutsCardWidget,
+  FloatingNutsCard,
+  EnergyMonitorCardWidget,
+  FloatingEnergyMonitorCard,
+  StatPillCardWidget,
+  FloatingStatPillCard,
+  CARD_ICON_OPTIONS,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-import { useEntityStatePolling } from "@/hooks/use-entity-state";
 import { OfflinePill } from "@/components/offline-pill";
 import { cn, generateId } from "@/lib/utils";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["title_card", "climate_card_2", "light_card", "media_card", "solar_card", "sensor_card", "weather_card", "vacuum_card", "pill_card", "room_card", "card_group"] as const;
+const ADDABLE_WIDGET_TYPES = ["title_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "pill_card", "room_card", "nuts_card", "card_group"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "title_card", label: "Titel", Icon: Type },
@@ -61,11 +67,14 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "light_card", label: "Lamp", Icon: Lightbulb },
   { type: "media_card", label: "Media", Icon: Music2 },
   { type: "solar_card", label: "Zonnepanelen", Icon: Sun },
+  { type: "energy_monitor_card", label: "Afbeeldingskaart", Icon: Sun },
+  { type: "stat_pill_card", label: "Stat pill", Icon: CircleDot },
   { type: "sensor_card", label: "Sensor", Icon: Gauge },
   { type: "weather_card", label: "Weer", Icon: CloudSun },
   { type: "vacuum_card", label: "Stofzuiger", Icon: Bot },
   { type: "pill_card", label: "Pill", Icon: CircleDot },
   { type: "room_card", label: "Kamer", Icon: Home },
+  { type: "nuts_card", label: "Nuts (Gas/Water)", Icon: Fuel },
   { type: "card_group", label: "Kaartgroep", Icon: LayoutGrid },
 ];
 
@@ -83,11 +92,14 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   lighting_brightness: "light",
   media_card: "media_player",
   solar_card: "sensor",
+  energy_monitor_card: "sensor",
+  stat_pill_card: "sensor",
   sensor_card: "sensor",
   weather_card: "weather",
   vacuum_card: "vacuum",
   pill_card: "switch",
   room_card: "",
+  nuts_card: "sensor",
   card_group: "",
 };
 
@@ -139,6 +151,12 @@ function WidgetByType({
   icon,
   size,
   conditions,
+  current_entity_id,
+  max_value,
+  grid_entity_id,
+  minimal,
+  label,
+  color,
 }: {
   type: string;
   title: string;
@@ -154,6 +172,12 @@ function WidgetByType({
   icon?: string;
   size?: string;
   conditions?: { operator: string; value: string; color: string }[];
+  current_entity_id?: string;
+  max_value?: number;
+  grid_entity_id?: string;
+  minimal?: boolean;
+  label?: string;
+  color?: string;
 }) {
   const sizeProp = (size as "sm" | "md" | "lg") ?? "md";
   const live = useEntityStateStore((s) => s.getState(entity_id));
@@ -221,6 +245,26 @@ function WidgetByType({
           size={sizeProp}
         />
       );
+    case "energy_monitor_card":
+      return (
+        <EnergyMonitorCardWidget
+          title={title}
+          background_image={background_image}
+          minimal={minimal}
+          size={sizeProp}
+        />
+      );
+    case "stat_pill_card":
+      return (
+        <StatPillCardWidget
+          title={title}
+          entity_id={entity_id}
+          label={label}
+          icon={icon}
+          color={(color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
+          size={sizeProp}
+        />
+      );
     case "weather_card":
       return (
         <WeatherCardWidget
@@ -262,6 +306,16 @@ function WidgetByType({
           background_image={background_image}
         />
       );
+    case "nuts_card":
+      return (
+        <NutsCardWidget
+          title={title}
+          entity_id={entity_id}
+          current_entity_id={current_entity_id as string | undefined}
+          icon={icon}
+          max_value={max_value as number | undefined}
+        />
+      );
     default:
       return (
         <div className="rounded-card border border-dashed p-4 text-sm text-gray-500">
@@ -298,6 +352,7 @@ export default function DashboardEditPage() {
     title: string;
     entity_id: string;
     consumption_entity_id?: string;
+    grid_entity_id?: string;
     humidity_entity_id?: string;
     show_icon?: boolean;
     show_state?: boolean;
@@ -312,16 +367,24 @@ export default function DashboardEditPage() {
     icon?: string;
     size?: string;
     conditions?: { operator: string; value: string; color: string }[];
+    current_entity_id?: string;
+    max_value?: number;
+    minimal?: boolean;
+    scale?: number;
+    label?: string;
+    color?: string;
   }>({
     title: "",
     entity_id: "",
     consumption_entity_id: "",
+    grid_entity_id: "",
     humidity_entity_id: "",
     show_icon: true,
     show_state: true,
     script_ids: [],
     script_names: {},
     cleaned_area_entity_id: "",
+    current_entity_id: "",
     light_entity_id: "",
     background_image: "",
     icon_background_color: "",
@@ -330,6 +393,10 @@ export default function DashboardEditPage() {
     icon: "",
     size: "md",
     conditions: [],
+    minimal: false,
+    scale: 1,
+    label: "",
+    color: "amber",
   });
   const [iconSearch, setIconSearch] = useState("");
   const [vacuumIconSearch, setVacuumIconSearch] = useState("");
@@ -397,6 +464,7 @@ export default function DashboardEditPage() {
         title: editingWidget.title ?? "",
         entity_id: editingWidget.entity_id ?? "",
         consumption_entity_id: editingWidget.consumption_entity_id ?? "",
+        grid_entity_id: editingWidget.grid_entity_id ?? "",
         humidity_entity_id: editingWidget.humidity_entity_id ?? "",
         show_icon: editingWidget.show_icon !== false,
         script_ids: editingWidget.script_ids ?? [],
@@ -411,6 +479,14 @@ export default function DashboardEditPage() {
         size: editingWidget.size ?? "md",
         conditions: editingWidget.conditions ?? [],
         show_state: editingWidget.show_state !== false,
+        current_entity_id: editingWidget.current_entity_id ?? "",
+        max_value: editingWidget.max_value ?? undefined,
+        icon_background_color: editingWidget.icon_background_color ?? "",
+        height: editingWidget.height ?? undefined,
+        minimal: editingWidget.minimal ?? false,
+        scale: editingWidget.scale ?? 1,
+        label: editingWidget.label ?? "",
+        color: editingWidget.color ?? "amber",
       });
       setIconSearch("");
       setVacuumIconSearch(editingWidget.type === "vacuum_card" ? (editingWidget.icon ?? "") : "");
@@ -420,7 +496,7 @@ export default function DashboardEditPage() {
       setEditEntitySearch("");
       if (editingWidget.type === "sensor_card") setSensorCardEditTab("general");
     }
-  }, [editingWidget?.id, editingWidget?.title, editingWidget?.entity_id, editingWidget?.consumption_entity_id, editingWidget?.humidity_entity_id, editingWidget?.show_icon, editingWidget?.show_state, editingWidget?.script_ids, editingWidget?.script_names, editingWidget?.cleaned_area_entity_id, editingWidget?.light_entity_id, editingWidget?.background_image, editingWidget?.icon_background_color, editingWidget?.width, editingWidget?.height, editingWidget?.icon, editingWidget?.size, editingWidget?.conditions, editingWidget?.type, editingWidget?.children, editingGroupChildId]);
+  }, [editingWidget?.id, editingWidget?.title, editingWidget?.entity_id, editingWidget?.consumption_entity_id, editingWidget?.grid_entity_id, editingWidget?.humidity_entity_id, editingWidget?.show_icon, editingWidget?.show_state, editingWidget?.script_ids, editingWidget?.script_names, editingWidget?.cleaned_area_entity_id, editingWidget?.light_entity_id, editingWidget?.background_image, editingWidget?.icon_background_color, editingWidget?.width, editingWidget?.height, editingWidget?.icon, editingWidget?.size, editingWidget?.conditions, editingWidget?.type, editingWidget?.children, editingWidget?.current_entity_id, editingWidget?.max_value, editingWidget?.minimal, editingWidget?.scale, editingWidget?.label, editingWidget?.color, editingGroupChildId]);
 
   const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["dashboard", id],
@@ -431,8 +507,6 @@ export default function DashboardEditPage() {
     },
     enabled: !!id,
   });
-
-  useEntityStatePolling();
 
   useEffect(() => {
     if (!data || initialized) return;
@@ -494,7 +568,7 @@ export default function DashboardEditPage() {
     setLayout((prev) => {
       const floatingItems = prev.filter((item) => {
         const type = widgets.find((w) => w.id === item.i)?.type;
-        return type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "card_group";
+        return type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group";
       });
       return [...newLayout, ...floatingItems];
     });
@@ -502,13 +576,15 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "title_card" && type !== "pill_card" && type !== "room_card" && type !== "card_group";
+    return type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "title_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
   const handleSave = () => {
-    saveMutation.mutate({ layout, widgets, welcomeTitle, welcomeSubtitle });
+    setEditingWidgetId(null);
+    setEditingGroupChildId(null);
     setEditMode(false);
+    saveMutation.mutate({ layout, widgets, welcomeTitle, welcomeSubtitle });
   };
 
   function handleAddTile(type: string, entityId: string, titleOverride?: string): string | undefined {
@@ -531,7 +607,7 @@ export default function DashboardEditPage() {
     };
     const newWidgets = [...widgets, newWidget];
     const newLayout =
-      type === "solar_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "card_group"
+      type === "solar_card" || type === "energy_monitor_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group"
         ? layout
         : [...layout, newLayoutItem];
     setWidgets(newWidgets);
@@ -540,7 +616,7 @@ export default function DashboardEditPage() {
     setAddTileStep("type");
     setAddTileSelectedType(null);
     saveMutation.mutate({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
-    return type === "room_card" ? newId : undefined;
+    return type === "room_card" || type === "nuts_card" || type === "energy_monitor_card" || type === "stat_pill_card" ? newId : undefined;
   }
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
@@ -558,7 +634,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; entity_id?: string; consumption_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[] }
+    updates: { title?: string; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -655,6 +731,12 @@ export default function DashboardEditPage() {
                               if (newId) setEditingWidgetId(newId);
                               return;
                             }
+                            if (type === "energy_monitor_card") {
+                              const newId = handleAddTile("energy_monitor_card", "", "Afbeeldingskaart");
+                              if (newId) setEditingWidgetId(newId);
+                              setAddTileOpen(false);
+                              return;
+                            }
                             setAddTileSelectedType(type);
                             setAddTileStep("entity");
                           }}
@@ -716,7 +798,12 @@ export default function DashboardEditPage() {
                                 key={e.entity_id}
                                 type="button"
                                 onClick={() => {
-                                  addTileSelectedType && handleAddTile(addTileSelectedType, e.entity_id);
+                                  if (addTileSelectedType) {
+                                    const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                                    const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "stat_pill_card" ? (name || "Stat") : undefined;
+                                    const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride);
+                                    if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card") && newId) setEditingWidgetId(newId);
+                                  }
                                   setAddTileOpen(false);
                                   setAddTileStep("type");
                                   setAddTileSelectedType(null);
@@ -738,15 +825,17 @@ export default function DashboardEditPage() {
               document.body
             )}
           </>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saveMutation.isPending}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-white/20"
-            aria-label="Done editing"
-          >
-            <Check className="h-4 w-4" />
-          </button>
+          <div className="relative z-[60]">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saveMutation.isPending}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-white/20"
+              aria-label="Done editing"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+          </div>
         </>
       ) : (
         <button
@@ -797,7 +886,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "title_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "card_group")
+            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "title_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -850,6 +939,12 @@ export default function DashboardEditPage() {
                       icon={w.icon}
                       size={w.size}
                       conditions={w.conditions}
+                      current_entity_id={w.current_entity_id}
+                      max_value={w.max_value}
+                      grid_entity_id={w.grid_entity_id}
+                      minimal={w.minimal}
+                      label={w.label}
+                      color={w.color}
                     />
                   </div>
                 </div>
@@ -894,6 +989,7 @@ export default function DashboardEditPage() {
                 icon: w.icon,
                 type: w.type === "climate_card_2" ? "climate_card_2" : "climate_card",
                 width: w.width,
+                height: w.height,
               }))}
               editMode={editMode}
               onEnterEditMode={() => setEditMode(true)}
@@ -949,6 +1045,56 @@ export default function DashboardEditPage() {
         })()}
 
         {(() => {
+          const firstEnergyMonitor = widgets.find((w) => w.type === "energy_monitor_card");
+          return firstEnergyMonitor ? (
+            <FloatingEnergyMonitorCard
+              title={firstEnergyMonitor.title ?? "Afbeeldingskaart"}
+              background_image={firstEnergyMonitor.background_image}
+              minimal={firstEnergyMonitor.minimal}
+              scale={firstEnergyMonitor.scale}
+              editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={
+                editMode
+                  ? () => setEditingWidgetId(firstEnergyMonitor.id)
+                  : undefined
+              }
+              onRemove={
+                editMode
+                  ? () => handleRemoveTile(firstEnergyMonitor.id)
+                  : undefined
+              }
+            />
+          ) : null;
+        })()}
+
+        {typeof document !== "undefined" &&
+          widgets.some((w) => w.type === "stat_pill_card") &&
+          createPortal(
+            widgets
+              .filter((w) => w.type === "stat_pill_card")
+              .map((w, i) => (
+                <FloatingStatPillCard
+                  key={w.id}
+                  widgetId={w.id}
+                  widgetIndex={i}
+                  title={w.title ?? "Stat"}
+                  entity_id={w.entity_id}
+                  label={w.label}
+                  icon={w.icon}
+                  color={(w.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
+                  conditions={w.conditions}
+                  size={(w.size as "sm" | "md" | "lg") ?? "md"}
+                  editMode={editMode}
+                  onEnterEditMode={() => setEditMode(true)}
+                  onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                  onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                />
+              )),
+            document.body
+          )}
+
+        {(() => {
           const firstSensor = widgets.find((w) => w.type === "sensor_card");
           return firstSensor ? (
             <FloatingSensorCard
@@ -981,6 +1127,7 @@ export default function DashboardEditPage() {
               entity_id={firstWeather.entity_id}
               show_icon={firstWeather.show_icon}
               width={firstWeather.width}
+              height={firstWeather.height}
               editMode={editMode}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
@@ -1038,6 +1185,30 @@ export default function DashboardEditPage() {
                 icon_background_color: w.icon_background_color,
                 width: w.width,
                 height: w.height,
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
+
+        {widgets
+          .filter((w) => w.type === "nuts_card")
+          .map((w, i) => (
+            <FloatingNutsCard
+              key={w.id}
+              widget={{
+                id: w.id,
+                title: w.title ?? "Gas",
+                entity_id: w.entity_id,
+                current_entity_id: w.current_entity_id,
+                icon: w.icon,
+                icon_background_color: w.icon_background_color,
+                max_value: w.max_value,
+                width: w.width ?? 250,
+                height: w.height ?? 130,
               }}
               widgetIndex={i}
               editMode={editMode}
@@ -1429,10 +1600,16 @@ export default function DashboardEditPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                   />
                 </div>
-                {editingWidget.entity_id != null && editingWidget.type !== "title_card" && (
+                {editingWidget.entity_id != null && editingWidget.type !== "title_card" && editingWidget.type !== "energy_monitor_card" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {editingWidget.type === "solar_card" ? "Yield (opbrengst)" : "Entity"}
+                      {editingWidget.type === "solar_card"
+                        ? "Yield (opbrengst)"
+                        : editingWidget.type === "energy_monitor_card"
+                          ? "Opbrengst (zon)"
+                          : editingWidget.type === "stat_pill_card"
+                            ? "Sensor"
+                            : "Entity"}
                     </label>
                     <input
                       type="text"
@@ -1688,6 +1865,24 @@ export default function DashboardEditPage() {
                   <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Icoon
+                      </label>
+                      <select
+                        value={editForm.icon ?? "Thermometer"}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, icon: e.target.value || undefined }))
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      >
+                        {CARD_ICON_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Luchtvochtigheid (optioneel)
                       </label>
                       <select
@@ -1737,6 +1932,28 @@ export default function DashboardEditPage() {
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–500 px (standaard 320)</p>
                     </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Hoogte kaart (px)
+                      </label>
+                      <input
+                        type="number"
+                        min={100}
+                        max={400}
+                        step={10}
+                        value={editForm.height ?? 180}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            height: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        placeholder="180"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">100–400 px (standaard 180)</p>
+                    </div>
                   </>
                 )}
                 {editingWidget.type === "solar_card" && (
@@ -1769,6 +1986,209 @@ export default function DashboardEditPage() {
                         })}
                     </select>
                   </div>
+                )}
+                {editingWidget.type === "energy_monitor_card" && (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Achtergrondafbeelding (URL)
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.background_image ?? ""}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            background_image: e.target.value || undefined,
+                          }))
+                        }
+                        placeholder="/energy-house.png of https://..."
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Plaats je afbeelding in public/ of gebruik een externe URL.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="energy-minimal"
+                        checked={editForm.minimal ?? false}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, minimal: e.target.checked }))
+                        }
+                        className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                      />
+                      <label htmlFor="energy-minimal" className="text-sm text-gray-700 dark:text-gray-300">
+                        Minimalistisch (alleen afbeelding, geen titel of rand)
+                      </label>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Schaalfactor ({(editForm.scale ?? 1).toFixed(1)}×)
+                      </label>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="1.5"
+                        step="0.1"
+                        value={editForm.scale ?? 1}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            scale: parseFloat(e.target.value),
+                          }))
+                        }
+                        className="w-full"
+                      />
+                    </div>
+                  </>
+                )}
+                {editingWidget.type === "stat_pill_card" && (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Label (onder de waarde)
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.label ?? ""}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, label: e.target.value || undefined }))
+                        }
+                        placeholder="Opbrengst, Verbruik, ..."
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Icoon
+                      </label>
+                      <select
+                        value={editForm.icon ?? "Sun"}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, icon: e.target.value || undefined }))
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      >
+                        {CARD_ICON_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Kleur (standaard)
+                      </label>
+                      <select
+                        value={editForm.color ?? "amber"}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            color: e.target.value as "amber" | "purple" | "emerald" | "red",
+                          }))
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      >
+                        <option value="amber">Amber (geel)</option>
+                        <option value="purple">Paars</option>
+                        <option value="emerald">Smaragd (groen)</option>
+                        <option value="red">Rood</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Voorwaarden (kleur aanpassen bij waarde)
+                      </label>
+                      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                        Eerste voorwaarde die klopt bepaalt de kleur. Bijv. plastic = groen, papier = blauw.
+                      </p>
+                      {(editForm.conditions ?? []).map((cond, idx) => (
+                        <div
+                          key={idx}
+                          className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2 mb-2"
+                        >
+                          <select
+                            value={cond.operator}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                conditions: (prev.conditions ?? []).map((c, i) =>
+                                  i === idx ? { ...c, operator: e.target.value } : c
+                                ),
+                              }))
+                            }
+                            className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                          >
+                            {SENSOR_CONDITION_OPERATORS.map((op) => (
+                              <option key={op} value={op}>
+                                {op === "eq" ? "=" : op === "neq" ? "≠" : op === "gte" ? "≥" : op === "lte" ? "≤" : op === "gt" ? ">" : op === "lt" ? "<" : "bevat"}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            value={cond.value}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                conditions: (prev.conditions ?? []).map((c, i) =>
+                                  i === idx ? { ...c, value: e.target.value } : c
+                                ),
+                              }))
+                            }
+                            placeholder="Waarde (bijv. plastic)"
+                            className="w-24 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                          />
+                          <select
+                            value={cond.color}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                conditions: (prev.conditions ?? []).map((c, i) =>
+                                  i === idx ? { ...c, color: e.target.value } : c
+                                ),
+                              }))
+                            }
+                            className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                          >
+                            {SENSOR_CONDITION_COLORS.map((color) => (
+                              <option key={color} value={color}>
+                                {color}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                conditions: (prev.conditions ?? []).filter((_, i) => i !== idx),
+                              }))
+                            }
+                            className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            aria-label="Verwijder voorwaarde"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            conditions: [...(prev.conditions ?? []), { operator: "eq", value: "", color: "green" }],
+                          }))
+                        }
+                        className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full"
+                      >
+                        + Voeg voorwaarde toe
+                      </button>
+                    </div>
+                  </>
                 )}
                 {editingWidget.type === "vacuum_card" && (
                   <div>
@@ -2334,6 +2754,194 @@ export default function DashboardEditPage() {
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–500 px (standaard 320)</p>
                     </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Hoogte kaart (px)
+                      </label>
+                      <input
+                        type="number"
+                        min={100}
+                        max={400}
+                        step={10}
+                        value={editForm.height ?? 180}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            height: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        placeholder="180"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">100–400 px (standaard 180)</p>
+                    </div>
+                  </>
+                )}
+                {editingWidget.type === "nuts_card" && (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Icoon
+                      </label>
+                      <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto">
+                        {(["Fuel", "Droplets", "Zap", "Gauge", "Thermometer"].filter((n) => CARD_ICON_OPTIONS.includes(n)) as string[]).map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() =>
+                              setEditForm((prev) => ({ ...prev, icon: name }))
+                            }
+                            className={cn(
+                              "rounded-md px-2 py-1 text-xs",
+                              (editForm.icon ?? "Fuel") === name
+                                ? "bg-[#4D2FB2] text-white"
+                                : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                            )}
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Kleur icoon
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : "#3B82F6"}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              icon_background_color: e.target.value,
+                            }))
+                          }
+                          className="h-8 w-12 cursor-pointer rounded border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5"
+                        />
+                        <input
+                          type="text"
+                          value={editForm.icon_background_color ?? "#3B82F6"}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              icon_background_color: e.target.value || undefined,
+                            }))
+                          }
+                          placeholder="#3B82F6"
+                          className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Breedte × hoogte (px)
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            min={150}
+                            max={400}
+                            step={10}
+                            value={editForm.width ?? 250}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
+                            }}
+                            placeholder="250"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Breedte</p>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            min={80}
+                            max={300}
+                            step={10}
+                            value={editForm.height ?? 130}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
+                            }}
+                            placeholder="130"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Hoogte</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Entity dagverbruik (totaal per dag)
+                      </label>
+                      <select
+                        value={editForm.entity_id ?? ""}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, entity_id: e.target.value }))
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      >
+                        <option value="">Kies entity…</option>
+                        {entities
+                          .filter((e) => e.entity_id.startsWith("sensor."))
+                          .map((e) => {
+                            const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                            return (
+                              <option key={e.entity_id} value={e.entity_id}>
+                                {name}
+                              </option>
+                            );
+                          })}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Entity huidig verbruik (optioneel)
+                      </label>
+                      <select
+                        value={editForm.current_entity_id ?? ""}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, current_entity_id: e.target.value || undefined }))
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      >
+                        <option value="">Geen (toont 0 voor huidig)</option>
+                        {entities
+                          .filter((e) => e.entity_id.startsWith("sensor."))
+                          .map((e) => {
+                            const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                            return (
+                              <option key={e.entity_id} value={e.entity_id}>
+                                {name}
+                              </option>
+                            );
+                          })}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Max waarde voor bar (optioneel)
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        step={0.1}
+                        value={editForm.max_value ?? 10}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            max_value: v != null && !Number.isNaN(v) && v > 0 ? v : undefined,
+                          }));
+                        }}
+                        placeholder="10"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Schaal voor verticale verbruiksbalk</p>
+                    </div>
                   </>
                 )}
                   </>
@@ -2452,15 +3060,28 @@ export default function DashboardEditPage() {
                     onClick={() => {
                       const updates = {
                         title: editForm.title,
-                        ...(editingWidget.entity_id != null && {
+                        ...(editingWidget.entity_id != null && editingWidget.type !== "energy_monitor_card" && {
                           entity_id: editForm.entity_id,
                         }),
                         ...(editingWidget.type === "solar_card" && {
                           consumption_entity_id: editForm.consumption_entity_id || undefined,
                         }),
+                        ...(editingWidget.type === "energy_monitor_card" && {
+                          background_image: editForm.background_image || undefined,
+                          minimal: editForm.minimal ?? false,
+                          scale: editForm.scale ?? 1,
+                        }),
+                        ...(editingWidget.type === "stat_pill_card" && {
+                          label: editForm.label || undefined,
+                          icon: editForm.icon || undefined,
+                          color: editForm.color || undefined,
+                          conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined,
+                        }),
                         ...((editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && {
                           humidity_entity_id: editForm.humidity_entity_id || undefined,
+                          icon: editForm.icon || undefined,
                           width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
                         }),
                         ...(editingWidget.type === "light_card" && {
                           icon: editForm.icon || undefined,
@@ -2468,6 +3089,7 @@ export default function DashboardEditPage() {
                         ...(editingWidget.type === "weather_card" && {
                           show_icon: editForm.show_icon !== false,
                           width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
                         }),
                         ...(editingWidget.type === "vacuum_card" && {
                           script_ids: editForm.script_ids ?? [],
@@ -2484,6 +3106,15 @@ export default function DashboardEditPage() {
                           icon: editForm.icon || undefined,
                           conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined,
                           show_state: editForm.show_state !== false,
+                        }),
+                        ...(editingWidget.type === "nuts_card" && {
+                          icon: editForm.icon || undefined,
+                          icon_background_color: editForm.icon_background_color || undefined,
+                          entity_id: editForm.entity_id || undefined,
+                          current_entity_id: editForm.current_entity_id || undefined,
+                          max_value: editForm.max_value != null && editForm.max_value > 0 ? editForm.max_value : undefined,
+                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
                         }),
                         ...(editingWidget.type === "room_card" && {
                           icon: editForm.icon || undefined,

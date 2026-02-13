@@ -10,11 +10,20 @@ const DEFAULT_OFFSET = 24;
 const DEFAULT_CARD_WIDTH = 320;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 500;
+const DEFAULT_CARD_HEIGHT = 180;
+const MIN_HEIGHT = 100;
+const MAX_HEIGHT = 400;
 
 function clampWidth(w: unknown): number {
   const n = Number(w);
   if (!Number.isFinite(n)) return DEFAULT_CARD_WIDTH;
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n)));
+}
+
+function clampHeight(w: unknown): number {
+  const n = Number(w);
+  if (!Number.isFinite(n)) return DEFAULT_CARD_HEIGHT;
+  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.round(n)));
 }
 
 type Position = { left: number; bottom: number };
@@ -44,10 +53,10 @@ function savePosition(p: Position) {
   }
 }
 
-function defaultPosition(cardWidth: number): Position {
+function defaultPosition(cardWidth: number, cardHeight: number): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
   const maxLeft = window.innerWidth - cardWidth;
-  const maxBottom = window.innerHeight - 120;
+  const maxBottom = window.innerHeight - cardHeight - 24;
   return { left: maxLeft / 2, bottom: maxBottom / 2 };
 }
 
@@ -58,6 +67,7 @@ export function FloatingWeatherCard({
   entity_id,
   show_icon = true,
   width,
+  height,
   editMode = false,
   onRemove,
   onEdit,
@@ -67,12 +77,14 @@ export function FloatingWeatherCard({
   entity_id: string;
   show_icon?: boolean;
   width?: number;
+  height?: number;
   editMode?: boolean;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
   const totalWidth = clampWidth(width);
+  const totalHeight = clampHeight(height);
   const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, top: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
@@ -111,17 +123,17 @@ export function FloatingWeatherCard({
     if (initialized.current) return;
     initialized.current = true;
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-    const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
     const bounds = { maxLeft, maxBottom };
     const saved = loadPosition();
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(totalWidth), bounds);
+    const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
     setPosition(p);
     savePosition(p);
-  }, [totalWidth]);
+  }, [totalWidth, totalHeight]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -141,20 +153,20 @@ export function FloatingWeatherCard({
   );
 
   const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+  const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!isDragging) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
       const raw = {
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
         bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging, maxLeft]
+    [isDragging, maxLeft, maxBottom]
   );
 
   const handlePointerUp = useCallback(
@@ -163,7 +175,6 @@ export function FloatingWeatherCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
           bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
@@ -174,7 +185,7 @@ export function FloatingWeatherCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft]
+    [isDragging, maxLeft, maxBottom]
   );
 
   return (
@@ -188,6 +199,7 @@ export function FloatingWeatherCard({
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
+        height: totalHeight,
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -207,8 +219,15 @@ export function FloatingWeatherCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-        <WeatherCardWidget title={title} entity_id={entity_id} show_icon={show_icon} size="md" onMoreClick={editMode ? onEdit : undefined} />
+      <div className={cn("flex flex-col h-full min-h-0", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
+        <WeatherCardWidget
+          title={title}
+          entity_id={entity_id}
+          show_icon={show_icon}
+          size="md"
+          onMoreClick={editMode ? onEdit : undefined}
+          className="flex-1 min-h-0"
+        />
       </div>
     </div>
   );

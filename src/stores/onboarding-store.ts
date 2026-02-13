@@ -57,6 +57,26 @@ export type WidgetConfig = {
   light_entity_id?: string;
   /** Room card: optionele achtergrondafbeelding (URL). */
   background_image?: string;
+  /** Nuts card: entity voor huidig verbruik (optioneel). */
+  current_entity_id?: string;
+  /** Nuts card: max voor verticale bar-schaal (optioneel). */
+  max_value?: number;
+  /** Nuts card: kleur icoon (hex). */
+  icon_background_color?: string;
+  /** Nuts card: breedte kaart in px (standaard 250). */
+  width?: number;
+  /** Nuts card: hoogte kaart in px (standaard 130). */
+  height?: number;
+  /** Energy monitor: entity voor teruglevering aan het net. */
+  grid_entity_id?: string;
+  /** Energy monitor: minimal (geen achtergrond/rand om floating card). */
+  minimal?: boolean;
+  /** Energy monitor / Afbeeldingskaart: schaalfactor (0.5–1.5). */
+  scale?: number;
+  /** Stat pill card: label onder de waarde (bijv. "Opbrengst"). */
+  label?: string;
+  /** Stat pill card: kleurthema (amber, purple, emerald, red). */
+  color?: string;
   thresholds?: string;
   unit?: string;
   refresh?: number;

@@ -2,18 +2,14 @@
 
 import { cn } from "@/lib/utils";
 import {
+  DoorOpen,
   LayoutDashboard,
-  Music2,
-  Smartphone,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
 
 const tabs = [
   { href: "/dashboards", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/energy", label: "Energy", icon: Zap },
-  { href: "/music", label: "Music", icon: Music2 },
-  { href: "/devices", label: "Devices", icon: Smartphone },
+  { href: "/rooms", label: "Kamers", icon: DoorOpen },
 ] as const;
 
 type TopTabsProps = {
@@ -30,7 +26,7 @@ export function TopTabs({ activeHref, className }: TopTabsProps) {
       )}
       role="tablist"
     >
-      {tabs.map(({ href, label, icon: Icon, badge }) => {
+      {tabs.map(({ href, label, icon: Icon }) => {
         const isActive = activeHref === href;
         return (
           <Link
@@ -47,11 +43,6 @@ export function TopTabs({ activeHref, className }: TopTabsProps) {
           >
             <Icon className="h-4 w-4" aria-hidden />
             {label}
-            {badge != null && (
-              <span className="ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-200 px-1.5 text-xs dark:bg-white/20">
-                {badge}
-              </span>
-            )}
           </Link>
         );
       })}
