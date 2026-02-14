@@ -21,7 +21,7 @@ import { useThemeStore } from "@/stores/theme-store";
 function WeatherIcon({ state, className }: { state: string; className?: string }) {
   const s = state?.toLowerCase() ?? "";
   const iconClass = cn("shrink-0", className ?? "h-8 w-8");
-  if (s === "sunny" || s === "clear") return <Sun className={iconClass} aria-hidden />;
+  if (s === "sunny" || s === "clear" || s === "zonnig") return <Sun className={iconClass} aria-hidden />;
   if (s === "clear-night") return <Moon className={iconClass} aria-hidden />;
   if (s === "fog" || s === "mist") return <CloudFog className={iconClass} aria-hidden />;
   if (s === "rainy" || s === "pouring" || s === "hail") return <CloudRain className={iconClass} aria-hidden />;
@@ -43,6 +43,7 @@ function getWeatherBackground(condition: string) {
   switch (s) {
     case "sunny":
     case "clear":
+    case "zonnig":
       return "from-amber-300/50 via-yellow-200/30 to-sky-300/40";
     case "clear-night":
       return "from-indigo-950/70 via-slate-900/60 to-indigo-950/80";
@@ -80,6 +81,7 @@ function getWeatherImageBase(condition: string): string | null {
       return "/weather-fog";
     case "sunny":
     case "clear":
+    case "zonnig":
       return "/weather-sunny";
     case "clear-night":
       return "/weather-clear-night";
