@@ -11,7 +11,6 @@ export const metadata: Metadata = {
   title: "Home Assistant Dashboard Builder",
   description: "Set up a working dashboard with live Home Assistant data in 5–10 minutes.",
   manifest: "/manifest.json",
-  themeColor: "#4D2FB2",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -24,6 +23,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover" as const,
+  themeColor: "#4D2FB2",
 };
 
 export default function RootLayout({
