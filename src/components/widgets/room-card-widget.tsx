@@ -115,7 +115,9 @@ export function RoomCardWidget({
         }}
         aria-hidden
       >
-        <IconComponent style={{ width: iconSize, height: iconSize }} className="shrink-0" aria-hidden />
+        <span className="inline-flex items-center justify-center" style={{ width: iconSize, height: iconSize }} aria-hidden>
+          <IconComponent className="h-full w-full" />
+        </span>
       </div>
       <div className="relative flex min-w-0 flex-1 flex-col">
         <div

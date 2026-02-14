@@ -1,5 +1,5 @@
 {
-  "buildStage": "type-checking",
+  "buildStage": "static-generation",
   "buildOptions": {
     "useBuildWorker": "true"
   }
