@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   ChevronDown,
   Pause,
@@ -143,10 +144,13 @@ export function MediaCardWidget({
                 className="block relative w-full aspect-square max-h-48 mx-auto rounded-xl overflow-hidden bg-white/5 hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-white/50"
                 aria-label="Inklappen"
               >
-                <img
+                <Image
                   src={mediaImageSrc}
                   alt=""
-                  className="w-full h-full object-cover pointer-events-none"
+                  fill
+                  sizes="(max-width: 192px) 192px, 192px"
+                  className="object-cover pointer-events-none"
+                  unoptimized
                 />
               </button>
             ) : (
@@ -188,10 +192,13 @@ export function MediaCardWidget({
       <div className="relative overflow-hidden">
         {mediaImageSrc && (
           <div className="absolute inset-0" aria-hidden>
-            <img
+            <Image
               src={mediaImageSrc}
               alt=""
-              className="absolute inset-0 h-full w-full object-cover scale-105 blur-md opacity-70"
+              fill
+              sizes="100vw"
+              className="object-cover scale-105 blur-md opacity-70"
+              unoptimized
             />
             <div className="absolute inset-0 bg-black/40" />
           </div>
@@ -225,21 +232,27 @@ export function MediaCardWidget({
               key={trackKey}
               type="button"
               onClick={() => setExpandedWithCallback(true)}
-              className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-white/5 border border-white/20 hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-white/5 border border-white/20 hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-white/50"
               aria-label="Uitklappen"
             >
-              <img
+              <Image
                 src={mediaImageSrc}
                 alt=""
-                className="h-full w-full object-cover"
+                fill
+                sizes="40px"
+                className="object-cover"
+                unoptimized
               />
             </button>
           ) : (
-            <div key={trackKey} className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-white/5 border border-white/20">
-              <img
+            <div key={trackKey} className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-white/5 border border-white/20">
+              <Image
                 src={mediaImageSrc}
                 alt=""
-                className="h-full w-full object-cover"
+                fill
+                sizes="40px"
+                className="object-cover"
+                unoptimized
               />
             </div>
           )

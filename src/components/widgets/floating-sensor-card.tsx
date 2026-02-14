@@ -178,7 +178,7 @@ export function FloatingSensorCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, cardWidth]
+    [isDragging, cardWidth, widgetId]
   );
 
   return (

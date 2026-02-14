@@ -178,7 +178,7 @@ export function FloatingStatPillCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging]
+    [isDragging, widgetId]
   );
 
   return (

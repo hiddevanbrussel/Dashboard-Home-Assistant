@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   Cloud,
   CloudFog,
@@ -158,10 +159,12 @@ export function WeatherCardWidget({
       {/* Custom achtergrondafbeelding: dag- of nacht-variant (bijv. weather-sunny.png / weather-sunny-night.png) */}
       {effectiveBgImage && (
         <div className="absolute inset-0 rounded-2xl overflow-hidden">
-          <img
+          <Image
             src={effectiveBgImage}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover object-center"
+            fill
+            sizes="(max-width: 500px) 500px, 500px"
+            className="object-cover object-center"
             onError={fallbackImage ? () => setImageError(true) : undefined}
           />
         </div>
