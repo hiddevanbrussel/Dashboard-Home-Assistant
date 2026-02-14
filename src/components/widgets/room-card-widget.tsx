@@ -100,11 +100,14 @@ export function RoomCardWidget({
       style={height != null ? { minHeight: height } : undefined}
     >
       {background_image && (
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
-          style={{ backgroundImage: `url(${background_image})` }}
-          aria-hidden
-        />
+        <>
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${background_image})` }}
+            aria-hidden
+          />
+          <div className="absolute inset-0 bg-black/35 dark:bg-black/50" aria-hidden />
+        </>
       )}
       <div
         className="absolute left-0 bottom-0 translate-x-[-20%] translate-y-[20%] flex items-center justify-center rounded-full text-white shadow-lg"
@@ -127,14 +130,14 @@ export function RoomCardWidget({
           <div className="flex items-center gap-2 w-full justify-end min-w-0 shrink-0">
             <div className="min-w-0 flex-1 flex flex-col items-end">
               <p className={cn(
-                "text-base font-medium truncate w-full",
-                embedded ? "text-gray-900 dark:text-white/90" : "text-gray-900 dark:text-white"
+                "text-base font-medium truncate w-full drop-shadow-sm",
+                background_image ? "text-white" : embedded ? "text-gray-900 dark:text-white/90" : "text-gray-900 dark:text-white"
               )}>
                 {title}
               </p>
               <p className={cn(
                 "text-xs truncate w-full mt-0.5",
-                embedded ? "text-gray-600 dark:text-white/70" : "text-gray-500 dark:text-gray-400"
+                background_image ? "text-white/90" : embedded ? "text-gray-600 dark:text-white/70" : "text-gray-500 dark:text-gray-400"
               )}>
                 {isConfigured ? entityValue : (!light_entity_id ? "Kies entiteiten in bewerken" : null)}
               </p>
@@ -145,7 +148,7 @@ export function RoomCardWidget({
                 onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
                 className={cn(
                   "p-1.5 rounded-lg shrink-0 transition-colors",
-                  embedded ? "text-gray-500 hover:text-gray-800 hover:bg-black/5 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
+                  background_image ? "text-white/80 hover:text-white hover:bg-white/20" : embedded ? "text-gray-500 hover:text-gray-800 hover:bg-black/5 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
                 )}
                 aria-label="Bewerken"
               >

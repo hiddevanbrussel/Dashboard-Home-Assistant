@@ -1,0 +1,5167 @@
+module.exports = [
+"[project]/src/app/dashboards/[id]/page.tsx [app-ssr] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "default",
+    ()=>DashboardEditPage
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$tanstack$2f$react$2d$query$2f$build$2f$modern$2f$useQuery$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/@tanstack/react-query/build/modern/useQuery.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$tanstack$2f$react$2d$query$2f$build$2f$modern$2f$useMutation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/@tanstack/react-query/build/modern/useMutation.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$tanstack$2f$react$2d$query$2f$build$2f$modern$2f$QueryClientProvider$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$2f$app$2d$shell$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/layout/app-shell.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-dom.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$grid$2d$layout$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/react-grid-layout/index.js [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$bot$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Bot$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/bot.js [app-ssr] (ecmascript) <export default as Bot>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$check$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Check$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/check.js [app-ssr] (ecmascript) <export default as Check>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$dot$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CircleDot$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/circle-dot.js [app-ssr] (ecmascript) <export default as CircleDot>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2d$sun$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CloudSun$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/cloud-sun.js [app-ssr] (ecmascript) <export default as CloudSun>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$fuel$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Fuel$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/fuel.js [app-ssr] (ecmascript) <export default as Fuel>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$gauge$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Gauge$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/gauge.js [app-ssr] (ecmascript) <export default as Gauge>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$house$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Home$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/house.js [app-ssr] (ecmascript) <export default as Home>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$layout$2d$grid$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__LayoutGrid$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/layout-grid.js [app-ssr] (ecmascript) <export default as LayoutGrid>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$lightbulb$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Lightbulb$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/lightbulb.js [app-ssr] (ecmascript) <export default as Lightbulb>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$music$2d$2$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Music2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/music-2.js [app-ssr] (ecmascript) <export default as Music2>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$pencil$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Pencil$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/pencil.js [app-ssr] (ecmascript) <export default as Pencil>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$plus$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Plus$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/plus.js [app-ssr] (ecmascript) <export default as Plus>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$sun$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Sun$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/sun.js [app-ssr] (ecmascript) <export default as Sun>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$thermometer$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Thermometer$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/thermometer.js [app-ssr] (ecmascript) <export default as Thermometer>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$type$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Type$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/type.js [app-ssr] (ecmascript) <export default as Type>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$video$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Video$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/video.js [app-ssr] (ecmascript) <export default as Video>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/x.js [app-ssr] (ecmascript) <export default as X>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$index$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/src/components/widgets/index.ts [app-ssr] (ecmascript) <locals>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$energy$2d$usage$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/energy-usage-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$light$2d$control$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/light-control-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$wifi$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/wifi-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$solar$2d$charge$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/solar-charge-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$climate$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/climate-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$lighting$2d$brightness$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/lighting-brightness-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$media$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/media-card-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$media$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-media-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$light$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/light-card-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$light$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-light-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$climate$2d$card$2d$2$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/climate-card-2-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$solar$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/solar-card-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$climate$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-climate-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$solar$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-solar-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$weather$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-weather-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$weather$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/weather-card-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$vacuum$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/src/components/widgets/vacuum-card-widget.tsx [app-ssr] (ecmascript) <locals>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$vacuum$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-vacuum-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/src/components/widgets/sensor-card-widget.tsx [app-ssr] (ecmascript) <locals>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$sensor$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-sensor-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$title$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/title-card-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$title$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-title-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__VACUUM_ICON_OPTIONS$3e$__ = __turbopack_context__.i("[project]/src/components/widgets/card-icons.tsx [app-ssr] (ecmascript) <export CARD_ICON_OPTIONS as VACUUM_ICON_OPTIONS>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__SENSOR_ICON_OPTIONS$3e$__ = __turbopack_context__.i("[project]/src/components/widgets/card-icons.tsx [app-ssr] (ecmascript) <export CARD_ICON_OPTIONS as SENSOR_ICON_OPTIONS>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$pill$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-pill-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$card$2d$group$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-card-group.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$room$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/room-card-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$room$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-room-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$nuts$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/nuts-card-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$nuts$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-nuts-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$energy$2d$monitor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/energy-monitor-card-widget.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$energy$2d$monitor$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-energy-monitor-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$stat$2d$pill$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/src/components/widgets/stat-pill-card-widget.tsx [app-ssr] (ecmascript) <locals>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$stat$2d$pill$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-stat-pill-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$camera$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/floating-camera-card.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/widgets/card-icons.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$state$2d$store$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/stores/entity-state-store.ts [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$offline$2d$pill$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/offline-pill.tsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/utils.ts [app-ssr] (ecmascript)");
+"use client";
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+/** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */ const ADDABLE_WIDGET_TYPES = [
+    "title_card",
+    "climate_card_2",
+    "light_card",
+    "media_card",
+    "solar_card",
+    "energy_monitor_card",
+    "stat_pill_card",
+    "sensor_card",
+    "weather_card",
+    "vacuum_card",
+    "camera_card",
+    "pill_card",
+    "room_card",
+    "nuts_card",
+    "card_group"
+];
+const ADDABLE_WIDGET_TILES = [
+    {
+        type: "title_card",
+        label: "Titel",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$type$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Type$3e$__["Type"]
+    },
+    {
+        type: "climate_card_2",
+        label: "Klimaat",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$thermometer$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Thermometer$3e$__["Thermometer"]
+    },
+    {
+        type: "light_card",
+        label: "Lamp",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$lightbulb$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Lightbulb$3e$__["Lightbulb"]
+    },
+    {
+        type: "media_card",
+        label: "Media",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$music$2d$2$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Music2$3e$__["Music2"]
+    },
+    {
+        type: "solar_card",
+        label: "Zonnepanelen",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$sun$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Sun$3e$__["Sun"]
+    },
+    {
+        type: "energy_monitor_card",
+        label: "Afbeeldingskaart",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$sun$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Sun$3e$__["Sun"]
+    },
+    {
+        type: "stat_pill_card",
+        label: "Stat pill",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$dot$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CircleDot$3e$__["CircleDot"]
+    },
+    {
+        type: "sensor_card",
+        label: "Sensor",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$gauge$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Gauge$3e$__["Gauge"]
+    },
+    {
+        type: "weather_card",
+        label: "Weer",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2d$sun$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CloudSun$3e$__["CloudSun"]
+    },
+    {
+        type: "vacuum_card",
+        label: "Stofzuiger",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$bot$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Bot$3e$__["Bot"]
+    },
+    {
+        type: "camera_card",
+        label: "Camera",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$video$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Video$3e$__["Video"]
+    },
+    {
+        type: "pill_card",
+        label: "Pill",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$dot$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__CircleDot$3e$__["CircleDot"]
+    },
+    {
+        type: "room_card",
+        label: "Kamer",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$house$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Home$3e$__["Home"]
+    },
+    {
+        type: "nuts_card",
+        label: "Nuts (Gas/Water)",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$fuel$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Fuel$3e$__["Fuel"]
+    },
+    {
+        type: "card_group",
+        label: "Kaartgroep",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$layout$2d$grid$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__LayoutGrid$3e$__["LayoutGrid"]
+    }
+];
+/** Map widget type to HA domain for filtering entities */ const WIDGET_TYPE_DOMAIN = {
+    title_card: "",
+    energy_usage: "sensor",
+    light_control: "light",
+    wifi: "sensor",
+    solar_charge: "sensor",
+    climate: "climate",
+    climate_card: "climate",
+    climate_card_2: "climate",
+    light_card: "light",
+    lighting_brightness: "light",
+    media_card: "media_player",
+    solar_card: "sensor",
+    energy_monitor_card: "sensor",
+    stat_pill_card: "sensor",
+    sensor_card: "sensor",
+    weather_card: "weather",
+    vacuum_card: "vacuum",
+    camera_card: "camera",
+    pill_card: "switch",
+    room_card: "",
+    nuts_card: "sensor",
+    card_group: ""
+};
+const PILL_CARD_DOMAINS = [
+    "switch",
+    "light",
+    "input_boolean",
+    "sensor"
+];
+function parseLayout(layout) {
+    if (!layout) return [];
+    try {
+        const arr = JSON.parse(layout);
+        return Array.isArray(arr) ? arr : [];
+    } catch  {
+        return [];
+    }
+}
+function parseWidgets(widgets) {
+    if (!widgets) return [];
+    try {
+        const arr = JSON.parse(widgets);
+        return Array.isArray(arr) ? arr : [];
+    } catch  {
+        return [];
+    }
+}
+function WidgetByType({ type, title, entity_id, consumption_entity_id, humidity_entity_id, show_icon, script_ids, script_names, cleaned_area_entity_id, light_entity_id, background_image, background_image_dark, image_conditions, icon, size, conditions, current_entity_id, max_value, grid_entity_id, minimal, label, color }) {
+    const sizeProp = size ?? "md";
+    const live = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$state$2d$store$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEntityStateStore"])((s)=>s.getState(entity_id));
+    const num = live?.state != null ? Number(live.state) : undefined;
+    const onOff = live?.state === "on" ? "on" : "off";
+    switch(type){
+        case "title_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$title$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TitleCardWidget"], {
+                title: title
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 199,
+                columnNumber: 14
+            }, this);
+        case "energy_usage":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$energy$2d$usage$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["EnergyUsageWidget"], {
+                title: title,
+                entity_id: entity_id,
+                size: sizeProp,
+                value: num
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 201,
+                columnNumber: 14
+            }, this);
+        case "light_control":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$light$2d$control$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["LightControlWidget"], {
+                title: title,
+                entity_id: entity_id,
+                size: sizeProp,
+                value: num,
+                state: live?.state === "on" ? "on" : "off"
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 204,
+                columnNumber: 9
+            }, this);
+        case "wifi":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$wifi$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["WifiWidget"], {
+                title: title,
+                entity_id: entity_id,
+                size: sizeProp,
+                value: onOff
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 213,
+                columnNumber: 14
+            }, this);
+        case "solar_charge":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$solar$2d$charge$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SolarChargeWidget"], {
+                title: title,
+                entity_id: entity_id,
+                size: sizeProp,
+                value: num
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 215,
+                columnNumber: 14
+            }, this);
+        case "climate":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$climate$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ClimateWidget"], {
+                title: title,
+                entity_id: entity_id,
+                size: sizeProp,
+                value: num
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 217,
+                columnNumber: 14
+            }, this);
+        case "lighting_brightness":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$lighting$2d$brightness$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["LightingBrightnessWidget"], {
+                title: title,
+                entity_id: entity_id,
+                size: sizeProp,
+                value: num
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 219,
+                columnNumber: 14
+            }, this);
+        case "media_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$media$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["MediaCardWidget"], {
+                title: title,
+                entity_id: entity_id,
+                size: sizeProp
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 221,
+                columnNumber: 14
+            }, this);
+        case "climate_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$climate$2d$card$2d$2$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ClimateCard2Widget"], {
+                title: title,
+                entity_id: entity_id,
+                humidity_entity_id: humidity_entity_id,
+                size: sizeProp
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 224,
+                columnNumber: 9
+            }, this);
+        case "climate_card_2":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$climate$2d$card$2d$2$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ClimateCard2Widget"], {
+                title: title,
+                entity_id: entity_id,
+                humidity_entity_id: humidity_entity_id,
+                size: sizeProp
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 233,
+                columnNumber: 9
+            }, this);
+        case "light_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$light$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["LightCardWidget"], {
+                title: title,
+                entity_id: entity_id,
+                icon: icon,
+                size: sizeProp
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 242,
+                columnNumber: 9
+            }, this);
+        case "solar_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$solar$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SolarCardWidget"], {
+                title: title,
+                entity_id: entity_id,
+                consumption_entity_id: consumption_entity_id,
+                size: sizeProp
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 251,
+                columnNumber: 9
+            }, this);
+        case "energy_monitor_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$energy$2d$monitor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["EnergyMonitorCardWidget"], {
+                title: title,
+                entity_id: entity_id,
+                background_image: background_image,
+                background_image_dark: background_image_dark,
+                image_conditions: image_conditions,
+                minimal: minimal,
+                size: sizeProp
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 260,
+                columnNumber: 9
+            }, this);
+        case "stat_pill_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$stat$2d$pill$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["StatPillCardWidget"], {
+                title: title,
+                entity_id: entity_id,
+                label: label,
+                icon: icon,
+                color: color ?? "amber",
+                size: sizeProp
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 272,
+                columnNumber: 9
+            }, this);
+        case "weather_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$weather$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["WeatherCardWidget"], {
+                title: title,
+                entity_id: entity_id,
+                show_icon: show_icon,
+                size: sizeProp
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 283,
+                columnNumber: 9
+            }, this);
+        case "vacuum_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$vacuum$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["VacuumCardWidget"], {
+                title: title,
+                entity_id: entity_id,
+                script_ids: script_ids,
+                script_names: script_names,
+                cleaned_area_entity_id: cleaned_area_entity_id,
+                icon: icon,
+                size: sizeProp
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 292,
+                columnNumber: 9
+            }, this);
+        case "sensor_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SensorCardWidget"], {
+                title: title,
+                entity_id: entity_id,
+                icon: icon,
+                show_icon: show_icon,
+                size: sizeProp,
+                conditions: conditions
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 304,
+                columnNumber: 9
+            }, this);
+        case "room_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$room$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["RoomCardWidget"], {
+                title: title,
+                entity_id: entity_id,
+                icon: icon,
+                light_entity_id: light_entity_id,
+                background_image: background_image
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 315,
+                columnNumber: 9
+            }, this);
+        case "nuts_card":
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$nuts$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["NutsCardWidget"], {
+                title: title,
+                entity_id: entity_id,
+                current_entity_id: current_entity_id,
+                icon: icon,
+                max_value: max_value
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 325,
+                columnNumber: 9
+            }, this);
+        default:
+            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "rounded-card border border-dashed p-4 text-sm text-gray-500",
+                children: title || type
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 335,
+                columnNumber: 9
+            }, this);
+    }
+}
+function DashboardEditPage() {
+    const params = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useParams"])();
+    const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRouter"])();
+    const queryClient = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$tanstack$2f$react$2d$query$2f$build$2f$modern$2f$QueryClientProvider$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useQueryClient"])();
+    const id = params?.id;
+    const [editMode, setEditMode] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [layout, setLayout] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [widgets, setWidgets] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [welcomeTitle, setWelcomeTitle] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [welcomeSubtitle, setWelcomeSubtitle] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [initialized, setInitialized] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [entities, setEntities] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [addTileOpen, setAddTileOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [addTileStep, setAddTileStep] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("type");
+    const [addTileSelectedType, setAddTileSelectedType] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [addTileEntitySearch, setAddTileEntitySearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [editEntitySearch, setEditEntitySearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [groupAddEntitySearch, setGroupAddEntitySearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [editingWidgetId, setEditingWidgetId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
+    /** When editing a card_group, id of the child pill being edited (null = editing group itself). */ const [editingGroupChildId, setEditingGroupChildId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [editForm, setEditForm] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])({
+        title: "",
+        entity_id: "",
+        consumption_entity_id: "",
+        grid_entity_id: "",
+        humidity_entity_id: "",
+        show_icon: true,
+        show_state: true,
+        script_ids: [],
+        script_names: {},
+        cleaned_area_entity_id: "",
+        current_entity_id: "",
+        light_entity_id: "",
+        background_image: "",
+        background_image_dark: "",
+        icon_background_color: "",
+        width: undefined,
+        height: undefined,
+        icon: "",
+        size: "md",
+        conditions: [],
+        image_conditions: [],
+        minimal: false,
+        scale: 1,
+        label: "",
+        color: "amber",
+        refresh: 10,
+        show_title: true
+    });
+    const [iconSearch, setIconSearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [vacuumIconSearch, setVacuumIconSearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [sensorIconSearch, setSensorIconSearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [pillIconSearch, setPillIconSearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
+    const [sensorCardEditTab, setSensorCardEditTab] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("general");
+    const [uploadingRoomBg, setUploadingRoomBg] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
+    const longPressTimerRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
+    const LONG_PRESS_MS = 500;
+    function clearLongPressTimer() {
+        if (longPressTimerRef.current != null) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+        }
+    }
+    function startLongPressForEdit(e) {
+        if (editMode) return;
+        e.preventDefault();
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        clearLongPressTimer();
+        longPressTimerRef.current = setTimeout(()=>{
+            longPressTimerRef.current = null;
+            setEditMode(true);
+        }, LONG_PRESS_MS);
+    }
+    function clearLongPressTimerAndRelease(e) {
+        e.currentTarget.releasePointerCapture?.(e.pointerId);
+        clearLongPressTimer();
+    }
+    const editingWidget = editingWidgetId ? widgets.find((w)=>w.id === editingWidgetId) : null;
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
+        if (!editingWidgetId) setEditingGroupChildId(null);
+    }, [
+        editingWidgetId
+    ]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
+        if (editingWidget?.type === "card_group" && editingGroupChildId) {
+            const child = (editingWidget.children ?? []).find((c)=>c.id === editingGroupChildId);
+            if (child) {
+                setEditForm({
+                    title: child.title ?? "",
+                    entity_id: child.entity_id ?? "",
+                    consumption_entity_id: "",
+                    humidity_entity_id: "",
+                    show_icon: true,
+                    script_ids: [],
+                    script_names: {},
+                    cleaned_area_entity_id: "",
+                    icon: child.icon ?? "",
+                    size: "md",
+                    conditions: child.conditions ?? [],
+                    show_state: child.show_state !== false
+                });
+                setPillIconSearch(child.icon ?? "");
+            }
+            return;
+        }
+        if (editingWidget) {
+            setEditForm({
+                title: editingWidget.title ?? "",
+                entity_id: editingWidget.entity_id ?? "",
+                consumption_entity_id: editingWidget.consumption_entity_id ?? "",
+                grid_entity_id: editingWidget.grid_entity_id ?? "",
+                humidity_entity_id: editingWidget.humidity_entity_id ?? "",
+                show_icon: editingWidget.show_icon !== false,
+                script_ids: editingWidget.script_ids ?? [],
+                script_names: editingWidget.script_names ?? {},
+                cleaned_area_entity_id: editingWidget.cleaned_area_entity_id ?? "",
+                light_entity_id: editingWidget.light_entity_id ?? "",
+                background_image: editingWidget.background_image ?? "",
+                background_image_dark: editingWidget.background_image_dark ?? "",
+                icon_background_color: editingWidget.icon_background_color ?? "",
+                width: editingWidget.width ?? undefined,
+                height: editingWidget.height ?? undefined,
+                icon: editingWidget.icon ?? "",
+                size: editingWidget.size ?? "md",
+                conditions: editingWidget.conditions ?? [],
+                image_conditions: editingWidget.image_conditions ?? [],
+                show_state: editingWidget.show_state !== false,
+                current_entity_id: editingWidget.current_entity_id ?? "",
+                max_value: editingWidget.max_value ?? undefined,
+                minimal: editingWidget.minimal ?? false,
+                scale: editingWidget.scale ?? 1,
+                label: editingWidget.label ?? "",
+                color: editingWidget.color ?? "amber",
+                refresh: editingWidget.refresh ?? 10,
+                show_title: editingWidget.show_title !== false
+            });
+            setIconSearch("");
+            setVacuumIconSearch(editingWidget.type === "vacuum_card" ? editingWidget.icon ?? "" : "");
+            setSensorIconSearch(editingWidget.type === "sensor_card" ? editingWidget.icon ?? "" : "");
+            setPillIconSearch(editingWidget.type === "pill_card" ? editingWidget.icon ?? "" : "");
+            setGroupAddEntitySearch("");
+            setEditEntitySearch("");
+            if (editingWidget.type === "sensor_card") setSensorCardEditTab("general");
+        }
+    }, [
+        editingWidget,
+        editingGroupChildId
+    ]);
+    const { data, isLoading, error } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$tanstack$2f$react$2d$query$2f$build$2f$modern$2f$useQuery$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useQuery"])({
+        queryKey: [
+            "dashboard",
+            id
+        ],
+        queryFn: async ()=>{
+            const res = await fetch(`/api/dashboards/${id}`);
+            if (!res.ok) throw new Error("Failed to load");
+            return res.json();
+        },
+        enabled: !!id
+    });
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
+        if (!data || initialized) return;
+        const w = parseWidgets(data.widgets);
+        setWidgets(w);
+        const parsed = parseLayout(data.layout);
+        if (parsed.length > 0) {
+            setLayout(parsed);
+        } else if (w.length > 0) {
+            setLayout(w.map((widget, i)=>({
+                    i: widget.id,
+                    x: i % 3 * 4,
+                    y: Math.floor(i / 3) * 2,
+                    w: 4,
+                    h: 2
+                })));
+        }
+        setWelcomeTitle(data.welcomeTitle ?? "");
+        setWelcomeSubtitle(data.welcomeSubtitle ?? "");
+        setInitialized(true);
+    }, [
+        data,
+        initialized
+    ]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
+        if (!editMode) return;
+        fetch("/api/ha/entities").then((r)=>r.json()).then((data)=>Array.isArray(data) ? setEntities(data) : setEntities([])).catch(()=>setEntities([]));
+    }, [
+        editMode
+    ]);
+    const requestRefresh = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$stores$2f$entity$2d$state$2d$store$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEntityStateStore"])((s)=>s.requestRefresh);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
+        if (!data) return;
+        const w = parseWidgets(data.widgets);
+        if (w.some((x)=>x.type === "stat_pill_card")) requestRefresh();
+    }, [
+        data,
+        requestRefresh
+    ]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
+        if (error && id) router.replace("/dashboards");
+    }, [
+        error,
+        id,
+        router
+    ]);
+    const saveMutation = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$tanstack$2f$react$2d$query$2f$build$2f$modern$2f$useMutation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useMutation"])({
+        mutationFn: async (payload)=>{
+            const res = await fetch(`/api/dashboards/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    layout: JSON.stringify(payload.layout),
+                    widgets: JSON.stringify(payload.widgets),
+                    ...payload.welcomeTitle !== undefined && {
+                        welcomeTitle: payload.welcomeTitle || null
+                    },
+                    ...payload.welcomeSubtitle !== undefined && {
+                        welcomeSubtitle: payload.welcomeSubtitle || null
+                    }
+                })
+            });
+            if (!res.ok) throw new Error("Save failed");
+            return res.json();
+        },
+        onSuccess: ()=>{
+            queryClient.invalidateQueries({
+                queryKey: [
+                    "dashboard",
+                    id
+                ]
+            });
+        }
+    });
+    const onLayoutChange = (newLayout)=>{
+        setLayout((prev)=>{
+            const floatingItems = prev.filter((item)=>{
+                const type = widgets.find((w)=>w.id === item.i)?.type;
+                return type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group";
+            });
+            return [
+                ...newLayout,
+                ...floatingItems
+            ];
+        });
+    };
+    const layoutForGrid = layout.filter((item)=>{
+        const type = widgets.find((w)=>w.id === item.i)?.type;
+        return type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "camera_card" && type !== "title_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group";
+    });
+    const layoutMap = new Map(layout.map((item)=>[
+            item.i,
+            item
+        ]));
+    const handleSave = ()=>{
+        setEditingWidgetId(null);
+        setEditingGroupChildId(null);
+        setEditMode(false);
+        saveMutation.mutate({
+            layout,
+            widgets,
+            welcomeTitle,
+            welcomeSubtitle
+        });
+    };
+    function handleAddTile(type, entityId, titleOverride) {
+        const newId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["generateId"])();
+        const newWidget = {
+            id: newId,
+            type,
+            title: titleOverride ?? type.replace(/_/g, " "),
+            entity_id: entityId,
+            ...type === "card_group" && {
+                children: [],
+                alignment: "start"
+            }
+        };
+        const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item)=>item.y + item.h));
+        const isTitleCard = type === "title_card";
+        const newLayoutItem = {
+            i: newId,
+            x: 0,
+            y: maxY,
+            w: isTitleCard ? 12 : 4,
+            h: isTitleCard ? 1 : 2
+        };
+        const newWidgets = [
+            ...widgets,
+            newWidget
+        ];
+        const newLayout = type === "solar_card" || type === "energy_monitor_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "camera_card" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group" ? layout : [
+            ...layout,
+            newLayoutItem
+        ];
+        setWidgets(newWidgets);
+        setLayout(newLayout);
+        setAddTileOpen(false);
+        setAddTileStep("type");
+        setAddTileSelectedType(null);
+        saveMutation.mutate({
+            layout: newLayout,
+            widgets: newWidgets,
+            welcomeTitle,
+            welcomeSubtitle
+        });
+        return type === "room_card" || type === "nuts_card" || type === "energy_monitor_card" || type === "stat_pill_card" ? newId : undefined;
+    }
+    const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
+    const entitiesToShow = addTileSelectedType === "pill_card" ? entities.filter((e)=>PILL_CARD_DOMAINS.some((d)=>e.entity_id.startsWith(d + "."))) : domain != null ? entities.filter((e)=>e.entity_id.startsWith(domain + ".")) : entities;
+    function handleRemoveTile(widgetId) {
+        setWidgets((prev)=>prev.filter((w)=>w.id !== widgetId));
+        setLayout((prev)=>prev.filter((item)=>item.i !== widgetId));
+    }
+    function handleUpdateTile(widgetId, updates) {
+        setWidgets((prev)=>prev.map((w)=>w.id === widgetId ? {
+                    ...w,
+                    ...updates
+                } : w));
+        setEditingWidgetId(null);
+    }
+    if (!id) {
+        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$2f$app$2d$shell$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["AppShell"], {
+            activeTab: "/dashboards",
+            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "text-sm text-gray-500",
+                children: "Invalid dashboard id."
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 684,
+                columnNumber: 9
+            }, this)
+        }, void 0, false, {
+            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+            lineNumber: 683,
+            columnNumber: 7
+        }, this);
+    }
+    if (isLoading || error) {
+        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$2f$app$2d$shell$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["AppShell"], {
+            activeTab: "/dashboards",
+            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                className: "text-sm text-gray-500",
+                children: error ? "Dashboard not found, redirecting…" : "Loading…"
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 692,
+                columnNumber: 9
+            }, this)
+        }, void 0, false, {
+            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+            lineNumber: 691,
+            columnNumber: 7
+        }, this);
+    }
+    const headerEndAction = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+        children: editMode ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+            children: [
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                            type: "button",
+                            onClick: ()=>setAddTileOpen(true),
+                            className: "flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90",
+                            style: {
+                                backgroundColor: "#4D2FB2"
+                            },
+                            "aria-label": "Kaart toevoegen",
+                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$plus$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Plus$3e$__["Plus"], {
+                                className: "h-4 w-4"
+                            }, void 0, false, {
+                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                lineNumber: 711,
+                                columnNumber: 15
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                            lineNumber: 704,
+                            columnNumber: 13
+                        }, this),
+                        addTileOpen && typeof document !== "undefined" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "fixed inset-0 z-[300] bg-black/50 backdrop-blur-xl",
+                                    "aria-hidden": true,
+                                    onClick: ()=>{
+                                        setAddTileOpen(false);
+                                        setAddTileStep("type");
+                                        setAddTileSelectedType(null);
+                                        setAddTileEntitySearch("");
+                                    }
+                                }, void 0, false, {
+                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                    lineNumber: 715,
+                                    columnNumber: 17
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "fixed left-1/2 top-1/2 z-[301] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "flex items-center justify-between mb-4",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                                    className: "text-sm font-semibold text-gray-900 dark:text-gray-100",
+                                                    children: addTileStep === "type" ? "Kaart toevoegen" : "Kies entity"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 727,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    type: "button",
+                                                    onClick: ()=>{
+                                                        setAddTileOpen(false);
+                                                        setAddTileStep("type");
+                                                        setAddTileSelectedType(null);
+                                                        setAddTileEntitySearch("");
+                                                    },
+                                                    className: "p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400",
+                                                    "aria-label": "Sluiten",
+                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                                        className: "h-5 w-5"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                        lineNumber: 741,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 730,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                            lineNumber: 726,
+                                            columnNumber: 19
+                                        }, this),
+                                        addTileStep === "type" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "grid grid-cols-3 gap-2",
+                                            children: ADDABLE_WIDGET_TILES.map(({ type, label, Icon })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    type: "button",
+                                                    onClick: ()=>{
+                                                        if (type === "title_card") {
+                                                            handleAddTile("title_card", "", "Titel");
+                                                            setAddTileOpen(false);
+                                                            return;
+                                                        }
+                                                        if (type === "card_group") {
+                                                            handleAddTile("card_group", "", "Kaartgroep");
+                                                            setAddTileOpen(false);
+                                                            return;
+                                                        }
+                                                        if (type === "room_card") {
+                                                            const newId = handleAddTile("room_card", "", "Kamer");
+                                                            if (newId) setEditingWidgetId(newId);
+                                                            return;
+                                                        }
+                                                        if (type === "energy_monitor_card") {
+                                                            const newId = handleAddTile("energy_monitor_card", "", "Afbeeldingskaart");
+                                                            if (newId) setEditingWidgetId(newId);
+                                                            setAddTileOpen(false);
+                                                            return;
+                                                        }
+                                                        setAddTileSelectedType(type);
+                                                        setAddTileStep("entity");
+                                                    },
+                                                    className: "flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4D2FB2]/40 hover:bg-[#4D2FB2]/5 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4D2FB2]/50 dark:hover:bg-[#4D2FB2]/10",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(Icon, {
+                                                            className: "h-7 w-7 text-gray-600 dark:text-gray-400"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 777,
+                                                            columnNumber: 27
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight",
+                                                            children: label
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 778,
+                                                            columnNumber: 27
+                                                        }, this)
+                                                    ]
+                                                }, type, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 747,
+                                                    columnNumber: 25
+                                                }, this))
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                            lineNumber: 745,
+                                            columnNumber: 21
+                                        }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "flex flex-col max-h-[60vh]",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    type: "button",
+                                                    onClick: ()=>{
+                                                        setAddTileStep("type");
+                                                        setAddTileSelectedType(null);
+                                                        setAddTileEntitySearch("");
+                                                    },
+                                                    className: "mb-3 self-start px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg",
+                                                    children: "← Terug"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 786,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                    type: "text",
+                                                    value: addTileEntitySearch,
+                                                    onChange: (e)=>setAddTileEntitySearch(e.target.value),
+                                                    placeholder: "Zoek op naam of entity_id (bijv. sensor.woonkamer)…",
+                                                    className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500",
+                                                    autoFocus: true
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 797,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5 max-h-[50vh]",
+                                                    children: (()=>{
+                                                        const q = addTileEntitySearch.trim().toLowerCase();
+                                                        const filtered = q ? entitiesToShow.filter((e)=>{
+                                                            const name = (e.attributes?.friendly_name ?? e.entity_id).toLowerCase();
+                                                            return name.includes(q) || e.entity_id.toLowerCase().includes(q);
+                                                        }) : entitiesToShow;
+                                                        if (filtered.length === 0) {
+                                                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                className: "px-4 py-6 text-sm text-gray-500 dark:text-gray-400 text-center",
+                                                                children: entitiesToShow.length === 0 ? "Geen entities gevonden. Controleer je HA-verbinding in Instellingen." : "Geen resultaten voor je zoekopdracht."
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                lineNumber: 817,
+                                                                columnNumber: 31
+                                                            }, this);
+                                                        }
+                                                        return filtered.map((e)=>{
+                                                            const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                type: "button",
+                                                                onClick: ()=>{
+                                                                    if (addTileSelectedType) {
+                                                                        const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                                        const titleOverride = addTileSelectedType === "nuts_card" ? name || "Gas" : addTileSelectedType === "energy_monitor_card" ? name || "Afbeeldingskaart" : addTileSelectedType === "stat_pill_card" ? name || "Stat" : undefined;
+                                                                        const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride);
+                                                                        if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card") && newId) setEditingWidgetId(newId);
+                                                                    }
+                                                                    setAddTileOpen(false);
+                                                                    setAddTileStep("type");
+                                                                    setAddTileSelectedType(null);
+                                                                    setAddTileEntitySearch("");
+                                                                },
+                                                                className: "block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate",
+                                                                title: e.entity_id,
+                                                                children: name
+                                                            }, e.entity_id, false, {
+                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                lineNumber: 829,
+                                                                columnNumber: 31
+                                                            }, this);
+                                                        });
+                                                    })()
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 805,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                            lineNumber: 785,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                    lineNumber: 725,
+                                    columnNumber: 17
+                                }, this)
+                            ]
+                        }, void 0, true), document.body)
+                    ]
+                }, void 0, true),
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "relative z-[60]",
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                        type: "button",
+                        onClick: handleSave,
+                        disabled: saveMutation.isPending,
+                        className: "flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-white/20",
+                        "aria-label": "Done editing",
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$check$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Check$3e$__["Check"], {
+                            className: "h-4 w-4"
+                        }, void 0, false, {
+                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                            lineNumber: 868,
+                            columnNumber: 15
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 861,
+                        columnNumber: 13
+                    }, this)
+                }, void 0, false, {
+                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                    lineNumber: 860,
+                    columnNumber: 11
+                }, this)
+            ]
+        }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+            type: "button",
+            onClick: ()=>setEditMode(true),
+            className: "flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90",
+            style: {
+                backgroundColor: "#4D2FB2"
+            },
+            "aria-label": "Edit dashboard",
+            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$pencil$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Pencil$3e$__["Pencil"], {
+                className: "h-4 w-4"
+            }, void 0, false, {
+                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                lineNumber: 880,
+                columnNumber: 11
+            }, this)
+        }, void 0, false, {
+            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+            lineNumber: 873,
+            columnNumber: 9
+        }, this)
+    }, void 0, false);
+    const hasCardGroup = widgets.some((w)=>w.type === "card_group");
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$2f$app$2d$shell$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["AppShell"], {
+        activeTab: "/dashboards",
+        headerEndAction: headerEndAction,
+        welcomeTitle: welcomeTitle || undefined,
+        welcomeSubtitle: welcomeSubtitle || undefined,
+        welcomeEditable: editMode,
+        onWelcomeChange: editMode ? ({ title, subtitle })=>{
+            setWelcomeTitle(title);
+            setWelcomeSubtitle(subtitle);
+        } : undefined,
+        contentNoScroll: hasCardGroup,
+        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            className: "space-y-6 overflow-x-hidden min-h-0",
+            children: [
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "flex items-center justify-end",
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$offline$2d$pill$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["OfflinePill"], {}, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 903,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                    lineNumber: 902,
+                    columnNumber: 9
+                }, this),
+                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "rounded-card overflow-hidden",
+                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$grid$2d$layout$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
+                        className: "layout",
+                        layout: layoutForGrid,
+                        onLayoutChange: onLayoutChange,
+                        cols: 12,
+                        rowHeight: 52,
+                        width: 1200,
+                        margin: [
+                            6,
+                            4
+                        ],
+                        containerPadding: [
+                            0,
+                            0
+                        ],
+                        isDraggable: editMode,
+                        isResizable: editMode,
+                        draggableHandle: editMode ? ".tile-drag-handle" : undefined,
+                        children: widgets.filter((w)=>w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "camera_card" && w.type !== "title_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group").map((w)=>{
+                            const item = layoutMap.get(w.id);
+                            if (!item) return null;
+                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "relative h-full w-full",
+                                ...!editMode && {
+                                    onPointerDown: startLongPressForEdit,
+                                    onPointerUp: clearLongPressTimerAndRelease,
+                                    onPointerLeave: clearLongPressTimerAndRelease,
+                                    onPointerCancel: clearLongPressTimerAndRelease,
+                                    onContextMenu: (e)=>e.preventDefault(),
+                                    style: {
+                                        touchAction: "none"
+                                    }
+                                },
+                                children: [
+                                    editMode && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                type: "button",
+                                                onClick: ()=>setEditingWidgetId(w.id),
+                                                className: "absolute -right-8 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-600 text-white shadow hover:bg-gray-700",
+                                                "aria-label": "Edit tile",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$pencil$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Pencil$3e$__["Pencil"], {
+                                                    className: "h-3.5 w-3.5"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 946,
+                                                    columnNumber: 25
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                lineNumber: 940,
+                                                columnNumber: 23
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                type: "button",
+                                                onClick: ()=>handleRemoveTile(w.id),
+                                                className: "absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600",
+                                                "aria-label": "Remove tile",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                                    className: "h-3.5 w-3.5"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 954,
+                                                    columnNumber: 25
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                lineNumber: 948,
+                                                columnNumber: 23
+                                            }, this)
+                                        ]
+                                    }, void 0, true),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("h-full w-full", editMode && "tile-drag-handle cursor-grab touch-none"),
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(WidgetByType, {
+                                            type: w.type,
+                                            title: w.title,
+                                            entity_id: w.entity_id,
+                                            consumption_entity_id: w.consumption_entity_id,
+                                            humidity_entity_id: w.humidity_entity_id,
+                                            show_icon: w.show_icon,
+                                            script_ids: w.script_ids,
+                                            script_names: w.script_names,
+                                            cleaned_area_entity_id: w.cleaned_area_entity_id,
+                                            light_entity_id: w.light_entity_id,
+                                            background_image: w.background_image,
+                                            background_image_dark: w.background_image_dark,
+                                            image_conditions: w.image_conditions,
+                                            icon: w.icon,
+                                            size: w.size,
+                                            conditions: w.conditions,
+                                            current_entity_id: w.current_entity_id,
+                                            max_value: w.max_value,
+                                            grid_entity_id: w.grid_entity_id,
+                                            minimal: w.minimal,
+                                            label: w.label,
+                                            color: w.color
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                            lineNumber: 959,
+                                            columnNumber: 21
+                                        }, this)
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                        lineNumber: 958,
+                                        columnNumber: 19
+                                    }, this)
+                                ]
+                            }, w.id, true, {
+                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                lineNumber: 926,
+                                columnNumber: 17
+                            }, this);
+                        })
+                    }, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 907,
+                        columnNumber: 11
+                    }, this)
+                }, void 0, false, {
+                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                    lineNumber: 906,
+                    columnNumber: 9
+                }, this),
+                (()=>{
+                    const firstMedia = widgets.find((w)=>w.type === "media_card");
+                    return firstMedia ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$media$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingMediaCard"], {
+                        title: firstMedia.title ?? "Media",
+                        entity_id: firstMedia.entity_id,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(firstMedia.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(firstMedia.id) : undefined
+                    }, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 993,
+                        columnNumber: 13
+                    }, this) : null;
+                })(),
+                (()=>{
+                    const climateCards = widgets.filter((w)=>w.type === "climate_card" || w.type === "climate_card_2");
+                    return climateCards.length > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$climate$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingClimateCard"], {
+                        widgets: climateCards.map((w)=>({
+                                id: w.id,
+                                title: w.title ?? "Climate",
+                                entity_id: w.entity_id,
+                                humidity_entity_id: w.humidity_entity_id,
+                                icon: w.icon,
+                                type: w.type === "climate_card_2" ? "climate_card_2" : "climate_card",
+                                width: w.width,
+                                height: w.height
+                            })),
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? (id)=>setEditingWidgetId(id) : undefined,
+                        onRemove: editMode ? (id)=>handleRemoveTile(id) : undefined
+                    }, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1017,
+                        columnNumber: 13
+                    }, this) : null;
+                })(),
+                widgets.filter((w)=>w.type === "light_card").map((w, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$light$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingLightCard"], {
+                        widget: {
+                            id: w.id,
+                            title: w.title ?? "Lamp",
+                            entity_id: w.entity_id,
+                            icon: w.icon
+                        },
+                        widgetIndex: i,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: ()=>{
+                            setEditMode(true);
+                            setEditingWidgetId(w.id);
+                        },
+                        onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
+                    }, w.id, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1039,
+                        columnNumber: 13
+                    }, this)),
+                (()=>{
+                    const firstSolar = widgets.find((w)=>w.type === "solar_card");
+                    return firstSolar ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$solar$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingSolarCard"], {
+                        title: firstSolar.title ?? "Zonnepanelen",
+                        entity_id: firstSolar.entity_id,
+                        consumption_entity_id: firstSolar.consumption_entity_id,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(firstSolar.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(firstSolar.id) : undefined
+                    }, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1061,
+                        columnNumber: 13
+                    }, this) : null;
+                })(),
+                (()=>{
+                    const firstEnergyMonitor = widgets.find((w)=>w.type === "energy_monitor_card");
+                    return firstEnergyMonitor ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$energy$2d$monitor$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingEnergyMonitorCard"], {
+                        title: firstEnergyMonitor.title ?? "Afbeeldingskaart",
+                        entity_id: firstEnergyMonitor.entity_id,
+                        background_image: firstEnergyMonitor.background_image,
+                        background_image_dark: firstEnergyMonitor.background_image_dark,
+                        image_conditions: firstEnergyMonitor.image_conditions,
+                        minimal: firstEnergyMonitor.minimal,
+                        scale: firstEnergyMonitor.scale,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(firstEnergyMonitor.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(firstEnergyMonitor.id) : undefined
+                    }, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1084,
+                        columnNumber: 13
+                    }, this) : null;
+                })(),
+                typeof document !== "undefined" && widgets.some((w)=>w.type === "stat_pill_card") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(widgets.filter((w)=>w.type === "stat_pill_card").map((w, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$stat$2d$pill$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingStatPillCard"], {
+                        widgetId: w.id,
+                        widgetIndex: i,
+                        title: w.title ?? "Stat",
+                        entity_id: w.entity_id,
+                        label: w.label,
+                        icon: w.icon,
+                        color: w.color ?? "amber",
+                        conditions: w.conditions,
+                        size: w.size ?? "md",
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(w.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
+                    }, w.id, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1114,
+                        columnNumber: 17
+                    }, this)), document.body),
+                typeof document !== "undefined" && widgets.some((w)=>w.type === "sensor_card") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(widgets.filter((w)=>w.type === "sensor_card").map((w, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$sensor$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingSensorCard"], {
+                        widgetId: w.id,
+                        widgetIndex: i,
+                        title: w.title ?? "Sensor",
+                        entity_id: w.entity_id,
+                        icon: w.icon,
+                        show_icon: w.show_icon !== false,
+                        size: w.size ?? "md",
+                        conditions: w.conditions,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(w.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
+                    }, w.id, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1140,
+                        columnNumber: 17
+                    }, this)), document.body),
+                (()=>{
+                    const firstWeather = widgets.find((w)=>w.type === "weather_card");
+                    return firstWeather ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$weather$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingWeatherCard"], {
+                        title: firstWeather.title ?? "Weather",
+                        entity_id: firstWeather.entity_id,
+                        show_icon: firstWeather.show_icon,
+                        width: firstWeather.width,
+                        height: firstWeather.height,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(firstWeather.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(firstWeather.id) : undefined
+                    }, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1162,
+                        columnNumber: 13
+                    }, this) : null;
+                })(),
+                (()=>{
+                    const firstCamera = widgets.find((w)=>w.type === "camera_card");
+                    return firstCamera ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$camera$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingCameraCard"], {
+                        title: firstCamera.title ?? "Camera",
+                        entity_id: firstCamera.entity_id,
+                        refresh: firstCamera.refresh,
+                        show_title: firstCamera.show_title,
+                        width: firstCamera.width,
+                        height: firstCamera.height,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(firstCamera.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(firstCamera.id) : undefined
+                    }, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1187,
+                        columnNumber: 13
+                    }, this) : null;
+                })(),
+                (()=>{
+                    const firstVacuum = widgets.find((w)=>w.type === "vacuum_card");
+                    return firstVacuum ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$vacuum$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingVacuumCard"], {
+                        title: firstVacuum.title ?? "Stofzuiger",
+                        entity_id: firstVacuum.entity_id,
+                        script_ids: firstVacuum.script_ids,
+                        script_names: firstVacuum.script_names,
+                        cleaned_area_entity_id: firstVacuum.cleaned_area_entity_id,
+                        icon: firstVacuum.icon,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(firstVacuum.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(firstVacuum.id) : undefined
+                    }, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1213,
+                        columnNumber: 13
+                    }, this) : null;
+                })(),
+                widgets.filter((w)=>w.type === "room_card").map((w, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$room$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingRoomCard"], {
+                        widget: {
+                            id: w.id,
+                            title: w.title ?? "Kamer",
+                            entity_id: w.entity_id,
+                            icon: w.icon,
+                            light_entity_id: w.light_entity_id,
+                            background_image: w.background_image,
+                            icon_background_color: w.icon_background_color,
+                            width: w.width,
+                            height: w.height
+                        },
+                        widgetIndex: i,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(w.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
+                    }, w.id, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1239,
+                        columnNumber: 13
+                    }, this)),
+                widgets.filter((w)=>w.type === "nuts_card").map((w, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$nuts$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingNutsCard"], {
+                        widget: {
+                            id: w.id,
+                            title: w.title ?? "Gas",
+                            entity_id: w.entity_id,
+                            current_entity_id: w.current_entity_id,
+                            icon: w.icon,
+                            icon_background_color: w.icon_background_color,
+                            max_value: w.max_value,
+                            width: w.width ?? 250,
+                            height: w.height ?? 130
+                        },
+                        widgetIndex: i,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(w.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
+                    }, w.id, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1263,
+                        columnNumber: 13
+                    }, this)),
+                (()=>{
+                    const titleCards = widgets.filter((w)=>w.type === "title_card");
+                    return titleCards.length > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$title$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingTitleCard"], {
+                        widgets: titleCards.map((w)=>({
+                                id: w.id,
+                                title: w.title ?? "Titel"
+                            })),
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? (id)=>setEditingWidgetId(id) : undefined,
+                        onRemove: editMode ? (id)=>handleRemoveTile(id) : undefined
+                    }, void 0, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1287,
+                        columnNumber: 13
+                    }, this) : null;
+                })(),
+                widgets.filter((w)=>w.type === "pill_card").map((w, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$pill$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingPillCard"], {
+                        widget: {
+                            id: w.id,
+                            title: w.title ?? "Pill",
+                            entity_id: w.entity_id,
+                            icon: w.icon,
+                            conditions: w.conditions,
+                            show_state: w.show_state
+                        },
+                        widgetIndex: i,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(w.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
+                    }, w.id, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1303,
+                        columnNumber: 13
+                    }, this)),
+                typeof document !== "undefined" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(widgets.filter((w)=>w.type === "card_group").map((g, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$card$2d$group$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingCardGroup"], {
+                        group: g,
+                        widgetIndex: i,
+                        editMode: editMode,
+                        onEnterEditMode: ()=>setEditMode(true),
+                        onEdit: editMode ? ()=>setEditingWidgetId(g.id) : undefined,
+                        onRemove: editMode ? ()=>handleRemoveTile(g.id) : undefined
+                    }, g.id, false, {
+                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                        lineNumber: 1326,
+                        columnNumber: 17
+                    }, this)), document.body),
+                editingWidgetId && editingWidget && typeof document !== "undefined" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "fixed inset-0 z-40 bg-black/50 backdrop-blur-xl",
+                            "aria-hidden": true,
+                            onClick: ()=>{
+                                if (editingWidget?.type === "card_group" && editingGroupChildId) {
+                                    setEditingGroupChildId(null);
+                                } else {
+                                    setEditingWidgetId(null);
+                                }
+                            }
+                        }, void 0, false, {
+                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                            lineNumber: 1341,
+                            columnNumber: 13
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                    className: "mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100",
+                                    children: editingWidget.type === "title_card" ? "Titel bewerken" : editingWidget.type === "card_group" ? editingGroupChildId ? "Kaart in groep bewerken" : "Kaartgroep bewerken" : "Edit tile"
+                                }, void 0, false, {
+                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                    lineNumber: 1353,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "space-y-3",
+                                    children: [
+                                        editingWidget.type === "title_card" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                    children: "Tekst"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1365,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                    type: "text",
+                                                    value: editForm.title,
+                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                ...prev,
+                                                                title: e.target.value
+                                                            })),
+                                                    placeholder: "Bijv. Woonkamer, Verlichting",
+                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1368,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                            lineNumber: 1364,
+                                            columnNumber: 19
+                                        }, this) : editingWidget.type === "card_group" ? editingGroupChildId ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                            children: "Naam"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1382,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                            type: "text",
+                                                            value: editForm.title,
+                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                        ...prev,
+                                                                        title: e.target.value
+                                                                    })),
+                                                            placeholder: "Bijv. Woonkamer, Verlichting",
+                                                            className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1383,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1381,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                            children: "Entity"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1392,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                            value: editForm.entity_id,
+                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                        ...prev,
+                                                                        entity_id: e.target.value
+                                                                    })),
+                                                            className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500",
+                                                            children: entities.filter((e)=>PILL_CARD_DOMAINS.some((d)=>e.entity_id.startsWith(d + "."))).map((e)=>{
+                                                                const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                                return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                    value: e.entity_id,
+                                                                    children: name
+                                                                }, e.entity_id, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1403,
+                                                                    columnNumber: 33
+                                                                }, this);
+                                                            })
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1393,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1391,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                    className: "flex items-center justify-between gap-3 cursor-pointer",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-sm font-medium text-gray-700 dark:text-gray-300",
+                                                            children: "Toon entiteitstatus"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1411,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            type: "button",
+                                                            role: "switch",
+                                                            "aria-checked": editForm.show_state !== false,
+                                                            onClick: ()=>setEditForm((prev)=>({
+                                                                        ...prev,
+                                                                        show_state: prev.show_state === false
+                                                                    })),
+                                                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("relative inline-flex h-6 w-11 shrink-0 rounded-full border border-gray-200 dark:border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2 dark:focus:ring-offset-gray-900", editForm.show_state !== false ? "bg-[#4D2FB2] border-transparent" : "bg-gray-200 dark:bg-gray-600"),
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition translate-x-0.5", editForm.show_state !== false ? "translate-x-5" : "translate-x-1")
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                lineNumber: 1422,
+                                                                columnNumber: 27
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1412,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1410,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                            children: "Icoon"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1431,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                            type: "text",
+                                                            value: pillIconSearch,
+                                                            onChange: (e)=>setPillIconSearch(e.target.value),
+                                                            onFocus: ()=>setPillIconSearch(pillIconSearch || (editForm.icon ?? "")),
+                                                            placeholder: "Zoek icoon (bijv. CircleDot, Sun…)",
+                                                            className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1432,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    onClick: ()=>{
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                icon: undefined
+                                                                            }));
+                                                                        setPillIconSearch("");
+                                                                    },
+                                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", !editForm.icon ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                    children: "Default (CircleDot)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1441,
+                                                                    columnNumber: 27
+                                                                }, this),
+                                                                __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__SENSOR_ICON_OPTIONS$3e$__["SENSOR_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((pillIconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                        type: "button",
+                                                                        onClick: ()=>{
+                                                                            setEditForm((prev)=>({
+                                                                                    ...prev,
+                                                                                    icon: name
+                                                                                }));
+                                                                            setPillIconSearch(name);
+                                                                        },
+                                                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", (editForm.icon ?? "CircleDot") === name ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                        children: name
+                                                                    }, name, false, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 1455,
+                                                                        columnNumber: 29
+                                                                    }, this))
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1440,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1430,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                            className: "mb-1 text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                            children: "Voorwaardelijke kleur (eerste match)"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1473,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        (editForm.conditions ?? []).map((cond, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2 mb-1.5",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                        value: cond.operator,
+                                                                        onChange: (e)=>setEditForm((prev)=>({
+                                                                                    ...prev,
+                                                                                    conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                            ...c,
+                                                                                            operator: e.target.value
+                                                                                        } : c)
+                                                                                })),
+                                                                        className: "rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs",
+                                                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATORS"].map((op)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                value: op,
+                                                                                children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATOR_LABELS"][op] ?? op
+                                                                            }, op, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 1487,
+                                                                                columnNumber: 33
+                                                                            }, this))
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 1476,
+                                                                        columnNumber: 29
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                        type: "text",
+                                                                        value: cond.value,
+                                                                        onChange: (e)=>setEditForm((prev)=>({
+                                                                                    ...prev,
+                                                                                    conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                            ...c,
+                                                                                            value: e.target.value
+                                                                                        } : c)
+                                                                                })),
+                                                                        placeholder: "Waarde",
+                                                                        className: "w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 1492,
+                                                                        columnNumber: 29
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                        value: cond.color,
+                                                                        onChange: (e)=>setEditForm((prev)=>({
+                                                                                    ...prev,
+                                                                                    conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                            ...c,
+                                                                                            color: e.target.value
+                                                                                        } : c)
+                                                                                })),
+                                                                        className: "rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs",
+                                                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_COLORS"].map((color)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                value: color,
+                                                                                children: color
+                                                                            }, color, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 1515,
+                                                                                columnNumber: 33
+                                                                            }, this))
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 1504,
+                                                                        columnNumber: 29
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                        type: "button",
+                                                                        onClick: ()=>setEditForm((prev)=>({
+                                                                                    ...prev,
+                                                                                    conditions: (prev.conditions ?? []).filter((_, i)=>i !== idx)
+                                                                                })),
+                                                                        className: "p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                                                        "aria-label": "Verwijder voorwaarde",
+                                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                                                            className: "h-4 w-4"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1531,
+                                                                            columnNumber: 31
+                                                                        }, this)
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 1520,
+                                                                        columnNumber: 29
+                                                                    }, this)
+                                                                ]
+                                                            }, idx, true, {
+                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                lineNumber: 1475,
+                                                                columnNumber: 27
+                                                            }, this)),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            type: "button",
+                                                            onClick: ()=>setEditForm((prev)=>({
+                                                                        ...prev,
+                                                                        conditions: [
+                                                                            ...prev.conditions ?? [],
+                                                                            {
+                                                                                operator: "eq",
+                                                                                value: "",
+                                                                                color: "green"
+                                                                            }
+                                                                        ]
+                                                                    })),
+                                                            className: "rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full",
+                                                            children: "+ Voeg voorwaarde toe"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1535,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1472,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "space-y-3",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                    children: "Uitlijning"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1551,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5",
+                                                    children: [
+                                                        "start",
+                                                        "center",
+                                                        "end",
+                                                        "between"
+                                                    ].map((align)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            type: "button",
+                                                            onClick: ()=>{
+                                                                const nextWidgets = widgets.map((w)=>w.id === editingWidget.id ? {
+                                                                        ...w,
+                                                                        alignment: align
+                                                                    } : w);
+                                                                setWidgets(nextWidgets);
+                                                                saveMutation.mutate({
+                                                                    layout,
+                                                                    widgets: nextWidgets,
+                                                                    welcomeTitle,
+                                                                    welcomeSubtitle
+                                                                });
+                                                            },
+                                                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", (editingWidget.alignment ?? "start") === align ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                            children: align === "start" ? "Links" : align === "center" ? "Midden" : align === "end" ? "Rechts" : "Tussen"
+                                                        }, align, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1554,
+                                                            columnNumber: 25
+                                                        }, this))
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1552,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-xs font-medium text-gray-500 dark:text-gray-400 pt-1",
+                                                    children: "Kaarten in groep"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1573,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
+                                                    className: "space-y-1 max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5",
+                                                    children: (editingWidget.children ?? []).map((c)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                                            className: "flex items-center justify-between gap-2 px-3 py-2 text-sm",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                    className: "truncate text-gray-900 dark:text-gray-100",
+                                                                    children: c.title || c.entity_id
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1577,
+                                                                    columnNumber: 27
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "flex items-center gap-1 shrink-0",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                            type: "button",
+                                                                            onClick: ()=>setEditingGroupChildId(c.id),
+                                                                            className: "p-1 rounded text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10",
+                                                                            "aria-label": "Bewerken",
+                                                                            title: "Kaart bewerken",
+                                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$pencil$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Pencil$3e$__["Pencil"], {
+                                                                                className: "h-4 w-4"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 1586,
+                                                                                columnNumber: 31
+                                                                            }, this)
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1579,
+                                                                            columnNumber: 29
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                            type: "button",
+                                                                            onClick: ()=>{
+                                                                                const nextChildren = (editingWidget.children ?? []).filter((x)=>x.id !== c.id);
+                                                                                const nextWidgets = widgets.map((w)=>w.id === editingWidget.id ? {
+                                                                                        ...w,
+                                                                                        children: nextChildren
+                                                                                    } : w);
+                                                                                setWidgets(nextWidgets);
+                                                                                saveMutation.mutate({
+                                                                                    layout,
+                                                                                    widgets: nextWidgets,
+                                                                                    welcomeTitle,
+                                                                                    welcomeSubtitle
+                                                                                });
+                                                                            },
+                                                                            className: "p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                                                            "aria-label": "Verwijderen",
+                                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                                                                className: "h-4 w-4"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 1599,
+                                                                                columnNumber: 31
+                                                                            }, this)
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1588,
+                                                                            columnNumber: 29
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1578,
+                                                                    columnNumber: 27
+                                                                }, this)
+                                                            ]
+                                                        }, c.id, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1576,
+                                                            columnNumber: 25
+                                                        }, this))
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1574,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                    children: "Kaart toevoegen"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1605,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                    type: "text",
+                                                    value: groupAddEntitySearch,
+                                                    onChange: (e)=>setGroupAddEntitySearch(e.target.value),
+                                                    placeholder: "Zoek op naam of entity_id (bijv. sensor.woonkamer)…",
+                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1606,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5",
+                                                    children: entities.filter((e)=>PILL_CARD_DOMAINS.some((d)=>e.entity_id.startsWith(d + "."))).filter((e)=>{
+                                                        const q = groupAddEntitySearch.trim().toLowerCase();
+                                                        if (!q) return true;
+                                                        const name = (e.attributes?.friendly_name ?? e.entity_id).toLowerCase();
+                                                        return name.includes(q) || e.entity_id.toLowerCase().includes(q);
+                                                    }).map((e)=>{
+                                                        const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            type: "button",
+                                                            onClick: ()=>{
+                                                                const newPill = {
+                                                                    id: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["generateId"])(),
+                                                                    type: "pill_card",
+                                                                    title: name,
+                                                                    entity_id: e.entity_id
+                                                                };
+                                                                const nextChildren = [
+                                                                    ...editingWidget.children ?? [],
+                                                                    newPill
+                                                                ];
+                                                                const nextWidgets = widgets.map((w)=>w.id === editingWidget.id ? {
+                                                                        ...w,
+                                                                        children: nextChildren
+                                                                    } : w);
+                                                                setWidgets(nextWidgets);
+                                                                saveMutation.mutate({
+                                                                    layout,
+                                                                    widgets: nextWidgets,
+                                                                    welcomeTitle,
+                                                                    welcomeSubtitle
+                                                                });
+                                                                setGroupAddEntitySearch("");
+                                                            },
+                                                            className: "block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate",
+                                                            children: name
+                                                        }, e.entity_id, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1625,
+                                                            columnNumber: 29
+                                                        }, this);
+                                                    })
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1613,
+                                                    columnNumber: 21
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                            lineNumber: 1550,
+                                            columnNumber: 19
+                                        }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                            children: "Name"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1653,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                            type: "text",
+                                                            value: editForm.title,
+                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                        ...prev,
+                                                                        title: e.target.value
+                                                                    })),
+                                                            placeholder: "Tile name",
+                                                            className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1656,
+                                                            columnNumber: 19
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1652,
+                                                    columnNumber: 17
+                                                }, this),
+                                                (editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card") && editingWidget.type !== "title_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                            children: editingWidget.type === "solar_card" ? "Yield (opbrengst)" : editingWidget.type === "energy_monitor_card" ? "Entity voor voorwaarden (bijv. weather.home)" : editingWidget.type === "stat_pill_card" ? "Sensor" : "Entity"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1668,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                            type: "text",
+                                                            value: editEntitySearch,
+                                                            onChange: (e)=>setEditEntitySearch(e.target.value),
+                                                            placeholder: "Zoek op naam of entity_id (bijv. sensor.woonkamer)…",
+                                                            className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1677,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                            value: editForm.entity_id,
+                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                        ...prev,
+                                                                        entity_id: e.target.value
+                                                                    })),
+                                                            className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500",
+                                                            children: (()=>{
+                                                                let options = editingWidget.type === "pill_card" ? entities.filter((e)=>PILL_CARD_DOMAINS.some((d)=>e.entity_id.startsWith(d + "."))) : editingWidget.type === "room_card" ? entities : editingWidget.type === "energy_monitor_card" ? entities.filter((e)=>e.entity_id.startsWith("weather.") || e.entity_id.startsWith("sensor.")) : entities.filter((e)=>e.entity_id.startsWith((WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + "."));
+                                                                const q = editEntitySearch.trim().toLowerCase();
+                                                                if (q) {
+                                                                    options = options.filter((e)=>{
+                                                                        const name = (e.attributes?.friendly_name ?? e.entity_id).toLowerCase();
+                                                                        return name.includes(q) || e.entity_id.toLowerCase().includes(q);
+                                                                    });
+                                                                    const currentId = editForm.entity_id;
+                                                                    if (currentId && !options.some((e)=>e.entity_id === currentId)) {
+                                                                        const current = entities.find((e)=>e.entity_id === currentId);
+                                                                        if (current) options = [
+                                                                            current,
+                                                                            ...options
+                                                                        ];
+                                                                    }
+                                                                }
+                                                                const opts = options.map((e)=>{
+                                                                    const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                        value: e.entity_id,
+                                                                        children: name
+                                                                    }, e.entity_id, false, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 1727,
+                                                                        columnNumber: 29
+                                                                    }, this);
+                                                                });
+                                                                if (editingWidget.type === "energy_monitor_card") {
+                                                                    return [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: "",
+                                                                            children: "Geen (alleen standaardafbeelding)"
+                                                                        }, "", false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1733,
+                                                                            columnNumber: 35
+                                                                        }, this),
+                                                                        ...opts
+                                                                    ];
+                                                                }
+                                                                return opts;
+                                                            })()
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1684,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1667,
+                                                    columnNumber: 19
+                                                }, this),
+                                                editingWidget.type === "light_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                            children: "Icoon"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1742,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5",
+                                                            children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$light$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["LIGHT_ICON_OPTIONS"].map((key)=>{
+                                                                const label = key === "lightbulb" ? "Lightbulb" : key === "spotlight" ? "Spotlight" : key === "lamp" ? "Lamp" : key === "lamp-ceiling" ? "Plafond" : key === "lamp-desk" ? "Bureau" : key === "lamp-floor" ? "Vloer" : key === "lamp-wall-down" ? "Wall down" : "Wall up";
+                                                                return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    onClick: ()=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                icon: key
+                                                                            })),
+                                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", (editForm.icon ?? "lightbulb") === key ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                    children: label
+                                                                }, key, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1764,
+                                                                    columnNumber: 27
+                                                                }, this);
+                                                            })
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1745,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 1741,
+                                                    columnNumber: 19
+                                                }, this),
+                                                editingWidget.type === "room_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Icoon"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1787,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto",
+                                                                    children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__SENSOR_ICON_OPTIONS$3e$__["SENSOR_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((iconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                            type: "button",
+                                                                            onClick: ()=>setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        icon: name
+                                                                                    })),
+                                                                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", (editForm.icon ?? "Home") === name ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                            children: name
+                                                                        }, name, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1794,
+                                                                            columnNumber: 27
+                                                                        }, this))
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1790,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1786,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Licht-entiteit (optioneel)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1813,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                    value: editForm.light_entity_id ?? "",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                light_entity_id: e.target.value || undefined
+                                                                            })),
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: "",
+                                                                            children: "Geen"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1826,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        entities.filter((e)=>e.entity_id.startsWith("light.") || e.entity_id.startsWith("group.")).map((e)=>{
+                                                                            const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                value: e.entity_id,
+                                                                                children: name
+                                                                            }, e.entity_id, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 1835,
+                                                                                columnNumber: 31
+                                                                            }, this);
+                                                                        })
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1816,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1812,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Achtergrondafbeelding"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1843,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mb-2 text-xs text-gray-500 dark:text-gray-400",
+                                                                    children: "Upload een foto van de kamer of plak een URL (bijv. van een camera-feed)."
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1846,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                editForm.background_image && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10",
+                                                                    style: {
+                                                                        backgroundImage: `url(${editForm.background_image})`
+                                                                    }
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1850,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "flex gap-2",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                            className: "rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/10",
+                                                                            children: [
+                                                                                uploadingRoomBg ? "Uploaden…" : "Upload afbeelding",
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                    type: "file",
+                                                                                    accept: "image/jpeg,image/png,image/webp,image/gif",
+                                                                                    className: "sr-only",
+                                                                                    onChange: async (e)=>{
+                                                                                        const file = e.target.files?.[0];
+                                                                                        if (!file || !editingWidgetId) return;
+                                                                                        e.target.value = "";
+                                                                                        setUploadingRoomBg(true);
+                                                                                        try {
+                                                                                            const formData = new FormData();
+                                                                                            formData.set("file", file);
+                                                                                            const res = await fetch("/api/upload", {
+                                                                                                method: "POST",
+                                                                                                body: formData
+                                                                                            });
+                                                                                            const json = await res.json();
+                                                                                            if (!res.ok) throw new Error(json.error || "Upload failed");
+                                                                                            setEditForm((prev)=>({
+                                                                                                    ...prev,
+                                                                                                    background_image: json.url
+                                                                                                }));
+                                                                                        } finally{
+                                                                                            setUploadingRoomBg(false);
+                                                                                        }
+                                                                                    },
+                                                                                    disabled: uploadingRoomBg
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 1858,
+                                                                                    columnNumber: 27
+                                                                                }, this)
+                                                                            ]
+                                                                        }, void 0, true, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1856,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        editForm.background_image && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                            type: "button",
+                                                                            onClick: ()=>setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        background_image: undefined
+                                                                                    })),
+                                                                            className: "rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10",
+                                                                            children: "Verwijderen"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1882,
+                                                                            columnNumber: 27
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1855,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "url",
+                                                                    value: editForm.background_image ?? "",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                background_image: e.target.value || undefined
+                                                                            })),
+                                                                    placeholder: "/uploads/... of https://...",
+                                                                    className: "mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1893,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1842,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Kleur icoon-badge"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1907,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "flex items-center gap-2",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                            type: "color",
+                                                                            value: editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : "#3B82F6",
+                                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        icon_background_color: e.target.value
+                                                                                    })),
+                                                                            className: "h-10 w-14 cursor-pointer rounded border border-gray-200 dark:border-white/10 bg-transparent"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1911,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                            type: "text",
+                                                                            value: editForm.icon_background_color ?? "",
+                                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        icon_background_color: e.target.value || undefined
+                                                                                    })),
+                                                                            placeholder: "#3B82F6",
+                                                                            className: "flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1922,
+                                                                            columnNumber: 25
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1910,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1906,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Breedte kaart (px)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1937,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "number",
+                                                                    min: 200,
+                                                                    max: 500,
+                                                                    step: 10,
+                                                                    value: editForm.width ?? 280,
+                                                                    onChange: (e)=>{
+                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                width: v != null && !Number.isNaN(v) ? v : undefined
+                                                                            }));
+                                                                    },
+                                                                    placeholder: "280",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1940,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                    children: "200–500 px (standaard 280)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1956,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1936,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Hoogte kaart (px)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1959,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "number",
+                                                                    min: 80,
+                                                                    max: 300,
+                                                                    step: 10,
+                                                                    value: editForm.height ?? 120,
+                                                                    onChange: (e)=>{
+                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                height: v != null && !Number.isNaN(v) ? v : undefined
+                                                                            }));
+                                                                    },
+                                                                    placeholder: "120",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1962,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                    children: "80–300 px (standaard 120)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1978,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1958,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true),
+                                                (editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Icoon"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1985,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                    value: editForm.icon ?? "Thermometer",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                icon: e.target.value || undefined
+                                                                            })),
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200",
+                                                                    children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CARD_ICON_OPTIONS"].map((opt)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: opt,
+                                                                            children: opt
+                                                                        }, opt, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1996,
+                                                                            columnNumber: 27
+                                                                        }, this))
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1988,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 1984,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Luchtvochtigheid (optioneel)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2003,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                    value: editForm.humidity_entity_id ?? "",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                humidity_entity_id: e.target.value || undefined
+                                                                            })),
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: "",
+                                                                            children: "Geen"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2016,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        entities.filter((e)=>e.entity_id.startsWith("sensor.")).map((e)=>{
+                                                                            const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                value: e.entity_id,
+                                                                                children: name
+                                                                            }, e.entity_id, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2024,
+                                                                                columnNumber: 31
+                                                                            }, this);
+                                                                        })
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2006,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2002,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Breedte kaart (px)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2032,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "number",
+                                                                    min: 200,
+                                                                    max: 500,
+                                                                    step: 10,
+                                                                    value: editForm.width ?? 320,
+                                                                    onChange: (e)=>{
+                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                width: v != null && !Number.isNaN(v) ? v : undefined
+                                                                            }));
+                                                                    },
+                                                                    placeholder: "320",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2035,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                    children: "200–500 px (standaard 320)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2051,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2031,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Hoogte kaart (px)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2054,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "number",
+                                                                    min: 100,
+                                                                    max: 400,
+                                                                    step: 10,
+                                                                    value: editForm.height ?? 180,
+                                                                    onChange: (e)=>{
+                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                height: v != null && !Number.isNaN(v) ? v : undefined
+                                                                            }));
+                                                                    },
+                                                                    placeholder: "180",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2057,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                    children: "100–400 px (standaard 180)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2073,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2053,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true),
+                                                editingWidget.type === "solar_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                            children: "Consumption (verbruik, optioneel)"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2079,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                            value: editForm.consumption_entity_id ?? "",
+                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                        ...prev,
+                                                                        consumption_entity_id: e.target.value || undefined
+                                                                    })),
+                                                            className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                    value: "",
+                                                                    children: "Geen"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2092,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                entities.filter((e)=>e.entity_id.startsWith("sensor.")).map((e)=>{
+                                                                    const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                        value: e.entity_id,
+                                                                        children: name
+                                                                    }, e.entity_id, false, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 2100,
+                                                                        columnNumber: 29
+                                                                    }, this);
+                                                                })
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2082,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 2078,
+                                                    columnNumber: 19
+                                                }, this),
+                                                editingWidget.type === "energy_monitor_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Achtergrondafbeelding light mode (URL)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2111,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "text",
+                                                                    value: editForm.background_image ?? "",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                background_image: e.target.value || undefined
+                                                                            })),
+                                                                    placeholder: "/energy-house.png of https://...",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2114,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2110,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Achtergrondafbeelding dark mode (URL, optioneel)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2128,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "text",
+                                                                    value: editForm.background_image_dark ?? "",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                background_image_dark: e.target.value || undefined
+                                                                            })),
+                                                                    placeholder: "Leeg =zelfde als light mode",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2131,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-1 text-xs text-gray-500 dark:text-gray-400",
+                                                                    children: "Plaats afbeeldingen in public/ of gebruik externe URLs."
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2143,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2127,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex items-center gap-2",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "checkbox",
+                                                                    id: "energy-minimal",
+                                                                    checked: editForm.minimal ?? false,
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                minimal: e.target.checked
+                                                                            })),
+                                                                    className: "rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2148,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    htmlFor: "energy-minimal",
+                                                                    className: "text-sm text-gray-700 dark:text-gray-300",
+                                                                    children: "Minimalistisch (alleen afbeelding, geen titel of rand)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2157,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2147,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: [
+                                                                        "Schaalfactor (",
+                                                                        (editForm.scale ?? 1).toFixed(1),
+                                                                        "×)"
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2162,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "range",
+                                                                    min: "0.5",
+                                                                    max: "1.5",
+                                                                    step: "0.1",
+                                                                    value: editForm.scale ?? 1,
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                scale: parseFloat(e.target.value)
+                                                                            })),
+                                                                    className: "w-full"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2165,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2161,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Voorwaarden (afbeelding bij waarde)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2181,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mb-2 text-xs text-gray-500 dark:text-gray-400",
+                                                                    children: "Eerste voorwaarde die klopt bepaalt de afbeelding. Bijv. sunny → zon.jpg, rainy → regen.jpg. Entity hierboven moet zijn ingesteld."
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2184,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                (editForm.image_conditions ?? []).map((cond, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        className: "flex flex-wrap items-start gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2 mb-2",
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                                value: cond.operator,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            image_conditions: (prev.image_conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    operator: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                className: "rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs",
+                                                                                children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATORS"].map((op)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                        value: op,
+                                                                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATOR_LABELS"][op] ?? op
+                                                                                    }, op, false, {
+                                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                        lineNumber: 2202,
+                                                                                        columnNumber: 31
+                                                                                    }, this))
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2189,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                type: "text",
+                                                                                value: cond.value,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            image_conditions: (prev.image_conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    value: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                placeholder: "Waarde (bijv. sunny)",
+                                                                                className: "flex-1 min-w-[80px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2205,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                type: "text",
+                                                                                value: cond.image,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            image_conditions: (prev.image_conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    image: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                placeholder: "Afbeelding (URL)",
+                                                                                className: "flex-1 min-w-[100px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2219,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                type: "text",
+                                                                                value: cond.image_dark ?? "",
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            image_conditions: (prev.image_conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    image_dark: e.target.value || undefined
+                                                                                                } : c)
+                                                                                        })),
+                                                                                placeholder: "Dark (optioneel)",
+                                                                                className: "w-24 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2233,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                type: "button",
+                                                                                onClick: ()=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            image_conditions: (prev.image_conditions ?? []).filter((_, i)=>i !== idx)
+                                                                                        })),
+                                                                                className: "p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                                                                    className: "h-3.5 w-3.5"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 2257,
+                                                                                    columnNumber: 29
+                                                                                }, this)
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2247,
+                                                                                columnNumber: 27
+                                                                            }, this)
+                                                                        ]
+                                                                    }, idx, true, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 2188,
+                                                                        columnNumber: 25
+                                                                    }, this)),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    onClick: ()=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                image_conditions: [
+                                                                                    ...prev.image_conditions ?? [],
+                                                                                    {
+                                                                                        operator: "eq",
+                                                                                        value: "",
+                                                                                        image: "",
+                                                                                        image_dark: undefined
+                                                                                    }
+                                                                                ]
+                                                                            })),
+                                                                    className: "rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full",
+                                                                    children: "+ Voorwaarde toevoegen"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2261,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2180,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true),
+                                                editingWidget.type === "stat_pill_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Label (onder de waarde)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2279,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "text",
+                                                                    value: editForm.label ?? "",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                label: e.target.value || undefined
+                                                                            })),
+                                                                    placeholder: "Opbrengst, Verbruik, ...",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2282,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2278,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Icoon"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2293,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                    value: editForm.icon ?? "Sun",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                icon: e.target.value || undefined
+                                                                            })),
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200",
+                                                                    children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CARD_ICON_OPTIONS"].map((opt)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: opt,
+                                                                            children: opt
+                                                                        }, opt, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2304,
+                                                                            columnNumber: 27
+                                                                        }, this))
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2296,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2292,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Kleur (standaard)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2311,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                    value: editForm.color ?? "amber",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                color: e.target.value
+                                                                            })),
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: "amber",
+                                                                            children: "Amber (geel)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2324,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: "purple",
+                                                                            children: "Paars"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2325,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: "emerald",
+                                                                            children: "Smaragd (groen)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2326,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: "red",
+                                                                            children: "Rood"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2327,
+                                                                            columnNumber: 25
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2314,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2310,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Voorwaarden (kleur aanpassen bij waarde)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2331,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mb-2 text-xs text-gray-500 dark:text-gray-400",
+                                                                    children: "Eerste voorwaarde die klopt bepaalt de kleur. Bijv. plastic = groen, papier = blauw."
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2334,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                (editForm.conditions ?? []).map((cond, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        className: "flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2 mb-2",
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                                value: cond.operator,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    operator: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                className: "rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs",
+                                                                                children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATORS"].map((op)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                        value: op,
+                                                                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATOR_LABELS"][op] ?? op
+                                                                                    }, op, false, {
+                                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                        lineNumber: 2355,
+                                                                                        columnNumber: 31
+                                                                                    }, this))
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2342,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                type: "text",
+                                                                                value: cond.value,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    value: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                placeholder: "Waarde (bijv. plastic)",
+                                                                                className: "w-24 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2360,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                                value: cond.color,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    color: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                className: "rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs",
+                                                                                children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_COLORS"].map((color)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                        value: color,
+                                                                                        children: color
+                                                                                    }, color, false, {
+                                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                        lineNumber: 2387,
+                                                                                        columnNumber: 31
+                                                                                    }, this))
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2374,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                type: "button",
+                                                                                onClick: ()=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).filter((_, i)=>i !== idx)
+                                                                                        })),
+                                                                                className: "p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                                                                "aria-label": "Verwijder voorwaarde",
+                                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                                                                    className: "h-4 w-4"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 2403,
+                                                                                    columnNumber: 29
+                                                                                }, this)
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2392,
+                                                                                columnNumber: 27
+                                                                            }, this)
+                                                                        ]
+                                                                    }, idx, true, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 2338,
+                                                                        columnNumber: 25
+                                                                    }, this)),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    onClick: ()=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                conditions: [
+                                                                                    ...prev.conditions ?? [],
+                                                                                    {
+                                                                                        operator: "eq",
+                                                                                        value: "",
+                                                                                        color: "green"
+                                                                                    }
+                                                                                ]
+                                                                            })),
+                                                                    className: "rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full",
+                                                                    children: "+ Voeg voorwaarde toe"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2407,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2330,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true),
+                                                editingWidget.type === "vacuum_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                            children: "Vacuum Room (scripts)"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2424,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                            className: "text-xs text-gray-500 dark:text-gray-400 mb-2",
+                                                            children: "Kies scripts en geef ze optioneel een weergavenaam."
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2427,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 p-2 space-y-1 mb-2",
+                                                            children: [
+                                                                entities.filter((e)=>e.entity_id.startsWith("script.")).map((e)=>{
+                                                                    const defaultName = e.attributes?.friendly_name ?? e.entity_id;
+                                                                    const checked = (editForm.script_ids ?? []).includes(e.entity_id);
+                                                                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                        className: "flex items-center gap-2 py-1.5 px-2 rounded hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer",
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                type: "checkbox",
+                                                                                checked: checked,
+                                                                                onChange: ()=>{
+                                                                                    const ids = editForm.script_ids ?? [];
+                                                                                    const names = {
+                                                                                        ...editForm.script_names ?? {}
+                                                                                    };
+                                                                                    if (checked) {
+                                                                                        delete names[e.entity_id];
+                                                                                    }
+                                                                                    setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            script_ids: checked ? ids.filter((id)=>id !== e.entity_id) : [
+                                                                                                ...ids,
+                                                                                                e.entity_id
+                                                                                            ],
+                                                                                            script_names: names
+                                                                                        }));
+                                                                                },
+                                                                                className: "h-4 w-4 rounded border-gray-300 dark:border-white/20 text-[#4D2FB2] focus:ring-[#4D2FB2]"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2441,
+                                                                                columnNumber: 31
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                className: "text-sm truncate shrink-0 max-w-[140px]",
+                                                                                title: e.entity_id,
+                                                                                children: defaultName
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2460,
+                                                                                columnNumber: 31
+                                                                            }, this)
+                                                                        ]
+                                                                    }, e.entity_id, true, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 2437,
+                                                                        columnNumber: 29
+                                                                    }, this);
+                                                                }),
+                                                                entities.filter((e)=>e.entity_id.startsWith("script.")).length === 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "text-xs text-gray-500 py-2",
+                                                                    children: "Geen scripts gevonden. Sla eerst een verbinding op."
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2465,
+                                                                    columnNumber: 25
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2430,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        (editForm.script_ids ?? []).length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "space-y-2",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Naam per script (optioneel)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2470,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                (editForm.script_ids ?? []).map((scriptId)=>{
+                                                                    const e = entities.find((x)=>x.entity_id === scriptId);
+                                                                    const defaultName = e?.attributes?.friendly_name ?? scriptId;
+                                                                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        className: "flex items-center gap-2",
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                className: "text-xs text-gray-500 dark:text-gray-400 w-28 truncate shrink-0",
+                                                                                title: scriptId,
+                                                                                children: defaultName
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2476,
+                                                                                columnNumber: 31
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                type: "text",
+                                                                                value: editForm.script_names?.[scriptId] ?? "",
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            script_names: {
+                                                                                                ...prev.script_names ?? {},
+                                                                                                [scriptId]: e.target.value || undefined
+                                                                                            }
+                                                                                        })),
+                                                                                placeholder: defaultName,
+                                                                                className: "flex-1 min-w-0 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1.5 text-sm"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2477,
+                                                                                columnNumber: 31
+                                                                            }, this)
+                                                                        ]
+                                                                    }, scriptId, true, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 2475,
+                                                                        columnNumber: 29
+                                                                    }, this);
+                                                                })
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2469,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "mt-3",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Sensor onder status (bijv. cleaned area)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2498,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                    value: editForm.cleaned_area_entity_id ?? "",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                cleaned_area_entity_id: e.target.value || undefined
+                                                                            })),
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: "",
+                                                                            children: "Geen"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2511,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        entities.filter((e)=>e.entity_id.startsWith("sensor.")).map((e)=>{
+                                                                            const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                value: e.entity_id,
+                                                                                children: name
+                                                                            }, e.entity_id, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2517,
+                                                                                columnNumber: 31
+                                                                            }, this);
+                                                                        })
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2501,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2497,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "mt-3",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Icoon"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2525,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "text",
+                                                                    value: vacuumIconSearch,
+                                                                    onChange: (e)=>setVacuumIconSearch(e.target.value),
+                                                                    onFocus: ()=>setVacuumIconSearch(vacuumIconSearch || (editForm.icon ?? "")),
+                                                                    placeholder: "Zoek icoon (bijv. home, bot, sparkles…)",
+                                                                    className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2528,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                            type: "button",
+                                                                            onClick: ()=>{
+                                                                                setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        icon: undefined
+                                                                                    }));
+                                                                                setVacuumIconSearch("");
+                                                                            },
+                                                                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", !editForm.icon ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                            children: "Geen (Sparkles)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2537,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__VACUUM_ICON_OPTIONS$3e$__["VACUUM_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((vacuumIconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                type: "button",
+                                                                                onClick: ()=>{
+                                                                                    setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            icon: name
+                                                                                        }));
+                                                                                    setVacuumIconSearch(name);
+                                                                                },
+                                                                                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", (editForm.icon ?? "Sparkles") === name ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                                children: name
+                                                                            }, name, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2555,
+                                                                                columnNumber: 27
+                                                                            }, this))
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2536,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2524,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 2423,
+                                                    columnNumber: 19
+                                                }, this),
+                                                editingWidget.type === "sensor_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex rounded-lg border border-gray-200 dark:border-white/10 p-0.5 mb-3",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    onClick: ()=>setSensorCardEditTab("general"),
+                                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("flex-1 rounded-md py-1.5 text-xs font-medium transition-colors", sensorCardEditTab === "general" ? "bg-[#4D2FB2] text-white" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"),
+                                                                    children: "Algemeen"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2579,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    onClick: ()=>setSensorCardEditTab("conditions"),
+                                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("flex-1 rounded-md py-1.5 text-xs font-medium transition-colors", sensorCardEditTab === "conditions" ? "bg-[#4D2FB2] text-white" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"),
+                                                                    children: "Conditionele voorwaarden"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2591,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2578,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        sensorCardEditTab === "general" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Icoon"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2606,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "text",
+                                                                    value: sensorIconSearch,
+                                                                    onChange: (e)=>setSensorIconSearch(e.target.value),
+                                                                    onFocus: ()=>setSensorIconSearch(sensorIconSearch || (editForm.icon ?? "")),
+                                                                    placeholder: "Zoek icoon (bijv. gauge, thermometer…)",
+                                                                    className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2609,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                            type: "button",
+                                                                            onClick: ()=>{
+                                                                                setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        icon: undefined
+                                                                                    }));
+                                                                                setSensorIconSearch("");
+                                                                            },
+                                                                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", !editForm.icon ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                            children: "Default (Gauge)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2618,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__SENSOR_ICON_OPTIONS$3e$__["SENSOR_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((sensorIconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                type: "button",
+                                                                                onClick: ()=>{
+                                                                                    setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            icon: name
+                                                                                        }));
+                                                                                    setSensorIconSearch(name);
+                                                                                },
+                                                                                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", (editForm.icon ?? "Gauge") === name ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                                children: name
+                                                                            }, name, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2636,
+                                                                                columnNumber: 29
+                                                                            }, this))
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2617,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "mt-3",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                            children: "Grootte"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2655,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                            value: editForm.size ?? "md",
+                                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        size: e.target.value
+                                                                                    })),
+                                                                            className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500",
+                                                                            children: [
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                    value: "sm",
+                                                                                    children: "Klein"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 2665,
+                                                                                    columnNumber: 29
+                                                                                }, this),
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                    value: "md",
+                                                                                    children: "Normaal"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 2666,
+                                                                                    columnNumber: 29
+                                                                                }, this),
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                    value: "lg",
+                                                                                    children: "Groot"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 2667,
+                                                                                    columnNumber: 29
+                                                                                }, this)
+                                                                            ]
+                                                                        }, void 0, true, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2658,
+                                                                            columnNumber: 27
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2654,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "mt-3 flex items-center gap-2",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                            type: "checkbox",
+                                                                            id: "sensor-show-icon",
+                                                                            checked: editForm.show_icon !== false,
+                                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        show_icon: e.target.checked
+                                                                                    })),
+                                                                            className: "rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2671,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                            htmlFor: "sensor-show-icon",
+                                                                            className: "text-sm text-gray-700 dark:text-gray-300",
+                                                                            children: "Icoon tonen"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2680,
+                                                                            columnNumber: 27
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2670,
+                                                                    columnNumber: 25
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true),
+                                                        sensorCardEditTab === "conditions" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "space-y-2",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "text-xs text-gray-500 dark:text-gray-400",
+                                                                    children: "Eerste voorwaarde die klopt bepaalt de kaartkleur. Getallen en tekst worden ondersteund."
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2688,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                (editForm.conditions ?? []).map((cond, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        className: "flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2",
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                                value: cond.operator,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    operator: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                className: "rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs",
+                                                                                children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATORS"].map((op)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                        value: op,
+                                                                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATOR_LABELS"][op] ?? op
+                                                                                    }, op, false, {
+                                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                        lineNumber: 2709,
+                                                                                        columnNumber: 33
+                                                                                    }, this))
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2696,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                type: "text",
+                                                                                value: cond.value,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    value: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                placeholder: "Waarde",
+                                                                                className: "w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2714,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                                value: cond.color,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    color: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                className: "rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs",
+                                                                                children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_COLORS"].map((color)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                        value: color,
+                                                                                        children: color
+                                                                                    }, color, false, {
+                                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                        lineNumber: 2741,
+                                                                                        columnNumber: 33
+                                                                                    }, this))
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2728,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                type: "button",
+                                                                                onClick: ()=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).filter((_, i)=>i !== idx)
+                                                                                        })),
+                                                                                className: "p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                                                                "aria-label": "Verwijder voorwaarde",
+                                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                                                                    className: "h-4 w-4"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 2757,
+                                                                                    columnNumber: 31
+                                                                                }, this)
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2746,
+                                                                                columnNumber: 29
+                                                                            }, this)
+                                                                        ]
+                                                                    }, idx, true, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 2692,
+                                                                        columnNumber: 27
+                                                                    }, this)),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    onClick: ()=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                conditions: [
+                                                                                    ...prev.conditions ?? [],
+                                                                                    {
+                                                                                        operator: "gte",
+                                                                                        value: "",
+                                                                                        color: "green"
+                                                                                    }
+                                                                                ]
+                                                                            })),
+                                                                    className: "rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full",
+                                                                    children: "+ Voeg voorwaarde toe"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2761,
+                                                                    columnNumber: 25
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2687,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 2577,
+                                                    columnNumber: 19
+                                                }, this),
+                                                editingWidget.type === "pill_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "space-y-3",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                            className: "flex items-center justify-between gap-3 cursor-pointer",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                    className: "text-sm font-medium text-gray-700 dark:text-gray-300",
+                                                                    children: "Toon entiteitstatus"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2780,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    role: "switch",
+                                                                    "aria-checked": editForm.show_state !== false,
+                                                                    onClick: ()=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                show_state: prev.show_state === false
+                                                                            })),
+                                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("relative inline-flex h-6 w-11 shrink-0 rounded-full border border-gray-200 dark:border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2 dark:focus:ring-offset-gray-900", editForm.show_state !== false ? "bg-[#4D2FB2] border-transparent" : "bg-gray-200 dark:bg-gray-600"),
+                                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition translate-x-0.5", editForm.show_state !== false ? "translate-x-5" : "translate-x-1")
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 2797,
+                                                                        columnNumber: 25
+                                                                    }, this)
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2783,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2779,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                            className: "text-xs text-gray-500 dark:text-gray-400 -mt-2",
+                                                            children: "Toon of verberg de waarde (Aan/Uit of sensorwaarde) op de pill."
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2805,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Icoon"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2809,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "text",
+                                                                    value: pillIconSearch,
+                                                                    onChange: (e)=>setPillIconSearch(e.target.value),
+                                                                    onFocus: ()=>setPillIconSearch(pillIconSearch || (editForm.icon ?? "")),
+                                                                    placeholder: "Zoek icoon (bijv. CircleDot, Sun…)",
+                                                                    className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2812,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                            type: "button",
+                                                                            onClick: ()=>{
+                                                                                setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        icon: undefined
+                                                                                    }));
+                                                                                setPillIconSearch("");
+                                                                            },
+                                                                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", !editForm.icon ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                            children: "Default (CircleDot)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 2821,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__SENSOR_ICON_OPTIONS$3e$__["SENSOR_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((pillIconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                type: "button",
+                                                                                onClick: ()=>{
+                                                                                    setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            icon: name
+                                                                                        }));
+                                                                                    setPillIconSearch(name);
+                                                                                },
+                                                                                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", (editForm.icon ?? "CircleDot") === name ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                                children: name
+                                                                            }, name, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2839,
+                                                                                columnNumber: 27
+                                                                            }, this))
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2820,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2808,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mb-1 text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Voorwaardelijke kleur (eerste match)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2859,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "text-xs text-gray-500 dark:text-gray-400 mb-2",
+                                                                    children: "Bepaal de pill-kleur op basis van de entity state."
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2862,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                (editForm.conditions ?? []).map((cond, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        className: "flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2 mb-1.5",
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                                value: cond.operator,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    operator: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                className: "rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs",
+                                                                                children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATORS"].map((op)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                        value: op,
+                                                                                        children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATOR_LABELS"][op] ?? op
+                                                                                    }, op, false, {
+                                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                        lineNumber: 2883,
+                                                                                        columnNumber: 31
+                                                                                    }, this))
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2870,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                type: "text",
+                                                                                value: cond.value,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    value: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                placeholder: "Waarde",
+                                                                                className: "w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2888,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                                value: cond.color,
+                                                                                onChange: (e)=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).map((c, i)=>i === idx ? {
+                                                                                                    ...c,
+                                                                                                    color: e.target.value
+                                                                                                } : c)
+                                                                                        })),
+                                                                                className: "rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs",
+                                                                                children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_COLORS"].map((color)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                        value: color,
+                                                                                        children: color
+                                                                                    }, color, false, {
+                                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                        lineNumber: 2915,
+                                                                                        columnNumber: 31
+                                                                                    }, this))
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2902,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                type: "button",
+                                                                                onClick: ()=>setEditForm((prev)=>({
+                                                                                            ...prev,
+                                                                                            conditions: (prev.conditions ?? []).filter((_, i)=>i !== idx)
+                                                                                        })),
+                                                                                className: "p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                                                                "aria-label": "Verwijder voorwaarde",
+                                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$x$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__X$3e$__["X"], {
+                                                                                    className: "h-4 w-4"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 2931,
+                                                                                    columnNumber: 29
+                                                                                }, this)
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 2920,
+                                                                                columnNumber: 27
+                                                                            }, this)
+                                                                        ]
+                                                                    }, idx, true, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 2866,
+                                                                        columnNumber: 25
+                                                                    }, this)),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    onClick: ()=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                conditions: [
+                                                                                    ...prev.conditions ?? [],
+                                                                                    {
+                                                                                        operator: "eq",
+                                                                                        value: "",
+                                                                                        color: "green"
+                                                                                    }
+                                                                                ]
+                                                                            })),
+                                                                    className: "rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full",
+                                                                    children: "+ Voeg voorwaarde toe"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2935,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2858,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                    lineNumber: 2778,
+                                                    columnNumber: 19
+                                                }, this),
+                                                editingWidget.type === "camera_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex items-center justify-between gap-3",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "text-sm font-medium text-gray-700 dark:text-gray-300",
+                                                                    children: "Toon titel"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2953,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    role: "switch",
+                                                                    "aria-checked": editForm.show_title !== false,
+                                                                    onClick: ()=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                show_title: !(prev.show_title !== false)
+                                                                            })),
+                                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2", editForm.show_title !== false ? "bg-[#4D2FB2]" : "bg-gray-200 dark:bg-gray-600"),
+                                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition", editForm.show_title !== false ? "translate-x-5" : "translate-x-1")
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 2970,
+                                                                        columnNumber: 25
+                                                                    }, this)
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2956,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2952,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Vernieuw interval (seconden)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2979,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "number",
+                                                                    min: 2,
+                                                                    max: 120,
+                                                                    step: 1,
+                                                                    value: editForm.refresh ?? 10,
+                                                                    onChange: (e)=>{
+                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                refresh: v != null && !Number.isNaN(v) ? v : 10
+                                                                            }));
+                                                                    },
+                                                                    placeholder: "10",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2982,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                    children: "2–120 seconden (standaard 10)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 2998,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 2978,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Breedte kaart (px)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3001,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "number",
+                                                                    min: 200,
+                                                                    max: 600,
+                                                                    step: 10,
+                                                                    value: editForm.width ?? 360,
+                                                                    onChange: (e)=>{
+                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                width: v != null && !Number.isNaN(v) ? v : undefined
+                                                                            }));
+                                                                    },
+                                                                    placeholder: "360",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3004,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                    children: "200–600 px (standaard 360)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3020,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3000,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Hoogte kaart (px)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3023,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "number",
+                                                                    min: 150,
+                                                                    max: 450,
+                                                                    step: 10,
+                                                                    value: editForm.height ?? 270,
+                                                                    onChange: (e)=>{
+                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                height: v != null && !Number.isNaN(v) ? v : undefined
+                                                                            }));
+                                                                    },
+                                                                    placeholder: "270",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3026,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                    children: "150–450 px (standaard 270)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3042,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3022,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true),
+                                                editingWidget.type === "weather_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex items-center justify-between gap-3",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "text-sm font-medium text-gray-700 dark:text-gray-300",
+                                                                    children: "Toon icoon"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3049,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    role: "switch",
+                                                                    "aria-checked": editForm.show_icon !== false,
+                                                                    onClick: ()=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                show_icon: !(prev.show_icon !== false)
+                                                                            })),
+                                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2", editForm.show_icon !== false ? "bg-[#4D2FB2]" : "bg-gray-200 dark:bg-gray-600"),
+                                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition", editForm.show_icon !== false ? "translate-x-5" : "translate-x-1")
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                        lineNumber: 3066,
+                                                                        columnNumber: 25
+                                                                    }, this)
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3052,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3048,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Breedte kaart (px)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3075,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "number",
+                                                                    min: 200,
+                                                                    max: 500,
+                                                                    step: 10,
+                                                                    value: editForm.width ?? 320,
+                                                                    onChange: (e)=>{
+                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                width: v != null && !Number.isNaN(v) ? v : undefined
+                                                                            }));
+                                                                    },
+                                                                    placeholder: "320",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3078,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                    children: "200–500 px (standaard 320)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3094,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3074,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Hoogte kaart (px)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3097,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "number",
+                                                                    min: 100,
+                                                                    max: 400,
+                                                                    step: 10,
+                                                                    value: editForm.height ?? 180,
+                                                                    onChange: (e)=>{
+                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                height: v != null && !Number.isNaN(v) ? v : undefined
+                                                                            }));
+                                                                    },
+                                                                    placeholder: "180",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3100,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                    children: "100–400 px (standaard 180)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3116,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3096,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true),
+                                                editingWidget.type === "nuts_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Icoon"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3123,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto",
+                                                                    children: [
+                                                                        "Fuel",
+                                                                        "Droplets",
+                                                                        "Zap",
+                                                                        "Gauge",
+                                                                        "Thermometer"
+                                                                    ].filter((n)=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CARD_ICON_OPTIONS"].includes(n)).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                            type: "button",
+                                                                            onClick: ()=>setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        icon: name
+                                                                                    })),
+                                                                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", (editForm.icon ?? "Fuel") === name ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                            children: name
+                                                                        }, name, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 3128,
+                                                                            columnNumber: 27
+                                                                        }, this))
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3126,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3122,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Kleur icoon"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3147,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "flex items-center gap-2",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                            type: "color",
+                                                                            value: editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : "#3B82F6",
+                                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        icon_background_color: e.target.value
+                                                                                    })),
+                                                                            className: "h-8 w-12 cursor-pointer rounded border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 3151,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                            type: "text",
+                                                                            value: editForm.icon_background_color ?? "#3B82F6",
+                                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        icon_background_color: e.target.value || undefined
+                                                                                    })),
+                                                                            placeholder: "#3B82F6",
+                                                                            className: "flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 3162,
+                                                                            columnNumber: 25
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3150,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3146,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Breedte × hoogte (px)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3177,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "flex gap-2",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                            className: "flex-1",
+                                                                            children: [
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                    type: "number",
+                                                                                    min: 150,
+                                                                                    max: 400,
+                                                                                    step: 10,
+                                                                                    value: editForm.width ?? 250,
+                                                                                    onChange: (e)=>{
+                                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                                        setEditForm((prev)=>({
+                                                                                                ...prev,
+                                                                                                width: v != null && !Number.isNaN(v) ? v : undefined
+                                                                                            }));
+                                                                                    },
+                                                                                    placeholder: "250",
+                                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 3182,
+                                                                                    columnNumber: 27
+                                                                                }, this),
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                                    children: "Breedte"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 3195,
+                                                                                    columnNumber: 27
+                                                                                }, this)
+                                                                            ]
+                                                                        }, void 0, true, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 3181,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                            className: "flex-1",
+                                                                            children: [
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                    type: "number",
+                                                                                    min: 80,
+                                                                                    max: 300,
+                                                                                    step: 10,
+                                                                                    value: editForm.height ?? 130,
+                                                                                    onChange: (e)=>{
+                                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                                        setEditForm((prev)=>({
+                                                                                                ...prev,
+                                                                                                height: v != null && !Number.isNaN(v) ? v : undefined
+                                                                                            }));
+                                                                                    },
+                                                                                    placeholder: "130",
+                                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 3198,
+                                                                                    columnNumber: 27
+                                                                                }, this),
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                                    children: "Hoogte"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 3211,
+                                                                                    columnNumber: 27
+                                                                                }, this)
+                                                                            ]
+                                                                        }, void 0, true, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 3197,
+                                                                            columnNumber: 25
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3180,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3176,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Entity dagverbruik (totaal per dag)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3216,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                    value: editForm.entity_id ?? "",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                entity_id: e.target.value
+                                                                            })),
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: "",
+                                                                            children: "Kies entity…"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 3226,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        entities.filter((e)=>e.entity_id.startsWith("sensor.")).map((e)=>{
+                                                                            const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                value: e.entity_id,
+                                                                                children: name
+                                                                            }, e.entity_id, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 3232,
+                                                                                columnNumber: 31
+                                                                            }, this);
+                                                                        })
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3219,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3215,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Entity huidig verbruik (optioneel)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3240,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                    value: editForm.current_entity_id ?? "",
+                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                current_entity_id: e.target.value || undefined
+                                                                            })),
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                            value: "",
+                                                                            children: "Geen (toont 0 voor huidig)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 3250,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        entities.filter((e)=>e.entity_id.startsWith("sensor.")).map((e)=>{
+                                                                            const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                value: e.entity_id,
+                                                                                children: name
+                                                                            }, e.entity_id, false, {
+                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                lineNumber: 3256,
+                                                                                columnNumber: 31
+                                                                            }, this);
+                                                                        })
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3243,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3239,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                    children: "Max waarde voor bar (optioneel)"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3264,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                    type: "number",
+                                                                    min: 1,
+                                                                    step: 0.1,
+                                                                    value: editForm.max_value ?? 10,
+                                                                    onChange: (e)=>{
+                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                        setEditForm((prev)=>({
+                                                                                ...prev,
+                                                                                max_value: v != null && !Number.isNaN(v) && v > 0 ? v : undefined
+                                                                            }));
+                                                                    },
+                                                                    placeholder: "10",
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3267,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                    children: "Schaal voor verticale verbruiksbalk"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 3282,
+                                                                    columnNumber: 23
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                            lineNumber: 3263,
+                                                            columnNumber: 21
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true)
+                                            ]
+                                        }, void 0, true),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "flex justify-between gap-2 pt-1",
+                                            children: editingWidget.type === "card_group" && editingGroupChildId ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        type: "button",
+                                                        onClick: ()=>setEditingGroupChildId(null),
+                                                        className: "rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300",
+                                                        children: "Terug"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                        lineNumber: 3291,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "flex gap-2",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                type: "button",
+                                                                onClick: ()=>{
+                                                                    const nextChildren = (editingWidget.children ?? []).filter((c)=>c.id !== editingGroupChildId);
+                                                                    const nextWidgets = widgets.map((w)=>w.id === editingWidget.id ? {
+                                                                            ...w,
+                                                                            children: nextChildren
+                                                                        } : w);
+                                                                    setWidgets(nextWidgets);
+                                                                    setEditingGroupChildId(null);
+                                                                    saveMutation.mutate({
+                                                                        layout,
+                                                                        widgets: nextWidgets,
+                                                                        welcomeTitle,
+                                                                        welcomeSubtitle
+                                                                    });
+                                                                },
+                                                                className: "rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                                                "aria-label": "Kaart uit groep verwijderen",
+                                                                children: "Verwijderen"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                lineNumber: 3299,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                type: "button",
+                                                                onClick: ()=>{
+                                                                    const updates = {
+                                                                        title: editForm.title,
+                                                                        entity_id: editForm.entity_id,
+                                                                        icon: editForm.icon || undefined,
+                                                                        conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined,
+                                                                        show_state: editForm.show_state !== false
+                                                                    };
+                                                                    const nextChildren = (editingWidget.children ?? []).map((c)=>c.id === editingGroupChildId ? {
+                                                                            ...c,
+                                                                            ...updates
+                                                                        } : c);
+                                                                    const nextWidgets = widgets.map((w)=>w.id === editingWidget.id ? {
+                                                                            ...w,
+                                                                            children: nextChildren
+                                                                        } : w);
+                                                                    setWidgets(nextWidgets);
+                                                                    setEditingGroupChildId(null);
+                                                                    saveMutation.mutate({
+                                                                        layout,
+                                                                        widgets: nextWidgets,
+                                                                        welcomeTitle,
+                                                                        welcomeSubtitle
+                                                                    });
+                                                                },
+                                                                className: "rounded-lg bg-[#4D2FB2] px-3 py-1.5 text-sm text-white hover:opacity-90",
+                                                                children: "Opslaan"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                lineNumber: 3313,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                        lineNumber: 3298,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                ]
+                                            }, void 0, true) : editingWidget.type === "card_group" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        type: "button",
+                                                        onClick: ()=>{
+                                                            const newWidgets = widgets.filter((w)=>w.id !== editingWidgetId);
+                                                            const newLayout = layout.filter((item)=>item.i !== editingWidgetId);
+                                                            setWidgets(newWidgets);
+                                                            setLayout(newLayout);
+                                                            setEditingWidgetId(null);
+                                                            saveMutation.mutate({
+                                                                layout: newLayout,
+                                                                widgets: newWidgets,
+                                                                welcomeTitle,
+                                                                welcomeSubtitle
+                                                            });
+                                                        },
+                                                        className: "rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                                        "aria-label": "Kaartgroep verwijderen",
+                                                        children: "Verwijderen"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                        lineNumber: 3339,
+                                                        columnNumber: 23
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        type: "button",
+                                                        onClick: ()=>setEditingWidgetId(null),
+                                                        className: "rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300",
+                                                        children: "Annuleren"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                        lineNumber: 3359,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                ]
+                                            }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        type: "button",
+                                                        onClick: ()=>{
+                                                            const newWidgets = widgets.filter((w)=>w.id !== editingWidgetId);
+                                                            const newLayout = layout.filter((item)=>item.i !== editingWidgetId);
+                                                            setWidgets(newWidgets);
+                                                            setLayout(newLayout);
+                                                            setEditingWidgetId(null);
+                                                            saveMutation.mutate({
+                                                                layout: newLayout,
+                                                                widgets: newWidgets,
+                                                                welcomeTitle,
+                                                                welcomeSubtitle
+                                                            });
+                                                        },
+                                                        className: "rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20",
+                                                        "aria-label": "Kaart verwijderen",
+                                                        children: "Verwijderen"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                        lineNumber: 3369,
+                                                        columnNumber: 19
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "flex gap-2",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                type: "button",
+                                                                onClick: ()=>setEditingWidgetId(null),
+                                                                className: "rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300",
+                                                                children: "Annuleren"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                lineNumber: 3390,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                type: "button",
+                                                                onClick: ()=>{
+                                                                    const updates = {
+                                                                        title: editForm.title,
+                                                                        ...editingWidget.entity_id != null && editingWidget.type !== "energy_monitor_card" && {
+                                                                            entity_id: editForm.entity_id
+                                                                        },
+                                                                        ...editingWidget.type === "solar_card" && {
+                                                                            consumption_entity_id: editForm.consumption_entity_id || undefined
+                                                                        },
+                                                                        ...editingWidget.type === "energy_monitor_card" && {
+                                                                            entity_id: editForm.entity_id || undefined,
+                                                                            background_image: editForm.background_image || undefined,
+                                                                            background_image_dark: editForm.background_image_dark || undefined,
+                                                                            image_conditions: (editForm.image_conditions ?? []).filter((c)=>c.image?.trim()).length > 0 ? (editForm.image_conditions ?? []).filter((c)=>c.image?.trim()) : undefined,
+                                                                            minimal: editForm.minimal ?? false,
+                                                                            scale: editForm.scale ?? 1
+                                                                        },
+                                                                        ...editingWidget.type === "stat_pill_card" && {
+                                                                            label: editForm.label || undefined,
+                                                                            icon: editForm.icon || undefined,
+                                                                            color: editForm.color || undefined,
+                                                                            conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined
+                                                                        },
+                                                                        ...(editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && {
+                                                                            humidity_entity_id: editForm.humidity_entity_id || undefined,
+                                                                            icon: editForm.icon || undefined,
+                                                                            width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                                                                            height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined
+                                                                        },
+                                                                        ...editingWidget.type === "light_card" && {
+                                                                            icon: editForm.icon || undefined
+                                                                        },
+                                                                        ...editingWidget.type === "weather_card" && {
+                                                                            show_icon: editForm.show_icon !== false,
+                                                                            width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                                                                            height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined
+                                                                        },
+                                                                        ...editingWidget.type === "camera_card" && {
+                                                                            refresh: editForm.refresh ?? 10,
+                                                                            show_title: editForm.show_title !== false,
+                                                                            width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                                                                            height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined
+                                                                        },
+                                                                        ...editingWidget.type === "vacuum_card" && {
+                                                                            script_ids: editForm.script_ids ?? [],
+                                                                            script_names: editForm.script_names ?? {},
+                                                                            cleaned_area_entity_id: editForm.cleaned_area_entity_id || undefined,
+                                                                            icon: editForm.icon || undefined
+                                                                        },
+                                                                        ...editingWidget.type === "sensor_card" && {
+                                                                            icon: editForm.icon || undefined,
+                                                                            show_icon: editForm.show_icon !== false,
+                                                                            size: editForm.size || undefined,
+                                                                            conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined
+                                                                        },
+                                                                        ...editingWidget.type === "pill_card" && {
+                                                                            icon: editForm.icon || undefined,
+                                                                            conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined,
+                                                                            show_state: editForm.show_state !== false
+                                                                        },
+                                                                        ...editingWidget.type === "nuts_card" && {
+                                                                            icon: editForm.icon || undefined,
+                                                                            icon_background_color: editForm.icon_background_color || undefined,
+                                                                            entity_id: editForm.entity_id || undefined,
+                                                                            current_entity_id: editForm.current_entity_id || undefined,
+                                                                            max_value: editForm.max_value != null && editForm.max_value > 0 ? editForm.max_value : undefined,
+                                                                            width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                                                                            height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined
+                                                                        },
+                                                                        ...editingWidget.type === "room_card" && {
+                                                                            icon: editForm.icon || undefined,
+                                                                            light_entity_id: editForm.light_entity_id || undefined,
+                                                                            background_image: editForm.background_image || undefined,
+                                                                            icon_background_color: editForm.icon_background_color || undefined,
+                                                                            width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                                                                            height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined
+                                                                        }
+                                                                    };
+                                                                    handleUpdateTile(editingWidgetId, updates);
+                                                                    const newWidgets = widgets.map((w)=>w.id === editingWidgetId ? {
+                                                                            ...w,
+                                                                            ...updates
+                                                                        } : w);
+                                                                    saveMutation.mutate({
+                                                                        layout,
+                                                                        widgets: newWidgets,
+                                                                        welcomeTitle,
+                                                                        welcomeSubtitle
+                                                                    });
+                                                                },
+                                                                className: "rounded-lg bg-[#4D2FB2] px-3 py-1.5 text-sm text-white hover:opacity-90",
+                                                                children: "Opslaan"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                lineNumber: 3397,
+                                                                columnNumber: 19
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                        lineNumber: 3389,
+                                                        columnNumber: 19
+                                                    }, this)
+                                                ]
+                                            }, void 0, true)
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                            lineNumber: 3288,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                    lineNumber: 1362,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                            lineNumber: 1352,
+                            columnNumber: 13
+                        }, this)
+                    ]
+                }, void 0, true), document.body)
+            ]
+        }, void 0, true, {
+            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+            lineNumber: 901,
+            columnNumber: 7
+        }, this)
+    }, void 0, false, {
+        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+        lineNumber: 889,
+        columnNumber: 5
+    }, this);
+}
+}),
+];
+
+//# sourceMappingURL=src_app_dashboards_%5Bid%5D_page_tsx_1152336a._.js.map

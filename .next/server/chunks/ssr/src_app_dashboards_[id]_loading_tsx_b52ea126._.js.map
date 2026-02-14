@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/HiddevanBrussel/.cursor/dashboard/src/app/dashboards/%5Bid%5D/loading.tsx"],"sourcesContent":["export default function DashboardLoading() {\r\n  return (\r\n    <div className=\"flex min-h-screen items-center justify-center bg-page-light dark:bg-dark-page\">\r\n      <div\r\n        className=\"h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent\"\r\n        aria-hidden\r\n      />\r\n    </div>\r\n  );\r\n}\r\n"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACtB,qBACE,8OAAC;QAAI,WAAU;kBACb,cAAA,8OAAC;YACC,WAAU;YACV,aAAW;;;;;;;;;;;AAInB","debugId":null}}]
+}

@@ -425,6 +425,7 @@ export default function DashboardEditPage() {
   const [sensorIconSearch, setSensorIconSearch] = useState("");
   const [pillIconSearch, setPillIconSearch] = useState("");
   const [sensorCardEditTab, setSensorCardEditTab] = useState<"general" | "conditions">("general");
+  const [uploadingRoomBg, setUploadingRoomBg] = useState(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const LONG_PRESS_MS = 500;
 
@@ -1840,8 +1841,55 @@ export default function DashboardEditPage() {
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Achtergrondafbeelding (URL, optioneel)
+                        Achtergrondafbeelding
                       </label>
+                      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                        Upload een foto van de kamer of plak een URL (bijv. van een camera-feed).
+                      </p>
+                      {editForm.background_image && (
+                        <div
+                          className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
+                          style={{ backgroundImage: `url(${editForm.background_image})` }}
+                        />
+                      )}
+                      <div className="flex gap-2">
+                        <label className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/10">
+                          {uploadingRoomBg ? "Uploaden…" : "Upload afbeelding"}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            className="sr-only"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file || !editingWidgetId) return;
+                              e.target.value = "";
+                              setUploadingRoomBg(true);
+                              try {
+                                const formData = new FormData();
+                                formData.set("file", file);
+                                const res = await fetch("/api/upload", { method: "POST", body: formData });
+                                const json = await res.json();
+                                if (!res.ok) throw new Error(json.error || "Upload failed");
+                                setEditForm((prev) => ({ ...prev, background_image: json.url }));
+                              } finally {
+                                setUploadingRoomBg(false);
+                              }
+                            }}
+                            disabled={uploadingRoomBg}
+                          />
+                        </label>
+                        {editForm.background_image && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditForm((prev) => ({ ...prev, background_image: undefined }))
+                            }
+                            className="rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
+                          >
+                            Verwijderen
+                          </button>
+                        )}
+                      </div>
                       <input
                         type="url"
                         value={editForm.background_image ?? ""}
@@ -1851,8 +1899,8 @@ export default function DashboardEditPage() {
                             background_image: e.target.value || undefined,
                           }))
                         }
-                        placeholder="https://..."
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                        placeholder="/uploads/... of https://..."
+                        className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                     </div>
                     <div>
