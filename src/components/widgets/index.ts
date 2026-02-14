@@ -31,5 +31,7 @@ export { NutsCardWidget } from "./nuts-card-widget";
 export { FloatingNutsCard } from "./floating-nuts-card";
 export { StatPillCardWidget } from "./stat-pill-card-widget";
 export { FloatingStatPillCard } from "./floating-stat-pill-card";
+export { CameraCardWidget } from "./camera-card-widget";
+export { FloatingCameraCard } from "./floating-camera-card";
 export { CARD_ICON_OPTIONS } from "./card-icons";
 export * from "./widget-types";

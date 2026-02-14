@@ -93,6 +93,14 @@ export type VacuumCardProps = WidgetBaseProps & {
   cleaned_area_entity_id?: string;
 };
 
+/** Camera card: toont live snapshot van een camera-entity. */
+export type CameraCardProps = WidgetBaseProps & {
+  /** Vernieuwinterval in seconden (0 = handmatig). Default 10. */
+  refresh?: number;
+  /** Toon titelbalk (default true). */
+  show_title?: boolean;
+};
+
 export type MediaCardProps = WidgetBaseProps & {
   state?: "on" | "off" | "playing" | "paused" | "idle";
   media_title?: string;

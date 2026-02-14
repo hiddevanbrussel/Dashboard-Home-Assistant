@@ -83,7 +83,10 @@ export type WidgetConfig = {
   color?: string;
   thresholds?: string;
   unit?: string;
+  /** Camera card: vernieuwinterval in seconden. */
   refresh?: number;
+  /** Camera card: toon titelbalk (default true). */
+  show_title?: boolean;
 };
 
 export type TemplateId = "overview" | "rooms" | "energy";
