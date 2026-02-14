@@ -625,6 +625,10 @@ body input, body textarea, body [contenteditable="true"] {
   margin-bottom: 1rem;
 }
 
+.-mr-1 {
+  margin-right: -.25rem;
+}
+
 .-mt-2 {
   margin-top: -.5rem;
 }
@@ -841,6 +845,10 @@ body input, body textarea, body [contenteditable="true"] {
   height: 100%;
 }
 
+.max-h-28 {
+  max-height: 7rem;
+}
+
 .max-h-32 {
   max-height: 8rem;
 }
@@ -875,6 +883,10 @@ body input, body textarea, body [contenteditable="true"] {
 
 .max-h-\[70vh\] {
   max-height: 70vh;
+}
+
+.max-h-\[90vh\] {
+  max-height: 90vh;
 }
 
 .min-h-0 {
@@ -1376,6 +1388,10 @@ body input, body textarea, body [contenteditable="true"] {
 
 .overflow-x-auto {
   overflow-x: auto;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
 }
 
 .overflow-x-hidden {
@@ -2194,6 +2210,10 @@ body input, body textarea, body [contenteditable="true"] {
 
 .pl-8 {
   padding-left: 2rem;
+}
+
+.pr-1 {
+  padding-right: .25rem;
 }
 
 .pr-3 {

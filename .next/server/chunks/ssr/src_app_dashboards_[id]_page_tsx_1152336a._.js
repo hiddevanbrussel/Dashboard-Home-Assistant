@@ -518,6 +518,7 @@ function DashboardEditPage() {
     const [sensorIconSearch, setSensorIconSearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
     const [pillIconSearch, setPillIconSearch] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
     const [sensorCardEditTab, setSensorCardEditTab] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("general");
+    const [roomCardEditTab, setRoomCardEditTab] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("algemeen");
     const [uploadingRoomBg, setUploadingRoomBg] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const longPressTimerRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
     const LONG_PRESS_MS = 500;
@@ -607,6 +608,7 @@ function DashboardEditPage() {
             setGroupAddEntitySearch("");
             setEditEntitySearch("");
             if (editingWidget.type === "sensor_card") setSensorCardEditTab("general");
+            if (editingWidget.type === "room_card") setRoomCardEditTab("algemeen");
         }
     }, [
         editingWidget,
@@ -793,12 +795,12 @@ function DashboardEditPage() {
                 children: "Invalid dashboard id."
             }, void 0, false, {
                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                lineNumber: 684,
+                lineNumber: 686,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-            lineNumber: 683,
+            lineNumber: 685,
             columnNumber: 7
         }, this);
     }
@@ -810,12 +812,12 @@ function DashboardEditPage() {
                 children: error ? "Dashboard not found, redirecting…" : "Loading…"
             }, void 0, false, {
                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                lineNumber: 692,
+                lineNumber: 694,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-            lineNumber: 691,
+            lineNumber: 693,
             columnNumber: 7
         }, this);
     }
@@ -836,12 +838,12 @@ function DashboardEditPage() {
                                 className: "h-4 w-4"
                             }, void 0, false, {
                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                lineNumber: 711,
+                                lineNumber: 713,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                            lineNumber: 704,
+                            lineNumber: 706,
                             columnNumber: 13
                         }, this),
                         addTileOpen && typeof document !== "undefined" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -857,7 +859,7 @@ function DashboardEditPage() {
                                     }
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                    lineNumber: 715,
+                                    lineNumber: 717,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -871,7 +873,7 @@ function DashboardEditPage() {
                                                     children: addTileStep === "type" ? "Kaart toevoegen" : "Kies entity"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 727,
+                                                    lineNumber: 729,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -888,18 +890,18 @@ function DashboardEditPage() {
                                                         className: "h-5 w-5"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                        lineNumber: 741,
+                                                        lineNumber: 743,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 730,
+                                                    lineNumber: 732,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                            lineNumber: 726,
+                                            lineNumber: 728,
                                             columnNumber: 19
                                         }, this),
                                         addTileStep === "type" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -937,7 +939,7 @@ function DashboardEditPage() {
                                                             className: "h-7 w-7 text-gray-600 dark:text-gray-400"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 777,
+                                                            lineNumber: 779,
                                                             columnNumber: 27
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -945,18 +947,18 @@ function DashboardEditPage() {
                                                             children: label
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 778,
+                                                            lineNumber: 780,
                                                             columnNumber: 27
                                                         }, this)
                                                     ]
                                                 }, type, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 747,
+                                                    lineNumber: 749,
                                                     columnNumber: 25
                                                 }, this))
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                            lineNumber: 745,
+                                            lineNumber: 747,
                                             columnNumber: 21
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "flex flex-col max-h-[60vh]",
@@ -972,7 +974,7 @@ function DashboardEditPage() {
                                                     children: "← Terug"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 786,
+                                                    lineNumber: 788,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -984,7 +986,7 @@ function DashboardEditPage() {
                                                     autoFocus: true
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 797,
+                                                    lineNumber: 799,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1001,7 +1003,7 @@ function DashboardEditPage() {
                                                                 children: entitiesToShow.length === 0 ? "Geen entities gevonden. Controleer je HA-verbinding in Instellingen." : "Geen resultaten voor je zoekopdracht."
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                lineNumber: 817,
+                                                                lineNumber: 819,
                                                                 columnNumber: 31
                                                             }, this);
                                                         }
@@ -1026,26 +1028,26 @@ function DashboardEditPage() {
                                                                 children: name
                                                             }, e.entity_id, false, {
                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                lineNumber: 829,
+                                                                lineNumber: 831,
                                                                 columnNumber: 31
                                                             }, this);
                                                         });
                                                     })()
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 805,
+                                                    lineNumber: 807,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                            lineNumber: 785,
+                                            lineNumber: 787,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                    lineNumber: 725,
+                                    lineNumber: 727,
                                     columnNumber: 17
                                 }, this)
                             ]
@@ -1064,17 +1066,17 @@ function DashboardEditPage() {
                             className: "h-4 w-4"
                         }, void 0, false, {
                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                            lineNumber: 868,
+                            lineNumber: 870,
                             columnNumber: 15
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 861,
+                        lineNumber: 863,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                    lineNumber: 860,
+                    lineNumber: 862,
                     columnNumber: 11
                 }, this)
             ]
@@ -1090,12 +1092,12 @@ function DashboardEditPage() {
                 className: "h-4 w-4"
             }, void 0, false, {
                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                lineNumber: 880,
+                lineNumber: 882,
                 columnNumber: 11
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-            lineNumber: 873,
+            lineNumber: 875,
             columnNumber: 9
         }, this)
     }, void 0, false);
@@ -1118,12 +1120,12 @@ function DashboardEditPage() {
                     className: "flex items-center justify-end",
                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$offline$2d$pill$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["OfflinePill"], {}, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 903,
+                        lineNumber: 905,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                    lineNumber: 902,
+                    lineNumber: 904,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1173,12 +1175,12 @@ function DashboardEditPage() {
                                                     className: "h-3.5 w-3.5"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 946,
+                                                    lineNumber: 948,
                                                     columnNumber: 25
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                lineNumber: 940,
+                                                lineNumber: 942,
                                                 columnNumber: 23
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1190,12 +1192,12 @@ function DashboardEditPage() {
                                                     className: "h-3.5 w-3.5"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 954,
+                                                    lineNumber: 956,
                                                     columnNumber: 25
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                lineNumber: 948,
+                                                lineNumber: 950,
                                                 columnNumber: 23
                                             }, this)
                                         ]
@@ -1227,29 +1229,29 @@ function DashboardEditPage() {
                                             color: w.color
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                            lineNumber: 959,
+                                            lineNumber: 961,
                                             columnNumber: 21
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                        lineNumber: 958,
+                                        lineNumber: 960,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, w.id, true, {
                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                lineNumber: 926,
+                                lineNumber: 928,
                                 columnNumber: 17
                             }, this);
                         })
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 907,
+                        lineNumber: 909,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                    lineNumber: 906,
+                    lineNumber: 908,
                     columnNumber: 9
                 }, this),
                 (()=>{
@@ -1263,7 +1265,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(firstMedia.id) : undefined
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 993,
+                        lineNumber: 995,
                         columnNumber: 13
                     }, this) : null;
                 })(),
@@ -1286,7 +1288,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? (id)=>handleRemoveTile(id) : undefined
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1017,
+                        lineNumber: 1019,
                         columnNumber: 13
                     }, this) : null;
                 })(),
@@ -1307,7 +1309,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
                     }, w.id, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1039,
+                        lineNumber: 1041,
                         columnNumber: 13
                     }, this)),
                 (()=>{
@@ -1322,7 +1324,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(firstSolar.id) : undefined
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1061,
+                        lineNumber: 1063,
                         columnNumber: 13
                     }, this) : null;
                 })(),
@@ -1342,7 +1344,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(firstEnergyMonitor.id) : undefined
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1084,
+                        lineNumber: 1086,
                         columnNumber: 13
                     }, this) : null;
                 })(),
@@ -1362,7 +1364,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
                     }, w.id, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1114,
+                        lineNumber: 1116,
                         columnNumber: 17
                     }, this)), document.body),
                 typeof document !== "undefined" && widgets.some((w)=>w.type === "sensor_card") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(widgets.filter((w)=>w.type === "sensor_card").map((w, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$sensor$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingSensorCard"], {
@@ -1380,7 +1382,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
                     }, w.id, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1140,
+                        lineNumber: 1142,
                         columnNumber: 17
                     }, this)), document.body),
                 (()=>{
@@ -1397,7 +1399,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(firstWeather.id) : undefined
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1162,
+                        lineNumber: 1164,
                         columnNumber: 13
                     }, this) : null;
                 })(),
@@ -1416,7 +1418,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(firstCamera.id) : undefined
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1187,
+                        lineNumber: 1189,
                         columnNumber: 13
                     }, this) : null;
                 })(),
@@ -1435,7 +1437,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(firstVacuum.id) : undefined
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1213,
+                        lineNumber: 1215,
                         columnNumber: 13
                     }, this) : null;
                 })(),
@@ -1458,7 +1460,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
                     }, w.id, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1239,
+                        lineNumber: 1241,
                         columnNumber: 13
                     }, this)),
                 widgets.filter((w)=>w.type === "nuts_card").map((w, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$nuts$2d$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingNutsCard"], {
@@ -1480,7 +1482,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
                     }, w.id, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1263,
+                        lineNumber: 1265,
                         columnNumber: 13
                     }, this)),
                 (()=>{
@@ -1496,7 +1498,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? (id)=>handleRemoveTile(id) : undefined
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1287,
+                        lineNumber: 1289,
                         columnNumber: 13
                     }, this) : null;
                 })(),
@@ -1516,7 +1518,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(w.id) : undefined
                     }, w.id, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1303,
+                        lineNumber: 1305,
                         columnNumber: 13
                     }, this)),
                 typeof document !== "undefined" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(widgets.filter((w)=>w.type === "card_group").map((g, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$floating$2d$card$2d$group$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FloatingCardGroup"], {
@@ -1528,7 +1530,7 @@ function DashboardEditPage() {
                         onRemove: editMode ? ()=>handleRemoveTile(g.id) : undefined
                     }, g.id, false, {
                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                        lineNumber: 1326,
+                        lineNumber: 1328,
                         columnNumber: 17
                     }, this)), document.body),
                 editingWidgetId && editingWidget && typeof document !== "undefined" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$dom$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createPortal"])(/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -1545,22 +1547,22 @@ function DashboardEditPage() {
                             }
                         }, void 0, false, {
                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                            lineNumber: 1341,
+                            lineNumber: 1343,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl",
+                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl max-h-[90vh] flex flex-col", editingWidget.type === "room_card" ? "max-w-md" : "max-w-sm"),
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                                    className: "mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100",
-                                    children: editingWidget.type === "title_card" ? "Titel bewerken" : editingWidget.type === "card_group" ? editingGroupChildId ? "Kaart in groep bewerken" : "Kaartgroep bewerken" : "Edit tile"
+                                    className: "mb-3 shrink-0 text-sm font-semibold text-gray-900 dark:text-gray-100",
+                                    children: editingWidget.type === "title_card" ? "Titel bewerken" : editingWidget.type === "card_group" ? editingGroupChildId ? "Kaart in groep bewerken" : "Kaartgroep bewerken" : editingWidget.type === "room_card" ? "Kamer bewerken" : "Edit tile"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                    lineNumber: 1353,
+                                    lineNumber: 1358,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "space-y-3",
+                                    className: "space-y-3 overflow-y-auto min-h-0 flex-1 pr-1 -mr-1",
                                     children: [
                                         editingWidget.type === "title_card" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             children: [
@@ -1569,7 +1571,7 @@ function DashboardEditPage() {
                                                     children: "Tekst"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1365,
+                                                    lineNumber: 1372,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1583,13 +1585,13 @@ function DashboardEditPage() {
                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1368,
+                                                    lineNumber: 1375,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                            lineNumber: 1364,
+                                            lineNumber: 1371,
                                             columnNumber: 19
                                         }, this) : editingWidget.type === "card_group" ? editingGroupChildId ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                                             children: [
@@ -1600,7 +1602,7 @@ function DashboardEditPage() {
                                                             children: "Naam"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1382,
+                                                            lineNumber: 1389,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1614,13 +1616,13 @@ function DashboardEditPage() {
                                                             className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1383,
+                                                            lineNumber: 1390,
                                                             columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1381,
+                                                    lineNumber: 1388,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1630,7 +1632,7 @@ function DashboardEditPage() {
                                                             children: "Entity"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1392,
+                                                            lineNumber: 1399,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1647,19 +1649,19 @@ function DashboardEditPage() {
                                                                     children: name
                                                                 }, e.entity_id, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1403,
+                                                                    lineNumber: 1410,
                                                                     columnNumber: 33
                                                                 }, this);
                                                             })
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1393,
+                                                            lineNumber: 1400,
                                                             columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1391,
+                                                    lineNumber: 1398,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -1670,7 +1672,7 @@ function DashboardEditPage() {
                                                             children: "Toon entiteitstatus"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1411,
+                                                            lineNumber: 1418,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1686,18 +1688,18 @@ function DashboardEditPage() {
                                                                 className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition translate-x-0.5", editForm.show_state !== false ? "translate-x-5" : "translate-x-1")
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                lineNumber: 1422,
+                                                                lineNumber: 1429,
                                                                 columnNumber: 27
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1412,
+                                                            lineNumber: 1419,
                                                             columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1410,
+                                                    lineNumber: 1417,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1707,7 +1709,7 @@ function DashboardEditPage() {
                                                             children: "Icoon"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1431,
+                                                            lineNumber: 1438,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1719,7 +1721,7 @@ function DashboardEditPage() {
                                                             className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1432,
+                                                            lineNumber: 1439,
                                                             columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1738,7 +1740,7 @@ function DashboardEditPage() {
                                                                     children: "Default (CircleDot)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1441,
+                                                                    lineNumber: 1448,
                                                                     columnNumber: 27
                                                                 }, this),
                                                                 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__SENSOR_ICON_OPTIONS$3e$__["SENSOR_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((pillIconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1754,19 +1756,19 @@ function DashboardEditPage() {
                                                                         children: name
                                                                     }, name, false, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 1455,
+                                                                        lineNumber: 1462,
                                                                         columnNumber: 29
                                                                     }, this))
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1440,
+                                                            lineNumber: 1447,
                                                             columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1430,
+                                                    lineNumber: 1437,
                                                     columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1776,7 +1778,7 @@ function DashboardEditPage() {
                                                             children: "Voorwaardelijke kleur (eerste match)"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1473,
+                                                            lineNumber: 1480,
                                                             columnNumber: 25
                                                         }, this),
                                                         (editForm.conditions ?? []).map((cond, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1797,12 +1799,12 @@ function DashboardEditPage() {
                                                                                 children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATOR_LABELS"][op] ?? op
                                                                             }, op, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 1487,
+                                                                                lineNumber: 1494,
                                                                                 columnNumber: 33
                                                                             }, this))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 1476,
+                                                                        lineNumber: 1483,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1819,7 +1821,7 @@ function DashboardEditPage() {
                                                                         className: "w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 1492,
+                                                                        lineNumber: 1499,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1837,12 +1839,12 @@ function DashboardEditPage() {
                                                                                 children: color
                                                                             }, color, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 1515,
+                                                                                lineNumber: 1522,
                                                                                 columnNumber: 33
                                                                             }, this))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 1504,
+                                                                        lineNumber: 1511,
                                                                         columnNumber: 29
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1857,18 +1859,18 @@ function DashboardEditPage() {
                                                                             className: "h-4 w-4"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1531,
+                                                                            lineNumber: 1538,
                                                                             columnNumber: 31
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 1520,
+                                                                        lineNumber: 1527,
                                                                         columnNumber: 29
                                                                     }, this)
                                                                 ]
                                                             }, idx, true, {
                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                lineNumber: 1475,
+                                                                lineNumber: 1482,
                                                                 columnNumber: 27
                                                             }, this)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1888,13 +1890,13 @@ function DashboardEditPage() {
                                                             children: "+ Voeg voorwaarde toe"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1535,
+                                                            lineNumber: 1542,
                                                             columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1472,
+                                                    lineNumber: 1479,
                                                     columnNumber: 23
                                                 }, this)
                                             ]
@@ -1906,7 +1908,7 @@ function DashboardEditPage() {
                                                     children: "Uitlijning"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1551,
+                                                    lineNumber: 1558,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1935,12 +1937,12 @@ function DashboardEditPage() {
                                                             children: align === "start" ? "Links" : align === "center" ? "Midden" : align === "end" ? "Rechts" : "Tussen"
                                                         }, align, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1554,
+                                                            lineNumber: 1561,
                                                             columnNumber: 25
                                                         }, this))
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1552,
+                                                    lineNumber: 1559,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1948,7 +1950,7 @@ function DashboardEditPage() {
                                                     children: "Kaarten in groep"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1573,
+                                                    lineNumber: 1580,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
@@ -1961,7 +1963,7 @@ function DashboardEditPage() {
                                                                     children: c.title || c.entity_id
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1577,
+                                                                    lineNumber: 1584,
                                                                     columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1977,12 +1979,12 @@ function DashboardEditPage() {
                                                                                 className: "h-4 w-4"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 1586,
+                                                                                lineNumber: 1593,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1579,
+                                                                            lineNumber: 1586,
                                                                             columnNumber: 29
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2007,29 +2009,29 @@ function DashboardEditPage() {
                                                                                 className: "h-4 w-4"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 1599,
+                                                                                lineNumber: 1606,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1588,
+                                                                            lineNumber: 1595,
                                                                             columnNumber: 29
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1578,
+                                                                    lineNumber: 1585,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, c.id, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1576,
+                                                            lineNumber: 1583,
                                                             columnNumber: 25
                                                         }, this))
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1574,
+                                                    lineNumber: 1581,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2037,7 +2039,7 @@ function DashboardEditPage() {
                                                     children: "Kaart toevoegen"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1605,
+                                                    lineNumber: 1612,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2048,7 +2050,7 @@ function DashboardEditPage() {
                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1606,
+                                                    lineNumber: 1613,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2090,19 +2092,19 @@ function DashboardEditPage() {
                                                             children: name
                                                         }, e.entity_id, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1625,
+                                                            lineNumber: 1632,
                                                             columnNumber: 29
                                                         }, this);
                                                     })
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1613,
+                                                    lineNumber: 1620,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                            lineNumber: 1550,
+                                            lineNumber: 1557,
                                             columnNumber: 19
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                                             children: [
@@ -2113,7 +2115,7 @@ function DashboardEditPage() {
                                                             children: "Name"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1653,
+                                                            lineNumber: 1660,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2127,13 +2129,13 @@ function DashboardEditPage() {
                                                             className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1656,
+                                                            lineNumber: 1663,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1652,
+                                                    lineNumber: 1659,
                                                     columnNumber: 17
                                                 }, this),
                                                 (editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card") && editingWidget.type !== "title_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2143,7 +2145,7 @@ function DashboardEditPage() {
                                                             children: editingWidget.type === "solar_card" ? "Yield (opbrengst)" : editingWidget.type === "energy_monitor_card" ? "Entity voor voorwaarden (bijv. weather.home)" : editingWidget.type === "stat_pill_card" ? "Sensor" : "Entity"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1668,
+                                                            lineNumber: 1675,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2154,7 +2156,7 @@ function DashboardEditPage() {
                                                             className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1677,
+                                                            lineNumber: 1684,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -2188,7 +2190,7 @@ function DashboardEditPage() {
                                                                         children: name
                                                                     }, e.entity_id, false, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 1727,
+                                                                        lineNumber: 1734,
                                                                         columnNumber: 29
                                                                     }, this);
                                                                 });
@@ -2199,7 +2201,7 @@ function DashboardEditPage() {
                                                                             children: "Geen (alleen standaardafbeelding)"
                                                                         }, "", false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1733,
+                                                                            lineNumber: 1740,
                                                                             columnNumber: 35
                                                                         }, this),
                                                                         ...opts
@@ -2209,13 +2211,13 @@ function DashboardEditPage() {
                                                             })()
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1684,
+                                                            lineNumber: 1691,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1667,
+                                                    lineNumber: 1674,
                                                     columnNumber: 19
                                                 }, this),
                                                 editingWidget.type === "light_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2225,7 +2227,7 @@ function DashboardEditPage() {
                                                             children: "Icoon"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1742,
+                                                            lineNumber: 1749,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2242,135 +2244,221 @@ function DashboardEditPage() {
                                                                     children: label
                                                                 }, key, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1764,
+                                                                    lineNumber: 1771,
                                                                     columnNumber: 27
                                                                 }, this);
                                                             })
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1745,
+                                                            lineNumber: 1752,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 1741,
+                                                    lineNumber: 1748,
                                                     columnNumber: 19
                                                 }, this),
                                                 editingWidget.type === "room_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2",
                                                             children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
-                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
-                                                                    children: "Icoon"
-                                                                }, void 0, false, {
+                                                                "algemeen",
+                                                                "achtergrond",
+                                                                "weergave"
+                                                            ].map((tab)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                    type: "button",
+                                                                    onClick: ()=>setRoomCardEditTab(tab),
+                                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors", roomCardEditTab === tab ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"),
+                                                                    children: tab === "algemeen" ? "Algemeen" : tab === "achtergrond" ? "Achtergrond" : "Weergave"
+                                                                }, tab, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1787,
-                                                                    columnNumber: 23
-                                                                }, this),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                    className: "flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto",
-                                                                    children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__SENSOR_ICON_OPTIONS$3e$__["SENSOR_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((iconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                            type: "button",
-                                                                            onClick: ()=>setEditForm((prev)=>({
-                                                                                        ...prev,
-                                                                                        icon: name
-                                                                                    })),
-                                                                            className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", (editForm.icon ?? "Home") === name ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
-                                                                            children: name
-                                                                        }, name, false, {
-                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1794,
-                                                                            columnNumber: 27
-                                                                        }, this))
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1790,
-                                                                    columnNumber: 23
-                                                                }, this)
-                                                            ]
-                                                        }, void 0, true, {
+                                                                    lineNumber: 1795,
+                                                                    columnNumber: 25
+                                                                }, this))
+                                                        }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1786,
+                                                            lineNumber: 1793,
                                                             columnNumber: 21
                                                         }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        roomCardEditTab === "algemeen" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "space-y-3",
                                                             children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
-                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
-                                                                    children: "Licht-entiteit (optioneel)"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1813,
-                                                                    columnNumber: 23
-                                                                }, this),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
-                                                                    value: editForm.light_entity_id ?? "",
-                                                                    onChange: (e)=>setEditForm((prev)=>({
-                                                                                ...prev,
-                                                                                light_entity_id: e.target.value || undefined
-                                                                            })),
-                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500",
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                     children: [
-                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                                                            value: "",
-                                                                            children: "Geen"
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                            children: "Icoon"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1826,
-                                                                            columnNumber: 25
+                                                                            lineNumber: 1813,
+                                                                            columnNumber: 27
                                                                         }, this),
-                                                                        entities.filter((e)=>e.entity_id.startsWith("light.") || e.entity_id.startsWith("group.")).map((e)=>{
-                                                                            const name = e.attributes?.friendly_name ?? e.entity_id;
-                                                                            return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                                                                value: e.entity_id,
-                                                                                children: name
-                                                                            }, e.entity_id, false, {
-                                                                                fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 1835,
-                                                                                columnNumber: 31
-                                                                            }, this);
-                                                                        })
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                            type: "text",
+                                                                            value: iconSearch || "",
+                                                                            onChange: (e)=>setIconSearch(e.target.value),
+                                                                            placeholder: "Zoek icoon...",
+                                                                            className: "mb-1.5 w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1814,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                            className: "flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-28 overflow-auto",
+                                                                            children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CARD_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((iconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                    type: "button",
+                                                                                    onClick: ()=>setEditForm((prev)=>({
+                                                                                                ...prev,
+                                                                                                icon: name
+                                                                                            })),
+                                                                                    className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("rounded-md px-2 py-1 text-xs", (editForm.icon ?? "Home") === name ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"),
+                                                                                    children: name
+                                                                                }, name, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 1825,
+                                                                                    columnNumber: 31
+                                                                                }, this))
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1821,
+                                                                            columnNumber: 27
+                                                                        }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1816,
-                                                                    columnNumber: 23
+                                                                    lineNumber: 1812,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                            children: "Licht-entiteit (optioneel)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1842,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                            value: editForm.light_entity_id ?? "",
+                                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        light_entity_id: e.target.value || undefined
+                                                                                    })),
+                                                                            className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500",
+                                                                            children: [
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                    value: "",
+                                                                                    children: "Geen"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 1848,
+                                                                                    columnNumber: 29
+                                                                                }, this),
+                                                                                entities.filter((e)=>e.entity_id.startsWith("light.") || e.entity_id.startsWith("group.")).map((e)=>{
+                                                                                    const name = e.attributes?.friendly_name ?? e.entity_id;
+                                                                                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                        value: e.entity_id,
+                                                                                        children: name
+                                                                                    }, e.entity_id, false, {
+                                                                                        fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                        lineNumber: 1853,
+                                                                                        columnNumber: 40
+                                                                                    }, this);
+                                                                                })
+                                                                            ]
+                                                                        }, void 0, true, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1843,
+                                                                            columnNumber: 27
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1841,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                            children: "Kleur icoon-badge"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1858,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                            className: "flex items-center gap-2",
+                                                                            children: [
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                    type: "color",
+                                                                                    value: editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : "#3B82F6",
+                                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                                ...prev,
+                                                                                                icon_background_color: e.target.value
+                                                                                            })),
+                                                                                    className: "h-10 w-14 cursor-pointer rounded border border-gray-200 dark:border-white/10 bg-transparent"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 1860,
+                                                                                    columnNumber: 29
+                                                                                }, this),
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                                    type: "text",
+                                                                                    value: editForm.icon_background_color ?? "",
+                                                                                    onChange: (e)=>setEditForm((prev)=>({
+                                                                                                ...prev,
+                                                                                                icon_background_color: e.target.value || undefined
+                                                                                            })),
+                                                                                    placeholder: "#3B82F6",
+                                                                                    className: "flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                                    lineNumber: 1866,
+                                                                                    columnNumber: 29
+                                                                                }, this)
+                                                                            ]
+                                                                        }, void 0, true, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1859,
+                                                                            columnNumber: 27
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1857,
+                                                                    columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1812,
-                                                            columnNumber: 21
+                                                            lineNumber: 1811,
+                                                            columnNumber: 23
                                                         }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        roomCardEditTab === "achtergrond" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "space-y-3",
                                                             children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
-                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
-                                                                    children: "Achtergrondafbeelding"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1843,
-                                                                    columnNumber: 23
-                                                                }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                    className: "mb-2 text-xs text-gray-500 dark:text-gray-400",
+                                                                    className: "text-xs text-gray-500 dark:text-gray-400",
                                                                     children: "Upload een foto van de kamer of plak een URL (bijv. van een camera-feed)."
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1846,
-                                                                    columnNumber: 23
+                                                                    lineNumber: 1879,
+                                                                    columnNumber: 25
                                                                 }, this),
                                                                 editForm.background_image && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                    className: "mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10",
+                                                                    className: "h-24 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10",
                                                                     style: {
                                                                         backgroundImage: `url(${editForm.background_image})`
                                                                     }
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1850,
-                                                                    columnNumber: 25
+                                                                    lineNumber: 1883,
+                                                                    columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                     className: "flex gap-2",
@@ -2408,14 +2496,14 @@ function DashboardEditPage() {
                                                                                     disabled: uploadingRoomBg
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 1858,
-                                                                                    columnNumber: 27
+                                                                                    lineNumber: 1891,
+                                                                                    columnNumber: 29
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1856,
-                                                                            columnNumber: 25
+                                                                            lineNumber: 1889,
+                                                                            columnNumber: 27
                                                                         }, this),
                                                                         editForm.background_image && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                                             type: "button",
@@ -2427,14 +2515,14 @@ function DashboardEditPage() {
                                                                             children: "Verwijderen"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1882,
-                                                                            columnNumber: 27
+                                                                            lineNumber: 1915,
+                                                                            columnNumber: 29
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1855,
-                                                                    columnNumber: 23
+                                                                    lineNumber: 1888,
+                                                                    columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                                                                     type: "url",
@@ -2444,157 +2532,114 @@ function DashboardEditPage() {
                                                                                 background_image: e.target.value || undefined
                                                                             })),
                                                                     placeholder: "/uploads/... of https://...",
-                                                                    className: "mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1893,
-                                                                    columnNumber: 23
+                                                                    lineNumber: 1924,
+                                                                    columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1842,
-                                                            columnNumber: 21
+                                                            lineNumber: 1878,
+                                                            columnNumber: 23
                                                         }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        roomCardEditTab === "weergave" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "space-y-3",
                                                             children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
-                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
-                                                                    children: "Kleur icoon-badge"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1907,
-                                                                    columnNumber: 23
-                                                                }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                    className: "flex items-center gap-2",
                                                                     children: [
-                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
-                                                                            type: "color",
-                                                                            value: editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : "#3B82F6",
-                                                                            onChange: (e)=>setEditForm((prev)=>({
-                                                                                        ...prev,
-                                                                                        icon_background_color: e.target.value
-                                                                                    })),
-                                                                            className: "h-10 w-14 cursor-pointer rounded border border-gray-200 dark:border-white/10 bg-transparent"
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                            children: "Breedte kaart (px)"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1911,
-                                                                            columnNumber: 25
+                                                                            lineNumber: 1936,
+                                                                            columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
-                                                                            type: "text",
-                                                                            value: editForm.icon_background_color ?? "",
-                                                                            onChange: (e)=>setEditForm((prev)=>({
+                                                                            type: "number",
+                                                                            min: 200,
+                                                                            max: 500,
+                                                                            step: 10,
+                                                                            value: editForm.width ?? 280,
+                                                                            onChange: (e)=>{
+                                                                                const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                                setEditForm((prev)=>({
                                                                                         ...prev,
-                                                                                        icon_background_color: e.target.value || undefined
-                                                                                    })),
-                                                                            placeholder: "#3B82F6",
-                                                                            className: "flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                                        width: v != null && !Number.isNaN(v) ? v : undefined
+                                                                                    }));
+                                                                            },
+                                                                            placeholder: "280",
+                                                                            className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1922,
-                                                                            columnNumber: 25
+                                                                            lineNumber: 1937,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                            className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                            children: "200–500 px (standaard 280)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1950,
+                                                                            columnNumber: 27
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1910,
-                                                                    columnNumber: 23
+                                                                    lineNumber: 1935,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                            className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
+                                                                            children: "Hoogte kaart (px)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1953,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                            type: "number",
+                                                                            min: 80,
+                                                                            max: 300,
+                                                                            step: 10,
+                                                                            value: editForm.height ?? 120,
+                                                                            onChange: (e)=>{
+                                                                                const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                                                                setEditForm((prev)=>({
+                                                                                        ...prev,
+                                                                                        height: v != null && !Number.isNaN(v) ? v : undefined
+                                                                                    }));
+                                                                            },
+                                                                            placeholder: "120",
+                                                                            className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1954,
+                                                                            columnNumber: 27
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                            className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
+                                                                            children: "80–300 px (standaard 120)"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                            lineNumber: 1967,
+                                                                            columnNumber: 27
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
+                                                                    lineNumber: 1952,
+                                                                    columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1906,
-                                                            columnNumber: 21
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
-                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
-                                                                    children: "Breedte kaart (px)"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1937,
-                                                                    columnNumber: 23
-                                                                }, this),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
-                                                                    type: "number",
-                                                                    min: 200,
-                                                                    max: 500,
-                                                                    step: 10,
-                                                                    value: editForm.width ?? 280,
-                                                                    onChange: (e)=>{
-                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
-                                                                        setEditForm((prev)=>({
-                                                                                ...prev,
-                                                                                width: v != null && !Number.isNaN(v) ? v : undefined
-                                                                            }));
-                                                                    },
-                                                                    placeholder: "280",
-                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1940,
-                                                                    columnNumber: 23
-                                                                }, this),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
-                                                                    children: "200–500 px (standaard 280)"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1956,
-                                                                    columnNumber: 23
-                                                                }, this)
-                                                            ]
-                                                        }, void 0, true, {
-                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1936,
-                                                            columnNumber: 21
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
-                                                                    className: "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400",
-                                                                    children: "Hoogte kaart (px)"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1959,
-                                                                    columnNumber: 23
-                                                                }, this),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
-                                                                    type: "number",
-                                                                    min: 80,
-                                                                    max: 300,
-                                                                    step: 10,
-                                                                    value: editForm.height ?? 120,
-                                                                    onChange: (e)=>{
-                                                                        const v = e.target.value === "" ? undefined : Number(e.target.value);
-                                                                        setEditForm((prev)=>({
-                                                                                ...prev,
-                                                                                height: v != null && !Number.isNaN(v) ? v : undefined
-                                                                            }));
-                                                                    },
-                                                                    placeholder: "120",
-                                                                    className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1962,
-                                                                    columnNumber: 23
-                                                                }, this),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                    className: "mt-0.5 text-xs text-gray-400 dark:text-gray-500",
-                                                                    children: "80–300 px (standaard 120)"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1978,
-                                                                    columnNumber: 23
-                                                                }, this)
-                                                            ]
-                                                        }, void 0, true, {
-                                                            fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1958,
-                                                            columnNumber: 21
+                                                            lineNumber: 1934,
+                                                            columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true),
@@ -2607,7 +2652,7 @@ function DashboardEditPage() {
                                                                     children: "Icoon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1985,
+                                                                    lineNumber: 1976,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -2622,18 +2667,18 @@ function DashboardEditPage() {
                                                                             children: opt
                                                                         }, opt, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 1996,
+                                                                            lineNumber: 1987,
                                                                             columnNumber: 27
                                                                         }, this))
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 1988,
+                                                                    lineNumber: 1979,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 1984,
+                                                            lineNumber: 1975,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2643,7 +2688,7 @@ function DashboardEditPage() {
                                                                     children: "Luchtvochtigheid (optioneel)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2003,
+                                                                    lineNumber: 1994,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -2659,7 +2704,7 @@ function DashboardEditPage() {
                                                                             children: "Geen"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2016,
+                                                                            lineNumber: 2007,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         entities.filter((e)=>e.entity_id.startsWith("sensor.")).map((e)=>{
@@ -2669,20 +2714,20 @@ function DashboardEditPage() {
                                                                                 children: name
                                                                             }, e.entity_id, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2024,
+                                                                                lineNumber: 2015,
                                                                                 columnNumber: 31
                                                                             }, this);
                                                                         })
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2006,
+                                                                    lineNumber: 1997,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2002,
+                                                            lineNumber: 1993,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2692,7 +2737,7 @@ function DashboardEditPage() {
                                                                     children: "Breedte kaart (px)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2032,
+                                                                    lineNumber: 2023,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2712,7 +2757,7 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2035,
+                                                                    lineNumber: 2026,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2720,13 +2765,13 @@ function DashboardEditPage() {
                                                                     children: "200–500 px (standaard 320)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2051,
+                                                                    lineNumber: 2042,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2031,
+                                                            lineNumber: 2022,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2736,7 +2781,7 @@ function DashboardEditPage() {
                                                                     children: "Hoogte kaart (px)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2054,
+                                                                    lineNumber: 2045,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2756,7 +2801,7 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2057,
+                                                                    lineNumber: 2048,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2764,13 +2809,13 @@ function DashboardEditPage() {
                                                                     children: "100–400 px (standaard 180)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2073,
+                                                                    lineNumber: 2064,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2053,
+                                                            lineNumber: 2044,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
@@ -2782,7 +2827,7 @@ function DashboardEditPage() {
                                                             children: "Consumption (verbruik, optioneel)"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2079,
+                                                            lineNumber: 2070,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -2798,7 +2843,7 @@ function DashboardEditPage() {
                                                                     children: "Geen"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2092,
+                                                                    lineNumber: 2083,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 entities.filter((e)=>e.entity_id.startsWith("sensor.")).map((e)=>{
@@ -2808,20 +2853,20 @@ function DashboardEditPage() {
                                                                         children: name
                                                                     }, e.entity_id, false, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 2100,
+                                                                        lineNumber: 2091,
                                                                         columnNumber: 29
                                                                     }, this);
                                                                 })
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2082,
+                                                            lineNumber: 2073,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 2078,
+                                                    lineNumber: 2069,
                                                     columnNumber: 19
                                                 }, this),
                                                 editingWidget.type === "energy_monitor_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -2833,7 +2878,7 @@ function DashboardEditPage() {
                                                                     children: "Achtergrondafbeelding light mode (URL)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2111,
+                                                                    lineNumber: 2102,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2847,13 +2892,13 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2114,
+                                                                    lineNumber: 2105,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2110,
+                                                            lineNumber: 2101,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2863,7 +2908,7 @@ function DashboardEditPage() {
                                                                     children: "Achtergrondafbeelding dark mode (URL, optioneel)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2128,
+                                                                    lineNumber: 2119,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2877,7 +2922,7 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2131,
+                                                                    lineNumber: 2122,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2885,13 +2930,13 @@ function DashboardEditPage() {
                                                                     children: "Plaats afbeeldingen in public/ of gebruik externe URLs."
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2143,
+                                                                    lineNumber: 2134,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2127,
+                                                            lineNumber: 2118,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2908,7 +2953,7 @@ function DashboardEditPage() {
                                                                     className: "rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2148,
+                                                                    lineNumber: 2139,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -2917,13 +2962,13 @@ function DashboardEditPage() {
                                                                     children: "Minimalistisch (alleen afbeelding, geen titel of rand)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2157,
+                                                                    lineNumber: 2148,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2147,
+                                                            lineNumber: 2138,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2937,7 +2982,7 @@ function DashboardEditPage() {
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2162,
+                                                                    lineNumber: 2153,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -2953,13 +2998,13 @@ function DashboardEditPage() {
                                                                     className: "w-full"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2165,
+                                                                    lineNumber: 2156,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2161,
+                                                            lineNumber: 2152,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2969,7 +3014,7 @@ function DashboardEditPage() {
                                                                     children: "Voorwaarden (afbeelding bij waarde)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2181,
+                                                                    lineNumber: 2172,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2977,7 +3022,7 @@ function DashboardEditPage() {
                                                                     children: "Eerste voorwaarde die klopt bepaalt de afbeelding. Bijv. sunny → zon.jpg, rainy → regen.jpg. Entity hierboven moet zijn ingesteld."
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2184,
+                                                                    lineNumber: 2175,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 (editForm.image_conditions ?? []).map((cond, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2998,12 +3043,12 @@ function DashboardEditPage() {
                                                                                         children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATOR_LABELS"][op] ?? op
                                                                                     }, op, false, {
                                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                        lineNumber: 2202,
+                                                                                        lineNumber: 2193,
                                                                                         columnNumber: 31
                                                                                     }, this))
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2189,
+                                                                                lineNumber: 2180,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3020,7 +3065,7 @@ function DashboardEditPage() {
                                                                                 className: "flex-1 min-w-[80px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2205,
+                                                                                lineNumber: 2196,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3037,7 +3082,7 @@ function DashboardEditPage() {
                                                                                 className: "flex-1 min-w-[100px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2219,
+                                                                                lineNumber: 2210,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3054,7 +3099,7 @@ function DashboardEditPage() {
                                                                                 className: "w-24 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2233,
+                                                                                lineNumber: 2224,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3068,18 +3113,18 @@ function DashboardEditPage() {
                                                                                     className: "h-3.5 w-3.5"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 2257,
+                                                                                    lineNumber: 2248,
                                                                                     columnNumber: 29
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2247,
+                                                                                lineNumber: 2238,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         ]
                                                                     }, idx, true, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 2188,
+                                                                        lineNumber: 2179,
                                                                         columnNumber: 25
                                                                     }, this)),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3100,13 +3145,13 @@ function DashboardEditPage() {
                                                                     children: "+ Voorwaarde toevoegen"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2261,
+                                                                    lineNumber: 2252,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2180,
+                                                            lineNumber: 2171,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
@@ -3120,7 +3165,7 @@ function DashboardEditPage() {
                                                                     children: "Label (onder de waarde)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2279,
+                                                                    lineNumber: 2270,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3134,13 +3179,13 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2282,
+                                                                    lineNumber: 2273,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2278,
+                                                            lineNumber: 2269,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3150,7 +3195,7 @@ function DashboardEditPage() {
                                                                     children: "Icoon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2293,
+                                                                    lineNumber: 2284,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -3165,18 +3210,18 @@ function DashboardEditPage() {
                                                                             children: opt
                                                                         }, opt, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2304,
+                                                                            lineNumber: 2295,
                                                                             columnNumber: 27
                                                                         }, this))
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2296,
+                                                                    lineNumber: 2287,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2292,
+                                                            lineNumber: 2283,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3186,7 +3231,7 @@ function DashboardEditPage() {
                                                                     children: "Kleur (standaard)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2311,
+                                                                    lineNumber: 2302,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -3202,7 +3247,7 @@ function DashboardEditPage() {
                                                                             children: "Amber (geel)"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2324,
+                                                                            lineNumber: 2315,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -3210,7 +3255,7 @@ function DashboardEditPage() {
                                                                             children: "Paars"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2325,
+                                                                            lineNumber: 2316,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -3218,7 +3263,7 @@ function DashboardEditPage() {
                                                                             children: "Smaragd (groen)"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2326,
+                                                                            lineNumber: 2317,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -3226,19 +3271,19 @@ function DashboardEditPage() {
                                                                             children: "Rood"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2327,
+                                                                            lineNumber: 2318,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2314,
+                                                                    lineNumber: 2305,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2310,
+                                                            lineNumber: 2301,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3248,7 +3293,7 @@ function DashboardEditPage() {
                                                                     children: "Voorwaarden (kleur aanpassen bij waarde)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2331,
+                                                                    lineNumber: 2322,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3256,7 +3301,7 @@ function DashboardEditPage() {
                                                                     children: "Eerste voorwaarde die klopt bepaalt de kleur. Bijv. plastic = groen, papier = blauw."
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2334,
+                                                                    lineNumber: 2325,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 (editForm.conditions ?? []).map((cond, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3277,12 +3322,12 @@ function DashboardEditPage() {
                                                                                         children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATOR_LABELS"][op] ?? op
                                                                                     }, op, false, {
                                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                        lineNumber: 2355,
+                                                                                        lineNumber: 2346,
                                                                                         columnNumber: 31
                                                                                     }, this))
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2342,
+                                                                                lineNumber: 2333,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3299,7 +3344,7 @@ function DashboardEditPage() {
                                                                                 className: "w-24 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2360,
+                                                                                lineNumber: 2351,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -3317,12 +3362,12 @@ function DashboardEditPage() {
                                                                                         children: color
                                                                                     }, color, false, {
                                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                        lineNumber: 2387,
+                                                                                        lineNumber: 2378,
                                                                                         columnNumber: 31
                                                                                     }, this))
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2374,
+                                                                                lineNumber: 2365,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3337,18 +3382,18 @@ function DashboardEditPage() {
                                                                                     className: "h-4 w-4"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 2403,
+                                                                                    lineNumber: 2394,
                                                                                     columnNumber: 29
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2392,
+                                                                                lineNumber: 2383,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         ]
                                                                     }, idx, true, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 2338,
+                                                                        lineNumber: 2329,
                                                                         columnNumber: 25
                                                                     }, this)),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3368,13 +3413,13 @@ function DashboardEditPage() {
                                                                     children: "+ Voeg voorwaarde toe"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2407,
+                                                                    lineNumber: 2398,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2330,
+                                                            lineNumber: 2321,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
@@ -3386,7 +3431,7 @@ function DashboardEditPage() {
                                                             children: "Vacuum Room (scripts)"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2424,
+                                                            lineNumber: 2415,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -3394,7 +3439,7 @@ function DashboardEditPage() {
                                                             children: "Kies scripts en geef ze optioneel een weergavenaam."
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2427,
+                                                            lineNumber: 2418,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3429,7 +3474,7 @@ function DashboardEditPage() {
                                                                                 className: "h-4 w-4 rounded border-gray-300 dark:border-white/20 text-[#4D2FB2] focus:ring-[#4D2FB2]"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2441,
+                                                                                lineNumber: 2432,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -3438,13 +3483,13 @@ function DashboardEditPage() {
                                                                                 children: defaultName
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2460,
+                                                                                lineNumber: 2451,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         ]
                                                                     }, e.entity_id, true, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 2437,
+                                                                        lineNumber: 2428,
                                                                         columnNumber: 29
                                                                     }, this);
                                                                 }),
@@ -3453,13 +3498,13 @@ function DashboardEditPage() {
                                                                     children: "Geen scripts gevonden. Sla eerst een verbinding op."
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2465,
+                                                                    lineNumber: 2456,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2430,
+                                                            lineNumber: 2421,
                                                             columnNumber: 21
                                                         }, this),
                                                         (editForm.script_ids ?? []).length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3470,7 +3515,7 @@ function DashboardEditPage() {
                                                                     children: "Naam per script (optioneel)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2470,
+                                                                    lineNumber: 2461,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 (editForm.script_ids ?? []).map((scriptId)=>{
@@ -3485,7 +3530,7 @@ function DashboardEditPage() {
                                                                                 children: defaultName
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2476,
+                                                                                lineNumber: 2467,
                                                                                 columnNumber: 31
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3502,20 +3547,20 @@ function DashboardEditPage() {
                                                                                 className: "flex-1 min-w-0 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1.5 text-sm"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2477,
+                                                                                lineNumber: 2468,
                                                                                 columnNumber: 31
                                                                             }, this)
                                                                         ]
                                                                     }, scriptId, true, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 2475,
+                                                                        lineNumber: 2466,
                                                                         columnNumber: 29
                                                                     }, this);
                                                                 })
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2469,
+                                                            lineNumber: 2460,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3526,7 +3571,7 @@ function DashboardEditPage() {
                                                                     children: "Sensor onder status (bijv. cleaned area)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2498,
+                                                                    lineNumber: 2489,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -3542,7 +3587,7 @@ function DashboardEditPage() {
                                                                             children: "Geen"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2511,
+                                                                            lineNumber: 2502,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         entities.filter((e)=>e.entity_id.startsWith("sensor.")).map((e)=>{
@@ -3552,20 +3597,20 @@ function DashboardEditPage() {
                                                                                 children: name
                                                                             }, e.entity_id, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2517,
+                                                                                lineNumber: 2508,
                                                                                 columnNumber: 31
                                                                             }, this);
                                                                         })
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2501,
+                                                                    lineNumber: 2492,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2497,
+                                                            lineNumber: 2488,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3576,7 +3621,7 @@ function DashboardEditPage() {
                                                                     children: "Icoon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2525,
+                                                                    lineNumber: 2516,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3588,7 +3633,7 @@ function DashboardEditPage() {
                                                                     className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2528,
+                                                                    lineNumber: 2519,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3607,7 +3652,7 @@ function DashboardEditPage() {
                                                                             children: "Geen (Sparkles)"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2537,
+                                                                            lineNumber: 2528,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__VACUUM_ICON_OPTIONS$3e$__["VACUUM_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((vacuumIconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3623,25 +3668,25 @@ function DashboardEditPage() {
                                                                                 children: name
                                                                             }, name, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2555,
+                                                                                lineNumber: 2546,
                                                                                 columnNumber: 27
                                                                             }, this))
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2536,
+                                                                    lineNumber: 2527,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2524,
+                                                            lineNumber: 2515,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 2423,
+                                                    lineNumber: 2414,
                                                     columnNumber: 19
                                                 }, this),
                                                 editingWidget.type === "sensor_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3656,7 +3701,7 @@ function DashboardEditPage() {
                                                                     children: "Algemeen"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2579,
+                                                                    lineNumber: 2570,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3666,13 +3711,13 @@ function DashboardEditPage() {
                                                                     children: "Conditionele voorwaarden"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2591,
+                                                                    lineNumber: 2582,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2578,
+                                                            lineNumber: 2569,
                                                             columnNumber: 21
                                                         }, this),
                                                         sensorCardEditTab === "general" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -3682,7 +3727,7 @@ function DashboardEditPage() {
                                                                     children: "Icoon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2606,
+                                                                    lineNumber: 2597,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3694,7 +3739,7 @@ function DashboardEditPage() {
                                                                     className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2609,
+                                                                    lineNumber: 2600,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3713,7 +3758,7 @@ function DashboardEditPage() {
                                                                             children: "Default (Gauge)"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2618,
+                                                                            lineNumber: 2609,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__SENSOR_ICON_OPTIONS$3e$__["SENSOR_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((sensorIconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3729,13 +3774,13 @@ function DashboardEditPage() {
                                                                                 children: name
                                                                             }, name, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2636,
+                                                                                lineNumber: 2627,
                                                                                 columnNumber: 29
                                                                             }, this))
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2617,
+                                                                    lineNumber: 2608,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3746,7 +3791,7 @@ function DashboardEditPage() {
                                                                             children: "Grootte"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2655,
+                                                                            lineNumber: 2646,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -3762,7 +3807,7 @@ function DashboardEditPage() {
                                                                                     children: "Klein"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 2665,
+                                                                                    lineNumber: 2656,
                                                                                     columnNumber: 29
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -3770,7 +3815,7 @@ function DashboardEditPage() {
                                                                                     children: "Normaal"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 2666,
+                                                                                    lineNumber: 2657,
                                                                                     columnNumber: 29
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -3778,19 +3823,19 @@ function DashboardEditPage() {
                                                                                     children: "Groot"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 2667,
+                                                                                    lineNumber: 2658,
                                                                                     columnNumber: 29
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2658,
+                                                                            lineNumber: 2649,
                                                                             columnNumber: 27
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2654,
+                                                                    lineNumber: 2645,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3807,7 +3852,7 @@ function DashboardEditPage() {
                                                                             className: "rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2671,
+                                                                            lineNumber: 2662,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -3816,13 +3861,13 @@ function DashboardEditPage() {
                                                                             children: "Icoon tonen"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2680,
+                                                                            lineNumber: 2671,
                                                                             columnNumber: 27
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2670,
+                                                                    lineNumber: 2661,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
@@ -3835,7 +3880,7 @@ function DashboardEditPage() {
                                                                     children: "Eerste voorwaarde die klopt bepaalt de kaartkleur. Getallen en tekst worden ondersteund."
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2688,
+                                                                    lineNumber: 2679,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 (editForm.conditions ?? []).map((cond, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3856,12 +3901,12 @@ function DashboardEditPage() {
                                                                                         children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATOR_LABELS"][op] ?? op
                                                                                     }, op, false, {
                                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                        lineNumber: 2709,
+                                                                                        lineNumber: 2700,
                                                                                         columnNumber: 33
                                                                                     }, this))
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2696,
+                                                                                lineNumber: 2687,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3878,7 +3923,7 @@ function DashboardEditPage() {
                                                                                 className: "w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2714,
+                                                                                lineNumber: 2705,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -3896,12 +3941,12 @@ function DashboardEditPage() {
                                                                                         children: color
                                                                                     }, color, false, {
                                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                        lineNumber: 2741,
+                                                                                        lineNumber: 2732,
                                                                                         columnNumber: 33
                                                                                     }, this))
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2728,
+                                                                                lineNumber: 2719,
                                                                                 columnNumber: 29
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3916,18 +3961,18 @@ function DashboardEditPage() {
                                                                                     className: "h-4 w-4"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 2757,
+                                                                                    lineNumber: 2748,
                                                                                     columnNumber: 31
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2746,
+                                                                                lineNumber: 2737,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, idx, true, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 2692,
+                                                                        lineNumber: 2683,
                                                                         columnNumber: 27
                                                                     }, this)),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3947,19 +3992,19 @@ function DashboardEditPage() {
                                                                     children: "+ Voeg voorwaarde toe"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2761,
+                                                                    lineNumber: 2752,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2687,
+                                                            lineNumber: 2678,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 2577,
+                                                    lineNumber: 2568,
                                                     columnNumber: 19
                                                 }, this),
                                                 editingWidget.type === "pill_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3973,7 +4018,7 @@ function DashboardEditPage() {
                                                                     children: "Toon entiteitstatus"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2780,
+                                                                    lineNumber: 2771,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3989,18 +4034,18 @@ function DashboardEditPage() {
                                                                         className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition translate-x-0.5", editForm.show_state !== false ? "translate-x-5" : "translate-x-1")
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 2797,
+                                                                        lineNumber: 2788,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2783,
+                                                                    lineNumber: 2774,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2779,
+                                                            lineNumber: 2770,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4008,7 +4053,7 @@ function DashboardEditPage() {
                                                             children: "Toon of verberg de waarde (Aan/Uit of sensorwaarde) op de pill."
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2805,
+                                                            lineNumber: 2796,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4018,7 +4063,7 @@ function DashboardEditPage() {
                                                                     children: "Icoon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2809,
+                                                                    lineNumber: 2800,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -4030,7 +4075,7 @@ function DashboardEditPage() {
                                                                     className: "mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2812,
+                                                                    lineNumber: 2803,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4049,7 +4094,7 @@ function DashboardEditPage() {
                                                                             children: "Default (CircleDot)"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 2821,
+                                                                            lineNumber: 2812,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$card$2d$icons$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__CARD_ICON_OPTIONS__as__SENSOR_ICON_OPTIONS$3e$__["SENSOR_ICON_OPTIONS"].filter((name)=>name.toLowerCase().includes((pillIconSearch || "").toLowerCase())).map((name)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4065,19 +4110,19 @@ function DashboardEditPage() {
                                                                                 children: name
                                                                             }, name, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2839,
+                                                                                lineNumber: 2830,
                                                                                 columnNumber: 27
                                                                             }, this))
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2820,
+                                                                    lineNumber: 2811,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2808,
+                                                            lineNumber: 2799,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4087,7 +4132,7 @@ function DashboardEditPage() {
                                                                     children: "Voorwaardelijke kleur (eerste match)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2859,
+                                                                    lineNumber: 2850,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4095,7 +4140,7 @@ function DashboardEditPage() {
                                                                     children: "Bepaal de pill-kleur op basis van de entity state."
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2862,
+                                                                    lineNumber: 2853,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 (editForm.conditions ?? []).map((cond, idx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4116,12 +4161,12 @@ function DashboardEditPage() {
                                                                                         children: __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$widgets$2f$sensor$2d$card$2d$widget$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["SENSOR_CONDITION_OPERATOR_LABELS"][op] ?? op
                                                                                     }, op, false, {
                                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                        lineNumber: 2883,
+                                                                                        lineNumber: 2874,
                                                                                         columnNumber: 31
                                                                                     }, this))
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2870,
+                                                                                lineNumber: 2861,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -4138,7 +4183,7 @@ function DashboardEditPage() {
                                                                                 className: "w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2888,
+                                                                                lineNumber: 2879,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -4156,12 +4201,12 @@ function DashboardEditPage() {
                                                                                         children: color
                                                                                     }, color, false, {
                                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                        lineNumber: 2915,
+                                                                                        lineNumber: 2906,
                                                                                         columnNumber: 31
                                                                                     }, this))
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2902,
+                                                                                lineNumber: 2893,
                                                                                 columnNumber: 27
                                                                             }, this),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4176,18 +4221,18 @@ function DashboardEditPage() {
                                                                                     className: "h-4 w-4"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 2931,
+                                                                                    lineNumber: 2922,
                                                                                     columnNumber: 29
                                                                                 }, this)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 2920,
+                                                                                lineNumber: 2911,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         ]
                                                                     }, idx, true, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 2866,
+                                                                        lineNumber: 2857,
                                                                         columnNumber: 25
                                                                     }, this)),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4207,19 +4252,19 @@ function DashboardEditPage() {
                                                                     children: "+ Voeg voorwaarde toe"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2935,
+                                                                    lineNumber: 2926,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2858,
+                                                            lineNumber: 2849,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                    lineNumber: 2778,
+                                                    lineNumber: 2769,
                                                     columnNumber: 19
                                                 }, this),
                                                 editingWidget.type === "camera_card" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -4232,7 +4277,7 @@ function DashboardEditPage() {
                                                                     children: "Toon titel"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2953,
+                                                                    lineNumber: 2944,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4248,18 +4293,18 @@ function DashboardEditPage() {
                                                                         className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition", editForm.show_title !== false ? "translate-x-5" : "translate-x-1")
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 2970,
+                                                                        lineNumber: 2961,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2956,
+                                                                    lineNumber: 2947,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2952,
+                                                            lineNumber: 2943,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4269,7 +4314,7 @@ function DashboardEditPage() {
                                                                     children: "Vernieuw interval (seconden)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2979,
+                                                                    lineNumber: 2970,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -4289,7 +4334,7 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2982,
+                                                                    lineNumber: 2973,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4297,13 +4342,13 @@ function DashboardEditPage() {
                                                                     children: "2–120 seconden (standaard 10)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 2998,
+                                                                    lineNumber: 2989,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 2978,
+                                                            lineNumber: 2969,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4313,7 +4358,7 @@ function DashboardEditPage() {
                                                                     children: "Breedte kaart (px)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3001,
+                                                                    lineNumber: 2992,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -4333,7 +4378,7 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3004,
+                                                                    lineNumber: 2995,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4341,13 +4386,13 @@ function DashboardEditPage() {
                                                                     children: "200–600 px (standaard 360)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3020,
+                                                                    lineNumber: 3011,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3000,
+                                                            lineNumber: 2991,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4357,7 +4402,7 @@ function DashboardEditPage() {
                                                                     children: "Hoogte kaart (px)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3023,
+                                                                    lineNumber: 3014,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -4377,7 +4422,7 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3026,
+                                                                    lineNumber: 3017,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4385,13 +4430,13 @@ function DashboardEditPage() {
                                                                     children: "150–450 px (standaard 270)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3042,
+                                                                    lineNumber: 3033,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3022,
+                                                            lineNumber: 3013,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
@@ -4406,7 +4451,7 @@ function DashboardEditPage() {
                                                                     children: "Toon icoon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3049,
+                                                                    lineNumber: 3040,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4422,18 +4467,18 @@ function DashboardEditPage() {
                                                                         className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["cn"])("pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition", editForm.show_icon !== false ? "translate-x-5" : "translate-x-1")
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                        lineNumber: 3066,
+                                                                        lineNumber: 3057,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3052,
+                                                                    lineNumber: 3043,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3048,
+                                                            lineNumber: 3039,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4443,7 +4488,7 @@ function DashboardEditPage() {
                                                                     children: "Breedte kaart (px)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3075,
+                                                                    lineNumber: 3066,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -4463,7 +4508,7 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3078,
+                                                                    lineNumber: 3069,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4471,13 +4516,13 @@ function DashboardEditPage() {
                                                                     children: "200–500 px (standaard 320)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3094,
+                                                                    lineNumber: 3085,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3074,
+                                                            lineNumber: 3065,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4487,7 +4532,7 @@ function DashboardEditPage() {
                                                                     children: "Hoogte kaart (px)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3097,
+                                                                    lineNumber: 3088,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -4507,7 +4552,7 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3100,
+                                                                    lineNumber: 3091,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4515,13 +4560,13 @@ function DashboardEditPage() {
                                                                     children: "100–400 px (standaard 180)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3116,
+                                                                    lineNumber: 3107,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3096,
+                                                            lineNumber: 3087,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
@@ -4535,7 +4580,7 @@ function DashboardEditPage() {
                                                                     children: "Icoon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3123,
+                                                                    lineNumber: 3114,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4556,18 +4601,18 @@ function DashboardEditPage() {
                                                                             children: name
                                                                         }, name, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 3128,
+                                                                            lineNumber: 3119,
                                                                             columnNumber: 27
                                                                         }, this))
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3126,
+                                                                    lineNumber: 3117,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3122,
+                                                            lineNumber: 3113,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4577,7 +4622,7 @@ function DashboardEditPage() {
                                                                     children: "Kleur icoon"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3147,
+                                                                    lineNumber: 3138,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4593,7 +4638,7 @@ function DashboardEditPage() {
                                                                             className: "h-8 w-12 cursor-pointer rounded border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 3151,
+                                                                            lineNumber: 3142,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -4607,19 +4652,19 @@ function DashboardEditPage() {
                                                                             className: "flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 3162,
+                                                                            lineNumber: 3153,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3150,
+                                                                    lineNumber: 3141,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3146,
+                                                            lineNumber: 3137,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4629,7 +4674,7 @@ function DashboardEditPage() {
                                                                     children: "Breedte × hoogte (px)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3177,
+                                                                    lineNumber: 3168,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4655,7 +4700,7 @@ function DashboardEditPage() {
                                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 3182,
+                                                                                    lineNumber: 3173,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4663,13 +4708,13 @@ function DashboardEditPage() {
                                                                                     children: "Breedte"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 3195,
+                                                                                    lineNumber: 3186,
                                                                                     columnNumber: 27
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 3181,
+                                                                            lineNumber: 3172,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4692,7 +4737,7 @@ function DashboardEditPage() {
                                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 3198,
+                                                                                    lineNumber: 3189,
                                                                                     columnNumber: 27
                                                                                 }, this),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4700,25 +4745,25 @@ function DashboardEditPage() {
                                                                                     children: "Hoogte"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                    lineNumber: 3211,
+                                                                                    lineNumber: 3202,
                                                                                     columnNumber: 27
                                                                                 }, this)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 3197,
+                                                                            lineNumber: 3188,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3180,
+                                                                    lineNumber: 3171,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3176,
+                                                            lineNumber: 3167,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4728,7 +4773,7 @@ function DashboardEditPage() {
                                                                     children: "Entity dagverbruik (totaal per dag)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3216,
+                                                                    lineNumber: 3207,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -4744,7 +4789,7 @@ function DashboardEditPage() {
                                                                             children: "Kies entity…"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 3226,
+                                                                            lineNumber: 3217,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         entities.filter((e)=>e.entity_id.startsWith("sensor.")).map((e)=>{
@@ -4754,20 +4799,20 @@ function DashboardEditPage() {
                                                                                 children: name
                                                                             }, e.entity_id, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 3232,
+                                                                                lineNumber: 3223,
                                                                                 columnNumber: 31
                                                                             }, this);
                                                                         })
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3219,
+                                                                    lineNumber: 3210,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3215,
+                                                            lineNumber: 3206,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4777,7 +4822,7 @@ function DashboardEditPage() {
                                                                     children: "Entity huidig verbruik (optioneel)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3240,
+                                                                    lineNumber: 3231,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -4793,7 +4838,7 @@ function DashboardEditPage() {
                                                                             children: "Geen (toont 0 voor huidig)"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                            lineNumber: 3250,
+                                                                            lineNumber: 3241,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         entities.filter((e)=>e.entity_id.startsWith("sensor.")).map((e)=>{
@@ -4803,20 +4848,20 @@ function DashboardEditPage() {
                                                                                 children: name
                                                                             }, e.entity_id, false, {
                                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                                lineNumber: 3256,
+                                                                                lineNumber: 3247,
                                                                                 columnNumber: 31
                                                                             }, this);
                                                                         })
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3243,
+                                                                    lineNumber: 3234,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3239,
+                                                            lineNumber: 3230,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4826,7 +4871,7 @@ function DashboardEditPage() {
                                                                     children: "Max waarde voor bar (optioneel)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3264,
+                                                                    lineNumber: 3255,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -4845,7 +4890,7 @@ function DashboardEditPage() {
                                                                     className: "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3267,
+                                                                    lineNumber: 3258,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -4853,13 +4898,13 @@ function DashboardEditPage() {
                                                                     children: "Schaal voor verticale verbruiksbalk"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                    lineNumber: 3282,
+                                                                    lineNumber: 3273,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                            lineNumber: 3263,
+                                                            lineNumber: 3254,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
@@ -4867,7 +4912,7 @@ function DashboardEditPage() {
                                             ]
                                         }, void 0, true),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "flex justify-between gap-2 pt-1",
+                                            className: "flex shrink-0 justify-between gap-2 pt-3 mt-2 border-t border-gray-200 dark:border-white/10",
                                             children: editingWidget.type === "card_group" && editingGroupChildId ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4877,7 +4922,7 @@ function DashboardEditPage() {
                                                         children: "Terug"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                        lineNumber: 3291,
+                                                        lineNumber: 3282,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -4905,7 +4950,7 @@ function DashboardEditPage() {
                                                                 children: "Verwijderen"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                lineNumber: 3299,
+                                                                lineNumber: 3290,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4939,13 +4984,13 @@ function DashboardEditPage() {
                                                                 children: "Opslaan"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                lineNumber: 3313,
+                                                                lineNumber: 3304,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                        lineNumber: 3298,
+                                                        lineNumber: 3289,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
@@ -4971,7 +5016,7 @@ function DashboardEditPage() {
                                                         children: "Verwijderen"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                        lineNumber: 3339,
+                                                        lineNumber: 3330,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -4981,7 +5026,7 @@ function DashboardEditPage() {
                                                         children: "Annuleren"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                        lineNumber: 3359,
+                                                        lineNumber: 3350,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
@@ -5007,7 +5052,7 @@ function DashboardEditPage() {
                                                         children: "Verwijderen"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                        lineNumber: 3369,
+                                                        lineNumber: 3360,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -5020,7 +5065,7 @@ function DashboardEditPage() {
                                                                 children: "Annuleren"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                lineNumber: 3390,
+                                                                lineNumber: 3381,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -5119,32 +5164,32 @@ function DashboardEditPage() {
                                                                 children: "Opslaan"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                                lineNumber: 3397,
+                                                                lineNumber: 3388,
                                                                 columnNumber: 19
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                                        lineNumber: 3389,
+                                                        lineNumber: 3380,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true)
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                            lineNumber: 3288,
+                                            lineNumber: 3279,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                                    lineNumber: 1362,
+                                    lineNumber: 1369,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-                            lineNumber: 1352,
+                            lineNumber: 1354,
                             columnNumber: 13
                         }, this)
                     ]
@@ -5152,12 +5197,12 @@ function DashboardEditPage() {
             ]
         }, void 0, true, {
             fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-            lineNumber: 901,
+            lineNumber: 903,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/dashboards/[id]/page.tsx",
-        lineNumber: 889,
+        lineNumber: 891,
         columnNumber: 5
     }, this);
 }

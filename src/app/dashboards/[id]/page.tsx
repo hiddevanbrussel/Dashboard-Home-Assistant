@@ -425,6 +425,7 @@ export default function DashboardEditPage() {
   const [sensorIconSearch, setSensorIconSearch] = useState("");
   const [pillIconSearch, setPillIconSearch] = useState("");
   const [sensorCardEditTab, setSensorCardEditTab] = useState<"general" | "conditions">("general");
+  const [roomCardEditTab, setRoomCardEditTab] = useState<"algemeen" | "achtergrond" | "weergave">("algemeen");
   const [uploadingRoomBg, setUploadingRoomBg] = useState(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const LONG_PRESS_MS = 500;
@@ -520,6 +521,7 @@ export default function DashboardEditPage() {
       setGroupAddEntitySearch("");
       setEditEntitySearch("");
       if (editingWidget.type === "sensor_card") setSensorCardEditTab("general");
+      if (editingWidget.type === "room_card") setRoomCardEditTab("algemeen");
     }
   }, [editingWidget, editingGroupChildId]);
 
@@ -1349,17 +1351,22 @@ export default function DashboardEditPage() {
                 }
               }}
             />
-            <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl">
-              <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <div className={cn(
+              "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl max-h-[90vh] flex flex-col",
+              editingWidget.type === "room_card" ? "max-w-md" : "max-w-sm"
+            )}>
+              <h3 className="mb-3 shrink-0 text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {editingWidget.type === "title_card"
                   ? "Titel bewerken"
                   : editingWidget.type === "card_group"
                     ? editingGroupChildId
                       ? "Kaart in groep bewerken"
                       : "Kaartgroep bewerken"
-                    : "Edit tile"}
+                    : editingWidget.type === "room_card"
+                      ? "Kamer bewerken"
+                      : "Edit tile"}
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-3 overflow-y-auto min-h-0 flex-1 pr-1 -mr-1">
                 {editingWidget.type === "title_card" ? (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -1783,200 +1790,184 @@ export default function DashboardEditPage() {
                 )}
                 {editingWidget.type === "room_card" && (
                   <>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Icoon
-                      </label>
-                      <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto">
-                        {SENSOR_ICON_OPTIONS.filter((name) =>
-                          name.toLowerCase().includes((iconSearch || "").toLowerCase())
-                        ).map((name) => (
-                          <button
-                            key={name}
-                            type="button"
-                            onClick={() =>
-                              setEditForm((prev) => ({ ...prev, icon: name }))
-                            }
-                            className={cn(
-                              "rounded-md px-2 py-1 text-xs",
-                              (editForm.icon ?? "Home") === name
-                                ? "bg-[#4D2FB2] text-white"
-                                : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
-                            )}
-                          >
-                            {name}
-                          </button>
-                        ))}
-                      </div>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "achtergrond", "weergave"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setRoomCardEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            roomCardEditTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? "Algemeen" : tab === "achtergrond" ? "Achtergrond" : "Weergave"}
+                        </button>
+                      ))}
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Licht-entiteit (optioneel)
-                      </label>
-                      <select
-                        value={editForm.light_entity_id ?? ""}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            light_entity_id: e.target.value || undefined,
-                          }))
-                        }
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                      >
-                        <option value="">Geen</option>
-                        {entities
-                          .filter((e) =>
-                            e.entity_id.startsWith("light.") || e.entity_id.startsWith("group.")
-                          )
-                          .map((e) => {
-                            const name =
-                              (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                            return (
-                              <option key={e.entity_id} value={e.entity_id}>
-                                {name}
-                              </option>
-                            );
-                          })}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Achtergrondafbeelding
-                      </label>
-                      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                        Upload een foto van de kamer of plak een URL (bijv. van een camera-feed).
-                      </p>
-                      {editForm.background_image && (
-                        <div
-                          className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                          style={{ backgroundImage: `url(${editForm.background_image})` }}
-                        />
-                      )}
-                      <div className="flex gap-2">
-                        <label className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/10">
-                          {uploadingRoomBg ? "Uploaden…" : "Upload afbeelding"}
+                    {roomCardEditTab === "algemeen" && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Icoon</label>
                           <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif"
-                            className="sr-only"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file || !editingWidgetId) return;
-                              e.target.value = "";
-                              setUploadingRoomBg(true);
-                              try {
-                                const formData = new FormData();
-                                formData.set("file", file);
-                                const res = await fetch("/api/upload", { method: "POST", body: formData });
-                                const json = await res.json();
-                                if (!res.ok) throw new Error(json.error || "Upload failed");
-                                setEditForm((prev) => ({ ...prev, background_image: json.url }));
-                              } finally {
-                                setUploadingRoomBg(false);
-                              }
-                            }}
-                            disabled={uploadingRoomBg}
+                            type="text"
+                            value={iconSearch || ""}
+                            onChange={(e) => setIconSearch(e.target.value)}
+                            placeholder="Zoek icoon..."
+                            className="mb-1.5 w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                           />
-                        </label>
-                        {editForm.background_image && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditForm((prev) => ({ ...prev, background_image: undefined }))
-                            }
-                            className="rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
+                          <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-28 overflow-auto">
+                            {CARD_ICON_OPTIONS.filter((name) =>
+                              name.toLowerCase().includes((iconSearch || "").toLowerCase())
+                            ).map((name) => (
+                              <button
+                                key={name}
+                                type="button"
+                                onClick={() => setEditForm((prev) => ({ ...prev, icon: name }))}
+                                className={cn(
+                                  "rounded-md px-2 py-1 text-xs",
+                                  (editForm.icon ?? "Home") === name
+                                    ? "bg-[#4D2FB2] text-white"
+                                    : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                                )}
+                              >
+                                {name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Licht-entiteit (optioneel)</label>
+                          <select
+                            value={editForm.light_entity_id ?? ""}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, light_entity_id: e.target.value || undefined }))}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                           >
-                            Verwijderen
-                          </button>
+                            <option value="">Geen</option>
+                            {entities
+                              .filter((e) => e.entity_id.startsWith("light.") || e.entity_id.startsWith("group."))
+                              .map((e) => {
+                                const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                                return <option key={e.entity_id} value={e.entity_id}>{name}</option>;
+                              })}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Kleur icoon-badge</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : "#3B82F6"}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, icon_background_color: e.target.value }))}
+                              className="h-10 w-14 cursor-pointer rounded border border-gray-200 dark:border-white/10 bg-transparent"
+                            />
+                            <input
+                              type="text"
+                              value={editForm.icon_background_color ?? ""}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, icon_background_color: e.target.value || undefined }))}
+                              placeholder="#3B82F6"
+                              className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {roomCardEditTab === "achtergrond" && (
+                      <div className="space-y-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Upload een foto van de kamer of plak een URL (bijv. van een camera-feed).
+                        </p>
+                        {editForm.background_image && (
+                          <div
+                            className="h-24 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
+                            style={{ backgroundImage: `url(${editForm.background_image})` }}
+                          />
                         )}
-                      </div>
-                      <input
-                        type="url"
-                        value={editForm.background_image ?? ""}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            background_image: e.target.value || undefined,
-                          }))
-                        }
-                        placeholder="/uploads/... of https://..."
-                        className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Kleur icoon-badge
-                      </label>
-                      <div className="flex items-center gap-2">
+                        <div className="flex gap-2">
+                          <label className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/10">
+                            {uploadingRoomBg ? "Uploaden…" : "Upload afbeelding"}
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,image/gif"
+                              className="sr-only"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file || !editingWidgetId) return;
+                                e.target.value = "";
+                                setUploadingRoomBg(true);
+                                try {
+                                  const formData = new FormData();
+                                  formData.set("file", file);
+                                  const res = await fetch("/api/upload", { method: "POST", body: formData });
+                                  const json = await res.json();
+                                  if (!res.ok) throw new Error(json.error || "Upload failed");
+                                  setEditForm((prev) => ({ ...prev, background_image: json.url }));
+                                } finally {
+                                  setUploadingRoomBg(false);
+                                }
+                              }}
+                              disabled={uploadingRoomBg}
+                            />
+                          </label>
+                          {editForm.background_image && (
+                            <button
+                              type="button"
+                              onClick={() => setEditForm((prev) => ({ ...prev, background_image: undefined }))}
+                              className="rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
+                            >
+                              Verwijderen
+                            </button>
+                          )}
+                        </div>
                         <input
-                          type="color"
-                          value={editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : "#3B82F6"}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({
-                              ...prev,
-                              icon_background_color: e.target.value,
-                            }))
-                          }
-                          className="h-10 w-14 cursor-pointer rounded border border-gray-200 dark:border-white/10 bg-transparent"
-                        />
-                        <input
-                          type="text"
-                          value={editForm.icon_background_color ?? ""}
-                          onChange={(e) =>
-                            setEditForm((prev) => ({
-                              ...prev,
-                              icon_background_color: e.target.value || undefined,
-                            }))
-                          }
-                          placeholder="#3B82F6"
-                          className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          type="url"
+                          value={editForm.background_image ?? ""}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, background_image: e.target.value || undefined }))}
+                          placeholder="/uploads/... of https://..."
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         />
                       </div>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Breedte kaart (px)
-                      </label>
-                      <input
-                        type="number"
-                        min={200}
-                        max={500}
-                        step={10}
-                        value={editForm.width ?? 280}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? undefined : Number(e.target.value);
-                          setEditForm((prev) => ({
-                            ...prev,
-                            width: v != null && !Number.isNaN(v) ? v : undefined,
-                          }));
-                        }}
-                        placeholder="280"
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                      />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–500 px (standaard 280)</p>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Hoogte kaart (px)
-                      </label>
-                      <input
-                        type="number"
-                        min={80}
-                        max={300}
-                        step={10}
-                        value={editForm.height ?? 120}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? undefined : Number(e.target.value);
-                          setEditForm((prev) => ({
-                            ...prev,
-                            height: v != null && !Number.isNaN(v) ? v : undefined,
-                          }));
-                        }}
-                        placeholder="120"
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                      />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">80–300 px (standaard 120)</p>
-                    </div>
+                    )}
+                    {roomCardEditTab === "weergave" && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Breedte kaart (px)</label>
+                          <input
+                            type="number"
+                            min={200}
+                            max={500}
+                            step={10}
+                            value={editForm.width ?? 280}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
+                            }}
+                            placeholder="280"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–500 px (standaard 280)</p>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Hoogte kaart (px)</label>
+                          <input
+                            type="number"
+                            min={80}
+                            max={300}
+                            step={10}
+                            value={editForm.height ?? 120}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
+                            }}
+                            placeholder="120"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">80–300 px (standaard 120)</p>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
                 {(editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && (
@@ -3285,7 +3276,7 @@ export default function DashboardEditPage() {
                 )}
                   </>
                 )}
-                <div className="flex justify-between gap-2 pt-1">
+                <div className="flex shrink-0 justify-between gap-2 pt-3 mt-2 border-t border-gray-200 dark:border-white/10">
                   {editingWidget.type === "card_group" && editingGroupChildId ? (
                     <>
                       <button
