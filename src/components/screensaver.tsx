@@ -322,7 +322,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
 export function ScreensaverProvider({ children }: { children: React.ReactNode }) {
   const { active, setActive } = useIdleScreensaver();
 
-  const dismiss = useCallback(() => setActive(false), []);
+  const dismiss = useCallback(() => setActive(false), [setActive]);
 
   return (
     <>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { MoreVertical, Sun } from "lucide-react";
 import type { EnergyMonitorCardProps, ImageCondition } from "./widget-types";
 import { cn } from "@/lib/utils";
@@ -92,14 +93,17 @@ export function EnergyMonitorCardWidget({
       {effectiveImage ? (
         <div
           className={cn(
-            "absolute inset-0 rounded-2xl overflow-hidden flex items-center justify-center",
+            "absolute inset-0 rounded-2xl overflow-hidden flex items-center justify-center relative",
             !minimal && "bg-slate-900"
           )}
         >
-          <img
+          <Image
             src={effectiveImage}
             alt=""
-            className="w-full h-full object-contain object-center"
+            fill
+            sizes="100vw"
+            className="object-contain object-center"
+            unoptimized
           />
         </div>
       ) : (

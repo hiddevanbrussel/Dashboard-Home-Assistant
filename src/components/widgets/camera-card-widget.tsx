@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { RefreshCw, MoreVertical, Video } from "lucide-react";
 import type { CameraCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
@@ -43,12 +44,15 @@ export function CameraCardWidget({
         className
       )}
     >
-      <div className="relative aspect-video w-full bg-black overflow-hidden">
+      <div className="relative flex-1 min-h-0 w-full bg-black overflow-hidden">
         {imageSrc ? (
-          <img
+          <Image
             src={imageSrc}
             alt={title}
-            className="w-full h-full object-contain"
+            fill
+            sizes="(max-width: 640px) 100vw, 640px"
+            className="object-cover"
+            unoptimized
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-white/50">

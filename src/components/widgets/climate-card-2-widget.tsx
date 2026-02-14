@@ -324,7 +324,11 @@ export function ClimateCard2Widget({
                     }}
                   >
                     {dropdownOptions.map(({ mode, label, icon: Icon }) => (
-                      <li key={mode} role="option">
+                      <li
+                        key={mode}
+                        role="option"
+                        aria-selected={mode === (isOff ? "off" : activeHvacMode)}
+                      >
                         <button
                           type="button"
                           onClick={() => {

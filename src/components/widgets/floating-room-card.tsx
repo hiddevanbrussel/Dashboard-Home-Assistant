@@ -183,7 +183,7 @@ export function FloatingRoomCard({
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging, maxLeft, maxBottom, totalWidth]
+    [isDragging, maxLeft, maxBottom]
   );
 
   const handlePointerUp = useCallback(
@@ -204,7 +204,7 @@ export function FloatingRoomCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft, maxBottom, widget.id, totalWidth]
+    [isDragging, maxLeft, maxBottom, widget.id]
   );
 
   return (

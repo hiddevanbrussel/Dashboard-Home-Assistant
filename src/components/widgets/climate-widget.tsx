@@ -26,6 +26,7 @@ export function ClimateWidget({
         <button
           type="button"
           role="switch"
+          aria-checked={false}
           aria-label="Toggle"
           className="relative inline-flex h-6 w-11 shrink-0 rounded-full bg-accent-green dark:bg-accent-green border-2 border-transparent"
         />
