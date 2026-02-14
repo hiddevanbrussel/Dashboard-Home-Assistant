@@ -520,8 +520,7 @@ export default function DashboardEditPage() {
       setEditEntitySearch("");
       if (editingWidget.type === "sensor_card") setSensorCardEditTab("general");
     }
-  }, [editingWidget?.id, editingWidget?.title, editingWidget?.entity_id, editingWidget?.consumption_entity_id, editingWidget?.grid_entity_id, editingWidget?.humidity_entity_id, editingWidget?.show_icon, editingWidget?.show_state, editingWidget?.script_ids, editingWidget?.script_names, editingWidget?.cleaned_area_entity_id, editingWidget?.light_entity_id, editingWidget?.background_image,
-        editingWidget?.background_image_dark, editingWidget?.image_conditions, editingWidget?.icon_background_color, editingWidget?.width, editingWidget?.height, editingWidget?.icon, editingWidget?.size, editingWidget?.conditions, editingWidget?.type, editingWidget?.children, editingWidget?.current_entity_id, editingWidget?.max_value, editingWidget?.minimal, editingWidget?.scale, editingWidget?.label, editingWidget?.color, editingWidget?.refresh, editingWidget?.show_title, editingGroupChildId]);
+  }, [editingWidget, editingGroupChildId]);
 
   const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["dashboard", id],

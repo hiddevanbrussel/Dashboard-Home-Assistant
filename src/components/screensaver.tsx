@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { createPortal } from "react-dom";
 import {
   Cloud,
@@ -255,12 +256,17 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
                 style={{ backgroundImage: `url(${backgroundImage})` }}
                 aria-hidden
               />
-              <img
-                src={backgroundImage}
-                alt=""
-                className="sr-only"
-                onError={() => setImageFailed(true)}
-              />
+              <div className="absolute inset-0 pointer-events-none" aria-hidden>
+                <Image
+                  src={backgroundImage}
+                  alt=""
+                  fill
+                  sizes="100vw"
+                  className="sr-only"
+                  onError={() => setImageFailed(true)}
+                  unoptimized
+                />
+              </div>
             </>
           ) : (
             <>
