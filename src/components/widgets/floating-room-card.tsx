@@ -248,6 +248,7 @@ export function FloatingRoomCard({
           light_entity_id={widget.light_entity_id}
           background_image={widget.background_image}
           icon_background_color={widget.icon_background_color}
+          width={totalWidth}
           height={totalHeight}
           embedded
           onMoreClick={editMode ? onEdit : undefined}

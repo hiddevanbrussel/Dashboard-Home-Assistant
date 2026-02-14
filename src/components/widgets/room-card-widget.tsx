@@ -20,6 +20,11 @@ function formatEntityValue(state: string | undefined, attributes: Record<string,
 
 const DEFAULT_ICON_BG = "#3B82F6";
 
+const BASE_CARD_WIDTH = 280;
+const BASE_CARD_HEIGHT = 120;
+const BASE_ICON_CIRCLE = 130;
+const BASE_ICON_SIZE = 52;
+
 export function RoomCardWidget({
   title = "Kamer",
   entity_id,
@@ -27,11 +32,12 @@ export function RoomCardWidget({
   light_entity_id,
   background_image,
   icon_background_color,
+  width,
   height,
   className,
   embedded,
   onMoreClick,
-}: RoomCardProps & { className?: string; embedded?: boolean; height?: number; onMoreClick?: () => void }) {
+}: RoomCardProps & { className?: string; embedded?: boolean; width?: number; height?: number; onMoreClick?: () => void }) {
   const entity = useEntityStateStore((s) => (entity_id ? s.getState(entity_id) : null));
   const lightEntity = useEntityStateStore((s) =>
     light_entity_id ? s.getState(light_entity_id) : null
@@ -72,6 +78,11 @@ export function RoomCardWidget({
 
   const IconComponent = CARD_ICONS[icon] ?? CARD_ICONS.Home;
   const isConfigured = Boolean(entity_id?.trim());
+  const w = width ?? BASE_CARD_WIDTH;
+  const h = height ?? BASE_CARD_HEIGHT;
+  const scale = Math.min(w / BASE_CARD_WIDTH, h / BASE_CARD_HEIGHT, 2);
+  const iconCircleSize = Math.round(BASE_ICON_CIRCLE * scale);
+  const iconSize = Math.round(BASE_ICON_SIZE * scale);
   const entityValue = isConfigured
     ? formatEntityValue(entity?.state, entity?.attributes)
     : null;
@@ -90,20 +101,27 @@ export function RoomCardWidget({
     >
       {background_image && (
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
           style={{ backgroundImage: `url(${background_image})` }}
           aria-hidden
         />
       )}
       <div
-        className="absolute left-0 bottom-0 w-[100px] h-[100px] translate-x-[-20%] translate-y-[20%] flex items-center justify-center rounded-full text-white shadow-lg"
-        style={{ backgroundColor: icon_background_color || DEFAULT_ICON_BG }}
+        className="absolute left-0 bottom-0 translate-x-[-20%] translate-y-[20%] flex items-center justify-center rounded-full text-white shadow-lg"
+        style={{
+          backgroundColor: icon_background_color || DEFAULT_ICON_BG,
+          width: iconCircleSize,
+          height: iconCircleSize,
+        }}
         aria-hidden
       >
-        <IconComponent className="h-10 w-10" aria-hidden />
+        <IconComponent style={{ width: iconSize, height: iconSize }} className="shrink-0" aria-hidden />
       </div>
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <div className="flex flex-1 flex-col items-end justify-between min-w-0 px-4 pt-3 pb-3 text-right pl-6 min-h-0">
+        <div
+          className="flex flex-1 flex-col items-end justify-between min-w-0 px-4 pt-3 pb-3 text-right min-h-0"
+          style={{ paddingLeft: Math.max(24, iconCircleSize * 0.35) }}
+        >
           <div className="flex items-center gap-2 w-full justify-end min-w-0 shrink-0">
             <div className="min-w-0 flex-1 flex flex-col items-end">
               <p className={cn(
