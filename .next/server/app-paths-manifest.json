@@ -1,9 +1,0 @@
-{
-  "/api/dashboard/route": "app/api/dashboard/route.js",
-  "/api/dashboards/[id]/route": "app/api/dashboards/[id]/route.js",
-  "/api/ha/entities/route": "app/api/ha/entities/route.js",
-  "/api/ha/state/route": "app/api/ha/state/route.js",
-  "/dashboards/[id]/page": "app/dashboards/[id]/page.js",
-  "/dashboards/page": "app/dashboards/page.js",
-  "/page": "app/page.js"
-}
