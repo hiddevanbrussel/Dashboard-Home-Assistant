@@ -335,7 +335,8 @@ export function FloatingClimateCard({
               clearTimeout(swipeAreaLongPressRef.current);
               swipeAreaLongPressRef.current = null;
             }
-            swipeStart.current = null;
+            /* Niet swipeStart nullen: op tablet verlaat de vinger vaak het element tijdens swipe;
+               met setPointerCapture krijgen we pointerup nog steeds, dus swipe wordt dan correct herkend. */
           } : undefined}
         >
           <div
