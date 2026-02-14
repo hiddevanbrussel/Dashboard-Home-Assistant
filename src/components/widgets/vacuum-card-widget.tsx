@@ -175,8 +175,9 @@ function ScriptTag({
   disabled?: boolean;
 }) {
   const entity = useEntityStateStore((s) => s.getState(entityId));
-  const label =
+  const raw =
     displayName ?? entity?.attributes?.friendly_name ?? entityId.replace(/^script\./, "");
+  const label = typeof raw === "string" ? raw : String(raw ?? "");
 
   return (
     <button

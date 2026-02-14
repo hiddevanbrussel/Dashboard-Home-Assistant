@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { MoreVertical } from "lucide-react";
 import { PillCardWidget } from "./pill-card-widget";
+import type { SensorCondition } from "./widget-types";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingCardGroupPosition.";
@@ -254,7 +255,7 @@ export function FloatingCardGroup({
               title={child.title ?? "Pill"}
               entity_id={child.entity_id ?? ""}
               icon={child.icon}
-              conditions={child.conditions}
+              conditions={child.conditions as SensorCondition[] | undefined}
               show_state={child.show_state !== false}
               onMoreClick={undefined}
             />

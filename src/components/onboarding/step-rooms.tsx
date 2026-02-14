@@ -12,8 +12,9 @@ export function StepRooms() {
     setAreas,
     addRoom,
     removeEntityFromRoom,
-    connectionId,
+    connection,
   } = useOnboardingStore();
+  const connectionId = connection.connectionId;
   const [newRoomName, setNewRoomName] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

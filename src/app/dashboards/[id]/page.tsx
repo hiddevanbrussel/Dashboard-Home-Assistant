@@ -41,6 +41,7 @@ import {
   SENSOR_ICON_OPTIONS,
   SENSOR_CONDITION_COLORS,
   SENSOR_CONDITION_OPERATORS,
+  SENSOR_CONDITION_OPERATOR_LABELS,
   FloatingPillCard,
   FloatingCardGroup,
   RoomCardWidget,
@@ -54,6 +55,7 @@ import {
   CARD_ICON_OPTIONS,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
+import type { ImageCondition, SensorCondition } from "@/components/widgets";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { OfflinePill } from "@/components/offline-pill";
 import { cn, generateId } from "@/lib/utils";
@@ -148,6 +150,8 @@ function WidgetByType({
   cleaned_area_entity_id,
   light_entity_id,
   background_image,
+  background_image_dark,
+  image_conditions,
   icon,
   size,
   conditions,
@@ -169,6 +173,8 @@ function WidgetByType({
   cleaned_area_entity_id?: string;
   light_entity_id?: string;
   background_image?: string;
+  background_image_dark?: string;
+  image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
   icon?: string;
   size?: string;
   conditions?: { operator: string; value: string; color: string }[];
@@ -249,7 +255,10 @@ function WidgetByType({
       return (
         <EnergyMonitorCardWidget
           title={title}
+          entity_id={entity_id}
           background_image={background_image}
+          background_image_dark={background_image_dark}
+          image_conditions={image_conditions as ImageCondition[] | undefined}
           minimal={minimal}
           size={sizeProp}
         />
@@ -292,8 +301,9 @@ function WidgetByType({
           title={title}
           entity_id={entity_id}
           icon={icon}
+          show_icon={show_icon}
           size={sizeProp}
-          conditions={conditions}
+          conditions={conditions as SensorCondition[] | undefined}
         />
       );
     case "room_card":
@@ -361,12 +371,14 @@ export default function DashboardEditPage() {
     cleaned_area_entity_id?: string;
     light_entity_id?: string;
     background_image?: string;
+    background_image_dark?: string;
     icon_background_color?: string;
     width?: number;
     height?: number;
     icon?: string;
     size?: string;
     conditions?: { operator: string; value: string; color: string }[];
+    image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
     current_entity_id?: string;
     max_value?: number;
     minimal?: boolean;
@@ -387,12 +399,14 @@ export default function DashboardEditPage() {
     current_entity_id: "",
     light_entity_id: "",
     background_image: "",
+    background_image_dark: "",
     icon_background_color: "",
     width: undefined as number | undefined,
     height: undefined as number | undefined,
     icon: "",
     size: "md",
     conditions: [],
+    image_conditions: [],
     minimal: false,
     scale: 1,
     label: "",
@@ -472,17 +486,17 @@ export default function DashboardEditPage() {
         cleaned_area_entity_id: editingWidget.cleaned_area_entity_id ?? "",
         light_entity_id: editingWidget.light_entity_id ?? "",
         background_image: editingWidget.background_image ?? "",
+        background_image_dark: editingWidget.background_image_dark ?? "",
         icon_background_color: editingWidget.icon_background_color ?? "",
         width: editingWidget.width ?? undefined,
         height: editingWidget.height ?? undefined,
         icon: editingWidget.icon ?? "",
         size: editingWidget.size ?? "md",
         conditions: editingWidget.conditions ?? [],
+        image_conditions: editingWidget.image_conditions ?? [],
         show_state: editingWidget.show_state !== false,
         current_entity_id: editingWidget.current_entity_id ?? "",
         max_value: editingWidget.max_value ?? undefined,
-        icon_background_color: editingWidget.icon_background_color ?? "",
-        height: editingWidget.height ?? undefined,
         minimal: editingWidget.minimal ?? false,
         scale: editingWidget.scale ?? 1,
         label: editingWidget.label ?? "",
@@ -496,7 +510,8 @@ export default function DashboardEditPage() {
       setEditEntitySearch("");
       if (editingWidget.type === "sensor_card") setSensorCardEditTab("general");
     }
-  }, [editingWidget?.id, editingWidget?.title, editingWidget?.entity_id, editingWidget?.consumption_entity_id, editingWidget?.grid_entity_id, editingWidget?.humidity_entity_id, editingWidget?.show_icon, editingWidget?.show_state, editingWidget?.script_ids, editingWidget?.script_names, editingWidget?.cleaned_area_entity_id, editingWidget?.light_entity_id, editingWidget?.background_image, editingWidget?.icon_background_color, editingWidget?.width, editingWidget?.height, editingWidget?.icon, editingWidget?.size, editingWidget?.conditions, editingWidget?.type, editingWidget?.children, editingWidget?.current_entity_id, editingWidget?.max_value, editingWidget?.minimal, editingWidget?.scale, editingWidget?.label, editingWidget?.color, editingGroupChildId]);
+  }, [editingWidget?.id, editingWidget?.title, editingWidget?.entity_id, editingWidget?.consumption_entity_id, editingWidget?.grid_entity_id, editingWidget?.humidity_entity_id, editingWidget?.show_icon, editingWidget?.show_state, editingWidget?.script_ids, editingWidget?.script_names, editingWidget?.cleaned_area_entity_id, editingWidget?.light_entity_id, editingWidget?.background_image,
+        editingWidget?.background_image_dark, editingWidget?.image_conditions, editingWidget?.icon_background_color, editingWidget?.width, editingWidget?.height, editingWidget?.icon, editingWidget?.size, editingWidget?.conditions, editingWidget?.type, editingWidget?.children, editingWidget?.current_entity_id, editingWidget?.max_value, editingWidget?.minimal, editingWidget?.scale, editingWidget?.label, editingWidget?.color, editingGroupChildId]);
 
   const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["dashboard", id],
@@ -538,6 +553,17 @@ export default function DashboardEditPage() {
       .then((data) => (Array.isArray(data) ? setEntities(data) : setEntities([])))
       .catch(() => setEntities([]));
   }, [editMode]);
+
+  const requestRefresh = useEntityStateStore((s) => s.requestRefresh);
+  useEffect(() => {
+    if (!data) return;
+    const w = parseWidgets(data.widgets);
+    if (w.some((x) => x.type === "stat_pill_card")) requestRefresh();
+  }, [data, requestRefresh]);
+
+  useEffect(() => {
+    if (error && id) router.replace("/dashboards");
+  }, [error, id, router]);
 
   const saveMutation = useMutation({
     mutationFn: async (payload: {
@@ -634,7 +660,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string }
+    updates: { title?: string; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -649,10 +675,6 @@ export default function DashboardEditPage() {
       </AppShell>
     );
   }
-
-  useEffect(() => {
-    if (error && id) router.replace("/dashboards");
-  }, [error, id, router]);
 
   if (isLoading || error) {
     return (
@@ -681,7 +703,7 @@ export default function DashboardEditPage() {
             {addTileOpen && typeof document !== "undefined" && createPortal(
               <>
                 <div
-                  className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xl"
+                  className="fixed inset-0 z-[300] bg-black/50 backdrop-blur-xl"
                   aria-hidden
                   onClick={() => {
                     setAddTileOpen(false);
@@ -690,7 +712,7 @@ export default function DashboardEditPage() {
                     setAddTileEntitySearch("");
                   }}
                 />
-                <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl">
+                <div className="fixed left-1/2 top-1/2 z-[301] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {addTileStep === "type" ? "Kaart toevoegen" : "Kies entity"}
@@ -936,6 +958,8 @@ export default function DashboardEditPage() {
                       cleaned_area_entity_id={w.cleaned_area_entity_id}
                       light_entity_id={w.light_entity_id}
                       background_image={w.background_image}
+                      background_image_dark={w.background_image_dark}
+                      image_conditions={w.image_conditions}
                       icon={w.icon}
                       size={w.size}
                       conditions={w.conditions}
@@ -1049,7 +1073,10 @@ export default function DashboardEditPage() {
           return firstEnergyMonitor ? (
             <FloatingEnergyMonitorCard
               title={firstEnergyMonitor.title ?? "Afbeeldingskaart"}
+              entity_id={firstEnergyMonitor.entity_id}
               background_image={firstEnergyMonitor.background_image}
+              background_image_dark={firstEnergyMonitor.background_image_dark}
+              image_conditions={firstEnergyMonitor.image_conditions}
               minimal={firstEnergyMonitor.minimal}
               scale={firstEnergyMonitor.scale}
               editMode={editMode}
@@ -1083,7 +1110,7 @@ export default function DashboardEditPage() {
                   label={w.label}
                   icon={w.icon}
                   color={(w.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
-                  conditions={w.conditions}
+                  conditions={w.conditions as SensorCondition[] | undefined}
                   size={(w.size as "sm" | "md" | "lg") ?? "md"}
                   editMode={editMode}
                   onEnterEditMode={() => setEditMode(true)}
@@ -1094,30 +1121,30 @@ export default function DashboardEditPage() {
             document.body
           )}
 
-        {(() => {
-          const firstSensor = widgets.find((w) => w.type === "sensor_card");
-          return firstSensor ? (
-            <FloatingSensorCard
-              title={firstSensor.title ?? "Sensor"}
-              entity_id={firstSensor.entity_id}
-              icon={firstSensor.icon}
-              size={(firstSensor.size as "sm" | "md" | "lg") ?? "md"}
-              conditions={firstSensor.conditions}
-              editMode={editMode}
-              onEnterEditMode={() => setEditMode(true)}
-              onEdit={
-                editMode
-                  ? () => setEditingWidgetId(firstSensor.id)
-                  : undefined
-              }
-              onRemove={
-                editMode
-                  ? () => handleRemoveTile(firstSensor.id)
-                  : undefined
-              }
-            />
-          ) : null;
-        })()}
+        {typeof document !== "undefined" &&
+          widgets.some((w) => w.type === "sensor_card") &&
+          createPortal(
+            widgets
+              .filter((w) => w.type === "sensor_card")
+              .map((w, i) => (
+                <FloatingSensorCard
+                  key={w.id}
+                  widgetId={w.id}
+                  widgetIndex={i}
+                  title={w.title ?? "Sensor"}
+                  entity_id={w.entity_id}
+                  icon={w.icon}
+                  show_icon={w.show_icon !== false}
+                  size={(w.size as "sm" | "md" | "lg") ?? "md"}
+                  conditions={w.conditions as SensorCondition[] | undefined}
+                  editMode={editMode}
+                  onEnterEditMode={() => setEditMode(true)}
+                  onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                  onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                />
+              )),
+            document.body
+          )}
 
         {(() => {
           const firstWeather = widgets.find((w) => w.type === "weather_card");
@@ -1244,7 +1271,7 @@ export default function DashboardEditPage() {
                 title: w.title ?? "Pill",
                 entity_id: w.entity_id,
                 icon: w.icon,
-                conditions: w.conditions,
+                conditions: w.conditions as SensorCondition[] | undefined,
                 show_state: w.show_state,
               }}
               widgetIndex={i}
@@ -1370,7 +1397,7 @@ export default function DashboardEditPage() {
                           type="text"
                           value={pillIconSearch}
                           onChange={(e) => setPillIconSearch(e.target.value)}
-                          onFocus={() => setPillIconSearch(pillIconSearch || editForm.icon ?? "")}
+                          onFocus={() => setPillIconSearch(pillIconSearch || (editForm.icon ?? ""))}
                           placeholder="Zoek icoon (bijv. CircleDot, Sun…)"
                           className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         />
@@ -1422,7 +1449,7 @@ export default function DashboardEditPage() {
                             >
                               {SENSOR_CONDITION_OPERATORS.map((op) => (
                                 <option key={op} value={op}>
-                                  {op === "eq" ? "=" : op === "neq" ? "≠" : op === "gte" ? "≥" : op === "lte" ? "≤" : op === "gt" ? ">" : op === "lt" ? "<" : "bevat"}
+                                  {SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op}
                                 </option>
                               ))}
                             </select>
@@ -1600,13 +1627,13 @@ export default function DashboardEditPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                   />
                 </div>
-                {editingWidget.entity_id != null && editingWidget.type !== "title_card" && editingWidget.type !== "energy_monitor_card" && (
+                {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card") && editingWidget.type !== "title_card" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       {editingWidget.type === "solar_card"
                         ? "Yield (opbrengst)"
                         : editingWidget.type === "energy_monitor_card"
-                          ? "Opbrengst (zon)"
+                          ? "Entity voor voorwaarden (bijv. weather.home)"
                           : editingWidget.type === "stat_pill_card"
                             ? "Sensor"
                             : "Entity"}
@@ -1635,11 +1662,15 @@ export default function DashboardEditPage() {
                               )
                             : editingWidget.type === "room_card"
                               ? entities
-                              : entities.filter((e) =>
-                                  e.entity_id.startsWith(
-                                    (WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + "."
+                              : editingWidget.type === "energy_monitor_card"
+                                ? entities.filter((e) =>
+                                    e.entity_id.startsWith("weather.") || e.entity_id.startsWith("sensor.")
                                   )
-                                );
+                                : entities.filter((e) =>
+                                    e.entity_id.startsWith(
+                                      (WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + "."
+                                    )
+                                  );
                         const q = editEntitySearch.trim().toLowerCase();
                         if (q) {
                           options = options.filter((e) => {
@@ -1652,7 +1683,7 @@ export default function DashboardEditPage() {
                             if (current) options = [current, ...options];
                           }
                         }
-                        return options.map((e) => {
+                        const opts = options.map((e) => {
                           const name =
                             (e.attributes as { friendly_name?: string })
                               ?.friendly_name ?? e.entity_id;
@@ -1662,6 +1693,10 @@ export default function DashboardEditPage() {
                             </option>
                           );
                         });
+                        if (editingWidget.type === "energy_monitor_card") {
+                          return [<option key="" value="">Geen (alleen standaardafbeelding)</option>, ...opts];
+                        }
+                        return opts;
                       })()}
                     </select>
                   </div>
@@ -1991,7 +2026,7 @@ export default function DashboardEditPage() {
                   <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Achtergrondafbeelding (URL)
+                        Achtergrondafbeelding light mode (URL)
                       </label>
                       <input
                         type="text"
@@ -2005,8 +2040,25 @@ export default function DashboardEditPage() {
                         placeholder="/energy-house.png of https://..."
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Achtergrondafbeelding dark mode (URL, optioneel)
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.background_image_dark ?? ""}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            background_image_dark: e.target.value || undefined,
+                          }))
+                        }
+                        placeholder="Leeg =zelfde als light mode"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Plaats je afbeelding in public/ of gebruik een externe URL.
+                        Plaats afbeeldingen in public/ of gebruik externe URLs.
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -2041,6 +2093,100 @@ export default function DashboardEditPage() {
                         }
                         className="w-full"
                       />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Voorwaarden (afbeelding bij waarde)
+                      </label>
+                      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                        Eerste voorwaarde die klopt bepaalt de afbeelding. Bijv. sunny → zon.jpg, rainy → regen.jpg. Entity hierboven moet zijn ingesteld.
+                      </p>
+                      {(editForm.image_conditions ?? []).map((cond, idx) => (
+                        <div key={idx} className="flex flex-wrap items-start gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2 mb-2">
+                          <select
+                            value={cond.operator}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                image_conditions: (prev.image_conditions ?? []).map((c, i) =>
+                                  i === idx ? { ...c, operator: e.target.value } : c
+                                ),
+                              }))
+                            }
+                            className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                          >
+                            {SENSOR_CONDITION_OPERATORS.map((op) => (
+                              <option key={op} value={op}>{SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            value={cond.value}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                image_conditions: (prev.image_conditions ?? []).map((c, i) =>
+                                  i === idx ? { ...c, value: e.target.value } : c
+                                ),
+                              }))
+                            }
+                            placeholder="Waarde (bijv. sunny)"
+                            className="flex-1 min-w-[80px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                          />
+                          <input
+                            type="text"
+                            value={cond.image}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                image_conditions: (prev.image_conditions ?? []).map((c, i) =>
+                                  i === idx ? { ...c, image: e.target.value } : c
+                                ),
+                              }))
+                            }
+                            placeholder="Afbeelding (URL)"
+                            className="flex-1 min-w-[100px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                          />
+                          <input
+                            type="text"
+                            value={cond.image_dark ?? ""}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                image_conditions: (prev.image_conditions ?? []).map((c, i) =>
+                                  i === idx ? { ...c, image_dark: e.target.value || undefined } : c
+                                ),
+                              }))
+                            }
+                            placeholder="Dark (optioneel)"
+                            className="w-24 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                image_conditions: (prev.image_conditions ?? []).filter((_, i) => i !== idx),
+                              }))
+                            }
+                            className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            image_conditions: [...(prev.image_conditions ?? []), { operator: "eq", value: "", image: "", image_dark: undefined }],
+                          }))
+                        }
+                        className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full"
+                      >
+                        + Voorwaarde toevoegen
+                      </button>
                     </div>
                   </>
                 )}
@@ -2124,7 +2270,7 @@ export default function DashboardEditPage() {
                           >
                             {SENSOR_CONDITION_OPERATORS.map((op) => (
                               <option key={op} value={op}>
-                                {op === "eq" ? "=" : op === "neq" ? "≠" : op === "gte" ? "≥" : op === "lte" ? "≤" : op === "gt" ? ">" : op === "lt" ? "<" : "bevat"}
+                                {SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op}
                               </option>
                             ))}
                           </select>
@@ -2300,7 +2446,7 @@ export default function DashboardEditPage() {
                         type="text"
                         value={vacuumIconSearch}
                         onChange={(e) => setVacuumIconSearch(e.target.value)}
-                        onFocus={() => setVacuumIconSearch(vacuumIconSearch || editForm.icon ?? "")}
+                        onFocus={() => setVacuumIconSearch(vacuumIconSearch || (editForm.icon ?? ""))}
                         placeholder="Zoek icoon (bijv. home, bot, sparkles…)"
                         className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
@@ -2381,7 +2527,7 @@ export default function DashboardEditPage() {
                           type="text"
                           value={sensorIconSearch}
                           onChange={(e) => setSensorIconSearch(e.target.value)}
-                          onFocus={() => setSensorIconSearch(sensorIconSearch || editForm.icon ?? "")}
+                          onFocus={() => setSensorIconSearch(sensorIconSearch || (editForm.icon ?? ""))}
                           placeholder="Zoek icoon (bijv. gauge, thermometer…)"
                           className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         />
@@ -2438,6 +2584,20 @@ export default function DashboardEditPage() {
                             <option value="lg">Groot</option>
                           </select>
                         </div>
+                        <div className="mt-3 flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="sensor-show-icon"
+                            checked={editForm.show_icon !== false}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({ ...prev, show_icon: e.target.checked }))
+                            }
+                            className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                          />
+                          <label htmlFor="sensor-show-icon" className="text-sm text-gray-700 dark:text-gray-300">
+                            Icoon tonen
+                          </label>
+                        </div>
                       </>
                     )}
                     {sensorCardEditTab === "conditions" && (
@@ -2464,7 +2624,7 @@ export default function DashboardEditPage() {
                             >
                               {SENSOR_CONDITION_OPERATORS.map((op) => (
                                 <option key={op} value={op}>
-                                  {op === "eq" ? "=" : op === "neq" ? "≠" : op === "gte" ? "≥" : op === "lte" ? "≤" : op === "gt" ? ">" : op === "lt" ? "<" : "bevat"}
+                                  {SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op}
                                 </option>
                               ))}
                             </select>
@@ -2570,7 +2730,7 @@ export default function DashboardEditPage() {
                         type="text"
                         value={pillIconSearch}
                         onChange={(e) => setPillIconSearch(e.target.value)}
-                        onFocus={() => setPillIconSearch(pillIconSearch || editForm.icon ?? "")}
+                        onFocus={() => setPillIconSearch(pillIconSearch || (editForm.icon ?? ""))}
                         placeholder="Zoek icoon (bijv. CircleDot, Sun…)"
                         className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
@@ -2638,7 +2798,7 @@ export default function DashboardEditPage() {
                           >
                             {SENSOR_CONDITION_OPERATORS.map((op) => (
                               <option key={op} value={op}>
-                                {op === "eq" ? "=" : op === "neq" ? "≠" : op === "gte" ? "≥" : op === "lte" ? "≤" : op === "gt" ? ">" : op === "lt" ? "<" : "bevat"}
+                                {SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op}
                               </option>
                             ))}
                           </select>
@@ -3067,7 +3227,12 @@ export default function DashboardEditPage() {
                           consumption_entity_id: editForm.consumption_entity_id || undefined,
                         }),
                         ...(editingWidget.type === "energy_monitor_card" && {
+                          entity_id: editForm.entity_id || undefined,
                           background_image: editForm.background_image || undefined,
+                          background_image_dark: editForm.background_image_dark || undefined,
+                          image_conditions: (editForm.image_conditions ?? []).filter((c) => c.image?.trim()).length > 0
+                            ? (editForm.image_conditions ?? []).filter((c) => c.image?.trim())
+                            : undefined,
                           minimal: editForm.minimal ?? false,
                           scale: editForm.scale ?? 1,
                         }),
@@ -3099,6 +3264,7 @@ export default function DashboardEditPage() {
                         }),
                         ...(editingWidget.type === "sensor_card" && {
                           icon: editForm.icon || undefined,
+                          show_icon: editForm.show_icon !== false,
                           size: editForm.size || undefined,
                           conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined,
                         }),

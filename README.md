@@ -63,6 +63,46 @@ Defaults:
 - **Mixed content**: If the app is served over HTTPS, use an HTTPS base URL for Home Assistant (or a reverse proxy).
 - **CORS**: All Home Assistant API calls are made from the server; the client never sends the token. No CORS issues from the browser.
 
+## Android / mobiel
+
+### PWA (Toevoegen aan startscherm)
+
+1. Open de app in **Chrome** op je Android-toestel (via je server-URL, bijv. `https://dashboard.jouwdomein.nl`)
+2. Tik op het **menu** (⋮) → **"Toevoegen aan startscherm"** of **"Install app"**
+3. Bevestig – de app verschijnt als icoon op je startscherm en opent fullscreen
+
+Werkt ook op iOS (Safari → Deel → "Zet op beginscherm").
+
+### Play Store publiceren (TWA)
+
+Je kunt de app aanbieden in de Google Play Store via een **Trusted Web Activity (TWA)** – een Android-app die je PWA fullscreen opent.
+
+**Vereisten:**
+- Je app moet **HTTPS** gebruiken en online bereikbaar zijn
+- [Google Play Developer-account](https://play.google.com/console/signup) ($25 eenmalig)
+
+**Stappen met Bubblewrap:**
+
+1. Installeer [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) (Node 18+):
+   ```bash
+   npm install -g @bubblewrap/cli
+   bubblewrap init --manifest=https://JOUW-DOMEIN.nl/manifest.json
+   ```
+2. Volg de prompts (package name, signing key, etc.)
+3. Bouw de app:
+   ```bash
+   bubblewrap build
+   ```
+4. Het bestand `app-release-signed.aab` kun je uploaden naar de [Play Console](https://play.google.com/console)
+
+**Alternatief – PWABuilder (grafisch):**
+
+1. Ga naar [pwabuilder.com](https://www.pwabuilder.com)
+2. Vul je app-URL in (bijv. `https://dashboard.jouwdomein.nl`)
+3. Klik op **"Package for stores"** → Android → download het project of APK
+
+**Belangrijk:** De Play Store vereist o.a. een privacybeleid-URL en app-screenshots. Zie de [Play Console-hulp](https://support.google.com/googleplay/android-developer) voor de volledige checklist.
+
 ## Scripts
 
 - `npm run dev` – development server (Turbopack)

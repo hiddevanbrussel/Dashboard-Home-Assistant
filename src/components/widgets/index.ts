@@ -17,7 +17,7 @@ export { WeatherCardWidget } from "./weather-card-widget";
 export { FloatingWeatherCard } from "./floating-weather-card";
 export { VacuumCardWidget, VACUUM_ICON_OPTIONS } from "./vacuum-card-widget";
 export { FloatingVacuumCard } from "./floating-vacuum-card";
-export { SensorCardWidget, SENSOR_ICON_OPTIONS, SENSOR_CONDITION_COLORS, SENSOR_CONDITION_OPERATORS } from "./sensor-card-widget";
+export { SensorCardWidget, SENSOR_ICON_OPTIONS, SENSOR_CONDITION_COLORS, SENSOR_CONDITION_OPERATORS, SENSOR_CONDITION_OPERATOR_LABELS } from "./sensor-card-widget";
 export { FloatingSensorCard } from "./floating-sensor-card";
 export { PillCardWidget, PILL_CONDITION_COLORS, PILL_CONDITION_OPERATORS } from "./pill-card-widget";
 export { FloatingPillCard } from "./floating-pill-card";

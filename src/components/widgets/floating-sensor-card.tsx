@@ -4,17 +4,18 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { SensorCardWidget } from "./sensor-card-widget";
+import type { SensorCondition as WidgetSensorCondition } from "./widget-types";
 
-const STORAGE_KEY = "dashboard.floatingSensorCardPosition";
+const STORAGE_KEY_PREFIX = "dashboard.floatingSensorCardPosition.";
 const DEFAULT_OFFSET = 24;
-const CARD_WIDTH = 320;
+const CARD_WIDTHS = { sm: 180, md: 260, lg: 320 } as const;
 
 type Position = { left: number; bottom: number };
 
-function loadPosition(): Position | null {
+function loadPosition(widgetId: string): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(STORAGE_KEY);
+    const s = localStorage.getItem(STORAGE_KEY_PREFIX + widgetId);
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
@@ -27,20 +28,21 @@ function loadPosition(): Position | null {
   return null;
 }
 
-function savePosition(p: Position) {
+function savePosition(widgetId: string, p: Position) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    localStorage.setItem(STORAGE_KEY_PREFIX + widgetId, JSON.stringify(p));
   } catch {
     // ignore
   }
 }
 
-function defaultPosition(): Position {
+function defaultPosition(cardWidth: number, widgetIndex: number): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  const maxLeft = window.innerWidth - CARD_WIDTH;
+  const maxLeft = window.innerWidth - cardWidth;
   const maxBottom = window.innerHeight - 120;
-  return { left: maxLeft / 2, bottom: maxBottom / 2 };
+  const offset = widgetIndex * (cardWidth + 16);
+  return { left: Math.min(offset, maxLeft / 2), bottom: maxBottom / 2 };
 }
 
 type SensorCondition = { operator: string; value: string; color: string };
@@ -48,9 +50,12 @@ type SensorCondition = { operator: string; value: string; color: string };
 const LONG_PRESS_MS = 500;
 
 export function FloatingSensorCard({
+  widgetId,
+  widgetIndex = 0,
   title,
   entity_id,
   icon,
+  show_icon = true,
   size = "md",
   conditions,
   editMode = false,
@@ -58,9 +63,12 @@ export function FloatingSensorCard({
   onEdit,
   onEnterEditMode,
 }: {
+  widgetId: string;
+  widgetIndex?: number;
   title: string;
   entity_id: string;
   icon?: string;
+  show_icon?: boolean;
   size?: "sm" | "md" | "lg";
   conditions?: SensorCondition[];
   editMode?: boolean;
@@ -68,7 +76,8 @@ export function FloatingSensorCard({
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
-  const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, top: 0 });
+  const cardWidth = CARD_WIDTHS[size ?? "md"];
+  const [position, setPosition] = useState<Position>(() => loadPosition(widgetId) ?? defaultPosition(cardWidth, widgetIndex));
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
@@ -105,18 +114,18 @@ export function FloatingSensorCard({
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardWidth : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
     const bounds = { maxLeft, maxBottom };
-    const saved = loadPosition();
+    const saved = loadPosition(widgetId);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(), bounds);
+    const p = snapToGrid(defaultPosition(cardWidth, widgetIndex), bounds);
     setPosition(p);
-    savePosition(p);
-  }, []);
+    savePosition(widgetId, p);
+  }, [cardWidth, widgetId, widgetIndex]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -140,7 +149,7 @@ export function FloatingSensorCard({
       if (!isDragging) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
+      const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardWidth : 400;
       const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
       const raw = {
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
@@ -148,7 +157,7 @@ export function FloatingSensorCard({
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging]
+    [isDragging, cardWidth]
   );
 
   const handlePointerUp = useCallback(
@@ -157,7 +166,7 @@ export function FloatingSensorCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
+        const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardWidth : 400;
         const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
@@ -165,21 +174,22 @@ export function FloatingSensorCard({
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(next);
+        savePosition(widgetId, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging]
+    [isDragging, cardWidth]
   );
 
   return (
     <div
       className={cn(
-        "fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
       style={{
+        width: cardWidth,
         left: position.left,
         bottom: position.bottom,
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
@@ -202,7 +212,7 @@ export function FloatingSensorCard({
       })}
     >
       <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-        <SensorCardWidget title={title} entity_id={entity_id} icon={icon} size={size} conditions={conditions} onMoreClick={editMode ? onEdit : undefined} />
+        <SensorCardWidget title={title} entity_id={entity_id} icon={icon} show_icon={show_icon} size={size} conditions={conditions as WidgetSensorCondition[] | undefined} onMoreClick={editMode ? onEdit : undefined} />
       </div>
     </div>
   );

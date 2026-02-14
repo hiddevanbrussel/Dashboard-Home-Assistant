@@ -19,8 +19,9 @@ function getDomain(entityId: string): string {
 }
 
 export function StepDiscovery() {
-  const { setEntities, entities, connectionId, selectedEntityIds, toggleEntitySelection } =
+  const { setEntities, entities, connection, selectedEntityIds, toggleEntitySelection } =
     useOnboardingStore();
+  const connectionId = connection.connectionId;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");

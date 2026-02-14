@@ -1,0 +1,11 @@
+{
+  "name": "Home Assistant Dashboard",
+  "short_name": "HA Dashboard",
+  "description": "Dashboard met live Home Assistant data",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#4D2FB2",
+  "orientation": "any",
+  "scope": "/"
+}

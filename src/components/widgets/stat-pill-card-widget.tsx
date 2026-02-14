@@ -72,8 +72,10 @@ function matchCondition(state: string | undefined, conditions: SensorCondition[]
   return null;
 }
 
+/** Abonneert op entity + updatedAt om betrouwbaar te re-renderen bij store-updates. */
 function useEntityValue(entityId: string) {
-  const entity = useEntityStateStore((s) => s.getState(entityId));
+  const entity = useEntityStateStore((s) => s.states[entityId]);
+  useEntityStateStore((s) => s.updatedAt);
   const raw = entity?.state;
   const unit = (entity?.attributes?.unit_of_measurement as string) ?? "";
   if (raw == null || raw === "unavailable" || raw === "unknown") {
@@ -119,7 +121,8 @@ export function StatPillCardWidget({
   className,
   onMoreClick,
 }: StatPillCardProps & { className?: string; onMoreClick?: () => void }) {
-  const entity = useEntityStateStore((s) => s.getState(entity_id));
+  const entity = useEntityStateStore((s) => s.states[entity_id]);
+  useEntityStateStore((s) => s.updatedAt);
   const state = entity?.state as string | undefined;
   const { display } = useEntityValue(entity_id);
   const IconComponent =

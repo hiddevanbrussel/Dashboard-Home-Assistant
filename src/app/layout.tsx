@@ -10,6 +10,20 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Home Assistant Dashboard Builder",
   description: "Set up a working dashboard with live Home Assistant data in 5–10 minutes.",
+  manifest: "/manifest.json",
+  themeColor: "#4D2FB2",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "HA Dashboard",
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover" as const,
 };
 
 export default function RootLayout({

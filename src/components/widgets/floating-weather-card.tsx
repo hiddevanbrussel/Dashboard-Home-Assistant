@@ -85,7 +85,7 @@ export function FloatingWeatherCard({
 }) {
   const totalWidth = clampWidth(width);
   const totalHeight = clampHeight(height);
-  const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, top: 0 });
+  const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);

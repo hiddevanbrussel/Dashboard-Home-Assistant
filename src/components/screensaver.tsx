@@ -19,6 +19,8 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
 
 const ACTIVITY_EVENTS = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "click"] as const;
+const PHOTO_ROTATION_SECONDS = 10;
+const FADE_DURATION_MS = 1500;
 
 function useIdleScreensaver() {
   const [active, setActive] = useState(false);
@@ -156,15 +158,18 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const customBg = getScreensaverBackgroundImage();
   const pexelsEnabled = getScreensaverPexelsEnabled();
   const pexelsQuery = getScreensaverPexelsQuery();
-  const [pexelsImage, setPexelsImage] = useState<string | null>(null);
-  const [pexelsAttribution, setPexelsAttribution] = useState<{ url: string; photographer: string } | null>(null);
+  const pexelsApiKey = getScreensaverPexelsApiKey();
+
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const [nextImage, setNextImage] = useState<string | null>(null);
+  const [currentAttribution, setCurrentAttribution] = useState<{ url: string; photographer: string } | null>(null);
+  const [nextAttribution, setNextAttribution] = useState<{ url: string; photographer: string } | null>(null);
+  const [isFading, setIsFading] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [pexelsError, setPexelsError] = useState(false);
 
-  const pexelsApiKey = getScreensaverPexelsApiKey();
-
-  useEffect(() => {
-    if (customBg || !pexelsEnabled || !pexelsApiKey) return;
+  const fetchPexelsPhoto = useCallback(() => {
+    if (!pexelsApiKey) return;
     setPexelsError(false);
     fetch(`/api/pexels/photo?query=${encodeURIComponent(pexelsQuery)}`, {
       headers: { "X-Pexels-Api-Key": pexelsApiKey },
@@ -172,17 +177,58 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       .then((r) => r.json())
       .then((data) => {
         if (data?.imageUrl) {
-          setPexelsImage(data.imageUrl);
-          setPexelsAttribution(data.pexelsUrl && data.photographer ? { url: data.pexelsUrl, photographer: data.photographer } : null);
+          const attr = data.pexelsUrl && data.photographer ? { url: data.pexelsUrl, photographer: data.photographer } : null;
+          setCurrentImage((prev) => {
+            if (prev) {
+              setNextImage(data.imageUrl);
+              setNextAttribution(attr);
+              return prev;
+            }
+            setCurrentAttribution(attr);
+            return data.imageUrl;
+          });
         } else {
           setPexelsError(true);
         }
       })
       .catch(() => setPexelsError(true));
-  }, [customBg, pexelsEnabled, pexelsQuery, pexelsApiKey]);
+  }, [pexelsApiKey, pexelsQuery]);
 
-  const backgroundImage = customBg || pexelsImage || DEFAULT_SCREENSAVER_IMAGE;
-  const useGradient = imageFailed || (pexelsEnabled && !customBg && (pexelsError && !pexelsImage || !pexelsApiKey));
+  useEffect(() => {
+    if (customBg || !pexelsEnabled || !pexelsApiKey) return;
+    fetchPexelsPhoto();
+  }, [customBg, pexelsEnabled, pexelsApiKey, pexelsQuery, fetchPexelsPhoto]);
+
+  useEffect(() => {
+    if (customBg || !pexelsEnabled || !pexelsApiKey || !currentImage || nextImage) return;
+    const interval = setInterval(fetchPexelsPhoto, PHOTO_ROTATION_SECONDS * 1000);
+    return () => clearInterval(interval);
+  }, [customBg, pexelsEnabled, pexelsApiKey, currentImage, nextImage, fetchPexelsPhoto]);
+
+  useEffect(() => {
+    if (!nextImage) return;
+    const start = requestAnimationFrame(() => setIsFading(true));
+    return () => cancelAnimationFrame(start);
+  }, [nextImage]);
+
+  useEffect(() => {
+    if (!isFading) return;
+    const timer = setTimeout(() => {
+      setCurrentImage(nextImage);
+      setCurrentAttribution(nextAttribution);
+      setNextImage(null);
+      setNextAttribution(null);
+      setIsFading(false);
+    }, FADE_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [isFading, nextImage, nextAttribution]);
+
+  const usePexelsRotation = pexelsEnabled && !customBg && pexelsApiKey;
+  const backgroundImage = customBg || currentImage || DEFAULT_SCREENSAVER_IMAGE;
+  const useGradient = imageFailed || (pexelsEnabled && !customBg && (pexelsError && !currentImage || !pexelsApiKey));
+
+  const singleImage = !usePexelsRotation || (!nextImage && !isFading);
+  const fadeStyle = { transition: `opacity ${FADE_DURATION_MS}ms ease-in-out` as const };
 
   return (
     <div
@@ -202,35 +248,62 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
     >
       {!useGradient && (
         <>
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url(${backgroundImage})` }}
-            aria-hidden
-          />
-          <img
-            src={backgroundImage}
-            alt=""
-            className="sr-only"
-            onError={() => setImageFailed(true)}
-          />
+          {singleImage ? (
+            <>
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{ backgroundImage: `url(${backgroundImage})` }}
+                aria-hidden
+              />
+              <img
+                src={backgroundImage}
+                alt=""
+                className="sr-only"
+                onError={() => setImageFailed(true)}
+              />
+            </>
+          ) : (
+            <>
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{
+                  ...fadeStyle,
+                  backgroundImage: `url(${currentImage})`,
+                  opacity: isFading ? 0 : 1,
+                }}
+                aria-hidden
+              />
+              {nextImage && (
+                <div
+                  className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                  style={{
+                    ...fadeStyle,
+                    backgroundImage: `url(${nextImage})`,
+                    opacity: isFading ? 1 : 0,
+                  }}
+                  aria-hidden
+                />
+              )}
+            </>
+          )}
           <div className="absolute inset-0 bg-black/50" aria-hidden />
         </>
       )}
       <div className="relative z-10 flex flex-col items-end gap-4">
         <ScreensaverWeather />
         <ScreensaverClock />
-        {pexelsAttribution && (
+        {currentAttribution && (
           <a
-            href={pexelsAttribution.url}
+            href={currentAttribution.url}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-white/50 hover:text-white/70 transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
-            Photo by {pexelsAttribution.photographer} on Pexels
+            Photo by {currentAttribution.photographer} on Pexels
           </a>
         )}
-        {pexelsEnabled && !pexelsAttribution && !pexelsError && (
+        {pexelsEnabled && !currentAttribution && !pexelsError && (
           <a
             href="https://www.pexels.com"
             target="_blank"

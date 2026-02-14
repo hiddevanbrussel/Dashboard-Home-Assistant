@@ -51,11 +51,25 @@ export type SolarCardProps = WidgetBaseProps & {
   consumption_entity_id?: string;
 };
 
+/** Voorwaarde voor afbeeldingskaart: als entity state matcht, toon deze afbeelding. */
+export type ImageCondition = {
+  operator: "eq" | "neq" | "contains" | "gt" | "gte" | "lt" | "lte";
+  value: string;
+  /** URL van afbeelding bij match (light mode). */
+  image: string;
+  /** Optionele URL voor dark mode. Valt terug op image indien niet ingesteld. */
+  image_dark?: string;
+};
+
 /** Afbeeldingskaart: alleen een afbeelding, geen entity-overlays. */
 export type EnergyMonitorCardProps = Omit<WidgetBaseProps, "entity_id"> & {
   entity_id?: string;
-  /** Optionele achtergrondafbeelding (URL). */
+  /** Optionele achtergrondafbeelding (URL) voor light mode. Valt terug bij geen match. */
   background_image?: string;
+  /** Optionele achtergrondafbeelding (URL) voor dark mode. Valt terug op background_image indien niet ingesteld. */
+  background_image_dark?: string;
+  /** Voorwaarden: eerste match bepaalt getoonde afbeelding (bijv. weer: sunny → zon, rainy → regen). */
+  image_conditions?: ImageCondition[];
   /** Zonder kaart-styling: geen achtergrond en rand om de floating card. */
   minimal?: boolean;
   /** Schaalfactor voor de kaart (0.5–1.5). */
@@ -96,8 +110,10 @@ export type SensorCondition = {
 };
 
 export type SensorCardProps = WidgetBaseProps & {
-  /** Optioneel icoon (Lucide-naam); default Gauge. */
+  /** Optioneel icoon (Lucide-naam); default Gauge. Leeg of "none" = geen icoon. */
   icon?: string;
+  /** Toon icoon; default true. false = icoon verbergen. */
+  show_icon?: boolean;
   /** Conditionele kleuren: eerste voorwaarde die klopt bepaalt de kaartkleur. */
   conditions?: SensorCondition[];
 };

@@ -57,6 +57,8 @@ export type WidgetConfig = {
   light_entity_id?: string;
   /** Room card: optionele achtergrondafbeelding (URL). */
   background_image?: string;
+  /** Afbeeldingskaart: achtergrond voor dark mode. */
+  background_image_dark?: string;
   /** Nuts card: entity voor huidig verbruik (optioneel). */
   current_entity_id?: string;
   /** Nuts card: max voor verticale bar-schaal (optioneel). */
@@ -73,6 +75,8 @@ export type WidgetConfig = {
   minimal?: boolean;
   /** Energy monitor / Afbeeldingskaart: schaalfactor (0.5–1.5). */
   scale?: number;
+  /** Afbeeldingskaart: voorwaarden voor afbeelding per entity state (bijv. weer → andere afbeelding). */
+  image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
   /** Stat pill card: label onder de waarde (bijv. "Opbrengst"). */
   label?: string;
   /** Stat pill card: kleurthema (amber, purple, emerald, red). */

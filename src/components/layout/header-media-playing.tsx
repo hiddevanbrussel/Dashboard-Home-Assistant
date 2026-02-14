@@ -125,7 +125,7 @@ function MediaPanel({
       className="fixed z-[200] w-[336px] p-2 rounded-xl border border-gray-200 bg-white/95 dark:bg-black/80 shadow-xl dark:border-white/10 dark:backdrop-blur-xl"
       style={{ top: pos.top, right: pos.right }}
     >
-      <MediaCardWidget entity_id={entity_id} size="md" />
+      <MediaCardWidget title="Media" entity_id={entity_id} size="md" />
     </div>
   );
 }

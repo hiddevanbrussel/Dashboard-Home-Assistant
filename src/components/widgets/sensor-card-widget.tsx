@@ -19,6 +19,17 @@ const CONDITION_COLORS: Record<string, string> = {
 export const SENSOR_CONDITION_COLORS = Object.keys(CONDITION_COLORS);
 export const SENSOR_CONDITION_OPERATORS = ["eq", "neq", "gt", "gte", "lt", "lte", "contains"] as const;
 
+/** Weergavelabels voor operators in keuzelijsten (=, ≠, >, ≥, <, ≤, bevat). */
+export const SENSOR_CONDITION_OPERATOR_LABELS: Record<string, string> = {
+  eq: "=",
+  neq: "≠",
+  gt: ">",
+  gte: "≥",
+  lt: "<",
+  lte: "≤",
+  contains: "bevat",
+};
+
 function matchCondition(state: string | undefined, conditions: SensorCondition[] | undefined): string | null {
   if (state == null || state === "unavailable" || state === "unknown" || !conditions?.length) return null;
   const numState = Number(state);
@@ -79,6 +90,7 @@ export function SensorCardWidget({
   title = "Sensor",
   entity_id,
   icon: iconName,
+  show_icon = true,
   size = "md",
   conditions,
   className,
@@ -87,7 +99,6 @@ export function SensorCardWidget({
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const state = entity?.state as string | undefined;
   const unit = (entity?.attributes?.unit_of_measurement as string) ?? "";
-  const friendlyName = (entity?.attributes?.friendly_name as string) ?? entity_id;
   const IconComponent = (iconName && CARD_ICONS[iconName]) ? CARD_ICONS[iconName] : CARD_ICONS.Gauge;
   const displayValue = formatValue(state);
   const matchedColor = matchCondition(state, conditions);
@@ -104,14 +115,15 @@ export function SensorCardWidget({
         className
       )}
     >
-      <div className="flex items-start justify-between gap-3 px-4 py-3">
+      <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-1">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
-            <IconComponent className="h-5 w-5" aria-hidden />
-          </div>
+          {show_icon && (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
+              <IconComponent className="h-5 w-5" aria-hidden />
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <p className="font-medium truncate text-white/90">{title}</p>
-            <p className="text-xs text-white/60 truncate">{friendlyName}</p>
           </div>
         </div>
         {onMoreClick ? (
@@ -129,7 +141,7 @@ export function SensorCardWidget({
           </div>
         )}
       </div>
-      <div className="px-4 pb-4 pt-3 flex flex-col gap-2">
+      <div className="px-4 pb-4 pt-0 flex flex-col gap-2">
         <div className="flex items-baseline gap-2 flex-wrap">
           <span
             className={cn(

@@ -1,17 +1,82 @@
 "use client";
 
 import { MoreVertical, Sun } from "lucide-react";
-import type { EnergyMonitorCardProps } from "./widget-types";
+import type { EnergyMonitorCardProps, ImageCondition } from "./widget-types";
 import { cn } from "@/lib/utils";
+import { useThemeStore } from "@/stores/theme-store";
+import { useEntityStateStore } from "@/stores/entity-state-store";
+
+function matchImageCondition(
+  state: string | undefined,
+  conditions: ImageCondition[] | undefined
+): ImageCondition | null {
+  if (state == null || state === "unavailable" || state === "unknown" || !conditions?.length) return null;
+  const numState = Number(state);
+  const isNumeric = !Number.isNaN(numState);
+  for (const c of conditions) {
+    const condValue = c.value.trim();
+    if (!condValue || !c.image?.trim()) continue;
+    const numCond = Number(condValue);
+    const isNumericCond = condValue !== "" && !Number.isNaN(numCond);
+    if (isNumeric && isNumericCond) {
+      switch (c.operator) {
+        case "gt": if (numState > numCond) return c; break;
+        case "gte": if (numState >= numCond) return c; break;
+        case "lt": if (numState < numCond) return c; break;
+        case "lte": if (numState <= numCond) return c; break;
+        case "eq": if (numState === numCond) return c; break;
+        case "neq": if (numState !== numCond) return c; break;
+        default: break;
+      }
+    } else {
+      const s = String(state).toLowerCase();
+      const v = condValue.toLowerCase();
+      switch (c.operator) {
+        case "eq": if (s === v) return c; break;
+        case "neq": if (s !== v) return c; break;
+        case "contains": if (s.includes(v) || v.includes(s)) return c; break;
+        case "gt":
+        case "gte":
+        case "lt":
+        case "lte":
+          if (isNumeric && isNumericCond) {
+            if (c.operator === "gt" && numState > numCond) return c;
+            if (c.operator === "gte" && numState >= numCond) return c;
+            if (c.operator === "lt" && numState < numCond) return c;
+            if (c.operator === "lte" && numState <= numCond) return c;
+          }
+          break;
+        default: break;
+      }
+    }
+  }
+  return null;
+}
 
 export function EnergyMonitorCardWidget({
   title = "Afbeeldingskaart",
+  entity_id,
   background_image,
+  background_image_dark,
+  image_conditions,
   minimal = false,
   size = "md",
   className,
   onMoreClick,
 }: EnergyMonitorCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { resolved: theme } = useThemeStore();
+  const isDark = theme === "dark";
+  const entity = useEntityStateStore((s) => (entity_id ? s.states[entity_id] : undefined));
+  useEntityStateStore((s) => s.updatedAt);
+  const state = entity?.state as string | undefined;
+  const matched = entity_id && image_conditions?.length
+    ? matchImageCondition(state, image_conditions)
+    : null;
+  const condImage = matched
+    ? (isDark && matched.image_dark ? matched.image_dark : matched.image)
+    : null;
+  const effectiveImage = condImage ?? (isDark && background_image_dark ? background_image_dark : background_image);
+
   return (
     <div
       className={cn(
@@ -24,7 +89,7 @@ export function EnergyMonitorCardWidget({
       )}
     >
       {/* Achtergrond: afbeelding of gradient */}
-      {background_image ? (
+      {effectiveImage ? (
         <div
           className={cn(
             "absolute inset-0 rounded-2xl overflow-hidden flex items-center justify-center",
@@ -32,7 +97,7 @@ export function EnergyMonitorCardWidget({
           )}
         >
           <img
-            src={background_image}
+            src={effectiveImage}
             alt=""
             className="w-full h-full object-contain object-center"
           />

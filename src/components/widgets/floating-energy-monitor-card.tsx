@@ -5,6 +5,7 @@ import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { EnergyMonitorCardWidget } from "./energy-monitor-card-widget";
+import type { ImageCondition } from "./widget-types";
 
 const STORAGE_KEY = "dashboard.floatingEnergyMonitorCardPosition";
 const DEFAULT_OFFSET = 24;
@@ -50,7 +51,10 @@ const LONG_PRESS_MS = 500;
 
 export function FloatingEnergyMonitorCard({
   title,
+  entity_id,
   background_image,
+  background_image_dark,
+  image_conditions,
   minimal = false,
   scale: scaleProp,
   editMode = false,
@@ -59,7 +63,10 @@ export function FloatingEnergyMonitorCard({
   onEnterEditMode,
 }: {
   title: string;
+  entity_id?: string;
   background_image?: string;
+  background_image_dark?: string;
+  image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
   minimal?: boolean;
   scale?: number;
   editMode?: boolean;
@@ -244,7 +251,10 @@ export function FloatingEnergyMonitorCard({
       <div className={cn("flex flex-col h-full min-h-0 overflow-hidden rounded-2xl", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
         <EnergyMonitorCardWidget
           title={title}
+          entity_id={entity_id}
           background_image={background_image}
+          background_image_dark={background_image_dark}
+          image_conditions={image_conditions as ImageCondition[] | undefined}
           minimal={minimal}
           size="md"
           onMoreClick={undefined}

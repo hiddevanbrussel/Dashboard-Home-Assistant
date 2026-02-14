@@ -5,6 +5,7 @@ import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { StatPillCardWidget } from "./stat-pill-card-widget";
+import type { SensorCondition } from "./widget-types";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingStatPillCardPosition.";
 const DEFAULT_OFFSET = 24;
@@ -216,7 +217,7 @@ export function FloatingStatPillCard({
           label={label}
           icon={icon}
           color={color}
-          conditions={conditions}
+          conditions={conditions as SensorCondition[] | undefined}
           size={size}
           onMoreClick={editMode ? onEdit : undefined}
         />
