@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Lightbulb, Disc2, MoreVertical, Thermometer } from "lucide-react";
+import { Lightbulb, Disc3, MoreVertical, Thermometer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { CARD_ICONS } from "./card-icons";
@@ -208,7 +208,7 @@ export function RoomCardWidget({
                 aria-hidden
                 title={isMediaPlaying ? "Media speelt af" : "Geen media"}
               >
-                <Disc2
+                <Disc3
                   className={cn(
                     "h-5 w-5 shrink-0",
                     isMediaPlaying && "animate-spin"

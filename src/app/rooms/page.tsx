@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { OfflinePill } from "@/components/offline-pill";
-import { DoorOpen } from "lucide-react";
+import { DoorOpen, LayoutGrid, ChevronRight } from "lucide-react";
 
 type HaArea = { area_id: string; name: string };
 
@@ -36,7 +37,7 @@ export default function RoomsPage() {
               Kamers
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Je kamers uit Home Assistant.
+              Je kamers uit Home Assistant. Klik op een kamer om kaarten toe te voegen.
             </p>
           </div>
           <OfflinePill />
@@ -72,13 +73,20 @@ export default function RoomsPage() {
         {!loading && !error && areas.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {areas.map((a) => (
-              <div
+              <Link
                 key={a.area_id}
-                className="rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-white/5"
+                href={`/dashboards/room-${encodeURIComponent(a.area_id)}`}
+                className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-white/5 transition-colors hover:border-[#4D2FB2]/40 hover:bg-[#4D2FB2]/5 dark:hover:bg-[#4D2FB2]/10"
               >
-                <p className="font-medium text-gray-900 dark:text-white">{a.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{a.area_id}</p>
-              </div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#4D2FB2]/10 text-[#4D2FB2] dark:bg-[#4D2FB2]/20">
+                  <LayoutGrid className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-900 dark:text-white group-hover:text-[#4D2FB2]">{a.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{a.area_id}</p>
+                </div>
+                <ChevronRight className="h-5 w-5 shrink-0 text-gray-400 group-hover:text-[#4D2FB2]" />
+              </Link>
             ))}
           </div>
         )}

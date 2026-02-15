@@ -373,7 +373,13 @@ export default function DashboardEditPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const id = params?.id as string;
+  const rawId = params?.id as string;
+  const isRoomMode = rawId?.startsWith("room-");
+  const id = rawId;
+  const areaId = isRoomMode ? decodeURIComponent(rawId.slice(5)) : null;
+  const apiBase = isRoomMode && areaId
+    ? `/api/room-dashboards/${encodeURIComponent(areaId)}`
+    : `/api/dashboards/${rawId}`;
   const [editMode, setEditMode] = useState(false);
   const [layout, setLayout] = useState<Layout>([]);
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
@@ -576,10 +582,10 @@ export default function DashboardEditPage() {
     }
   }, [editingWidget, editingGroupChildId]);
 
-  const { data, isLoading, error } = useQuery<DashboardData>({
-    queryKey: ["dashboard", id],
+  const { data, isLoading, error } = useQuery<DashboardData & { welcomeTitle?: string | null; welcomeSubtitle?: string | null }>({
+    queryKey: isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id],
     queryFn: async () => {
-      const res = await fetch(`/api/dashboards/${id}`);
+      const res = await fetch(apiBase);
       if (!res.ok) throw new Error("Failed to load");
       return res.json();
     },
@@ -604,8 +610,11 @@ export default function DashboardEditPage() {
         }))
       );
     }
-    setWelcomeTitle(data.welcomeTitle ?? "");
-    setWelcomeSubtitle(data.welcomeSubtitle ?? "");
+    setWelcomeTitle(
+      (data as { welcomeTitle?: string | null }).welcomeTitle ??
+        (isRoomMode ? (data as { name?: string }).name ?? "" : "")
+    );
+    setWelcomeSubtitle((data as { welcomeSubtitle?: string | null }).welcomeSubtitle ?? "");
     setInitialized(true);
   }, [data, initialized]);
 
@@ -633,8 +642,8 @@ export default function DashboardEditPage() {
   }, [data, requestRefresh]);
 
   useEffect(() => {
-    if (error && id) router.replace("/dashboards");
-  }, [error, id, router]);
+    if (error && id) router.replace(isRoomMode ? "/rooms" : "/dashboards");
+  }, [error, id, isRoomMode, router]);
 
   const saveMutation = useMutation({
     mutationFn: async (payload: {
@@ -643,7 +652,7 @@ export default function DashboardEditPage() {
       welcomeTitle?: string;
       welcomeSubtitle?: string;
     }) => {
-      const res = await fetch(`/api/dashboards/${id}`, {
+      const res = await fetch(apiBase, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -657,7 +666,7 @@ export default function DashboardEditPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dashboard", id] });
+      queryClient.invalidateQueries({ queryKey: isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id] });
     },
   });
 
@@ -774,17 +783,19 @@ export default function DashboardEditPage() {
     setEditingWidgetId(null);
   }
 
-  if (!id) {
+  if (!id || (isRoomMode && !areaId)) {
     return (
-      <AppShell activeTab="/dashboards">
-        <p className="text-sm text-gray-500">Invalid dashboard id.</p>
+      <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
+        <p className="text-sm text-gray-500">
+          {isRoomMode ? "Ongeldige kamer." : "Invalid dashboard id."}
+        </p>
       </AppShell>
     );
   }
 
   if (isLoading || error) {
     return (
-      <AppShell activeTab="/dashboards">
+      <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
         <p className="text-sm text-gray-500">
           {error ? "Dashboard not found, redirecting…" : "Loading…"}
         </p>
@@ -991,7 +1002,7 @@ export default function DashboardEditPage() {
 
   return (
     <AppShell
-        activeTab="/dashboards"
+        activeTab={isRoomMode ? "/rooms" : "/dashboards"}
         headerEndAction={headerEndAction}
         welcomeTitle={welcomeTitle || undefined}
         welcomeSubtitle={welcomeSubtitle || undefined}
