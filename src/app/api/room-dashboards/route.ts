@@ -80,14 +80,28 @@ export async function POST(request: Request) {
   const icon = typeof body.icon === "string" && body.icon.trim() ? body.icon.trim() : null;
   const background = typeof body.background === "string" && body.background.trim() ? body.background.trim() : null;
 
-  const rd = await prisma.roomDashboard.create({
-    data: {
-      areaId: slug,
-      name: name,
-      icon: icon,
-      background: background,
-    },
-  });
+  let rd;
+  try {
+    rd = await prisma.roomDashboard.create({
+      data: {
+        areaId: slug,
+        name: name,
+        icon: icon,
+        background: background,
+      },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Database error";
+    console.error("[room-dashboards POST]", msg);
+    return NextResponse.json(
+      {
+        error: msg.includes("table")
+          ? "Database schema outdated. Run: npx prisma migrate deploy"
+          : "Failed to create room",
+      },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({
     areaId: rd.areaId,

@@ -131,7 +131,7 @@ export function LightCardWidget({
         size === "md" && "text-base",
         size === "lg" && "text-lg",
         isOn
-          ? "text-gray-900"
+          ? "text-gray-900 dark:text-gray-900"
           : "text-gray-800 dark:text-gray-200 opacity-95",
         className
       )}
@@ -148,7 +148,7 @@ export function LightCardWidget({
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200",
               isOn
-                ? "bg-[#FFD41D] shadow-sm"
+                ? "bg-[#FFD41D] shadow-sm dark:bg-[#FFD41D] dark:shadow-sm"
                 : "bg-white/30 dark:bg-white/10 shadow-inner"
             )}
             aria-hidden
@@ -156,7 +156,7 @@ export function LightCardWidget({
             <IconComponent
               className={cn(
                 "h-5 w-5 shrink-0 transition-colors",
-                isOn ? "text-white drop-shadow" : "text-gray-500 dark:text-gray-400"
+                isOn ? "text-white drop-shadow dark:text-white dark:drop-shadow" : "text-gray-500 dark:text-gray-400"
               )}
               strokeWidth={1.5}
               fill={isOn ? "currentColor" : "none"}
@@ -175,7 +175,7 @@ export function LightCardWidget({
             <p className="font-medium truncate text-inherit">{title}</p>
             <p className={cn(
               "text-xs truncate",
-              isOn ? "text-gray-600" : "text-gray-500 dark:text-gray-400"
+              isOn ? "text-gray-600 dark:text-gray-600" : "text-gray-500 dark:text-gray-400"
             )}>
               {statusText}
             </p>
@@ -372,7 +372,7 @@ export function LightCardWidget({
 
       {isOn && supportsBrightness && (
         <div className="px-4 pb-3 pt-0 flex items-center gap-2">
-          <span className="text-xs text-gray-500 dark:text-gray-600 shrink-0 w-10">Helderheid</span>
+          <span className={cn("text-xs shrink-0 w-10", isOn ? "text-gray-500 dark:text-gray-500" : "text-gray-500 dark:text-gray-600")}>Helderheid</span>
           <input
             type="range"
             min={0}
@@ -380,10 +380,13 @@ export function LightCardWidget({
             value={sliderBrightness}
             onChange={(e) => handleBrightnessChange(Number(e.target.value))}
             disabled={loading}
-            className="flex-1 h-2 rounded-full appearance-none bg-gray-200 dark:bg-gray-300 accent-amber-500 disabled:opacity-50"
+            className={cn(
+              "flex-1 h-2 rounded-full appearance-none accent-amber-500 disabled:opacity-50",
+              isOn ? "bg-gray-200 dark:bg-gray-200" : "bg-gray-200 dark:bg-gray-300"
+            )}
             aria-label="Helderheid"
           />
-          <span className="text-xs tabular-nums text-gray-600 dark:text-gray-700 w-8">{sliderBrightness}%</span>
+          <span className={cn("text-xs tabular-nums w-8", isOn ? "text-gray-600 dark:text-gray-600" : "text-gray-600 dark:text-gray-700")}>{sliderBrightness}%</span>
         </div>
       )}
     </div>

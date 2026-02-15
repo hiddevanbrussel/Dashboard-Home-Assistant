@@ -195,7 +195,7 @@ export function FloatingLightCard({
       className={cn(
       "fixed z-30 shadow-xl rounded-2xl overflow-hidden backdrop-blur-2xl border flex transition-colors duration-200",
       isSelectedOn
-        ? "bg-white/25 dark:bg-black/60 border-white/30 dark:border-white/15"
+        ? "bg-white/25 border-white/30"
         : "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
       editMode && "cursor-grab touch-none active:cursor-grabbing",
       editMode && !isDragging && "animate-edit-wiggle"
