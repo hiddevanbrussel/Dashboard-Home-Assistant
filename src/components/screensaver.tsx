@@ -13,7 +13,7 @@ import {
   Sun,
   Wind,
 } from "lucide-react";
-import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
@@ -113,6 +113,76 @@ function ScreensaverWeather() {
       {tempStr && (
         <span className="text-xl font-light tabular-nums">{tempStr}</span>
       )}
+    </div>
+  );
+}
+
+function ScreensaverFootballLogo({ src, alt }: { src?: string | null; alt: string }) {
+  if (!src || typeof src !== "string") return null;
+  const url = src.startsWith("http") ? src : src.startsWith("/") ? `${typeof window !== "undefined" ? window.location.origin : ""}${src}` : src;
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className="h-12 w-12 object-contain shrink-0"
+      loading="lazy"
+      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+    />
+  );
+}
+
+function ScreensaverFootball() {
+  const entityId = getScreensaverFootballEntityId();
+  const entity = useEntityStateStore((s) => (entityId ? s.getState(entityId) : null));
+  if (!entityId || !entity) return null;
+
+  const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
+  const status = String(attrs.status ?? "").toUpperCase();
+  const date = attrs.date as string | undefined;
+  const teamLogo = attrs.team_logo as string | undefined;
+  const teamLongName = attrs.team_long_name as string | undefined;
+  const opponentLogo = attrs.opponent_logo as string | undefined;
+  const opponentLongName = attrs.opponent_long_name as string | undefined;
+  const teamScore = attrs.team_score as number | string | undefined;
+  const opponentScore = attrs.opponent_score as number | string | undefined;
+
+  const teamScoreStr = teamScore != null ? String(teamScore) : null;
+  const opponentScoreStr = opponentScore != null ? String(opponentScore) : null;
+
+  const isPre = status === "PRE";
+  const showScores = (status === "IN" || status === "POST") && (teamScoreStr != null || opponentScoreStr != null);
+
+  if (!teamLongName && !opponentLongName && !date && !showScores) return null;
+
+  return (
+    <div className="flex flex-col items-end gap-1 rounded-xl bg-black/40 dark:bg-black/50 backdrop-blur-sm px-4 py-3 text-white/95 drop-shadow-md min-w-[200px]">
+      {date && (
+        <p className="text-xs text-white/70 mb-1">{date}</p>
+      )}
+      <div className="flex items-center gap-3 w-full justify-between">
+        {/* Thuisteam */}
+        <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
+          <ScreensaverFootballLogo src={teamLogo} alt="" />
+          <span className="text-sm font-medium truncate w-full text-center">{teamLongName ?? "—"}</span>
+        </div>
+        {/* Scheidingsstreep / scores */}
+        <div className="flex items-center gap-2 shrink-0 px-2">
+          {showScores ? (
+            <>
+              <span className="text-xl font-bold tabular-nums">{teamScoreStr ?? "—"}</span>
+              <span className="text-white/60">-</span>
+              <span className="text-xl font-bold tabular-nums">{opponentScoreStr ?? "—"}</span>
+            </>
+          ) : (
+            <span className="text-white/60 text-sm">-</span>
+          )}
+        </div>
+        {/* Uitteam */}
+        <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
+          <ScreensaverFootballLogo src={opponentLogo} alt="" />
+          <span className="text-sm font-medium truncate w-full text-center">{opponentLongName ?? "—"}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -298,6 +368,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       <div className="relative z-10 flex flex-col items-end gap-4">
         <ScreensaverWeather />
         <ScreensaverClock />
+        <ScreensaverFootball />
         {currentAttribution && (
           <a
             href={currentAttribution.url}

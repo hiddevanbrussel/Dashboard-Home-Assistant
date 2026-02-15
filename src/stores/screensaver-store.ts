@@ -164,3 +164,25 @@ export function setScreensaverPexelsApiKey(apiKey: string): void {
     // ignore
   }
 }
+
+const STORAGE_KEY_FOOTBALL_ENTITY = "dashboard.screensaverFootballEntityId";
+
+/** Voetbal sensor entity voor screensaver (bijv. sensor.team_variabele). Leeg = niet tonen. */
+export function getScreensaverFootballEntityId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = localStorage.getItem(STORAGE_KEY_FOOTBALL_ENTITY);
+    return v && v.length > 0 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setScreensaverFootballEntityId(entityId: string | null): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_FOOTBALL_ENTITY, entityId ?? "");
+    window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
+  } catch {
+    // ignore
+  }
+}

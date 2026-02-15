@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 import { useThemeStore } from "@/stores/theme-store";
-import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { Image, Link2, List, Monitor, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +61,7 @@ export default function SettingsPage() {
   const [screensaverBackground, setScreensaverBackgroundState] = useState("");
   const [screensaverClock24h, setScreensaverClock24hState] = useState(true);
   const [screensaverWeatherEntityId, setScreensaverWeatherEntityIdState] = useState<string | null>(null);
+  const [screensaverFootballEntityId, setScreensaverFootballEntityIdState] = useState<string | null>(null);
   const [screensaverPexelsEnabled, setScreensaverPexelsEnabledState] = useState(false);
   const [screensaverPexelsQuery, setScreensaverPexelsQueryState] = useState("nature landscape");
   const [screensaverPexelsApiKey, setScreensaverPexelsApiKeyState] = useState("");
@@ -71,6 +72,7 @@ export default function SettingsPage() {
     setScreensaverBackgroundState(getScreensaverBackgroundImage());
     setScreensaverClock24hState(getScreensaverClock24h());
     setScreensaverWeatherEntityIdState(getScreensaverWeatherEntityId());
+    setScreensaverFootballEntityIdState(getScreensaverFootballEntityId());
     setScreensaverPexelsEnabledState(getScreensaverPexelsEnabled());
     setScreensaverPexelsQueryState(getScreensaverPexelsQuery());
     setScreensaverPexelsApiKeyState(getScreensaverPexelsApiKey());
@@ -433,6 +435,34 @@ export default function SettingsPage() {
                 </select>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Toont temperatuur en weersicoon op de screensaver.
+                </p>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Voetbal op screensaver</label>
+                <select
+                  value={screensaverFootballEntityId ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value || null;
+                    setScreensaverFootballEntityIdState(v);
+                    setScreensaverFootballEntityId(v);
+                  }}
+                  className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 w-full"
+                >
+                  <option value="">Niet tonen</option>
+                  {entities
+                    .filter((e) => e.entity_id.startsWith("sensor.team_variabele"))
+                    .map((e) => {
+                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
+                      return (
+                        <option key={e.entity_id} value={e.entity_id}>
+                          {name}
+                        </option>
+                      );
+                    })}
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Toont wedstrijdinformatie rechtsonder op de screensaver. Vereist sensor met entity_id zoals sensor.team_variabele.
                 </p>
               </div>
 
