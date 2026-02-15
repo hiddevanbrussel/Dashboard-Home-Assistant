@@ -676,6 +676,41 @@ export default function DashboardEditPage() {
     setLayout((prev) => prev.filter((item) => item.i !== widgetId));
   }
 
+  function handleDuplicateTile(widgetId: string): string | undefined {
+    const original = widgets.find((w) => w.id === widgetId);
+    if (!original) return undefined;
+    const newId = generateId();
+    const duplicated: WidgetConfig = {
+      ...original,
+      id: newId,
+      title: `${original.title ?? ""} (kopie)`.trim() || original.title,
+      ...(original.type === "card_group" &&
+        original.children && {
+          children: original.children.map((c) => ({
+            ...c,
+            id: generateId(),
+          })),
+        }),
+    };
+    const layoutItem = layout.find((item) => item.i === widgetId);
+    const newLayoutItem: LayoutItem = layoutItem
+      ? { ...layoutItem, i: newId, y: layoutItem.y + layoutItem.h }
+      : {
+          i: newId,
+          x: 0,
+          y: layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h)),
+          w: original.type === "title_card" ? 12 : 4,
+          h: original.type === "title_card" ? 1 : 2,
+        };
+    const newWidgets = [...widgets, duplicated];
+    const newLayout = [...layout, newLayoutItem];
+    setWidgets(newWidgets);
+    setLayout(newLayout);
+    setEditingWidgetId(null);
+    saveMutation.mutate({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    return newId;
+  }
+
   function handleUpdateTile(
     widgetId: string,
     updates: { title?: string; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean }
@@ -3596,6 +3631,24 @@ export default function DashboardEditPage() {
                         <button
                           type="button"
                           onClick={() => {
+                            const child = (editingWidget.children ?? []).find((c) => c.id === editingGroupChildId);
+                            if (child) {
+                              const newChild: WidgetConfig = { ...child, id: generateId() };
+                              const nextChildren = [...(editingWidget.children ?? []), newChild];
+                              const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
+                              setWidgets(nextWidgets);
+                              setEditingGroupChildId(newChild.id);
+                              saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                            }
+                          }}
+                          className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
+                          aria-label="Kaart in groep dupliceren"
+                        >
+                          Dupliceren
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
                             const updates = {
                               title: editForm.title,
                               entity_id: editForm.entity_id,
@@ -3641,6 +3694,16 @@ export default function DashboardEditPage() {
                       </button>
                       <button
                         type="button"
+                        onClick={() => {
+                          handleDuplicateTile(editingWidgetId!);
+                        }}
+                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
+                        aria-label="Kaartgroep dupliceren"
+                      >
+                        Dupliceren
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setEditingWidgetId(null)}
                         className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300"
                       >
@@ -3676,6 +3739,16 @@ export default function DashboardEditPage() {
                     className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300"
                   >
                     Annuleren
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDuplicateTile(editingWidgetId!);
+                    }}
+                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
+                    aria-label="Kaart dupliceren"
+                  >
+                    Dupliceren
                   </button>
                   <button
                     type="button"

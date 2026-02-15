@@ -21,10 +21,12 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 
 const SELECTOR_STEP = 0.5;
 
-function formatTemp(value: number | undefined): string {
-  if (value == null || Number.isNaN(value)) return "—";
+function formatTempParts(value: number | undefined): { int: number; dec: string | null; empty?: boolean } {
+  if (value == null || Number.isNaN(value)) return { int: 0, dec: null, empty: true };
   const rounded = Math.round(value * 2) / 2;
-  return rounded % 1 === 0.5 ? `${rounded}°` : `${Math.round(rounded)}°`;
+  const int = Math.floor(rounded);
+  const dec = rounded % 1 === 0.5 ? "5" : null;
+  return { int, dec };
 }
 
 const TEMP_MIN = 5;
@@ -253,7 +255,19 @@ export function ClimateCard2Widget({
           <Minus className="h-6 w-6" />
         </button>
         <p className="text-5xl font-bold tabular-nums text-gray-900 dark:text-white min-w-[4.5rem] text-center">
-          {formatTemp(displayTemp)}
+          {(() => {
+            const { int, dec, empty } = formatTempParts(displayTemp);
+            if (empty) return "—";
+            return (
+              <>
+                {int}
+                {dec != null && (
+                  <sup className="text-2xl font-semibold align-super ml-0.5">{dec}</sup>
+                )}
+                °
+              </>
+            );
+          })()}
         </p>
         <button
           type="button"
