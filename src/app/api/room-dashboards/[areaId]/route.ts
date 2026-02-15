@@ -95,3 +95,22 @@ export async function PUT(request: Request, { params }: RouteParams) {
     updatedAt: rd.updatedAt.toISOString(),
   });
 }
+
+/**
+ * DELETE /api/room-dashboards/[areaId] – Delete a room.
+ */
+export async function DELETE(_request: Request, { params }: RouteParams) {
+  const { areaId } = await params;
+  if (!areaId) {
+    return NextResponse.json({ error: "areaId required" }, { status: 400 });
+  }
+  const decoded = decodeURIComponent(areaId);
+  try {
+    await prisma.roomDashboard.delete({
+      where: { areaId: decoded },
+    });
+  } catch {
+    // Not found – treat as success
+  }
+  return NextResponse.json({ ok: true });
+}
