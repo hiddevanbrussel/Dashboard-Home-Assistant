@@ -154,7 +154,7 @@ export function CardDefinitionModal({
             </button>
           </div>
         </div>
-        <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-3">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 pb-6 space-y-3">
           {showAdd && (
             <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 space-y-2 bg-gray-50 dark:bg-white/5">
               <div className="flex items-center justify-between">
@@ -215,8 +215,8 @@ export function CardDefinitionModal({
                   >
                     <span
                       className={cn(
-                        "inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform",
-                        isOn ? "translate-x-5" : "translate-x-1"
+                        "absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+                        isOn ? "translate-x-5" : "translate-x-0"
                       )}
                     />
                   </button>
@@ -232,15 +232,6 @@ export function CardDefinitionModal({
               );
             })}
           </div>
-        </div>
-        <div className="shrink-0 p-5 pt-4 pb-6 border-t border-gray-200 dark:border-white/10">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="w-full rounded-lg bg-[#4D2FB2] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
-          >
-            Sluiten
-          </button>
         </div>
       </div>
     </>
