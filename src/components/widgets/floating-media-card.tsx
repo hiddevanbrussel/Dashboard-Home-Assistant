@@ -7,7 +7,7 @@ import { MediaCardWidget } from "./media-card-widget";
 
 const STORAGE_KEY = "dashboard.floatingMediaCardPosition";
 const DEFAULT_OFFSET = 24;
-const CARD_WIDTH = 320;
+const DEFAULT_CARD_WIDTH = 320;
 
 type Position = { left: number; bottom: number };
 
@@ -36,9 +36,9 @@ function savePosition(p: Position) {
   }
 }
 
-function defaultPosition(): Position {
+function defaultPosition(cardWidth: number): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  const maxLeft = window.innerWidth - CARD_WIDTH;
+  const maxLeft = window.innerWidth - cardWidth;
   const maxBottom = window.innerHeight - 120;
   return { left: maxLeft / 2, bottom: maxBottom / 2 };
 }
@@ -48,6 +48,8 @@ const LONG_PRESS_MS = 500;
 export function FloatingMediaCard({
   title,
   entity_id,
+  width: cardWidth = DEFAULT_CARD_WIDTH,
+  height: cardHeight,
   editMode = false,
   onRemove,
   onEdit,
@@ -55,11 +57,14 @@ export function FloatingMediaCard({
 }: {
   title: string;
   entity_id: string;
+  width?: number;
+  height?: number;
   editMode?: boolean;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
+  const totalWidth = cardWidth != null && cardWidth > 0 ? cardWidth : DEFAULT_CARD_WIDTH;
   const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -98,7 +103,7 @@ export function FloatingMediaCard({
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
     const bounds = { maxLeft, maxBottom };
     const saved = loadPosition();
@@ -106,10 +111,10 @@ export function FloatingMediaCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(), bounds);
+    const p = snapToGrid(defaultPosition(totalWidth), bounds);
     setPosition(p);
     savePosition(p);
-  }, []);
+  }, [totalWidth]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -133,7 +138,7 @@ export function FloatingMediaCard({
       if (!isDragging) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
+      const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
       const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
       const raw = {
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
@@ -141,7 +146,7 @@ export function FloatingMediaCard({
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging]
+    [isDragging, totalWidth]
   );
 
   const handlePointerUp = useCallback(
@@ -150,7 +155,7 @@ export function FloatingMediaCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
+        const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
         const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
@@ -162,13 +167,13 @@ export function FloatingMediaCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging]
+    [isDragging, totalWidth]
   );
 
   return (
     <div
       className={cn(
-        "fixed w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "fixed shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
         isExpanded ? "z-50" : "z-40",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
@@ -176,6 +181,8 @@ export function FloatingMediaCard({
       style={{
         left: position.left,
         bottom: position.bottom,
+        width: totalWidth,
+        ...(cardHeight != null && cardHeight > 0 && { minHeight: cardHeight }),
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -195,11 +202,13 @@ export function FloatingMediaCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
+      <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")} style={{ width: totalWidth }}>
         <MediaCardWidget
           title={title}
           entity_id={entity_id}
           size="md"
+          width={cardWidth}
+          height={cardHeight}
           onMoreClick={editMode ? onEdit : undefined}
           onExpandedChange={setIsExpanded}
         />

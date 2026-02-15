@@ -26,6 +26,8 @@ export function MediaCardWidget({
   title = "Media",
   entity_id,
   size = "md",
+  width,
+  height,
   className,
   onMoreClick,
   onExpandedChange,
@@ -131,6 +133,10 @@ export function MediaCardWidget({
         size === "lg" && "text-lg",
         className
       )}
+      style={{
+        ...(width != null && width > 0 && { width }),
+        ...(height != null && height > 0 && { minHeight: height }),
+      }}
     >
       {/* Expanded: album art + progress boven de header (uitklapt naar boven); chevron alleen hier */}
       {expanded && (

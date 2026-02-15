@@ -108,6 +108,10 @@ export type MediaCardProps = WidgetBaseProps & {
   entity_picture?: string;
   media_duration?: number;
   media_position?: number;
+  /** Breedte kaart in px (standaard 320). */
+  width?: number;
+  /** Hoogte kaart in px (standaard auto). */
+  height?: number;
 };
 
 /** Eén voorwaarde: als sensorwaarde aan operator + value voldoet, toon kleur. Eerste match wint. */

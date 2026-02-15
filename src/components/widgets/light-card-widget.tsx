@@ -172,7 +172,7 @@ export function LightCardWidget({
           aria-label="Verlichting bedienen"
         >
           <div className="min-w-0 flex-1 flex flex-col justify-center">
-            <p className="font-medium truncate text-inherit">{title}</p>
+            <p className="text-xs font-medium truncate text-inherit">{title}</p>
             <p className={cn(
               "text-xs truncate",
               isOn ? "text-gray-600 dark:text-gray-600" : "text-gray-500 dark:text-gray-400"

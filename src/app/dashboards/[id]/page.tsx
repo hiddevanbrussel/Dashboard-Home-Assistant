@@ -614,8 +614,8 @@ export default function DashboardEditPage() {
       setSensorIconSearch(editingWidget.type === "sensor_card" ? (editingWidget.icon ?? "") : "");
       setPillIconSearch(editingWidget.type === "pill_card" ? (editingWidget.icon ?? "") : "");
       setGroupAddEntitySearch("");
-      if (editingWidget.type === "title_card" || editingWidget.type === "light_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card") {
-        setEditTab(editingWidget.type === "room_card" ? "entiteiten" : "algemeen");
+      if (editingWidget.type === "title_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card") {
+        setEditTab(editingWidget.type === "room_card" ? "entiteiten" : editingWidget.type === "media_card" ? "weergave" : "algemeen");
       }
       if (editingWidget.type === "energy_monitor_card") {
         setEditTab("achtergrond");
@@ -1202,6 +1202,8 @@ export default function DashboardEditPage() {
             <FloatingMediaCard
               title={firstMedia.title ?? "Media"}
               entity_id={firstMedia.entity_id}
+              width={firstMedia.width}
+              height={firstMedia.height}
               editMode={editMode}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
@@ -2008,6 +2010,68 @@ export default function DashboardEditPage() {
                     placeholder="Zoek op naam of entity_id…"
                     emptyOption={editingWidget.type === "energy_monitor_card" ? "Geen (alleen standaardafbeelding)" : "Geen"}
                   />
+                )}
+                {editingWidget.type === "media_card" && (
+                  <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "weergave"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? "Algemeen" : "Weergave"}
+                        </button>
+                      ))}
+                    </div>
+                    {editTab === "algemeen" && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">De mediaplayer staat hierboven geselecteerd.</p>
+                    )}
+                    {editTab === "weergave" && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Breedte kaart (px)</label>
+                          <input
+                            type="number"
+                            min={240}
+                            max={500}
+                            step={10}
+                            value={editForm.width ?? 320}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
+                            }}
+                            placeholder="320"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">240–500 px (standaard 320)</p>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Hoogte kaart (px)</label>
+                          <input
+                            type="number"
+                            min={120}
+                            max={400}
+                            step={10}
+                            value={editForm.height ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
+                            }}
+                            placeholder="Auto"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Optioneel. Minimaal 120 px. Laat leeg voor automatische hoogte.</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
                 {editingWidget.type === "light_card" && (
                   <>
@@ -3978,6 +4042,10 @@ export default function DashboardEditPage() {
                         }),
                         ...(editingWidget.type === "light_card" && {
                           icon: editForm.icon || undefined,
+                        }),
+                        ...(editingWidget.type === "media_card" && {
+                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
                         }),
                         ...(editingWidget.type === "weather_card" && {
                           show_icon: editForm.show_icon !== false,
