@@ -451,7 +451,7 @@ export default function SettingsPage() {
                 >
                   <option value="">Niet tonen</option>
                   {entities
-                    .filter((e) => e.entity_id.startsWith("sensor.team_variabele"))
+                    .filter((e) => e.entity_id.startsWith("sensor.team"))
                     .map((e) => {
                       const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
                       return (
@@ -462,7 +462,7 @@ export default function SettingsPage() {
                     })}
                 </select>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Toont wedstrijdinformatie rechtsonder op de screensaver. Vereist sensor met entity_id zoals sensor.team_variabele.
+                  Toont wedstrijdinformatie rechtsonder op de screensaver. Vereist sensor met entity_id zoals sensor.team_...
                 </p>
               </div>
 
