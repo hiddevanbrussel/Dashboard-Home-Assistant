@@ -195,8 +195,10 @@ export type RoomCardProps = WidgetBaseProps & {
   icon?: string;
   /** Entity voor lichtstatus (bijv. light.badkamer of group.badkamer_lights). */
   light_entity_id?: string;
-  /** Lampen om in de modal afzonderlijk te kunnen schakelen (los van de kaart). */
+  /** Lampen om in de modal afzonderlijk te kunnen schakelen (los van de kaart). @deprecated Gebruik modal_cards */
   modal_light_entity_ids?: string[];
+  /** Kaarten in de modal: light, climate, media_player. */
+  modal_cards?: { id: string; type: "light" | "climate" | "media_player"; entity_id: string }[];
   /** Entity voor mediaplayer; toont music-icoon wanneer er iets wordt afgespeeld. */
   media_player_entity_id?: string;
   /** Entity voor klimaat; toont temperatuur/thermometer-icoon. */

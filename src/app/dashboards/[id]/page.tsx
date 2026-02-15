@@ -536,7 +536,6 @@ export default function DashboardEditPage() {
         script_names: editingWidget.script_names ?? {},
         cleaned_area_entity_id: editingWidget.cleaned_area_entity_id ?? "",
         light_entity_id: editingWidget.light_entity_id ?? "",
-        modal_light_entity_ids: (editingWidget as { modal_light_entity_ids?: string[] }).modal_light_entity_ids ?? [],
         media_player_entity_id: editingWidget.media_player_entity_id ?? "",
         climate_entity_id: editingWidget.climate_entity_id ?? "",
         background_image: editingWidget.background_image ?? "",
@@ -3921,7 +3920,6 @@ export default function DashboardEditPage() {
                           icon: editForm.icon || undefined,
                           entity_id: editForm.entity_id || undefined,
                           light_entity_id: editForm.light_entity_id || undefined,
-                          modal_light_entity_ids: (editForm.modal_light_entity_ids ?? []).length > 0 ? editForm.modal_light_entity_ids : undefined,
                           media_player_entity_id: editForm.media_player_entity_id || undefined,
                           climate_entity_id: editForm.climate_entity_id || undefined,
                           background_image: editForm.background_image || undefined,
@@ -3960,6 +3958,11 @@ export default function DashboardEditPage() {
             <CardDefinitionModal
               title={clickedCardForDefinition.title}
               definition={{
+                modal_cards: (() => {
+                  const w = widgets.find((x) => x.id === clickedCardForDefinition.widgetId);
+                  if (!w) return undefined;
+                  return (w as { modal_cards?: { id: string; type: "light" | "climate" | "media_player"; entity_id: string }[] }).modal_cards;
+                })(),
                 modal_light_entity_ids: (() => {
                   const w = widgets.find((x) => x.id === clickedCardForDefinition.widgetId);
                   if (!w) return [];
@@ -3984,11 +3987,8 @@ export default function DashboardEditPage() {
                   w.id === clickedCardForDefinition.widgetId
                     ? {
                         ...w,
-                        modal_light_entity_ids: def.modal_light_entity_ids?.length
-                          ? def.modal_light_entity_ids
-                          : undefined,
-                        media_player_entity_id: def.media_player_entity_id,
-                        climate_entity_id: def.climate_entity_id,
+                        modal_cards: def.modal_cards?.length ? def.modal_cards : undefined,
+                        modal_light_entity_ids: undefined,
                       }
                     : w
                 );
