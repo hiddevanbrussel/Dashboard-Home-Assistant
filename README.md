@@ -56,6 +56,7 @@ Defaults:
 - `APP_SECRET`: set in `.env` or override when running.
 - `DATABASE_URL`: `file:/data/app.db` (SQLite in the mounted volume).
 - `NEXT_PUBLIC_APP_NAME`: "Home Assistant Dashboard Builder".
+- `NEXT_PUBLIC_DEFAULT_LANGUAGE`: `en` (English) or `nl` (Dutch). Users can override in Settings.
 
 ## Troubleshooting
 

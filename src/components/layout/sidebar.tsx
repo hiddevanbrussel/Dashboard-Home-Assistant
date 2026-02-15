@@ -3,10 +3,11 @@
 import { cn } from "@/lib/utils";
 import { Home, Settings } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/use-translation";
 
 const mainIcons = [
-  { href: "/dashboards", icon: Home, label: "Home" },
-  { href: "/settings", icon: Settings, label: "Settings" },
+  { href: "/dashboards", icon: Home, labelKey: "nav.home" },
+  { href: "/settings", icon: Settings, labelKey: "nav.settings" },
 ] as const;
 
 type SidebarProps = {
@@ -15,6 +16,7 @@ type SidebarProps = {
 };
 
 export function Sidebar({ activeHref, className }: SidebarProps) {
+  const { t } = useTranslation();
   return (
     <aside
       className={cn(
@@ -23,13 +25,13 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
       )}
       aria-label="Sidebar"
     >
-      {mainIcons.map(({ href, icon: Icon, label }) => {
+      {mainIcons.map(({ href, icon: Icon, labelKey }) => {
         const isActive = activeHref === href;
         return (
           <Link
-            key={label}
+            key={href}
             href={href}
-            aria-label={label}
+            aria-label={t(labelKey)}
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150",
               isActive

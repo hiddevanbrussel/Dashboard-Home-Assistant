@@ -5,10 +5,12 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { OfflinePill } from "@/components/offline-pill";
 import { DoorOpen, LayoutGrid, ChevronRight } from "lucide-react";
+import { useTranslation } from "@/hooks/use-translation";
 
 type HaArea = { area_id: string; name: string };
 
 export default function RoomsPage() {
+  const { t } = useTranslation();
   const [areas, setAreas] = useState<HaArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,15 +20,15 @@ export default function RoomsPage() {
     setError(null);
     fetch("/api/ha/areas")
       .then((r) => {
-        if (!r.ok) throw new Error("Kon geen kamers laden.");
+        if (!r.ok) throw new Error(t("rooms.loadError"));
         return r.json();
       })
       .then((data: HaArea[]) => {
         setAreas(Array.isArray(data) ? data : []);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Er is iets misgegaan."))
+      .catch((err) => setError(err instanceof Error ? err.message : t("rooms.genericError")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   return (
     <AppShell activeTab="/rooms">
@@ -34,10 +36,10 @@ export default function RoomsPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Kamers
+              {t("rooms.title")}
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Klik op een kamer om kaarten toe te voegen — dezelfde editor als het dashboard.
+              {t("rooms.description")}
             </p>
           </div>
           <OfflinePill />
@@ -62,10 +64,10 @@ export default function RoomsPage() {
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 dark:border-white/20 bg-gray-50/50 dark:bg-white/5 py-16 px-6 text-center">
             <DoorOpen className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Geen kamers gevonden
+              {t("rooms.empty")}
             </p>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-              Voer eerst de onboarding uit om je Home Assistant-verbinding in te stellen.
+              {t("rooms.emptyHint")}
             </p>
           </div>
         )}

@@ -1,15 +1,13 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import {
-  DoorOpen,
-  LayoutDashboard,
-} from "lucide-react";
+import { DoorOpen, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/use-translation";
 
-const tabs = [
-  { href: "/dashboards", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/rooms", label: "Kamers", icon: DoorOpen },
+const tabKeys = [
+  { href: "/dashboards", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/rooms", labelKey: "nav.rooms", icon: DoorOpen },
 ] as const;
 
 type TopTabsProps = {
@@ -18,6 +16,7 @@ type TopTabsProps = {
 };
 
 export function TopTabs({ activeHref, className }: TopTabsProps) {
+  const { t } = useTranslation();
   return (
     <nav
       className={cn(
@@ -26,7 +25,7 @@ export function TopTabs({ activeHref, className }: TopTabsProps) {
       )}
       role="tablist"
     >
-      {tabs.map(({ href, label, icon: Icon }) => {
+      {tabKeys.map(({ href, labelKey, icon: Icon }) => {
         const isActive = activeHref === href;
         return (
           <Link
@@ -42,7 +41,7 @@ export function TopTabs({ activeHref, className }: TopTabsProps) {
             )}
           >
             <Icon className="h-4 w-4" aria-hidden />
-            {label}
+            {t(labelKey)}
           </Link>
         );
       })}

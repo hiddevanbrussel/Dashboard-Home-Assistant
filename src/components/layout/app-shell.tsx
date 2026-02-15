@@ -21,6 +21,7 @@ import { Sidebar } from "./sidebar";
 import { FloatingToolbar } from "./floating-toolbar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { usePageBackground } from "@/components/page-background";
+import { useTranslation } from "@/hooks/use-translation";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getScreensaverClock24h } from "@/stores/screensaver-store";
 import { HeaderMediaPlaying } from "./header-media-playing";
@@ -86,6 +87,7 @@ function TemperatureEntityModal({
   onClose: () => void;
   onSelect: (entityId: string) => void;
 }) {
+  const { t } = useTranslation();
   const [entities, setEntities] = useState<HaEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,24 +120,24 @@ function TemperatureEntityModal({
       >
         <div className="flex items-center justify-between gap-3 mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Choose weather for temperature
+            {t("appShell.chooseTemperature")}
           </h3>
           <button
             type="button"
             onClick={onClose}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-            aria-label="Close"
+            aria-label={t("appShell.close")}
           >
             <X className="h-4 w-4" />
           </button>
         </div>
         {loading ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("appShell.loading")}</p>
         ) : error ? (
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         ) : entities.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            No weather entities found. Check your Home Assistant connection.
+            {t("appShell.noWeatherEntities")}
           </p>
         ) : (
           <ul className="max-h-64 overflow-auto space-y-1">
@@ -200,6 +202,7 @@ export function AppShell({
   contentNoScroll = false,
   className,
 }: AppShellProps) {
+  const { t } = useTranslation();
   const welcomeTitle = welcomeTitleProp ?? "";
   const welcomeSubtitle = welcomeSubtitleProp ?? "";
   const hasWelcomeText = Boolean(welcomeTitle || welcomeSubtitle);
@@ -257,7 +260,7 @@ export function AppShell({
               type="button"
               onClick={() => setSidebarOpen((v) => !v)}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-              aria-label={sidebarOpen ? "Menu sluiten" : "Menu openen"}
+              aria-label={sidebarOpen ? t("nav.menuClose") : t("nav.menuOpen")}
             >
               <Menu className="h-5 w-5" aria-hidden />
             </button>
@@ -316,7 +319,7 @@ export function AppShell({
                   })
                 }
                 className="block w-full text-2xl md:text-3xl font-bold bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-white/20 rounded-lg px-2 py-1 -mx-2 text-gray-900 dark:text-white tracking-tight focus:outline-none focus:border-accent-purple dark:focus:border-accent-purple"
-                placeholder="Welkomsttitel"
+                placeholder={t("appShell.welcomeTitlePlaceholder")}
               />
               <input
                 type="text"
@@ -328,7 +331,7 @@ export function AppShell({
                   })
                 }
                 className="block w-full text-base md:text-lg font-normal bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-white/20 rounded-lg px-2 py-1 -mx-2 text-gray-600 dark:text-gray-300 focus:outline-none focus:border-accent-purple dark:focus:border-accent-purple"
-                placeholder="Ondertitel"
+                placeholder={t("appShell.welcomeSubtitlePlaceholder")}
               />
             </div>
           ) : hasWelcomeText ? (

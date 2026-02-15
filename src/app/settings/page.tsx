@@ -4,19 +4,21 @@ import { useEffect, useState, useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 import { useThemeStore } from "@/stores/theme-store";
+import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { Image, Link2, List, Monitor, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 type SettingsSection = "appearance" | "screensaver" | "page-background" | "connection" | "entities";
 
-const SECTIONS: { id: SettingsSection; label: string; icon: React.ElementType }[] = [
-  { id: "appearance", label: "Appearance", icon: Palette },
-  { id: "screensaver", label: "Screensaver", icon: Monitor },
-  { id: "page-background", label: "Page Background", icon: Image },
-  { id: "connection", label: "Connection", icon: Link2 },
-  { id: "entities", label: "Entities by Type", icon: List },
-];
+const SECTION_KEYS: Record<SettingsSection, string> = {
+  appearance: "settings.appearance",
+  screensaver: "settings.screensaver",
+  "page-background": "settings.pageBackground",
+  connection: "settings.connection",
+  entities: "settings.entities",
+};
 
 type HaEntity = {
   entity_id: string;
@@ -26,12 +28,12 @@ type HaEntity = {
 
 const ENTITY_DOMAINS = ["automation", "climate", "light", "media_player", "weather"] as const;
 
-const DOMAIN_LABELS: Record<(typeof ENTITY_DOMAINS)[number], string> = {
-  automation: "Automation",
-  climate: "Climate",
-  light: "Lights",
-  media_player: "Media Player",
-  weather: "Weather",
+const DOMAIN_KEYS: Record<(typeof ENTITY_DOMAINS)[number], string> = {
+  automation: "settings.entities.automation",
+  climate: "settings.entities.climate",
+  light: "settings.entities.light",
+  media_player: "settings.entities.mediaPlayer",
+  weather: "settings.entities.weather",
 };
 
 function getDomain(entityId: string): string {
@@ -313,6 +315,16 @@ export default function SettingsPage() {
   }
 
   const { mode, setMode, resolved } = useThemeStore();
+  const { t } = useTranslation();
+  const { language, setLanguage } = useLanguageStore();
+
+  const SECTIONS: { id: SettingsSection; labelKey: string; icon: React.ElementType }[] = [
+    { id: "appearance", labelKey: SECTION_KEYS.appearance, icon: Palette },
+    { id: "screensaver", labelKey: SECTION_KEYS.screensaver, icon: Monitor },
+    { id: "page-background", labelKey: SECTION_KEYS["page-background"], icon: Image },
+    { id: "connection", labelKey: SECTION_KEYS.connection, icon: Link2 },
+    { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
+  ];
 
   return (
     <AppShell activeTab="/settings">
@@ -321,9 +333,9 @@ export default function SettingsPage() {
           className="shrink-0 sm:w-52"
           aria-label="Settings sections"
         >
-          <h2 className="text-xl font-semibold mb-3 sm:mb-4">Settings</h2>
+          <h2 className="text-xl font-semibold mb-3 sm:mb-4">{t("settings.title")}</h2>
           <ul className="flex sm:flex-col gap-1 overflow-x-auto pb-2 sm:pb-0 sm:overflow-visible">
-            {SECTIONS.map(({ id, label, icon: Icon }) => (
+            {SECTIONS.map(({ id, labelKey, icon: Icon }) => (
               <li key={id}>
                 <button
                   type="button"
@@ -336,7 +348,7 @@ export default function SettingsPage() {
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                  {label}
+                  {t(labelKey)}
                 </button>
               </li>
             ))}
@@ -346,9 +358,20 @@ export default function SettingsPage() {
         <div className="flex-1 min-w-0">
           {section === "appearance" && (
             <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">Appearance</h3>
+              <h3 className="text-card-title font-medium mb-3">{t("settings.appearance")}</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.language.setting")}</label>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as "en" | "nl")}
+                  className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                >
+                  <option value="en">{t("settings.language.en")}</option>
+                  <option value="nl">{t("settings.language.nl")}</option>
+                </select>
+              </div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                Theme: use the sun/moon switch in the top bar to choose light or dark. Enable auto below to follow your system preference.
+                {t("settings.theme.description")}
               </p>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
@@ -358,7 +381,7 @@ export default function SettingsPage() {
                   className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
                 />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  Use system preference (auto)
+                  {t("settings.theme.auto")}
                 </span>
               </label>
             </GlassCard>
@@ -366,13 +389,13 @@ export default function SettingsPage() {
 
           {section === "screensaver" && (
             <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">Screensaver</h3>
+              <h3 className="text-card-title font-medium mb-3">{t("settings.screensaver")}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Na inactiviteit gaat een schermbeveiliging aan met klok en weer. Aanraken of bewegen sluit hem.
+                {t("settings.screensaver.description")}
               </p>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Na hoeveel inactiviteit</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.delay")}</label>
                 <select
                   value={screensaverDelaySeconds}
                   onChange={(e) => {
@@ -382,20 +405,20 @@ export default function SettingsPage() {
                   }}
                   className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
                 >
-                  <option value={0}>Uit</option>
-                  <option value={10}>10 seconden</option>
-                  <option value={30}>30 seconden</option>
-                  <option value={60}>1 minuut</option>
-                  <option value={120}>2 minuten</option>
-                  <option value={300}>5 minuten</option>
-                  <option value={600}>10 minuten</option>
-                  <option value={900}>15 minuten</option>
-                  <option value={1800}>30 minuten</option>
+                  <option value={0}>{t("settings.screensaver.off")}</option>
+                  <option value={10}>{t("settings.screensaver.10s")}</option>
+                  <option value={30}>{t("settings.screensaver.30s")}</option>
+                  <option value={60}>{t("settings.screensaver.1m")}</option>
+                  <option value={120}>{t("settings.screensaver.2m")}</option>
+                  <option value={300}>{t("settings.screensaver.5m")}</option>
+                  <option value={600}>{t("settings.screensaver.10m")}</option>
+                  <option value={900}>{t("settings.screensaver.15m")}</option>
+                  <option value={1800}>{t("settings.screensaver.30m")}</option>
                 </select>
               </div>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Klokformaat</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.clockFormat")}</label>
                 <select
                   value={screensaverClock24h ? "24" : "12"}
                   onChange={(e) => {
@@ -405,13 +428,13 @@ export default function SettingsPage() {
                   }}
                   className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
                 >
-                  <option value="24">24 uur</option>
-                  <option value="12">12 uur (am/pm)</option>
+                  <option value="24">{t("settings.screensaver.24h")}</option>
+                  <option value="12">{t("settings.screensaver.12h")}</option>
                 </select>
               </div>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Weer op screensaver</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.weather")}</label>
                 <select
                   value={screensaverWeatherEntityId ?? ""}
                   onChange={(e) => {
@@ -421,7 +444,7 @@ export default function SettingsPage() {
                   }}
                   className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 w-full"
                 >
-                  <option value="">Standaard (zelfde als temperatuur in header)</option>
+                  <option value="">{t("settings.screensaver.weatherDefault")}</option>
                   {entities
                     .filter((e) => e.entity_id.startsWith("weather.") || (e.entity_id.startsWith("sensor.") && /temp|weather|graden/i.test(e.entity_id)))
                     .map((e) => {
@@ -434,12 +457,12 @@ export default function SettingsPage() {
                     })}
                 </select>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Toont temperatuur en weersicoon op de screensaver.
+                  {t("settings.screensaver.weatherHint")}
                 </p>
               </div>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Voetbal op screensaver</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.football")}</label>
                 <select
                   value={screensaverFootballEntityId ?? ""}
                   onChange={(e) => {
@@ -449,7 +472,7 @@ export default function SettingsPage() {
                   }}
                   className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 w-full"
                 >
-                  <option value="">Niet tonen</option>
+                  <option value="">{t("settings.screensaver.footballOff")}</option>
                   {entities
                     .filter((e) => e.entity_id.startsWith("sensor.team"))
                     .map((e) => {
@@ -462,14 +485,15 @@ export default function SettingsPage() {
                     })}
                 </select>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Toont wedstrijdinformatie rechtsonder op de screensaver. Vereist sensor met entity_id zoals sensor.team_...
+                  {t("settings.screensaver.footballHint")}
                 </p>
               </div>
 
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Pexels-foto&apos;s (optioneel)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.pexels")}</label>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  Gebruik gratis stockfoto&apos;s van Pexels als achtergrond. Alleen actief als er geen eigen afbeelding is geüpload. API-key gratis op <a href="https://www.pexels.com/api" target="_blank" rel="noopener noreferrer" className="text-[#4D2FB2] hover:underline">pexels.com/api</a>.
+                  {t("settings.screensaver.pexelsHint")}{" "}
+                  <a href="https://www.pexels.com/api" target="_blank" rel="noopener noreferrer" className="text-[#4D2FB2] hover:underline">pexels.com/api</a>.
                 </p>
                 <div className="flex items-center gap-3 mb-2">
                   <input
@@ -483,7 +507,7 @@ export default function SettingsPage() {
                     }}
                     className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
                   />
-                  <label htmlFor="pexels-enabled" className="text-sm font-medium text-gray-700 dark:text-gray-200">Pexels gebruiken</label>
+                  <label htmlFor="pexels-enabled" className="text-sm font-medium text-gray-700 dark:text-gray-200">{t("settings.screensaver.pexelsUse")}</label>
                 </div>
                 {screensaverPexelsEnabled && (
                   <div className="space-y-2 mt-3">
@@ -495,7 +519,7 @@ export default function SettingsPage() {
                         setScreensaverPexelsApiKeyState(v);
                         setScreensaverPexelsApiKey(v);
                       }}
-                      placeholder="Pexels API-key"
+                      placeholder={t("settings.screensaver.pexelsKey")}
                       className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
                       autoComplete="off"
                     />
@@ -507,7 +531,7 @@ export default function SettingsPage() {
                         setScreensaverPexelsQueryState(v);
                         setScreensaverPexelsQuery(v);
                       }}
-                      placeholder="Zoekterm (bijv. nature landscape, mountains)"
+                      placeholder={t("settings.screensaver.pexelsQuery")}
                       className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
                     />
                   </div>
@@ -515,7 +539,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Achtergrondafbeelding (optioneel)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.bgImage")}</label>
                 {screensaverBackground && (
                   <div
                     className="mb-3 h-24 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
@@ -524,7 +548,7 @@ export default function SettingsPage() {
                 )}
                 <div className="flex flex-wrap gap-2 items-center">
                   <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
-                    {uploadingScreensaverBg ? "Uploaden…" : "Afbeelding uploaden"}
+                    {uploadingScreensaverBg ? t("settings.screensaver.uploading") : t("settings.screensaver.uploadImage")}
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif"
@@ -557,7 +581,7 @@ export default function SettingsPage() {
                       setScreensaverBackgroundState(v);
                       setScreensaverBackgroundImage(v);
                     }}
-                    placeholder="Of plak een afbeeldings-URL"
+                    placeholder={t("settings.screensaver.bgUrlPlaceholder")}
                     className="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
                   />
                   {screensaverBackground && (
@@ -569,7 +593,7 @@ export default function SettingsPage() {
                       }}
                       className="rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300"
                     >
-                      Verwijderen
+                      {t("settings.screensaver.remove")}
                     </button>
                   )}
                 </div>
@@ -581,13 +605,13 @@ export default function SettingsPage() {
             dashboardId ? (
               <div className="space-y-6">
                 <GlassCard>
-                  <h3 className="text-card-title font-medium mb-3">Page Background</h3>
+                  <h3 className="text-card-title font-medium mb-3">{t("settings.pageBackground")}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    Kies een afbeelding per thema. Als je alleen één achtergrond instelt, wordt die als fallback gebruikt.
+                    {t("settings.pageBackground.description")}
                   </p>
                 </GlassCard>
                 <GlassCard>
-                  <h3 className="text-card-title font-medium mb-3">Achtergrond light mode</h3>
+                  <h3 className="text-card-title font-medium mb-3">{t("settings.pageBackground.light")}</h3>
                   {pageBackgroundLight && (
                     <div
                       className="mb-3 h-32 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
@@ -596,7 +620,7 @@ export default function SettingsPage() {
                   )}
                   <div className="flex gap-2">
                     <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
-                      {uploadingBgLight ? "Uploaden…" : "Upload afbeelding"}
+                      {uploadingBgLight ? t("settings.screensaver.uploading") : t("settings.pageBackground.upload")}
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp,image/gif"
@@ -611,13 +635,13 @@ export default function SettingsPage() {
                         onClick={handlePageBackgroundLightRemove}
                         className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
                       >
-                        Verwijderen
+                        {t("settings.pageBackground.remove")}
                       </button>
                     )}
                   </div>
                 </GlassCard>
                 <GlassCard>
-                  <h3 className="text-card-title font-medium mb-3">Achtergrond dark mode</h3>
+                  <h3 className="text-card-title font-medium mb-3">{t("settings.pageBackground.dark")}</h3>
                   {pageBackgroundDark && (
                     <div
                       className="mb-3 h-32 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
@@ -626,7 +650,7 @@ export default function SettingsPage() {
                   )}
                   <div className="flex gap-2">
                     <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
-                      {uploadingBgDark ? "Uploaden…" : "Upload afbeelding"}
+                      {uploadingBgDark ? t("settings.screensaver.uploading") : t("settings.pageBackground.upload")}
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp,image/gif"
@@ -641,15 +665,15 @@ export default function SettingsPage() {
                         onClick={handlePageBackgroundDarkRemove}
                         className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
                       >
-                        Verwijderen
+                        {t("settings.pageBackground.remove")}
                       </button>
                     )}
                   </div>
                 </GlassCard>
                 <GlassCard>
-                  <h3 className="text-card-title font-medium mb-3">Fallback-achtergrond (optioneel)</h3>
+                  <h3 className="text-card-title font-medium mb-3">{t("settings.pageBackground.fallback")}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    Gebruikt wanneer er geen light/dark-specifieke achtergrond is ingesteld.
+                    {t("settings.pageBackground.fallbackDesc")}
                   </p>
                   {pageBackground && (
                     <div
@@ -659,7 +683,7 @@ export default function SettingsPage() {
                   )}
                   <div className="flex gap-2">
                     <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
-                      {uploadingBg ? "Uploaden…" : "Upload afbeelding"}
+                      {uploadingBg ? t("settings.screensaver.uploading") : t("settings.pageBackground.upload")}
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp,image/gif"
@@ -674,7 +698,7 @@ export default function SettingsPage() {
                         onClick={handlePageBackgroundRemove}
                         className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
                       >
-                        Verwijderen
+                        {t("settings.pageBackground.remove")}
                       </button>
                     )}
                   </div>
@@ -683,7 +707,7 @@ export default function SettingsPage() {
             ) : (
               <GlassCard>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Create or select a dashboard first to set a page background.
+                  {t("settings.pageBackground.needDashboard")}
                 </p>
               </GlassCard>
             )
@@ -691,15 +715,14 @@ export default function SettingsPage() {
 
           {section === "connection" && (
             <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">Connection</h3>
+              <h3 className="text-card-title font-medium mb-3">{t("settings.connection")}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Enter your Home Assistant instance URL and a Long-Lived Access Token.
-                Create a token under Profile → Long-Lived Access Tokens in Home Assistant.
+                {t("settings.connection.description")}
               </p>
               <div className="space-y-4">
                 <div>
                   <label htmlFor="ha-baseUrl" className="block text-sm font-medium mb-1">
-                    Base URL
+                    {t("settings.connection.baseUrl")}
                   </label>
                   <input
                     id="ha-baseUrl"
@@ -792,7 +815,7 @@ export default function SettingsPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           }`}
                         >
-                          {DOMAIN_LABELS[domain as keyof typeof DOMAIN_LABELS] ?? domain}
+                          {t(DOMAIN_KEYS[domain as keyof typeof DOMAIN_KEYS])}
                           <span className="ml-1 opacity-75">({list.length})</span>
                         </button>
                       ))}
@@ -810,7 +833,7 @@ export default function SettingsPage() {
                     className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3 max-h-[50vh] overflow-auto"
                   >
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 sticky top-0 bg-gray-50/95 dark:bg-white/5 py-1">
-                      {activeDomain ? (DOMAIN_LABELS[activeDomain as keyof typeof DOMAIN_LABELS] ?? activeDomain) : ""}
+                      {activeDomain ? t(DOMAIN_KEYS[activeDomain as keyof typeof DOMAIN_KEYS]) : ""}
                     </h4>
                     <ul className="space-y-1">
                       {activeList.map((e) => {
