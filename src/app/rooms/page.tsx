@@ -37,7 +37,7 @@ export default function RoomsPage() {
               Kamers
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Je kamers uit Home Assistant. Klik op een kamer om kaarten toe te voegen.
+              Klik op een kamer om kaarten toe te voegen — dezelfde editor als het dashboard.
             </p>
           </div>
           <OfflinePill />
@@ -75,7 +75,7 @@ export default function RoomsPage() {
             {areas.map((a) => (
               <Link
                 key={a.area_id}
-                href={`/dashboards/room-${encodeURIComponent(a.area_id)}`}
+                href={`/rooms/${encodeURIComponent(a.area_id)}`}
                 className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-white/5 transition-colors hover:border-[#4D2FB2]/40 hover:bg-[#4D2FB2]/5 dark:hover:bg-[#4D2FB2]/10"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#4D2FB2]/10 text-[#4D2FB2] dark:bg-[#4D2FB2]/20">
