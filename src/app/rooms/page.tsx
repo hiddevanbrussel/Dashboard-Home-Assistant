@@ -24,15 +24,15 @@ export default function RoomsPage() {
     setError(null);
     fetch("/api/room-dashboards")
       .then((r) => {
-        if (!r.ok) throw new Error(t("rooms.loadError"));
+        if (!r.ok) throw new Error("Failed to load rooms");
         return r.json();
       })
       .then((data: RoomItem[]) => {
         setRooms(Array.isArray(data) ? data : []);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : t("rooms.genericError")))
+      .catch((err) => setError(err instanceof Error ? err.message : "Something went wrong"))
       .finally(() => setLoading(false));
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     loadRooms();
