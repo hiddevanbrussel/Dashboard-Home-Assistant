@@ -199,8 +199,8 @@ export function RoomCardWidget({
                   "flex items-center justify-center rounded-full h-9 w-9 transition-all duration-200",
                   isMediaPlaying
                     ? embedded
-                      ? "bg-[#4D2FB2] text-white"
-                      : "bg-[#4D2FB2] text-white shadow-sm"
+                      ? "bg-white text-[#4D2FB2]"
+                      : "bg-white text-[#4D2FB2] shadow-md"
                     : embedded
                       ? "bg-gray-300 text-gray-600 dark:bg-white/20 dark:text-white/60"
                       : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
@@ -211,7 +211,7 @@ export function RoomCardWidget({
                 <Disc2
                   className={cn(
                     "h-5 w-5 shrink-0",
-                    isMediaPlaying && "animate-spin drop-shadow-[0_0_3px_rgba(0,0,0,0.4)]"
+                    isMediaPlaying && "animate-spin"
                   )}
                   strokeWidth={isMediaPlaying ? 2.5 : 1.5}
                   fill={isMediaPlaying ? "currentColor" : "none"}
