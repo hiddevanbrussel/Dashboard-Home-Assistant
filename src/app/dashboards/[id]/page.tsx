@@ -424,8 +424,7 @@ export default function DashboardEditPage() {
   const [vacuumIconSearch, setVacuumIconSearch] = useState("");
   const [sensorIconSearch, setSensorIconSearch] = useState("");
   const [pillIconSearch, setPillIconSearch] = useState("");
-  const [sensorCardEditTab, setSensorCardEditTab] = useState<"general" | "conditions">("general");
-  const [roomCardEditTab, setRoomCardEditTab] = useState<"algemeen" | "achtergrond" | "weergave">("algemeen");
+  const [editTab, setEditTab] = useState<string>("algemeen");
   const [uploadingRoomBg, setUploadingRoomBg] = useState(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const LONG_PRESS_MS = 500;
@@ -520,8 +519,15 @@ export default function DashboardEditPage() {
       setPillIconSearch(editingWidget.type === "pill_card" ? (editingWidget.icon ?? "") : "");
       setGroupAddEntitySearch("");
       setEditEntitySearch("");
-      if (editingWidget.type === "sensor_card") setSensorCardEditTab("general");
-      if (editingWidget.type === "room_card") setRoomCardEditTab("algemeen");
+      if (editingWidget.type === "title_card" || editingWidget.type === "light_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card") {
+        setEditTab("algemeen");
+      }
+      if (editingWidget.type === "energy_monitor_card") {
+        setEditTab("achtergrond");
+      }
+      if (editingWidget.type === "card_group") {
+        setEditTab(editingGroupChildId ? "algemeen" : "weergave");
+      }
     }
   }, [editingWidget, editingGroupChildId]);
 
@@ -1368,23 +1374,60 @@ export default function DashboardEditPage() {
               </h3>
               <div className="space-y-3 overflow-y-auto min-h-0 flex-1 pr-1 -mr-1">
                 {editingWidget.type === "title_card" ? (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      Tekst
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.title}
-                      onChange={(e) =>
-                        setEditForm((prev) => ({ ...prev, title: e.target.value }))
-                      }
-                      placeholder="Bijv. Woonkamer, Verlichting"
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                    />
-                  </div>
+                  <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditTab("algemeen")}
+                        className={cn(
+                          "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                          editTab === "algemeen"
+                            ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                            : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        )}
+                      >
+                        Algemeen
+                      </button>
+                    </div>
+                    {editTab === "algemeen" && (
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Tekst
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.title}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({ ...prev, title: e.target.value }))
+                          }
+                          placeholder="Bijv. Woonkamer, Verlichting"
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                        />
+                      </div>
+                    )}
+                  </>
                 ) : editingWidget.type === "card_group" ? (
                   editingGroupChildId ? (
                     <>
+                      <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                        {(["algemeen", "voorwaarden"] as const).map((tab) => (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={() => setEditTab(tab)}
+                            className={cn(
+                              "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                              editTab === tab
+                                ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                            )}
+                          >
+                            {tab === "algemeen" ? "Algemeen" : "Voorwaarden"}
+                          </button>
+                        ))}
+                      </div>
+                      {editTab === "algemeen" && (
+                        <>
                       <div>
                         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Naam</label>
                         <input
@@ -1476,6 +1519,9 @@ export default function DashboardEditPage() {
                           ))}
                         </div>
                       </div>
+                        </>
+                      )}
+                      {editTab === "voorwaarden" && (
                       <div>
                         <p className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Voorwaardelijke kleur (eerste match)</p>
                         {(editForm.conditions ?? []).map((cond, idx) => (
@@ -1552,8 +1598,28 @@ export default function DashboardEditPage() {
                           + Voeg voorwaarde toe
                         </button>
                       </div>
+                      )}
                     </>
                   ) : (
+                  <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["weergave", "kaarten"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "weergave" ? "Weergave" : "Kaarten"}
+                        </button>
+                      ))}
+                    </div>
+                    {editTab === "weergave" && (
                   <div className="space-y-3">
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Uitlijning</p>
                     <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5">
@@ -1577,7 +1643,11 @@ export default function DashboardEditPage() {
                         </button>
                       ))}
                     </div>
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 pt-1">Kaarten in groep</p>
+                  </div>
+                    )}
+                    {editTab === "kaarten" && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Kaarten in groep</p>
                     <ul className="space-y-1 max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
                       {(editingWidget.children ?? []).map((c) => (
                         <li key={c.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
@@ -1653,6 +1723,8 @@ export default function DashboardEditPage() {
                         })}
                     </div>
                   </div>
+                    )}
+                  </>
                   )
                 ) : (
                   <>
@@ -1745,6 +1817,22 @@ export default function DashboardEditPage() {
                   </div>
                 )}
                 {editingWidget.type === "light_card" && (
+                  <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditTab("algemeen")}
+                        className={cn(
+                          "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                          editTab === "algemeen"
+                            ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                            : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        )}
+                      >
+                        Algemeen
+                      </button>
+                    </div>
+                    {editTab === "algemeen" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       Icoon
@@ -1787,6 +1875,8 @@ export default function DashboardEditPage() {
                       })}
                     </div>
                   </div>
+                    )}
+                  </>
                 )}
                 {editingWidget.type === "room_card" && (
                   <>
@@ -1795,10 +1885,10 @@ export default function DashboardEditPage() {
                         <button
                           key={tab}
                           type="button"
-                          onClick={() => setRoomCardEditTab(tab)}
+                          onClick={() => setEditTab(tab)}
                           className={cn(
                             "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
-                            roomCardEditTab === tab
+                            editTab === tab
                               ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
@@ -1807,7 +1897,7 @@ export default function DashboardEditPage() {
                         </button>
                       ))}
                     </div>
-                    {roomCardEditTab === "algemeen" && (
+                    {editTab === "algemeen" && (
                       <div className="space-y-3">
                         <div>
                           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Icoon</label>
@@ -1874,7 +1964,7 @@ export default function DashboardEditPage() {
                         </div>
                       </div>
                     )}
-                    {roomCardEditTab === "achtergrond" && (
+                    {editTab === "achtergrond" && (
                       <div className="space-y-3">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Upload een foto van de kamer of plak een URL (bijv. van een camera-feed).
@@ -1930,7 +2020,7 @@ export default function DashboardEditPage() {
                         />
                       </div>
                     )}
-                    {roomCardEditTab === "weergave" && (
+                    {editTab === "weergave" && (
                       <div className="space-y-3">
                         <div>
                           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Breedte kaart (px)</label>
@@ -1972,6 +2062,25 @@ export default function DashboardEditPage() {
                 )}
                 {(editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && (
                   <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "weergave"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? "Algemeen" : "Weergave"}
+                        </button>
+                      ))}
+                    </div>
+                    {editTab === "algemeen" && (
+                    <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Icoon
@@ -2019,6 +2128,10 @@ export default function DashboardEditPage() {
                           })}
                       </select>
                     </div>
+                    </>
+                    )}
+                    {editTab === "weergave" && (
+                    <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Breedte kaart (px)
@@ -2063,9 +2176,27 @@ export default function DashboardEditPage() {
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">100–400 px (standaard 180)</p>
                     </div>
+                    </>
+                    )}
                   </>
                 )}
                 {editingWidget.type === "solar_card" && (
+                  <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditTab("algemeen")}
+                        className={cn(
+                          "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                          editTab === "algemeen"
+                            ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                            : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        )}
+                      >
+                        Algemeen
+                      </button>
+                    </div>
+                    {editTab === "algemeen" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       Consumption (verbruik, optioneel)
@@ -2095,9 +2226,30 @@ export default function DashboardEditPage() {
                         })}
                     </select>
                   </div>
+                    )}
+                  </>
                 )}
                 {editingWidget.type === "energy_monitor_card" && (
                   <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["achtergrond", "weergave", "voorwaarden"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "achtergrond" ? "Achtergrond" : tab === "weergave" ? "Weergave" : "Voorwaarden"}
+                        </button>
+                      ))}
+                    </div>
+                    {editTab === "achtergrond" && (
+                    <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Achtergrondafbeelding light mode (URL)
@@ -2135,6 +2287,10 @@ export default function DashboardEditPage() {
                         Plaats afbeeldingen in public/ of gebruik externe URLs.
                       </p>
                     </div>
+                    </>
+                    )}
+                    {editTab === "weergave" && (
+                    <>
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -2168,6 +2324,9 @@ export default function DashboardEditPage() {
                         className="w-full"
                       />
                     </div>
+                    </>
+                    )}
+                    {editTab === "voorwaarden" && (
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Voorwaarden (afbeelding bij waarde)
@@ -2262,10 +2421,30 @@ export default function DashboardEditPage() {
                         + Voorwaarde toevoegen
                       </button>
                     </div>
+                    )}
                   </>
                 )}
                 {editingWidget.type === "stat_pill_card" && (
                   <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "voorwaarden"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? "Algemeen" : "Voorwaarden"}
+                        </button>
+                      ))}
+                    </div>
+                    {editTab === "algemeen" && (
+                    <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Label (onder de waarde)
@@ -2318,6 +2497,9 @@ export default function DashboardEditPage() {
                         <option value="red">Rood</option>
                       </select>
                     </div>
+                    </>
+                    )}
+                    {editTab === "voorwaarden" && (
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Voorwaarden (kleur aanpassen bij waarde)
@@ -2408,9 +2590,29 @@ export default function DashboardEditPage() {
                         + Voeg voorwaarde toe
                       </button>
                     </div>
+                    )}
                   </>
                 )}
                 {editingWidget.type === "vacuum_card" && (
+                  <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "weergave"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? "Algemeen" : "Weergave"}
+                        </button>
+                      ))}
+                    </div>
+                    {editTab === "algemeen" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       Vacuum Room (scripts)
@@ -2512,7 +2714,10 @@ export default function DashboardEditPage() {
                           })}
                       </select>
                     </div>
-                    <div className="mt-3">
+                  </div>
+                    )}
+                    {editTab === "weergave" && (
+                  <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Icoon
                       </label>
@@ -2562,37 +2767,29 @@ export default function DashboardEditPage() {
                         ))}
                       </div>
                     </div>
-                  </div>
+                    )}
+                  </>
                 )}
                 {editingWidget.type === "sensor_card" && (
                   <div>
-                    <div className="flex rounded-lg border border-gray-200 dark:border-white/10 p-0.5 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => setSensorCardEditTab("general")}
-                        className={cn(
-                          "flex-1 rounded-md py-1.5 text-xs font-medium transition-colors",
-                          sensorCardEditTab === "general"
-                            ? "bg-[#4D2FB2] text-white"
-                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
-                        )}
-                      >
-                        Algemeen
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSensorCardEditTab("conditions")}
-                        className={cn(
-                          "flex-1 rounded-md py-1.5 text-xs font-medium transition-colors",
-                          sensorCardEditTab === "conditions"
-                            ? "bg-[#4D2FB2] text-white"
-                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
-                        )}
-                      >
-                        Conditionele voorwaarden
-                      </button>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "voorwaarden"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? "Algemeen" : "Conditionele voorwaarden"}
+                        </button>
+                      ))}
                     </div>
-                    {sensorCardEditTab === "general" && (
+                    {editTab === "algemeen" && (
                       <>
                         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                           Icoon
@@ -2674,7 +2871,7 @@ export default function DashboardEditPage() {
                         </div>
                       </>
                     )}
-                    {sensorCardEditTab === "conditions" && (
+                    {editTab === "voorwaarden" && (
                       <div className="space-y-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Eerste voorwaarde die klopt bepaalt de kaartkleur. Getallen en tekst worden ondersteund.
@@ -2766,6 +2963,25 @@ export default function DashboardEditPage() {
                   </div>
                 )}
                 {editingWidget.type === "pill_card" && (
+                  <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "voorwaarden"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? "Algemeen" : "Voorwaarden"}
+                        </button>
+                      ))}
+                    </div>
+                    {editTab === "algemeen" && (
                   <div className="space-y-3">
                     <label className="flex items-center justify-between gap-3 cursor-pointer">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -2846,6 +3062,9 @@ export default function DashboardEditPage() {
                         ))}
                       </div>
                     </div>
+                  </div>
+                    )}
+                    {editTab === "voorwaarden" && (
                     <div>
                       <p className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">
                         Voorwaardelijke kleur (eerste match)
@@ -2936,10 +3155,30 @@ export default function DashboardEditPage() {
                         + Voeg voorwaarde toe
                       </button>
                     </div>
-                  </div>
+                    )}
+                  </>
                 )}
                 {editingWidget.type === "camera_card" && (
                   <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "weergave"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? "Algemeen" : "Weergave"}
+                        </button>
+                      ))}
+                    </div>
+                    {editTab === "algemeen" && (
+                    <>
                     <div className="flex items-center justify-between gap-3">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Toon titel
@@ -2988,6 +3227,10 @@ export default function DashboardEditPage() {
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">2–120 seconden (standaard 10)</p>
                     </div>
+                    </>
+                    )}
+                    {editTab === "weergave" && (
+                    <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Breedte kaart (px)
@@ -3032,10 +3275,30 @@ export default function DashboardEditPage() {
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">150–450 px (standaard 270)</p>
                     </div>
+                    </>
+                    )}
                   </>
                 )}
                 {editingWidget.type === "weather_card" && (
                   <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "weergave"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? "Algemeen" : "Weergave"}
+                        </button>
+                      ))}
+                    </div>
+                    {editTab === "algemeen" && (
                     <div className="flex items-center justify-between gap-3">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Toon icoon
@@ -3062,6 +3325,9 @@ export default function DashboardEditPage() {
                         />
                       </button>
                     </div>
+                    )}
+                    {editTab === "weergave" && (
+                    <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Breedte kaart (px)
@@ -3106,10 +3372,31 @@ export default function DashboardEditPage() {
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">100–400 px (standaard 180)</p>
                     </div>
+                    </>
+                    )}
                   </>
                 )}
                 {editingWidget.type === "nuts_card" && (
                   <>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "weergave"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? "Algemeen" : "Weergave"}
+                        </button>
+                      ))}
+                    </div>
+                    {editTab === "algemeen" && (
+                    <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Icoon
@@ -3162,45 +3449,6 @@ export default function DashboardEditPage() {
                           placeholder="#3B82F6"
                           className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                         />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Breedte × hoogte (px)
-                      </label>
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <input
-                            type="number"
-                            min={150}
-                            max={400}
-                            step={10}
-                            value={editForm.width ?? 250}
-                            onChange={(e) => {
-                              const v = e.target.value === "" ? undefined : Number(e.target.value);
-                              setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
-                            }}
-                            placeholder="250"
-                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                          />
-                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Breedte</p>
-                        </div>
-                        <div className="flex-1">
-                          <input
-                            type="number"
-                            min={80}
-                            max={300}
-                            step={10}
-                            value={editForm.height ?? 130}
-                            onChange={(e) => {
-                              const v = e.target.value === "" ? undefined : Number(e.target.value);
-                              setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
-                            }}
-                            placeholder="130"
-                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                          />
-                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Hoogte</p>
-                        </div>
                       </div>
                     </div>
                     <div>
@@ -3272,10 +3520,54 @@ export default function DashboardEditPage() {
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Schaal voor verticale verbruiksbalk</p>
                     </div>
+                    </>
+                    )}
+                    {editTab === "weergave" && (
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Breedte × hoogte (px)
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            min={150}
+                            max={400}
+                            step={10}
+                            value={editForm.width ?? 250}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
+                            }}
+                            placeholder="250"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Breedte</p>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            min={80}
+                            max={300}
+                            step={10}
+                            value={editForm.height ?? 130}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
+                            }}
+                            placeholder="130"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Hoogte</p>
+                        </div>
+                      </div>
+                    </div>
+                    )}
                   </>
                 )}
-                  </>
-                )}
+                </>
+                )
+              }
                 <div className="flex shrink-0 justify-between gap-2 pt-3 mt-2 border-t border-gray-200 dark:border-white/10">
                   {editingWidget.type === "card_group" && editingGroupChildId ? (
                     <>
