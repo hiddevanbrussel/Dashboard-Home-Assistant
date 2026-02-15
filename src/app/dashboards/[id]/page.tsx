@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
+import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
@@ -860,7 +860,7 @@ export default function DashboardEditPage() {
             aria-label="Room background"
             title="Room background"
           >
-            <Image className="h-4 w-4" aria-hidden />
+            <ImageIcon className="h-4 w-4" aria-hidden />
           </button>
           {roomBackgroundOpen && (
                 <>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
-import { DoorOpen, Image, LayoutGrid, ChevronRight, Plus, Trash2, X } from "lucide-react";
+import { DoorOpen, Image as ImageIcon, LayoutGrid, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { CARD_ICONS } from "@/components/widgets/card-icons";
 
@@ -312,7 +312,7 @@ export default function RoomsPage() {
                       htmlFor="room-bg-create"
                       className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-[#4D2FB2] hover:text-[#4D2FB2]"
                     >
-                      <Image className="h-6 w-6" aria-hidden />
+                      <ImageIcon className="h-6 w-6" aria-hidden />
                     </label>
                   )}
                 </div>
