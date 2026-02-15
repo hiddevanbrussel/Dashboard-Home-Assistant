@@ -121,6 +121,7 @@ function ScreensaverFootballLogo({ src, alt }: { src?: string | null; alt: strin
   if (!src || typeof src !== "string") return null;
   const url = src.startsWith("http") ? src : src.startsWith("/") ? `${typeof window !== "undefined" ? window.location.origin : ""}${src}` : src;
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- Dynamic external URL from Home Assistant sensor
     <img
       src={url}
       alt={alt}
@@ -138,7 +139,31 @@ function ScreensaverFootball() {
 
   const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
   const status = String(attrs.status ?? "").toUpperCase();
-  const date = attrs.date as string | undefined;
+  const rawDate = attrs.date as string | undefined;
+  const date =
+    rawDate
+      ? (() => {
+          try {
+            const d = new Date(rawDate);
+            if (Number.isNaN(d.getTime())) return rawDate;
+            const datePart = d.toLocaleDateString("nl-NL", {
+              timeZone: "Europe/Amsterdam",
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+            const timePart = d.toLocaleTimeString("nl-NL", {
+              timeZone: "Europe/Amsterdam",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            });
+            return `${datePart} | ${timePart}`;
+          } catch {
+            return rawDate;
+          }
+        })()
+      : undefined;
   const teamLogo = attrs.team_logo as string | undefined;
   const teamLongName = attrs.team_long_name as string | undefined;
   const opponentLogo = attrs.opponent_logo as string | undefined;
@@ -155,9 +180,9 @@ function ScreensaverFootball() {
   if (!teamLongName && !opponentLongName && !date && !showScores) return null;
 
   return (
-    <div className="flex flex-col items-end gap-1 rounded-xl bg-black/40 dark:bg-black/50 backdrop-blur-sm px-4 py-3 text-white/95 drop-shadow-md min-w-[200px]">
+    <div className="flex flex-col gap-1 px-4 py-3 text-white/95 drop-shadow-md min-w-[280px]">
       {date && (
-        <p className="text-xs text-white/70 mb-1">{date}</p>
+        <p className="text-xs text-white/90 text-center w-full mb-1">{date}</p>
       )}
       <div className="flex items-center gap-3 w-full justify-between">
         {/* Thuisteam */}
@@ -306,7 +331,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       role="button"
       tabIndex={0}
       aria-label="Screensaver aanraken om te sluiten"
-      className="fixed inset-0 z-[9999] flex items-end justify-end p-8 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+      className="fixed inset-0 z-[9999] flex flex-col justify-end p-8 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
       style={
         useGradient
           ? { background: "linear-gradient(to bottom right, #111827, #1f2937, #000)" }
@@ -365,10 +390,13 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
           <div className="absolute inset-0 bg-black/50" aria-hidden />
         </>
       )}
-      <div className="relative z-10 flex flex-col items-end gap-4">
-        <ScreensaverWeather />
-        <ScreensaverClock />
-        <ScreensaverFootball />
+      <div className="relative z-10 flex justify-between items-end w-full gap-4 max-w-full">
+        <div className="flex flex-col items-start">
+          <ScreensaverFootball />
+        </div>
+        <div className="flex flex-col items-end gap-4">
+          <ScreensaverWeather />
+          <ScreensaverClock />
         {currentAttribution && (
           <a
             href={currentAttribution.url}
@@ -391,6 +419,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
             Photos provided by Pexels
           </a>
         )}
+        </div>
       </div>
     </div>
   );

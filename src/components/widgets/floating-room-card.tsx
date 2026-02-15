@@ -68,6 +68,7 @@ export type RoomCardWidgetItem = {
   entity_id: string;
   icon?: string;
   light_entity_id?: string;
+  modal_light_entity_ids?: string[];
   media_player_entity_id?: string;
   climate_entity_id?: string;
   background_image?: string;

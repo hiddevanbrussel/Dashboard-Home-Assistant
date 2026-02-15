@@ -12,7 +12,8 @@ export type HaEntity = {
 };
 
 export type CardDefinition = {
-  light_entity_id?: string;
+  /** Lampen om in de modal afzonderlijk te schakelen. */
+  modal_light_entity_ids?: string[];
   media_player_entity_id?: string;
   climate_entity_id?: string;
 };
@@ -35,9 +36,7 @@ export function CardDefinitionModal({
   const [local, setLocal] = useState<CardDefinition>(definition);
   const [loading, setLoading] = useState(false);
 
-  const lightEntity = useEntityStateStore((s) =>
-    local.light_entity_id ? s.getState(local.light_entity_id) : null
-  );
+  const lightIds = local.modal_light_entity_ids ?? [];
   const mediaEntity = useEntityStateStore((s) =>
     local.media_player_entity_id ? s.getState(local.media_player_entity_id) : null
   );
@@ -56,29 +55,27 @@ export function CardDefinitionModal({
     if (Array.isArray(res)) setStates(res);
   }, [setStates]);
 
-  const toggleLight = useCallback(async () => {
-    if (!local.light_entity_id) return;
-    const isOn = lightEntity?.state === "on";
+  const toggleLight = useCallback(async (entityId: string, isOn: boolean) => {
     setLoading(true);
     try {
       const res = await fetch("/api/ha/call-service", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          entity_id: local.light_entity_id,
+          entity_id: entityId,
           domain: "light",
           service: isOn ? "turn_off" : "turn_on",
           service_data: isOn ? undefined : { brightness_pct: 100 },
         }),
       });
       if (res.ok) {
-        updateEntityState(local.light_entity_id, { state: isOn ? "off" : "on" });
+        updateEntityState(entityId, { state: isOn ? "off" : "on" });
         await refreshState();
       }
     } finally {
       setLoading(false);
     }
-  }, [local.light_entity_id, lightEntity?.state, updateEntityState, refreshState]);
+  }, [updateEntityState, refreshState]);
 
   const handleMediaPlayPause = useCallback(async () => {
     if (!local.media_player_entity_id) return;
@@ -104,10 +101,7 @@ export function CardDefinitionModal({
     onClose();
   };
 
-  const lightName =
-    (entities.find((e) => e.entity_id === local.light_entity_id)?.attributes as { friendly_name?: string })?.friendly_name ??
-    local.light_entity_id ??
-    "";
+  const getEntityState = useEntityStateStore((s) => s.getState);
   const mediaName =
     (entities.find((e) => e.entity_id === local.media_player_entity_id)?.attributes as { friendly_name?: string })?.friendly_name ??
     local.media_player_entity_id ??
@@ -144,7 +138,7 @@ export function CardDefinitionModal({
             Schakel verlichting en media snel in of voeg kaarten toe.
           </p>
 
-          {/* Lichtkaart */}
+          {/* Verlichting – meerdere lampen afzonderlijk schakelen */}
           <section className="rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
             <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
               <Lightbulb className="h-5 w-5 text-amber-500 shrink-0" />
@@ -152,54 +146,70 @@ export function CardDefinitionModal({
                 Verlichting
               </h4>
             </div>
-            <div className="p-4">
-              {local.light_entity_id ? (
-                <div className="space-y-3">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate" title={local.light_entity_id}>
-                    {lightName}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={toggleLight}
-                    disabled={loading}
-                    className={cn(
-                      "w-full py-4 px-4 rounded-xl font-medium text-base transition-all flex items-center justify-center gap-2",
-                      lightEntity?.state === "on"
-                        ? "bg-amber-400 text-amber-900 hover:bg-amber-300"
-                        : "bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-500"
-                    )}
-                  >
-                    <Lightbulb
-                      className="h-6 w-6"
-                      strokeWidth={1.5}
-                      fill={lightEntity?.state === "on" ? "currentColor" : "none"}
-                    />
-                    {lightEntity?.state === "on" ? "Licht uit" : "Licht aan"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLocal((prev) => ({ ...prev, light_entity_id: undefined }))}
-                    className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                  >
-                    Licht wijzigen
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Voeg een lichtkaart toe om snel te schakelen</p>
-                  <EntitySelectWithSearch
-                    entities={entities}
-                    value=""
-                    onChange={(v) => setLocal((prev) => ({ ...prev, light_entity_id: v || undefined }))}
-                    filter={(e) =>
-                      e.entity_id.startsWith("light.") || e.entity_id.startsWith("group.")
-                    }
-                    placeholder="Zoek lamp of groep…"
-                    emptyOption="Kies een lamp…"
-                    className="[&_label]:sr-only"
-                  />
-                </div>
-              )}
+            <div className="p-4 space-y-3">
+              {lightIds.map((entityId) => {
+                const ent = getEntityState(entityId);
+                const isOn = ent?.state === "on";
+                const name =
+                  (entities.find((e) => e.entity_id === entityId)?.attributes as { friendly_name?: string })?.friendly_name ??
+                  entityId;
+                return (
+                  <div key={entityId} className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleLight(entityId, isOn)}
+                      disabled={loading}
+                      className={cn(
+                        "flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2",
+                        isOn
+                          ? "bg-amber-400 text-amber-900 hover:bg-amber-300"
+                          : "bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-500"
+                      )}
+                    >
+                      <Lightbulb
+                        className="h-5 w-5 shrink-0"
+                        strokeWidth={1.5}
+                        fill={isOn ? "currentColor" : "none"}
+                      />
+                      <span className="truncate">{name}</span>
+                      <span className="text-xs opacity-80">{isOn ? "Aan" : "Uit"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setLocal((prev) => ({
+                          ...prev,
+                          modal_light_entity_ids: (prev.modal_light_entity_ids ?? []).filter((id) => id !== entityId),
+                        }))
+                      }
+                      className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10 dark:hover:text-gray-300 shrink-0"
+                      aria-label="Lamp verwijderen"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                );
+              })}
+              <div>
+                <EntitySelectWithSearch
+                  entities={entities}
+                  value=""
+                  onChange={(v) => {
+                    if (!v || lightIds.includes(v)) return;
+                    setLocal((prev) => ({
+                      ...prev,
+                      modal_light_entity_ids: [...(prev.modal_light_entity_ids ?? []), v],
+                    }));
+                  }}
+                  filter={(e) =>
+                    (e.entity_id.startsWith("light.") || e.entity_id.startsWith("group.")) &&
+                    !lightIds.includes(e.entity_id)
+                  }
+                  placeholder="Lamp toevoegen…"
+                  emptyOption="Kies een lamp…"
+                  className="[&_label]:sr-only"
+                />
+              </div>
             </div>
           </section>
 

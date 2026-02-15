@@ -401,6 +401,7 @@ export default function DashboardEditPage() {
     script_names?: Record<string, string>;
     cleaned_area_entity_id?: string;
     light_entity_id?: string;
+    modal_light_entity_ids?: string[];
     media_player_entity_id?: string;
     climate_entity_id?: string;
     background_image?: string;
@@ -435,6 +436,7 @@ export default function DashboardEditPage() {
     cleaned_area_entity_id: "",
     current_entity_id: "",
     light_entity_id: "",
+    modal_light_entity_ids: [],
     media_player_entity_id: "",
     climate_entity_id: "",
     background_image: "",
@@ -534,6 +536,7 @@ export default function DashboardEditPage() {
         script_names: editingWidget.script_names ?? {},
         cleaned_area_entity_id: editingWidget.cleaned_area_entity_id ?? "",
         light_entity_id: editingWidget.light_entity_id ?? "",
+        modal_light_entity_ids: (editingWidget as { modal_light_entity_ids?: string[] }).modal_light_entity_ids ?? [],
         media_player_entity_id: editingWidget.media_player_entity_id ?? "",
         climate_entity_id: editingWidget.climate_entity_id ?? "",
         background_image: editingWidget.background_image ?? "",
@@ -2011,7 +2014,7 @@ export default function DashboardEditPage() {
                             placeholder="Zoek licht of groep…"
                             emptyOption="Geen"
                           />
-                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont een lamp-icoon om het licht aan/uit te zetten.</p>
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont een lamp-icoon om het licht aan/uit te zetten. Tik op de kaart om meerdere lampen los te schakelen in de modal.</p>
                         </div>
                         <div>
                           <EntitySelectWithSearch
@@ -3918,6 +3921,7 @@ export default function DashboardEditPage() {
                           icon: editForm.icon || undefined,
                           entity_id: editForm.entity_id || undefined,
                           light_entity_id: editForm.light_entity_id || undefined,
+                          modal_light_entity_ids: (editForm.modal_light_entity_ids ?? []).length > 0 ? editForm.modal_light_entity_ids : undefined,
                           media_player_entity_id: editForm.media_player_entity_id || undefined,
                           climate_entity_id: editForm.climate_entity_id || undefined,
                           background_image: editForm.background_image || undefined,
@@ -3956,8 +3960,14 @@ export default function DashboardEditPage() {
             <CardDefinitionModal
               title={clickedCardForDefinition.title}
               definition={{
-                light_entity_id:
-                  widgets.find((x) => x.id === clickedCardForDefinition.widgetId)?.light_entity_id,
+                modal_light_entity_ids: (() => {
+                  const w = widgets.find((x) => x.id === clickedCardForDefinition.widgetId);
+                  if (!w) return [];
+                  const ids = (w as { modal_light_entity_ids?: string[] }).modal_light_entity_ids;
+                  if (ids?.length) return ids;
+                  const lid = (w as { light_entity_id?: string }).light_entity_id;
+                  return lid ? [lid] : [];
+                })(),
                 media_player_entity_id:
                   widgets.find((x) => x.id === clickedCardForDefinition.widgetId)
                     ?.media_player_entity_id,
@@ -3974,7 +3984,9 @@ export default function DashboardEditPage() {
                   w.id === clickedCardForDefinition.widgetId
                     ? {
                         ...w,
-                        light_entity_id: def.light_entity_id,
+                        modal_light_entity_ids: def.modal_light_entity_ids?.length
+                          ? def.modal_light_entity_ids
+                          : undefined,
                         media_player_entity_id: def.media_player_entity_id,
                         climate_entity_id: def.climate_entity_id,
                       }
