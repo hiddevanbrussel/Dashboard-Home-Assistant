@@ -19,7 +19,7 @@ export type LightControlProps = WidgetBaseProps & {
   value?: number;
   /** "on" | "off" for display and toggle */
   state?: "on" | "off";
-  /** Icoon voor light card: lightbulb (default), spotlight, lamp, lamp-ceiling, lamp-desk, lamp-floor, lamp-wall-down, lamp-wall-up */
+  /** Icoon voor light card: lightbulb (default), cone, spotlight, lamp, lamp-ceiling, lamp-desk, lamp-floor, lamp-wall-down, lamp-wall-up */
   icon?: string;
 };
 

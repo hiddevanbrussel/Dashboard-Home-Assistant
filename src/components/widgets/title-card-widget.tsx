@@ -17,7 +17,7 @@ export function TitleCardWidget({ title, className }: TitleCardProps) {
       )}
       aria-hidden
     >
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate w-full">
+      <h2 className="text-base md:text-lg font-normal text-gray-600 dark:text-gray-300 truncate w-full">
         {title}
       </h2>
     </div>

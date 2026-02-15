@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
+  Cone,
   Lightbulb,
   Lamp,
   LampCeiling,
@@ -18,6 +19,7 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 
 const LIGHT_ICON_MAP: Record<string, React.ElementType> = {
   lightbulb: Lightbulb,
+  cone: Cone,
   spotlight: Lamp,
   lamp: Lamp,
   "lamp-ceiling": LampCeiling,
@@ -29,6 +31,7 @@ const LIGHT_ICON_MAP: Record<string, React.ElementType> = {
 
 export const LIGHT_ICON_OPTIONS = [
   "lightbulb",
+  "cone",
   "spotlight",
   "lamp",
   "lamp-ceiling",

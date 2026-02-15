@@ -2099,19 +2099,21 @@ export default function DashboardEditPage() {
                         const label =
                           key === "lightbulb"
                             ? "Lightbulb"
-                            : key === "spotlight"
-                              ? "Spotlight"
-                              : key === "lamp"
-                                ? "Lamp"
-                                : key === "lamp-ceiling"
-                                  ? "Plafond"
-                                  : key === "lamp-desk"
-                                    ? "Bureau"
-                                    : key === "lamp-floor"
-                                      ? "Vloer"
-                                      : key === "lamp-wall-down"
-                                        ? "Wall down"
-                                        : "Wall up";
+                            : key === "cone"
+                              ? "Cone"
+                              : key === "spotlight"
+                                ? "Spotlight"
+                                : key === "lamp"
+                                  ? "Lamp"
+                                  : key === "lamp-ceiling"
+                                    ? "Plafond"
+                                    : key === "lamp-desk"
+                                      ? "Bureau"
+                                      : key === "lamp-floor"
+                                        ? "Vloer"
+                                        : key === "lamp-wall-down"
+                                          ? "Wall down"
+                                          : "Wall up";
                         return (
                           <button
                             key={key}
