@@ -215,7 +215,7 @@ export function CardDefinitionModal({
                   >
                     <span
                       className={cn(
-                        "absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+                        "absolute left-0.5 top-px h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
                         isOn ? "translate-x-5" : "translate-x-0"
                       )}
                     />
