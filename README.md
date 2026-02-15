@@ -21,13 +21,23 @@ Set up a working dashboard with live Home Assistant data in 5–10 minutes.
 - IP: `http://192.168.1.10:8123`
 - With HTTPS / reverse proxy: `https://ha.yourdomain.com`
 
-## Quick start (local)
+## Install via npm
 
 ```bash
-cp .env.example .env
-# Set APP_SECRET (at least 16 characters) and optionally DATABASE_URL
+# Clone the repository (or download and extract)
+git clone <repository-url>
+cd dashboard
+
+# Install dependencies
 npm install
+
+# Copy environment file and configure APP_SECRET (and optionally DATABASE_URL)
+cp .env.example .env
+
+# Run database migrations
 npx prisma migrate dev
+
+# Start the development server
 npm run dev
 ```
 
