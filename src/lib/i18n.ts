@@ -100,6 +100,11 @@ const translations: Record<"en" | "nl", Translations> = {
     "rooms.cancel": "Cancel",
     "rooms.delete": "Delete room",
     "rooms.deleteConfirm": "Delete this room and all its cards?",
+    "rooms.icon": "Icon",
+    "rooms.back": "Back",
+    "rooms.background": "Room background",
+    "rooms.backgroundUpload": "Upload image",
+    "rooms.backgroundRemove": "Remove background",
   },
   nl: {
     "nav.dashboard": "Dashboard",
@@ -200,6 +205,11 @@ const translations: Record<"en" | "nl", Translations> = {
     "rooms.cancel": "Annuleren",
     "rooms.delete": "Kamer verwijderen",
     "rooms.deleteConfirm": "Deze kamer en alle kaarten verwijderen?",
+    "rooms.icon": "Icoon",
+    "rooms.back": "Terug",
+    "rooms.background": "Kamerachtergrond",
+    "rooms.backgroundUpload": "Afbeelding uploaden",
+    "rooms.backgroundRemove": "Achtergrond verwijderen",
   },
 };
 

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 export type RoomDashboardListItem = {
   areaId: string;
   name: string;
+  icon?: string | null;
   createdAt: string;
 };
 
@@ -13,11 +14,12 @@ export type RoomDashboardListItem = {
 export async function GET() {
   const list = await prisma.roomDashboard.findMany({
     orderBy: { updatedAt: "desc" },
-    select: { areaId: true, name: true, createdAt: true },
+    select: { areaId: true, name: true, icon: true, createdAt: true },
   });
   const items: RoomDashboardListItem[] = list.map((r) => ({
     areaId: r.areaId,
     name: r.name ?? r.areaId,
+    icon: r.icon ?? null,
     createdAt: r.createdAt.toISOString(),
   }));
   return NextResponse.json(items);
@@ -38,10 +40,10 @@ function slugify(str: string): string {
 
 /**
  * POST /api/room-dashboards – Create a new room.
- * Body: { name: string, id?: string } – id is optional, derived from name if omitted.
+ * Body: { name: string, id?: string, icon?: string, background?: string } – id, icon, background optional.
  */
 export async function POST(request: Request) {
-  let body: { name?: string; id?: string } = {};
+  let body: { name?: string; id?: string; icon?: string; background?: string } = {};
   try {
     body = await request.json();
   } catch {
@@ -75,16 +77,22 @@ export async function POST(request: Request) {
     );
   }
 
+  const icon = typeof body.icon === "string" && body.icon.trim() ? body.icon.trim() : null;
+  const background = typeof body.background === "string" && body.background.trim() ? body.background.trim() : null;
+
   const rd = await prisma.roomDashboard.create({
     data: {
       areaId: slug,
       name: name,
+      icon: icon,
+      background: background,
     },
   });
 
   return NextResponse.json({
     areaId: rd.areaId,
     name: rd.name ?? rd.areaId,
+    icon: rd.icon ?? null,
     createdAt: rd.createdAt.toISOString(),
   });
 }

@@ -3,10 +3,18 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
-import { DoorOpen, LayoutGrid, ChevronRight, Plus, Trash2, X } from "lucide-react";
+import { DoorOpen, Image, LayoutGrid, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
+import { CARD_ICONS } from "@/components/widgets/card-icons";
 
-type RoomItem = { areaId: string; name: string; createdAt: string };
+const ROOM_ICON_OPTIONS = ["DoorOpen", "Home", "Sofa", "BedDouble", "Bath", "UtensilsCrossed", "Lamp", "Car", "Building2"] as const;
+
+type RoomItem = { areaId: string; name: string; icon?: string | null; createdAt: string };
+
+function RoomIcon({ icon }: { icon?: string | null }) {
+  const Icon = icon && icon in CARD_ICONS ? CARD_ICONS[icon] : LayoutGrid;
+  return <Icon className="h-5 w-5" aria-hidden />;
+}
 
 export default function RoomsPage() {
   const { t } = useTranslation();
@@ -16,6 +24,9 @@ export default function RoomsPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newId, setNewId] = useState("");
+  const [newIcon, setNewIcon] = useState<string>(ROOM_ICON_OPTIONS[0]);
+  const [newBackgroundFile, setNewBackgroundFile] = useState<File | null>(null);
+  const [newBackgroundPreview, setNewBackgroundPreview] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -43,12 +54,23 @@ export default function RoomsPage() {
     setCreateError(null);
     setCreating(true);
     try {
+      let backgroundUrl: string | undefined;
+      if (newBackgroundFile) {
+        const formData = new FormData();
+        formData.set("file", newBackgroundFile);
+        const upRes = await fetch("/api/upload", { method: "POST", body: formData });
+        const upJson = await upRes.json();
+        if (!upRes.ok) throw new Error(upJson?.error ?? "Upload failed");
+        backgroundUrl = upJson.url;
+      }
       const res = await fetch("/api/room-dashboards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newName.trim(),
           id: newId.trim() || undefined,
+          icon: newIcon || undefined,
+          background: backgroundUrl,
         }),
       });
       const data = await res.json();
@@ -59,6 +81,9 @@ export default function RoomsPage() {
       setAddModalOpen(false);
       setNewName("");
       setNewId("");
+      setNewIcon(ROOM_ICON_OPTIONS[0]);
+      setNewBackgroundFile(null);
+      setNewBackgroundPreview(null);
       loadRooms();
     } catch {
       setCreateError(t("rooms.genericError"));
@@ -100,6 +125,9 @@ export default function RoomsPage() {
               setCreateError(null);
               setNewName("");
               setNewId("");
+              setNewIcon(ROOM_ICON_OPTIONS[0]);
+              setNewBackgroundFile(null);
+              setNewBackgroundPreview(null);
             }}
             className="flex items-center gap-2 rounded-xl border border-[#4D2FB2]/40 bg-[#4D2FB2]/10 px-4 py-2.5 text-sm font-medium text-[#4D2FB2] transition-colors hover:bg-[#4D2FB2]/20 dark:border-[#4D2FB2]/40 dark:bg-[#4D2FB2]/20 dark:text-[#4D2FB2] dark:hover:bg-[#4D2FB2]/30"
           >
@@ -160,7 +188,7 @@ export default function RoomsPage() {
                   <Trash2 className="h-4 w-4" />
                 </button>
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#4D2FB2]/10 text-[#4D2FB2] dark:bg-[#4D2FB2]/20">
-                  <LayoutGrid className="h-5 w-5" />
+                  <RoomIcon icon={r.icon} />
                 </div>
                 <div className="min-w-0 flex-1 pr-8">
                   <p className="font-medium text-gray-900 dark:text-white group-hover:text-[#4D2FB2]">
@@ -217,6 +245,77 @@ export default function RoomsPage() {
                   className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
                   autoFocus
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.icon")}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {ROOM_ICON_OPTIONS.map((iconKey) => {
+                    const Icon = CARD_ICONS[iconKey];
+                    return (
+                      <button
+                        key={iconKey}
+                        type="button"
+                        onClick={() => setNewIcon(iconKey)}
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-colors ${
+                          newIcon === iconKey
+                            ? "border-[#4D2FB2] bg-[#4D2FB2]/10 text-[#4D2FB2]"
+                            : "border-gray-200 dark:border-white/20 text-gray-500 hover:border-gray-300 dark:hover:border-white/30"
+                        }`}
+                        title={iconKey}
+                      >
+                        {Icon && <Icon className="h-5 w-5" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.background")}
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  id="room-bg-create"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setNewBackgroundFile(file);
+                      setNewBackgroundPreview(URL.createObjectURL(file));
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <div className="flex items-center gap-3">
+                  {newBackgroundPreview ? (
+                    <>
+                      <div
+                        className="h-16 w-24 shrink-0 rounded-lg bg-cover bg-center"
+                        style={{ backgroundImage: `url(${newBackgroundPreview})` }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewBackgroundFile(null);
+                          setNewBackgroundPreview(null);
+                        }}
+                        className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        {t("rooms.backgroundRemove")}
+                      </button>
+                    </>
+                  ) : (
+                    <label
+                      htmlFor="room-bg-create"
+                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-[#4D2FB2] hover:text-[#4D2FB2]"
+                    >
+                      <Image className="h-6 w-6" aria-hidden />
+                    </label>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">

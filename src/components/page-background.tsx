@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useThemeStore } from "@/stores/theme-store";
 
 type BackgroundData = {
@@ -9,13 +10,24 @@ type BackgroundData = {
   backgroundDark: string | null;
 };
 
-function fetchBackground(): Promise<BackgroundData> {
+function fetchDashboardBackground(): Promise<BackgroundData> {
   return fetch("/api/dashboard")
     .then((r) => r.json())
     .then((d) => ({
       background: d?.background ?? null,
       backgroundLight: d?.backgroundLight ?? null,
       backgroundDark: d?.backgroundDark ?? null,
+    }))
+    .catch(() => ({ background: null, backgroundLight: null, backgroundDark: null }));
+}
+
+function fetchRoomBackground(areaId: string): Promise<BackgroundData> {
+  return fetch(`/api/room-dashboards/${encodeURIComponent(areaId)}`)
+    .then((r) => r.json())
+    .then((d) => ({
+      background: d?.background ?? null,
+      backgroundLight: null,
+      backgroundDark: null,
     }))
     .catch(() => ({ background: null, backgroundLight: null, backgroundDark: null }));
 }
@@ -31,6 +43,7 @@ export function PageBackgroundProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [data, setData] = useState<BackgroundData>({
     background: null,
     backgroundLight: null,
@@ -38,12 +51,33 @@ export function PageBackgroundProvider({
   });
   const resolved = useThemeStore((s) => s.resolved);
 
+  const roomMatch = pathname?.match(/^\/rooms\/([^/]+)$/);
+  const areaId = roomMatch?.[1];
+
   useEffect(() => {
-    fetchBackground().then(setData);
-    const onUpdate = () => fetchBackground().then(setData);
+    async function load() {
+      if (areaId) {
+        const d = await fetchRoomBackground(decodeURIComponent(areaId));
+        setData(d);
+      } else {
+        const d = await fetchDashboardBackground();
+        setData(d);
+      }
+    }
+    load();
+  }, [areaId]);
+
+  useEffect(() => {
+    const onUpdate = () => {
+      if (areaId) {
+        fetchRoomBackground(decodeURIComponent(areaId)).then(setData);
+      } else {
+        fetchDashboardBackground().then(setData);
+      }
+    };
     window.addEventListener("page-background-changed", onUpdate);
     return () => window.removeEventListener("page-background-changed", onUpdate);
-  }, []);
+  }, [areaId]);
 
   const url =
     (resolved === "dark" ? data.backgroundDark : data.backgroundLight) ??

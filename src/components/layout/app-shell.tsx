@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
+    ChevronLeft,
     Cloud,
     CloudFog,
     CloudLightning,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { TopTabs } from "./top-tabs";
 import { Sidebar } from "./sidebar";
 import { FloatingToolbar } from "./floating-toolbar";
+import Link from "next/link";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { usePageBackground } from "@/components/page-background";
 import { useTranslation } from "@/hooks/use-translation";
@@ -58,6 +60,8 @@ type AppShellProps = {
   temperatureEntityId?: string | null;
   /** When true, main content does not scroll (overflow hidden). */
   contentNoScroll?: boolean;
+  /** When set, show a chevron-left back link before the welcome title (e.g. /rooms). */
+  backHref?: string;
   className?: string;
 };
 
@@ -200,6 +204,7 @@ export function AppShell({
   onWelcomeChange,
   temperatureEntityId,
   contentNoScroll = false,
+  backHref,
   className,
 }: AppShellProps) {
   const { t } = useTranslation();
@@ -304,9 +309,19 @@ export function AppShell({
           document.body
         )}
 
-      {hasWelcomeText && (
+      {(hasWelcomeText || backHref) && (
       <div className="shrink-0 flex items-center justify-between gap-4 pl-10 pr-4 py-4">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 flex items-center gap-3">
+          {backHref && (
+            <Link
+              href={backHref}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+              aria-label={t("rooms.back")}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+          )}
+          <div className="min-w-0 flex-1">
           {welcomeEditable && onWelcomeChange ? (
             <div className="space-y-2 max-w-md">
               <input
@@ -344,6 +359,7 @@ export function AppShell({
               </p>
             </>
           ) : null}
+          </div>
         </div>
         {welcomeBarAction != null ? (
           <div className="flex items-center gap-2 shrink-0">

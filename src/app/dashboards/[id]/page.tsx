@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
+import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
@@ -64,6 +64,7 @@ import type { WidgetConfig } from "@/stores/onboarding-store";
 import type { ImageCondition, SensorCondition } from "@/components/widgets";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { OfflinePill } from "@/components/offline-pill";
+import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
@@ -370,6 +371,7 @@ function WidgetByType({
 type HaEntity = { entity_id: string; attributes?: Record<string, unknown> };
 
 export default function DashboardEditPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -474,8 +476,50 @@ export default function DashboardEditPage() {
     title: string;
   } | null>(null);
   const [definitionModalEntities, setDefinitionModalEntities] = useState<HaEntity[]>([]);
+  const [roomBackgroundOpen, setRoomBackgroundOpen] = useState(false);
+  const [uploadingRoomBackground, setUploadingRoomBackground] = useState(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const roomBackgroundInputRef = useRef<HTMLInputElement>(null);
   const LONG_PRESS_MS = 500;
+
+  async function handleRoomBackgroundUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !areaId) return;
+    e.target.value = "";
+    setUploadingRoomBackground(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Upload failed");
+      await fetch(apiBase, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ background: json.url }),
+      });
+      queryClient.invalidateQueries({ queryKey: ["room-dashboard", areaId] });
+      window.dispatchEvent(new Event("page-background-changed"));
+    } finally {
+      setUploadingRoomBackground(false);
+      setRoomBackgroundOpen(false);
+    }
+  }
+
+  async function handleRoomBackgroundRemove() {
+    if (!areaId) return;
+    try {
+      await fetch(apiBase, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ background: null }),
+      });
+      queryClient.invalidateQueries({ queryKey: ["room-dashboard", areaId] });
+      window.dispatchEvent(new Event("page-background-changed"));
+    } finally {
+      setRoomBackgroundOpen(false);
+    }
+  }
 
   function clearLongPressTimer() {
     if (longPressTimerRef.current != null) {
@@ -803,11 +847,56 @@ export default function DashboardEditPage() {
     );
   }
 
+  const roomBackground = (data as { background?: string | null })?.background ?? null;
+
   const headerEndAction = (
     <>
+      {isRoomMode && areaId && (
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setRoomBackgroundOpen((v) => !v)}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+            aria-label="Room background"
+            title="Room background"
+          >
+            <Image className="h-4 w-4" aria-hidden />
+          </button>
+          {roomBackgroundOpen && (
+                <>
+                  <div className="fixed inset-0 z-[299]" aria-hidden onClick={() => setRoomBackgroundOpen(false)} />
+                  <div className="absolute right-0 top-full z-[300] mt-1 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-white/10 dark:bg-gray-900">
+                    <input
+                      ref={roomBackgroundInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleRoomBackgroundUpload}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => roomBackgroundInputRef.current?.click()}
+                      disabled={uploadingRoomBackground}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 disabled:opacity-50"
+                    >
+                      {uploadingRoomBackground ? "Uploading…" : "Upload image"}
+                    </button>
+                    {roomBackground && (
+                      <button
+                        type="button"
+                        onClick={handleRoomBackgroundRemove}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                      >
+                        Remove background
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
       {editMode ? (
         <>
-          <>
             <button
               type="button"
               onClick={() => setAddTileOpen(true)}
@@ -971,19 +1060,18 @@ export default function DashboardEditPage() {
               </>,
               document.body
             )}
+            <div className="relative z-[60]">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saveMutation.isPending}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-white/20"
+                aria-label="Done editing"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+            </div>
           </>
-          <div className="relative z-[60]">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saveMutation.isPending}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-white/20"
-              aria-label="Done editing"
-            >
-              <Check className="h-4 w-4" />
-            </button>
-          </div>
-        </>
       ) : (
         <button
           type="button"
@@ -1004,6 +1092,7 @@ export default function DashboardEditPage() {
     <AppShell
         activeTab={isRoomMode ? "/rooms" : "/dashboards"}
         headerEndAction={headerEndAction}
+        backHref={isRoomMode ? "/rooms" : undefined}
         welcomeTitle={welcomeTitle || undefined}
         welcomeSubtitle={welcomeSubtitle || undefined}
         welcomeEditable={editMode}

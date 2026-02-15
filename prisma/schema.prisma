@@ -42,6 +42,7 @@ model RoomDashboard {
   id             String   @id @default(cuid())
   areaId         String   @unique
   name           String?
+  icon           String?
   layout         String?
   widgets        String?
   background     String?
