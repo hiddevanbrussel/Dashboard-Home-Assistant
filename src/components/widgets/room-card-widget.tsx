@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Lightbulb, Music2, MoreVertical } from "lucide-react";
+import { Lightbulb, Music2, MoreVertical, Thermometer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { CARD_ICONS } from "./card-icons";
@@ -31,6 +31,7 @@ export function RoomCardWidget({
   icon = "Home",
   light_entity_id,
   media_player_entity_id,
+  climate_entity_id,
   background_image,
   icon_background_color,
   width,
@@ -38,13 +39,17 @@ export function RoomCardWidget({
   className,
   embedded,
   onMoreClick,
-}: RoomCardProps & { className?: string; embedded?: boolean; width?: number; height?: number; onMoreClick?: () => void }) {
+  onCardClick,
+}: RoomCardProps & { className?: string; embedded?: boolean; width?: number; height?: number; onMoreClick?: () => void; onCardClick?: () => void }) {
   const entity = useEntityStateStore((s) => (entity_id ? s.getState(entity_id) : null));
   const lightEntity = useEntityStateStore((s) =>
     light_entity_id ? s.getState(light_entity_id) : null
   );
   const mediaEntity = useEntityStateStore((s) =>
     media_player_entity_id ? s.getState(media_player_entity_id) : null
+  );
+  const climateEntity = useEntityStateStore((s) =>
+    climate_entity_id ? s.getState(climate_entity_id) : null
   );
   const setStates = useEntityStateStore((s) => s.setStates);
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
@@ -92,14 +97,25 @@ export function RoomCardWidget({
     ? formatEntityValue(entity?.state, entity?.attributes)
     : null;
 
+  const climateTemp = climateEntity?.attributes?.current_temperature ?? climateEntity?.state;
+  const tempStr =
+    climateTemp != null && !Number.isNaN(Number(climateTemp))
+      ? `${Number(climateTemp).toFixed(1)}°`
+      : null;
+
   return (
     <div
+      role={onCardClick ? "button" : undefined}
+      tabIndex={onCardClick ? 0 : undefined}
+      onClick={onCardClick ? (e) => { if (!(e.target as HTMLElement).closest("button")) onCardClick(); } : undefined}
+      onKeyDown={onCardClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCardClick(); } } : undefined}
       className={cn(
         "relative flex h-full w-full min-h-0 overflow-hidden rounded-2xl",
         embedded
           ? "bg-transparent"
           : "bg-white/10 dark:bg-black/50 shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
         !embedded && !isConfigured && "border-2 border-dashed border-gray-300 dark:border-white/20",
+        onCardClick && "cursor-pointer hover:ring-2 hover:ring-[#4D2FB2]/30 transition-shadow",
         className
       )}
       style={height != null ? { minHeight: height } : undefined}
@@ -162,6 +178,21 @@ export function RoomCardWidget({
             )}
           </div>
           <div className="mt-auto flex shrink-0 items-center gap-2">
+            {climate_entity_id && (
+              <div
+                className={cn(
+                  "flex items-center gap-1 rounded-full h-9 px-2.5 transition-all duration-200",
+                  embedded
+                    ? "bg-gray-300 text-gray-600 dark:bg-white/20 dark:text-white/60"
+                    : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                )}
+                title={tempStr ?? "Klimaat"}
+                aria-hidden
+              >
+                <Thermometer className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                {tempStr && <span className="text-xs font-medium">{tempStr}</span>}
+              </div>
+            )}
             {media_player_entity_id && (
               <div
                 className={cn(

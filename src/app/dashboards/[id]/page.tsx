@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/app-shell";
 import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
+import { CardDefinitionModal } from "@/components/card-definition-modal";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
@@ -159,6 +160,7 @@ function WidgetByType({
   cleaned_area_entity_id,
   light_entity_id,
   media_player_entity_id,
+  climate_entity_id,
   background_image,
   background_image_dark,
   image_conditions,
@@ -186,6 +188,7 @@ function WidgetByType({
   cleaned_area_entity_id?: string;
   light_entity_id?: string;
   media_player_entity_id?: string;
+  climate_entity_id?: string;
   background_image?: string;
   background_image_dark?: string;
   image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
@@ -341,6 +344,7 @@ function WidgetByType({
           icon={icon}
           light_entity_id={light_entity_id}
           media_player_entity_id={media_player_entity_id}
+          climate_entity_id={climate_entity_id}
           background_image={background_image}
         />
       );
@@ -398,6 +402,7 @@ export default function DashboardEditPage() {
     cleaned_area_entity_id?: string;
     light_entity_id?: string;
     media_player_entity_id?: string;
+    climate_entity_id?: string;
     background_image?: string;
     background_image_dark?: string;
     icon_background_color?: string;
@@ -431,6 +436,7 @@ export default function DashboardEditPage() {
     current_entity_id: "",
     light_entity_id: "",
     media_player_entity_id: "",
+    climate_entity_id: "",
     background_image: "",
     background_image_dark: "",
     icon_background_color: "",
@@ -455,6 +461,11 @@ export default function DashboardEditPage() {
   const [pillIconSearch, setPillIconSearch] = useState("");
   const [editTab, setEditTab] = useState<string>("algemeen");
   const [uploadingRoomBg, setUploadingRoomBg] = useState(false);
+  const [clickedCardForDefinition, setClickedCardForDefinition] = useState<{
+    widgetId: string;
+    title: string;
+  } | null>(null);
+  const [definitionModalEntities, setDefinitionModalEntities] = useState<HaEntity[]>([]);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const LONG_PRESS_MS = 500;
 
@@ -524,6 +535,7 @@ export default function DashboardEditPage() {
         cleaned_area_entity_id: editingWidget.cleaned_area_entity_id ?? "",
         light_entity_id: editingWidget.light_entity_id ?? "",
         media_player_entity_id: editingWidget.media_player_entity_id ?? "",
+        climate_entity_id: editingWidget.climate_entity_id ?? "",
         background_image: editingWidget.background_image ?? "",
         background_image_dark: editingWidget.background_image_dark ?? "",
         icon_background_color: editingWidget.icon_background_color ?? "",
@@ -602,6 +614,14 @@ export default function DashboardEditPage() {
       .then((data) => (Array.isArray(data) ? setEntities(data) : setEntities([])))
       .catch(() => setEntities([]));
   }, [editMode]);
+
+  useEffect(() => {
+    if (!clickedCardForDefinition) return;
+    fetch("/api/ha/entities")
+      .then((r) => r.json())
+      .then((data) => (Array.isArray(data) ? setDefinitionModalEntities(data) : setDefinitionModalEntities([])))
+      .catch(() => setDefinitionModalEntities([]));
+  }, [clickedCardForDefinition]);
 
   const requestRefresh = useEntityStateStore((s) => s.requestRefresh);
   useEffect(() => {
@@ -1050,6 +1070,7 @@ export default function DashboardEditPage() {
                       cleaned_area_entity_id={w.cleaned_area_entity_id}
                       light_entity_id={w.light_entity_id}
                       media_player_entity_id={w.media_player_entity_id}
+                      climate_entity_id={w.climate_entity_id}
                       background_image={w.background_image}
                       background_image_dark={w.background_image_dark}
                       image_conditions={w.image_conditions}
@@ -1355,6 +1376,7 @@ export default function DashboardEditPage() {
                 icon: w.icon,
                 light_entity_id: w.light_entity_id,
                 media_player_entity_id: w.media_player_entity_id,
+                climate_entity_id: w.climate_entity_id,
                 background_image: w.background_image,
                 icon_background_color: w.icon_background_color,
                 width: w.width,
@@ -1365,6 +1387,11 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+              onCardClick={
+                !editMode
+                  ? () => setClickedCardForDefinition({ widgetId: w.id, title: w.title ?? "Kamer" })
+                  : undefined
+              }
             />
           ))}
 
@@ -1997,6 +2024,18 @@ export default function DashboardEditPage() {
                             emptyOption="Geen"
                           />
                           <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont een music-icoon wanneer er iets wordt afgespeeld.</p>
+                        </div>
+                        <div>
+                          <EntitySelectWithSearch
+                            entities={entities}
+                            value={editForm.climate_entity_id ?? ""}
+                            onChange={(v) => setEditForm((prev) => ({ ...prev, climate_entity_id: v || undefined }))}
+                            filter={(e) => e.entity_id.startsWith("climate.") || e.entity_id.startsWith("sensor.")}
+                            label="Klimaat"
+                            placeholder="Zoek klimaat of temperatuursensor…"
+                            emptyOption="Geen"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont temperatuur met thermometer-icoon.</p>
                         </div>
                       </div>
                     )}
@@ -3880,6 +3919,7 @@ export default function DashboardEditPage() {
                           entity_id: editForm.entity_id || undefined,
                           light_entity_id: editForm.light_entity_id || undefined,
                           media_player_entity_id: editForm.media_player_entity_id || undefined,
+                          climate_entity_id: editForm.climate_entity_id || undefined,
                           background_image: editForm.background_image || undefined,
                           icon_background_color: editForm.icon_background_color || undefined,
                           width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
@@ -3909,6 +3949,48 @@ export default function DashboardEditPage() {
           </>,
           document.body
         )}
+
+        {clickedCardForDefinition &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <CardDefinitionModal
+              title={clickedCardForDefinition.title}
+              definition={{
+                light_entity_id:
+                  widgets.find((x) => x.id === clickedCardForDefinition.widgetId)?.light_entity_id,
+                media_player_entity_id:
+                  widgets.find((x) => x.id === clickedCardForDefinition.widgetId)
+                    ?.media_player_entity_id,
+                climate_entity_id:
+                  widgets.find((x) => x.id === clickedCardForDefinition.widgetId)
+                    ?.climate_entity_id,
+              }}
+              entities={definitionModalEntities}
+              onClose={() => setClickedCardForDefinition(null)}
+              onSave={(def) => {
+                const wid = widgets.find((w) => w.id === clickedCardForDefinition.widgetId);
+                if (!wid || wid.type !== "room_card") return;
+                const next = widgets.map((w) =>
+                  w.id === clickedCardForDefinition.widgetId
+                    ? {
+                        ...w,
+                        light_entity_id: def.light_entity_id,
+                        media_player_entity_id: def.media_player_entity_id,
+                        climate_entity_id: def.climate_entity_id,
+                      }
+                    : w
+                );
+                setWidgets(next);
+                saveMutation.mutate({
+                  layout,
+                  widgets: next,
+                  welcomeTitle,
+                  welcomeSubtitle,
+                });
+              }}
+            />,
+            document.body
+          )}
       </div>
     </AppShell>
   );

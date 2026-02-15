@@ -69,6 +69,7 @@ export type RoomCardWidgetItem = {
   icon?: string;
   light_entity_id?: string;
   media_player_entity_id?: string;
+  climate_entity_id?: string;
   background_image?: string;
   icon_background_color?: string;
   width?: number;
@@ -85,6 +86,7 @@ export function FloatingRoomCard({
   onRemove,
   onEdit,
   onEnterEditMode,
+  onCardClick,
 }: {
   widget: RoomCardWidgetItem;
   widgetIndex?: number;
@@ -92,6 +94,7 @@ export function FloatingRoomCard({
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
+  onCardClick?: () => void;
 }) {
   const totalWidth = clampWidth(widget.width);
   const totalHeight = clampHeight(widget.height);
@@ -248,12 +251,14 @@ export function FloatingRoomCard({
           icon={widget.icon}
           light_entity_id={widget.light_entity_id}
           media_player_entity_id={widget.media_player_entity_id}
+          climate_entity_id={widget.climate_entity_id}
           background_image={widget.background_image}
           icon_background_color={widget.icon_background_color}
           width={totalWidth}
           height={totalHeight}
           embedded
           onMoreClick={editMode ? onEdit : undefined}
+          onCardClick={!editMode ? onCardClick : undefined}
         />
       </div>
     </div>

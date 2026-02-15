@@ -197,6 +197,8 @@ export type RoomCardProps = WidgetBaseProps & {
   light_entity_id?: string;
   /** Entity voor mediaplayer; toont music-icoon wanneer er iets wordt afgespeeld. */
   media_player_entity_id?: string;
+  /** Entity voor klimaat; toont temperatuur/thermometer-icoon. */
+  climate_entity_id?: string;
   /** Optionele achtergrondafbeelding voor de kaart (URL). */
   background_image?: string;
   /** Achtergrondkleur van het icoon-badge (hex, bijv. #3B82F6). */
