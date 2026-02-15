@@ -87,6 +87,10 @@ export type WidgetConfig = {
   refresh?: number;
   /** Camera card: toon titelbalk (default true). */
   show_title?: boolean;
+  /** Power usage card: entity IDs voor per-apparaat verbruik (bijv. sensor.tv_energy, sensor.fridge_energy). */
+  device_entity_ids?: string[];
+  /** Power usage card: kosten per kWh (bijv. 0.25) voor berekening expense. */
+  cost_per_kwh?: number;
 };
 
 export type TemplateId = "overview" | "rooms" | "energy";

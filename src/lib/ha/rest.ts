@@ -93,6 +93,37 @@ export async function getAreas(config: HaRestConfig): Promise<HaArea[]> {
   return list.map((a) => ({ area_id: a.area_id, name: a.name }));
 }
 
+export type HaHistoryState = {
+  entity_id: string;
+  state: string;
+  last_changed: string;
+  last_updated?: string;
+  attributes?: Record<string, unknown>;
+};
+
+/**
+ * Fetch history for entities. Returns array of state arrays (one per entity).
+ * GET /api/history/period?filter_entity_id=...&start_time=...&end_time=...
+ */
+export async function getHistory(
+  config: HaRestConfig,
+  entityIds: string[],
+  startTime: string,
+  endTime?: string
+): Promise<HaHistoryState[][]> {
+  const params = new URLSearchParams();
+  params.set("filter_entity_id", entityIds.join(","));
+  params.set("minimal_response", "1");
+  params.set("end_time", endTime ?? new Date().toISOString());
+  const path = `/api/history/period/${encodeURIComponent(startTime)}?${params.toString()}`;
+  const res = await haFetch(config.baseUrl, config.token, path);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch history: ${res.status}`);
+  }
+  const data = (await res.json()) as HaHistoryState[][];
+  return Array.isArray(data) ? data : [];
+}
+
 /**
  * Call a Home Assistant service (e.g. light.toggle).
  */

@@ -179,6 +179,16 @@ export type NutsCardProps = WidgetBaseProps & {
   height?: number;
 };
 
+/** Power usage card: dagelijks verbruik, bar chart, per-apparaat breakdown. */
+export type PowerUsageCardProps = WidgetBaseProps & {
+  /** Hoofdentity voor totaal verbruik (kWh, cumulative). */
+  entity_id: string;
+  /** Entity IDs voor per-apparaat verbruik. */
+  device_entity_ids?: string[];
+  /** Kosten per kWh voor expense weergave. */
+  cost_per_kwh?: number;
+};
+
 /** Room card: kamer met icoon, naam, entity-waarde en lichtstatus. */
 export type RoomCardProps = WidgetBaseProps & {
   /** Optioneel icoon (Lucide-naam uit card-icons). */

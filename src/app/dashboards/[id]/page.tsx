@@ -8,7 +8,7 @@ import { createPortal } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, Video, X } from "lucide-react";
+import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
@@ -50,6 +50,8 @@ import {
   FloatingNutsCard,
   EnergyMonitorCardWidget,
   FloatingEnergyMonitorCard,
+  PowerUsageCardWidget,
+  FloatingPowerUsageCard,
   StatPillCardWidget,
   FloatingStatPillCard,
   CameraCardWidget,
@@ -63,7 +65,7 @@ import { OfflinePill } from "@/components/offline-pill";
 import { cn, generateId } from "@/lib/utils";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["title_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group"] as const;
+const ADDABLE_WIDGET_TYPES = ["title_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "title_card", label: "Titel", Icon: Type },
@@ -72,6 +74,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "media_card", label: "Media", Icon: Music2 },
   { type: "solar_card", label: "Zonnepanelen", Icon: Sun },
   { type: "energy_monitor_card", label: "Afbeeldingskaart", Icon: Sun },
+  { type: "power_usage_card", label: "Stroomverbruik", Icon: Zap },
   { type: "stat_pill_card", label: "Stat pill", Icon: CircleDot },
   { type: "sensor_card", label: "Sensor", Icon: Gauge },
   { type: "weather_card", label: "Weer", Icon: CloudSun },
@@ -98,6 +101,7 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   media_card: "media_player",
   solar_card: "sensor",
   energy_monitor_card: "sensor",
+  power_usage_card: "sensor",
   stat_pill_card: "sensor",
   sensor_card: "sensor",
   weather_card: "weather",
@@ -188,6 +192,9 @@ function WidgetByType({
   minimal?: boolean;
   label?: string;
   color?: string;
+  device_entity_ids?: string[];
+  cost_per_kwh?: number;
+  onMoreClick?: () => void;
 }) {
   const sizeProp = (size as "sm" | "md" | "lg") ?? "md";
   const live = useEntityStateStore((s) => s.getState(entity_id));
@@ -265,6 +272,16 @@ function WidgetByType({
           image_conditions={image_conditions as ImageCondition[] | undefined}
           minimal={minimal}
           size={sizeProp}
+        />
+      );
+    case "power_usage_card":
+      return (
+        <PowerUsageCardWidget
+          title={title}
+          entity_id={entity_id}
+          device_entity_ids={device_entity_ids}
+          cost_per_kwh={cost_per_kwh}
+          onMoreClick={onMoreClick}
         />
       );
     case "stat_pill_card":
@@ -391,6 +408,8 @@ export default function DashboardEditPage() {
     color?: string;
     refresh?: number;
     show_title?: boolean;
+    device_entity_ids?: string[];
+    cost_per_kwh?: number;
   }>({
     title: "",
     entity_id: "",
@@ -419,6 +438,8 @@ export default function DashboardEditPage() {
     color: "amber",
     refresh: 10,
     show_title: true,
+    device_entity_ids: [],
+    cost_per_kwh: undefined as number | undefined,
   });
   const [iconSearch, setIconSearch] = useState("");
   const [vacuumIconSearch, setVacuumIconSearch] = useState("");
@@ -512,6 +533,8 @@ export default function DashboardEditPage() {
         color: editingWidget.color ?? "amber",
         refresh: editingWidget.refresh ?? 10,
         show_title: editingWidget.show_title !== false,
+        device_entity_ids: editingWidget.device_entity_ids ?? [],
+        cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
       });
       setIconSearch("");
       setVacuumIconSearch(editingWidget.type === "vacuum_card" ? (editingWidget.icon ?? "") : "");
@@ -519,7 +542,7 @@ export default function DashboardEditPage() {
       setPillIconSearch(editingWidget.type === "pill_card" ? (editingWidget.icon ?? "") : "");
       setGroupAddEntitySearch("");
       setEditEntitySearch("");
-      if (editingWidget.type === "title_card" || editingWidget.type === "light_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card") {
+      if (editingWidget.type === "title_card" || editingWidget.type === "light_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card") {
         setEditTab("algemeen");
       }
       if (editingWidget.type === "energy_monitor_card") {
@@ -612,7 +635,7 @@ export default function DashboardEditPage() {
     setLayout((prev) => {
       const floatingItems = prev.filter((item) => {
         const type = widgets.find((w) => w.id === item.i)?.type;
-        return type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group";
+        return type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "power_usage_card" || type === "card_group";
       });
       return [...newLayout, ...floatingItems];
     });
@@ -620,7 +643,7 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "camera_card" && type !== "title_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group";
+    return type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "camera_card" && type !== "title_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
@@ -651,7 +674,7 @@ export default function DashboardEditPage() {
     };
     const newWidgets = [...widgets, newWidget];
     const newLayout =
-      type === "solar_card" || type === "energy_monitor_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "camera_card" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group"
+      type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "camera_card" || type === "title_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group"
         ? layout
         : [...layout, newLayoutItem];
     setWidgets(newWidgets);
@@ -660,7 +683,7 @@ export default function DashboardEditPage() {
     setAddTileStep("type");
     setAddTileSelectedType(null);
     saveMutation.mutate({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
-    return type === "room_card" || type === "nuts_card" || type === "energy_monitor_card" || type === "stat_pill_card" ? newId : undefined;
+    return type === "room_card" || type === "nuts_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "stat_pill_card" ? newId : undefined;
   }
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
@@ -812,6 +835,12 @@ export default function DashboardEditPage() {
                               setAddTileOpen(false);
                               return;
                             }
+                            if (type === "power_usage_card") {
+                              const newId = handleAddTile("power_usage_card", "", "Stroomverbruik");
+                              if (newId) setEditingWidgetId(newId);
+                              setAddTileOpen(false);
+                              return;
+                            }
                             setAddTileSelectedType(type);
                             setAddTileStep("entity");
                           }}
@@ -875,7 +904,7 @@ export default function DashboardEditPage() {
                                 onClick={() => {
                                   if (addTileSelectedType) {
                                     const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                                    const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "stat_pill_card" ? (name || "Stat") : undefined;
+                                    const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "power_usage_card" ? (name || "Stroomverbruik") : addTileSelectedType === "stat_pill_card" ? (name || "Stat") : undefined;
                                     const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride);
                                     if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card") && newId) setEditingWidgetId(newId);
                                   }
@@ -961,7 +990,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "camera_card" && w.type !== "title_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group")
+            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "camera_card" && w.type !== "title_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -1022,6 +1051,9 @@ export default function DashboardEditPage() {
                       minimal={w.minimal}
                       label={w.label}
                       color={w.color}
+                      device_entity_ids={w.device_entity_ids}
+                      cost_per_kwh={w.cost_per_kwh}
+                      onMoreClick={editMode ? () => setEditingWidgetId(w.id) : undefined}
                     />
                   </div>
                 </div>
@@ -1142,6 +1174,30 @@ export default function DashboardEditPage() {
               onRemove={
                 editMode
                   ? () => handleRemoveTile(firstEnergyMonitor.id)
+                  : undefined
+              }
+            />
+          ) : null;
+        })()}
+
+        {(() => {
+          const firstPowerUsage = widgets.find((w) => w.type === "power_usage_card");
+          return firstPowerUsage ? (
+            <FloatingPowerUsageCard
+              title={firstPowerUsage.title ?? "Stroomverbruik"}
+              entity_id={firstPowerUsage.entity_id}
+              device_entity_ids={firstPowerUsage.device_entity_ids}
+              cost_per_kwh={firstPowerUsage.cost_per_kwh}
+              editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={
+                editMode
+                  ? () => setEditingWidgetId(firstPowerUsage.id)
+                  : undefined
+              }
+              onRemove={
+                editMode
+                  ? () => handleRemoveTile(firstPowerUsage.id)
                   : undefined
               }
             />
@@ -1405,7 +1461,9 @@ export default function DashboardEditPage() {
                       : "Kaartgroep bewerken"
                     : editingWidget.type === "room_card"
                       ? "Kamer bewerken"
-                      : "Edit tile"}
+                      : editingWidget.type === "power_usage_card"
+                        ? "Stroomverbruik bewerken"
+                        : "Edit tile"}
               </h3>
               <div className="space-y-3 overflow-y-auto min-h-0 flex-1 pr-1 -mr-1">
                 {editingWidget.type === "title_card" ? (
@@ -1777,13 +1835,15 @@ export default function DashboardEditPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                   />
                 </div>
-                {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card") && editingWidget.type !== "title_card" && (
+                {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card" || editingWidget.type === "power_usage_card") && editingWidget.type !== "title_card" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       {editingWidget.type === "solar_card"
                         ? "Yield (opbrengst)"
                         : editingWidget.type === "energy_monitor_card"
                           ? "Entity voor voorwaarden (bijv. weather.home)"
+                          : editingWidget.type === "power_usage_card"
+                            ? "Totaal verbruik (kWh, cumulative sensor)"
                           : editingWidget.type === "stat_pill_card"
                             ? "Sensor"
                             : "Entity"}
@@ -2457,6 +2517,69 @@ export default function DashboardEditPage() {
                       </button>
                     </div>
                     )}
+                  </>
+                )}
+                {editingWidget.type === "power_usage_card" && (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Apparaten (per-apparaat verbruik)
+                      </label>
+                      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                        Selecteer energie-sensoren voor een breakdown per apparaat. Bijv. sensor.tv_energy, sensor.fridge_energy.
+                      </p>
+                      <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 p-2 space-y-1">
+                        {entities
+                          .filter((e) => e.entity_id.startsWith("sensor."))
+                          .map((e) => {
+                            const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                            const checked = (editForm.device_entity_ids ?? []).includes(e.entity_id);
+                            return (
+                              <label
+                                key={e.entity_id}
+                                className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => {
+                                    const ids = editForm.device_entity_ids ?? [];
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      device_entity_ids: checked
+                                        ? ids.filter((id) => id !== e.entity_id)
+                                        : [...ids, e.entity_id],
+                                    }));
+                                  }}
+                                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-[#4D2FB2] focus:ring-[#4D2FB2]"
+                                />
+                                <span className="text-sm truncate" title={e.entity_id}>{name}</span>
+                              </label>
+                            );
+                          })}
+                        {entities.filter((e) => e.entity_id.startsWith("sensor.")).length === 0 && (
+                          <p className="text-xs text-gray-500 py-2">Geen sensoren gevonden.</p>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Kosten per kWh (€)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.001}
+                        value={editForm.cost_per_kwh ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
+                          setEditForm((prev) => ({ ...prev, cost_per_kwh: v != null && !Number.isNaN(v) ? v : undefined }));
+                        }}
+                        placeholder="0.25"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Optioneel. Voor berekening kosten vandaag.</p>
+                    </div>
                   </>
                 )}
                 {editingWidget.type === "stat_pill_card" && (
@@ -3755,7 +3878,7 @@ export default function DashboardEditPage() {
                     onClick={() => {
                       const updates = {
                         title: editForm.title,
-                        ...(editingWidget.entity_id != null && editingWidget.type !== "energy_monitor_card" && {
+                        ...(editingWidget.entity_id != null && editingWidget.type !== "energy_monitor_card" && editingWidget.type !== "power_usage_card" && {
                           entity_id: editForm.entity_id,
                         }),
                         ...(editingWidget.type === "solar_card" && {
@@ -3770,6 +3893,11 @@ export default function DashboardEditPage() {
                             : undefined,
                           minimal: editForm.minimal ?? false,
                           scale: editForm.scale ?? 1,
+                        }),
+                        ...(editingWidget.type === "power_usage_card" && {
+                          entity_id: editForm.entity_id || undefined,
+                          device_entity_ids: (editForm.device_entity_ids ?? []).length > 0 ? editForm.device_entity_ids : undefined,
+                          cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined,
                         }),
                         ...(editingWidget.type === "stat_pill_card" && {
                           label: editForm.label || undefined,
