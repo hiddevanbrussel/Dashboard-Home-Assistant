@@ -157,6 +157,7 @@ function WidgetByType({
   script_names,
   cleaned_area_entity_id,
   light_entity_id,
+  media_player_entity_id,
   background_image,
   background_image_dark,
   image_conditions,
@@ -183,6 +184,7 @@ function WidgetByType({
   script_names?: Record<string, string>;
   cleaned_area_entity_id?: string;
   light_entity_id?: string;
+  media_player_entity_id?: string;
   background_image?: string;
   background_image_dark?: string;
   image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
@@ -337,6 +339,7 @@ function WidgetByType({
           entity_id={entity_id}
           icon={icon}
           light_entity_id={light_entity_id}
+          media_player_entity_id={media_player_entity_id}
           background_image={background_image}
         />
       );
@@ -394,6 +397,7 @@ export default function DashboardEditPage() {
     script_names?: Record<string, string>;
     cleaned_area_entity_id?: string;
     light_entity_id?: string;
+    media_player_entity_id?: string;
     background_image?: string;
     background_image_dark?: string;
     icon_background_color?: string;
@@ -426,6 +430,7 @@ export default function DashboardEditPage() {
     cleaned_area_entity_id: "",
     current_entity_id: "",
     light_entity_id: "",
+    media_player_entity_id: "",
     background_image: "",
     background_image_dark: "",
     icon_background_color: "",
@@ -518,6 +523,7 @@ export default function DashboardEditPage() {
         script_names: editingWidget.script_names ?? {},
         cleaned_area_entity_id: editingWidget.cleaned_area_entity_id ?? "",
         light_entity_id: editingWidget.light_entity_id ?? "",
+        media_player_entity_id: editingWidget.media_player_entity_id ?? "",
         background_image: editingWidget.background_image ?? "",
         background_image_dark: editingWidget.background_image_dark ?? "",
         icon_background_color: editingWidget.icon_background_color ?? "",
@@ -546,7 +552,7 @@ export default function DashboardEditPage() {
       setGroupAddEntitySearch("");
       setEditEntitySearch("");
       if (editingWidget.type === "title_card" || editingWidget.type === "light_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card") {
-        setEditTab("algemeen");
+        setEditTab(editingWidget.type === "room_card" ? "entiteiten" : "algemeen");
       }
       if (editingWidget.type === "energy_monitor_card") {
         setEditTab("achtergrond");
@@ -791,7 +797,7 @@ export default function DashboardEditPage() {
                     setAddTileEntitySearch("");
                   }}
                 />
-                <div className="fixed inset-y-0 right-0 z-[301] w-full max-w-md animate-slide-in-right flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-white/10 shadow-2xl">
+                <div className="fixed top-4 right-4 bottom-4 z-[301] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-2xl">
                   <div className="shrink-0 flex items-center justify-between p-5 pb-0">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {addTileStep === "type" ? "Kaart toevoegen" : "Kies entity"}
@@ -810,7 +816,7 @@ export default function DashboardEditPage() {
                       <X className="h-5 w-5" />
                     </button>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-5 pt-4">
+                  <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4">
                   {addTileStep === "type" ? (
                     <div className="grid grid-cols-3 gap-2">
                       {ADDABLE_WIDGET_TILES.map(({ type, label, Icon }) => (
@@ -858,7 +864,7 @@ export default function DashboardEditPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="flex flex-col max-h-[60vh]">
+                    <div className="flex flex-col">
                       <button
                         type="button"
                         onClick={() => {
@@ -878,7 +884,7 @@ export default function DashboardEditPage() {
                         className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         autoFocus
                       />
-                      <div className="overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5 max-h-[50vh]">
+                      <div className="overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
                         {(() => {
                           const q = addTileEntitySearch.trim().toLowerCase();
                           const filtered = q
@@ -1044,6 +1050,7 @@ export default function DashboardEditPage() {
                       script_names={w.script_names}
                       cleaned_area_entity_id={w.cleaned_area_entity_id}
                       light_entity_id={w.light_entity_id}
+                      media_player_entity_id={w.media_player_entity_id}
                       background_image={w.background_image}
                       background_image_dark={w.background_image_dark}
                       image_conditions={w.image_conditions}
@@ -1348,6 +1355,7 @@ export default function DashboardEditPage() {
                 entity_id: w.entity_id,
                 icon: w.icon,
                 light_entity_id: w.light_entity_id,
+                media_player_entity_id: w.media_player_entity_id,
                 background_image: w.background_image,
                 icon_background_color: w.icon_background_color,
                 width: w.width,
@@ -1454,7 +1462,7 @@ export default function DashboardEditPage() {
               }}
             />
             <div className={cn(
-              "fixed inset-y-0 right-0 z-50 w-full max-w-md animate-slide-in-right flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-white/10 shadow-2xl",
+              "fixed top-4 right-4 bottom-4 z-50 w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-2xl",
               editingWidget.type === "room_card" && "max-w-lg"
             )}>
               <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
@@ -1486,7 +1494,7 @@ export default function DashboardEditPage() {
                 <X className="h-5 w-5" />
               </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-5 pt-4 space-y-3 min-h-0">
+              <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-3">
                 {editingWidget.type === "title_card" ? (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
@@ -1856,7 +1864,7 @@ export default function DashboardEditPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                   />
                 </div>
-                {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card" || editingWidget.type === "power_usage_card") && editingWidget.type !== "title_card" && (
+                {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card" || editingWidget.type === "power_usage_card") && editingWidget.type !== "title_card" && editingWidget.type !== "room_card" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       {editingWidget.type === "solar_card"
@@ -1997,7 +2005,7 @@ export default function DashboardEditPage() {
                 {editingWidget.type === "room_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
-                      {(["algemeen", "achtergrond", "weergave"] as const).map((tab) => (
+                      {(["entiteiten", "algemeen", "achtergrond", "weergave"] as const).map((tab) => (
                         <button
                           key={tab}
                           type="button"
@@ -2009,10 +2017,63 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "algemeen" ? "Algemeen" : tab === "achtergrond" ? "Achtergrond" : "Weergave"}
+                          {tab === "entiteiten" ? "Entiteiten" : tab === "algemeen" ? "Algemeen" : tab === "achtergrond" ? "Achtergrond" : "Weergave"}
                         </button>
                       ))}
                     </div>
+                    {editTab === "entiteiten" && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Sensor (waardeweergave)</label>
+                          <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">Optioneel. Toont de actuele waarde van de sensor op de kaart.</p>
+                          <select
+                            value={editForm.entity_id ?? ""}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, entity_id: e.target.value || "" }))}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          >
+                            <option value="">Geen</option>
+                            {entities.map((e) => {
+                              const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                              return <option key={e.entity_id} value={e.entity_id}>{name}</option>;
+                            })}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Licht</label>
+                          <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">Toont een lamp-icoon om het licht aan/uit te zetten.</p>
+                          <select
+                            value={editForm.light_entity_id ?? ""}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, light_entity_id: e.target.value || undefined }))}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          >
+                            <option value="">Geen</option>
+                            {entities
+                              .filter((e) => e.entity_id.startsWith("light.") || e.entity_id.startsWith("group."))
+                              .map((e) => {
+                                const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                                return <option key={e.entity_id} value={e.entity_id}>{name}</option>;
+                              })}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Mediaplayer</label>
+                          <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">Toont een music-icoon wanneer er iets wordt afgespeeld.</p>
+                          <select
+                            value={editForm.media_player_entity_id ?? ""}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, media_player_entity_id: e.target.value || undefined }))}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          >
+                            <option value="">Geen</option>
+                            {entities
+                              .filter((e) => e.entity_id.startsWith("media_player."))
+                              .map((e) => {
+                                const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                                return <option key={e.entity_id} value={e.entity_id}>{name}</option>;
+                              })}
+                          </select>
+                        </div>
+                      </div>
+                    )}
                     {editTab === "algemeen" && (
                       <div className="space-y-3">
                         <div>
@@ -2043,22 +2104,6 @@ export default function DashboardEditPage() {
                               </button>
                             ))}
                           </div>
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Licht-entiteit (optioneel)</label>
-                          <select
-                            value={editForm.light_entity_id ?? ""}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, light_entity_id: e.target.value || undefined }))}
-                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                          >
-                            <option value="">Geen</option>
-                            {entities
-                              .filter((e) => e.entity_id.startsWith("light.") || e.entity_id.startsWith("group."))
-                              .map((e) => {
-                                const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                                return <option key={e.entity_id} value={e.entity_id}>{name}</option>;
-                              })}
-                          </select>
                         </div>
                         <div>
                           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Kleur icoon-badge</label>
@@ -3748,7 +3793,7 @@ export default function DashboardEditPage() {
                 )
               }
               </div>
-                <div className="shrink-0 flex justify-between gap-2 p-5 pt-4 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900">
+                <div className="shrink-0 flex justify-between gap-2 p-5 pt-4 pb-6 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900">
                   {editingWidget.type === "card_group" && editingGroupChildId ? (
                     <>
                       <button
@@ -3975,7 +4020,9 @@ export default function DashboardEditPage() {
                         }),
                         ...(editingWidget.type === "room_card" && {
                           icon: editForm.icon || undefined,
+                          entity_id: editForm.entity_id || undefined,
                           light_entity_id: editForm.light_entity_id || undefined,
+                          media_player_entity_id: editForm.media_player_entity_id || undefined,
                           background_image: editForm.background_image || undefined,
                           icon_background_color: editForm.icon_background_color || undefined,
                           width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,

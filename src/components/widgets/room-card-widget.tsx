@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Lightbulb, MoreVertical } from "lucide-react";
+import { Lightbulb, Music2, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { CARD_ICONS } from "./card-icons";
@@ -30,6 +30,7 @@ export function RoomCardWidget({
   entity_id,
   icon = "Home",
   light_entity_id,
+  media_player_entity_id,
   background_image,
   icon_background_color,
   width,
@@ -42,11 +43,15 @@ export function RoomCardWidget({
   const lightEntity = useEntityStateStore((s) =>
     light_entity_id ? s.getState(light_entity_id) : null
   );
+  const mediaEntity = useEntityStateStore((s) =>
+    media_player_entity_id ? s.getState(media_player_entity_id) : null
+  );
   const setStates = useEntityStateStore((s) => s.setStates);
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
 
   const [loading, setLoading] = useState(false);
   const isLightOn = lightEntity?.state === "on";
+  const isMediaPlaying = mediaEntity && (mediaEntity.state === "playing" || mediaEntity.state === "paused");
 
   const refreshState = useCallback(async () => {
     const res = await fetch("/api/ha/state").then((r) => r.json());
@@ -139,7 +144,7 @@ export function RoomCardWidget({
                 "text-xs truncate w-full mt-0.5",
                 background_image ? "text-white/90" : embedded ? "text-gray-600 dark:text-white/70" : "text-gray-500 dark:text-gray-400"
               )}>
-                {isConfigured ? entityValue : (!light_entity_id ? "Kies entiteiten in bewerken" : null)}
+                {isConfigured ? entityValue : (!entity_id && !light_entity_id && !media_player_entity_id ? "Kies entiteiten in bewerken" : null)}
               </p>
             </div>
             {onMoreClick && (
@@ -156,31 +161,56 @@ export function RoomCardWidget({
               </button>
             )}
           </div>
-          {light_entity_id && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); toggleLight(); }}
-              disabled={loading}
-              className={cn(
-                "mt-auto flex shrink-0 items-center justify-center rounded-full h-9 w-9 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 disabled:opacity-70",
-                embedded
-                  ? isLightOn
-                    ? "bg-[#FFD41D] text-white"
-                    : "bg-gray-300 text-gray-600 dark:bg-white/20 dark:text-white/60"
-                  : isLightOn
-                    ? "bg-[#FFD41D] text-white shadow-sm"
-                    : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
-              )}
-              aria-label={isLightOn ? "Lamp uitzetten" : "Lamp aanzetten"}
-            >
-              <Lightbulb
-                className="h-5 w-5 shrink-0"
-                strokeWidth={1.5}
-                fill={isLightOn ? "currentColor" : "none"}
+          <div className="mt-auto flex shrink-0 items-center gap-2">
+            {media_player_entity_id && (
+              <div
+                className={cn(
+                  "flex items-center justify-center rounded-full h-9 w-9 transition-all duration-200",
+                  isMediaPlaying
+                    ? embedded
+                      ? "bg-[#4D2FB2] text-white"
+                      : "bg-[#4D2FB2] text-white shadow-sm"
+                    : embedded
+                      ? "bg-gray-300 text-gray-600 dark:bg-white/20 dark:text-white/60"
+                      : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                )}
                 aria-hidden
-              />
-            </button>
-          )}
+                title={isMediaPlaying ? "Media speelt af" : "Geen media"}
+              >
+                <Music2
+                  className="h-5 w-5 shrink-0"
+                  strokeWidth={1.5}
+                  fill={isMediaPlaying ? "currentColor" : "none"}
+                  aria-hidden
+                />
+              </div>
+            )}
+            {light_entity_id && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleLight(); }}
+                disabled={loading}
+                className={cn(
+                  "flex shrink-0 items-center justify-center rounded-full h-9 w-9 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 disabled:opacity-70",
+                  embedded
+                    ? isLightOn
+                      ? "bg-[#FFD41D] text-white"
+                      : "bg-gray-300 text-gray-600 dark:bg-white/20 dark:text-white/60"
+                    : isLightOn
+                      ? "bg-[#FFD41D] text-white shadow-sm"
+                      : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                )}
+                aria-label={isLightOn ? "Lamp uitzetten" : "Lamp aanzetten"}
+              >
+                <Lightbulb
+                  className="h-5 w-5 shrink-0"
+                  strokeWidth={1.5}
+                  fill={isLightOn ? "currentColor" : "none"}
+                  aria-hidden
+                />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

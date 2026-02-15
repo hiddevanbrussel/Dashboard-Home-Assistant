@@ -189,12 +189,14 @@ export type PowerUsageCardProps = WidgetBaseProps & {
   cost_per_kwh?: number;
 };
 
-/** Room card: kamer met icoon, naam, entity-waarde en lichtstatus. */
+/** Room card: kamer met icoon, naam, entity-waarde, lichtstatus en optionele mediaplayer. */
 export type RoomCardProps = WidgetBaseProps & {
   /** Optioneel icoon (Lucide-naam uit card-icons). */
   icon?: string;
   /** Entity voor lichtstatus (bijv. light.badkamer of group.badkamer_lights). */
   light_entity_id?: string;
+  /** Entity voor mediaplayer; toont music-icoon wanneer er iets wordt afgespeeld. */
+  media_player_entity_id?: string;
   /** Optionele achtergrondafbeelding voor de kaart (URL). */
   background_image?: string;
   /** Achtergrondkleur van het icoon-badge (hex, bijv. #3B82F6). */

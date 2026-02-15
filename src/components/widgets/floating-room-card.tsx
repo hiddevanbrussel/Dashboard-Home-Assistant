@@ -68,6 +68,7 @@ export type RoomCardWidgetItem = {
   entity_id: string;
   icon?: string;
   light_entity_id?: string;
+  media_player_entity_id?: string;
   background_image?: string;
   icon_background_color?: string;
   width?: number;
@@ -246,6 +247,7 @@ export function FloatingRoomCard({
           entity_id={widget.entity_id}
           icon={widget.icon}
           light_entity_id={widget.light_entity_id}
+          media_player_entity_id={widget.media_player_entity_id}
           background_image={widget.background_image}
           icon_background_color={widget.icon_background_color}
           width={totalWidth}

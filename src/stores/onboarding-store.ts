@@ -55,6 +55,8 @@ export type WidgetConfig = {
   children?: WidgetConfig[];
   /** Room card: entity_id voor lichtstatus (bijv. light.groep). */
   light_entity_id?: string;
+  /** Room card: entity_id voor mediaplayer (bijv. media_player.woonkamer). */
+  media_player_entity_id?: string;
   /** Room card: optionele achtergrondafbeelding (URL). */
   background_image?: string;
   /** Afbeeldingskaart: achtergrond voor dark mode. */
