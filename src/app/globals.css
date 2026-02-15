@@ -44,6 +44,22 @@
   }
 }
 
+/* Side panel modal slide-in animatie */
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-from-right 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
 /* Verberg scrollbalk maar behoud scroll (o.a. climate card temperatuurrij) */
 .scrollbar-hide {
   -ms-overflow-style: none;

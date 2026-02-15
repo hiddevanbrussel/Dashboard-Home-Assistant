@@ -782,7 +782,7 @@ export default function DashboardEditPage() {
             {addTileOpen && typeof document !== "undefined" && createPortal(
               <>
                 <div
-                  className="fixed inset-0 z-[300] bg-black/50 backdrop-blur-xl"
+                  className="fixed inset-0 z-[300] bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                   aria-hidden
                   onClick={() => {
                     setAddTileOpen(false);
@@ -791,8 +791,8 @@ export default function DashboardEditPage() {
                     setAddTileEntitySearch("");
                   }}
                 />
-                <div className="fixed left-1/2 top-1/2 z-[301] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="fixed inset-y-0 right-0 z-[301] w-full max-w-md animate-slide-in-right flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-white/10 shadow-2xl">
+                  <div className="shrink-0 flex items-center justify-between p-5 pb-0">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {addTileStep === "type" ? "Kaart toevoegen" : "Kies entity"}
                     </h3>
@@ -810,6 +810,7 @@ export default function DashboardEditPage() {
                       <X className="h-5 w-5" />
                     </button>
                   </div>
+                  <div className="flex-1 overflow-y-auto p-5 pt-4">
                   {addTileStep === "type" ? (
                     <div className="grid grid-cols-3 gap-2">
                       {ADDABLE_WIDGET_TILES.map(({ type, label, Icon }) => (
@@ -927,6 +928,7 @@ export default function DashboardEditPage() {
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               </>,
               document.body
@@ -1441,7 +1443,7 @@ export default function DashboardEditPage() {
         {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
           <>
             <div
-              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xl"
+              className="fixed inset-0 z-40 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
               aria-hidden
               onClick={() => {
                 if (editingWidget?.type === "card_group" && editingGroupChildId) {
@@ -1452,10 +1454,11 @@ export default function DashboardEditPage() {
               }}
             />
             <div className={cn(
-              "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl max-h-[90vh] flex flex-col",
-              editingWidget.type === "room_card" ? "max-w-md" : "max-w-sm"
+              "fixed inset-y-0 right-0 z-50 w-full max-w-md animate-slide-in-right flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-white/10 shadow-2xl",
+              editingWidget.type === "room_card" && "max-w-lg"
             )}>
-              <h3 className="mb-3 shrink-0 text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {editingWidget.type === "title_card"
                   ? "Titel bewerken"
                   : editingWidget.type === "card_group"
@@ -1468,7 +1471,22 @@ export default function DashboardEditPage() {
                         ? "Stroomverbruik bewerken"
                         : "Edit tile"}
               </h3>
-              <div className="space-y-3 overflow-y-auto min-h-0 flex-1 pr-1 -mr-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (editingWidget?.type === "card_group" && editingGroupChildId) {
+                    setEditingGroupChildId(null);
+                  } else {
+                    setEditingWidgetId(null);
+                  }
+                }}
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
+                aria-label="Sluiten"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5 pt-4 space-y-3 min-h-0">
                 {editingWidget.type === "title_card" ? (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
@@ -3729,7 +3747,8 @@ export default function DashboardEditPage() {
                 </>
                 )
               }
-                <div className="flex shrink-0 justify-between gap-2 pt-3 mt-2 border-t border-gray-200 dark:border-white/10">
+              </div>
+                <div className="shrink-0 flex justify-between gap-2 p-5 pt-4 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900">
                   {editingWidget.type === "card_group" && editingGroupChildId ? (
                     <>
                       <button
@@ -3983,7 +4002,6 @@ export default function DashboardEditPage() {
                   )}
                 </div>
               </div>
-            </div>
           </>,
           document.body
         )}
