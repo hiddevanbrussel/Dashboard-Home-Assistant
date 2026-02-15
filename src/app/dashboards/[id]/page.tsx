@@ -616,7 +616,7 @@ export default function DashboardEditPage() {
     );
     setWelcomeSubtitle((data as { welcomeSubtitle?: string | null }).welcomeSubtitle ?? "");
     setInitialized(true);
-  }, [data, initialized]);
+  }, [data, initialized, isRoomMode]);
 
   useEffect(() => {
     if (!editMode) return;
