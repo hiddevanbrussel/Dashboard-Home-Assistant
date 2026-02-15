@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/app-shell";
+import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
@@ -380,7 +381,6 @@ export default function DashboardEditPage() {
   const [addTileStep, setAddTileStep] = useState<"type" | "entity">("type");
   const [addTileSelectedType, setAddTileSelectedType] = useState<string | null>(null);
   const [addTileEntitySearch, setAddTileEntitySearch] = useState("");
-  const [editEntitySearch, setEditEntitySearch] = useState("");
   const [groupAddEntitySearch, setGroupAddEntitySearch] = useState("");
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
   /** When editing a card_group, id of the child pill being edited (null = editing group itself). */
@@ -550,7 +550,6 @@ export default function DashboardEditPage() {
       setSensorIconSearch(editingWidget.type === "sensor_card" ? (editingWidget.icon ?? "") : "");
       setPillIconSearch(editingWidget.type === "pill_card" ? (editingWidget.icon ?? "") : "");
       setGroupAddEntitySearch("");
-      setEditEntitySearch("");
       if (editingWidget.type === "title_card" || editingWidget.type === "light_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card") {
         setEditTab(editingWidget.type === "room_card" ? "entiteiten" : "algemeen");
       }
@@ -1560,25 +1559,15 @@ export default function DashboardEditPage() {
                           className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         />
                       </div>
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Entity</label>
-                        <select
-                          value={editForm.entity_id}
-                          onChange={(e) => setEditForm((prev) => ({ ...prev, entity_id: e.target.value }))}
-                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                        >
-                          {entities
-                            .filter((e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + ".")))
-                            .map((e) => {
-                              const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                              return (
-                                <option key={e.entity_id} value={e.entity_id}>
-                                  {name}
-                                </option>
-                              );
-                            })}
-                        </select>
-                      </div>
+                      <EntitySelectWithSearch
+                        entities={entities}
+                        value={editForm.entity_id}
+                        onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
+                        filter={(e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + "."))}
+                        label="Entity"
+                        placeholder="Zoek op naam of entity_id…"
+                        emptyOption="Geen"
+                      />
                       <label className="flex items-center justify-between gap-3 cursor-pointer">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Toon entiteitstatus</span>
                         <button
@@ -1865,80 +1854,31 @@ export default function DashboardEditPage() {
                   />
                 </div>
                 {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card" || editingWidget.type === "power_usage_card") && editingWidget.type !== "title_card" && editingWidget.type !== "room_card" && (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {editingWidget.type === "solar_card"
+                  <EntitySelectWithSearch
+                    entities={entities}
+                    value={editForm.entity_id}
+                    onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
+                    filter={
+                      editingWidget.type === "pill_card"
+                        ? (e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + "."))
+                        : editingWidget.type === "energy_monitor_card"
+                          ? (e) => e.entity_id.startsWith("weather.") || e.entity_id.startsWith("sensor.")
+                          : (e) => e.entity_id.startsWith((WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + ".")
+                    }
+                    label={
+                      editingWidget.type === "solar_card"
                         ? "Yield (opbrengst)"
                         : editingWidget.type === "energy_monitor_card"
                           ? "Entity voor voorwaarden (bijv. weather.home)"
                           : editingWidget.type === "power_usage_card"
                             ? "Totaal verbruik (kWh, cumulative sensor)"
-                          : editingWidget.type === "stat_pill_card"
-                            ? "Sensor"
-                            : "Entity"}
-                    </label>
-                    <input
-                      type="text"
-                      value={editEntitySearch}
-                      onChange={(e) => setEditEntitySearch(e.target.value)}
-                      placeholder="Zoek op naam of entity_id (bijv. sensor.woonkamer)…"
-                      className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                    />
-                    <select
-                      value={editForm.entity_id}
-                      onChange={(e) =>
-                        setEditForm((prev) => ({ ...prev, entity_id: e.target.value }))
-                      }
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                    >
-                      {(() => {
-                        let options =
-                          editingWidget.type === "pill_card"
-                            ? entities.filter((e) =>
-                                PILL_CARD_DOMAINS.some((d) =>
-                                  e.entity_id.startsWith(d + ".")
-                                )
-                              )
-                            : editingWidget.type === "room_card"
-                              ? entities
-                              : editingWidget.type === "energy_monitor_card"
-                                ? entities.filter((e) =>
-                                    e.entity_id.startsWith("weather.") || e.entity_id.startsWith("sensor.")
-                                  )
-                                : entities.filter((e) =>
-                                    e.entity_id.startsWith(
-                                      (WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + "."
-                                    )
-                                  );
-                        const q = editEntitySearch.trim().toLowerCase();
-                        if (q) {
-                          options = options.filter((e) => {
-                            const name = ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase();
-                            return name.includes(q) || e.entity_id.toLowerCase().includes(q);
-                          });
-                          const currentId = editForm.entity_id;
-                          if (currentId && !options.some((e) => e.entity_id === currentId)) {
-                            const current = entities.find((e) => e.entity_id === currentId);
-                            if (current) options = [current, ...options];
-                          }
-                        }
-                        const opts = options.map((e) => {
-                          const name =
-                            (e.attributes as { friendly_name?: string })
-                              ?.friendly_name ?? e.entity_id;
-                          return (
-                            <option key={e.entity_id} value={e.entity_id}>
-                              {name}
-                            </option>
-                          );
-                        });
-                        if (editingWidget.type === "energy_monitor_card") {
-                          return [<option key="" value="">Geen (alleen standaardafbeelding)</option>, ...opts];
-                        }
-                        return opts;
-                      })()}
-                    </select>
-                  </div>
+                            : editingWidget.type === "stat_pill_card"
+                              ? "Sensor"
+                              : "Entity"
+                    }
+                    placeholder="Zoek op naam of entity_id…"
+                    emptyOption={editingWidget.type === "energy_monitor_card" ? "Geen (alleen standaardafbeelding)" : "Geen"}
+                  />
                 )}
                 {editingWidget.type === "light_card" && (
                   <>
@@ -2022,55 +1962,41 @@ export default function DashboardEditPage() {
                       ))}
                     </div>
                     {editTab === "entiteiten" && (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Sensor (waardeweergave)</label>
-                          <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">Optioneel. Toont de actuele waarde van de sensor op de kaart.</p>
-                          <select
+                          <EntitySelectWithSearch
+                            entities={entities}
                             value={editForm.entity_id ?? ""}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, entity_id: e.target.value || "" }))}
-                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                          >
-                            <option value="">Geen</option>
-                            {entities.map((e) => {
-                              const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                              return <option key={e.entity_id} value={e.entity_id}>{name}</option>;
-                            })}
-                          </select>
+                            onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v || "" }))}
+                            label="Sensor (waardeweergave)"
+                            placeholder="Zoek op naam of entity_id…"
+                            emptyOption="Geen"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Optioneel. Toont de actuele waarde van de sensor op de kaart.</p>
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Licht</label>
-                          <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">Toont een lamp-icoon om het licht aan/uit te zetten.</p>
-                          <select
+                          <EntitySelectWithSearch
+                            entities={entities}
                             value={editForm.light_entity_id ?? ""}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, light_entity_id: e.target.value || undefined }))}
-                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                          >
-                            <option value="">Geen</option>
-                            {entities
-                              .filter((e) => e.entity_id.startsWith("light.") || e.entity_id.startsWith("group."))
-                              .map((e) => {
-                                const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                                return <option key={e.entity_id} value={e.entity_id}>{name}</option>;
-                              })}
-                          </select>
+                            onChange={(v) => setEditForm((prev) => ({ ...prev, light_entity_id: v || undefined }))}
+                            filter={(e) => e.entity_id.startsWith("light.") || e.entity_id.startsWith("group.")}
+                            label="Licht"
+                            placeholder="Zoek licht of groep…"
+                            emptyOption="Geen"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont een lamp-icoon om het licht aan/uit te zetten.</p>
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Mediaplayer</label>
-                          <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">Toont een music-icoon wanneer er iets wordt afgespeeld.</p>
-                          <select
+                          <EntitySelectWithSearch
+                            entities={entities}
                             value={editForm.media_player_entity_id ?? ""}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, media_player_entity_id: e.target.value || undefined }))}
-                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                          >
-                            <option value="">Geen</option>
-                            {entities
-                              .filter((e) => e.entity_id.startsWith("media_player."))
-                              .map((e) => {
-                                const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                                return <option key={e.entity_id} value={e.entity_id}>{name}</option>;
-                              })}
-                          </select>
+                            onChange={(v) => setEditForm((prev) => ({ ...prev, media_player_entity_id: v || undefined }))}
+                            filter={(e) => e.entity_id.startsWith("media_player.")}
+                            label="Mediaplayer"
+                            placeholder="Zoek mediaplayer…"
+                            emptyOption="Geen"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont een music-icoon wanneer er iets wordt afgespeeld.</p>
                         </div>
                       </div>
                     )}
@@ -2260,35 +2186,20 @@ export default function DashboardEditPage() {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Luchtvochtigheid (optioneel)
-                      </label>
-                      <select
-                        value={editForm.humidity_entity_id ?? ""}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            humidity_entity_id: e.target.value || undefined,
-                          }))
-                        }
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                      >
-                        <option value="">Geen</option>
-                        {entities
-                          .filter((e) => e.entity_id.startsWith("sensor."))
-                          .map((e) => {
-                            const name =
-                              (e.attributes as { friendly_name?: string })
-                                ?.friendly_name ?? e.entity_id;
-                            return (
-                              <option key={e.entity_id} value={e.entity_id}>
-                                {name}
-                              </option>
-                            );
-                          })}
-                      </select>
-                    </div>
+                    <EntitySelectWithSearch
+                      entities={entities}
+                      value={editForm.humidity_entity_id ?? ""}
+                      onChange={(v) =>
+                        setEditForm((prev) => ({
+                          ...prev,
+                          humidity_entity_id: v || undefined,
+                        }))
+                      }
+                      filter={(e) => e.entity_id.startsWith("sensor.")}
+                      label="Luchtvochtigheid (optioneel)"
+                      placeholder="Zoek sensor…"
+                      emptyOption="Geen"
+                    />
                     </>
                     )}
                     {editTab === "weergave" && (
@@ -2358,35 +2269,20 @@ export default function DashboardEditPage() {
                       </button>
                     </div>
                     {editTab === "algemeen" && (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      Consumption (verbruik, optioneel)
-                    </label>
-                    <select
-                      value={editForm.consumption_entity_id ?? ""}
-                      onChange={(e) =>
-                        setEditForm((prev) => ({
-                          ...prev,
-                          consumption_entity_id: e.target.value || undefined,
-                        }))
-                      }
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                    >
-                      <option value="">Geen</option>
-                      {entities
-                        .filter((e) => e.entity_id.startsWith("sensor."))
-                        .map((e) => {
-                          const name =
-                            (e.attributes as { friendly_name?: string })
-                              ?.friendly_name ?? e.entity_id;
-                          return (
-                            <option key={e.entity_id} value={e.entity_id}>
-                              {name}
-                            </option>
-                          );
-                        })}
-                    </select>
-                  </div>
+                  <EntitySelectWithSearch
+                    entities={entities}
+                    value={editForm.consumption_entity_id ?? ""}
+                    onChange={(v) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        consumption_entity_id: v || undefined,
+                      }))
+                    }
+                    filter={(e) => e.entity_id.startsWith("sensor.")}
+                    label="Consumption (verbruik, optioneel)"
+                    placeholder="Zoek sensor…"
+                    emptyOption="Geen"
+                  />
                     )}
                   </>
                 )}
@@ -2912,31 +2808,20 @@ export default function DashboardEditPage() {
                       </div>
                     )}
                     <div className="mt-3">
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Sensor onder status (bijv. cleaned area)
-                      </label>
-                      <select
+                      <EntitySelectWithSearch
+                        entities={entities}
                         value={editForm.cleaned_area_entity_id ?? ""}
-                        onChange={(e) =>
+                        onChange={(v) =>
                           setEditForm((prev) => ({
                             ...prev,
-                            cleaned_area_entity_id: e.target.value || undefined,
+                            cleaned_area_entity_id: v || undefined,
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                      >
-                        <option value="">Geen</option>
-                        {entities
-                          .filter((e) => e.entity_id.startsWith("sensor."))
-                          .map((e) => {
-                            const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                            return (
-                              <option key={e.entity_id} value={e.entity_id}>
-                                {name}
-                              </option>
-                            );
-                          })}
-                      </select>
+                        filter={(e) => e.entity_id.startsWith("sensor.")}
+                        label="Sensor onder status (bijv. cleaned area)"
+                        placeholder="Zoek sensor…"
+                        emptyOption="Geen"
+                      />
                     </div>
                   </div>
                     )}
@@ -3675,54 +3560,26 @@ export default function DashboardEditPage() {
                         />
                       </div>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Entity dagverbruik (totaal per dag)
-                      </label>
-                      <select
-                        value={editForm.entity_id ?? ""}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({ ...prev, entity_id: e.target.value }))
-                        }
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                      >
-                        <option value="">Kies entity…</option>
-                        {entities
-                          .filter((e) => e.entity_id.startsWith("sensor."))
-                          .map((e) => {
-                            const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                            return (
-                              <option key={e.entity_id} value={e.entity_id}>
-                                {name}
-                              </option>
-                            );
-                          })}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Entity huidig verbruik (optioneel)
-                      </label>
-                      <select
-                        value={editForm.current_entity_id ?? ""}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({ ...prev, current_entity_id: e.target.value || undefined }))
-                        }
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                      >
-                        <option value="">Geen (toont 0 voor huidig)</option>
-                        {entities
-                          .filter((e) => e.entity_id.startsWith("sensor."))
-                          .map((e) => {
-                            const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                            return (
-                              <option key={e.entity_id} value={e.entity_id}>
-                                {name}
-                              </option>
-                            );
-                          })}
-                      </select>
-                    </div>
+                    <EntitySelectWithSearch
+                      entities={entities}
+                      value={editForm.entity_id ?? ""}
+                      onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
+                      filter={(e) => e.entity_id.startsWith("sensor.")}
+                      label="Entity dagverbruik (totaal per dag)"
+                      placeholder="Zoek sensor…"
+                      emptyOption="Kies entity…"
+                    />
+                    <EntitySelectWithSearch
+                      entities={entities}
+                      value={editForm.current_entity_id ?? ""}
+                      onChange={(v) =>
+                        setEditForm((prev) => ({ ...prev, current_entity_id: v || undefined }))
+                      }
+                      filter={(e) => e.entity_id.startsWith("sensor.")}
+                      label="Entity huidig verbruik (optioneel)"
+                      placeholder="Zoek sensor…"
+                      emptyOption="Geen (toont 0 voor huidig)"
+                    />
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Max waarde voor bar (optioneel)
