@@ -209,8 +209,11 @@ export function RoomCardWidget({
                 title={isMediaPlaying ? "Media speelt af" : "Geen media"}
               >
                 <Disc2
-                  className={cn("h-5 w-5 shrink-0", isMediaPlaying && "animate-spin")}
-                  strokeWidth={1.5}
+                  className={cn(
+                    "h-5 w-5 shrink-0",
+                    isMediaPlaying && "animate-spin drop-shadow-[0_0_3px_rgba(0,0,0,0.4)]"
+                  )}
+                  strokeWidth={isMediaPlaying ? 2.5 : 1.5}
                   fill={isMediaPlaying ? "currentColor" : "none"}
                   aria-hidden
                 />
