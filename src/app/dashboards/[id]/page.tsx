@@ -169,6 +169,9 @@ function WidgetByType({
   minimal,
   label,
   color,
+  device_entity_ids,
+  cost_per_kwh,
+  onMoreClick,
 }: {
   type: string;
   title: string;
