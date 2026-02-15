@@ -156,14 +156,14 @@ export function CardDefinitionModal({
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 pb-6 space-y-3">
           {showAdd && (
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 space-y-2 bg-gray-50 dark:bg-white/5">
+            <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 space-y-4 bg-gray-50 dark:bg-white/5">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Verlichting toevoegen</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Verlichting toevoegen of verwijderen</span>
                 <button
                   type="button"
                   onClick={() => setShowAdd(false)}
                   className="p-1 rounded text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10"
-                  aria-label="Annuleren"
+                  aria-label="Sluiten"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -177,6 +177,29 @@ export function CardDefinitionModal({
                 emptyOption="Kies een lamp…"
                 className="[&_label]:sr-only"
               />
+              <div className="space-y-2">
+                {local.map((card) => {
+                  const name = getEntityName(card.entity_id);
+                  return (
+                    <div
+                      key={card.id}
+                      className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-white dark:bg-gray-800/50"
+                    >
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate flex-1 min-w-0">
+                        {name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setLocal((prev) => prev.filter((c) => c.id !== card.id))}
+                        className="p-1.5 shrink-0 text-gray-500 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 rounded-lg transition-colors"
+                        aria-label="Lamp verwijderen"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -191,14 +214,18 @@ export function CardDefinitionModal({
                   key={card.id}
                   className="rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden flex items-center gap-3 p-3"
                 >
-                  <div
+                  <button
+                    type="button"
+                    onClick={() => toggleLight(card.entity_id, isOn)}
+                    disabled={loading}
                     className={cn(
-                      "flex shrink-0 items-center justify-center w-10 h-10 rounded-lg",
-                      isOn ? "bg-amber-400 text-amber-900" : "bg-gray-200 dark:bg-gray-600 text-gray-500"
+                      "flex shrink-0 items-center justify-center w-10 h-10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 disabled:opacity-70",
+                      isOn ? "bg-amber-400 text-amber-900 hover:bg-amber-300" : "bg-gray-200 dark:bg-gray-600 text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-500"
                     )}
+                    aria-label={isOn ? "Licht uitzetten" : "Licht aanzetten"}
                   >
                     <Lightbulb className="h-5 w-5" strokeWidth={1.5} fill={isOn ? "currentColor" : "none"} />
-                  </div>
+                  </button>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{name}</p>
                   </div>
@@ -216,17 +243,9 @@ export function CardDefinitionModal({
                     <span
                       className={cn(
                         "absolute left-0.5 top-px h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-                        isOn ? "translate-x-5" : "translate-x-0"
+                        isOn ? "translate-x-[19px]" : "translate-x-0"
                       )}
                     />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLocal((prev) => prev.filter((c) => c.id !== card.id))}
-                    className="p-2 shrink-0 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:hover:text-gray-300 rounded-lg"
-                    aria-label="Lamp verwijderen"
-                  >
-                    <X className="h-4 w-4" />
                   </button>
                 </div>
               );
