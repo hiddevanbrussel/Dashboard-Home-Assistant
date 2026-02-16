@@ -37,6 +37,7 @@ import {
   SensorCardWidget,
   FloatingSensorCard,
   TitleCardWidget,
+  FloatingTextCard,
   CLIMATE_ICON_OPTIONS,
   VACUUM_ICON_OPTIONS,
   SENSOR_ICON_OPTIONS,
@@ -662,16 +663,8 @@ export default function DashboardEditPage() {
     const w = parseWidgets(data.widgets);
     setWidgets(w);
     const parsed = parseLayout(data.layout);
-    const textCardTypes = ["text_card", "title_card", "title_only_card", "subtitle_card"];
-    const migratedLayout = parsed.map((item) => {
-      const widget = w.find((x) => x.id === item.i);
-      if (widget && textCardTypes.includes(widget.type) && item.w === 12) {
-        return { ...item, w: 4 };
-      }
-      return item;
-    });
-    if (migratedLayout.length > 0) {
-      setLayout(migratedLayout);
+    if (parsed.length > 0) {
+      setLayout(parsed);
     } else if (w.length > 0) {
       setLayout(
         w.map((widget, i) => ({
@@ -747,7 +740,7 @@ export default function DashboardEditPage() {
     setLayout((prev) => {
       const floatingItems = prev.filter((item) => {
         const type = widgets.find((w) => w.id === item.i)?.type;
-        return type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "power_usage_card" || type === "card_group";
+        return type === "text_card" || type === "title_card" || type === "title_only_card" || type === "subtitle_card" || type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "power_usage_card" || type === "card_group";
       });
       return [...newLayout, ...floatingItems];
     });
@@ -755,7 +748,7 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "camera_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group";
+    return type !== "text_card" && type !== "title_card" && type !== "title_only_card" && type !== "subtitle_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "camera_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
@@ -782,10 +775,10 @@ export default function DashboardEditPage() {
       x: 0,
       y: maxY,
       w: 4,
-      h: type === "text_card" || type === "title_card" || type === "title_only_card" || type === "subtitle_card" ? 1 : 2,
+      h: 2,
     };
     const newWidgets = [...widgets, newWidget];
-    const isFloatingOnly = type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group";
+    const isFloatingOnly = type === "text_card" || type === "title_card" || type === "title_only_card" || type === "subtitle_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group";
     const newLayout = isFloatingOnly ? layout : [...layout, newLayoutItem];
     setWidgets(newWidgets);
     setLayout(newLayout);
@@ -833,7 +826,7 @@ export default function DashboardEditPage() {
           x: 0,
           y: layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h)),
           w: 4,
-          h: ["text_card", "title_card", "title_only_card", "subtitle_card"].includes(original.type) ? 1 : 2,
+          h: 2,
         };
     const newWidgets = [...widgets, duplicated];
     const newLayout = [...layout, newLayoutItem];
@@ -1151,7 +1144,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group")
+            .filter((w) => w.type !== "text_card" && w.type !== "title_card" && w.type !== "title_only_card" && w.type !== "subtitle_card" && w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -1226,6 +1219,28 @@ export default function DashboardEditPage() {
             })}
           </ReactGridLayout>
         </div>
+
+        {widgets
+          .filter((w) => w.type === "text_card" || w.type === "title_card" || w.type === "title_only_card" || w.type === "subtitle_card")
+          .map((w, i) => (
+            <FloatingTextCard
+              key={w.id}
+              widget={{
+                id: w.id,
+                title: w.title ?? "Tekst",
+                subtitle: w.subtitle,
+                textMode: (w as { textMode?: "title" | "subtitle" | "text" | "both" }).textMode ?? "title",
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={() => {
+                setEditMode(true);
+                setEditingWidgetId(w.id);
+              }}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
 
         {(() => {
           const firstMedia = widgets.find((w) => w.type === "media_card");

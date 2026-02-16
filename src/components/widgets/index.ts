@@ -27,6 +27,7 @@ export { FloatingCardGroup } from "./floating-card-group";
 export { FloatingClimateCard, CLIMATE_ICON_OPTIONS } from "./floating-climate-card";
 export { TitleCardWidget } from "./title-card-widget";
 export { FloatingTitleCard } from "./floating-title-card";
+export { FloatingTextCard } from "./floating-text-card";
 export { RoomCardWidget } from "./room-card-widget";
 export { FloatingRoomCard } from "./floating-room-card";
 export { NutsCardWidget } from "./nuts-card-widget";
