@@ -3,13 +3,47 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
-import { DoorOpen, Image as ImageIcon, LayoutGrid, ChevronRight, Plus, Trash2, X } from "lucide-react";
+import { DoorOpen, Image as ImageIcon, LayoutGrid, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { CARD_ICONS } from "@/components/widgets/card-icons";
 
 const ROOM_ICON_OPTIONS = ["DoorOpen", "Home", "Sofa", "BedDouble", "Bath", "UtensilsCrossed", "Lamp", "Car", "Building2"] as const;
 
-type RoomItem = { areaId: string; name: string; icon?: string | null; createdAt: string };
+type RoomItem = { areaId: string; name: string; icon?: string | null; floor?: string | null; createdAt: string };
+
+/** Floor options for create form. Value is stored; order is for display. */
+const FLOOR_OPTIONS = [
+  { value: "", labelKey: "rooms.floorOther" as const },
+  { value: "Kelder", labelKey: "rooms.floorBasement" as const },
+  { value: "Begane grond", labelKey: "rooms.floorGround" as const },
+  { value: "1e verdieping", labelKey: "rooms.floor1st" as const },
+  { value: "2e verdieping", labelKey: "rooms.floor2nd" as const },
+  { value: "3e verdieping", labelKey: "rooms.floor3rd" as const },
+  { value: "Zolder", labelKey: "rooms.floorAttic" as const },
+] as const;
+
+/** Order for grouping floors. Earlier = higher in list. Unknown floors go last. */
+const FLOOR_ORDER = ["Kelder", "Begane grond", "1e verdieping", "2e verdieping", "3e verdieping", "Zolder"];
+
+function groupRoomsByFloor(rooms: RoomItem[]): { floor: string; rooms: RoomItem[] }[] {
+  const byFloor = new Map<string, RoomItem[]>();
+  for (const r of rooms) {
+    const key = r.floor?.trim() || "";
+    if (!byFloor.has(key)) byFloor.set(key, []);
+    byFloor.get(key)!.push(r);
+  }
+  const result: { floor: string; rooms: RoomItem[] }[] = [];
+  for (const f of FLOOR_ORDER) {
+    if (byFloor.has(f)) {
+      result.push({ floor: f, rooms: byFloor.get(f)! });
+      byFloor.delete(f);
+    }
+  }
+  byFloor.forEach((rooms, floor) => {
+    result.push({ floor, rooms });
+  });
+  return result;
+}
 
 function RoomIcon({ icon }: { icon?: string | null }) {
   const Icon = icon && icon in CARD_ICONS ? CARD_ICONS[icon] : LayoutGrid;
@@ -25,10 +59,20 @@ export default function RoomsPage() {
   const [newName, setNewName] = useState("");
   const [newId, setNewId] = useState("");
   const [newIcon, setNewIcon] = useState<string>(ROOM_ICON_OPTIONS[0]);
+  const [newFloor, setNewFloor] = useState<string>("");
+  const [newCustomFloor, setNewCustomFloor] = useState("");
   const [newBackgroundFile, setNewBackgroundFile] = useState<File | null>(null);
   const [newBackgroundPreview, setNewBackgroundPreview] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<RoomItem | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editIcon, setEditIcon] = useState<string>(ROOM_ICON_OPTIONS[0]);
+  const [editFloor, setEditFloor] = useState("");
+  const [editCustomFloor, setEditCustomFloor] = useState("");
+  const [updating, setUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const loadRooms = useCallback(() => {
     setLoading(true);
@@ -70,6 +114,9 @@ export default function RoomsPage() {
           name: newName.trim(),
           id: newId.trim() || undefined,
           icon: newIcon || undefined,
+          floor: newFloor.trim()
+            ? newFloor.trim()
+            : newCustomFloor.trim() || undefined,
           background: backgroundUrl,
         }),
       });
@@ -82,6 +129,8 @@ export default function RoomsPage() {
       setNewName("");
       setNewId("");
       setNewIcon(ROOM_ICON_OPTIONS[0]);
+      setNewFloor("");
+      setNewCustomFloor("");
       setNewBackgroundFile(null);
       setNewBackgroundPreview(null);
       loadRooms();
@@ -89,6 +138,50 @@ export default function RoomsPage() {
       setCreateError(t("rooms.genericError"));
     } finally {
       setCreating(false);
+    }
+  }
+
+  function openEditModal(r: RoomItem) {
+    setEditingRoom(r);
+    setEditName(r.name);
+    setEditIcon((r.icon as string) || ROOM_ICON_OPTIONS[0]);
+    const isPreset = FLOOR_ORDER.includes(r.floor || "");
+    setEditFloor(isPreset ? (r.floor || "") : "");
+    setEditCustomFloor(isPreset ? "" : (r.floor || ""));
+    setUpdateError(null);
+    setEditModalOpen(true);
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingRoom) return;
+    setUpdateError(null);
+    setUpdating(true);
+    try {
+      const floorValue = editFloor.trim()
+        ? editFloor.trim()
+        : editCustomFloor.trim() || undefined;
+      const res = await fetch(`/api/room-dashboards/${encodeURIComponent(editingRoom.areaId)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          icon: editIcon || undefined,
+          floor: floorValue,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUpdateError(data?.error ?? "Failed to update room");
+        return;
+      }
+      setEditModalOpen(false);
+      setEditingRoom(null);
+      loadRooms();
+    } catch {
+      setUpdateError(t("rooms.genericError"));
+    } finally {
+      setUpdating(false);
     }
   }
 
@@ -126,6 +219,8 @@ export default function RoomsPage() {
               setNewName("");
               setNewId("");
               setNewIcon(ROOM_ICON_OPTIONS[0]);
+              setNewFloor("");
+              setNewCustomFloor("");
               setNewBackgroundFile(null);
               setNewBackgroundPreview(null);
             }}
@@ -172,34 +267,57 @@ export default function RoomsPage() {
         )}
 
         {!loading && !error && rooms.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {rooms.map((r) => (
-              <Link
-                key={r.areaId}
-                href={`/rooms/${encodeURIComponent(r.areaId)}`}
-                className="group relative flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-white/5 transition-colors hover:border-[#4D2FB2]/40 hover:bg-[#4D2FB2]/5 dark:hover:bg-[#4D2FB2]/10"
-              >
-                <button
-                  type="button"
-                  onClick={(e) => handleDelete(r.areaId, e)}
-                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 opacity-0 transition-opacity hover:bg-red-100 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-950/50 dark:hover:text-red-400"
-                  aria-label={t("rooms.delete")}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#4D2FB2]/10 text-[#4D2FB2] dark:bg-[#4D2FB2]/20">
-                  <RoomIcon icon={r.icon} />
+          <div className="space-y-6">
+            {groupRoomsByFloor(rooms).map(({ floor, rooms: floorRooms }) => (
+              <div key={floor || "_"} className="space-y-3">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  {floor ? floor : t("rooms.floorOther")}
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {floorRooms.map((r) => (
+                    <Link
+                      key={r.areaId}
+                      href={`/rooms/${encodeURIComponent(r.areaId)}`}
+                      className="group relative flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-white/5 transition-colors hover:border-[#4D2FB2]/40 hover:bg-[#4D2FB2]/5 dark:hover:bg-[#4D2FB2]/10"
+                    >
+                      <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openEditModal(r);
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-[#4D2FB2] dark:hover:bg-white/10 dark:hover:text-[#4D2FB2]"
+                          aria-label={t("rooms.editRoom")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDelete(r.areaId, e)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+                          aria-label={t("rooms.delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#4D2FB2]/10 text-[#4D2FB2] dark:bg-[#4D2FB2]/20">
+                        <RoomIcon icon={r.icon} />
+                      </div>
+                      <div className="min-w-0 flex-1 pr-8">
+                        <p className="font-medium text-gray-900 dark:text-white group-hover:text-[#4D2FB2]">
+                          {r.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {r.areaId}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 shrink-0 text-gray-400 group-hover:text-[#4D2FB2]" />
+                    </Link>
+                  ))}
                 </div>
-                <div className="min-w-0 flex-1 pr-8">
-                  <p className="font-medium text-gray-900 dark:text-white group-hover:text-[#4D2FB2]">
-                    {r.name}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {r.areaId}
-                  </p>
-                </div>
-                <ChevronRight className="h-5 w-5 shrink-0 text-gray-400 group-hover:text-[#4D2FB2]" />
-              </Link>
+              </div>
             ))}
           </div>
         )}
@@ -270,6 +388,31 @@ export default function RoomsPage() {
                     );
                   })}
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.floor")}
+                </label>
+                <select
+                  value={newFloor}
+                  onChange={(e) => setNewFloor(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white"
+                >
+                  {FLOOR_OPTIONS.map((opt) => (
+                    <option key={opt.value || "_"} value={opt.value}>
+                      {t(opt.labelKey)}
+                    </option>
+                  ))}
+                </select>
+                {!newFloor && (
+                  <input
+                    type="text"
+                    value={newCustomFloor}
+                    onChange={(e) => setNewCustomFloor(e.target.value)}
+                    placeholder={t("rooms.floorPlaceholder")}
+                    className="mt-2 w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
@@ -349,6 +492,120 @@ export default function RoomsPage() {
                   className="rounded-lg bg-[#4D2FB2] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                 >
                   {creating ? "…" : t("rooms.create")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editModalOpen && editingRoom && typeof document !== "undefined" && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          aria-modal="true"
+          role="dialog"
+        >
+          <div
+            className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
+            aria-hidden
+            onClick={() => !updating && setEditModalOpen(false)}
+          />
+          <div
+            className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-white/10 dark:bg-gray-900 dark:text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">{t("rooms.editRoom")}</h3>
+              <button
+                type="button"
+                onClick={() => !updating && setEditModalOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+                aria-label={t("rooms.cancel")}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.roomName")}
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder={t("rooms.roomNamePlaceholder")}
+                  required
+                  className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.icon")}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {ROOM_ICON_OPTIONS.map((iconKey) => {
+                    const Icon = CARD_ICONS[iconKey];
+                    return (
+                      <button
+                        key={iconKey}
+                        type="button"
+                        onClick={() => setEditIcon(iconKey)}
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-colors ${
+                          editIcon === iconKey
+                            ? "border-[#4D2FB2] bg-[#4D2FB2]/10 text-[#4D2FB2]"
+                            : "border-gray-200 dark:border-white/20 text-gray-500 hover:border-gray-300 dark:hover:border-white/30"
+                        }`}
+                        title={iconKey}
+                      >
+                        {Icon && <Icon className="h-5 w-5" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.floor")}
+                </label>
+                <select
+                  value={editFloor}
+                  onChange={(e) => setEditFloor(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white"
+                >
+                  {FLOOR_OPTIONS.map((opt) => (
+                    <option key={opt.value || "_"} value={opt.value}>
+                      {t(opt.labelKey)}
+                    </option>
+                  ))}
+                </select>
+                {!editFloor && (
+                  <input
+                    type="text"
+                    value={editCustomFloor}
+                    onChange={(e) => setEditCustomFloor(e.target.value)}
+                    placeholder={t("rooms.floorPlaceholder")}
+                    className="mt-2 w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
+                  />
+                )}
+              </div>
+              {updateError && (
+                <p className="text-sm text-red-600 dark:text-red-400">{updateError}</p>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => !updating && setEditModalOpen(false)}
+                  className="rounded-lg border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5"
+                >
+                  {t("rooms.cancel")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating || !editName.trim()}
+                  className="rounded-lg bg-[#4D2FB2] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  {updating ? "…" : t("rooms.save")}
                 </button>
               </div>
             </form>

@@ -43,6 +43,7 @@ model RoomDashboard {
   areaId         String   @unique
   name           String?
   icon           String?
+  floor          String?
   layout         String?
   widgets        String?
   background     String?

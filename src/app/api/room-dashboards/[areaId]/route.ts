@@ -27,6 +27,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
     id: rd.id,
     areaId: rd.areaId,
     name: rd.name ?? rd.areaId,
+    floor: rd.floor ?? null,
     layout: rd.layout,
     widgets: rd.widgets,
     background: rd.background,
@@ -48,6 +49,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
   const decoded = decodeURIComponent(areaId);
   let body: {
     name?: string | null;
+    floor?: string | null;
+    icon?: string | null;
     layout?: string | null;
     widgets?: string | null;
     background?: string | null;
@@ -62,6 +65,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
   const data: Record<string, unknown> = {
     ...(body.name !== undefined && { name: body.name }),
+    ...(body.floor !== undefined && { floor: body.floor || null }),
+    ...(body.icon !== undefined && { icon: body.icon || null }),
     ...(body.layout !== undefined && { layout: body.layout }),
     ...(body.widgets !== undefined && { widgets: body.widgets }),
     ...(body.background !== undefined && { background: body.background }),
@@ -74,6 +79,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
     create: {
       areaId: decoded,
       name: body.name ?? decoded,
+      floor: body.floor ?? null,
+      icon: body.icon ?? null,
       layout: body.layout ?? null,
       widgets: body.widgets ?? null,
       background: body.background ?? null,
@@ -87,6 +94,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
     id: rd.id,
     areaId: rd.areaId,
     name: rd.name ?? rd.areaId,
+    floor: rd.floor ?? null,
+    icon: rd.icon ?? null,
     layout: rd.layout,
     widgets: rd.widgets,
     background: rd.background,
