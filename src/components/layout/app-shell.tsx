@@ -52,6 +52,8 @@ type AppShellProps = {
   welcomeTitle?: string;
   /** Welcome subtitle. */
   welcomeSubtitle?: string;
+  /** When true, hide welcome in header (e.g. when shown as card). */
+  hideWelcome?: boolean;
   /** When true, show inputs to edit welcome title/subtitle (edit mode). */
   welcomeEditable?: boolean;
   /** Called when user changes welcome title or subtitle. */
@@ -200,6 +202,7 @@ export function AppShell({
   headerEndAction,
   welcomeTitle: welcomeTitleProp,
   welcomeSubtitle: welcomeSubtitleProp,
+  hideWelcome = false,
   welcomeEditable = false,
   onWelcomeChange,
   temperatureEntityId,
@@ -211,6 +214,7 @@ export function AppShell({
   const welcomeTitle = welcomeTitleProp ?? "";
   const welcomeSubtitle = welcomeSubtitleProp ?? "";
   const hasWelcomeText = Boolean(welcomeTitle || welcomeSubtitle);
+  const showWelcomeInHeader = hasWelcomeText && !hideWelcome;
   const pageBackground = usePageBackground();
   const headerTime = useHeaderClock();
   const [temperatureModalOpen, setTemperatureModalOpen] = useState(false);
@@ -309,7 +313,7 @@ export function AppShell({
           document.body
         )}
 
-      {(hasWelcomeText || backHref) && (
+      {(showWelcomeInHeader || backHref) && (
       <div className="shrink-0 flex items-center justify-between gap-4 pl-10 pr-4 py-4">
         <div className="min-w-0 flex-1 flex items-center gap-3">
           {backHref && (
@@ -322,7 +326,7 @@ export function AppShell({
             </Link>
           )}
           <div className="min-w-0 flex-1">
-          {welcomeEditable && onWelcomeChange ? (
+          {showWelcomeInHeader && welcomeEditable && onWelcomeChange ? (
             <div className="space-y-2 max-w-md">
               <input
                 type="text"
@@ -349,7 +353,7 @@ export function AppShell({
                 placeholder={t("appShell.welcomeSubtitlePlaceholder")}
               />
             </div>
-          ) : hasWelcomeText ? (
+          ) : showWelcomeInHeader ? (
             <>
               <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
                 {welcomeTitle}

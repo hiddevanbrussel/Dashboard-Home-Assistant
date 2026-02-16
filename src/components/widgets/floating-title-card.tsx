@@ -5,16 +5,16 @@ import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 
-const STORAGE_KEY = "dashboard.floatingTitleCardPosition";
+const STORAGE_KEY_PREFIX = "dashboard.floatingWelcomeCardPosition.";
 const DEFAULT_OFFSET = 24;
-const PANEL_WIDTH = 200;
+const PANEL_WIDTH = 280;
 
 type Position = { left: number; bottom: number };
 
-function loadPosition(): Position | null {
+function loadPosition(widgetId: string): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(STORAGE_KEY);
+    const s = localStorage.getItem(STORAGE_KEY_PREFIX + widgetId);
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
@@ -27,10 +27,10 @@ function loadPosition(): Position | null {
   return null;
 }
 
-function savePosition(p: Position) {
+function savePosition(widgetId: string, p: Position) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    localStorage.setItem(STORAGE_KEY_PREFIX + widgetId, JSON.stringify(p));
   } catch {
     // ignore
   }
@@ -50,20 +50,29 @@ export type TitleCardWidgetItem = {
 
 const LONG_PRESS_MS = 500;
 
+export type WelcomeCardMode = "title" | "subtitle" | "both";
+
 export function FloatingTitleCard({
-  widgets,
+  welcomeTitle,
+  welcomeSubtitle,
+  widgetId,
+  mode = "both",
   editMode = false,
   onRemove,
   onEdit,
   onEnterEditMode,
 }: {
-  widgets: TitleCardWidgetItem[];
+  welcomeTitle?: string;
+  welcomeSubtitle?: string;
+  widgetId: string;
+  /** "title" = alleen titel, "subtitle" = alleen ondertitel, "both" = beide */
+  mode?: WelcomeCardMode;
   editMode?: boolean;
   onRemove?: (widgetId: string) => void;
   onEdit?: (widgetId: string) => void;
   onEnterEditMode?: () => void;
 }) {
-  const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, bottom: DEFAULT_OFFSET });
+  const [position, setPosition] = useState<Position>(() => loadPosition(widgetId) ?? { left: 0, bottom: DEFAULT_OFFSET });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
@@ -103,15 +112,15 @@ export function FloatingTitleCard({
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - PANEL_WIDTH : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
     const bounds = { maxLeft, maxBottom };
-    const saved = loadPosition();
+    const saved = loadPosition(widgetId);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
     const p = snapToGrid(defaultPosition(), bounds);
     setPosition(p);
-    savePosition(p);
-  }, []);
+    savePosition(widgetId, p);
+  }, [widgetId]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -160,19 +169,22 @@ export function FloatingTitleCard({
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(next);
+        savePosition(widgetId, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft]
+    [isDragging, maxLeft, widgetId]
   );
 
-  if (widgets.length === 0) return null;
+  const showTitle = (mode === "title" || mode === "both") && welcomeTitle?.trim();
+  const showSubtitle = (mode === "subtitle" || mode === "both") && welcomeSubtitle?.trim();
+  const hasContent = Boolean(showTitle || showSubtitle);
 
   return (
     <div
       className={cn(
-        "fixed z-30 flex flex-col",
+        "fixed z-30 flex flex-col rounded-2xl overflow-hidden shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        hasContent ? "bg-white/10 dark:bg-black/50" : "bg-white/5 dark:bg-black/30",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -199,25 +211,34 @@ export function FloatingTitleCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className="p-2 flex flex-col gap-1 max-h-[40vh] overflow-auto">
-        {widgets.map((w) => (
-          <div
-            key={w.id}
-            className="flex items-center gap-2 py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200"
-          >
-            <span className="truncate flex-1 min-w-0">{w.title || "Titel"}</span>
-            {editMode && onEdit && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onEdit(w.id); }}
-                className="shrink-0 p-1.5 rounded-md text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10 dark:text-gray-400"
-                aria-label="Opties"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
+      <div className="p-4 flex flex-col gap-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            {showTitle && (
+              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight truncate">
+                {welcomeTitle?.trim()}
+              </p>
+            )}
+            {showSubtitle && (
+              <p className={cn(
+                "font-normal text-gray-600 dark:text-gray-300 truncate",
+                showTitle ? "text-base md:text-lg mt-1" : "text-2xl md:text-3xl font-bold text-gray-900 dark:text-white"
+              )}>
+                {welcomeSubtitle?.trim()}
+              </p>
             )}
           </div>
-        ))}
+          {editMode && onEdit && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEdit(widgetId); }}
+              className="shrink-0 p-1.5 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10 dark:text-gray-400"
+              aria-label="Opties"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
