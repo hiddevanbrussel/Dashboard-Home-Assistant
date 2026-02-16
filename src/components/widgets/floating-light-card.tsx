@@ -94,10 +94,11 @@ export function FloatingLightCard({
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       longPressTimerRef.current = setTimeout(() => {
         longPressTimerRef.current = null;
-        onEnterEditMode();
+        onEnterEditMode?.();
+        onEdit?.();
       }, LONG_PRESS_MS);
     },
-    [editMode, onEnterEditMode, clearLongPress]
+    [editMode, onEnterEditMode, onEdit, clearLongPress]
   );
 
   const endLongPress = useCallback(
@@ -231,7 +232,7 @@ export function FloatingLightCard({
             entity_id={widget.entity_id}
             icon={widget.icon}
             size="md"
-            onMoreClick={onEdit}
+            onMoreClick={editMode ? onEdit : undefined}
           />
         </div>
       </div>

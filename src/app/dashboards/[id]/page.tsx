@@ -67,12 +67,10 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["title_card", "title_only_card", "subtitle_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group"] as const;
+const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { type: "title_card", label: "Titel + ondertitel", Icon: Type },
-  { type: "title_only_card", label: "Titel", Icon: Type },
-  { type: "subtitle_card", label: "Ondertitel", Icon: Type },
+  { type: "text_card", label: "Tekst", Icon: Type },
   { type: "climate_card_2", label: "Klimaat", Icon: Thermometer },
   { type: "light_card", label: "Lamp", Icon: Lightbulb },
   { type: "media_card", label: "Media", Icon: Music2 },
@@ -92,9 +90,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
 
 /** Map widget type to HA domain for filtering entities */
 const WIDGET_TYPE_DOMAIN: Record<string, string> = {
-  title_card: "",
-  title_only_card: "",
-  subtitle_card: "",
+  text_card: "",
   energy_usage: "sensor",
   light_control: "light",
   wifi: "sensor",
@@ -180,6 +176,7 @@ function WidgetByType({
   color,
   device_entity_ids,
   cost_per_kwh,
+  textMode,
   onMoreClick,
 }: {
   type: string;
@@ -209,6 +206,7 @@ function WidgetByType({
   color?: string;
   device_entity_ids?: string[];
   cost_per_kwh?: number;
+  textMode?: "title" | "subtitle" | "text" | "both";
   onMoreClick?: () => void;
 }) {
   const sizeProp = (size as "sm" | "md" | "lg") ?? "md";
@@ -217,6 +215,8 @@ function WidgetByType({
   const onOff = live?.state === "on" ? "on" : "off";
 
   switch (type) {
+    case "text_card":
+      return <TitleCardWidget title={title} subtitle={subtitle} mode={textMode ?? "title"} />;
     case "title_card":
       return <TitleCardWidget title={title} subtitle={subtitle} mode="both" />;
     case "title_only_card":
@@ -409,6 +409,7 @@ export default function DashboardEditPage() {
   const [editForm, setEditForm] = useState<{
     title: string;
     subtitle?: string;
+    textMode?: "title" | "subtitle" | "text" | "both";
     entity_id: string;
     consumption_entity_id?: string;
     grid_entity_id?: string;
@@ -585,10 +586,18 @@ export default function DashboardEditPage() {
       return;
     }
     if (editingWidget) {
-      const isCategoryCard = editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card";
+      const isCategoryCard = editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card";
+      const deriveTextMode = (): "title" | "subtitle" | "text" | "both" => {
+        if (editingWidget.type === "text_card" && (editingWidget as { textMode?: string }).textMode) return (editingWidget as { textMode: "title" | "subtitle" | "text" | "both" }).textMode;
+        if (editingWidget.type === "title_card") return "both";
+        if (editingWidget.type === "subtitle_card") return "subtitle";
+        if (editingWidget.type === "title_only_card") return "title";
+        return "title";
+      };
       setEditForm({
         title: isCategoryCard ? (editingWidget.title ?? "") : (editingWidget.title ?? ""),
         subtitle: isCategoryCard ? ((editingWidget as { subtitle?: string }).subtitle ?? "") : undefined,
+        textMode: isCategoryCard ? deriveTextMode() : undefined,
         entity_id: editingWidget.entity_id ?? "",
         consumption_entity_id: editingWidget.consumption_entity_id ?? "",
         grid_entity_id: editingWidget.grid_entity_id ?? "",
@@ -626,7 +635,7 @@ export default function DashboardEditPage() {
       setSensorIconSearch(editingWidget.type === "sensor_card" ? (editingWidget.icon ?? "") : "");
       setPillIconSearch(editingWidget.type === "pill_card" ? (editingWidget.icon ?? "") : "");
       setGroupAddEntitySearch("");
-      if (editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card") {
+      if (editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card") {
         setEditTab(editingWidget.type === "room_card" ? "entiteiten" : editingWidget.type === "media_card" ? "weergave" : "algemeen");
       }
       if (editingWidget.type === "energy_monitor_card") {
@@ -754,12 +763,13 @@ export default function DashboardEditPage() {
     const newWidget: WidgetConfig = {
       id: newId,
       type,
-      title: titleOverride ?? type.replace(/_/g, " "),
+      title: titleOverride ?? (type === "text_card" ? "Nieuwe sectie" : type.replace(/_/g, " ")),
       entity_id: entityId,
+      ...(type === "text_card" && { textMode: "title" as const }),
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
-    const isTitleCard = type === "title_card" || type === "title_only_card" || type === "subtitle_card";
+    const isTitleCard = type === "text_card" || type === "title_card" || type === "title_only_card" || type === "subtitle_card";
     const newLayoutItem: LayoutItem = {
       i: newId,
       x: 0,
@@ -815,8 +825,8 @@ export default function DashboardEditPage() {
           i: newId,
           x: 0,
           y: layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h)),
-          w: original.type === "title_card" || original.type === "title_only_card" || original.type === "subtitle_card" ? 12 : 4,
-          h: original.type === "title_card" || original.type === "title_only_card" || original.type === "subtitle_card" ? 1 : 2,
+          w: ["text_card", "title_card", "title_only_card", "subtitle_card"].includes(original.type) ? 12 : 4,
+          h: ["text_card", "title_card", "title_only_card", "subtitle_card"].includes(original.type) ? 1 : 2,
         };
     const newWidgets = [...widgets, duplicated];
     const newLayout = [...layout, newLayoutItem];
@@ -829,7 +839,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; subtitle?: string; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean }
+    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text" | "both"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -955,18 +965,8 @@ export default function DashboardEditPage() {
                           key={type}
                           type="button"
                           onClick={() => {
-                            if (type === "title_card") {
-                              handleAddTile("title_card", "", "Nieuwe sectie");
-                              setAddTileOpen(false);
-                              return;
-                            }
-                            if (type === "title_only_card") {
-                              handleAddTile("title_only_card", "", "Nieuwe sectie");
-                              setAddTileOpen(false);
-                              return;
-                            }
-                            if (type === "subtitle_card") {
-                              handleAddTile("subtitle_card", "", "Sectie");
+                            if (type === "text_card") {
+                              handleAddTile("text_card", "", "Nieuwe sectie");
                               setAddTileOpen(false);
                               return;
                             }
@@ -1138,6 +1138,7 @@ export default function DashboardEditPage() {
             width={1200}
             margin={[6, 4]}
             containerPadding={[0, 0]}
+            compactType="vertical"
             isDraggable={editMode}
             isResizable={editMode}
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
@@ -1180,7 +1181,7 @@ export default function DashboardEditPage() {
                       </button>
                     </>
                   )}
-                  <div className={cn("h-full w-full", editMode && "tile-drag-handle cursor-grab touch-none")}>
+                  <div className={cn("h-full w-full min-h-[44px]", editMode && "tile-drag-handle cursor-grab touch-none select-none")}>
                     <WidgetByType
                       type={w.type}
                       title={w.title}
@@ -1209,6 +1210,7 @@ export default function DashboardEditPage() {
                       color={w.color}
                       device_entity_ids={w.device_entity_ids}
                       cost_per_kwh={w.cost_per_kwh}
+                      textMode={w.textMode}
                       onMoreClick={editMode ? () => setEditingWidgetId(w.id) : undefined}
                     />
                   </div>
@@ -1604,12 +1606,8 @@ export default function DashboardEditPage() {
             )}>
               <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {editingWidget.type === "title_card"
-                  ? "Titel bewerken"
-                  : editingWidget.type === "subtitle_card"
-                    ? "Ondertitel bewerken"
-                    : editingWidget.type === "title_only_card"
-                      ? "Titel bewerken"
+                {(editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card")
+                  ? "Tekst bewerken"
                   : editingWidget.type === "card_group"
                     ? editingGroupChildId
                       ? "Kaart in groep bewerken"
@@ -1636,11 +1634,28 @@ export default function DashboardEditPage() {
               </button>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-3">
-                {(editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card") ? (
+                {(editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card") ? (
                   <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Titel
+                        Type
+                      </label>
+                      <select
+                        value={editForm.textMode ?? (editingWidget.type === "text_card" ? (editingWidget as { textMode?: string }).textMode ?? "title" : editingWidget.type === "title_card" ? "both" : editingWidget.type === "subtitle_card" ? "subtitle" : "title")}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({ ...prev, textMode: e.target.value as "title" | "subtitle" | "text" | "both" }))
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      >
+                        <option value="title">Titel</option>
+                        <option value="subtitle">Ondertitel</option>
+                        <option value="both">Titel + ondertitel</option>
+                        <option value="text">Gewone tekst</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {(editForm.textMode ?? "title") === "subtitle" ? "Ondertitel" : "Titel"}
                       </label>
                       <input
                         type="text"
@@ -1652,6 +1667,7 @@ export default function DashboardEditPage() {
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                     </div>
+                    {((editForm.textMode ?? "title") === "both") && (
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         Ondertitel
@@ -1666,6 +1682,7 @@ export default function DashboardEditPage() {
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                     </div>
+                    )}
                   </>
                 ) : editingWidget.type === "card_group" ? (
                   editingGroupChildId ? (
@@ -1993,7 +2010,7 @@ export default function DashboardEditPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                   />
                 </div>
-                {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card" || editingWidget.type === "power_usage_card") && editingWidget.type !== "title_card" && editingWidget.type !== "title_only_card" && editingWidget.type !== "subtitle_card" && editingWidget.type !== "room_card" && (
+                {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card" || editingWidget.type === "power_usage_card") && editingWidget.type !== "text_card" && editingWidget.type !== "title_card" && editingWidget.type !== "title_only_card" && editingWidget.type !== "subtitle_card" && editingWidget.type !== "room_card" && (
                   <EntitySelectWithSearch
                     entities={entities}
                     value={editForm.entity_id}
@@ -4016,12 +4033,13 @@ export default function DashboardEditPage() {
                       <button
                     type="button"
                     onClick={() => {
-                      const isCategoryCard = editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card";
+                      const isCategoryCard = editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card";
                       const newWelcomeTitle = welcomeTitle;
                       const newWelcomeSubtitle = welcomeSubtitle;
                       const updates = isCategoryCard ? {
                         title: editForm.title,
                         subtitle: editForm.subtitle ?? "",
+                        ...(editingWidget.type === "text_card" && { textMode: editForm.textMode ?? "title" }),
                       } : {
                         title: editForm.title,
                         ...(editingWidget.entity_id != null && editingWidget.type !== "energy_monitor_card" && editingWidget.type !== "power_usage_card" && {

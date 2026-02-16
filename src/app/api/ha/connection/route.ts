@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ connectionId: conn.id });
   } catch (err) {
+    console.error("[api/ha/connection] POST error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to save connection" },
       { status: 500 }
