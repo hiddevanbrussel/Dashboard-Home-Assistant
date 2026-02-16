@@ -662,8 +662,16 @@ export default function DashboardEditPage() {
     const w = parseWidgets(data.widgets);
     setWidgets(w);
     const parsed = parseLayout(data.layout);
-    if (parsed.length > 0) {
-      setLayout(parsed);
+    const textCardTypes = ["text_card", "title_card", "title_only_card", "subtitle_card"];
+    const migratedLayout = parsed.map((item) => {
+      const widget = w.find((x) => x.id === item.i);
+      if (widget && textCardTypes.includes(widget.type) && item.w === 12) {
+        return { ...item, w: 4 };
+      }
+      return item;
+    });
+    if (migratedLayout.length > 0) {
+      setLayout(migratedLayout);
     } else if (w.length > 0) {
       setLayout(
         w.map((widget, i) => ({
@@ -769,13 +777,12 @@ export default function DashboardEditPage() {
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
-    const isTitleCard = type === "text_card" || type === "title_card" || type === "title_only_card" || type === "subtitle_card";
     const newLayoutItem: LayoutItem = {
       i: newId,
       x: 0,
       y: maxY,
-      w: isTitleCard ? 12 : 4,
-      h: isTitleCard ? 1 : 2,
+      w: 4,
+      h: type === "text_card" || type === "title_card" || type === "title_only_card" || type === "subtitle_card" ? 1 : 2,
     };
     const newWidgets = [...widgets, newWidget];
     const isFloatingOnly = type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group";
@@ -825,7 +832,7 @@ export default function DashboardEditPage() {
           i: newId,
           x: 0,
           y: layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h)),
-          w: ["text_card", "title_card", "title_only_card", "subtitle_card"].includes(original.type) ? 12 : 4,
+          w: 4,
           h: ["text_card", "title_card", "title_only_card", "subtitle_card"].includes(original.type) ? 1 : 2,
         };
     const newWidgets = [...widgets, duplicated];
