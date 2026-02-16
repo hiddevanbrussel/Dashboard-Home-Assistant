@@ -222,7 +222,8 @@ export function FloatingTitleCard({
             {showSubtitle && (
               <p className={cn(
                 "font-normal text-gray-600 dark:text-gray-300 truncate",
-                showTitle ? "text-base md:text-lg mt-1" : "text-2xl md:text-3xl font-bold text-gray-900 dark:text-white"
+                showTitle && "mt-1",
+                "text-base md:text-lg"
               )}>
                 {welcomeSubtitle?.trim()}
               </p>
