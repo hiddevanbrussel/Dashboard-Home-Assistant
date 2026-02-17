@@ -6,17 +6,19 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { useThemeStore } from "@/stores/theme-store";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
-import { Image, Link2, List, Monitor, Palette } from "lucide-react";
+import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { Image, Link2, List, Monitor, Music2, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "page-background" | "connection" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "page-background" | "connection" | "music-assistant" | "entities";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
   screensaver: "settings.screensaver",
   "page-background": "settings.pageBackground",
   connection: "settings.connection",
+  "music-assistant": "settings.musicAssistant",
   entities: "settings.entities",
 };
 
@@ -68,6 +70,13 @@ export default function SettingsPage() {
   const [screensaverPexelsQuery, setScreensaverPexelsQueryState] = useState("nature landscape");
   const [screensaverPexelsApiKey, setScreensaverPexelsApiKeyState] = useState("");
   const [uploadingScreensaverBg, setUploadingScreensaverBg] = useState(false);
+  const [maTestResult, setMaTestResult] = useState<"ok" | "error" | null>(null);
+  const [maTesting, setMaTesting] = useState(false);
+  const musicAssistant = useMusicAssistantStore();
+
+  useEffect(() => {
+    hydrateMusicAssistantStore();
+  }, []);
 
   useEffect(() => {
     setScreensaverDelaySecondsState(getScreensaverDelaySeconds());
@@ -323,6 +332,7 @@ export default function SettingsPage() {
     { id: "screensaver", labelKey: SECTION_KEYS.screensaver, icon: Monitor },
     { id: "page-background", labelKey: SECTION_KEYS["page-background"], icon: Image },
     { id: "connection", labelKey: SECTION_KEYS.connection, icon: Link2 },
+    { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
     { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
   ];
 
@@ -778,6 +788,94 @@ export default function SettingsPage() {
                     {saving ? "Saving…" : "Save"}
                   </button>
                 </div>
+              </div>
+            </GlassCard>
+          )}
+
+          {section === "music-assistant" && (
+            <GlassCard>
+              <h3 className="text-card-title font-medium mb-3">{t("settings.musicAssistant")}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {t("settings.musicAssistant.description")}
+              </p>
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={musicAssistant.enabled}
+                    onChange={(e) => musicAssistant.setEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {t("settings.musicAssistant.enabled")}
+                  </span>
+                </label>
+                <div>
+                  <label htmlFor="ma-baseUrl" className="block text-sm font-medium mb-1">
+                    {t("settings.musicAssistant.baseUrl")}
+                  </label>
+                  <input
+                    id="ma-baseUrl"
+                    type="url"
+                    value={musicAssistant.baseUrl}
+                    onChange={(e) => musicAssistant.setBaseUrl(e.target.value)}
+                    placeholder={t("settings.musicAssistant.baseUrlPlaceholder")}
+                    className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="ma-token" className="block text-sm font-medium mb-1">
+                    {t("settings.musicAssistant.token")}
+                  </label>
+                  <input
+                    id="ma-token"
+                    type="password"
+                    value={musicAssistant.token}
+                    onChange={(e) => musicAssistant.setToken(e.target.value)}
+                    placeholder={t("settings.musicAssistant.tokenPlaceholder")}
+                    className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
+                  />
+                </div>
+                {maTestResult && (
+                  <div
+                    className={`rounded-lg p-3 text-sm ${
+                      maTestResult === "ok"
+                        ? "bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-200"
+                        : "bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200"
+                    }`}
+                  >
+                    {maTestResult === "ok" ? t("settings.musicAssistant.testSuccess") : t("settings.musicAssistant.testError")}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setMaTestResult(null);
+                    setMaTesting(true);
+                    try {
+                      const res = await fetch("/api/music-assistant", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          baseUrl: musicAssistant.baseUrl,
+                          token: musicAssistant.token,
+                          command: "music/recently_played_items",
+                          args: { limit: 1 },
+                        }),
+                      });
+                      const data = await res.json();
+                      setMaTestResult(res.ok && !data?.error ? "ok" : "error");
+                    } catch {
+                      setMaTestResult("error");
+                    } finally {
+                      setMaTesting(false);
+                    }
+                  }}
+                  disabled={maTesting}
+                  className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
+                >
+                  {maTesting ? t("settings.musicAssistant.testing") : t("settings.musicAssistant.test")}
+                </button>
               </div>
             </GlassCard>
           )}

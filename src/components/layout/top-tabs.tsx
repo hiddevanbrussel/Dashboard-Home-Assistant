@@ -1,14 +1,18 @@
 "use client";
 
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { DoorOpen, LayoutDashboard } from "lucide-react";
+import { DoorOpen, LayoutDashboard, Music2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
+import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 
 const tabKeys = [
   { href: "/dashboards", labelKey: "nav.dashboard", icon: LayoutDashboard },
   { href: "/rooms", labelKey: "nav.rooms", icon: DoorOpen },
 ] as const;
+
+const musicTab = { href: "/music", labelKey: "nav.music", icon: Music2 } as const;
 
 type TopTabsProps = {
   activeHref?: string;
@@ -17,6 +21,11 @@ type TopTabsProps = {
 
 export function TopTabs({ activeHref, className }: TopTabsProps) {
   const { t } = useTranslation();
+  const musicAssistantEnabled = useMusicAssistantStore((s) => s.enabled);
+  useEffect(() => {
+    hydrateMusicAssistantStore();
+  }, []);
+  const tabs = [...tabKeys, ...(musicAssistantEnabled ? [musicTab] : [])];
   return (
     <nav
       className={cn(
@@ -25,7 +34,7 @@ export function TopTabs({ activeHref, className }: TopTabsProps) {
       )}
       role="tablist"
     >
-      {tabKeys.map(({ href, labelKey, icon: Icon }) => {
+      {tabs.map(({ href, labelKey, icon: Icon }) => {
         const isActive = activeHref === href;
         return (
           <Link
