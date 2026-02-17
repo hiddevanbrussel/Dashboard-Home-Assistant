@@ -33,10 +33,14 @@ const SLIDE_DURATION_MS = 280;
 
 type Position = { left: number; bottom: number };
 
-function loadPosition(): Position | null {
+function storageKeyForScope(scope: string | undefined): string {
+  return scope ? `${STORAGE_KEY}.${scope}` : STORAGE_KEY;
+}
+
+function loadPosition(scope: string | undefined): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(STORAGE_KEY);
+    const s = localStorage.getItem(storageKeyForScope(scope));
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number")
@@ -50,10 +54,10 @@ function loadPosition(): Position | null {
   return null;
 }
 
-function savePosition(p: Position) {
+function savePosition(scope: string | undefined, p: Position) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    localStorage.setItem(storageKeyForScope(scope), JSON.stringify(p));
   } catch {
     // ignore
   }
@@ -84,6 +88,7 @@ export function FloatingClimateCard({
   title: titleProp,
   entity_id: entityIdProp,
   editMode = false,
+  storageScope,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -93,6 +98,7 @@ export function FloatingClimateCard({
   title?: string;
   entity_id?: string;
   editMode?: boolean;
+  storageScope?: string;
   onRemove?: (widgetId: string) => void;
   onEdit?: (widgetId: string) => void;
   onEnterEditMode?: () => void;
@@ -149,7 +155,7 @@ export function FloatingClimateCard({
   }, [selectedIndex, widgets.length]);
 
   const [position, setPosition] = useState<Position>(() =>
-    loadPosition() ?? { left: 0, bottom: DEFAULT_OFFSET }
+    loadPosition(storageScope) ?? { left: 0, bottom: DEFAULT_OFFSET }
   );
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
@@ -162,27 +168,27 @@ export function FloatingClimateCard({
     const bounds = { maxLeft, maxBottom };
     if (!initialized.current) {
       initialized.current = true;
-      const saved = loadPosition();
+      const saved = loadPosition(storageScope);
       if (saved) {
         const clamped = snapToGrid(saved, bounds);
         setPosition(clamped);
-        savePosition(clamped);
+        savePosition(storageScope, clamped);
         return;
       }
       const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
       setPosition(p);
-      savePosition(p);
+      savePosition(storageScope, p);
     } else {
       setPosition((prev) => {
         const clamped = snapToGrid(prev, bounds);
         if (clamped.left !== prev.left || clamped.bottom !== prev.bottom) {
-          savePosition(clamped);
+          savePosition(storageScope, clamped);
           return clamped;
         }
         return prev;
       });
     }
-  }, [totalWidth, totalHeight]);
+  }, [totalWidth, totalHeight, storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -236,11 +242,11 @@ export function FloatingClimateCard({
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(next);
+        savePosition(storageScope, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft, maxBottom]
+    [isDragging, maxLeft, maxBottom, storageScope]
   );
 
   return (

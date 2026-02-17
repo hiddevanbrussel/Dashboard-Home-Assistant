@@ -1285,6 +1285,7 @@ export default function DashboardEditPage() {
               width={firstMedia.width}
               height={firstMedia.height}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -1317,6 +1318,7 @@ export default function DashboardEditPage() {
                 height: w.height,
               }))}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? (id) => setEditingWidgetId(id) : undefined}
               onRemove={editMode ? (id) => handleRemoveTile(id) : undefined}
@@ -1340,6 +1342,7 @@ export default function DashboardEditPage() {
               }}
               widgetIndex={i}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={() => {
                 setEditMode(true);
@@ -1362,6 +1365,7 @@ export default function DashboardEditPage() {
               }}
               widgetIndex={i}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={() => {
                 setEditMode(true);
@@ -1379,6 +1383,7 @@ export default function DashboardEditPage() {
               entity_id={firstSolar.entity_id}
               consumption_entity_id={firstSolar.consumption_entity_id}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -1406,6 +1411,7 @@ export default function DashboardEditPage() {
               minimal={firstEnergyMonitor.minimal}
               scale={firstEnergyMonitor.scale}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -1463,6 +1469,7 @@ export default function DashboardEditPage() {
                   conditions={w.conditions as SensorCondition[] | undefined}
                   size={(w.size as "sm" | "md" | "lg") ?? "md"}
                   editMode={editMode}
+                  storageScope={id}
                   onEnterEditMode={() => setEditMode(true)}
                   onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
                   onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
@@ -1488,6 +1495,7 @@ export default function DashboardEditPage() {
                   size={(w.size as "sm" | "md" | "lg") ?? "md"}
                   conditions={w.conditions as SensorCondition[] | undefined}
                   editMode={editMode}
+                  storageScope={id}
                   onEnterEditMode={() => setEditMode(true)}
                   onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
                   onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
@@ -1506,6 +1514,7 @@ export default function DashboardEditPage() {
               width={firstWeather.width}
               height={firstWeather.height}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -1532,6 +1541,7 @@ export default function DashboardEditPage() {
               width={firstCamera.width}
               height={firstCamera.height}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -1558,6 +1568,7 @@ export default function DashboardEditPage() {
               cleaned_area_entity_id={firstVacuum.cleaned_area_entity_id}
               icon={firstVacuum.icon}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -1593,6 +1604,7 @@ export default function DashboardEditPage() {
               }}
               widgetIndex={i}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
@@ -1622,6 +1634,7 @@ export default function DashboardEditPage() {
               }}
               widgetIndex={i}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
@@ -1644,6 +1657,7 @@ export default function DashboardEditPage() {
               }}
               widgetIndex={i}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
@@ -1660,6 +1674,7 @@ export default function DashboardEditPage() {
                   group={g}
                   widgetIndex={i}
                   editMode={editMode}
+                  storageScope={id}
                   onEnterEditMode={() => setEditMode(true)}
                   onEdit={editMode ? () => setEditingWidgetId(g.id) : undefined}
                   onRemove={editMode ? () => handleRemoveTile(g.id) : undefined}

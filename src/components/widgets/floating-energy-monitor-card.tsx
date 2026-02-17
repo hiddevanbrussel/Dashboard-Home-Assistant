@@ -15,10 +15,14 @@ const MAX_WIDTH = 420;
 
 type Position = { left: number; bottom: number };
 
-function loadPosition(cardHeight: number): Position | null {
+function storageKeyForScope(scope: string | undefined): string {
+  return scope ? `${STORAGE_KEY}.${scope}` : STORAGE_KEY;
+}
+
+function loadPosition(scope: string | undefined, cardHeight: number): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(STORAGE_KEY);
+    const s = localStorage.getItem(storageKeyForScope(scope));
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
@@ -31,10 +35,10 @@ function loadPosition(cardHeight: number): Position | null {
   return null;
 }
 
-function savePosition(p: Position) {
+function savePosition(scope: string | undefined, p: Position) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    localStorage.setItem(storageKeyForScope(scope), JSON.stringify(p));
   } catch {
     // ignore
   }
@@ -58,6 +62,7 @@ export function FloatingEnergyMonitorCard({
   minimal = false,
   scale: scaleProp,
   editMode = false,
+  storageScope,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -70,6 +75,7 @@ export function FloatingEnergyMonitorCard({
   minimal?: boolean;
   scale?: number;
   editMode?: boolean;
+  storageScope?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
@@ -82,7 +88,7 @@ export function FloatingEnergyMonitorCard({
   const cardWidth = Math.round(dimensions.width * scale);
   const cardHeight = Math.round(dimensions.height * scale);
 
-  const [position, setPosition] = useState<Position>(() => loadPosition(DEFAULT_HEIGHT) ?? { left: 0, bottom: 0 });
+  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, DEFAULT_HEIGHT) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
@@ -139,16 +145,16 @@ export function FloatingEnergyMonitorCard({
     if (typeof window === "undefined") return;
     if (!initialized.current) {
       initialized.current = true;
-      const saved = loadPosition(cardHeight);
+      const saved = loadPosition(storageScope, cardHeight);
       if (saved) {
         setPosition(snapToGrid(saved));
         return;
       }
       const p = snapToGrid(defaultPosition(cardWidth, cardHeight));
       setPosition(p);
-      savePosition(p);
+      savePosition(storageScope, p);
     }
-  }, [cardWidth, cardHeight]);
+  }, [cardWidth, cardHeight, storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -193,11 +199,11 @@ export function FloatingEnergyMonitorCard({
         };
         const next = snapToGrid(raw);
         setPosition(next);
-        savePosition(next);
+        savePosition(storageScope, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging]
+    [isDragging, storageScope]
   );
 
   return (

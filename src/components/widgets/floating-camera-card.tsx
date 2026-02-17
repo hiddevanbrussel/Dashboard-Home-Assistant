@@ -28,10 +28,14 @@ function clampHeight(w: unknown): number {
 
 type Position = { left: number; bottom: number };
 
-function loadPosition(): Position | null {
+function storageKeyForScope(scope: string | undefined): string {
+  return scope ? `${STORAGE_KEY}.${scope}` : STORAGE_KEY;
+}
+
+function loadPosition(scope: string | undefined): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(STORAGE_KEY);
+    const s = localStorage.getItem(storageKeyForScope(scope));
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
@@ -44,10 +48,10 @@ function loadPosition(): Position | null {
   return null;
 }
 
-function savePosition(p: Position) {
+function savePosition(scope: string | undefined, p: Position) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    localStorage.setItem(storageKeyForScope(scope), JSON.stringify(p));
   } catch {
     // ignore
   }
@@ -70,6 +74,7 @@ export function FloatingCameraCard({
   width,
   height,
   editMode = false,
+  storageScope,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -81,13 +86,15 @@ export function FloatingCameraCard({
   width?: number;
   height?: number;
   editMode?: boolean;
+  /** Dashboard/room id so position is stored per page. */
+  storageScope?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
   const totalWidth = clampWidth(width);
   const totalHeight = clampHeight(height);
-  const [position, setPosition] = useState<Position>(() => loadPosition() ?? { left: 0, bottom: 0 });
+  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
@@ -127,15 +134,15 @@ export function FloatingCameraCard({
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
     const bounds = { maxLeft, maxBottom };
-    const saved = loadPosition();
+    const saved = loadPosition(storageScope);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
     const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
     setPosition(p);
-    savePosition(p);
-  }, [totalWidth, totalHeight]);
+    savePosition(storageScope, p);
+  }, [totalWidth, totalHeight, storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -183,11 +190,11 @@ export function FloatingCameraCard({
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(next);
+        savePosition(storageScope, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft, maxBottom]
+    [isDragging, maxLeft, maxBottom, storageScope]
   );
 
   return (

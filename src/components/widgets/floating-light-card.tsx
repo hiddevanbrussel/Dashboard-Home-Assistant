@@ -12,10 +12,14 @@ const CARD_WIDTH = 240;
 
 type Position = { left: number; bottom: number };
 
-function loadPosition(widgetId: string): Position | null {
+function storageKey(scope: string | undefined, widgetId: string): string {
+  return scope ? `${STORAGE_KEY_PREFIX}${scope}.${widgetId}` : `${STORAGE_KEY_PREFIX}${widgetId}`;
+}
+
+function loadPosition(scope: string | undefined, widgetId: string): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(STORAGE_KEY_PREFIX + widgetId);
+    const s = localStorage.getItem(storageKey(scope, widgetId));
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
@@ -28,10 +32,10 @@ function loadPosition(widgetId: string): Position | null {
   return null;
 }
 
-function savePosition(widgetId: string, p: Position) {
+function savePosition(scope: string | undefined, widgetId: string, p: Position) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY_PREFIX + widgetId, JSON.stringify(p));
+    localStorage.setItem(storageKey(scope, widgetId), JSON.stringify(p));
   } catch {
     // ignore
   }
@@ -57,6 +61,7 @@ export function FloatingLightCard({
   widget,
   widgetIndex = 0,
   editMode = false,
+  storageScope,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -64,6 +69,7 @@ export function FloatingLightCard({
   widget: LightCardWidgetItem;
   widgetIndex?: number;
   editMode?: boolean;
+  storageScope?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
@@ -71,7 +77,7 @@ export function FloatingLightCard({
   const entity = useEntityStateStore((s) => s.getState(widget.entity_id));
   const isSelectedOn = entity?.state === "on";
 
-  const [position, setPosition] = useState<Position>(() => loadPosition(widget.id) ?? { left: 0, bottom: DEFAULT_OFFSET });
+  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widget.id) ?? { left: 0, bottom: DEFAULT_OFFSET });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const isPointerDownOnCard = useRef(false);
@@ -117,15 +123,15 @@ export function FloatingLightCard({
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
     const bounds = { maxLeft, maxBottom };
-    const saved = loadPosition(widget.id);
+    const saved = loadPosition(storageScope, widget.id);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
     const p = snapToGrid(defaultPosition(widgetIndex), bounds);
     setPosition(p);
-    savePosition(widget.id, p);
-  }, [totalWidth, widget.id, widgetIndex]);
+    savePosition(storageScope, widget.id, p);
+  }, [totalWidth, widget.id, widgetIndex, storageScope]);
 
   const DRAG_THRESHOLD_PX = 6;
 
@@ -184,11 +190,11 @@ export function FloatingLightCard({
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(widget.id, next);
+        savePosition(storageScope, widget.id, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft, widget.id]
+    [isDragging, maxLeft, widget.id, storageScope]
   );
 
   return (

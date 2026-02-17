@@ -17,10 +17,14 @@ const DRAG_OVERFLOW_LEFT_BOTTOM = 24;
 
 type Position = { left: number; bottom: number };
 
-function loadPosition(widgetId: string): Position | null {
+function storageKey(scope: string | undefined, widgetId: string): string {
+  return scope ? `${STORAGE_KEY_PREFIX}${scope}.${widgetId}` : `${STORAGE_KEY_PREFIX}${widgetId}`;
+}
+
+function loadPosition(scope: string | undefined, widgetId: string): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(STORAGE_KEY_PREFIX + widgetId);
+    const s = localStorage.getItem(storageKey(scope, widgetId));
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
@@ -33,10 +37,10 @@ function loadPosition(widgetId: string): Position | null {
   return null;
 }
 
-function savePosition(widgetId: string, p: Position) {
+function savePosition(scope: string | undefined, widgetId: string, p: Position) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY_PREFIX + widgetId, JSON.stringify(p));
+    localStorage.setItem(storageKey(scope, widgetId), JSON.stringify(p));
   } catch {
     // ignore
   }
@@ -62,6 +66,7 @@ export function FloatingCardGroup({
   group,
   widgetIndex = 0,
   editMode = false,
+  storageScope,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -69,13 +74,14 @@ export function FloatingCardGroup({
   group: WidgetConfig & { children?: WidgetConfig[] };
   widgetIndex?: number;
   editMode?: boolean;
+  storageScope?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
   const alignment = (group.alignment as keyof typeof JUSTIFY_MAP) ?? "start";
   const children = group.children ?? [];
-  const [position, setPosition] = useState<Position>(() => loadPosition(group.id) ?? { left: 0, bottom: DEFAULT_OFFSET });
+  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, group.id) ?? { left: 0, bottom: DEFAULT_OFFSET });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0, width: CARD_MIN_WIDTH, height: CARD_MIN_HEIGHT });
   const initialized = useRef(false);
@@ -119,15 +125,15 @@ export function FloatingCardGroup({
     const minLeft = -DRAG_OVERFLOW_LEFT_BOTTOM;
     const minBottom = -DRAG_OVERFLOW_LEFT_BOTTOM;
     const bounds = { maxLeft, maxBottom, minLeft, minBottom };
-    const saved = loadPosition(group.id);
+    const saved = loadPosition(storageScope, group.id);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
     const p = snapToGrid(defaultPosition(widgetIndex), bounds);
     setPosition(p);
-    savePosition(group.id, p);
-  }, [group.id, widgetIndex]);
+    savePosition(storageScope, group.id, p);
+  }, [group.id, widgetIndex, storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -193,11 +199,11 @@ export function FloatingCardGroup({
           { maxLeft, maxBottom, minLeft, minBottom }
         );
         setPosition(next);
-        savePosition(group.id, next);
+        savePosition(storageScope, group.id, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, group.id]
+    [isDragging, group.id, storageScope]
   );
 
   return (

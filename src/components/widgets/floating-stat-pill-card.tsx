@@ -13,10 +13,14 @@ const CARD_WIDTH = 260;
 
 type Position = { left: number; bottom: number };
 
-function loadPosition(widgetId: string): Position | null {
+function storageKey(scope: string | undefined, widgetId: string): string {
+  return scope ? `${STORAGE_KEY_PREFIX}${scope}.${widgetId}` : `${STORAGE_KEY_PREFIX}${widgetId}`;
+}
+
+function loadPosition(scope: string | undefined, widgetId: string): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(STORAGE_KEY_PREFIX + widgetId);
+    const s = localStorage.getItem(storageKey(scope, widgetId));
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
@@ -29,10 +33,10 @@ function loadPosition(widgetId: string): Position | null {
   return null;
 }
 
-function savePosition(widgetId: string, p: Position) {
+function savePosition(scope: string | undefined, widgetId: string, p: Position) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY_PREFIX + widgetId, JSON.stringify(p));
+    localStorage.setItem(storageKey(scope, widgetId), JSON.stringify(p));
   } catch {
     // ignore
   }
@@ -59,6 +63,7 @@ export function FloatingStatPillCard({
   conditions,
   size = "md",
   editMode = false,
+  storageScope,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -73,11 +78,13 @@ export function FloatingStatPillCard({
   conditions?: { operator: string; value: string; color: string }[];
   size?: "sm" | "md" | "lg";
   editMode?: boolean;
+  /** Dashboard/room id so position is stored per page. */
+  storageScope?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
-  const [position, setPosition] = useState<Position>(() => loadPosition(widgetId) ?? { left: 0, bottom: 0 });
+  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
@@ -117,15 +124,15 @@ export function FloatingStatPillCard({
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
     const bounds = { maxLeft, maxBottom };
-    const saved = loadPosition(widgetId);
+    const saved = loadPosition(storageScope, widgetId);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
     const p = snapToGrid(defaultPosition(widgetIndex), bounds);
     setPosition(p);
-    savePosition(widgetId, p);
-  }, [widgetId, widgetIndex]);
+    savePosition(storageScope, widgetId, p);
+  }, [widgetId, widgetIndex, storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -174,11 +181,11 @@ export function FloatingStatPillCard({
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(widgetId, next);
+        savePosition(storageScope, widgetId, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, widgetId]
+    [isDragging, widgetId, storageScope]
   );
 
   return (

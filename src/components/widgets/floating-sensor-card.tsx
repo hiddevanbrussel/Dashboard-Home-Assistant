@@ -12,10 +12,14 @@ const CARD_WIDTHS = { sm: 180, md: 260, lg: 320 } as const;
 
 type Position = { left: number; bottom: number };
 
-function loadPosition(widgetId: string): Position | null {
+function storageKey(scope: string | undefined, widgetId: string): string {
+  return scope ? `${STORAGE_KEY_PREFIX}${scope}.${widgetId}` : `${STORAGE_KEY_PREFIX}${widgetId}`;
+}
+
+function loadPosition(scope: string | undefined, widgetId: string): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(STORAGE_KEY_PREFIX + widgetId);
+    const s = localStorage.getItem(storageKey(scope, widgetId));
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
@@ -28,10 +32,10 @@ function loadPosition(widgetId: string): Position | null {
   return null;
 }
 
-function savePosition(widgetId: string, p: Position) {
+function savePosition(scope: string | undefined, widgetId: string, p: Position) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY_PREFIX + widgetId, JSON.stringify(p));
+    localStorage.setItem(storageKey(scope, widgetId), JSON.stringify(p));
   } catch {
     // ignore
   }
@@ -59,6 +63,7 @@ export function FloatingSensorCard({
   size = "md",
   conditions,
   editMode = false,
+  storageScope,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -72,12 +77,13 @@ export function FloatingSensorCard({
   size?: "sm" | "md" | "lg";
   conditions?: SensorCondition[];
   editMode?: boolean;
+  storageScope?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
   const cardWidth = CARD_WIDTHS[size ?? "md"];
-  const [position, setPosition] = useState<Position>(() => loadPosition(widgetId) ?? defaultPosition(cardWidth, widgetIndex));
+  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? defaultPosition(cardWidth, widgetIndex));
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
