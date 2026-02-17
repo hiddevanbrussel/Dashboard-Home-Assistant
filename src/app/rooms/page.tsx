@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { DoorOpen, Image as ImageIcon, LayoutGrid, Plus, Trash2, X } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
+import { cn } from "@/lib/utils";
 import { CARD_ICONS } from "@/components/widgets/card-icons";
 import { RoomPreviewCard } from "@/components/widgets/room-preview-card";
 
