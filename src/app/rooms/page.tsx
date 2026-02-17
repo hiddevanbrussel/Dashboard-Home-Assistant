@@ -77,6 +77,7 @@ export default function RoomsPage() {
   const [editCustomFloor, setEditCustomFloor] = useState("");
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [selectedFloor, setSelectedFloor] = useState<string | null>(null);
 
   const loadRooms = useCallback(() => {
     setLoading(true);
@@ -223,10 +224,47 @@ export default function RoomsPage() {
     }
   }
 
+  const floorsWithRooms = groupRoomsByFloor(rooms);
+  const getFloorLabel = (floor: string) => {
+    if (!floor) return t("rooms.floorOther");
+    const opt = FLOOR_OPTIONS.find((o) => o.value === floor);
+    return opt ? t(opt.labelKey) : floor;
+  };
+  const floorTabs = floorsWithRooms.map(({ floor }) => ({
+    key: floor || "_",
+    label: getFloorLabel(floor || ""),
+    floor: floor || "",
+  }));
+
+  const openAddModal = () => {
+    setAddModalOpen(true);
+    setCreateError(null);
+    setNewName("");
+    setNewId("");
+    setNewIcon(ROOM_ICON_OPTIONS[0]);
+    setNewIconBackgroundColor("#3B82F6");
+    setNewFloor("");
+    setNewCustomFloor("");
+    setNewBackgroundFile(null);
+    setNewBackgroundPreview(null);
+  };
+
   return (
-    <AppShell activeTab="/rooms">
+    <AppShell
+      activeTab="/rooms"
+      headerEndAction={
+        <button
+          type="button"
+          onClick={openAddModal}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+          aria-label={t("rooms.addRoom")}
+        >
+          <Plus className="h-5 w-5" />
+        </button>
+      }
+    >
       <div className="space-y-6 px-6 md:px-8">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               {t("rooms.title")}
@@ -235,25 +273,37 @@ export default function RoomsPage() {
               {t("rooms.description")}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setAddModalOpen(true);
-              setCreateError(null);
-              setNewName("");
-              setNewId("");
-              setNewIcon(ROOM_ICON_OPTIONS[0]);
-              setNewIconBackgroundColor("#3B82F6");
-              setNewFloor("");
-              setNewCustomFloor("");
-              setNewBackgroundFile(null);
-              setNewBackgroundPreview(null);
-            }}
-            className="flex items-center gap-2 rounded-xl border border-[#4D2FB2]/40 bg-[#4D2FB2]/10 px-4 py-2.5 text-sm font-medium text-[#4D2FB2] transition-colors hover:bg-[#4D2FB2]/20 dark:border-[#4D2FB2]/40 dark:bg-[#4D2FB2]/20 dark:text-[#4D2FB2] dark:hover:bg-[#4D2FB2]/30"
-          >
-            <Plus className="h-4 w-4" />
-            {t("rooms.addRoom")}
-          </button>
+          {rooms.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              <button
+                type="button"
+                onClick={() => setSelectedFloor(null)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                  selectedFloor === null
+                    ? "bg-[#4D2FB2] text-white"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+                )}
+              >
+                {t("rooms.floorAll")}
+              </button>
+              {floorTabs.map(({ key, label, floor }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSelectedFloor(floor)}
+                  className={cn(
+                    "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                    selectedFloor === floor
+                      ? "bg-[#4D2FB2] text-white"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {loading && (
@@ -282,7 +332,7 @@ export default function RoomsPage() {
             </p>
             <button
               type="button"
-              onClick={() => setAddModalOpen(true)}
+              onClick={openAddModal}
               className="mt-6 flex items-center gap-2 rounded-xl bg-[#4D2FB2] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 dark:bg-[#4D2FB2]"
             >
               <Plus className="h-4 w-4" />
@@ -293,11 +343,13 @@ export default function RoomsPage() {
 
         {!loading && !error && rooms.length > 0 && (
           <div className="space-y-6">
-            {groupRoomsByFloor(rooms).map(({ floor, rooms: floorRooms }) => (
+            {(selectedFloor === null ? floorsWithRooms : floorsWithRooms.filter(({ floor }) => (floor || "") === selectedFloor)).map(({ floor, rooms: floorRooms }) => (
               <div key={floor || "_"} className="space-y-3">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                  {floor ? floor : t("rooms.floorOther")}
-                </h3>
+                {selectedFloor === null && (
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    {getFloorLabel(floor || "")}
+                  </h3>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {floorRooms.map((r) => (
                     <RoomPreviewCard
