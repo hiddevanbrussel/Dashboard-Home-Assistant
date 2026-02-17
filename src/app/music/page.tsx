@@ -237,6 +237,7 @@ export default function MusicPage() {
       callMusicAssistant(baseUrl, token, "player_queues/add", {
           queue_id: queueId,
           uri,
+          url: uri,
         })
           .then((addData: unknown) => {
             const addErr = (addData as { error?: string })?.error;
@@ -357,10 +358,21 @@ export default function MusicPage() {
         </button>
       </div>
       <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
+        {selectedQueueId && maPlayers.length > 0 && (
+          <p className="text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-3">
+            Afspelen op: <span className="font-medium text-gray-900 dark:text-white">{playerLabel(maPlayers.find((p) => p.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId })}</span>
+          </p>
+        )}
         {searchResults.length > 0 ? (
           <ul className="space-y-1 max-w-2xl mx-auto" role="list">
             {searchResults.map((item, index) => {
-              const uri = item.uri ?? (item as { item_id?: string })?.item_id;
+              const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
+              const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
+              const uri = typeof rawUri === "string" && rawUri
+                ? rawUri
+                : itemId != null
+                  ? `${(item as { provider?: string })?.provider ?? "library"}://track/${itemId}`
+                  : "";
               const name = item.name ?? "Onbekend";
               const artists = item.artists;
               const artistNames = Array.isArray(artists)
