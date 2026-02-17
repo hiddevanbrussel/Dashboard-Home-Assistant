@@ -46,7 +46,15 @@ export async function POST(request: Request) {
       headers,
       body: JSON.stringify(payload),
     });
-    const data = await res.json().catch(() => ({}));
+    const rawText = await res.text();
+    const data = (() => {
+      try {
+        if (!rawText.trim()) return {};
+        return JSON.parse(rawText) as Record<string, unknown>;
+      } catch {
+        return {};
+      }
+    })();
     if (!res.ok) {
       const msg = (data as { message?: string })?.message;
       const err = (data as { error?: string })?.error;
@@ -56,12 +64,12 @@ export async function POST(request: Request) {
         : typeof detail === "string"
           ? detail
           : null;
-      const raw = typeof data === "object" && data !== null ? JSON.stringify(data) : "";
+      const fallback = rawText.length > 0 && rawText.length < 600 ? rawText : `MA API error: ${res.status}`;
       let errorMessage: string =
         (typeof msg === "string" ? msg : null) ??
         (typeof err === "string" ? err : null) ??
         (typeof detailStr === "string" ? detailStr : null) ??
-        (raw.length > 0 && raw.length < 500 ? raw : `MA API error: ${res.status}`);
+        fallback;
       if (res.status === 401) {
         errorMessage =
           "Music Assistant returned 401 Unauthorized. Add a valid API token in Settings (from Music Assistant → Settings → User management / API token).";
@@ -71,7 +79,7 @@ export async function POST(request: Request) {
         { status: res.status >= 400 && res.status < 600 ? res.status : 502 }
       );
     }
-    return NextResponse.json(data);
+    return NextResponse.json(data as Record<string, unknown>);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to reach Music Assistant";
     return NextResponse.json({ error: message }, { status: 502 });
