@@ -784,6 +784,7 @@ export const RoomDashboardScalarFieldEnum = {
   areaId: 'areaId',
   name: 'name',
   icon: 'icon',
+  iconBackgroundColor: 'iconBackgroundColor',
   floor: 'floor',
   layout: 'layout',
   widgets: 'widgets',

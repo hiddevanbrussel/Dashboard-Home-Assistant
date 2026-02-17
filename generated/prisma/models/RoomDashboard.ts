@@ -29,6 +29,7 @@ export type RoomDashboardMinAggregateOutputType = {
   areaId: string | null
   name: string | null
   icon: string | null
+  iconBackgroundColor: string | null
   floor: string | null
   layout: string | null
   widgets: string | null
@@ -44,6 +45,7 @@ export type RoomDashboardMaxAggregateOutputType = {
   areaId: string | null
   name: string | null
   icon: string | null
+  iconBackgroundColor: string | null
   floor: string | null
   layout: string | null
   widgets: string | null
@@ -59,6 +61,7 @@ export type RoomDashboardCountAggregateOutputType = {
   areaId: number
   name: number
   icon: number
+  iconBackgroundColor: number
   floor: number
   layout: number
   widgets: number
@@ -76,6 +79,7 @@ export type RoomDashboardMinAggregateInputType = {
   areaId?: true
   name?: true
   icon?: true
+  iconBackgroundColor?: true
   floor?: true
   layout?: true
   widgets?: true
@@ -91,6 +95,7 @@ export type RoomDashboardMaxAggregateInputType = {
   areaId?: true
   name?: true
   icon?: true
+  iconBackgroundColor?: true
   floor?: true
   layout?: true
   widgets?: true
@@ -106,6 +111,7 @@ export type RoomDashboardCountAggregateInputType = {
   areaId?: true
   name?: true
   icon?: true
+  iconBackgroundColor?: true
   floor?: true
   layout?: true
   widgets?: true
@@ -194,6 +200,7 @@ export type RoomDashboardGroupByOutputType = {
   areaId: string
   name: string | null
   icon: string | null
+  iconBackgroundColor: string | null
   floor: string | null
   layout: string | null
   widgets: string | null
@@ -230,6 +237,7 @@ export type RoomDashboardWhereInput = {
   areaId?: Prisma.StringFilter<"RoomDashboard"> | string
   name?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   icon?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
+  iconBackgroundColor?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   floor?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   layout?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   widgets?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
@@ -245,6 +253,7 @@ export type RoomDashboardOrderByWithRelationInput = {
   areaId?: Prisma.SortOrder
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   icon?: Prisma.SortOrderInput | Prisma.SortOrder
+  iconBackgroundColor?: Prisma.SortOrderInput | Prisma.SortOrder
   floor?: Prisma.SortOrderInput | Prisma.SortOrder
   layout?: Prisma.SortOrderInput | Prisma.SortOrder
   widgets?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -263,6 +272,7 @@ export type RoomDashboardWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.RoomDashboardWhereInput | Prisma.RoomDashboardWhereInput[]
   name?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   icon?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
+  iconBackgroundColor?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   floor?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   layout?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   widgets?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
@@ -278,6 +288,7 @@ export type RoomDashboardOrderByWithAggregationInput = {
   areaId?: Prisma.SortOrder
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   icon?: Prisma.SortOrderInput | Prisma.SortOrder
+  iconBackgroundColor?: Prisma.SortOrderInput | Prisma.SortOrder
   floor?: Prisma.SortOrderInput | Prisma.SortOrder
   layout?: Prisma.SortOrderInput | Prisma.SortOrder
   widgets?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -299,6 +310,7 @@ export type RoomDashboardScalarWhereWithAggregatesInput = {
   areaId?: Prisma.StringWithAggregatesFilter<"RoomDashboard"> | string
   name?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
   icon?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
+  iconBackgroundColor?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
   floor?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
   layout?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
   widgets?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
@@ -314,6 +326,7 @@ export type RoomDashboardCreateInput = {
   areaId: string
   name?: string | null
   icon?: string | null
+  iconBackgroundColor?: string | null
   floor?: string | null
   layout?: string | null
   widgets?: string | null
@@ -329,6 +342,7 @@ export type RoomDashboardUncheckedCreateInput = {
   areaId: string
   name?: string | null
   icon?: string | null
+  iconBackgroundColor?: string | null
   floor?: string | null
   layout?: string | null
   widgets?: string | null
@@ -344,6 +358,7 @@ export type RoomDashboardUpdateInput = {
   areaId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iconBackgroundColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   layout?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   widgets?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -359,6 +374,7 @@ export type RoomDashboardUncheckedUpdateInput = {
   areaId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iconBackgroundColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   layout?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   widgets?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -374,6 +390,7 @@ export type RoomDashboardCreateManyInput = {
   areaId: string
   name?: string | null
   icon?: string | null
+  iconBackgroundColor?: string | null
   floor?: string | null
   layout?: string | null
   widgets?: string | null
@@ -389,6 +406,7 @@ export type RoomDashboardUpdateManyMutationInput = {
   areaId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iconBackgroundColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   layout?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   widgets?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -404,6 +422,7 @@ export type RoomDashboardUncheckedUpdateManyInput = {
   areaId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  iconBackgroundColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   floor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   layout?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   widgets?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -419,6 +438,7 @@ export type RoomDashboardCountOrderByAggregateInput = {
   areaId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   icon?: Prisma.SortOrder
+  iconBackgroundColor?: Prisma.SortOrder
   floor?: Prisma.SortOrder
   layout?: Prisma.SortOrder
   widgets?: Prisma.SortOrder
@@ -434,6 +454,7 @@ export type RoomDashboardMaxOrderByAggregateInput = {
   areaId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   icon?: Prisma.SortOrder
+  iconBackgroundColor?: Prisma.SortOrder
   floor?: Prisma.SortOrder
   layout?: Prisma.SortOrder
   widgets?: Prisma.SortOrder
@@ -449,6 +470,7 @@ export type RoomDashboardMinOrderByAggregateInput = {
   areaId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   icon?: Prisma.SortOrder
+  iconBackgroundColor?: Prisma.SortOrder
   floor?: Prisma.SortOrder
   layout?: Prisma.SortOrder
   widgets?: Prisma.SortOrder
@@ -466,6 +488,7 @@ export type RoomDashboardSelect<ExtArgs extends runtime.Types.Extensions.Interna
   areaId?: boolean
   name?: boolean
   icon?: boolean
+  iconBackgroundColor?: boolean
   floor?: boolean
   layout?: boolean
   widgets?: boolean
@@ -481,6 +504,7 @@ export type RoomDashboardSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   areaId?: boolean
   name?: boolean
   icon?: boolean
+  iconBackgroundColor?: boolean
   floor?: boolean
   layout?: boolean
   widgets?: boolean
@@ -496,6 +520,7 @@ export type RoomDashboardSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   areaId?: boolean
   name?: boolean
   icon?: boolean
+  iconBackgroundColor?: boolean
   floor?: boolean
   layout?: boolean
   widgets?: boolean
@@ -511,6 +536,7 @@ export type RoomDashboardSelectScalar = {
   areaId?: boolean
   name?: boolean
   icon?: boolean
+  iconBackgroundColor?: boolean
   floor?: boolean
   layout?: boolean
   widgets?: boolean
@@ -521,7 +547,7 @@ export type RoomDashboardSelectScalar = {
   updatedAt?: boolean
 }
 
-export type RoomDashboardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "areaId" | "name" | "icon" | "floor" | "layout" | "widgets" | "background" | "welcomeTitle" | "welcomeSubtitle" | "createdAt" | "updatedAt", ExtArgs["result"]["roomDashboard"]>
+export type RoomDashboardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "areaId" | "name" | "icon" | "iconBackgroundColor" | "floor" | "layout" | "widgets" | "background" | "welcomeTitle" | "welcomeSubtitle" | "createdAt" | "updatedAt", ExtArgs["result"]["roomDashboard"]>
 
 export type $RoomDashboardPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "RoomDashboard"
@@ -531,6 +557,7 @@ export type $RoomDashboardPayload<ExtArgs extends runtime.Types.Extensions.Inter
     areaId: string
     name: string | null
     icon: string | null
+    iconBackgroundColor: string | null
     floor: string | null
     layout: string | null
     widgets: string | null
@@ -966,6 +993,7 @@ export interface RoomDashboardFieldRefs {
   readonly areaId: Prisma.FieldRef<"RoomDashboard", 'String'>
   readonly name: Prisma.FieldRef<"RoomDashboard", 'String'>
   readonly icon: Prisma.FieldRef<"RoomDashboard", 'String'>
+  readonly iconBackgroundColor: Prisma.FieldRef<"RoomDashboard", 'String'>
   readonly floor: Prisma.FieldRef<"RoomDashboard", 'String'>
   readonly layout: Prisma.FieldRef<"RoomDashboard", 'String'>
   readonly widgets: Prisma.FieldRef<"RoomDashboard", 'String'>

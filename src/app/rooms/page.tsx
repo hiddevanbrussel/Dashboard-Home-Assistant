@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { CARD_ICONS } from "@/components/widgets/card-icons";
 import { RoomPreviewCard } from "@/components/widgets/room-preview-card";
 
-const ROOM_ICON_OPTIONS = ["DoorOpen", "Home", "Sofa", "BedDouble", "Bath", "UtensilsCrossed", "Lamp", "Car", "Building2"] as const;
+const ROOM_ICON_OPTIONS = ["trees", "popcorn", "utensils-crossed", "towel-rack", "baby", "rocket", "gamepad", "tent-tree", "footprints", "eye-closed", "drill", "shelving-unit", "tool-case"] as const;
 
 type RoomItem = { areaId: string; name: string; icon?: string | null; iconBackgroundColor?: string | null; floor?: string | null; background?: string | null; createdAt: string };
 
