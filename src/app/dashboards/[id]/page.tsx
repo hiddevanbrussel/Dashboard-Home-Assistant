@@ -1276,30 +1276,31 @@ export default function DashboardEditPage() {
           </ReactGridLayout>
         </div>
 
-        {(() => {
-          const firstMedia = widgets.find((w) => w.type === "media_card");
-          return firstMedia ? (
+        {widgets
+          .filter((w) => w.type === "media_card")
+          .map((w) => (
             <FloatingMediaCard
-              title={firstMedia.title ?? "Media"}
-              entity_id={firstMedia.entity_id}
-              width={firstMedia.width}
-              height={firstMedia.height}
+              key={w.id}
+              title={w.title ?? "Media"}
+              entity_id={w.entity_id}
+              width={w.width}
+              height={w.height}
               editMode={editMode}
               storageScope={id}
+              widgetId={w.id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstMedia.id)
+                  ? () => setEditingWidgetId(w.id)
                   : undefined
               }
               onRemove={
                 editMode
-                  ? () => handleRemoveTile(firstMedia.id)
+                  ? () => handleRemoveTile(w.id)
                   : undefined
               }
             />
-          ) : null;
-        })()}
+          ))}
 
         {(() => {
           const climateCards = widgets.filter(
