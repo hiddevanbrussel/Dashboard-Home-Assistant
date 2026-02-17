@@ -76,7 +76,6 @@ export default function MusicPage() {
           }
           const list = Array.isArray(data) ? data : (data as { result?: MAPlayer[] })?.result ?? [];
           setMaPlayers(list);
-          if (list.length > 0 && !selectedQueueId) setSelectedQueueId((list[0] as MAPlayer).queue_id);
         })
         .catch((err) => setError(err instanceof Error ? err.message : "Er is iets misgegaan."))
         .finally(() => setPlayersLoading(false));
@@ -95,6 +94,14 @@ export default function MusicPage() {
       .catch((err) => setError(err instanceof Error ? err.message : "Er is iets misgegaan."))
       .finally(() => setPlayersLoading(false));
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+
+  useEffect(() => {
+    if (maPlayers.length === 0) return;
+    const ids = new Set(maPlayers.map((p) => p.queue_id));
+    if (!selectedQueueId || !ids.has(selectedQueueId)) {
+      setSelectedQueueId(maPlayers[0].queue_id);
+    }
+  }, [maPlayers, selectedQueueId]);
 
   const runSearch = useCallback(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !searchQuery.trim()) return;
@@ -327,7 +334,7 @@ export default function MusicPage() {
                         <button
                           type="button"
                           onClick={() => canPlay && playOnPlayer(uri)}
-                          disabled={!canPlay || isPlayPending}
+                          disabled={!canPlay || !!isPlayPending}
                           className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
                           title={`Afspelen op ${selectedQueueId ? playerLabel(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : "speler"}`}
                         >
