@@ -65,6 +65,7 @@ export function RoomCardWidget({
 
   const toggleLight = useCallback(async () => {
     if (!light_entity_id) return;
+    updateEntityState(light_entity_id, { state: isLightOn ? "off" : "on" });
     setLoading(true);
     try {
       const res = await fetch("/api/ha/call-service", {
@@ -78,8 +79,7 @@ export function RoomCardWidget({
         }),
       });
       if (res.ok) {
-        updateEntityState(light_entity_id, { state: isLightOn ? "off" : "on" });
-        await refreshState();
+        refreshState().catch(() => {});
       }
     } finally {
       setLoading(false);

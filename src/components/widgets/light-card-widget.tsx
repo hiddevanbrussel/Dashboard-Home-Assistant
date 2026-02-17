@@ -93,7 +93,9 @@ export function LightCardWidget({
           service_data: serviceData,
         }),
       });
-      if (res.ok) await refreshState();
+      if (res.ok) {
+        refreshState().catch(() => {});
+      }
     } finally {
       setLoading(false);
     }

@@ -36,11 +36,13 @@ export const useEntityStateStore = create<EntityStateStore>((set, get) => ({
   },
   updateEntityState: (entityId, patch) => {
     const current = get().states[entityId];
-    if (!current) return;
+    const next = current
+      ? { ...current, ...patch }
+      : { entity_id: entityId, state: (patch.state as string) ?? "unknown", attributes: patch.attributes ?? {} };
     set({
       states: {
         ...get().states,
-        [entityId]: { ...current, ...patch },
+        [entityId]: next,
       },
       updatedAt: Date.now(),
     });

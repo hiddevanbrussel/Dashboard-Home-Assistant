@@ -44,6 +44,7 @@ export function TextCardWidget({
       e.preventDefault();
       if (!entity_id || loading) return;
       const nextOn = !isOn;
+      updateEntityState(entity_id, { state: nextOn ? "on" : "off" });
       setLoading(true);
       try {
         const res = await fetch("/api/ha/call-service", {
@@ -57,9 +58,7 @@ export function TextCardWidget({
           }),
         });
         if (res.ok) {
-          updateEntityState(entity_id, { state: nextOn ? "on" : "off" });
-          const data = await fetch("/api/ha/state").then((r) => r.json());
-          if (Array.isArray(data)) setStates(data);
+          fetch("/api/ha/state").then((r) => r.json()).then((data) => { if (Array.isArray(data)) setStates(data); }).catch(() => {});
         }
       } finally {
         setLoading(false);

@@ -108,10 +108,13 @@ export function PillCardWidget({
       ? (isOn ? STATUS_STYLE.on : STATUS_STYLE.off)
       : STATUS_STYLE.neutral;
 
+  const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
+
   async function handleToggle(e: React.MouseEvent) {
     e.stopPropagation();
     if (!canToggle) return;
     const nextOn = !isOn;
+    updateEntityState(entity_id, { state: nextOn ? "on" : "off" });
     try {
       const res = await fetch("/api/ha/call-service", {
         method: "POST",
@@ -124,8 +127,7 @@ export function PillCardWidget({
         }),
       });
       if (res.ok) {
-        const data = await fetch("/api/ha/state").then((r) => r.json());
-        if (Array.isArray(data)) setStates(data);
+        fetch("/api/ha/state").then((r) => r.json()).then((data) => { if (Array.isArray(data)) setStates(data); }).catch(() => {});
       }
     } catch {
       // ignore
