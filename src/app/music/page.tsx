@@ -68,6 +68,8 @@ export default function MusicPage() {
   const volumePopoverRef = useRef<HTMLDivElement>(null);
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [recentItems, setRecentItems] = useState<MASearchItem[]>([]);
+  const [recentLoading, setRecentLoading] = useState(false);
 
   useEffect(() => {
     if (!volumePopoverOpen) return;
@@ -150,6 +152,32 @@ export default function MusicPage() {
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
 
   useEffect(() => {
+    if (!musicAssistant.enabled || !musicAssistant.baseUrl) return;
+    setRecentLoading(true);
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/recently_played_items", {
+      limit: 24,
+      media_types: ["track", "album"],
+    })
+      .then((data: unknown) => {
+        const err = (data as { error?: string })?.error;
+        if (err) return;
+        const d = data as Record<string, unknown>;
+        const result = d?.result ?? d;
+        const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+        let items: MASearchItem[] = [];
+        if (Array.isArray(resultObj.tracks)) items = resultObj.tracks as MASearchItem[];
+        else if (Array.isArray(resultObj.track)) items = resultObj.track as MASearchItem[];
+        else if (Array.isArray(resultObj.items)) items = resultObj.items as MASearchItem[];
+        else if (Array.isArray(result)) items = result as MASearchItem[];
+        else if (Array.isArray(d.tracks)) items = d.tracks as MASearchItem[];
+        else if (Array.isArray((d as { items?: MASearchItem[] }).items)) items = (d as { items: MASearchItem[] }).items;
+        setRecentItems(Array.isArray(items) ? items : []);
+      })
+      .catch(() => setRecentItems([]))
+      .finally(() => setRecentLoading(false));
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+
+  useEffect(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
     const fetchState = () => {
       callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "player_queues/get", {
@@ -228,16 +256,20 @@ export default function MusicPage() {
 
   const playOnPlayer = useCallback(
     (uri: string) => {
-      if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
-      setPlayPending(uri);
+      const trimmedUri = typeof uri === "string" ? uri.trim() : "";
+      if (!trimmedUri || !selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) {
+        if (!trimmedUri) setError("Geen nummer om af te spelen (ontbrekende gegevens).");
+        return;
+      }
+      setPlayPending(trimmedUri);
       const baseUrl = musicAssistant.baseUrl;
       const token = musicAssistant.token;
       const queueId = selectedQueueId;
 
       callMusicAssistant(baseUrl, token, "player_queues/add", {
           queue_id: queueId,
-          uri,
-          url: uri,
+          player_id: queueId,
+          uri: trimmedUri,
         })
           .then((addData: unknown) => {
             const addErr = (addData as { error?: string })?.error;
@@ -524,13 +556,68 @@ export default function MusicPage() {
         )}
 
         {!playersLoading && useMA && maPlayers.length > 0 && (
-          <GlassCard>
-            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5 flex-wrap">
-              <span>Klik op het zoekicoon</span>
-              <Search className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
-              <span>in de balk boven om te zoeken op artiest, nummer of album.</span>
-            </p>
-          </GlassCard>
+          <>
+            <GlassCard>
+              <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5 flex-wrap">
+                <span>Klik op het zoekicoon</span>
+                <Search className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
+                <span>in de balk boven om te zoeken op artiest, nummer of album.</span>
+              </p>
+            </GlassCard>
+
+            <GlassCard>
+              <h3 className="text-card-title font-medium text-gray-700 dark:text-gray-200 mb-3">
+                Onlangs afgespeeld
+              </h3>
+              {recentLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                </div>
+              ) : recentItems.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 py-4">Nog geen afspeelgeschiedenis.</p>
+              ) : (
+                <ul className="space-y-1" role="list">
+                  {recentItems.map((item, index) => {
+                    const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
+                    const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
+                    const uri = typeof rawUri === "string" && rawUri ? rawUri : itemId != null ? `${(item as { provider?: string })?.provider ?? "library"}://track/${itemId}` : "";
+                    const name = item.name ?? "Onbekend";
+                    const artists = item.artists;
+                    const artistNames = Array.isArray(artists) ? artists.map((a) => (a && typeof a === "object" && "name" in a ? (a as { name?: string }).name : null)).filter(Boolean).join(", ") || "—" : artists && typeof artists === "object" && "name" in artists ? (artists as { name?: string }).name : "—";
+                    const albumName = item.album?.name;
+                    const duration = item.duration;
+                    const isPlayPending = uri && playPending === uri;
+                    const canPlay = !!uri && !!selectedQueueId;
+                    return (
+                      <li key={uri || `recent-${index}`} className="flex items-center gap-3 rounded-xl border border-transparent bg-white/50 dark:bg-white/5 px-3 py-2.5 hover:bg-white/80 dark:hover:bg-white/10">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
+                          <Disc3 className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
+                          <p className="truncate text-xs text-gray-500 dark:text-gray-400">{artistNames}{albumName ? ` · ${albumName}` : ""}</p>
+                        </div>
+                        <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">{formatDuration(duration)}</span>
+                        <button
+                          type="button"
+                          onClick={() => canPlay && playOnPlayer(uri)}
+                          disabled={!canPlay || !!isPlayPending}
+                          className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
+                          title={`Afspelen op ${selectedQueueId ? playerLabel(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : "speler"}`}
+                        >
+                          {isPlayPending ? (
+                            <span className="h-4 w-4 block animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-900 dark:border-t-transparent" aria-hidden />
+                          ) : (
+                            <Play className="h-4 w-4 fill-current" aria-hidden />
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </GlassCard>
+          </>
         )}
       </div>
 
