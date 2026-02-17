@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
-import { TitleCardWidget } from "./title-card-widget";
+import { TextCardWidget } from "./text-card-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingTextCardPosition.";
 const DEFAULT_OFFSET = 24;
@@ -45,16 +44,17 @@ function defaultPosition(widgetIndex: number): Position {
   const row = Math.floor(widgetIndex / cols);
   const col = widgetIndex % cols;
   return {
-    left: Math.max(0, Math.min(col * (maxLeft / (cols - 1)), maxLeft)),
+    left: Math.max(0, Math.min(col * Math.max(1, maxLeft / (cols - 1)), maxLeft)),
     bottom: Math.max(0, maxBottom - row * 80),
   };
 }
 
-export type TextCardWidgetItem = {
+export type FloatingTextCardItem = {
   id: string;
   title: string;
-  subtitle?: string;
-  textMode?: "title" | "subtitle" | "text" | "both";
+  textMode?: "title" | "subtitle" | "text";
+  show_icon?: boolean;
+  icon?: string;
 };
 
 const LONG_PRESS_MS = 500;
@@ -67,7 +67,7 @@ export function FloatingTextCard({
   onEdit,
   onEnterEditMode,
 }: {
-  widget: TextCardWidgetItem;
+  widget: FloatingTextCardItem;
   widgetIndex?: number;
   editMode?: boolean;
   onRemove?: () => void;
@@ -92,7 +92,7 @@ export function FloatingTextCard({
     (e: React.PointerEvent) => {
       if (editMode || !onEnterEditMode) return;
       const target = e.target as HTMLElement;
-      if (target?.closest?.("button") ?? false) return;
+      if (target?.closest?.("button")) return;
       clearLongPress();
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       longPressTimerRef.current = setTimeout(() => {
@@ -197,8 +197,8 @@ export function FloatingTextCard({
   return (
     <div
       className={cn(
-        "fixed z-30 shadow-xl rounded-2xl overflow-visible backdrop-blur-2xl border flex transition-colors duration-200 relative",
-        "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
+        "fixed z-30 rounded-2xl overflow-visible flex transition-colors duration-200",
+        "border border-white/20 dark:border-white/10",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -206,7 +206,6 @@ export function FloatingTextCard({
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
-        ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
         onEnterEditMode && {
@@ -226,31 +225,13 @@ export function FloatingTextCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      {editMode && (
-        <>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
-            className="absolute -right-8 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-600 text-white shadow hover:bg-gray-700"
-            aria-label="Edit tile"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onRemove?.(); }}
-            className="absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
-            aria-label="Remove tile"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </>
-      )}
-      <div className="shrink-0 flex flex-col p-4 relative" style={{ width: CARD_WIDTH }}>
-        <TitleCardWidget
-          title={widget.title}
-          subtitle={widget.subtitle}
-          mode={widget.textMode ?? "title"}
+      <div className={cn("shrink-0 flex flex-col p-4 w-full", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")} style={{ width: CARD_WIDTH }}>
+        <TextCardWidget
+          text={widget.title ?? ""}
+          type={widget.textMode ?? "title"}
+          show_icon={widget.show_icon ?? false}
+          icon={widget.icon ?? "Type"}
+          onMoreClick={editMode && onEdit ? () => onEdit() : undefined}
         />
       </div>
     </div>

@@ -6,7 +6,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
 import { CardDefinitionModal } from "@/components/card-definition-modal";
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -36,8 +36,9 @@ import {
   FloatingVacuumCard,
   SensorCardWidget,
   FloatingSensorCard,
-  TitleCardWidget,
+  TextCardWidget,
   FloatingTextCard,
+  CARD_ICON_OPTIONS,
   CLIMATE_ICON_OPTIONS,
   VACUUM_ICON_OPTIONS,
   SENSOR_ICON_OPTIONS,
@@ -58,7 +59,6 @@ import {
   FloatingStatPillCard,
   CameraCardWidget,
   FloatingCameraCard,
-  CARD_ICON_OPTIONS,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import type { ImageCondition, SensorCondition } from "@/components/widgets";
@@ -76,7 +76,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "light_card", label: "Lamp", Icon: Lightbulb },
   { type: "media_card", label: "Media", Icon: Music2 },
   { type: "solar_card", label: "Zonnepanelen", Icon: Sun },
-  { type: "energy_monitor_card", label: "Afbeeldingskaart", Icon: Sun },
+  { type: "energy_monitor_card", label: "Afbeeldingskaart", Icon: ImageIcon },
   { type: "power_usage_card", label: "Stroomverbruik", Icon: Zap },
   { type: "stat_pill_card", label: "Stat pill", Icon: CircleDot },
   { type: "sensor_card", label: "Sensor", Icon: Gauge },
@@ -217,13 +217,22 @@ function WidgetByType({
 
   switch (type) {
     case "text_card":
-      return <TitleCardWidget title={title} subtitle={subtitle} mode={textMode ?? "title"} />;
     case "title_card":
-      return <TitleCardWidget title={title} subtitle={subtitle} mode="both" />;
     case "title_only_card":
-      return <TitleCardWidget title={title} mode="title" />;
-    case "subtitle_card":
-      return <TitleCardWidget title={title} mode="subtitle" />;
+    case "subtitle_card": {
+      const textType: "title" | "subtitle" | "text" =
+        type === "title_card" || type === "title_only_card" ? "title"
+        : type === "subtitle_card" ? "subtitle"
+        : (textMode === "title" || textMode === "subtitle" || textMode === "text" ? textMode : "title");
+      return (
+        <TextCardWidget
+          text={title ?? ""}
+          type={textType}
+          show_icon={show_icon ?? false}
+          icon={icon ?? "Type"}
+        />
+      );
+    }
     case "energy_usage":
       return <EnergyUsageWidget title={title} entity_id={entity_id} size={sizeProp} value={num} />;
     case "light_control":
@@ -410,7 +419,7 @@ export default function DashboardEditPage() {
   const [editForm, setEditForm] = useState<{
     title: string;
     subtitle?: string;
-    textMode?: "title" | "subtitle" | "text" | "both";
+    textMode?: "title" | "subtitle" | "text";
     entity_id: string;
     consumption_entity_id?: string;
     grid_entity_id?: string;
@@ -588,11 +597,13 @@ export default function DashboardEditPage() {
     }
     if (editingWidget) {
       const isCategoryCard = editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card";
-      const deriveTextMode = (): "title" | "subtitle" | "text" | "both" => {
-        if (editingWidget.type === "text_card" && (editingWidget as { textMode?: string }).textMode) return (editingWidget as { textMode: "title" | "subtitle" | "text" | "both" }).textMode;
-        if (editingWidget.type === "title_card") return "both";
+      const deriveTextMode = (): "title" | "subtitle" | "text" => {
+        if (editingWidget.type === "text_card" && (editingWidget as { textMode?: string }).textMode) {
+          const m = (editingWidget as { textMode: string }).textMode;
+          if (m === "title" || m === "subtitle" || m === "text") return m;
+        }
+        if (editingWidget.type === "title_card" || editingWidget.type === "title_only_card") return "title";
         if (editingWidget.type === "subtitle_card") return "subtitle";
-        if (editingWidget.type === "title_only_card") return "title";
         return "title";
       };
       setEditForm({
@@ -603,7 +614,7 @@ export default function DashboardEditPage() {
         consumption_entity_id: editingWidget.consumption_entity_id ?? "",
         grid_entity_id: editingWidget.grid_entity_id ?? "",
         humidity_entity_id: editingWidget.humidity_entity_id ?? "",
-        show_icon: editingWidget.show_icon !== false,
+        show_icon: isCategoryCard ? ((editingWidget as { show_icon?: boolean }).show_icon ?? false) : (editingWidget.show_icon !== false),
         script_ids: editingWidget.script_ids ?? [],
         script_names: editingWidget.script_names ?? {},
         cleaned_area_entity_id: editingWidget.cleaned_area_entity_id ?? "",
@@ -615,7 +626,7 @@ export default function DashboardEditPage() {
         icon_background_color: editingWidget.icon_background_color ?? "",
         width: editingWidget.width ?? undefined,
         height: editingWidget.height ?? undefined,
-        icon: editingWidget.icon ?? "",
+        icon: isCategoryCard ? (editingWidget.icon ?? "Type") : (editingWidget.icon ?? ""),
         size: editingWidget.size ?? "md",
         conditions: editingWidget.conditions ?? [],
         image_conditions: editingWidget.image_conditions ?? [],
@@ -656,12 +667,13 @@ export default function DashboardEditPage() {
       return res.json();
     },
     enabled: !!id,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
     if (!data || initialized) return;
     const w = parseWidgets(data.widgets);
-    setWidgets(w);
+    setWidgets((prev) => (prev.length === 0 ? w : prev));
     const parsed = parseLayout(data.layout);
     if (parsed.length > 0) {
       setLayout(parsed);
@@ -672,7 +684,7 @@ export default function DashboardEditPage() {
           x: (i % 3) * 4,
           y: Math.floor(i / 3) * 2,
           w: 4,
-          h: 2,
+          h: widget.type === "text_card" ? 1 : 2,
         }))
       );
     }
@@ -682,7 +694,7 @@ export default function DashboardEditPage() {
     );
     setWelcomeSubtitle((data as { welcomeSubtitle?: string | null }).welcomeSubtitle ?? "");
     setInitialized(true);
-  }, [data, initialized, isRoomMode]);
+  }, [data, initialized, isRoomMode, id, areaId]);
 
   useEffect(() => {
     if (!editMode) return;
@@ -731,8 +743,11 @@ export default function DashboardEditPage() {
       if (!res.ok) throw new Error("Save failed");
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id] });
+    onSuccess: (updated) => {
+      queryClient.setQueryData(
+        isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id],
+        (old: unknown) => (old && updated ? { ...(old as object), ...(updated as object) } : old ?? updated)
+      );
     },
   });
 
@@ -740,7 +755,7 @@ export default function DashboardEditPage() {
     setLayout((prev) => {
       const floatingItems = prev.filter((item) => {
         const type = widgets.find((w) => w.id === item.i)?.type;
-        return type === "text_card" || type === "title_card" || type === "title_only_card" || type === "subtitle_card" || type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "power_usage_card" || type === "card_group";
+        return type === "text_card" || type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "power_usage_card" || type === "card_group";
       });
       return [...newLayout, ...floatingItems];
     });
@@ -748,7 +763,7 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "text_card" && type !== "title_card" && type !== "title_only_card" && type !== "subtitle_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "camera_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group";
+    return type !== "text_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "camera_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
@@ -764,24 +779,35 @@ export default function DashboardEditPage() {
     const newWidget: WidgetConfig = {
       id: newId,
       type,
-      title: titleOverride ?? (type === "text_card" ? "Nieuwe sectie" : type.replace(/_/g, " ")),
+      title: titleOverride ?? (type === "text_card" ? "Nieuwe tekst" : type.replace(/_/g, " ")),
       entity_id: entityId,
-      ...(type === "text_card" && { textMode: "title" as const }),
+      ...(type === "text_card" && { textMode: "title" as const, show_icon: false, icon: "Type" }),
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
+    const isTextCard = type === "text_card";
     const newLayoutItem: LayoutItem = {
       i: newId,
       x: 0,
       y: maxY,
       w: 4,
-      h: 2,
+      h: isTextCard ? 1 : 2,
     };
     const newWidgets = [...widgets, newWidget];
-    const isFloatingOnly = type === "text_card" || type === "title_card" || type === "title_only_card" || type === "subtitle_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group";
+    const isFloatingOnly = type === "text_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group";
     const newLayout = isFloatingOnly ? layout : [...layout, newLayoutItem];
-    setWidgets(newWidgets);
-    setLayout(newLayout);
+
+    // Optimistisch query-cache updaten zodat de widget direct beschikbaar is bij remount/refetch
+    const qk = isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id];
+    queryClient.setQueryData(qk, (old: unknown) => {
+      if (!old || typeof old !== "object") return old;
+      return { ...(old as object), widgets: JSON.stringify(newWidgets), layout: JSON.stringify(newLayout) };
+    });
+
+    flushSync(() => {
+      setWidgets(newWidgets);
+      setLayout(newLayout);
+    });
     setAddTileOpen(false);
     setAddTileStep("type");
     setAddTileSelectedType(null);
@@ -826,7 +852,7 @@ export default function DashboardEditPage() {
           x: 0,
           y: layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h)),
           w: 4,
-          h: 2,
+          h: original.type === "text_card" ? 1 : 2,
         };
     const newWidgets = [...widgets, duplicated];
     const newLayout = [...layout, newLayoutItem];
@@ -839,7 +865,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text" | "both"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean }
+    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -966,7 +992,7 @@ export default function DashboardEditPage() {
                           type="button"
                           onClick={() => {
                             if (type === "text_card") {
-                              handleAddTile("text_card", "", "Nieuwe sectie");
+                              handleAddTile("text_card", "", "Nieuwe tekst");
                               setAddTileOpen(false);
                               return;
                             }
@@ -1144,7 +1170,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "text_card" && w.type !== "title_card" && w.type !== "title_only_card" && w.type !== "subtitle_card" && w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group")
+            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -1220,28 +1246,6 @@ export default function DashboardEditPage() {
           </ReactGridLayout>
         </div>
 
-        {widgets
-          .filter((w) => w.type === "text_card" || w.type === "title_card" || w.type === "title_only_card" || w.type === "subtitle_card")
-          .map((w, i) => (
-            <FloatingTextCard
-              key={w.id}
-              widget={{
-                id: w.id,
-                title: w.title ?? "Tekst",
-                subtitle: w.subtitle,
-                textMode: (w as { textMode?: "title" | "subtitle" | "text" | "both" }).textMode ?? "title",
-              }}
-              widgetIndex={i}
-              editMode={editMode}
-              onEnterEditMode={() => setEditMode(true)}
-              onEdit={() => {
-                setEditMode(true);
-                setEditingWidgetId(w.id);
-              }}
-              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-            />
-          ))}
-
         {(() => {
           const firstMedia = widgets.find((w) => w.type === "media_card");
           return firstMedia ? (
@@ -1289,6 +1293,29 @@ export default function DashboardEditPage() {
             />
           ) : null;
         })()}
+
+        {widgets
+          .filter((w) => w.type === "text_card")
+          .map((w, i) => (
+            <FloatingTextCard
+              key={w.id}
+              widget={{
+                id: w.id,
+                title: w.title ?? "Nieuwe tekst",
+                textMode: (w as { textMode?: "title" | "subtitle" | "text" }).textMode ?? "title",
+                show_icon: w.show_icon ?? false,
+                icon: w.icon ?? "Type",
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={() => {
+                setEditMode(true);
+                setEditingWidgetId(w.id);
+              }}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
 
         {widgets
           .filter((w) => w.type === "light_card")
@@ -1660,24 +1687,7 @@ export default function DashboardEditPage() {
                   <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Type
-                      </label>
-                      <select
-                        value={editForm.textMode ?? (editingWidget.type === "text_card" ? (editingWidget as { textMode?: string }).textMode ?? "title" : editingWidget.type === "title_card" ? "both" : editingWidget.type === "subtitle_card" ? "subtitle" : "title")}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({ ...prev, textMode: e.target.value as "title" | "subtitle" | "text" | "both" }))
-                        }
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                      >
-                        <option value="title">Titel</option>
-                        <option value="subtitle">Ondertitel</option>
-                        <option value="both">Titel + ondertitel</option>
-                        <option value="text">Gewone tekst</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {(editForm.textMode ?? "title") === "subtitle" ? "Ondertitel" : "Titel"}
+                        Tekstwaarde
                       </label>
                       <input
                         type="text"
@@ -1685,25 +1695,50 @@ export default function DashboardEditPage() {
                         onChange={(e) =>
                           setEditForm((prev) => ({ ...prev, title: e.target.value }))
                         }
-                        placeholder={t("appShell.welcomeTitlePlaceholder")}
+                        placeholder="Bijv. Woonkamer, Verlichting"
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                     </div>
-                    {((editForm.textMode ?? "title") === "both") && (
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Ondertitel
+                        Type
                       </label>
-                      <input
-                        type="text"
-                        value={editForm.subtitle ?? ""}
+                      <select
+                        value={editForm.textMode ?? "title"}
                         onChange={(e) =>
-                          setEditForm((prev) => ({ ...prev, subtitle: e.target.value }))
+                          setEditForm((prev) => ({ ...prev, textMode: e.target.value as "title" | "subtitle" | "text" }))
                         }
-                        placeholder={t("appShell.welcomeSubtitlePlaceholder")}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                      />
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      >
+                        <option value="title">Titel</option>
+                        <option value="subtitle">Ondertitel</option>
+                        <option value="text">Tekst</option>
+                      </select>
                     </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editForm.show_icon ?? false}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, show_icon: e.target.checked }))}
+                        className="rounded border-gray-300 dark:border-gray-600"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Icoon tonen</span>
+                    </label>
+                    {(editForm.show_icon ?? false) && (
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Icoon
+                        </label>
+                        <select
+                          value={editForm.icon ?? "Type"}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, icon: e.target.value }))}
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                        >
+                          {CARD_ICON_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
                     )}
                   </>
                 ) : editingWidget.type === "card_group" ? (
@@ -4060,8 +4095,9 @@ export default function DashboardEditPage() {
                       const newWelcomeSubtitle = welcomeSubtitle;
                       const updates = isCategoryCard ? {
                         title: editForm.title,
-                        subtitle: editForm.subtitle ?? "",
-                        ...(editingWidget.type === "text_card" && { textMode: editForm.textMode ?? "title" }),
+                        textMode: editForm.textMode ?? "title",
+                        show_icon: editForm.show_icon ?? false,
+                        icon: editForm.icon ?? "Type",
                       } : {
                         title: editForm.title,
                         ...(editingWidget.entity_id != null && editingWidget.type !== "energy_monitor_card" && editingWidget.type !== "power_usage_card" && {

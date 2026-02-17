@@ -32,8 +32,8 @@ export type WidgetConfig = {
   title: string;
   /** Titel/subtitle cards: ondertitel voor categorisering. */
   subtitle?: string;
-  /** Text card: weergavetype (title, subtitle, text, both). */
-  textMode?: "title" | "subtitle" | "text" | "both";
+  /** Text card: weergavetype (title, subtitle, text). */
+  textMode?: "title" | "subtitle" | "text";
   entity_id: string;
   /** Optioneel verbruik-entity voor solar_card (gecombineerde kaart). */
   consumption_entity_id?: string;
