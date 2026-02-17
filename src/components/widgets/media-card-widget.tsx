@@ -127,7 +127,7 @@ export function MediaCardWidget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/10 dark:bg-black/50 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/90 dark:bg-black/50 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-gray-200/80 dark:border-white/10",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
@@ -147,7 +147,7 @@ export function MediaCardWidget({
                 key={trackKey}
                 type="button"
                 onClick={() => setExpandedWithCallback(false)}
-                className="block relative w-full aspect-square max-h-48 mx-auto rounded-xl overflow-hidden bg-white/5 hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="block relative w-full aspect-square max-h-48 mx-auto rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/50"
                 aria-label="Inklappen"
               >
                 <Image
@@ -160,24 +160,24 @@ export function MediaCardWidget({
                 />
               </button>
             ) : (
-              <div className="w-full aspect-square max-h-48 mx-auto rounded-xl bg-white/5 flex items-center justify-center">
-                <Disc3 className="h-16 w-16 text-white/20" />
+              <div className="w-full aspect-square max-h-48 mx-auto rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+                <Disc3 className="h-16 w-16 text-gray-300 dark:text-white/20" />
               </div>
             )}
             <div className="mt-2 space-y-1">
               <div
-                className="h-1 rounded-full bg-white/20 overflow-hidden"
+                className="h-1 rounded-full bg-gray-200 dark:bg-white/20 overflow-hidden"
                 role="progressbar"
                 aria-valuenow={displayPosition}
                 aria-valuemin={0}
                 aria-valuemax={duration}
               >
                 <div
-                  className="h-full rounded-full bg-white transition-all duration-300"
+                  className="h-full rounded-full bg-gray-700 dark:bg-white transition-all duration-300"
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
-              <div className="flex justify-between text-xs text-white/60">
+              <div className="flex justify-between text-xs text-gray-600 dark:text-white/60">
                 <span>{formatTime(displayPosition)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
@@ -186,7 +186,7 @@ export function MediaCardWidget({
           <button
             type="button"
             onClick={() => setExpandedWithCallback(false)}
-            className="flex items-center justify-center gap-1 py-1 text-white/50 hover:text-white/80 transition-colors"
+            className="flex items-center justify-center gap-1 py-1 text-gray-500 hover:text-gray-700 dark:text-white/50 dark:hover:text-white/80 transition-colors"
             aria-label="Inklappen"
           >
             <ChevronDown className="h-4 w-4" />
@@ -206,27 +206,27 @@ export function MediaCardWidget({
               className="object-cover scale-105 blur-md opacity-70"
               unoptimized
             />
-            <div className="absolute inset-0 bg-black/40" />
+            <div className="absolute inset-0 bg-white/70 dark:bg-black/50" />
           </div>
         )}
         <div className="relative flex items-center gap-3 px-4 py-3">
           <div
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/5",
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-300/80 dark:border-white/20 bg-gray-100/80 dark:bg-white/5",
               isPlaying && "animate-spin"
             )}
           >
-            <Disc3 className="h-5 w-5 text-white/80" strokeWidth={1.5} />
+            <Disc3 className="h-5 w-5 text-gray-700 dark:text-white/80" strokeWidth={1.5} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-medium truncate text-white/90">{title}</p>
-            <p className="text-xs text-white/60 truncate">{deviceName}</p>
+            <p className="font-medium truncate text-gray-900 dark:text-white/90">{title}</p>
+            <p className="text-xs text-gray-600 dark:text-white/60 truncate">{deviceName}</p>
           </div>
           {onMoreClick && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-              className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-lg shrink-0 text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors"
               aria-label="Opties"
             >
               <MoreVertical className="h-5 w-5" aria-hidden />
@@ -238,7 +238,7 @@ export function MediaCardWidget({
               key={trackKey}
               type="button"
               onClick={() => setExpandedWithCallback(true)}
-              className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-white/5 border border-white/20 hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/20 hover:border-gray-300 dark:hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/50"
               aria-label="Uitklappen"
             >
               <Image
@@ -251,7 +251,7 @@ export function MediaCardWidget({
               />
             </button>
           ) : (
-            <div key={trackKey} className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-white/5 border border-white/20">
+            <div key={trackKey} className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/20">
               <Image
                 src={mediaImageSrc}
                 alt=""
@@ -266,21 +266,21 @@ export function MediaCardWidget({
           <button
             type="button"
             onClick={() => setExpandedWithCallback(true)}
-            className="h-10 w-10 shrink-0 rounded-lg bg-white/5 border border-white/20 flex items-center justify-center hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="h-10 w-10 shrink-0 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/20 flex items-center justify-center hover:border-gray-300 dark:hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/50"
             aria-label="Uitklappen"
           >
-            <Disc3 className="h-5 w-5 text-white/30" strokeWidth={1.5} />
+            <Disc3 className="h-5 w-5 text-gray-400 dark:text-white/30" strokeWidth={1.5} />
           </button>
         ) : (
-          <div className="h-10 w-10 shrink-0 rounded-lg bg-white/5 border border-white/20 flex items-center justify-center">
-            <Disc3 className="h-5 w-5 text-white/30" strokeWidth={1.5} />
+          <div className="h-10 w-10 shrink-0 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/20 flex items-center justify-center">
+            <Disc3 className="h-5 w-5 text-gray-400 dark:text-white/30" strokeWidth={1.5} />
           </div>
         )}
         </div>
       </div>
 
       {/* Onderste balk: track + controls — altijd hetzelfde */}
-      <div className="flex items-center justify-between gap-2 px-4 py-3 bg-black/10 dark:bg-black/30 backdrop-blur-md rounded-b-2xl">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 bg-gray-100/80 dark:bg-black/30 backdrop-blur-md rounded-b-2xl">
         <div className="min-w-0 flex-1">
           <p className="font-medium truncate text-sm text-gray-900 dark:text-white">
             {mediaTitle || "—"}
@@ -294,7 +294,7 @@ export function MediaCardWidget({
             type="button"
             onClick={handlePrevious}
             disabled={loading || !isOn}
-            className="p-2 rounded-full text-white/80 hover:bg-white/10 disabled:opacity-40"
+            className="p-2 rounded-full text-gray-700 hover:bg-gray-200/80 dark:text-white/80 dark:hover:bg-white/10 disabled:opacity-40"
             aria-label="Previous"
           >
             <SkipBack className="h-4 w-4" />
@@ -303,7 +303,7 @@ export function MediaCardWidget({
             type="button"
             onClick={handlePlayPause}
             disabled={loading || !isOn}
-            className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 disabled:opacity-40"
+            className="p-2 rounded-full bg-gray-300 text-gray-900 hover:bg-gray-400 dark:bg-white/20 dark:text-white dark:hover:bg-white/30 disabled:opacity-40"
             aria-label={isPlaying ? "Pause" : "Play"}
           >
             {isPlaying ? (
@@ -316,7 +316,7 @@ export function MediaCardWidget({
             type="button"
             onClick={handleNext}
             disabled={loading || !isOn}
-            className="p-2 rounded-full text-white/80 hover:bg-white/10 disabled:opacity-40"
+            className="p-2 rounded-full text-gray-700 hover:bg-gray-200/80 dark:text-white/80 dark:hover:bg-white/10 disabled:opacity-40"
             aria-label="Next"
           >
             <SkipForward className="h-4 w-4" />

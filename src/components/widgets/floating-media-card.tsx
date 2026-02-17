@@ -173,7 +173,7 @@ export function FloatingMediaCard({
   return (
     <div
       className={cn(
-        "fixed shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "fixed shadow-xl rounded-2xl overflow-hidden bg-white/90 dark:bg-black/50 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10",
         isExpanded ? "z-50" : "z-40",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
