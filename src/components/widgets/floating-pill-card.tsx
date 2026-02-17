@@ -125,8 +125,8 @@ export function FloatingPillCard({
     }
     const p = snapToGrid(defaultPosition(widgetIndex), bounds);
     setPosition(p);
-    savePosition(widget.id, p);
-  }, [widget.id, widgetIndex]);
+    savePosition(storageScope, widget.id, p);
+  }, [widget.id, widgetIndex, storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -180,11 +180,11 @@ export function FloatingPillCard({
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(widget.id, next);
+        savePosition(storageScope, widget.id, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, widget.id]
+    [isDragging, widget.id, storageScope]
   );
 
   return (
