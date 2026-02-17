@@ -25,17 +25,24 @@ type MASearchItem = {
   [key: string]: unknown;
 };
 
-function callMusicAssistant(
+async function callMusicAssistant(
   baseUrl: string,
   token: string,
   command: string,
   args: Record<string, unknown> = {}
 ): Promise<unknown> {
-  return fetch("/api/music-assistant", {
+  const res = await fetch("/api/music-assistant", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ baseUrl, token, command, args }),
-  }).then((r) => r.json());
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = (data as { error?: string })?.error ?? `Request failed (${res.status})`;
+    console.error("[Music Assistant]", res.status, err, { command, args });
+    return { error: err };
+  }
+  return data;
 }
 
 function formatDuration(seconds?: number): string {
@@ -266,22 +273,36 @@ export default function MusicPage() {
       const token = musicAssistant.token;
       const queueId = selectedQueueId;
 
+      const tryPlayMedia = (): Promise<void> =>
+      callMusicAssistant(baseUrl, token, "player_queues/play_media", {
+        queue_id: queueId,
+        player_id: queueId,
+        uri: trimmedUri,
+      }).then((data: unknown) => {
+        const e = (data as { error?: string })?.error;
+        if (e) throw new Error(e);
+      });
+
+    const tryAddThenPlay = (): Promise<void> =>
       callMusicAssistant(baseUrl, token, "player_queues/add", {
-          queue_id: queueId,
-          player_id: queueId,
-          uri: trimmedUri,
-        })
-          .then((addData: unknown) => {
-            const addErr = (addData as { error?: string })?.error;
-            if (addErr) throw new Error(addErr);
-            return callMusicAssistant(baseUrl, token, "player_queues/play", { queue_id: queueId });
-          })
-          .then((playData: unknown) => {
-            const playErr = (playData as { error?: string })?.error;
-            if (playErr) throw new Error(playErr);
-          })
-          .catch((err) => setError(err instanceof Error ? err.message : "Afspelen mislukt."))
-          .finally(() => setPlayPending(null));
+        queue_id: queueId,
+        uri: trimmedUri,
+      }).then((addData: unknown) => {
+        const addErr = (addData as { error?: string })?.error;
+        if (addErr) throw new Error(addErr);
+        return callMusicAssistant(baseUrl, token, "player_queues/play", { queue_id: queueId });
+      }).then((playData: unknown) => {
+        const playErr = (playData as { error?: string })?.error;
+        if (playErr) throw new Error(playErr);
+      });
+
+    tryPlayMedia()
+      .catch(() => tryAddThenPlay())
+      .catch((err) => {
+        const msg = err instanceof Error ? err.message : "Afspelen mislukt.";
+        setError(msg);
+      })
+      .finally(() => setPlayPending(null));
     },
     [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
   );

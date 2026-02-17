@@ -50,9 +50,18 @@ export async function POST(request: Request) {
     if (!res.ok) {
       const msg = (data as { message?: string })?.message;
       const err = (data as { error?: string })?.error;
-      const detail = (data as { detail?: string | string[] })?.detail;
-      const detailStr = Array.isArray(detail) ? detail[0] : detail;
-      let errorMessage: string = (typeof msg === "string" ? msg : null) ?? (typeof err === "string" ? err : null) ?? (typeof detailStr === "string" ? detailStr : null) ?? `MA API error: ${res.status}`;
+      const detail = (data as { detail?: string | string[] | { msg?: string }[] })?.detail;
+      const detailStr = Array.isArray(detail)
+        ? (typeof detail[0] === "string" ? detail[0] : (detail[0] as { msg?: string })?.msg)
+        : typeof detail === "string"
+          ? detail
+          : null;
+      const raw = typeof data === "object" && data !== null ? JSON.stringify(data) : "";
+      let errorMessage: string =
+        (typeof msg === "string" ? msg : null) ??
+        (typeof err === "string" ? err : null) ??
+        (typeof detailStr === "string" ? detailStr : null) ??
+        (raw.length > 0 && raw.length < 500 ? raw : `MA API error: ${res.status}`);
       if (res.status === 401) {
         errorMessage =
           "Music Assistant returned 401 Unauthorized. Add a valid API token in Settings (from Music Assistant → Settings → User management / API token).";
