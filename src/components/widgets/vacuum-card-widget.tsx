@@ -83,7 +83,7 @@ export function VacuumCardWidget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/10 dark:bg-black/50 text-white shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10 min-h-[7.75rem]",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/90 dark:bg-black/50 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 min-h-[7.75rem]",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
@@ -94,15 +94,15 @@ export function VacuumCardWidget({
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white",
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-200/80 dark:bg-white/15 text-gray-700 dark:text-white",
               isActive && "animate-vacuum"
             )}
           >
             <IconComponent className="h-5 w-5" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-medium truncate text-white/90">{title}</p>
-            <p className="text-xs text-white/60 truncate">{friendlyName}</p>
+            <p className="font-medium truncate text-gray-900 dark:text-white/90">{title}</p>
+            <p className="text-xs text-gray-600 dark:text-white/60 truncate">{friendlyName}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 min-w-0 max-w-[45%]">
@@ -110,7 +110,7 @@ export function VacuumCardWidget({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-              className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-lg shrink-0 text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors"
               aria-label="Opties"
             >
               <MoreVertical className="h-5 w-5" aria-hidden />
@@ -120,17 +120,17 @@ export function VacuumCardWidget({
           <p
             className={cn(
               "text-sm font-medium truncate w-full text-right",
-              state === "cleaning" && "text-amber-400",
-              state === "docked" && "text-green-400",
-              state === "error" && "text-red-400",
-              !["cleaning", "docked", "error"].includes(state) && "text-white/80"
+              state === "cleaning" && "text-amber-600 dark:text-amber-400",
+              state === "docked" && "text-green-600 dark:text-green-400",
+              state === "error" && "text-red-600 dark:text-red-400",
+              !["cleaning", "docked", "error"].includes(state) && "text-gray-700 dark:text-white/80"
             )}
             title={statusLabel}
           >
             {statusLabel}
           </p>
           {showCleanedArea && (
-            <p className="text-xs text-white/60 truncate w-full text-right">
+            <p className="text-xs text-gray-600 dark:text-white/60 truncate w-full text-right">
               {cleanedAreaValue}{cleanedAreaUnit ? ` ${cleanedAreaUnit}` : ""}
             </p>
           )}
@@ -139,7 +139,7 @@ export function VacuumCardWidget({
       </div>
 
       {script_ids.length > 0 && (
-        <div className="px-4 pb-3 pt-3 border-t border-white/10">
+        <div className="px-4 pb-3 pt-3 border-t border-gray-200 dark:border-white/10">
           <div className="flex flex-wrap gap-1.5">
             {script_ids.map((scriptId) => (
               <ScriptTag
@@ -187,8 +187,8 @@ function ScriptTag({
       className={cn(
         "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-normal transition-colors",
         active
-          ? "border-amber-400/40 bg-amber-500/20 text-amber-200/95"
-          : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white/85 hover:border-white/20",
+          ? "border-amber-500/50 bg-amber-500/25 text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/20 dark:text-amber-200/95"
+          : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-white/15 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white/85 dark:hover:border-white/20",
         (loading || disabled) && !active && "opacity-50 cursor-not-allowed"
       )}
     >
