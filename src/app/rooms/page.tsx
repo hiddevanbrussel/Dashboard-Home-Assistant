@@ -376,32 +376,29 @@ export default function RoomsPage() {
       </div>
 
       {addModalOpen && typeof document !== "undefined" && (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          aria-modal="true"
-          role="dialog"
-        >
+        <div className="fixed inset-0 z-[200]" aria-modal="true" role="dialog">
           <div
             className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
             aria-hidden
             onClick={() => !creating && setAddModalOpen(false)}
           />
           <div
-            className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-white/10 dark:bg-gray-900 dark:text-white"
+            className="fixed top-4 right-4 bottom-4 z-[201] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white dark:bg-gray-900 dark:border-white/10 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">{t("rooms.addRoom")}</h3>
+            <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t("rooms.addRoom")}</h3>
               <button
                 type="button"
                 onClick={() => !creating && setAddModalOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
                 aria-label={t("rooms.cancel")}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleCreate} className="flex flex-1 min-h-0 flex-col overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                   {t("rooms.roomName")}
@@ -550,7 +547,8 @@ export default function RoomsPage() {
               {createError && (
                 <p className="text-sm text-red-600 dark:text-red-400">{createError}</p>
               )}
-              <div className="flex justify-end gap-2 pt-2">
+              </div>
+              <div className="shrink-0 flex justify-end gap-2 p-5 pt-4 border-t border-gray-200 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => !creating && setAddModalOpen(false)}
@@ -572,32 +570,29 @@ export default function RoomsPage() {
       )}
 
       {editModalOpen && editingRoom && typeof document !== "undefined" && (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          aria-modal="true"
-          role="dialog"
-        >
+        <div className="fixed inset-0 z-[200]" aria-modal="true" role="dialog">
           <div
             className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
             aria-hidden
             onClick={() => !updating && setEditModalOpen(false)}
           />
           <div
-            className="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-white/10 dark:bg-gray-900 dark:text-white"
+            className="fixed top-4 right-4 bottom-4 z-[201] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white dark:bg-gray-900 dark:border-white/10 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">{t("rooms.editRoom")}</h3>
+            <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t("rooms.editRoom")}</h3>
               <button
                 type="button"
                 onClick={() => !updating && setEditModalOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
                 aria-label={t("rooms.cancel")}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleUpdate} className="space-y-4">
+            <form onSubmit={handleUpdate} className="flex flex-1 min-h-0 flex-col overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                   {t("rooms.roomName")}
@@ -730,7 +725,8 @@ export default function RoomsPage() {
               {updateError && (
                 <p className="text-sm text-red-600 dark:text-red-400">{updateError}</p>
               )}
-              <div className="flex justify-end gap-2 pt-2">
+              </div>
+              <div className="shrink-0 flex justify-end gap-2 p-5 pt-4 border-t border-gray-200 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => !updating && setEditModalOpen(false)}
