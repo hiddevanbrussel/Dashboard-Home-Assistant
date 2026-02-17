@@ -8,6 +8,7 @@ import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
 import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, X } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
 type HaEntity = { entity_id: string; attributes?: Record<string, unknown> };
@@ -21,9 +22,16 @@ type MASearchItem = {
   item_id?: string;
   duration?: number;
   artists?: { name?: string }[] | { name?: string } | unknown[];
-  album?: { name?: string };
+  album?: { name?: string; image?: string };
+  image?: string;
+  image_url?: string;
   [key: string]: unknown;
 };
+
+function getItemImageUrl(item: MASearchItem): string | null {
+  const url = item.image ?? item.image_url ?? item.album?.image ?? (item as { thumbnail?: string }).thumbnail ?? null;
+  return typeof url === "string" && url ? url : null;
+}
 
 async function callMusicAssistant(
   baseUrl: string,
@@ -87,6 +95,9 @@ export default function MusicPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [recentItems, setRecentItems] = useState<MASearchItem[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
+  const [recentTracks, setRecentTracks] = useState<MASearchItem[]>([]);
+  const [recentAlbums, setRecentAlbums] = useState<MASearchItem[]>([]);
+  const [recentAddedLoading, setRecentAddedLoading] = useState(false);
 
   useEffect(() => {
     if (!volumePopoverOpen) return;
@@ -98,6 +109,21 @@ export default function MusicPage() {
     document.addEventListener("click", close);
     return () => document.removeEventListener("click", close);
   }, [volumePopoverOpen]);
+
+  useEffect(() => {
+    if (!volumePopoverOpen || !musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "config/players/get", {
+      player_id: selectedQueueId,
+    })
+      .then((data: unknown) => {
+        const err = (data as { error?: string })?.error;
+        if (err) return;
+        const res = (data as { result?: { volume_level?: number } })?.result ?? data as { volume_level?: number };
+        const vol = res?.volume_level;
+        if (typeof vol === "number" && vol >= 0 && vol <= 1) setVolume(Math.round(vol * 100));
+      })
+      .catch(() => {});
+  }, [volumePopoverOpen, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
   const musicAssistant = useMusicAssistantStore();
 
   useEffect(() => {
@@ -192,6 +218,25 @@ export default function MusicPage() {
       })
       .catch(() => setRecentItems([]))
       .finally(() => setRecentLoading(false));
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+
+  useEffect(() => {
+    if (!musicAssistant.enabled || !musicAssistant.baseUrl) return;
+    setRecentAddedLoading(true);
+    const parseList = (data: unknown): MASearchItem[] => {
+      const d = data as Record<string, unknown>;
+      const result = d?.result ?? d;
+      const arr = Array.isArray(result) ? result : (typeof result === "object" && result !== null && "items" in result ? (result as { items?: unknown[] }).items : null);
+      return Array.isArray(arr) ? (arr as MASearchItem[]) : [];
+    };
+    const base = musicAssistant.baseUrl;
+    const token = musicAssistant.token;
+    Promise.all([
+      callMusicAssistant(base, token, "music/recently_added", { media_type: "track", limit: 16 }).then((data) => setRecentTracks(parseList(data))).catch(() => setRecentTracks([])),
+      callMusicAssistant(base, token, "music/recently_added", { media_type: "album", limit: 12 }).then((data) => setRecentAlbums(parseList(data))).catch(() => setRecentAlbums([])),
+    ])
+      .catch(() => {})
+      .finally(() => setRecentAddedLoading(false));
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   useEffect(() => {
@@ -372,6 +417,7 @@ export default function MusicPage() {
 
   const useMA = musicAssistant.enabled;
   const playerLabel = (p: MAPlayer) => (p.display_name as string) ?? p.queue_id ?? String(p.queue_id);
+  const { t } = useTranslation();
 
   const showPlayerBar = useMA && maPlayers.length > 0;
   const isPlaying = queueState?.state === "playing";
@@ -383,7 +429,7 @@ export default function MusicPage() {
     <div
       className="fixed inset-0 z-[60] flex flex-col bg-page-light dark:bg-dark-page"
       role="dialog"
-      aria-label="Zoek muziek"
+      aria-label={t("music.search")}
     >
       <div className="shrink-0 flex items-center gap-2 border-b border-gray-200 dark:border-white/10 bg-white/90 dark:bg-gray-900/95 backdrop-blur-md px-4 py-3">
         <Search className="h-5 w-5 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
@@ -396,9 +442,9 @@ export default function MusicPage() {
             if (e.key === "Enter") runSearch();
             if (e.key === "Escape") setSearchOverlayOpen(false);
           }}
-          placeholder="Artiest, nummer of album…"
+          placeholder={t("music.searchPlaceholder")}
           className="flex-1 min-w-0 rounded-xl border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
-          aria-label="Zoek muziek"
+          aria-label={t("music.search")}
         />
         <button
           type="button"
@@ -406,13 +452,13 @@ export default function MusicPage() {
           disabled={searching || !searchQuery.trim()}
           className="shrink-0 rounded-xl bg-accent-yellow dark:bg-accent-green px-4 py-2.5 text-sm font-medium text-gray-900 disabled:opacity-50"
         >
-          {searching ? "Zoeken…" : "Zoeken"}
+          {searching ? t("music.searching") : t("music.searchButton")}
         </button>
         <button
           type="button"
           onClick={() => setSearchOverlayOpen(false)}
           className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-          aria-label="Sluiten"
+          aria-label={t("music.close")}
         >
           <X className="h-5 w-5" />
         </button>
@@ -420,7 +466,7 @@ export default function MusicPage() {
       <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
         {selectedQueueId && maPlayers.length > 0 && (
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-3">
-            Afspelen op: <span className="font-medium text-gray-900 dark:text-white">{playerLabel(maPlayers.find((p) => p.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId })}</span>
+            {t("music.playOn")}: <span className="font-medium text-gray-900 dark:text-white">{playerLabel(maPlayers.find((p) => p.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId })}</span>
           </p>
         )}
         {searchResults.length > 0 ? (
@@ -433,7 +479,7 @@ export default function MusicPage() {
                 : itemId != null
                   ? `${(item as { provider?: string })?.provider ?? "library"}://track/${itemId}`
                   : "";
-              const name = item.name ?? "Onbekend";
+              const name = item.name ?? t("music.unknown");
               const artists = item.artists;
               const artistNames = Array.isArray(artists)
                 ? artists.map((a) => (a && typeof a === "object" && "name" in a ? (a as { name?: string }).name : null)).filter(Boolean).join(", ") || "—"
@@ -467,7 +513,7 @@ export default function MusicPage() {
                     onClick={() => canPlay && playOnPlayer(uri)}
                     disabled={!canPlay || !!isPlayPending}
                     className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
-                    title={`Afspelen op ${selectedQueueId ? playerLabel(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : "speler"}`}
+                    title={`${t("music.playOn")} ${selectedQueueId ? playerLabel(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : t("music.player")}`}
                   >
                     {isPlayPending ? (
                       <span className="h-4 w-4 block animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-900 dark:border-t-transparent" aria-hidden />
@@ -482,11 +528,11 @@ export default function MusicPage() {
         ) : searchQuery.trim() && !searching ? (
           <div className="flex items-center gap-3 py-8 text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
             <User className="h-10 w-10 shrink-0" aria-hidden />
-            <p className="text-sm">Geen resultaten voor &quot;{searchQuery.trim()}&quot;. Probeer een andere zoekterm.</p>
+            <p className="text-sm">{t("music.noResults")} &quot;{searchQuery.trim()}&quot;. {t("music.noResultsTry")}</p>
           </div>
         ) : (
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl mx-auto py-8">
-            Voer een zoekterm in en klik op Zoeken of druk op Enter.
+            {t("music.searchHint")}
           </p>
         )}
       </div>
@@ -503,7 +549,7 @@ export default function MusicPage() {
             type="button"
             onClick={() => setSearchOverlayOpen(true)}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-            aria-label="Zoek muziek"
+            aria-label={t("music.search")}
           >
             <Search className="h-5 w-5" />
           </button>
@@ -511,14 +557,12 @@ export default function MusicPage() {
       }
     >
       {searchOverlay}
-      <div className={cn("space-y-6 max-w-3xl", showPlayerBar && "pb-24")}>
+      <div className={cn("space-y-6 max-w-4xl pl-6 pr-4 sm:pl-10 sm:pr-6", showPlayerBar && "pb-24")}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Muziek</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t("music.title")}</h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {useMA
-                ? "Zoek muziek en speel af op een gekozen speler."
-                : "Bedien je media players via Home Assistant."}
+              {useMA ? t("music.subtitleMa") : t("music.subtitleHa")}
             </p>
           </div>
           <OfflinePill />
@@ -546,10 +590,9 @@ export default function MusicPage() {
           <GlassCard>
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Music2 className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Geen media players gevonden</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("music.noMediaPlayers")}</p>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-                Voeg de Sonos-integratie (of een andere media player) toe in Home Assistant, of schakel Music
-                Assistant in onder Instellingen.
+                {t("music.noMediaPlayersHint")}
               </p>
             </div>
           </GlassCard>
@@ -559,9 +602,9 @@ export default function MusicPage() {
           <GlassCard>
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Music2 className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Geen spelers gevonden</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("music.noPlayers")}</p>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-                Controleer of Music Assistant draait en of er spelers zijn gekoppeld.
+                {t("music.noPlayersHint")}
               </p>
             </div>
           </GlassCard>
@@ -585,58 +628,125 @@ export default function MusicPage() {
 
         {!playersLoading && useMA && maPlayers.length > 0 && (
           <>
-            <GlassCard>
-              <h3 className="text-card-title font-medium text-gray-700 dark:text-gray-200 mb-3">
-                Onlangs afgespeeld
-              </h3>
+            <section className="mt-8">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyPlayed")}</h3>
               {recentLoading ? (
                 <div className="flex justify-center py-8">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                 </div>
               ) : recentItems.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400 py-4">Nog geen afspeelgeschiedenis.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noHistory")}</p>
               ) : (
-                <ul className="space-y-1" role="list">
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                   {recentItems.map((item, index) => {
                     const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
                     const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
                     const uri = typeof rawUri === "string" && rawUri ? rawUri : itemId != null ? `${(item as { provider?: string })?.provider ?? "library"}://track/${itemId}` : "";
-                    const name = item.name ?? "Onbekend";
-                    const artists = item.artists;
-                    const artistNames = Array.isArray(artists) ? artists.map((a) => (a && typeof a === "object" && "name" in a ? (a as { name?: string }).name : null)).filter(Boolean).join(", ") || "—" : artists && typeof artists === "object" && "name" in artists ? (artists as { name?: string }).name : "—";
-                    const albumName = item.album?.name;
-                    const duration = item.duration;
+                    const imageUrl = getItemImageUrl(item);
                     const isPlayPending = uri && playPending === uri;
                     const canPlay = !!uri && !!selectedQueueId;
                     return (
-                      <li key={uri || `recent-${index}`} className="flex items-center gap-3 rounded-xl border border-transparent bg-white/50 dark:bg-white/5 px-3 py-2.5 hover:bg-white/80 dark:hover:bg-white/10">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
-                          <Disc3 className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
-                          <p className="truncate text-xs text-gray-500 dark:text-gray-400">{artistNames}{albumName ? ` · ${albumName}` : ""}</p>
-                        </div>
-                        <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">{formatDuration(duration)}</span>
-                        <button
-                          type="button"
-                          onClick={() => canPlay && playOnPlayer(uri)}
-                          disabled={!canPlay || !!isPlayPending}
-                          className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
-                          title={`Afspelen op ${selectedQueueId ? playerLabel(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : "speler"}`}
-                        >
-                          {isPlayPending ? (
-                            <span className="h-4 w-4 block animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-900 dark:border-t-transparent" aria-hidden />
-                          ) : (
-                            <Play className="h-4 w-4 fill-current" aria-hidden />
-                          )}
-                        </button>
-                      </li>
+                      <button
+                        key={uri || `recent-${index}`}
+                        type="button"
+                        onClick={() => canPlay && playOnPlayer(uri)}
+                        disabled={!canPlay || !!isPlayPending}
+                        className="aspect-square w-full rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50"
+                        title={item.name as string}
+                      >
+                        {imageUrl ? (
+                          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                            <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
+                          </div>
+                        )}
+                      </button>
                     );
                   })}
-                </ul>
+                </div>
               )}
-            </GlassCard>
+            </section>
+
+            <section className="mt-8">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyAddedTracks")}</h3>
+              {recentAddedLoading ? (
+                <div className="flex justify-center py-6">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                </div>
+              ) : recentTracks.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 py-3">{t("music.noRecentTracks")}</p>
+              ) : (
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                  {recentTracks.map((item, index) => {
+                    const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
+                    const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
+                    const uri = typeof rawUri === "string" && rawUri ? rawUri : itemId != null ? `${(item as { provider?: string })?.provider ?? "library"}://track/${itemId}` : "";
+                    const imageUrl = getItemImageUrl(item);
+                    const isPlayPending = uri && playPending === uri;
+                    const canPlay = !!uri && !!selectedQueueId;
+                    return (
+                      <button
+                        key={uri || `recent-track-${index}`}
+                        type="button"
+                        onClick={() => canPlay && playOnPlayer(uri)}
+                        disabled={!canPlay || !!isPlayPending}
+                        className="aspect-square w-full rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50"
+                        title={item.name as string}
+                      >
+                        {imageUrl ? (
+                          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                            <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <section className="mt-8">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyAddedAlbums")}</h3>
+              {recentAddedLoading ? (
+                <div className="flex justify-center py-6">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                </div>
+              ) : recentAlbums.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 py-3">{t("music.noRecentAlbums")}</p>
+              ) : (
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                  {recentAlbums.map((item, index) => {
+                    const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
+                    const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
+                    const uri = typeof rawUri === "string" && rawUri ? rawUri : itemId != null ? `${(item as { provider?: string })?.provider ?? "library"}://album/${itemId}` : "";
+                    const imageUrl = getItemImageUrl(item);
+                    const isPlayPending = uri && playPending === uri;
+                    const canPlay = !!uri && !!selectedQueueId;
+                    return (
+                      <button
+                        key={uri || `recent-album-${index}`}
+                        type="button"
+                        onClick={() => canPlay && playOnPlayer(uri)}
+                        disabled={!canPlay || !!isPlayPending}
+                        className="aspect-square w-full rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50"
+                        title={item.name as string}
+                      >
+                        {imageUrl ? (
+                          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                            <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </>
         )}
       </div>
@@ -644,7 +754,7 @@ export default function MusicPage() {
       {showPlayerBar && (
         <footer
           className="fixed bottom-0 left-0 right-0 z-40 flex items-center border-t border-white/10 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md px-4 sm:px-6 py-3"
-          aria-label="Afspeelbalk"
+          aria-label={t("music.playerBar")}
         >
           <div className="w-full flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2 shrink-0">
@@ -652,7 +762,7 @@ export default function MusicPage() {
                 type="button"
                 onClick={() => queueControl("previous")}
                 className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                aria-label="Vorige"
+                aria-label={t("music.previous")}
               >
                 <SkipBack className="h-5 w-5" />
               </button>
@@ -660,7 +770,7 @@ export default function MusicPage() {
                 type="button"
                 onClick={() => queueControl(isPlaying ? "pause" : "play")}
                 className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-yellow dark:bg-accent-green text-gray-900 hover:opacity-90 transition-opacity"
-                aria-label={isPlaying ? "Pauzeren" : "Afspelen"}
+                aria-label={isPlaying ? t("music.pause") : t("music.play")}
               >
                 {isPlaying ? (
                   <Pause className="h-6 w-6 fill-current" />
@@ -672,7 +782,7 @@ export default function MusicPage() {
                 type="button"
                 onClick={() => queueControl("next")}
                 className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                aria-label="Volgende"
+                aria-label={t("music.next")}
               >
                 <SkipForward className="h-5 w-5" />
               </button>
@@ -690,7 +800,7 @@ export default function MusicPage() {
                   disabled={seekPending || duration <= 0}
                   onChange={(e) => seekTo(Number(e.target.value))}
                   className="flex-1 min-w-0 h-1.5 rounded-full appearance-none bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50"
-                  aria-label="Afspeelpositie"
+                  aria-label={t("music.position")}
                 />
                 <span className="w-9 shrink-0 text-right">{formatDuration(duration)}</span>
               </div>
@@ -707,30 +817,27 @@ export default function MusicPage() {
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setVolumePopoverOpen((v) => !v); }}
                   className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                  aria-label="Volume"
+                  aria-label={t("music.volume")}
                   aria-expanded={volumePopoverOpen}
                 >
                   <Volume2 className="h-5 w-5" />
                 </button>
                 {volumePopoverOpen && (
                   <div
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col items-center gap-2 rounded-xl border border-white/20 bg-gray-900 dark:bg-black py-3 px-3 shadow-xl"
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col items-center gap-3 rounded-xl border border-white/20 bg-gray-900 dark:bg-black py-4 px-4 shadow-xl min-w-[140px]"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <span className="text-xs text-white/70 tabular-nums">{volume}%</span>
-                    <div className="h-24 w-2 flex items-center justify-center">
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={volume}
-                        onChange={(e) => setVolumeLevel(Number(e.target.value))}
-                        disabled={volumePending}
-                        className="w-24 h-2 appearance-none rounded-full bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-yellow dark:[&::-webkit-slider-thumb]:bg-accent-green"
-                        style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
-                        aria-label="Volume"
-                      />
-                    </div>
+                    <span className="text-sm text-white/90 font-medium tabular-nums">{volume}%</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={volume}
+                      onChange={(e) => setVolumeLevel(Number(e.target.value))}
+                      disabled={volumePending}
+                      className="w-28 h-2 appearance-none rounded-full bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-yellow dark:[&::-webkit-slider-thumb]:bg-accent-green [&::-webkit-slider-thumb]:cursor-pointer"
+                      aria-label={t("music.volume")}
+                    />
                   </div>
                 )}
               </div>
@@ -738,7 +845,7 @@ export default function MusicPage() {
                 value={selectedQueueId ?? ""}
                 onChange={(e) => setSelectedQueueId(e.target.value || null)}
                 className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
-                aria-label="Speler kiezen"
+                aria-label={t("music.choosePlayer")}
               >
                 {maPlayers.map((p) => (
                   <option key={p.queue_id} value={p.queue_id} className="bg-gray-900 text-white">
