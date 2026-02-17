@@ -36,10 +36,20 @@ async function callMusicAssistant(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ baseUrl, token, command, args }),
   });
-  const data = await res.json().catch(() => ({}));
+  const text = await res.text();
+  const data = (() => {
+    try {
+      if (!text.trim()) return {};
+      return JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  })();
   if (!res.ok) {
-    const err = (data as { error?: string })?.error ?? `Request failed (${res.status})`;
-    console.error("[Music Assistant]", res.status, err, { command, args });
+    const err =
+      (typeof (data as { error?: string }).error === "string" ? (data as { error: string }).error : null) ??
+      (text.length > 0 && text.length < 400 ? text : `Request failed (${res.status})`);
+    console.error("[Music Assistant]", res.status, command, err, args);
     return { error: err };
   }
   return data;
@@ -283,11 +293,8 @@ export default function MusicPage() {
         if (e) throw new Error(e);
       });
 
-    const tryPlayerQueuesAddAndPlay = (): Promise<void> =>
-      callMusicAssistant(baseUrl, token, "player_queues/add", {
-        queue_id: queueId,
-        uri: trimmedUri,
-      }).then((addData: unknown) => {
+    const tryPlayerQueuesAddAndPlay = (addArgs: Record<string, unknown>): Promise<void> =>
+      callMusicAssistant(baseUrl, token, "player_queues/add", addArgs).then((addData: unknown) => {
         const addErr = (addData as { error?: string })?.error;
         if (addErr) throw new Error(addErr);
         return callMusicAssistant(baseUrl, token, "player_queues/play", { queue_id: queueId });
@@ -298,7 +305,8 @@ export default function MusicPage() {
 
     tryMusicQueueAddAndPlay({ queue_id: queueId, uri: trimmedUri })
       .catch(() => tryMusicQueueAddAndPlay({ player_id: queueId, uri: trimmedUri }))
-      .catch(() => tryPlayerQueuesAddAndPlay())
+      .catch(() => tryPlayerQueuesAddAndPlay({ queue_id: queueId, uri: trimmedUri }))
+      .catch(() => tryPlayerQueuesAddAndPlay({ queue_id: queueId, item: trimmedUri }))
       .catch((err) => {
         const msg = err instanceof Error ? err.message : "Afspelen mislukt.";
         setError(msg);
@@ -579,14 +587,6 @@ export default function MusicPage() {
 
         {!playersLoading && useMA && maPlayers.length > 0 && (
           <>
-            <GlassCard>
-              <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5 flex-wrap">
-                <span>Klik op het zoekicoon</span>
-                <Search className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
-                <span>in de balk boven om te zoeken op artiest, nummer of album.</span>
-              </p>
-            </GlassCard>
-
             <GlassCard>
               <h3 className="text-card-title font-medium text-gray-700 dark:text-gray-200 mb-3">
                 Onlangs afgespeeld
