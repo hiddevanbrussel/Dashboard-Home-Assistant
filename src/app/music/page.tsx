@@ -6,6 +6,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
+import Image from "next/image";
 import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, X } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useTranslation } from "@/hooks/use-translation";
@@ -98,6 +99,7 @@ export default function MusicPage() {
   const [recentTracks, setRecentTracks] = useState<MASearchItem[]>([]);
   const [recentAlbums, setRecentAlbums] = useState<MASearchItem[]>([]);
   const [recentAddedLoading, setRecentAddedLoading] = useState(false);
+  const musicAssistant = useMusicAssistantStore();
 
   useEffect(() => {
     if (!volumePopoverOpen) return;
@@ -124,7 +126,6 @@ export default function MusicPage() {
       })
       .catch(() => {});
   }, [volumePopoverOpen, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
-  const musicAssistant = useMusicAssistantStore();
 
   useEffect(() => {
     if (searchOverlayOpen) {
@@ -655,7 +656,9 @@ export default function MusicPage() {
                         title={item.name as string}
                       >
                         {imageUrl ? (
-                          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                          <span className="relative block w-full h-full">
+                            <Image src={imageUrl} alt="" fill className="object-cover" sizes="150px" unoptimized />
+                          </span>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
                             <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
@@ -695,7 +698,9 @@ export default function MusicPage() {
                         title={item.name as string}
                       >
                         {imageUrl ? (
-                          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                          <span className="relative block w-full h-full">
+                            <Image src={imageUrl} alt="" fill className="object-cover" sizes="150px" unoptimized />
+                          </span>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
                             <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
@@ -735,7 +740,9 @@ export default function MusicPage() {
                         title={item.name as string}
                       >
                         {imageUrl ? (
-                          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                          <span className="relative block w-full h-full">
+                            <Image src={imageUrl} alt="" fill className="object-cover" sizes="150px" unoptimized />
+                          </span>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
                             <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
