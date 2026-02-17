@@ -253,6 +253,7 @@ export default function RoomsPage() {
   return (
     <AppShell
       activeTab="/rooms"
+      contentScrollbarHidden
       headerEndAction={
         <button
           type="button"

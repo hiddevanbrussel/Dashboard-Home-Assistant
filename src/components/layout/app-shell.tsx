@@ -62,6 +62,8 @@ type AppShellProps = {
   temperatureEntityId?: string | null;
   /** When true, main content does not scroll (overflow hidden). */
   contentNoScroll?: boolean;
+  /** When true, hide the main content scrollbar (scroll still works). */
+  contentScrollbarHidden?: boolean;
   /** When set, show a chevron-left back link before the welcome title (e.g. /rooms). */
   backHref?: string;
   className?: string;
@@ -207,6 +209,7 @@ export function AppShell({
   onWelcomeChange,
   temperatureEntityId,
   contentNoScroll = false,
+  contentScrollbarHidden = false,
   backHref,
   className,
 }: AppShellProps) {
@@ -388,6 +391,7 @@ export function AppShell({
           className={cn(
             "flex-1 p-4 min-w-0 transition-[margin] duration-200",
             contentNoScroll ? "overflow-hidden" : "overflow-auto",
+            !contentNoScroll && contentScrollbarHidden && "scrollbar-hide",
             showSidebar && sidebarOpen && "ml-[88px]"
           )}
         >

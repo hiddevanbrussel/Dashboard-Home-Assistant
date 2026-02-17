@@ -118,6 +118,12 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
 
 const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor"];
 
+const FLOATING_WIDGET_TYPES = new Set([
+  "text_card", "media_card", "climate_card", "climate_card_2", "light_card", "solar_card",
+  "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card",
+  "vacuum_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group",
+]);
+
 type DashboardData = {
   id: string;
   name: string;
@@ -675,18 +681,42 @@ export default function DashboardEditPage() {
     const w = parseWidgets(data.widgets);
     setWidgets((prev) => (prev.length === 0 ? w : prev));
     const parsed = parseLayout(data.layout);
-    if (parsed.length > 0) {
-      setLayout(parsed);
-    } else if (w.length > 0) {
-      setLayout(
-        w.map((widget, i) => ({
-          i: widget.id,
-          x: (i % 3) * 4,
-          y: Math.floor(i / 3) * 2,
-          w: 4,
-          h: widget.type === "text_card" ? 1 : 2,
-        }))
+    const widgetTypes = new Map(w.map((x) => [x.id, x.type]));
+    const parsedFiltered = parsed.filter((item) => !FLOATING_WIDGET_TYPES.has(widgetTypes.get(item.i) ?? ""));
+    if (parsedFiltered.length > 0 || parsed.length !== parsedFiltered.length) {
+      setLayout(parsedFiltered.length > 0 ? parsedFiltered : []);
+    } else if (parsed.length === 0 && w.length > 0) {
+      const gridWidgets = w.filter(
+        (widget) =>
+          widget.type !== "text_card" &&
+          widget.type !== "media_card" &&
+          widget.type !== "climate_card" &&
+          widget.type !== "climate_card_2" &&
+          widget.type !== "light_card" &&
+          widget.type !== "solar_card" &&
+          widget.type !== "energy_monitor_card" &&
+          widget.type !== "power_usage_card" &&
+          widget.type !== "stat_pill_card" &&
+          widget.type !== "sensor_card" &&
+          widget.type !== "weather_card" &&
+          widget.type !== "vacuum_card" &&
+          widget.type !== "camera_card" &&
+          widget.type !== "pill_card" &&
+          widget.type !== "room_card" &&
+          widget.type !== "nuts_card" &&
+          widget.type !== "card_group"
       );
+      if (gridWidgets.length > 0) {
+        setLayout(
+          gridWidgets.map((widget, i) => ({
+            i: widget.id,
+            x: (i % 3) * 4,
+            y: Math.floor(i / 3) * 2,
+            w: 4,
+            h: 2,
+          }))
+        );
+      }
     }
     setWelcomeTitle(
       (data as { welcomeTitle?: string | null }).welcomeTitle ??
