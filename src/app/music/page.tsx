@@ -136,11 +136,12 @@ export default function MusicPage() {
         .then((data: unknown) => {
           const err = (data as { error?: string })?.error;
           if (err) return;
-          const r = data as { result?: { state?: string; elapsed_time?: number; current_item?: { duration?: number; name?: string }; volume_level?: number } };
-          const res = r?.result ?? r;
-          const state = res?.state as string | undefined;
-          const elapsed = (res as { elapsed_time?: number })?.elapsed_time ?? (res as { position?: number })?.position;
-          const cur = res?.current_item ?? (res as { current_item?: { duration?: number; name?: string } })?.current_item;
+          const r = data as { result?: { state?: string; elapsed_time?: number; current_item?: { duration?: number; name?: string }; volume_level?: number } } | Record<string, unknown>;
+          type QueueStateRes = { state?: string; elapsed_time?: number; position?: number; current_item?: { duration?: number; name?: string } };
+          const res = (r?.result ?? r) as QueueStateRes | null | undefined;
+          const state = res?.state;
+          const elapsed = res?.elapsed_time ?? res?.position;
+          const cur = res?.current_item;
           const duration = cur?.duration;
           setQueueState({
             state: state === "playing" ? "playing" : state === "paused" ? "paused" : "idle",
