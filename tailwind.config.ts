@@ -26,7 +26,7 @@ const config: Config = {
         },
         // Dark theme (used via dark:)
         dark: {
-          page: "#1F2F3A",
+          page: "#000000",
           card: "rgba(43, 63, 75, 0.85)",
           cardSolid: "#2B3F4B",
         },

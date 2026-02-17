@@ -16,8 +16,8 @@
   }
 
   .dark {
-    --page-bg: #1f2f3a;
-    --card-bg: rgba(43, 63, 75, 0.85);
+    --page-bg: #000000;
+    --card-bg: rgba(30, 30, 30, 0.9);
     --glass-border-light: rgba(255, 255, 255, 0.08);
     --glass-border-dark: rgba(255, 255, 255, 0.12);
   }

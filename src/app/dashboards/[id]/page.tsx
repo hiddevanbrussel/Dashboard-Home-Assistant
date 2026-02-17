@@ -1139,8 +1139,8 @@ export default function DashboardEditPage() {
         activeTab={isRoomMode ? "/rooms" : "/dashboards"}
         headerEndAction={headerEndAction}
         backHref={isRoomMode ? "/rooms" : undefined}
-        welcomeTitle={welcomeTitle || undefined}
-        welcomeSubtitle={welcomeSubtitle || undefined}
+        welcomeTitle={isRoomMode ? undefined : (welcomeTitle || undefined)}
+        welcomeSubtitle={isRoomMode ? undefined : (welcomeSubtitle || undefined)}
         hideWelcome={false}
         welcomeEditable={editMode}
         onWelcomeChange={editMode ? ({ title, subtitle }) => {
