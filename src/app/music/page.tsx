@@ -5,7 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
-import { Music2, Search, Play, Mic2, Disc3, User } from "lucide-react";
+import { Music2, Search, Play, Pause, Mic2, Disc3, User, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +54,15 @@ export default function MusicPage() {
   const [searching, setSearching] = useState(false);
   const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null);
   const [playPending, setPlayPending] = useState<string | null>(null);
+  const [queueState, setQueueState] = useState<{
+    state?: "playing" | "paused" | "idle";
+    position?: number;
+    duration?: number;
+    current_item?: { name?: string; [key: string]: unknown };
+  } | null>(null);
+  const [seekPending, setSeekPending] = useState(false);
+  const [volume, setVolume] = useState<number>(80);
+  const [volumePending, setVolumePending] = useState(false);
   const musicAssistant = useMusicAssistantStore();
 
   useEffect(() => {
@@ -102,6 +111,50 @@ export default function MusicPage() {
       setSelectedQueueId(maPlayers[0].queue_id);
     }
   }, [maPlayers, selectedQueueId]);
+
+  useEffect(() => {
+    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "config/players/get", {
+      player_id: selectedQueueId,
+    })
+      .then((data: unknown) => {
+        const err = (data as { error?: string })?.error;
+        if (err) return;
+        const res = (data as { result?: { volume_level?: number } })?.result ?? data as { volume_level?: number };
+        const vol = res?.volume_level;
+        if (typeof vol === "number" && vol >= 0 && vol <= 1) setVolume(Math.round(vol * 100));
+      })
+      .catch(() => {});
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
+
+  useEffect(() => {
+    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
+    const fetchState = () => {
+      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "player_queues/get", {
+        queue_id: selectedQueueId,
+      })
+        .then((data: unknown) => {
+          const err = (data as { error?: string })?.error;
+          if (err) return;
+          const r = data as { result?: { state?: string; elapsed_time?: number; current_item?: { duration?: number; name?: string }; volume_level?: number } };
+          const res = r?.result ?? r;
+          const state = res?.state as string | undefined;
+          const elapsed = (res as { elapsed_time?: number })?.elapsed_time ?? (res as { position?: number })?.position;
+          const cur = res?.current_item ?? (res as { current_item?: { duration?: number; name?: string } })?.current_item;
+          const duration = cur?.duration;
+          setQueueState({
+            state: state === "playing" ? "playing" : state === "paused" ? "paused" : "idle",
+            position: typeof elapsed === "number" ? elapsed : undefined,
+            duration: typeof duration === "number" ? duration : undefined,
+            current_item: cur ? { name: (cur as { name?: string }).name } : undefined,
+          });
+        })
+        .catch(() => {});
+    };
+    fetchState();
+    const interval = setInterval(fetchState, 3000);
+    return () => clearInterval(interval);
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
 
   const runSearch = useCallback(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !searchQuery.trim()) return;
@@ -152,12 +205,74 @@ export default function MusicPage() {
     [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
   );
 
+  const queueControl = useCallback(
+    (action: "previous" | "play" | "pause" | "next") => {
+      if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+      const cmd =
+        action === "play" ? "player_queues/play" :
+        action === "pause" ? "player_queues/pause" :
+        action === "next" ? "player_queues/next" : "player_queues/previous";
+      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, cmd, { queue_id: selectedQueueId })
+        .then((data: unknown) => {
+          const err = (data as { error?: string })?.error;
+          if (err) setError(err);
+        })
+        .catch((err) => setError(err instanceof Error ? err.message : "Actie mislukt."));
+    },
+    [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
+  );
+
+  const seekTo = useCallback(
+    (positionSeconds: number) => {
+      if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+      setSeekPending(true);
+      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "player_queues/seek", {
+        queue_id: selectedQueueId,
+        position: positionSeconds,
+      })
+        .then((data: unknown) => {
+          const err = (data as { error?: string })?.error;
+          if (err) setError(err);
+          else setQueueState((q) => (q ? { ...q, position: positionSeconds } : null));
+        })
+        .catch((err) => setError(err instanceof Error ? err.message : "Seek mislukt."))
+        .finally(() => setSeekPending(false));
+    },
+    [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
+  );
+
+  const setVolumeLevel = useCallback(
+    (pct: number) => {
+      if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+      const level = Math.max(0, Math.min(100, pct)) / 100;
+      setVolume(Math.round(pct));
+      setVolumePending(true);
+      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "config/players/save", {
+        player_id: selectedQueueId,
+        values: { volume_level: level },
+      })
+        .then((data: unknown) => {
+          const err = (data as { error?: string })?.error;
+          if (err) setError(err);
+        })
+        .catch(() => {})
+        .finally(() => setVolumePending(false));
+    },
+    [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
+  );
+
   const useMA = musicAssistant.enabled;
   const playerLabel = (p: MAPlayer) => (p.display_name as string) ?? p.queue_id ?? String(p.queue_id);
 
+  const showPlayerBar = useMA && maPlayers.length > 0;
+  const isPlaying = queueState?.state === "playing";
+  const position = queueState?.position ?? 0;
+  const duration = queueState?.duration ?? 0;
+  const progress = duration > 0 ? Math.min(1, position / duration) : 0;
+
   return (
     <AppShell activeTab="/music">
-      <div className="space-y-6 max-w-3xl">
+      <div className={cn("space-y-6 max-w-3xl", showPlayerBar && "pb-24")}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Muziek</h2>
@@ -362,6 +477,95 @@ export default function MusicPage() {
           </>
         )}
       </div>
+
+      {showPlayerBar && (
+        <footer
+          className="fixed bottom-0 left-0 right-0 z-40 flex items-center border-t border-white/10 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md px-4 sm:px-6 py-3"
+          aria-label="Afspeelbalk"
+        >
+          <div className="w-full flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => queueControl("previous")}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+                aria-label="Vorige"
+              >
+                <SkipBack className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => queueControl(isPlaying ? "pause" : "play")}
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-yellow dark:bg-accent-green text-gray-900 hover:opacity-90 transition-opacity"
+                aria-label={isPlaying ? "Pauzeren" : "Afspelen"}
+              >
+                {isPlaying ? (
+                  <Pause className="h-6 w-6 fill-current" />
+                ) : (
+                  <Play className="h-6 w-6 fill-current ml-0.5" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => queueControl("next")}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+                aria-label="Volgende"
+              >
+                <SkipForward className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 min-w-0 flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-xs text-white/70 tabular-nums">
+                <span>{formatDuration(position)}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 100}
+                  value={position}
+                  step={1}
+                  disabled={seekPending || duration <= 0}
+                  onChange={(e) => seekTo(Number(e.target.value))}
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50"
+                  aria-label="Afspeelpositie"
+                />
+                <span>{formatDuration(duration)}</span>
+              </div>
+              {queueState?.current_item?.name && (
+                <p className="truncate text-sm text-white/90 font-medium">
+                  {queueState.current_item.name}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Volume2 className="h-5 w-5 shrink-0 text-white/70" aria-hidden />
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={volume}
+                onChange={(e) => setVolumeLevel(Number(e.target.value))}
+                disabled={volumePending}
+                className="w-20 sm:w-24 h-1.5 rounded-full appearance-none bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50"
+                aria-label="Volume"
+              />
+              <select
+                value={selectedQueueId ?? ""}
+                onChange={(e) => setSelectedQueueId(e.target.value || null)}
+                className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
+                aria-label="Speler kiezen"
+              >
+                {maPlayers.map((p) => (
+                  <option key={p.queue_id} value={p.queue_id} className="bg-gray-900 text-white">
+                    {playerLabel(p)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </footer>
+      )}
     </AppShell>
   );
 }
