@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, X } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +64,15 @@ export default function MusicPage() {
   const [seekPending, setSeekPending] = useState(false);
   const [volume, setVolume] = useState<number>(80);
   const [volumePending, setVolumePending] = useState(false);
+  const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const musicAssistant = useMusicAssistantStore();
+
+  useEffect(() => {
+    if (searchOverlayOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [searchOverlayOpen]);
 
   useEffect(() => {
     hydrateMusicAssistantStore();
@@ -271,8 +280,127 @@ export default function MusicPage() {
   const duration = queueState?.duration ?? 0;
   const progress = duration > 0 ? Math.min(1, position / duration) : 0;
 
+  const searchOverlay = searchOverlayOpen && typeof document !== "undefined" && createPortal(
+    <div
+      className="fixed inset-0 z-[60] flex flex-col bg-page-light dark:bg-dark-page"
+      role="dialog"
+      aria-label="Zoek muziek"
+    >
+      <div className="shrink-0 flex items-center gap-2 border-b border-gray-200 dark:border-white/10 bg-white/90 dark:bg-gray-900/95 backdrop-blur-md px-4 py-3">
+        <Search className="h-5 w-5 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
+        <input
+          ref={searchInputRef}
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") runSearch();
+            if (e.key === "Escape") setSearchOverlayOpen(false);
+          }}
+          placeholder="Artiest, nummer of album…"
+          className="flex-1 min-w-0 rounded-xl border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
+          aria-label="Zoek muziek"
+        />
+        <button
+          type="button"
+          onClick={runSearch}
+          disabled={searching || !searchQuery.trim()}
+          className="shrink-0 rounded-xl bg-accent-yellow dark:bg-accent-green px-4 py-2.5 text-sm font-medium text-gray-900 disabled:opacity-50"
+        >
+          {searching ? "Zoeken…" : "Zoeken"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchOverlayOpen(false)}
+          className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+          aria-label="Sluiten"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
+        {searchResults.length > 0 ? (
+          <ul className="space-y-1 max-w-2xl mx-auto" role="list">
+            {searchResults.map((item, index) => {
+              const uri = item.uri ?? (item as { item_id?: string })?.item_id;
+              const name = item.name ?? "Onbekend";
+              const artists = item.artists;
+              const artistNames = Array.isArray(artists)
+                ? artists.map((a) => (a && typeof a === "object" && "name" in a ? (a as { name?: string }).name : null)).filter(Boolean).join(", ") || "—"
+                : artists && typeof artists === "object" && "name" in artists
+                  ? (artists as { name?: string }).name
+                  : "—";
+              const albumName = item.album?.name;
+              const duration = item.duration;
+              const isPlayPending = uri && playPending === uri;
+              const canPlay = !!uri && !!selectedQueueId;
+              return (
+                <li
+                  key={uri ?? `item-${index}`}
+                  className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
+                    <Disc3 className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
+                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                      {artistNames}
+                      {albumName ? ` · ${albumName}` : ""}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                    {formatDuration(duration)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => canPlay && playOnPlayer(uri)}
+                    disabled={!canPlay || !!isPlayPending}
+                    className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
+                    title={`Afspelen op ${selectedQueueId ? playerLabel(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : "speler"}`}
+                  >
+                    {isPlayPending ? (
+                      <span className="h-4 w-4 block animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-900 dark:border-t-transparent" aria-hidden />
+                    ) : (
+                      <Play className="h-4 w-4 fill-current" aria-hidden />
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : searchQuery.trim() && !searching ? (
+          <div className="flex items-center gap-3 py-8 text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+            <User className="h-10 w-10 shrink-0" aria-hidden />
+            <p className="text-sm">Geen resultaten voor &quot;{searchQuery.trim()}&quot;. Probeer een andere zoekterm.</p>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl mx-auto py-8">
+            Voer een zoekterm in en klik op Zoeken of druk op Enter.
+          </p>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+
   return (
-    <AppShell activeTab="/music">
+    <AppShell
+      activeTab="/music"
+      headerEndAction={
+        useMA && maPlayers.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setSearchOverlayOpen(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+            aria-label="Zoek muziek"
+          >
+            <Search className="h-5 w-5" />
+          </button>
+        ) : undefined
+      }
+    >
+      {searchOverlay}
       <div className={cn("space-y-6 max-w-3xl", showPlayerBar && "pb-24")}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -346,105 +474,13 @@ export default function MusicPage() {
         )}
 
         {!playersLoading && useMA && maPlayers.length > 0 && (
-          <>
-            <GlassCard>
-              <h3 className="text-card-title font-medium text-gray-700 dark:text-gray-200 mb-3">
-                Zoek muziek
-              </h3>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search
-                    className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-                    aria-hidden
-                  />
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && runSearch()}
-                    placeholder="Artiest, nummer of album…"
-                    className="w-full rounded-xl border border-gray-200 dark:border-white/20 bg-white/80 dark:bg-white/10 pl-10 pr-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
-                    aria-label="Zoek muziek"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={runSearch}
-                  disabled={searching || !searchQuery.trim()}
-                  className="rounded-xl bg-accent-yellow dark:bg-accent-green px-4 py-2.5 text-sm font-medium text-gray-900 disabled:opacity-50"
-                >
-                  {searching ? "Zoeken…" : "Zoeken"}
-                </button>
-              </div>
-            </GlassCard>
-
-            {searchResults.length > 0 && (
-              <GlassCard>
-                <h3 className="text-card-title font-medium text-gray-700 dark:text-gray-200 mb-3">
-                  Resultaten
-                </h3>
-                <ul className="space-y-1" role="list">
-                  {searchResults.map((item, index) => {
-                    const uri = item.uri ?? (item as { item_id?: string })?.item_id;
-                    const name = item.name ?? "Onbekend";
-                    const artists = item.artists;
-                    const artistNames = Array.isArray(artists)
-                      ? artists.map((a) => (a && typeof a === "object" && "name" in a ? (a as { name?: string }).name : null)).filter(Boolean).join(", ") || "—"
-                      : artists && typeof artists === "object" && "name" in artists
-                        ? (artists as { name?: string }).name
-                        : "—";
-                    const albumName = item.album?.name;
-                    const duration = item.duration;
-                    const isPlayPending = uri && playPending === uri;
-                    const canPlay = !!uri && !!selectedQueueId;
-
-                    return (
-                      <li
-                        key={uri ?? `item-${index}`}
-                        className="flex items-center gap-3 rounded-xl border border-transparent bg-white/50 dark:bg-white/5 px-3 py-2.5 hover:bg-white/80 dark:hover:bg-white/10"
-                      >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
-                          <Disc3 className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
-                          <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-                            {artistNames}
-                            {albumName ? ` · ${albumName}` : ""}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-                          {formatDuration(duration)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => canPlay && playOnPlayer(uri)}
-                          disabled={!canPlay || !!isPlayPending}
-                          className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
-                          title={`Afspelen op ${selectedQueueId ? playerLabel(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : "speler"}`}
-                        >
-                          {isPlayPending ? (
-                            <span className="h-4 w-4 block animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-900 dark:border-t-transparent" aria-hidden />
-                          ) : (
-                            <Play className="h-4 w-4 fill-current" aria-hidden />
-                          )}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </GlassCard>
-            )}
-
-            {searchQuery.trim() && !searching && searchResults.length === 0 && (
-              <GlassCard>
-                <div className="flex items-center gap-3 py-6 text-gray-500 dark:text-gray-400">
-                  <User className="h-10 w-10 shrink-0" aria-hidden />
-                  <p className="text-sm">Geen resultaten voor &quot;{searchQuery.trim()}&quot;. Probeer een andere zoekterm.</p>
-                </div>
-              </GlassCard>
-            )}
-          </>
+          <GlassCard>
+            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5 flex-wrap">
+              <span>Klik op het zoekicoon</span>
+              <Search className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
+              <span>in de balk boven om te zoeken op artiest, nummer of album.</span>
+            </p>
+          </GlassCard>
         )}
       </div>
 
@@ -485,7 +521,7 @@ export default function MusicPage() {
               </button>
             </div>
 
-            <div className="flex flex-col gap-1 w-full max-w-[280px] sm:max-w-[320px] shrink-0">
+            <div className="flex-1 min-w-0 flex flex-col gap-1 max-w-2xl">
               <div className="flex items-center gap-2 text-xs text-white/70 tabular-nums">
                 <span className="w-9 shrink-0">{formatDuration(position)}</span>
                 <input
@@ -508,7 +544,7 @@ export default function MusicPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
               <Volume2 className="h-5 w-5 shrink-0 text-white/70" aria-hidden />
               <input
                 type="range"
