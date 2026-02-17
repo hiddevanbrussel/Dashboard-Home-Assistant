@@ -70,7 +70,7 @@ export default function SettingsPage() {
   const [screensaverPexelsQuery, setScreensaverPexelsQueryState] = useState("nature landscape");
   const [screensaverPexelsApiKey, setScreensaverPexelsApiKeyState] = useState("");
   const [uploadingScreensaverBg, setUploadingScreensaverBg] = useState(false);
-  const [maTestResult, setMaTestResult] = useState<"ok" | "error" | null>(null);
+  const [maTestResult, setMaTestResult] = useState<"ok" | string | null>(null);
   const [maTesting, setMaTesting] = useState(false);
   const musicAssistant = useMusicAssistantStore();
 
@@ -844,7 +844,7 @@ export default function SettingsPage() {
                         : "bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200"
                     }`}
                   >
-                    {maTestResult === "ok" ? t("settings.musicAssistant.testSuccess") : t("settings.musicAssistant.testError")}
+                    {maTestResult === "ok" ? t("settings.musicAssistant.testSuccess") : maTestResult}
                   </div>
                 )}
                 <button
@@ -864,9 +864,9 @@ export default function SettingsPage() {
                         }),
                       });
                       const data = await res.json();
-                      setMaTestResult(res.ok && !data?.error ? "ok" : "error");
-                    } catch {
-                      setMaTestResult("error");
+                      setMaTestResult(res.ok && !data?.error ? "ok" : (data?.error ?? t("settings.musicAssistant.testError")));
+                    } catch (e) {
+                      setMaTestResult(e instanceof Error ? e.message : t("settings.musicAssistant.testError"));
                     } finally {
                       setMaTesting(false);
                     }

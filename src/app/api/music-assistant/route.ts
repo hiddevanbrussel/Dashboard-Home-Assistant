@@ -48,8 +48,13 @@ export async function POST(request: Request) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+      let errorMessage = (data as { message?: string })?.message ?? `MA API error: ${res.status}`;
+      if (res.status === 401) {
+        errorMessage =
+          "Music Assistant returned 401 Unauthorized. Add a valid API token in Settings (from Music Assistant → Settings → User management / API token).";
+      }
       return NextResponse.json(
-        { error: (data as { message?: string })?.message ?? `MA API error: ${res.status}` },
+        { error: errorMessage },
         { status: res.status >= 400 && res.status < 600 ? res.status : 502 }
       );
     }
