@@ -7,9 +7,22 @@ import { TextCardWidget } from "./text-card-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingTextCardPosition.";
 const DEFAULT_OFFSET = 24;
-const CARD_WIDTH = 280;
+const DEFAULT_CARD_WIDTH = 280;
 
 type Position = { left: number; bottom: number };
+
+function defaultPositionForWidth(cardWidth: number, widgetIndex: number): Position {
+  if (typeof window === "undefined") return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET };
+  const maxLeft = window.innerWidth - cardWidth;
+  const maxBottom = window.innerHeight - 120;
+  const cols = 3;
+  const row = Math.floor(widgetIndex / cols);
+  const col = widgetIndex % cols;
+  return {
+    left: Math.max(0, Math.min(col * Math.max(1, maxLeft / (cols - 1)), maxLeft)),
+    bottom: Math.max(0, maxBottom - row * 80),
+  };
+}
 
 function loadPosition(widgetId: string): Position | null {
   if (typeof window === "undefined") return null;
@@ -36,25 +49,16 @@ function savePosition(widgetId: string, p: Position) {
   }
 }
 
-function defaultPosition(widgetIndex: number): Position {
-  if (typeof window === "undefined") return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET };
-  const maxLeft = window.innerWidth - CARD_WIDTH;
-  const maxBottom = window.innerHeight - 120;
-  const cols = 3;
-  const row = Math.floor(widgetIndex / cols);
-  const col = widgetIndex % cols;
-  return {
-    left: Math.max(0, Math.min(col * Math.max(1, maxLeft / (cols - 1)), maxLeft)),
-    bottom: Math.max(0, maxBottom - row * 80),
-  };
-}
-
 export type FloatingTextCardItem = {
   id: string;
   title: string;
   textMode?: "title" | "subtitle" | "text";
   show_icon?: boolean;
   icon?: string;
+  /** Breedte kaart in px (standaard 280). */
+  width?: number;
+  /** Entity voor aan/uit-schakelaar (switch, light, input_boolean). */
+  entity_id?: string;
 };
 
 const LONG_PRESS_MS = 500;
@@ -112,7 +116,7 @@ export function FloatingTextCard({
     [clearLongPress]
   );
 
-  const totalWidth = CARD_WIDTH;
+  const totalWidth = widget.width ?? DEFAULT_CARD_WIDTH;
 
   useEffect(() => {
     if (initialized.current) return;
@@ -125,7 +129,7 @@ export function FloatingTextCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(widgetIndex), bounds);
+    const p = snapToGrid(defaultPositionForWidth(totalWidth, widgetIndex), bounds);
     setPosition(p);
     savePosition(widget.id, p);
   }, [totalWidth, widget.id, widgetIndex]);
@@ -224,12 +228,14 @@ export function FloatingTextCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className={cn("shrink-0 flex flex-col p-4 w-full", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")} style={{ width: CARD_WIDTH }}>
+      <div className={cn("shrink-0 flex flex-col p-4 w-full", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")} style={{ width: totalWidth }}>
         <TextCardWidget
           text={widget.title ?? ""}
           type={widget.textMode ?? "title"}
           show_icon={widget.show_icon ?? false}
           icon={widget.icon ?? "Type"}
+          width={totalWidth}
+          entity_id={widget.entity_id}
           onMoreClick={editMode && onEdit ? () => onEdit() : undefined}
         />
       </div>

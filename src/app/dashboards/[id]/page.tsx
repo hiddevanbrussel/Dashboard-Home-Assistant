@@ -1335,6 +1335,8 @@ export default function DashboardEditPage() {
                 textMode: (w as { textMode?: "title" | "subtitle" | "text" }).textMode ?? "title",
                 show_icon: w.show_icon ?? false,
                 icon: w.icon ?? "Type",
+                width: (w as { width?: number }).width,
+                entity_id: (w as { entity_id?: string }).entity_id,
               }}
               widgetIndex={i}
               editMode={editMode}
@@ -1769,6 +1771,48 @@ export default function DashboardEditPage() {
                           ))}
                         </select>
                       </div>
+                    )}
+                    {editingWidget.type === "text_card" && (
+                      <>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                            Breedte (px)
+                          </label>
+                          <input
+                            type="number"
+                            min={160}
+                            max={500}
+                            step={10}
+                            value={editForm.width ?? 280}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
+                            }}
+                            placeholder="280"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Standaard 280 px</p>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                            Schakelaar (optioneel)
+                          </label>
+                          <EntitySelectWithSearch
+                            entities={entities}
+                            value={editForm.entity_id}
+                            onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
+                            filter={(e) =>
+                              e.entity_id.startsWith("switch.") ||
+                              e.entity_id.startsWith("light.") ||
+                              e.entity_id.startsWith("input_boolean.")
+                            }
+                            label=""
+                            placeholder="Bijv. light.woonkamer of switch.plafond"
+                            emptyOption="Geen"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont aan/uit-knop aan het eind van de kaart</p>
+                        </div>
+                      </>
                     )}
                   </>
                 ) : editingWidget.type === "card_group" ? (
@@ -4128,6 +4172,10 @@ export default function DashboardEditPage() {
                         textMode: editForm.textMode ?? "title",
                         show_icon: editForm.show_icon ?? false,
                         icon: editForm.icon ?? "Type",
+                        ...(editingWidget.type === "text_card" && {
+                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                          entity_id: editForm.entity_id || undefined,
+                        }),
                       } : {
                         title: editForm.title,
                         ...(editingWidget.entity_id != null && editingWidget.type !== "energy_monitor_card" && editingWidget.type !== "power_usage_card" && {
