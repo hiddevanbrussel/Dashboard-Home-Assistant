@@ -5,7 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
-import { Music2, Search, Play, Pause, Mic2, Disc3, User, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { cn } from "@/lib/utils";
 
@@ -349,37 +349,6 @@ export default function MusicPage() {
           <>
             <GlassCard>
               <h3 className="text-card-title font-medium text-gray-700 dark:text-gray-200 mb-3">
-                Speler kiezen
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                Muziek wordt afgespeeld op de geselecteerde speler.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {maPlayers.map((p) => {
-                  const id = p.queue_id;
-                  const isSelected = selectedQueueId === id;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setSelectedQueueId(id)}
-                      className={cn(
-                        "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                        isSelected
-                          ? "bg-accent-yellow text-gray-900 dark:bg-accent-green dark:text-gray-900"
-                          : "bg-white/80 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/20 hover:bg-white dark:hover:bg-white/20"
-                      )}
-                    >
-                      <Mic2 className="h-4 w-4" aria-hidden />
-                      {playerLabel(p)}
-                    </button>
-                  );
-                })}
-              </div>
-            </GlassCard>
-
-            <GlassCard>
-              <h3 className="text-card-title font-medium text-gray-700 dark:text-gray-200 mb-3">
                 Zoek muziek
               </h3>
               <div className="flex gap-2">
@@ -516,9 +485,9 @@ export default function MusicPage() {
               </button>
             </div>
 
-            <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <div className="flex flex-col gap-1 w-full max-w-[280px] sm:max-w-[320px] shrink-0">
               <div className="flex items-center gap-2 text-xs text-white/70 tabular-nums">
-                <span>{formatDuration(position)}</span>
+                <span className="w-9 shrink-0">{formatDuration(position)}</span>
                 <input
                   type="range"
                   min={0}
@@ -527,10 +496,10 @@ export default function MusicPage() {
                   step={1}
                   disabled={seekPending || duration <= 0}
                   onChange={(e) => seekTo(Number(e.target.value))}
-                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50"
+                  className="flex-1 min-w-0 h-1.5 rounded-full appearance-none bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50"
                   aria-label="Afspeelpositie"
                 />
-                <span>{formatDuration(duration)}</span>
+                <span className="w-9 shrink-0 text-right">{formatDuration(duration)}</span>
               </div>
               {queueState?.current_item?.name && (
                 <p className="truncate text-sm text-white/90 font-medium">
