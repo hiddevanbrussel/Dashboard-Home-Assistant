@@ -262,8 +262,7 @@ export function AppShell({
         className
       )}
     >
-      <div className="sticky top-0 z-50 shrink-0 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-b border-gray-200/50 dark:border-white/10">
-      <header className="flex items-center px-4 py-3 dark:border-white/10">
+      <header className="relative z-50 flex shrink-0 items-center border-b border-gray-200/50 px-4 py-3 dark:border-white/10">
         <div className="flex-1 min-w-0 flex items-center gap-4">
           {showSidebar && (
             <button
@@ -304,8 +303,18 @@ export function AppShell({
         </div>
       </header>
 
+      {temperatureModalOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <TemperatureEntityModal
+            onClose={() => setTemperatureModalOpen(false)}
+            onSelect={saveChosenTemperatureEntity}
+          />,
+          document.body
+        )}
+
       {(showWelcomeInHeader || backHref) && (
-      <div className="flex items-center justify-between gap-4 pl-10 pr-4 py-4 border-b border-gray-200/50 dark:border-white/10">
+      <div className="shrink-0 flex items-center justify-between gap-4 pl-10 pr-4 py-4">
         <div className="min-w-0 flex-1 flex items-center gap-3">
           {backHref && (
             <Link
@@ -363,17 +372,6 @@ export function AppShell({
         ) : null}
       </div>
       )}
-      </div>
-
-      {temperatureModalOpen &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <TemperatureEntityModal
-            onClose={() => setTemperatureModalOpen(false)}
-            onSelect={saveChosenTemperatureEntity}
-          />,
-          document.body
-        )}
 
       <div className="flex flex-1 overflow-hidden relative">
         {showSidebar && (
