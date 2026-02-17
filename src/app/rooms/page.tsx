@@ -225,7 +225,7 @@ export default function RoomsPage() {
 
   return (
     <AppShell activeTab="/rooms">
-      <div className="space-y-6">
+      <div className="space-y-6 px-6 md:px-8">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -298,7 +298,7 @@ export default function RoomsPage() {
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   {floor ? floor : t("rooms.floorOther")}
                 </h3>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {floorRooms.map((r) => (
                     <RoomPreviewCard
                       key={r.areaId}
