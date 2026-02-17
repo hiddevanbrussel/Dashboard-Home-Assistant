@@ -214,7 +214,6 @@ export default function MusicPage() {
         (data: unknown) => {
           const err = (data as { error?: string })?.error;
           if (err) {
-            lastError = err;
             if (argIndex + 1 < argsList.length) return tryAttempt(cmdIndex, argIndex + 1);
             if (cmdIndex + 1 < commands.length) return tryAttempt(cmdIndex + 1, 0);
             setError(err);
