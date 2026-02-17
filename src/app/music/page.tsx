@@ -283,8 +283,17 @@ export default function MusicPage() {
       const token = musicAssistant.token;
       const queueId = selectedQueueId;
 
-      const tryAddItemThenPlay = (cmd: string, addArgs: Record<string, unknown>): Promise<void> =>
-      callMusicAssistant(baseUrl, token, cmd, addArgs).then((addData: unknown) => {
+      const tryPlayMedia = (): Promise<void> =>
+      callMusicAssistant(baseUrl, token, "player_queues/play_media", {
+        queue_id: queueId,
+        media: [trimmedUri],
+      }).then((data: unknown) => {
+        const e = (data as { error?: string })?.error;
+        if (e) throw new Error(e);
+      });
+
+    const tryAddItemThenPlay = (addArgs: Record<string, unknown>): Promise<void> =>
+      callMusicAssistant(baseUrl, token, "player_queues/add_item", addArgs).then((addData: unknown) => {
         const e = (addData as { error?: string })?.error;
         if (e) throw new Error(e);
         return callMusicAssistant(baseUrl, token, "player_queues/play", { queue_id: queueId });
@@ -293,21 +302,9 @@ export default function MusicPage() {
         if (e) throw new Error(e);
       });
 
-    const tryQueueCommand = (): Promise<void> =>
-      callMusicAssistant(baseUrl, token, "player_queues/queue_command", {
-        queue_id: queueId,
-        command: "play_media",
-        uri: trimmedUri,
-      }).then((data: unknown) => {
-        const e = (data as { error?: string })?.error;
-        if (e) throw new Error(e);
-      });
-
-    tryAddItemThenPlay("player_queues/add_item", { queue_id: queueId, uri: trimmedUri })
-      .catch(() => tryAddItemThenPlay("player_queues/add_item", { player_id: queueId, uri: trimmedUri }))
-      .catch(() => tryAddItemThenPlay("player_queues/insert", { queue_id: queueId, uri: trimmedUri }))
-      .catch(() => tryQueueCommand())
-      .catch(() => tryAddItemThenPlay("player_queues/add_item", { queue_id: queueId, item: trimmedUri }))
+    tryPlayMedia()
+      .catch(() => tryAddItemThenPlay({ queue_id: queueId, uri: trimmedUri }))
+      .catch(() => tryAddItemThenPlay({ queue_id: queueId, media: [trimmedUri] }))
       .catch((err) => {
         const msg = err instanceof Error ? err.message : "Afspelen mislukt.";
         setError(msg);
