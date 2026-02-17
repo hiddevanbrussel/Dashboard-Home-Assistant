@@ -198,7 +198,6 @@ export function FloatingTextCard({
     <div
       className={cn(
         "fixed z-30 rounded-2xl overflow-visible flex transition-colors duration-200",
-        "border border-white/20 dark:border-white/10",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
