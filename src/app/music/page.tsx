@@ -64,8 +64,21 @@ export default function MusicPage() {
   const [seekPending, setSeekPending] = useState(false);
   const [volume, setVolume] = useState<number>(80);
   const [volumePending, setVolumePending] = useState(false);
+  const [volumePopoverOpen, setVolumePopoverOpen] = useState(false);
+  const volumePopoverRef = useRef<HTMLDivElement>(null);
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!volumePopoverOpen) return;
+    const close = (e: MouseEvent) => {
+      if (volumePopoverRef.current && !volumePopoverRef.current.contains(e.target as Node)) {
+        setVolumePopoverOpen(false);
+      }
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [volumePopoverOpen]);
   const musicAssistant = useMusicAssistantStore();
 
   useEffect(() => {
@@ -170,22 +183,48 @@ export default function MusicPage() {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !searchQuery.trim()) return;
     setSearching(true);
     setSearchResults([]);
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/search", {
-      search_query: searchQuery.trim(),
-      limit: 24,
-    })
-      .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
-        if (err) {
-          setError(err);
-          return;
+    setError(null);
+    const query = searchQuery.trim();
+    const argsList: Record<string, unknown>[] = [
+      { search_query: query, limit: 24 },
+      { query, limit: 24 },
+      { name: query, limit: 24 },
+    ];
+    const commands = ["music/search", "search"] as const;
+    function parseTracks(data: unknown): MASearchItem[] {
+      const d = data as Record<string, unknown>;
+      const result = d?.result ?? d;
+      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+      if (Array.isArray(resultObj.tracks)) return resultObj.tracks as MASearchItem[];
+      if (Array.isArray(resultObj.track)) return resultObj.track as MASearchItem[];
+      if (Array.isArray(result)) return result as MASearchItem[];
+      if (Array.isArray(d.tracks)) return d.tracks as MASearchItem[];
+      if (Array.isArray((d as { data?: unknown }).data)) return (d as { data: MASearchItem[] }).data;
+      const dataTracks = (d as { data?: { tracks?: MASearchItem[] } }).data?.tracks;
+      if (Array.isArray(dataTracks)) return dataTracks;
+      const albums = resultObj.albums as { tracks?: MASearchItem[] }[] | undefined;
+      if (albums?.length) {
+        const flat = albums.flatMap((a) => (a?.tracks && Array.isArray(a.tracks) ? a.tracks : []));
+        if (flat.length) return flat as MASearchItem[];
+      }
+      return [];
+    }
+    const tryAttempt = (cmdIndex: number, argIndex: number): Promise<void> =>
+      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, commands[cmdIndex]!, argsList[argIndex]!).then(
+        (data: unknown) => {
+          const err = (data as { error?: string })?.error;
+          if (err) {
+            lastError = err;
+            if (argIndex + 1 < argsList.length) return tryAttempt(cmdIndex, argIndex + 1);
+            if (cmdIndex + 1 < commands.length) return tryAttempt(cmdIndex + 1, 0);
+            setError(err);
+            return;
+          }
+          const tracks = parseTracks(data);
+          setSearchResults(tracks);
         }
-        const raw = (data as { result?: { tracks?: MASearchItem[]; track?: MASearchItem[] } })?.result;
-        const tracks = raw?.tracks ?? raw?.track ?? (Array.isArray(raw) ? raw : []);
-        setSearchResults(Array.isArray(tracks) ? tracks : []);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Zoeken mislukt."))
-      .finally(() => setSearching(false));
+      );
+    tryAttempt(0, 0).catch((err) => setError(err instanceof Error ? err.message : "Zoeken mislukt.")).finally(() => setSearching(false));
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, searchQuery]);
 
   const playOnPlayer = useCallback(
@@ -545,17 +584,38 @@ export default function MusicPage() {
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
-              <Volume2 className="h-5 w-5 shrink-0 text-white/70" aria-hidden />
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={volume}
-                onChange={(e) => setVolumeLevel(Number(e.target.value))}
-                disabled={volumePending}
-                className="w-20 sm:w-24 h-1.5 rounded-full appearance-none bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50"
-                aria-label="Volume"
-              />
+              <div className="relative" ref={volumePopoverRef}>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setVolumePopoverOpen((v) => !v); }}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+                  aria-label="Volume"
+                  aria-expanded={volumePopoverOpen}
+                >
+                  <Volume2 className="h-5 w-5" />
+                </button>
+                {volumePopoverOpen && (
+                  <div
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col items-center gap-2 rounded-xl border border-white/20 bg-gray-900 dark:bg-black py-3 px-3 shadow-xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="text-xs text-white/70 tabular-nums">{volume}%</span>
+                    <div className="h-24 w-2 flex items-center justify-center">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={volume}
+                        onChange={(e) => setVolumeLevel(Number(e.target.value))}
+                        disabled={volumePending}
+                        className="w-24 h-2 appearance-none rounded-full bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-yellow dark:[&::-webkit-slider-thumb]:bg-accent-green"
+                        style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
+                        aria-label="Volume"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
               <select
                 value={selectedQueueId ?? ""}
                 onChange={(e) => setSelectedQueueId(e.target.value || null)}
