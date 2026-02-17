@@ -131,15 +131,15 @@ export function FloatingWeatherCard({
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
     const bounds = { maxLeft, maxBottom };
-    const saved = loadPosition();
+    const saved = loadPosition(storageScope);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
     const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
     setPosition(p);
-    savePosition(p);
-  }, [totalWidth, totalHeight]);
+    savePosition(storageScope, p);
+  }, [totalWidth, totalHeight, storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -187,11 +187,11 @@ export function FloatingWeatherCard({
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(next);
+        savePosition(storageScope, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft, maxBottom]
+    [isDragging, maxLeft, maxBottom, storageScope]
   );
 
   return (
