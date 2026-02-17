@@ -1,15 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
-import { DoorOpen, Image as ImageIcon, LayoutGrid, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
+import { DoorOpen, Image as ImageIcon, LayoutGrid, Plus, Trash2, X } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { CARD_ICONS } from "@/components/widgets/card-icons";
+import { RoomPreviewCard } from "@/components/widgets/room-preview-card";
 
 const ROOM_ICON_OPTIONS = ["DoorOpen", "Home", "Sofa", "BedDouble", "Bath", "UtensilsCrossed", "Lamp", "Car", "Building2"] as const;
 
-type RoomItem = { areaId: string; name: string; icon?: string | null; floor?: string | null; createdAt: string };
+type RoomItem = { areaId: string; name: string; icon?: string | null; iconBackgroundColor?: string | null; floor?: string | null; background?: string | null; createdAt: string };
 
 /** Floor options for create form. Value is stored; order is for display. */
 const FLOOR_OPTIONS = [
@@ -59,6 +59,7 @@ export default function RoomsPage() {
   const [newName, setNewName] = useState("");
   const [newId, setNewId] = useState("");
   const [newIcon, setNewIcon] = useState<string>(ROOM_ICON_OPTIONS[0]);
+  const [newIconBackgroundColor, setNewIconBackgroundColor] = useState<string>("#3B82F6");
   const [newFloor, setNewFloor] = useState<string>("");
   const [newCustomFloor, setNewCustomFloor] = useState("");
   const [newBackgroundFile, setNewBackgroundFile] = useState<File | null>(null);
@@ -69,6 +70,9 @@ export default function RoomsPage() {
   const [editingRoom, setEditingRoom] = useState<RoomItem | null>(null);
   const [editName, setEditName] = useState("");
   const [editIcon, setEditIcon] = useState<string>(ROOM_ICON_OPTIONS[0]);
+  const [editIconBackgroundColor, setEditIconBackgroundColor] = useState<string>("#3B82F6");
+  const [editBackgroundFile, setEditBackgroundFile] = useState<File | null>(null);
+  const [editBackgroundPreview, setEditBackgroundPreview] = useState<string | null>(null);
   const [editFloor, setEditFloor] = useState("");
   const [editCustomFloor, setEditCustomFloor] = useState("");
   const [updating, setUpdating] = useState(false);
@@ -114,6 +118,7 @@ export default function RoomsPage() {
           name: newName.trim(),
           id: newId.trim() || undefined,
           icon: newIcon || undefined,
+          iconBackgroundColor: newIconBackgroundColor || undefined,
           floor: newFloor.trim()
             ? newFloor.trim()
             : newCustomFloor.trim() || undefined,
@@ -129,6 +134,7 @@ export default function RoomsPage() {
       setNewName("");
       setNewId("");
       setNewIcon(ROOM_ICON_OPTIONS[0]);
+      setNewIconBackgroundColor("#3B82F6");
       setNewFloor("");
       setNewCustomFloor("");
       setNewBackgroundFile(null);
@@ -145,6 +151,9 @@ export default function RoomsPage() {
     setEditingRoom(r);
     setEditName(r.name);
     setEditIcon((r.icon as string) || ROOM_ICON_OPTIONS[0]);
+    setEditIconBackgroundColor((r.iconBackgroundColor as string) || "#3B82F6");
+    setEditBackgroundFile(null);
+    setEditBackgroundPreview(r.background || null);
     const isPreset = FLOOR_ORDER.includes(r.floor || "");
     setEditFloor(isPreset ? (r.floor || "") : "");
     setEditCustomFloor(isPreset ? "" : (r.floor || ""));
@@ -158,6 +167,17 @@ export default function RoomsPage() {
     setUpdateError(null);
     setUpdating(true);
     try {
+      let backgroundUrl: string | null | undefined;
+      if (editBackgroundFile) {
+        const formData = new FormData();
+        formData.set("file", editBackgroundFile);
+        const upRes = await fetch("/api/upload", { method: "POST", body: formData });
+        const upJson = await upRes.json();
+        if (!upRes.ok) throw new Error(upJson?.error ?? "Upload failed");
+        backgroundUrl = upJson.url;
+      } else {
+        backgroundUrl = editBackgroundPreview ?? null;
+      }
       const floorValue = editFloor.trim()
         ? editFloor.trim()
         : editCustomFloor.trim() || undefined;
@@ -167,7 +187,9 @@ export default function RoomsPage() {
         body: JSON.stringify({
           name: editName.trim(),
           icon: editIcon || undefined,
+          iconBackgroundColor: editIconBackgroundColor || undefined,
           floor: floorValue,
+          background: backgroundUrl,
         }),
       });
       const data = await res.json();
@@ -177,6 +199,8 @@ export default function RoomsPage() {
       }
       setEditModalOpen(false);
       setEditingRoom(null);
+      setEditBackgroundFile(null);
+      setEditBackgroundPreview(null);
       loadRooms();
     } catch {
       setUpdateError(t("rooms.genericError"));
@@ -219,6 +243,7 @@ export default function RoomsPage() {
               setNewName("");
               setNewId("");
               setNewIcon(ROOM_ICON_OPTIONS[0]);
+              setNewIconBackgroundColor("#3B82F6");
               setNewFloor("");
               setNewCustomFloor("");
               setNewBackgroundFile(null);
@@ -273,48 +298,22 @@ export default function RoomsPage() {
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   {floor ? floor : t("rooms.floorOther")}
                 </h3>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {floorRooms.map((r) => (
-                    <Link
+                    <RoomPreviewCard
                       key={r.areaId}
-                      href={`/rooms/${encodeURIComponent(r.areaId)}`}
-                      className="group relative flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-white/5 transition-colors hover:border-[#4D2FB2]/40 hover:bg-[#4D2FB2]/5 dark:hover:bg-[#4D2FB2]/10"
-                    >
-                      <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            openEditModal(r);
-                          }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-[#4D2FB2] dark:hover:bg-white/10 dark:hover:text-[#4D2FB2]"
-                          aria-label={t("rooms.editRoom")}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => handleDelete(r.areaId, e)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400"
-                          aria-label={t("rooms.delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#4D2FB2]/10 text-[#4D2FB2] dark:bg-[#4D2FB2]/20">
-                        <RoomIcon icon={r.icon} />
-                      </div>
-                      <div className="min-w-0 flex-1 pr-8">
-                        <p className="font-medium text-gray-900 dark:text-white group-hover:text-[#4D2FB2]">
-                          {r.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {r.areaId}
-                        </p>
-                      </div>
-                      <ChevronRight className="h-5 w-5 shrink-0 text-gray-400 group-hover:text-[#4D2FB2]" />
-                    </Link>
+                      areaId={r.areaId}
+                      name={r.name}
+                      icon={r.icon}
+                      iconBackgroundColor={r.iconBackgroundColor}
+                      background={r.background}
+                      onEdit={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openEditModal(r);
+                      }}
+                      onDelete={(e) => handleDelete(r.areaId, e)}
+                    />
                   ))}
                 </div>
               </div>
@@ -387,6 +386,26 @@ export default function RoomsPage() {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.iconBackgroundColor")}
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={newIconBackgroundColor && /^#[0-9A-Fa-f]{6}$/.test(newIconBackgroundColor) ? newIconBackgroundColor : "#3B82F6"}
+                    onChange={(e) => setNewIconBackgroundColor(e.target.value)}
+                    className="h-10 w-14 cursor-pointer rounded-lg border border-gray-300 dark:border-white/20"
+                  />
+                  <input
+                    type="text"
+                    value={newIconBackgroundColor ?? ""}
+                    onChange={(e) => setNewIconBackgroundColor(e.target.value)}
+                    placeholder="#3B82F6"
+                    className="flex-1 rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500 text-sm"
+                  />
                 </div>
               </div>
               <div>
@@ -566,6 +585,26 @@ export default function RoomsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.iconBackgroundColor")}
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={editIconBackgroundColor && /^#[0-9A-Fa-f]{6}$/.test(editIconBackgroundColor) ? editIconBackgroundColor : "#3B82F6"}
+                    onChange={(e) => setEditIconBackgroundColor(e.target.value)}
+                    className="h-10 w-14 cursor-pointer rounded-lg border border-gray-300 dark:border-white/20"
+                  />
+                  <input
+                    type="text"
+                    value={editIconBackgroundColor ?? ""}
+                    onChange={(e) => setEditIconBackgroundColor(e.target.value)}
+                    placeholder="#3B82F6"
+                    className="flex-1 rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500 text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                   {t("rooms.floor")}
                 </label>
                 <select
@@ -588,6 +627,52 @@ export default function RoomsPage() {
                     className="mt-2 w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
                   />
                 )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.background")}
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  id="room-bg-edit"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setEditBackgroundFile(file);
+                      setEditBackgroundPreview(URL.createObjectURL(file));
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <div className="flex items-center gap-3">
+                  {editBackgroundPreview ? (
+                    <>
+                      <div
+                        className="h-16 w-24 shrink-0 rounded-lg bg-cover bg-center"
+                        style={{ backgroundImage: `url(${editBackgroundPreview})` }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditBackgroundFile(null);
+                          setEditBackgroundPreview(null);
+                        }}
+                        className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                      >
+                        {t("rooms.backgroundRemove")}
+                      </button>
+                    </>
+                  ) : (
+                    <label
+                      htmlFor="room-bg-edit"
+                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-[#4D2FB2] hover:text-[#4D2FB2]"
+                    >
+                      <ImageIcon className="h-6 w-6" aria-hidden />
+                    </label>
+                  )}
+                </div>
               </div>
               {updateError && (
                 <p className="text-sm text-red-600 dark:text-red-400">{updateError}</p>

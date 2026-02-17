@@ -5,7 +5,9 @@ export type RoomDashboardListItem = {
   areaId: string;
   name: string;
   icon?: string | null;
+  iconBackgroundColor?: string | null;
   floor?: string | null;
+  background?: string | null;
   createdAt: string;
 };
 
@@ -15,13 +17,15 @@ export type RoomDashboardListItem = {
 export async function GET() {
   const list = await prisma.roomDashboard.findMany({
     orderBy: { updatedAt: "desc" },
-    select: { areaId: true, name: true, icon: true, floor: true, createdAt: true },
+    select: { areaId: true, name: true, icon: true, iconBackgroundColor: true, floor: true, background: true, createdAt: true },
   });
   const items: RoomDashboardListItem[] = list.map((r) => ({
     areaId: r.areaId,
     name: r.name ?? r.areaId,
     icon: r.icon ?? null,
+    iconBackgroundColor: r.iconBackgroundColor ?? null,
     floor: r.floor ?? null,
+    background: r.background ?? null,
     createdAt: r.createdAt.toISOString(),
   }));
   return NextResponse.json(items);
@@ -45,7 +49,7 @@ function slugify(str: string): string {
  * Body: { name: string, id?: string, icon?: string, background?: string, floor?: string } – id, icon, background, floor optional.
  */
 export async function POST(request: Request) {
-  let body: { name?: string; id?: string; icon?: string; background?: string; floor?: string } = {};
+  let body: { name?: string; id?: string; icon?: string; iconBackgroundColor?: string; background?: string; floor?: string } = {};
   try {
     body = await request.json();
   } catch {
@@ -80,6 +84,7 @@ export async function POST(request: Request) {
   }
 
   const icon = typeof body.icon === "string" && body.icon.trim() ? body.icon.trim() : null;
+  const iconBackgroundColor = typeof body.iconBackgroundColor === "string" && body.iconBackgroundColor.trim() ? body.iconBackgroundColor.trim() : null;
   const background = typeof body.background === "string" && body.background.trim() ? body.background.trim() : null;
   const floor = typeof body.floor === "string" && body.floor.trim() ? body.floor.trim() : null;
 
@@ -90,6 +95,7 @@ export async function POST(request: Request) {
         areaId: slug,
         name: name,
         icon: icon,
+        iconBackgroundColor: iconBackgroundColor,
         background: background,
         floor: floor,
       },
@@ -111,7 +117,9 @@ export async function POST(request: Request) {
     areaId: rd.areaId,
     name: rd.name ?? rd.areaId,
     icon: rd.icon ?? null,
+    iconBackgroundColor: rd.iconBackgroundColor ?? null,
     floor: rd.floor ?? null,
+    background: rd.background ?? null,
     createdAt: rd.createdAt.toISOString(),
   });
 }

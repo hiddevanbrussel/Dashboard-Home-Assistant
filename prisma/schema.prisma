@@ -39,16 +39,17 @@ model Room {
 }
 
 model RoomDashboard {
-  id             String   @id @default(cuid())
-  areaId         String   @unique
-  name           String?
-  icon           String?
-  floor          String?
-  layout         String?
-  widgets        String?
-  background     String?
-  welcomeTitle   String?
-  welcomeSubtitle String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  areaId              String   @unique
+  name                String?
+  icon                String?
+  iconBackgroundColor  String?
+  floor               String?
+  layout              String?
+  widgets             String?
+  background          String?
+  welcomeTitle        String?
+  welcomeSubtitle     String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }

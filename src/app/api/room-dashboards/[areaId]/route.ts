@@ -51,6 +51,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     name?: string | null;
     floor?: string | null;
     icon?: string | null;
+    iconBackgroundColor?: string | null;
     layout?: string | null;
     widgets?: string | null;
     background?: string | null;
@@ -67,6 +68,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     ...(body.name !== undefined && { name: body.name }),
     ...(body.floor !== undefined && { floor: body.floor || null }),
     ...(body.icon !== undefined && { icon: body.icon || null }),
+    ...(body.iconBackgroundColor !== undefined && { iconBackgroundColor: body.iconBackgroundColor || null }),
     ...(body.layout !== undefined && { layout: body.layout }),
     ...(body.widgets !== undefined && { widgets: body.widgets }),
     ...(body.background !== undefined && { background: body.background }),
@@ -81,6 +83,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
       name: body.name ?? decoded,
       floor: body.floor ?? null,
       icon: body.icon ?? null,
+      iconBackgroundColor: body.iconBackgroundColor ?? null,
       layout: body.layout ?? null,
       widgets: body.widgets ?? null,
       background: body.background ?? null,
@@ -96,6 +99,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     name: rd.name ?? rd.areaId,
     floor: rd.floor ?? null,
     icon: rd.icon ?? null,
+    iconBackgroundColor: rd.iconBackgroundColor ?? null,
     layout: rd.layout,
     widgets: rd.widgets,
     background: rd.background,
