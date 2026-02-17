@@ -123,15 +123,15 @@ export function FloatingSensorCard({
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardWidth : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
     const bounds = { maxLeft, maxBottom };
-    const saved = loadPosition(widgetId);
+    const saved = loadPosition(storageScope, widgetId);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
     const p = snapToGrid(defaultPosition(cardWidth, widgetIndex), bounds);
     setPosition(p);
-    savePosition(widgetId, p);
-  }, [cardWidth, widgetId, widgetIndex]);
+    savePosition(storageScope, widgetId, p);
+  }, [cardWidth, widgetId, widgetIndex, storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -180,11 +180,11 @@ export function FloatingSensorCard({
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(widgetId, next);
+        savePosition(storageScope, widgetId, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, cardWidth, widgetId]
+    [isDragging, cardWidth, widgetId, storageScope]
   );
 
   return (
