@@ -227,14 +227,26 @@ export default function MusicPage() {
     const parseList = (data: unknown): MASearchItem[] => {
       const d = data as Record<string, unknown>;
       const result = d?.result ?? d;
-      const arr = Array.isArray(result) ? result : (typeof result === "object" && result !== null && "items" in result ? (result as { items?: unknown[] }).items : null);
+      let arr: unknown[] | null = null;
+      if (Array.isArray(result)) arr = result;
+      else if (typeof result === "object" && result !== null) {
+        const r = result as Record<string, unknown>;
+        if (Array.isArray(r.items)) arr = r.items;
+        else if (Array.isArray(r.tracks)) arr = r.tracks;
+        else if (Array.isArray(r.albums)) arr = r.albums;
+      }
       return Array.isArray(arr) ? (arr as MASearchItem[]) : [];
     };
     const base = musicAssistant.baseUrl;
     const token = musicAssistant.token;
+    // Music Assistant: "recently added" = library_items with order_by timestamp_added (no music/recently_added command)
     Promise.all([
-      callMusicAssistant(base, token, "music/recently_added", { media_type: "track", limit: 16 }).then((data) => setRecentTracks(parseList(data))).catch(() => setRecentTracks([])),
-      callMusicAssistant(base, token, "music/recently_added", { media_type: "album", limit: 12 }).then((data) => setRecentAlbums(parseList(data))).catch(() => setRecentAlbums([])),
+      callMusicAssistant(base, token, "music/tracks/library_items", { limit: 16, order_by: "timestamp_added" })
+        .then((data) => setRecentTracks(parseList(data)))
+        .catch(() => setRecentTracks([])),
+      callMusicAssistant(base, token, "music/albums/library_items", { limit: 12, order_by: "timestamp_added" })
+        .then((data) => setRecentAlbums(parseList(data)))
+        .catch(() => setRecentAlbums([])),
     ])
       .catch(() => {})
       .finally(() => setRecentAddedLoading(false));
