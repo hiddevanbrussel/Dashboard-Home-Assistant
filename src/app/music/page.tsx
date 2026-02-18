@@ -162,7 +162,7 @@ export default function MusicPage() {
     state?: "playing" | "paused" | "idle";
     position?: number;
     duration?: number;
-    current_item?: { name?: string; [key: string]: unknown };
+    current_item?: { name?: string; artists?: { name?: string }[] | { name?: string }; image?: string; [key: string]: unknown };
   } | null>(null);
   const [seekPending, setSeekPending] = useState(false);
   const [volume, setVolume] = useState<number>(80);
@@ -306,6 +306,9 @@ export default function MusicPage() {
       const result = d?.result ?? d;
       let arr: unknown[] | null = null;
       if (Array.isArray(result)) arr = result;
+      else if (Array.isArray(d?.items)) arr = d.items;
+      else if (Array.isArray(d?.data)) arr = d.data;
+      else if (Array.isArray((d as { data?: { items?: unknown[] } }).data?.items)) arr = (d as { data: { items: unknown[] } }).data.items;
       else if (typeof result === "object" && result !== null) {
         const r = result as Record<string, unknown>;
         if (Array.isArray(r.items)) arr = r.items;
@@ -316,15 +319,17 @@ export default function MusicPage() {
     };
     const base = musicAssistant.baseUrl;
     const token = musicAssistant.token;
-    // Music Assistant: "recently added" = library_items with order_by timestamp_added (no music/recently_added command)
-    Promise.all([
-      callMusicAssistant(base, token, "music/tracks/library_items", { limit: 16, order_by: "timestamp_added" })
-        .then((data) => setRecentTracks(parseList(data)))
-        .catch(() => setRecentTracks([])),
-      callMusicAssistant(base, token, "music/albums/library_items", { limit: 12, order_by: "timestamp_added" })
-        .then((data) => setRecentAlbums(parseList(data)))
-        .catch(() => setRecentAlbums([])),
-    ])
+    const fetchTracks = (): Promise<MASearchItem[]> =>
+      callMusicAssistant(base, token, "music/tracks/library_items", { limit: 24, order_by: "-timestamp_added" })
+        .then((data) => parseList(data))
+        .then((list) => (list.length > 0 ? list : callMusicAssistant(base, token, "music/tracks/library_items", { limit: 24, order_by: "timestamp_added" }).then((data) => parseList(data).slice().reverse())))
+        .catch(() => []);
+    const fetchAlbums = (): Promise<MASearchItem[]> =>
+      callMusicAssistant(base, token, "music/albums/library_items", { limit: 20, order_by: "-timestamp_added" })
+        .then((data) => parseList(data))
+        .then((list) => (list.length > 0 ? list : callMusicAssistant(base, token, "music/albums/library_items", { limit: 20, order_by: "timestamp_added" }).then((data) => parseList(data).slice().reverse())))
+        .catch(() => []);
+    Promise.all([fetchTracks().then(setRecentTracks), fetchAlbums().then(setRecentAlbums)])
       .catch(() => {})
       .finally(() => setRecentAddedLoading(false));
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
@@ -338,8 +343,8 @@ export default function MusicPage() {
         .then((data: unknown) => {
           const err = (data as { error?: string })?.error;
           if (err) return;
-          const r = data as { result?: { state?: string; elapsed_time?: number; current_item?: { duration?: number; name?: string }; volume_level?: number } } | Record<string, unknown>;
-          type QueueStateRes = { state?: string; elapsed_time?: number; position?: number; current_item?: { duration?: number; name?: string } };
+          const r = data as { result?: { state?: string; elapsed_time?: number; current_item?: { duration?: number; name?: string; artists?: { name?: string }[] | { name?: string }; image?: string; image_url?: string; [key: string]: unknown }; volume_level?: number } } | Record<string, unknown>;
+          type QueueStateRes = { state?: string; elapsed_time?: number; position?: number; current_item?: { duration?: number; name?: string; artists?: { name?: string }[] | { name?: string }; image?: string; image_url?: string; [key: string]: unknown } };
           const res = (r?.result ?? r) as QueueStateRes | null | undefined;
           const state = res?.state;
           const elapsed = res?.elapsed_time ?? res?.position;
@@ -349,7 +354,7 @@ export default function MusicPage() {
             state: state === "playing" ? "playing" : state === "paused" ? "paused" : "idle",
             position: typeof elapsed === "number" ? elapsed : undefined,
             duration: typeof duration === "number" ? duration : undefined,
-            current_item: cur ? { name: (cur as { name?: string }).name } : undefined,
+            current_item: cur ? { name: cur.name, artists: cur.artists, image: cur.image ?? cur.image_url, ...cur } : undefined,
           });
         })
         .catch(() => {});
@@ -647,7 +652,7 @@ export default function MusicPage() {
       }
     >
       {searchOverlay}
-      <div className={cn("space-y-6 max-w-4xl pl-6 pr-4 sm:pl-10 sm:pr-6", showPlayerBar && "pb-24")}>
+      <div className={cn("space-y-6 w-full max-w-full px-4 sm:px-6 overflow-x-hidden", showPlayerBar && "pb-24")}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t("music.title")}</h2>
@@ -719,7 +724,7 @@ export default function MusicPage() {
         {!playersLoading && useMA && maPlayers.length > 0 && (
           <>
             <section className="mt-8">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyPlayed")}</h3>
+              <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyPlayed")}</h3>
               {recentLoading ? (
                 <div className="flex justify-center py-8">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
@@ -727,7 +732,8 @@ export default function MusicPage() {
               ) : recentItems.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noHistory")}</p>
               ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                <div className="w-screen relative left-1/2 -translate-x-1/2">
+                  <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-8 pr-4 sm:pl-12 sm:pr-6 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
                   {recentItems.map((item, index) => {
                     const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
                     const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
@@ -741,27 +747,28 @@ export default function MusicPage() {
                         type="button"
                         onClick={() => canPlay && playOnPlayer(uri)}
                         disabled={!canPlay || !!isPlayPending}
-                        className="aspect-square w-full rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50"
+                        className="shrink-0 w-40 h-40 sm:w-48 sm:h-48 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always]"
                         title={item.name as string}
                       >
                         {imageSrc ? (
                           <span className="relative block w-full h-full">
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="150px" unoptimized />
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="192px" unoptimized />
                           </span>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                            <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
+                            <Disc3 className="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden />
                           </div>
                         )}
                       </button>
                     );
                   })}
+                  </div>
                 </div>
               )}
             </section>
 
             <section className="mt-8">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyAddedTracks")}</h3>
+              <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyAddedTracks")}</h3>
               {recentAddedLoading ? (
                 <div className="flex justify-center py-6">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
@@ -769,7 +776,8 @@ export default function MusicPage() {
               ) : recentTracks.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 py-3">{t("music.noRecentTracks")}</p>
               ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                <div className="w-screen relative left-1/2 -translate-x-1/2">
+                  <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-8 pr-4 sm:pl-12 sm:pr-6 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
                   {recentTracks.map((item, index) => {
                     const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
                     const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
@@ -783,27 +791,28 @@ export default function MusicPage() {
                         type="button"
                         onClick={() => canPlay && playOnPlayer(uri)}
                         disabled={!canPlay || !!isPlayPending}
-                        className="aspect-square w-full rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50"
+                        className="shrink-0 w-40 h-40 sm:w-48 sm:h-48 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always]"
                         title={item.name as string}
                       >
                         {imageSrc ? (
                           <span className="relative block w-full h-full">
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="150px" unoptimized />
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="192px" unoptimized />
                           </span>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                            <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
+                            <Disc3 className="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden />
                           </div>
                         )}
                       </button>
                     );
                   })}
+                  </div>
                 </div>
               )}
             </section>
 
             <section className="mt-8">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyAddedAlbums")}</h3>
+              <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyAddedAlbums")}</h3>
               {recentAddedLoading ? (
                 <div className="flex justify-center py-6">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
@@ -811,7 +820,8 @@ export default function MusicPage() {
               ) : recentAlbums.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 py-3">{t("music.noRecentAlbums")}</p>
               ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                <div className="w-screen relative left-1/2 -translate-x-1/2">
+                  <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-8 pr-4 sm:pl-12 sm:pr-6 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
                   {recentAlbums.map((item, index) => {
                     const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
                     const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
@@ -825,21 +835,22 @@ export default function MusicPage() {
                         type="button"
                         onClick={() => canPlay && playOnPlayer(uri)}
                         disabled={!canPlay || !!isPlayPending}
-                        className="aspect-square w-full rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50"
+                        className="shrink-0 w-40 h-40 sm:w-48 sm:h-48 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always]"
                         title={item.name as string}
                       >
                         {imageSrc ? (
                           <span className="relative block w-full h-full">
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="150px" unoptimized />
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="192px" unoptimized />
                           </span>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                            <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
+                            <Disc3 className="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden />
                           </div>
                         )}
                       </button>
                     );
                   })}
+                  </div>
                 </div>
               )}
             </section>
@@ -852,40 +863,72 @@ export default function MusicPage() {
           className="fixed bottom-0 left-0 right-0 z-40 flex items-center border-t border-white/10 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md px-4 sm:px-6 py-3"
           aria-label={t("music.playerBar")}
         >
-          <div className="w-full flex flex-wrap items-center gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => queueControl("previous")}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                aria-label={t("music.previous")}
-              >
-                <SkipBack className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => queueControl(isPlaying ? "pause" : "play")}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-yellow dark:bg-accent-green text-gray-900 hover:opacity-90 transition-opacity"
-                aria-label={isPlaying ? t("music.pause") : t("music.play")}
-              >
-                {isPlaying ? (
-                  <Pause className="h-6 w-6 fill-current" />
-                ) : (
-                  <Play className="h-6 w-6 fill-current ml-0.5" />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => queueControl("next")}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                aria-label={t("music.next")}
-              >
-                <SkipForward className="h-5 w-5" />
-              </button>
+          <div className="w-full flex items-center gap-4 sm:gap-6 min-w-0">
+            <div className="flex items-center gap-3 min-w-[120px] max-w-[200px] sm:max-w-xs shrink-0 flex-shrink-0">
+              {(() => {
+                const cur = queueState?.current_item as MASearchItem | undefined;
+                const coverSrc = cur ? getImageSrc(getItemImageUrl(cur), musicAssistant.baseUrl, musicAssistant.token) : null;
+                const artistNames = cur?.artists
+                  ? Array.isArray(cur.artists)
+                    ? (cur.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
+                    : typeof (cur.artists as { name?: string }).name === "string"
+                      ? (cur.artists as { name: string }).name
+                      : ""
+                  : "";
+                return (
+                  <>
+                    <div className="relative w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-white/10">
+                      {coverSrc ? (
+                        <Image src={coverSrc} alt="" fill className="object-cover" sizes="48px" unoptimized />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Disc3 className="h-6 w-6 text-white/50" aria-hidden />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-white/95">{cur?.name ?? "—"}</p>
+                      <p className="truncate text-xs text-white/60">{artistNames || "—"}</p>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
-            <div className="flex-1 min-w-0 flex flex-col gap-1 max-w-2xl">
-              <div className="flex items-center gap-2 text-xs text-white/70 tabular-nums">
+            <div className="flex-1 min-w-0" aria-hidden />
+
+            <div className="flex flex-col gap-2 min-w-0 shrink items-center">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => queueControl("previous")}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+                  aria-label={t("music.previous")}
+                >
+                  <SkipBack className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => queueControl(isPlaying ? "pause" : "play")}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-yellow dark:bg-accent-green text-gray-900 hover:opacity-90 transition-opacity"
+                  aria-label={isPlaying ? t("music.pause") : t("music.play")}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-6 w-6 fill-current" />
+                  ) : (
+                    <Play className="h-6 w-6 fill-current ml-0.5" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => queueControl("next")}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+                  aria-label={t("music.next")}
+                >
+                  <SkipForward className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/70 tabular-nums w-full min-w-0 sm:min-w-[320px] max-w-[560px] sm:max-w-[720px] shrink">
                 <span className="w-9 shrink-0">{formatDuration(position)}</span>
                 <input
                   type="range"
@@ -900,55 +943,52 @@ export default function MusicPage() {
                 />
                 <span className="w-9 shrink-0 text-right">{formatDuration(duration)}</span>
               </div>
-              {queueState?.current_item?.name && (
-                <p className="truncate text-sm text-white/90 font-medium">
-                  {queueState.current_item.name}
-                </p>
-              )}
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="relative" ref={volumePopoverRef}>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setVolumePopoverOpen((v) => !v); }}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                  aria-label={t("music.volume")}
-                  aria-expanded={volumePopoverOpen}
-                >
-                  <Volume2 className="h-5 w-5" />
-                </button>
-                {volumePopoverOpen && (
-                  <div
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col items-center gap-3 rounded-xl border border-white/20 bg-gray-900 dark:bg-black py-4 px-4 shadow-xl min-w-[140px]"
-                    onClick={(e) => e.stopPropagation()}
+            <div className="flex-1 min-w-0 flex items-center justify-end">
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="relative" ref={volumePopoverRef}>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setVolumePopoverOpen((v) => !v); }}
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+                    aria-label={t("music.volume")}
+                    aria-expanded={volumePopoverOpen}
                   >
-                    <span className="text-sm text-white/90 font-medium tabular-nums">{volume}%</span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={volume}
-                      onChange={(e) => setVolumeLevel(Number(e.target.value))}
-                      disabled={volumePending}
-                      className="w-28 h-2 appearance-none rounded-full bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-yellow dark:[&::-webkit-slider-thumb]:bg-accent-green [&::-webkit-slider-thumb]:cursor-pointer"
-                      aria-label={t("music.volume")}
-                    />
-                  </div>
-                )}
+                    <Volume2 className="h-5 w-5" />
+                  </button>
+                  {volumePopoverOpen && (
+                    <div
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col items-center gap-3 rounded-xl border border-white/20 bg-gray-900 dark:bg-black py-4 px-4 shadow-xl min-w-[140px]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="text-sm text-white/90 font-medium tabular-nums">{volume}%</span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={volume}
+                        onChange={(e) => setVolumeLevel(Number(e.target.value))}
+                        disabled={volumePending}
+                        className="w-28 h-2 appearance-none rounded-full bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-yellow dark:[&::-webkit-slider-thumb]:bg-accent-green [&::-webkit-slider-thumb]:cursor-pointer"
+                        aria-label={t("music.volume")}
+                      />
+                    </div>
+                  )}
+                </div>
+                <select
+                  value={selectedQueueId ?? ""}
+                  onChange={(e) => setSelectedQueueId(e.target.value || null)}
+                  className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
+                  aria-label={t("music.choosePlayer")}
+                >
+                  {maPlayers.map((p) => (
+                    <option key={p.queue_id} value={p.queue_id} className="bg-gray-900 text-white">
+                      {playerLabel(p)}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <select
-                value={selectedQueueId ?? ""}
-                onChange={(e) => setSelectedQueueId(e.target.value || null)}
-                className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
-                aria-label={t("music.choosePlayer")}
-              >
-                {maPlayers.map((p) => (
-                  <option key={p.queue_id} value={p.queue_id} className="bg-gray-900 text-white">
-                    {playerLabel(p)}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
         </footer>
