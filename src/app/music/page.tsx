@@ -155,6 +155,7 @@ export default function MusicPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MASearchItem[]>([]);
+  const [searchFilter, setSearchFilter] = useState<"all" | "track" | "artist" | "album">("all");
   const [searching, setSearching] = useState(false);
   const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null);
   const [playPending, setPlayPending] = useState<string | null>(null);
@@ -370,16 +371,32 @@ export default function MusicPage() {
     setSearchResults([]);
     setError(null);
     const query = searchQuery.trim();
+    const mediaTypes =
+      searchFilter === "track" ? ["track"] as const
+      : searchFilter === "artist" ? ["artist"] as const
+      : searchFilter === "album" ? ["album"] as const
+      : undefined;
+    const baseArgs = { search_query: query, limit: 24, ...(mediaTypes && { media_types: [...mediaTypes] }) };
     const argsList: Record<string, unknown>[] = [
-      { search_query: query, limit: 24 },
-      { query, limit: 24 },
-      { name: query, limit: 24 },
+      baseArgs,
+      { ...baseArgs, query, search_query: undefined },
+      { name: query, limit: 24, ...(mediaTypes && { media_types: [...mediaTypes] }) },
     ];
     const commands = ["music/search", "search"] as const;
-    function parseTracks(data: unknown): MASearchItem[] {
+    function parseSearchResult(data: unknown): MASearchItem[] {
       const d = data as Record<string, unknown>;
       const result = d?.result ?? d;
       const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+      if (searchFilter === "artist") {
+        if (Array.isArray(resultObj.artists)) return resultObj.artists as MASearchItem[];
+        if (Array.isArray((d as { artists?: unknown }).artists)) return (d as { artists: MASearchItem[] }).artists;
+        return [];
+      }
+      if (searchFilter === "album") {
+        if (Array.isArray(resultObj.albums)) return resultObj.albums as MASearchItem[];
+        if (Array.isArray((d as { albums?: unknown }).albums)) return (d as { albums: MASearchItem[] }).albums;
+        return [];
+      }
       if (Array.isArray(resultObj.tracks)) return resultObj.tracks as MASearchItem[];
       if (Array.isArray(resultObj.track)) return resultObj.track as MASearchItem[];
       if (Array.isArray(result)) return result as MASearchItem[];
@@ -387,9 +404,11 @@ export default function MusicPage() {
       if (Array.isArray((d as { data?: unknown }).data)) return (d as { data: MASearchItem[] }).data;
       const dataTracks = (d as { data?: { tracks?: MASearchItem[] } }).data?.tracks;
       if (Array.isArray(dataTracks)) return dataTracks;
-      const albums = resultObj.albums as { tracks?: MASearchItem[] }[] | undefined;
-      if (albums?.length) {
-        const flat = albums.flatMap((a) => (a?.tracks && Array.isArray(a.tracks) ? a.tracks : []));
+      const albums = resultObj.albums as MASearchItem[] | undefined;
+      if (albums?.length && searchFilter === "album") return albums;
+      const tracksFromAlbums = resultObj.albums as { tracks?: MASearchItem[] }[] | undefined;
+      if (tracksFromAlbums?.length) {
+        const flat = tracksFromAlbums.flatMap((a) => (a?.tracks && Array.isArray(a.tracks) ? a.tracks : []));
         if (flat.length) return flat as MASearchItem[];
       }
       return [];
@@ -404,12 +423,12 @@ export default function MusicPage() {
             setError(err);
             return;
           }
-          const tracks = parseTracks(data);
-          setSearchResults(tracks);
+          const items = parseSearchResult(data);
+          setSearchResults(items);
         }
       );
     tryAttempt(0, 0).catch((err) => setError(err instanceof Error ? err.message : "Zoeken mislukt.")).finally(() => setSearching(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, searchQuery]);
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, searchQuery, searchFilter]);
 
   const playOnPlayer = useCallback(
     (uri: string) => {
@@ -526,37 +545,58 @@ export default function MusicPage() {
       role="dialog"
       aria-label={t("music.search")}
     >
-      <div className="shrink-0 flex items-center gap-2 border-b border-gray-200 dark:border-white/10 bg-white/90 dark:bg-gray-900/95 backdrop-blur-md px-4 py-3">
-        <Search className="h-5 w-5 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
-        <input
-          ref={searchInputRef}
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") runSearch();
-            if (e.key === "Escape") setSearchOverlayOpen(false);
-          }}
-          placeholder={t("music.searchPlaceholder")}
-          className="flex-1 min-w-0 rounded-xl border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
-          aria-label={t("music.search")}
-        />
-        <button
-          type="button"
-          onClick={runSearch}
-          disabled={searching || !searchQuery.trim()}
-          className="shrink-0 rounded-xl bg-accent-yellow dark:bg-accent-green px-4 py-2.5 text-sm font-medium text-gray-900 disabled:opacity-50"
-        >
-          {searching ? t("music.searching") : t("music.searchButton")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setSearchOverlayOpen(false)}
-          className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-          aria-label={t("music.close")}
-        >
-          <X className="h-5 w-5" />
-        </button>
+      <div className="shrink-0 border-b border-gray-200 dark:border-white/10 bg-white/90 dark:bg-gray-900/95 backdrop-blur-md px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Search className="h-5 w-5 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
+          <input
+            ref={searchInputRef}
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") runSearch();
+              if (e.key === "Escape") setSearchOverlayOpen(false);
+            }}
+            placeholder={t("music.searchPlaceholder")}
+            className="flex-1 min-w-0 rounded-xl border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
+            aria-label={t("music.search")}
+          />
+          <button
+            type="button"
+            onClick={runSearch}
+            disabled={searching || !searchQuery.trim()}
+            className="shrink-0 rounded-xl bg-accent-yellow dark:bg-accent-green px-4 py-2.5 text-sm font-medium text-gray-900 disabled:opacity-50"
+          >
+            {searching ? t("music.searching") : t("music.searchButton")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSearchOverlayOpen(false)}
+            className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+            aria-label={t("music.close")}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="flex gap-1 mt-2" role="tablist" aria-label={t("music.search")}>
+          {(["all", "artist", "track", "album"] as const).map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              role="tab"
+              aria-selected={searchFilter === filter}
+              onClick={() => setSearchFilter(filter)}
+              className={cn(
+                "shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                searchFilter === filter
+                  ? "bg-accent-yellow dark:bg-accent-green text-gray-900"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+              )}
+            >
+              {filter === "all" ? t("music.searchFilterAll") : filter === "artist" ? t("music.searchFilterArtist") : filter === "track" ? t("music.searchFilterTrack") : t("music.searchFilterAlbum")}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
         {selectedQueueId && maPlayers.length > 0 && (
@@ -569,10 +609,12 @@ export default function MusicPage() {
             {searchResults.map((item, index) => {
               const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
               const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
+              const provider = (item as { provider?: string })?.provider ?? "library";
+              const mediaType = searchFilter === "artist" ? "artist" : searchFilter === "album" ? "album" : "track";
               const uri = typeof rawUri === "string" && rawUri
                 ? rawUri
                 : itemId != null
-                  ? `${(item as { provider?: string })?.provider ?? "library"}://track/${itemId}`
+                  ? `${provider}://${mediaType}/${itemId}`
                   : "";
               const name = item.name ?? t("music.unknown");
               const artists = item.artists;
@@ -585,13 +627,18 @@ export default function MusicPage() {
               const duration = item.duration;
               const isPlayPending = uri && playPending === uri;
               const canPlay = !!uri && !!selectedQueueId;
+              const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
               return (
                 <li
                   key={uri ?? `item-${index}`}
                   className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
-                    <Disc3 className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                    {imageSrc ? (
+                      <Image src={imageSrc} alt="" width={40} height={40} className="object-cover w-full h-full" unoptimized />
+                    ) : (
+                      <Disc3 className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
@@ -600,9 +647,11 @@ export default function MusicPage() {
                       {albumName ? ` · ${albumName}` : ""}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-                    {formatDuration(duration)}
-                  </span>
+                  {duration != null && searchFilter !== "artist" && (
+                    <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                      {formatDuration(duration)}
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => canPlay && playOnPlayer(uri)}

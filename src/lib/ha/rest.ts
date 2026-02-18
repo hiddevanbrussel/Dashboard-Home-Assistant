@@ -72,10 +72,18 @@ export type HaEntity = {
 export async function getEntities(config: HaRestConfig): Promise<HaEntity[]> {
   const res = await haFetch(config.baseUrl, config.token, "/api/states");
   if (!res.ok) {
-    throw new Error(`Failed to fetch entities: ${res.status}`);
+    const text = await res.text().catch(() => "");
+    if (res.status === 401) throw new Error("Invalid Home Assistant token. Check Settings → Connection.");
+    if (res.status === 404) throw new Error("Home Assistant API not found. Check base URL.");
+    throw new Error(text.slice(0, 200) || `Failed to fetch entities: ${res.status}`);
   }
-  const data = (await res.json()) as HaEntity[];
-  return Array.isArray(data) ? data : [];
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Invalid response from Home Assistant (not JSON).");
+  }
+  return Array.isArray(data) ? (data as HaEntity[]) : [];
 }
 
 export type HaArea = {
