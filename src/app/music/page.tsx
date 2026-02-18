@@ -89,7 +89,16 @@ function getItemImageUrl(item: MASearchItem): string | null {
 /** Build src for MA images: proxy relative/MA URLs so auth works and CORS is avoided. */
 function getImageSrc(rawUrl: string | null, baseUrl: string | undefined, token: string | undefined): string | null {
   if (!rawUrl || !rawUrl.trim()) return null;
-  const url = rawUrl.trim();
+  let url = rawUrl.trim();
+  // MA sometimes returns full URLs as path (e.g. "/https://is1-ssl.mzstatic.com/...") – use as external URL
+  if (url.startsWith("/") && (url.slice(1).startsWith("http://") || url.slice(1).startsWith("https://"))) {
+    url = url.slice(1);
+  }
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    const base = baseUrl?.replace(/\/+$/, "") ?? "";
+    const isOnMaHost = base && url.startsWith(base);
+    if (!isOnMaHost) return url;
+  }
   const base = baseUrl?.replace(/\/+$/, "") ?? "";
   const isRelative = url.startsWith("/");
   const isMaOrigin = base && (url.startsWith(base) || url.startsWith("http://localhost") || url.startsWith("http://127.0.0.1"));
