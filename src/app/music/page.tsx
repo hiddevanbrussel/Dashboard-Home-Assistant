@@ -405,7 +405,7 @@ export default function MusicPage() {
       const dataTracks = (d as { data?: { tracks?: MASearchItem[] } }).data?.tracks;
       if (Array.isArray(dataTracks)) return dataTracks;
       const albums = resultObj.albums as MASearchItem[] | undefined;
-      if (albums?.length && searchFilter === "album") return albums;
+      if (albums?.length) return albums;
       const tracksFromAlbums = resultObj.albums as { tracks?: MASearchItem[] }[] | undefined;
       if (tracksFromAlbums?.length) {
         const flat = tracksFromAlbums.flatMap((a) => (a?.tracks && Array.isArray(a.tracks) ? a.tracks : []));
