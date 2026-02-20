@@ -32,9 +32,14 @@ export async function POST(request: Request) {
   }
   const secret = process.env.APP_SECRET;
   if (!secret || secret.length < 16) {
-    console.error("[api/ha/connection] APP_SECRET missing or too short");
+    const hasAny = secret !== undefined && secret !== "" ? "set but too short" : "not set";
+    console.error("[api/ha/connection] APP_SECRET", hasAny, "(length:", secret?.length ?? 0, "). Restart dev server after changing .env.");
     return NextResponse.json(
-      { error: "Server config: set APP_SECRET in .env (min 16 characters). See .env.example." },
+      {
+        error:
+          "APP_SECRET is " +
+          (secret?.length ? "too short (min 16)." : "not loaded. Put .env next to package.json and restart the dev server."),
+      },
       { status: 500 }
     );
   }
@@ -51,13 +56,20 @@ export async function POST(request: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to save connection";
     console.error("[api/ha/connection] POST error:", err);
-    // APP_SECRET missing or too short is a common cause
-    const isConfigError =
-      message.includes("APP_SECRET") ||
-      (err instanceof Error && message.length > 0 && message.toLowerCase().includes("secret"));
-    const clientMessage = isConfigError
-      ? "Server config: set APP_SECRET in .env (min 16 characters). See .env.example."
-      : message;
+    let clientMessage: string;
+    if (message.includes("APP_SECRET") || message.toLowerCase().includes("secret")) {
+      clientMessage =
+        "APP_SECRET not loaded. Put .env in the same folder as package.json, then restart the dev server (env is read at startup).";
+    } else if (
+      message.includes("SQLite") ||
+      message.includes("database") ||
+      message.includes("prisma") ||
+      (err as { code?: string })?.code === "P2022"
+    ) {
+      clientMessage = `Database error: ${message}. Try: npx prisma db push`;
+    } else {
+      clientMessage = message;
+    }
     return NextResponse.json({ error: clientMessage }, { status: 500 });
   }
 }

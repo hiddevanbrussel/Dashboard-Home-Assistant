@@ -8,10 +8,12 @@ export function StepConnect() {
   const { connection, setConnection, setTestResult, testResult, nextStep } =
     useOnboardingStore();
   const [testing, setTesting] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   async function handleTest() {
     setTesting(true);
     setTestResult(null);
+    setSaveError(null);
     try {
       const res = await fetch("/api/ha/test", {
         method: "POST",
@@ -39,6 +41,7 @@ export function StepConnect() {
 
   async function handleSaveAndContinue() {
     if (!testResult?.ok) return;
+    setSaveError(null);
     setTesting(true);
     try {
       const res = await fetch("/api/ha/connection", {
@@ -49,11 +52,15 @@ export function StepConnect() {
           token: connection.token,
         }),
       });
-      const data = await res.json();
-      if (data.connectionId) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.connectionId) {
         setConnection({ connectionId: data.connectionId });
         nextStep();
+      } else {
+        setSaveError(data.error ?? `Save failed (${res.status})`);
       }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Request failed");
     } finally {
       setTesting(false);
     }
@@ -74,7 +81,7 @@ export function StepConnect() {
             id="baseUrl"
             type="url"
             value={connection.baseUrl}
-            onChange={(e) => setConnection({ baseUrl: e.target.value })}
+            onChange={(e) => { setSaveError(null); setConnection({ baseUrl: e.target.value }); }}
             placeholder="http://homeassistant.local:8123"
             className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
           />
@@ -87,7 +94,7 @@ export function StepConnect() {
             id="token"
             type="password"
             value={connection.token}
-            onChange={(e) => setConnection({ token: e.target.value })}
+            onChange={(e) => { setSaveError(null); setConnection({ token: e.target.value }); }}
             placeholder="Paste your token"
             className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
           />
@@ -112,7 +119,16 @@ export function StepConnect() {
             </button>
           )}
         </div>
-        {testResult !== null && (
+        {saveError && (
+          <div className="rounded-lg p-3 text-sm bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200">
+            <p className="font-medium">Could not save connection</p>
+            <p className="mt-1">{saveError}</p>
+            <p className="mt-2 text-xs opacity-90">
+              If this is a server config error (e.g. APP_SECRET), set it in the project .env and restart the dev server.
+            </p>
+          </div>
+        )}
+        {testResult !== null && !saveError && (
           <div
             className={`rounded-lg p-3 text-sm ${
               testResult.ok
