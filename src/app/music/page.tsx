@@ -868,11 +868,28 @@ export default function MusicPage() {
 
       {showPlayerBar && (
         <footer
-          className="fixed bottom-0 left-0 right-0 z-40 flex items-center border-t border-white/10 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md px-4 sm:px-6 py-3"
+          className="fixed bottom-0 left-0 right-0 z-40 flex flex-col border-t border-white/10 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md px-4 sm:px-6 py-2"
           aria-label={t("music.playerBar")}
         >
+          {/* Speaker select rechtsboven */}
+          <div className="w-full flex justify-end mb-2">
+            <select
+              value={selectedQueueId ?? ""}
+              onChange={(e) => setSelectedQueueId(e.target.value || null)}
+              className="rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm text-white focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
+              aria-label={t("music.choosePlayer")}
+            >
+              {maPlayers.map((p) => (
+                <option key={p.queue_id} value={p.queue_id} className="bg-gray-900 text-white">
+                  {playerLabel(p)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Balk: links = hoes + artiest/titel, midden = knoppen + voortgang, rechts = volume */}
           <div className="w-full flex items-center gap-4 sm:gap-6 min-w-0">
-            <div className="flex items-center gap-3 min-w-[120px] max-w-[200px] sm:max-w-xs shrink-0 flex-shrink-0">
+            {/* Links: albumhoes, naast artiest (boven) en titel (onder) */}
+            <div className="flex items-center gap-3 min-w-[120px] max-w-[220px] sm:max-w-xs shrink-0 flex-shrink-0">
               {(() => {
                 const cur = queueState?.current_item as MASearchItem | undefined;
                 const coverSrc = cur ? getImageSrc(getItemImageUrl(cur), musicAssistant.baseUrl, musicAssistant.token) : null;
@@ -885,27 +902,26 @@ export default function MusicPage() {
                   : "";
                 return (
                   <>
-                    <div className="relative w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-white/10">
+                    <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-white/10">
                       {coverSrc ? (
-                        <Image src={coverSrc} alt="" fill className="object-cover" sizes="48px" unoptimized />
+                        <Image src={coverSrc} alt="" fill className="object-cover" sizes="56px" unoptimized />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Disc3 className="h-6 w-6 text-white/50" aria-hidden />
+                          <Disc3 className="h-7 w-7 text-white/50" aria-hidden />
                         </div>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs text-white/70">{artistNames || "—"}</p>
                       <p className="truncate text-sm font-medium text-white/95">{cur?.name ?? "—"}</p>
-                      <p className="truncate text-xs text-white/60">{artistNames || "—"}</p>
                     </div>
                   </>
                 );
               })()}
             </div>
 
-            <div className="flex-1 min-w-0" aria-hidden />
-
-            <div className="flex flex-col gap-2 min-w-0 shrink items-center">
+            {/* Midden: vorige / play / volgende, dan voortgang */}
+            <div className="flex-1 min-w-0 flex flex-col gap-2 items-center">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -953,79 +969,46 @@ export default function MusicPage() {
               </div>
             </div>
 
-            <div className="flex-1 min-w-0 flex items-center justify-end gap-3">
-              <div className="relative flex items-center gap-2 min-w-0 flex-1 max-w-[180px] sm:max-w-[220px]" ref={volumePopoverRef}>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setVolumePopoverOpen((v) => !v); }}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                  aria-label={t("music.volume")}
-                  aria-expanded={volumePopoverOpen}
+            {/* Rechts: volume */}
+            <div className="relative flex items-center gap-2 shrink-0 w-[140px] sm:w-[180px]" ref={volumePopoverRef}>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setVolumePopoverOpen((v) => !v); }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+                aria-label={t("music.volume")}
+                aria-expanded={volumePopoverOpen}
+              >
+                <Volume2 className="h-5 w-5" />
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={volume}
+                onChange={(e) => setVolumeLevel(Number(e.target.value))}
+                disabled={volumePending}
+                className="flex-1 min-w-0 h-2 appearance-none rounded-full bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-yellow dark:[&::-webkit-slider-thumb]:bg-accent-green [&::-webkit-slider-thumb]:cursor-pointer"
+                aria-label={t("music.volume")}
+              />
+              {volumePopoverOpen && (
+                <div
+                  className="absolute bottom-full left-0 mb-2 flex flex-col items-center gap-3 rounded-xl border border-white/20 bg-gray-900 dark:bg-black py-4 px-4 shadow-xl min-w-[140px] z-10"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <Volume2 className="h-5 w-5" />
-                </button>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={volume}
-                  onChange={(e) => setVolumeLevel(Number(e.target.value))}
-                  disabled={volumePending}
-                  className="flex-1 min-w-0 w-20 h-2 appearance-none rounded-full bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-yellow dark:[&::-webkit-slider-thumb]:bg-accent-green [&::-webkit-slider-thumb]:cursor-pointer"
-                  aria-label={t("music.volume")}
-                />
-                {volumePopoverOpen && (
-                  <div
-                    className="absolute bottom-full left-0 mb-2 flex flex-col items-center gap-3 rounded-xl border border-white/20 bg-gray-900 dark:bg-black py-4 px-4 shadow-xl min-w-[140px] z-10"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="text-sm text-white/90 font-medium tabular-nums">{volume}%</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={volumeDown}
-                        disabled={volumePending}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50"
-                        aria-label={t("music.volumeDown")}
-                      >
-                        <ChevronDown className="h-5 w-5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={volumeUp}
-                        disabled={volumePending}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50"
-                        aria-label={t("music.volumeUp")}
-                      >
-                        <ChevronUp className="h-5 w-5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={volumeMute}
-                        disabled={volumePending}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50"
-                        aria-label={t("music.volumeMute")}
-                      >
-                        <VolumeX className="h-5 w-5" />
-                      </button>
-                    </div>
+                  <span className="text-sm text-white/90 font-medium tabular-nums">{volume}%</span>
+                  <div className="flex items-center gap-1">
+                    <button type="button" onClick={volumeDown} disabled={volumePending} className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50" aria-label={t("music.volumeDown")}>
+                      <ChevronDown className="h-5 w-5" />
+                    </button>
+                    <button type="button" onClick={volumeUp} disabled={volumePending} className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50" aria-label={t("music.volumeUp")}>
+                      <ChevronUp className="h-5 w-5" />
+                    </button>
+                    <button type="button" onClick={volumeMute} disabled={volumePending} className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50" aria-label={t("music.volumeMute")}>
+                      <VolumeX className="h-5 w-5" />
+                    </button>
                   </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <select
-                  value={selectedQueueId ?? ""}
-                  onChange={(e) => setSelectedQueueId(e.target.value || null)}
-                  className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
-                  aria-label={t("music.choosePlayer")}
-                >
-                  {maPlayers.map((p) => (
-                    <option key={p.queue_id} value={p.queue_id} className="bg-gray-900 text-white">
-                      {playerLabel(p)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </footer>

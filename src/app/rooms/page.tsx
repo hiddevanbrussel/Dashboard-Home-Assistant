@@ -352,7 +352,7 @@ export default function RoomsPage() {
                     {getFloorLabel(floor || "")}
                   </h3>
                 )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pr-4 sm:pr-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 sm:gap-x-8 sm:gap-y-6">
                   {floorRooms.map((r) => (
                     <RoomPreviewCard
                       key={r.areaId}
