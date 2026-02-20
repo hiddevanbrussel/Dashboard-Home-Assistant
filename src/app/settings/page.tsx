@@ -72,6 +72,8 @@ export default function SettingsPage() {
   const [uploadingScreensaverBg, setUploadingScreensaverBg] = useState(false);
   const [maTestResult, setMaTestResult] = useState<"ok" | string | null>(null);
   const [maTesting, setMaTesting] = useState(false);
+  const [maPlayersList, setMaPlayersList] = useState<{ queue_id: string; display_name?: string }[]>([]);
+  const [maPlayersLoading, setMaPlayersLoading] = useState(false);
   const musicAssistant = useMusicAssistantStore();
 
   useEffect(() => {
@@ -97,6 +99,36 @@ export default function SettingsPage() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (section !== "music-assistant" || !musicAssistant.enabled || !musicAssistant.baseUrl) {
+      setMaPlayersList([]);
+      return;
+    }
+    setMaPlayersLoading(true);
+    fetch("/api/music-assistant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        baseUrl: musicAssistant.baseUrl,
+        token: musicAssistant.token,
+        command: "player_queues/all",
+        args: {},
+      }),
+    })
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        const err = (data as { error?: string })?.error;
+        if (err) {
+          setMaPlayersList([]);
+          return;
+        }
+        const list = Array.isArray(data) ? data : (data as { result?: { queue_id: string; display_name?: string }[] })?.result ?? [];
+        setMaPlayersList(list);
+      })
+      .catch(() => setMaPlayersList([]))
+      .finally(() => setMaPlayersLoading(false));
+  }, [section, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   useEffect(() => {
     fetch("/api/dashboard")
@@ -821,6 +853,72 @@ export default function SettingsPage() {
                     {t("settings.musicAssistant.allowSpeakerSelection")}
                   </span>
                 </label>
+                {musicAssistant.enabled && musicAssistant.allowSpeakerSelection && (
+                  <div className="space-y-2 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                      {t("settings.musicAssistant.allowedSpeakers")}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {t("settings.musicAssistant.allowedSpeakersHint")}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setMaPlayersLoading(true);
+                        setMaPlayersList([]);
+                        try {
+                          const res = await fetch("/api/music-assistant", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              baseUrl: musicAssistant.baseUrl,
+                              token: musicAssistant.token,
+                              command: "player_queues/all",
+                              args: {},
+                            }),
+                          });
+                          const data = await res.json();
+                          const err = (data as { error?: string })?.error;
+                          if (err) return;
+                          const list = Array.isArray(data) ? data : (data as { result?: { queue_id: string; display_name?: string }[] })?.result ?? [];
+                          setMaPlayersList(list);
+                        } finally {
+                          setMaPlayersLoading(false);
+                        }
+                      }}
+                      disabled={maPlayersLoading || !musicAssistant.baseUrl}
+                      className="rounded-lg border border-gray-200 dark:border-white/20 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-50"
+                    >
+                      {maPlayersLoading ? t("settings.musicAssistant.testing") : t("settings.musicAssistant.loadSpeakers")}
+                    </button>
+                    {maPlayersList.length > 0 && (
+                      <div className="flex flex-col gap-1.5 max-h-48 overflow-auto">
+                        {maPlayersList.map((p) => {
+                          const allowed = musicAssistant.allowedSpeakerIds;
+                          const isChecked = allowed.length === 0 || allowed.includes(p.queue_id);
+                          return (
+                            <label key={p.queue_id} className="flex items-center gap-2 cursor-pointer text-sm">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {
+                                  const ids = allowed.length === 0 ? maPlayersList.map((x) => x.queue_id) : [...allowed];
+                                  if (isChecked) {
+                                    musicAssistant.setAllowedSpeakerIds(ids.filter((id) => id !== p.queue_id));
+                                  } else {
+                                    musicAssistant.setAllowedSpeakerIds([...ids, p.queue_id]);
+                                  }
+                                }}
+                                className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                              />
+                              <span className="text-gray-700 dark:text-gray-200">{(p.display_name as string) ?? p.queue_id}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div>
                   <label htmlFor="ma-baseUrl" className="block text-sm font-medium mb-1">
                     {t("settings.musicAssistant.baseUrl")}

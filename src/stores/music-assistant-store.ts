@@ -6,6 +6,7 @@ const STORAGE_KEY_ENABLED = "dashboard.musicAssistant.enabled";
 const STORAGE_KEY_BASE_URL = "dashboard.musicAssistant.baseUrl";
 const STORAGE_KEY_TOKEN = "dashboard.musicAssistant.token";
 const STORAGE_KEY_ALLOW_SPEAKER_SELECTION = "dashboard.musicAssistant.allowSpeakerSelection";
+const STORAGE_KEY_ALLOWED_SPEAKER_IDS = "dashboard.musicAssistant.allowedSpeakerIds";
 
 const DEFAULT_BASE_URL = "http://localhost:8095";
 
@@ -15,16 +16,20 @@ function getStored<T>(key: string, fallback: T): T {
     const v = localStorage.getItem(key);
     if (v === null) return fallback;
     if (key === STORAGE_KEY_ENABLED || key === STORAGE_KEY_ALLOW_SPEAKER_SELECTION) return (v === "true") as T;
+    if (key === STORAGE_KEY_ALLOWED_SPEAKER_IDS) {
+      const parsed = JSON.parse(v);
+      return (Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []) as T;
+    }
     return v as T;
   } catch {
     return fallback;
   }
 }
 
-function setStored(key: string, value: string | boolean) {
+function setStored(key: string, value: string | boolean | string[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(key, String(value));
+    localStorage.setItem(key, Array.isArray(value) ? JSON.stringify(value) : String(value));
     window.dispatchEvent(new CustomEvent("music-assistant-setting-changed"));
   } catch {
     // ignore
@@ -36,10 +41,13 @@ export type MusicAssistantStore = {
   baseUrl: string;
   token: string;
   allowSpeakerSelection: boolean;
+  /** When non-empty, only these queue_ids may be chosen. Empty = all allowed. */
+  allowedSpeakerIds: string[];
   setEnabled: (v: boolean) => void;
   setBaseUrl: (v: string) => void;
   setToken: (v: string) => void;
   setAllowSpeakerSelection: (v: boolean) => void;
+  setAllowedSpeakerIds: (ids: string[]) => void;
 };
 
 export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => ({
@@ -47,6 +55,7 @@ export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => 
   baseUrl: getStored(STORAGE_KEY_BASE_URL, DEFAULT_BASE_URL),
   token: getStored(STORAGE_KEY_TOKEN, ""),
   allowSpeakerSelection: getStored(STORAGE_KEY_ALLOW_SPEAKER_SELECTION, true),
+  allowedSpeakerIds: getStored<string[]>(STORAGE_KEY_ALLOWED_SPEAKER_IDS, []),
   setEnabled: (v) => {
     setStored(STORAGE_KEY_ENABLED, v);
     set({ enabled: v });
@@ -64,6 +73,11 @@ export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => 
     setStored(STORAGE_KEY_ALLOW_SPEAKER_SELECTION, v);
     set({ allowSpeakerSelection: v });
   },
+  setAllowedSpeakerIds: (ids) => {
+    const list = Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
+    setStored(STORAGE_KEY_ALLOWED_SPEAKER_IDS, list);
+    set({ allowedSpeakerIds: list });
+  },
 }));
 
 /** Hydrate store from localStorage (call once in client, e.g. in layout or TopTabs). */
@@ -73,5 +87,6 @@ export function hydrateMusicAssistantStore() {
     baseUrl: getStored(STORAGE_KEY_BASE_URL, DEFAULT_BASE_URL),
     token: getStored(STORAGE_KEY_TOKEN, ""),
     allowSpeakerSelection: getStored(STORAGE_KEY_ALLOW_SPEAKER_SELECTION, true),
+    allowedSpeakerIds: getStored<string[]>(STORAGE_KEY_ALLOWED_SPEAKER_IDS, []),
   });
 }
