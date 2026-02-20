@@ -404,7 +404,7 @@ export default function MusicPage() {
   }, [selectedAlbum, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !musicAssistant.sectionFavoritesEnabled) {
+    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !musicAssistant.sectionFavoriteAlbumsEnabled) {
       setFavoriteAlbums([]);
       setFavoritesLoading(false);
       return;
@@ -428,10 +428,10 @@ export default function MusicPage() {
       .then((albumsData) => setFavoriteAlbums(parseItems(albumsData).slice().reverse()))
       .catch(() => setFavoriteAlbums([]))
       .finally(() => setFavoritesLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, musicAssistant.sectionFavoritesEnabled]);
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, musicAssistant.sectionFavoriteAlbumsEnabled]);
 
   useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !musicAssistant.sectionFavoritesEnabled) {
+    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !musicAssistant.sectionFavoriteTracksEnabled) {
       setFavoriteItems([]);
       setFavoriteItemsLoading(false);
       return;
@@ -456,7 +456,7 @@ export default function MusicPage() {
       .then((data) => setFavoriteItems(parseTracks(data).slice().reverse()))
       .catch(() => setFavoriteItems([]))
       .finally(() => setFavoriteItemsLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, musicAssistant.sectionFavoritesEnabled]);
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, musicAssistant.sectionFavoriteTracksEnabled]);
 
   useEffect(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !musicAssistant.sectionRadioEnabled) {
