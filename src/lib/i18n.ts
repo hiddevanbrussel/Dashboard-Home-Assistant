@@ -516,7 +516,6 @@ const translations: Record<"en" | "nl", Translations> = {
     "music.choosePlayer": "Speler kiezen",
     "music.viewAlbum": "Album bekijken",
     "music.back": "Terug",
-    "music.viewAlbum": "Album bekijken",
     "music.albumTracks": "Nummers op album",
     "music.noAlbumTracks": "Geen nummers in dit album.",
     "music.addToFavorites": "Toevoegen aan favorieten",
