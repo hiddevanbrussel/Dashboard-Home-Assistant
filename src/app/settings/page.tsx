@@ -7,7 +7,7 @@ import { useThemeStore } from "@/stores/theme-store";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
-import { Image, Link2, List, Monitor, Music2, Palette } from "lucide-react";
+import { Image, Link2, List, Monitor, Music2, Palette, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -917,6 +917,90 @@ export default function SettingsPage() {
                         })}
                       </div>
                     )}
+                  </div>
+                )}
+                {musicAssistant.enabled && (
+                  <div className="space-y-3 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                      {t("settings.musicAssistant.musicPageSections")}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={musicAssistant.sectionFavoriteAlbumsEnabled}
+                          onChange={(e) => musicAssistant.setSectionFavoriteAlbumsEnabled(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowFavoriteAlbums")}</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={musicAssistant.sectionFavoriteTracksEnabled}
+                          onChange={(e) => musicAssistant.setSectionFavoriteTracksEnabled(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowFavoriteTracks")}</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={musicAssistant.sectionRadioEnabled}
+                          onChange={(e) => musicAssistant.setSectionRadioEnabled(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRadio")}</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={musicAssistant.sectionRecentlyPlayedEnabled}
+                          onChange={(e) => musicAssistant.setSectionRecentlyPlayedEnabled(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRecentlyPlayed")}</span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t("settings.musicAssistant.sectionOrderHint")}</p>
+                    <div className="flex flex-col gap-1">
+                      {musicAssistant.sectionOrder.map((id, i) => {
+                        const labelKey = id === "favoriteAlbums" ? "music.favoriteAlbums" : id === "favoriteTracks" ? "music.favoriteTracks" : id === "radio" ? "music.radioStations" : "music.recentlyPlayed";
+                        return (
+                          <div key={id} className="flex items-center gap-2 rounded bg-white dark:bg-white/5 px-2 py-1.5">
+                            <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (i <= 0) return;
+                                const next = [...musicAssistant.sectionOrder];
+                                [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                                musicAssistant.setSectionOrder(next);
+                              }}
+                              disabled={i === 0}
+                              className="p-1 rounded text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
+                              aria-label="Move up"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (i >= musicAssistant.sectionOrder.length - 1) return;
+                                const next = [...musicAssistant.sectionOrder];
+                                [next[i], next[i + 1]] = [next[i + 1], next[i]];
+                                musicAssistant.setSectionOrder(next);
+                              }}
+                              disabled={i === musicAssistant.sectionOrder.length - 1}
+                              className="p-1 rounded text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
+                              aria-label="Move down"
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
                 <div>
