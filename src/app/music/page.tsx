@@ -250,6 +250,8 @@ export default function MusicPage() {
   const [recentItems, setRecentItems] = useState<MASearchItem[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<MASearchItem | null>(null);
+  /** Album details from music/albums/get (single media item); fallback is selectedAlbum. */
+  const [albumDetails, setAlbumDetails] = useState<MASearchItem | null>(null);
   const [albumTracks, setAlbumTracks] = useState<MASearchItem[]>([]);
   const [albumTracksLoading, setAlbumTracksLoading] = useState(false);
   const [favoritePending, setFavoritePending] = useState<Set<string>>(new Set());
@@ -371,6 +373,36 @@ export default function MusicPage() {
 
   useEffect(() => {
     if (!selectedAlbum || !musicAssistant.enabled || !musicAssistant.baseUrl) {
+      setAlbumDetails(null);
+      setAlbumTracks([]);
+      return;
+    }
+    const params = getAlbumParams(selectedAlbum);
+    if (!params) {
+      setAlbumDetails(null);
+      setAlbumTracks([]);
+      setError(null);
+      return;
+    }
+    setAlbumDetails(null);
+    // MA API: music/albums/get for single album (metadata)
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/albums/get", {
+      item_id: params.item_id,
+      provider_instance_id_or_domain: params.provider_instance_id_or_domain,
+    })
+      .then((data: unknown) => {
+        const d = data as Record<string, unknown>;
+        const err = (d?.error as string) ?? (d?.message as string);
+        if (err) return;
+        const result = d?.result ?? d;
+        const obj = typeof result === "object" && result !== null ? (result as MASearchItem) : null;
+        if (obj && (obj.item_id != null || obj.name != null || obj.uri)) setAlbumDetails(obj);
+      })
+      .catch(() => {});
+  }, [selectedAlbum, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+
+  useEffect(() => {
+    if (!selectedAlbum || !musicAssistant.enabled || !musicAssistant.baseUrl) {
       setAlbumTracks([]);
       return;
     }
@@ -382,6 +414,7 @@ export default function MusicPage() {
     }
     setAlbumTracksLoading(true);
     setError(null);
+    // MA API: music/albums/album_tracks with item_id + provider_instance_id_or_domain
     callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/albums/album_tracks", {
       item_id: params.item_id,
       provider_instance_id_or_domain: params.provider_instance_id_or_domain,
@@ -1066,7 +1099,7 @@ export default function MusicPage() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => { setSelectedAlbum(null); setAlbumTracks([]); setError(null); }}
+                onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
                 className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -1097,34 +1130,39 @@ export default function MusicPage() {
               })()}
             </div>
             <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
-              <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-4 shrink-0">
-                <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-52 lg:h-52 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
-                  {getImageSrc(getItemImageUrl(selectedAlbum), musicAssistant.baseUrl, musicAssistant.token) ? (
-                    <Image
-                      src={getImageSrc(getItemImageUrl(selectedAlbum), musicAssistant.baseUrl, musicAssistant.token)!}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="224px"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Disc3 className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
+              {(() => {
+                const album = albumDetails ?? selectedAlbum;
+                return (
+                  <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-4 shrink-0">
+                    <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-52 lg:h-52 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
+                      {getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token) ? (
+                        <Image
+                          src={getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token)!}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="224px"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Disc3 className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="min-w-0 lg:min-w-0">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedAlbum.name ?? t("music.unknown")}</h2>
-                  <p className="mt-1 text-gray-600 dark:text-gray-400">
-                    {selectedAlbum.artists
-                      ? Array.isArray(selectedAlbum.artists)
-                        ? (selectedAlbum.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
-                        : (selectedAlbum.artists as { name?: string })?.name
-                      : "—"}
-                  </p>
-                </div>
-              </div>
+                    <div className="min-w-0 lg:min-w-0">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{album.name ?? t("music.unknown")}</h2>
+                      <p className="mt-1 text-gray-600 dark:text-gray-400">
+                        {album.artists
+                          ? Array.isArray(album.artists)
+                            ? (album.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
+                            : (album.artists as { name?: string })?.name
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
               <section className="min-w-0 flex-1 w-full lg:ml-8">
                 <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albumTracks")}</h3>
                 {albumTracksLoading ? (
