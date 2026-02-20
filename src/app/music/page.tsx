@@ -56,19 +56,20 @@ function getPlayableUri(item: MASearchItem, mediaType: "track" | "album" | "arti
 
 /** Get item_id and provider for MA album_tracks API. */
 function getAlbumParams(item: MASearchItem): { item_id: string; provider_instance_id_or_domain: string } | null {
-  const mappings = (item as { provider_mappings?: { provider_instance_id?: string; item_id?: string }[] }).provider_mappings;
+  const mappings = (item as { provider_mappings?: { provider_instance_id?: string; provider_instance?: string; item_id?: string | number }[] }).provider_mappings;
   if (Array.isArray(mappings) && mappings.length > 0) {
     const first = mappings[0];
-    const prov = first?.provider_instance_id ?? (first as { provider_instance?: string })?.provider_instance;
-    const id = first?.item_id != null ? String(first.item_id) : null;
-    if (prov && id) return { item_id: id, provider_instance_id_or_domain: prov };
+    const prov = first?.provider_instance_id ?? (first as { provider_instance?: string }).provider_instance ?? (first as { provider?: string }).provider;
+    const rawId = first?.item_id ?? (first as { id?: string | number }).id;
+    const id = rawId != null ? String(rawId) : null;
+    if (prov && id) return { item_id: id, provider_instance_id_or_domain: String(prov).replace(/\/+$/, "") };
   }
   const raw = item.uri ?? (item as { item_uri?: string }).item_uri;
   if (typeof raw === "string" && raw.includes("://")) {
     const [scheme, rest] = raw.split("://");
     const parts = rest?.split("/");
     const id = parts?.pop();
-    if (scheme && id) return { item_id: id, provider_instance_id_or_domain: scheme };
+    if (scheme && id) return { item_id: id, provider_instance_id_or_domain: scheme.replace(/\/+$/, "") };
   }
   const itemId = item.item_id ?? (item as { item_id?: number | string }).item_id ?? (item as { id?: number | string }).id;
   if (itemId == null) return null;
@@ -76,6 +77,7 @@ function getAlbumParams(item: MASearchItem): { item_id: string; provider_instanc
     (item as { provider_instance_id?: string }).provider_instance_id ??
     (item as { provider_instance?: string }).provider_instance ??
     (item as { provider?: string }).provider ??
+    (item as { provider_domain?: string }).provider_domain ??
     "library";
   return { item_id: String(itemId), provider_instance_id_or_domain: String(provider).replace(/\/+$/, "") };
 }
@@ -375,31 +377,42 @@ export default function MusicPage() {
     const params = getAlbumParams(selectedAlbum);
     if (!params) {
       setAlbumTracks([]);
+      setError(null);
       return;
     }
     setAlbumTracksLoading(true);
+    setError(null);
     callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/albums/album_tracks", {
       item_id: params.item_id,
       provider_instance_id_or_domain: params.provider_instance_id_or_domain,
     })
       .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
+        const d = data as Record<string, unknown>;
+        const err =
+          (d?.error as string) ??
+          (d?.message as string) ??
+          (typeof (d?.detail as string) === "string" ? (d.detail as string) : null);
         if (err) {
           setError(err);
           setAlbumTracks([]);
           return;
         }
-        const d = data as Record<string, unknown>;
         const result = d?.result ?? d;
         const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
         let list: MASearchItem[] = [];
         if (Array.isArray(resultObj.tracks)) list = resultObj.tracks as MASearchItem[];
         else if (Array.isArray(resultObj.items)) list = resultObj.items as MASearchItem[];
+        else if (Array.isArray((resultObj as { track?: unknown }).track)) list = (resultObj as { track: MASearchItem[] }).track;
         else if (Array.isArray(result)) list = result as MASearchItem[];
         else if (Array.isArray(d.tracks)) list = d.tracks as MASearchItem[];
+        else if (Array.isArray(d.items)) list = d.items as MASearchItem[];
         setAlbumTracks(list);
       })
-      .catch(() => setAlbumTracks([]))
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : "Kon albumnummers niet laden.";
+        setError(msg);
+        setAlbumTracks([]);
+      })
       .finally(() => setAlbumTracksLoading(false));
   }, [selectedAlbum, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
@@ -1247,8 +1260,7 @@ export default function MusicPage() {
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                     </div>
                   ) : (
-                    <div className="w-screen relative left-1/2 -translate-x-1/2">
-                      <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-8 pr-4 sm:pl-12 sm:pr-6 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
+                    <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
                         {favoriteAlbums.map((item, index) => {
                           const albumUri = getPlayableUri(item, "album");
                           const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
@@ -1279,7 +1291,6 @@ export default function MusicPage() {
                             </button>
                           );
                         })}
-                      </div>
                     </div>
                   )}
                 </section>
@@ -1296,8 +1307,7 @@ export default function MusicPage() {
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                     </div>
                   ) : (
-                    <div className="w-screen relative left-1/2 -translate-x-1/2">
-                      <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-8 pr-4 sm:pl-12 sm:pr-6 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
+                    <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
                         {favoriteItems.map((item, index) => {
                           const uri = getPlayableUri(item, "track");
                           const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
@@ -1326,7 +1336,6 @@ export default function MusicPage() {
                             </button>
                           );
                         })}
-                      </div>
                     </div>
                   )}
                 </section>
@@ -1343,8 +1352,7 @@ export default function MusicPage() {
                   ) : radioStations.length === 0 ? (
                     <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noRadioStations")}</p>
                   ) : (
-                    <div className="w-screen relative left-1/2 -translate-x-1/2">
-                      <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-8 pr-4 sm:pl-12 sm:pr-6 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
+                    <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
                         {radioStations.map((item, index) => {
                           const radioUri = getPlayableUri(item, "radio");
                           const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
@@ -1374,7 +1382,6 @@ export default function MusicPage() {
                             </button>
                           );
                         })}
-                      </div>
                     </div>
                   )}
                 </section>
@@ -1391,8 +1398,7 @@ export default function MusicPage() {
                   ) : recentItems.length === 0 ? (
                     <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noHistory")}</p>
                   ) : (
-                    <div className="w-screen relative left-1/2 -translate-x-1/2">
-                      <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-8 pr-4 sm:pl-12 sm:pr-6 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
+                    <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
                         {recentItems.map((item, index) => {
                           const uri = getPlayableUri(item, "track");
                           const albumUri = getPlayableUri(item, "album");
@@ -1426,7 +1432,6 @@ export default function MusicPage() {
                             </button>
                           );
                         })}
-                      </div>
                     </div>
                   )}
                 </section>
