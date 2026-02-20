@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, X } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, ChevronDown, X } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,53 @@ type MASearchItem = {
   metadata?: { images?: { url?: string; value?: string; type?: string }[] };
   [key: string]: unknown;
 };
+
+/** Build playable URI for MA. Prefer item.uri; else use provider_mappings or provider + mediaType + item_id. */
+function getPlayableUri(item: MASearchItem, mediaType: "track" | "album" | "artist"): string {
+  const raw = item.uri ?? (item as { item_uri?: string }).item_uri;
+  if (typeof raw === "string" && raw.trim()) return raw.trim();
+  const mappings = (item as { provider_mappings?: { provider_instance_id?: string; item_id?: string }[] }).provider_mappings;
+  if (Array.isArray(mappings) && mappings.length > 0) {
+    const first = mappings[0];
+    const prov = first?.provider_instance_id ?? (first as { provider_instance?: string })?.provider_instance;
+    const id = first?.item_id;
+    if (prov && id != null) return `${prov}://${mediaType}/${id}`;
+  }
+  const itemId =
+    item.item_id ??
+    (item as { item_id?: number | string }).item_id ??
+    (item as { id?: number | string }).id;
+  if (itemId == null) return "";
+  const provider =
+    (item as { provider_instance_id?: string }).provider_instance_id ??
+    (item as { provider_instance?: string }).provider_instance ??
+    (item as { provider?: string }).provider ??
+    "library";
+  return `${String(provider).replace(/\/+$/, "")}://${mediaType}/${itemId}`;
+}
+
+/** Normalize MA URI: "provider--instance://type/id" -> "provider://type/id" for play_media (avoids 500 on some MA versions). */
+function normalizePlayMediaUri(uri: string): string {
+  const u = uri.trim();
+  const idx = u.indexOf("://");
+  if (idx <= 0) return u;
+  const scheme = u.slice(0, idx);
+  const rest = u.slice(idx);
+  const baseProvider = scheme.split("--")[0];
+  if (baseProvider && baseProvider !== scheme) return `${baseProvider}${rest}`;
+  return u;
+}
+
+/** Human-readable provider label (e.g. spotify--abc123 → Spotify, library → Library). */
+function getProviderLabel(item: MASearchItem): string {
+  const raw =
+    (item as { provider_instance_id?: string }).provider_instance_id ??
+    (item as { provider_instance?: string }).provider_instance ??
+    (item as { provider?: string }).provider ??
+    "";
+  const base = (typeof raw === "string" ? raw : "").split("--")[0]?.trim() || "library";
+  return base.charAt(0).toUpperCase() + base.slice(1).toLowerCase();
+}
 
 /** Extract first usable image URL from MA item (tracks/albums use metadata.images or image object). */
 function getItemImageUrl(item: MASearchItem): string | null {
@@ -174,9 +221,6 @@ export default function MusicPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [recentItems, setRecentItems] = useState<MASearchItem[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
-  const [recentTracks, setRecentTracks] = useState<MASearchItem[]>([]);
-  const [recentAlbums, setRecentAlbums] = useState<MASearchItem[]>([]);
-  const [recentAddedLoading, setRecentAddedLoading] = useState(false);
   const musicAssistant = useMusicAssistantStore();
 
   useEffect(() => {
@@ -300,42 +344,6 @@ export default function MusicPage() {
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl) return;
-    setRecentAddedLoading(true);
-    const parseList = (data: unknown): MASearchItem[] => {
-      const d = data as Record<string, unknown>;
-      const result = d?.result ?? d;
-      let arr: unknown[] | null = null;
-      if (Array.isArray(result)) arr = result;
-      else if (Array.isArray(d?.items)) arr = d.items;
-      else if (Array.isArray(d?.data)) arr = d.data;
-      else if (Array.isArray((d as { data?: { items?: unknown[] } }).data?.items)) arr = (d as { data: { items: unknown[] } }).data.items;
-      else if (typeof result === "object" && result !== null) {
-        const r = result as Record<string, unknown>;
-        if (Array.isArray(r.items)) arr = r.items;
-        else if (Array.isArray(r.tracks)) arr = r.tracks;
-        else if (Array.isArray(r.albums)) arr = r.albums;
-      }
-      return Array.isArray(arr) ? (arr as MASearchItem[]) : [];
-    };
-    const base = musicAssistant.baseUrl;
-    const token = musicAssistant.token;
-    const fetchTracks = (): Promise<MASearchItem[]> =>
-      callMusicAssistant(base, token, "music/tracks/library_items", { limit: 24, order_by: "-timestamp_added" })
-        .then((data) => parseList(data))
-        .then((list) => (list.length > 0 ? list : callMusicAssistant(base, token, "music/tracks/library_items", { limit: 24, order_by: "timestamp_added" }).then((data) => parseList(data).slice().reverse())))
-        .catch(() => []);
-    const fetchAlbums = (): Promise<MASearchItem[]> =>
-      callMusicAssistant(base, token, "music/albums/library_items", { limit: 20, order_by: "-timestamp_added" })
-        .then((data) => parseList(data))
-        .then((list) => (list.length > 0 ? list : callMusicAssistant(base, token, "music/albums/library_items", { limit: 20, order_by: "timestamp_added" }).then((data) => parseList(data).slice().reverse())))
-        .catch(() => []);
-    Promise.all([fetchTracks().then(setRecentTracks), fetchAlbums().then(setRecentAlbums)])
-      .catch(() => {})
-      .finally(() => setRecentAddedLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
-
-  useEffect(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
     const fetchState = () => {
       callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "player_queues/get", {
@@ -451,33 +459,29 @@ export default function MusicPage() {
       const token = musicAssistant.token;
       const queueId = selectedQueueId;
 
-      const tryPlayMedia = (): Promise<void> =>
-      callMusicAssistant(baseUrl, token, "player_queues/play_media", {
-        queue_id: queueId,
-        media: [trimmedUri],
-      }).then((data: unknown) => {
-        const e = (data as { error?: string })?.error;
-        if (e) throw new Error(e);
-      });
+      const tryPlayMedia = (args: Record<string, unknown>): Promise<void> =>
+        callMusicAssistant(baseUrl, token, "player_queues/play_media", args).then((data: unknown) => {
+          const e = (data as { error?: string })?.error;
+          if (e) throw new Error(e);
+        });
 
-    const tryAddItemThenPlay = (addArgs: Record<string, unknown>): Promise<void> =>
-      callMusicAssistant(baseUrl, token, "player_queues/add_item", addArgs).then((addData: unknown) => {
-        const e = (addData as { error?: string })?.error;
-        if (e) throw new Error(e);
-        return callMusicAssistant(baseUrl, token, "player_queues/play", { queue_id: queueId });
-      }).then((playData: unknown) => {
-        const e = (playData as { error?: string })?.error;
-        if (e) throw new Error(e);
-      });
-
-    tryPlayMedia()
-      .catch(() => tryAddItemThenPlay({ queue_id: queueId, uri: trimmedUri }))
-      .catch(() => tryAddItemThenPlay({ queue_id: queueId, media: [trimmedUri] }))
-      .catch((err) => {
+      const normalizedUri = normalizePlayMediaUri(trimmedUri);
+      const attempts: Record<string, unknown>[] = [
+        { queue_id: queueId, media: trimmedUri },
+        { queue_id: queueId, media: [trimmedUri] },
+        ...(normalizedUri !== trimmedUri ? [{ queue_id: queueId, media: normalizedUri }, { queue_id: queueId, media: [normalizedUri] }] : []),
+        { queue_id: queueId, media: trimmedUri, option: "replace" },
+        { queue_id: queueId, media: trimmedUri, option: "REPLACE" },
+        { queue_id: queueId, media: { uri: trimmedUri } },
+      ];
+      let p: Promise<void> = tryPlayMedia(attempts[0]!);
+      for (let i = 1; i < attempts.length; i++) {
+        p = p.catch(() => tryPlayMedia(attempts[i]!));
+      }
+      p.catch((err) => {
         const msg = err instanceof Error ? err.message : "Afspelen mislukt.";
         setError(msg);
-      })
-      .finally(() => setPlayPending(null));
+      }).finally(() => setPlayPending(null));
     },
     [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
   );
@@ -537,6 +541,48 @@ export default function MusicPage() {
     },
     [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
   );
+
+  const volumeUp = useCallback(() => {
+    if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+    setVolumePending(true);
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_up", {
+      player_id: selectedQueueId,
+    })
+      .then((data: unknown) => {
+        const err = (data as { error?: string })?.error;
+        if (err) setError(err);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Volume failed"))
+      .finally(() => setVolumePending(false));
+  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+
+  const volumeDown = useCallback(() => {
+    if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+    setVolumePending(true);
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_down", {
+      player_id: selectedQueueId,
+    })
+      .then((data: unknown) => {
+        const err = (data as { error?: string })?.error;
+        if (err) setError(err);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Volume failed"))
+      .finally(() => setVolumePending(false));
+  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+
+  const volumeMute = useCallback(() => {
+    if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+    setVolumePending(true);
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_mute", {
+      player_id: selectedQueueId,
+    })
+      .then((data: unknown) => {
+        const err = (data as { error?: string })?.error;
+        if (err) setError(err);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Volume failed"))
+      .finally(() => setVolumePending(false));
+  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   const useMA = musicAssistant.enabled;
   const playerLabel = (p: MAPlayer) => (p.display_name as string) ?? p.queue_id ?? String(p.queue_id);
@@ -633,6 +679,7 @@ export default function MusicPage() {
                   : "—";
               const albumName = item.album?.name;
               const duration = item.duration;
+              const providerLabel = getProviderLabel(item);
               const isPlayPending = uri && playPending === uri;
               const canPlay = !!uri && !!selectedQueueId;
               return (
@@ -648,6 +695,7 @@ export default function MusicPage() {
                     <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                       {artistNames}
                       {albumName ? ` · ${albumName}` : ""}
+                      {providerLabel ? ` · ${providerLabel}` : ""}
                     </p>
                   </div>
                   <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
@@ -785,103 +833,13 @@ export default function MusicPage() {
                 <div className="w-screen relative left-1/2 -translate-x-1/2">
                   <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-8 pr-4 sm:pl-12 sm:pr-6 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
                   {recentItems.map((item, index) => {
-                    const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
-                    const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
-                    const uri = typeof rawUri === "string" && rawUri ? rawUri : itemId != null ? `${(item as { provider?: string })?.provider ?? "library"}://track/${itemId}` : "";
+                    const uri = getPlayableUri(item, "track");
                     const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
                     const isPlayPending = uri && playPending === uri;
                     const canPlay = !!uri && !!selectedQueueId;
                     return (
                       <button
                         key={uri || `recent-${index}`}
-                        type="button"
-                        onClick={() => canPlay && playOnPlayer(uri)}
-                        disabled={!canPlay || !!isPlayPending}
-                        className="shrink-0 w-40 h-40 sm:w-48 sm:h-48 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always]"
-                        title={item.name as string}
-                      >
-                        {imageSrc ? (
-                          <span className="relative block w-full h-full">
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="192px" unoptimized />
-                          </span>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                            <Disc3 className="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            <section className="mt-8">
-              <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyAddedTracks")}</h3>
-              {recentAddedLoading ? (
-                <div className="flex justify-center py-6">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
-                </div>
-              ) : recentTracks.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400 py-3">{t("music.noRecentTracks")}</p>
-              ) : (
-                <div className="w-screen relative left-1/2 -translate-x-1/2">
-                  <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-8 pr-4 sm:pl-12 sm:pr-6 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
-                  {recentTracks.map((item, index) => {
-                    const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
-                    const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
-                    const uri = typeof rawUri === "string" && rawUri ? rawUri : itemId != null ? `${(item as { provider?: string })?.provider ?? "library"}://track/${itemId}` : "";
-                    const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
-                    const isPlayPending = uri && playPending === uri;
-                    const canPlay = !!uri && !!selectedQueueId;
-                    return (
-                      <button
-                        key={uri || `recent-track-${index}`}
-                        type="button"
-                        onClick={() => canPlay && playOnPlayer(uri)}
-                        disabled={!canPlay || !!isPlayPending}
-                        className="shrink-0 w-40 h-40 sm:w-48 sm:h-48 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always]"
-                        title={item.name as string}
-                      >
-                        {imageSrc ? (
-                          <span className="relative block w-full h-full">
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="192px" unoptimized />
-                          </span>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                            <Disc3 className="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            <section className="mt-8">
-              <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyAddedAlbums")}</h3>
-              {recentAddedLoading ? (
-                <div className="flex justify-center py-6">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
-                </div>
-              ) : recentAlbums.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400 py-3">{t("music.noRecentAlbums")}</p>
-              ) : (
-                <div className="w-screen relative left-1/2 -translate-x-1/2">
-                  <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pl-8 pr-4 sm:pl-12 sm:pr-6 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
-                  {recentAlbums.map((item, index) => {
-                    const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
-                    const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
-                    const uri = typeof rawUri === "string" && rawUri ? rawUri : itemId != null ? `${(item as { provider?: string })?.provider ?? "library"}://album/${itemId}` : "";
-                    const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
-                    const isPlayPending = uri && playPending === uri;
-                    const canPlay = !!uri && !!selectedQueueId;
-                    return (
-                      <button
-                        key={uri || `recent-album-${index}`}
                         type="button"
                         onClick={() => canPlay && playOnPlayer(uri)}
                         disabled={!canPlay || !!isPlayPending}
@@ -995,37 +953,66 @@ export default function MusicPage() {
               </div>
             </div>
 
-            <div className="flex-1 min-w-0 flex items-center justify-end">
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="relative" ref={volumePopoverRef}>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setVolumePopoverOpen((v) => !v); }}
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                    aria-label={t("music.volume")}
-                    aria-expanded={volumePopoverOpen}
+            <div className="flex-1 min-w-0 flex items-center justify-end gap-3">
+              <div className="relative flex items-center gap-2 min-w-0 flex-1 max-w-[180px] sm:max-w-[220px]" ref={volumePopoverRef}>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setVolumePopoverOpen((v) => !v); }}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+                  aria-label={t("music.volume")}
+                  aria-expanded={volumePopoverOpen}
+                >
+                  <Volume2 className="h-5 w-5" />
+                </button>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={volume}
+                  onChange={(e) => setVolumeLevel(Number(e.target.value))}
+                  disabled={volumePending}
+                  className="flex-1 min-w-0 w-20 h-2 appearance-none rounded-full bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-yellow dark:[&::-webkit-slider-thumb]:bg-accent-green [&::-webkit-slider-thumb]:cursor-pointer"
+                  aria-label={t("music.volume")}
+                />
+                {volumePopoverOpen && (
+                  <div
+                    className="absolute bottom-full left-0 mb-2 flex flex-col items-center gap-3 rounded-xl border border-white/20 bg-gray-900 dark:bg-black py-4 px-4 shadow-xl min-w-[140px] z-10"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Volume2 className="h-5 w-5" />
-                  </button>
-                  {volumePopoverOpen && (
-                    <div
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex flex-col items-center gap-3 rounded-xl border border-white/20 bg-gray-900 dark:bg-black py-4 px-4 shadow-xl min-w-[140px]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span className="text-sm text-white/90 font-medium tabular-nums">{volume}%</span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={volume}
-                        onChange={(e) => setVolumeLevel(Number(e.target.value))}
+                    <span className="text-sm text-white/90 font-medium tabular-nums">{volume}%</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={volumeDown}
                         disabled={volumePending}
-                        className="w-28 h-2 appearance-none rounded-full bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-yellow dark:[&::-webkit-slider-thumb]:bg-accent-green [&::-webkit-slider-thumb]:cursor-pointer"
-                        aria-label={t("music.volume")}
-                      />
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50"
+                        aria-label={t("music.volumeDown")}
+                      >
+                        <ChevronDown className="h-5 w-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={volumeUp}
+                        disabled={volumePending}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50"
+                        aria-label={t("music.volumeUp")}
+                      >
+                        <ChevronUp className="h-5 w-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={volumeMute}
+                        disabled={volumePending}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50"
+                        aria-label={t("music.volumeMute")}
+                      >
+                        <VolumeX className="h-5 w-5" />
+                      </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
                 <select
                   value={selectedQueueId ?? ""}
                   onChange={(e) => setSelectedQueueId(e.target.value || null)}

@@ -74,6 +74,9 @@ export async function POST(request: Request) {
         errorMessage =
           "Music Assistant returned 401 Unauthorized. Add a valid API token in Settings (from Music Assistant → Settings → User management / API token).";
       }
+      if (res.status === 500 && errorMessage === "Internal server error" && rawText.length > 0 && rawText.length < 2000) {
+        errorMessage = rawText.replace(/\s+/g, " ").trim();
+      }
       return NextResponse.json(
         { error: errorMessage },
         { status: res.status >= 400 && res.status < 600 ? res.status : 502 }
