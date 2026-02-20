@@ -30,6 +30,14 @@ export async function POST(request: Request) {
   if (!validated.success) {
     return NextResponse.json({ error: validated.error }, { status: 400 });
   }
+  const secret = process.env.APP_SECRET;
+  if (!secret || secret.length < 16) {
+    console.error("[api/ha/connection] APP_SECRET missing or too short");
+    return NextResponse.json(
+      { error: "Server config: set APP_SECRET in .env (min 16 characters). See .env.example." },
+      { status: 500 }
+    );
+  }
   try {
     await prisma.connection.deleteMany({});
     const encryptedToken = encrypt(validated.data.token);
@@ -41,10 +49,15 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ connectionId: conn.id });
   } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to save connection";
     console.error("[api/ha/connection] POST error:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to save connection" },
-      { status: 500 }
-    );
+    // APP_SECRET missing or too short is a common cause
+    const isConfigError =
+      message.includes("APP_SECRET") ||
+      (err instanceof Error && message.length > 0 && message.toLowerCase().includes("secret"));
+    const clientMessage = isConfigError
+      ? "Server config: set APP_SECRET in .env (min 16 characters). See .env.example."
+      : message;
+    return NextResponse.json({ error: clientMessage }, { status: 500 });
   }
 }
