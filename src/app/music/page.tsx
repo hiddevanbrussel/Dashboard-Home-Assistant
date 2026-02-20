@@ -154,6 +154,7 @@ export default function MusicPage() {
   const [playersLoading, setPlayersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchFilter, setSearchFilter] = useState<"all" | "track" | "artist" | "album">("all");
   const [searchResults, setSearchResults] = useState<MASearchItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null);
@@ -370,19 +371,27 @@ export default function MusicPage() {
     setSearchResults([]);
     setError(null);
     const query = searchQuery.trim();
+    const mediaType =
+      searchFilter === "track" ? "track" : searchFilter === "artist" ? "artist" : searchFilter === "album" ? "album" : undefined;
+    const baseArgs = { search_query: query, limit: 24 };
+    const argsWithFilter = mediaType ? { ...baseArgs, media_types: [mediaType] } : baseArgs;
     const argsList: Record<string, unknown>[] = [
-      { search_query: query, limit: 24 },
-      { query, limit: 24 },
+      argsWithFilter,
+      { query: query, limit: 24, ...(mediaType ? { media_types: [mediaType] } : {}) },
       { name: query, limit: 24 },
     ];
     const commands = ["music/search", "search"] as const;
-    function parseTracks(data: unknown): MASearchItem[] {
+    function getResultObj(data: unknown): Record<string, unknown> {
       const d = data as Record<string, unknown>;
       const result = d?.result ?? d;
-      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+      return typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+    }
+    function parseTracks(data: unknown): MASearchItem[] {
+      const d = data as Record<string, unknown>;
+      const resultObj = getResultObj(data);
       if (Array.isArray(resultObj.tracks)) return resultObj.tracks as MASearchItem[];
       if (Array.isArray(resultObj.track)) return resultObj.track as MASearchItem[];
-      if (Array.isArray(result)) return result as MASearchItem[];
+      if (Array.isArray(d?.result)) return (d.result as MASearchItem[]);
       if (Array.isArray(d.tracks)) return d.tracks as MASearchItem[];
       if (Array.isArray((d as { data?: unknown }).data)) return (d as { data: MASearchItem[] }).data;
       const dataTracks = (d as { data?: { tracks?: MASearchItem[] } }).data?.tracks;
@@ -394,6 +403,25 @@ export default function MusicPage() {
       }
       return [];
     }
+    function parseArtists(data: unknown): MASearchItem[] {
+      const resultObj = getResultObj(data);
+      if (Array.isArray(resultObj.artists)) return resultObj.artists as MASearchItem[];
+      return [];
+    }
+    function parseAlbums(data: unknown): MASearchItem[] {
+      const resultObj = getResultObj(data);
+      if (Array.isArray(resultObj.albums)) return resultObj.albums as MASearchItem[];
+      return [];
+    }
+    function collectResults(data: unknown): (MASearchItem & { __mediaType?: "track" | "artist" | "album" })[] {
+      if (searchFilter === "artist") return parseArtists(data).map((a) => ({ ...a, __mediaType: "artist" as const }));
+      if (searchFilter === "album") return parseAlbums(data).map((a) => ({ ...a, __mediaType: "album" as const }));
+      if (searchFilter === "track") return parseTracks(data).map((t) => ({ ...t, __mediaType: "track" as const }));
+      const tracks = parseTracks(data).map((t) => ({ ...t, __mediaType: "track" as const }));
+      const artists = parseArtists(data).map((a) => ({ ...a, __mediaType: "artist" as const }));
+      const albums = parseAlbums(data).map((a) => ({ ...a, __mediaType: "album" as const }));
+      return [...tracks, ...artists, ...albums];
+    }
     const tryAttempt = (cmdIndex: number, argIndex: number): Promise<void> =>
       callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, commands[cmdIndex]!, argsList[argIndex]!).then(
         (data: unknown) => {
@@ -404,12 +432,12 @@ export default function MusicPage() {
             setError(err);
             return;
           }
-          const tracks = parseTracks(data);
-          setSearchResults(tracks);
+          const items = collectResults(data);
+          setSearchResults(items);
         }
       );
     tryAttempt(0, 0).catch((err) => setError(err instanceof Error ? err.message : "Zoeken mislukt.")).finally(() => setSearching(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, searchQuery]);
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, searchQuery, searchFilter]);
 
   const playOnPlayer = useCallback(
     (uri: string) => {
@@ -558,6 +586,23 @@ export default function MusicPage() {
           <X className="h-5 w-5" />
         </button>
       </div>
+      <div className="shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-200 dark:border-white/10 bg-white/50 dark:bg-gray-900/50">
+        {(["all", "track", "artist", "album"] as const).map((filter) => (
+          <button
+            key={filter}
+            type="button"
+            onClick={() => setSearchFilter(filter)}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+              searchFilter === filter
+                ? "bg-accent-yellow dark:bg-accent-green text-gray-900"
+                : "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+            )}
+          >
+            {filter === "all" ? t("music.filterAll") : filter === "track" ? t("music.filterTrack") : filter === "artist" ? t("music.filterArtist") : t("music.filterAlbum")}
+          </button>
+        ))}
+      </div>
       <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
         {selectedQueueId && maPlayers.length > 0 && (
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-3">
@@ -569,11 +614,16 @@ export default function MusicPage() {
             {searchResults.map((item, index) => {
               const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
               const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
-              const uri = typeof rawUri === "string" && rawUri
-                ? rawUri
-                : itemId != null
-                  ? `${(item as { provider?: string })?.provider ?? "library"}://track/${itemId}`
-                  : "";
+              const provider = (item as { provider?: string })?.provider ?? "library";
+              const itemMediaType = (item as { __mediaType?: "track" | "artist" | "album" }).__mediaType;
+              const mediaType =
+                itemMediaType ?? (searchFilter === "artist" ? "artist" : searchFilter === "album" ? "album" : "track");
+              const uri =
+                typeof rawUri === "string" && rawUri
+                  ? rawUri
+                  : itemId != null
+                    ? `${provider}://${mediaType}/${itemId}`
+                    : "";
               const name = item.name ?? t("music.unknown");
               const artists = item.artists;
               const artistNames = Array.isArray(artists)
