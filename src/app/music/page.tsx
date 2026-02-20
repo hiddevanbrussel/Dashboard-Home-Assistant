@@ -733,19 +733,36 @@ export default function MusicPage() {
     document.body
   );
 
+  const allowSpeakerSelection = musicAssistant.allowSpeakerSelection;
   return (
     <AppShell
       activeTab="/music"
       headerEndAction={
         useMA && maPlayers.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => setSearchOverlayOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-            aria-label={t("music.search")}
-          >
-            <Search className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {allowSpeakerSelection && (
+              <select
+                value={selectedQueueId ?? ""}
+                onChange={(e) => setSelectedQueueId(e.target.value || null)}
+                className="rounded-lg border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
+                aria-label={t("music.choosePlayer")}
+              >
+                {maPlayers.map((p) => (
+                  <option key={p.queue_id} value={p.queue_id} className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+                    {playerLabel(p)}
+                  </option>
+                ))}
+              </select>
+            )}
+            <button
+              type="button"
+              onClick={() => setSearchOverlayOpen(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+              aria-label={t("music.search")}
+            >
+              <Search className="h-5 w-5" />
+            </button>
+          </div>
         ) : undefined
       }
     >
@@ -871,21 +888,6 @@ export default function MusicPage() {
           className="fixed bottom-0 left-0 right-0 z-40 flex flex-col border-t border-white/10 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md px-4 sm:px-6 py-2"
           aria-label={t("music.playerBar")}
         >
-          {/* Speaker select rechtsboven */}
-          <div className="w-full flex justify-end mb-2">
-            <select
-              value={selectedQueueId ?? ""}
-              onChange={(e) => setSelectedQueueId(e.target.value || null)}
-              className="rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm text-white focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
-              aria-label={t("music.choosePlayer")}
-            >
-              {maPlayers.map((p) => (
-                <option key={p.queue_id} value={p.queue_id} className="bg-gray-900 text-white">
-                  {playerLabel(p)}
-                </option>
-              ))}
-            </select>
-          </div>
           {/* Balk: links = hoes + artiest/titel, midden = knoppen + voortgang, rechts = volume */}
           <div className="w-full flex items-center gap-4 sm:gap-6 min-w-0">
             {/* Links: albumhoes, naast artiest (boven) en titel (onder) */}

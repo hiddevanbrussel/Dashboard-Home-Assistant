@@ -810,6 +810,17 @@ export default function SettingsPage() {
                     {t("settings.musicAssistant.enabled")}
                   </span>
                 </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={musicAssistant.allowSpeakerSelection}
+                    onChange={(e) => musicAssistant.setAllowSpeakerSelection(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {t("settings.musicAssistant.allowSpeakerSelection")}
+                  </span>
+                </label>
                 <div>
                   <label htmlFor="ma-baseUrl" className="block text-sm font-medium mb-1">
                     {t("settings.musicAssistant.baseUrl")}
