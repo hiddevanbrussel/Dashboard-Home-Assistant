@@ -23,18 +23,14 @@ export function useEntityStatePolling(connectionId?: string) {
 
     function poll() {
       fetch(url)
-        .then(async (res) => {
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) {
-            const msg = typeof (data as { error?: string }).error === "string" ? (data as { error: string }).error : "No connection";
-            throw new Error(msg);
-          }
-          return data;
+        .then((res) => {
+          if (!res.ok) throw new Error("Fetch failed");
+          return res.json();
         })
         .then((data) => {
           if (Array.isArray(data)) setStates(data);
         })
-        .catch((err) => setError(err instanceof Error ? err.message : "No connection"));
+        .catch(() => setError("No connection"));
     }
 
     poll();
@@ -50,18 +46,14 @@ export function useEntityStatePolling(connectionId?: string) {
         ? `/api/ha/state?connectionId=${encodeURIComponent(connectionId)}`
         : "/api/ha/state";
       fetch(url)
-        .then(async (res) => {
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) {
-            const msg = typeof (data as { error?: string }).error === "string" ? (data as { error: string }).error : "No connection";
-            throw new Error(msg);
-          }
-          return data;
+        .then((res) => {
+          if (!res.ok) throw new Error("Fetch failed");
+          return res.json();
         })
         .then((data) => {
           if (Array.isArray(data)) setStates(data);
         })
-        .catch((err) => setError(err instanceof Error ? err.message : "No connection"));
+        .catch(() => setError("No connection"));
     }
   }, [refreshRequested, connectionId, setStates, setError]);
 }

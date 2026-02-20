@@ -142,7 +142,7 @@ export function CardDefinitionModal({
               type="button"
               onClick={() => setShowAdd(true)}
               className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400 hover:text-[#4D2FB2] dark:hover:text-[#4D2FB2] transition-colors"
-              aria-label={t("modal.addLight")}
+              aria-label={t("editPanel.addLight")}
             >
               <Plus className="h-5 w-5" />
             </button>
@@ -150,7 +150,7 @@ export function CardDefinitionModal({
               type="button"
               onClick={handleClose}
               className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
-              aria-label={t("modal.close")}
+              aria-label={t("editPanel.close")}
             >
               <X className="h-5 w-5" />
             </button>
@@ -160,12 +160,12 @@ export function CardDefinitionModal({
           {showAdd && (
             <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 space-y-4 bg-gray-50 dark:bg-white/5">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{t("modal.addOrRemoveLights")}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{t("editPanel.addOrRemoveLight")}</span>
                 <button
                   type="button"
                   onClick={() => setShowAdd(false)}
                   className="p-1 rounded text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10"
-                  aria-label={t("modal.close")}
+                  aria-label={t("editPanel.close")}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -175,8 +175,8 @@ export function CardDefinitionModal({
                 value=""
                 onChange={(v) => v && addLight(v)}
                 filter={lightEntityFilter}
-                placeholder={t("modal.searchLightPlaceholder")}
-                emptyOption={t("modal.chooseLightEmpty")}
+                placeholder={t("editPanel.searchLight")}
+                emptyOption={t("editPanel.chooseLight")}
                 className="[&_label]:sr-only"
               />
               <div className="space-y-2">
@@ -194,7 +194,7 @@ export function CardDefinitionModal({
                         type="button"
                         onClick={() => setLocal((prev) => prev.filter((c) => c.id !== card.id))}
                         className="p-1.5 shrink-0 text-gray-500 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 rounded-lg transition-colors"
-                        aria-label={t("modal.removeLight")}
+                        aria-label={t("editPanel.removeLight")}
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -224,7 +224,7 @@ export function CardDefinitionModal({
                       "flex shrink-0 items-center justify-center w-10 h-10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 disabled:opacity-70",
                       isOn ? "bg-amber-400 text-amber-900 hover:bg-amber-300" : "bg-gray-200 dark:bg-gray-600 text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-500"
                     )}
-                    aria-label={isOn ? t("modal.turnOffLight") : t("modal.turnOnLight")}
+                    aria-label={isOn ? t("editPanel.lightOff") : t("editPanel.lightOn")}
                   >
                     <Lightbulb className="h-5 w-5" strokeWidth={1.5} fill={isOn ? "currentColor" : "none"} />
                   </button>

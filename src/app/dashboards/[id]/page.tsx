@@ -70,28 +70,24 @@ import { cn, generateId } from "@/lib/utils";
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
 const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group"] as const;
 
-const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; labelKey: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { type: "text_card", labelKey: "edit.widgetText", Icon: Type },
-  { type: "climate_card_2", labelKey: "edit.widgetClimate", Icon: Thermometer },
-  { type: "light_card", labelKey: "edit.widgetLight", Icon: Lightbulb },
-  { type: "media_card", labelKey: "edit.widgetMedia", Icon: Music2 },
-  { type: "solar_card", labelKey: "edit.widgetSolar", Icon: Sun },
-  { type: "energy_monitor_card", labelKey: "edit.widgetImageCard", Icon: ImageIcon },
-  { type: "power_usage_card", labelKey: "edit.widgetPowerUsage", Icon: Zap },
-  { type: "stat_pill_card", labelKey: "edit.widgetStatPill", Icon: CircleDot },
-  { type: "sensor_card", labelKey: "edit.widgetSensor", Icon: Gauge },
-  { type: "weather_card", labelKey: "edit.widgetWeather", Icon: CloudSun },
-  { type: "vacuum_card", labelKey: "edit.widgetVacuum", Icon: Bot },
-  { type: "camera_card", labelKey: "edit.widgetCamera", Icon: Video },
-  { type: "pill_card", labelKey: "edit.widgetPill", Icon: CircleDot },
-  { type: "room_card", labelKey: "edit.widgetRoom", Icon: Home },
-  { type: "nuts_card", labelKey: "edit.widgetNuts", Icon: Fuel },
-  { type: "card_group", labelKey: "edit.widgetCardGroup", Icon: LayoutGrid },
+const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { type: "text_card", label: "Tekst", Icon: Type },
+  { type: "climate_card_2", label: "Klimaat", Icon: Thermometer },
+  { type: "light_card", label: "Lamp", Icon: Lightbulb },
+  { type: "media_card", label: "Media", Icon: Music2 },
+  { type: "solar_card", label: "Zonnepanelen", Icon: Sun },
+  { type: "energy_monitor_card", label: "Afbeeldingskaart", Icon: ImageIcon },
+  { type: "power_usage_card", label: "Stroomverbruik", Icon: Zap },
+  { type: "stat_pill_card", label: "Stat pill", Icon: CircleDot },
+  { type: "sensor_card", label: "Sensor", Icon: Gauge },
+  { type: "weather_card", label: "Weer", Icon: CloudSun },
+  { type: "vacuum_card", label: "Stofzuiger", Icon: Bot },
+  { type: "camera_card", label: "Camera", Icon: Video },
+  { type: "pill_card", label: "Pill", Icon: CircleDot },
+  { type: "room_card", label: "Kamer", Icon: Home },
+  { type: "nuts_card", label: "Nuts (Gas/Water)", Icon: Fuel },
+  { type: "card_group", label: "Kaartgroep", Icon: LayoutGrid },
 ];
-
-const WIDGET_DEFAULT_TITLE_KEYS: Record<string, string> = Object.fromEntries(
-  ADDABLE_WIDGET_TILES.map((tile) => [tile.type, tile.type === "text_card" ? "edit.newText" : tile.labelKey])
-);
 
 /** Map widget type to HA domain for filtering entities */
 const WIDGET_TYPE_DOMAIN: Record<string, string> = {
@@ -523,7 +519,7 @@ export default function DashboardEditPage() {
       formData.set("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || t("edit.uploadFailed"));
+      if (!res.ok) throw new Error(json.error || "Upload failed");
       await fetch(apiBase, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -813,7 +809,7 @@ export default function DashboardEditPage() {
     const newWidget: WidgetConfig = {
       id: newId,
       type,
-      title: titleOverride ?? (WIDGET_DEFAULT_TITLE_KEYS[type] ? t(WIDGET_DEFAULT_TITLE_KEYS[type]) : type.replace(/_/g, " ")),
+      title: titleOverride ?? (type === "text_card" ? t("editPanel.newText") : type.replace(/_/g, " ")),
       entity_id: entityId,
       ...(type === "text_card" && { textMode: "title" as const, show_icon: false, icon: "Type" }),
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
@@ -911,7 +907,7 @@ export default function DashboardEditPage() {
     return (
       <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
         <p className="text-sm text-gray-500">
-          {isRoomMode ? "Ongeldige kamer." : "Invalid dashboard id."}
+          {isRoomMode ? t("editPanel.invalidRoom") : t("editPanel.invalidDashboardId")}
         </p>
       </AppShell>
     );
@@ -921,7 +917,7 @@ export default function DashboardEditPage() {
     return (
       <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
         <p className="text-sm text-gray-500">
-          {error ? "Dashboard not found, redirecting…" : "Loading…"}
+          {error ? t("editPanel.dashboardNotFound") : t("editPanel.loading")}
         </p>
       </AppShell>
     );
@@ -937,8 +933,8 @@ export default function DashboardEditPage() {
             type="button"
             onClick={() => setRoomBackgroundOpen((v) => !v)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-            aria-label={t("edit.roomBackground")}
-            title={t("edit.roomBackground")}
+            aria-label={t("editPanel.roomBackground")}
+            title={t("editPanel.roomBackground")}
           >
             <ImageIcon className="h-4 w-4" aria-hidden />
           </button>
@@ -959,7 +955,7 @@ export default function DashboardEditPage() {
                       disabled={uploadingRoomBackground}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 disabled:opacity-50"
                     >
-                      {uploadingRoomBackground ? t("edit.uploading") : t("edit.uploadImage")}
+                      {uploadingRoomBackground ? t("editPanel.uploading") : t("editPanel.uploadImage")}
                     </button>
                     {roomBackground && (
                       <button
@@ -967,7 +963,7 @@ export default function DashboardEditPage() {
                         onClick={handleRoomBackgroundRemove}
                         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
                       >
-                        {t("edit.removeBackground")}
+                        {t("editPanel.removeBackground")}
                       </button>
                     )}
                   </div>
@@ -982,7 +978,7 @@ export default function DashboardEditPage() {
               onClick={() => setAddTileOpen(true)}
               className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
               style={{ backgroundColor: "#4D2FB2" }}
-              aria-label={t("edit.addTile")}
+              aria-label={t("editPanel.addTile")}
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -1001,7 +997,7 @@ export default function DashboardEditPage() {
                 <div className="fixed top-4 right-4 bottom-4 z-[301] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-2xl">
                   <div className="shrink-0 flex items-center justify-between p-5 pb-0">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {addTileStep === "type" ? t("edit.addTile") : t("edit.chooseEntity")}
+                      {addTileStep === "type" ? t("editPanel.addTile") : t("editPanel.chooseEntity")}
                     </h3>
                     <button
                       type="button"
@@ -1012,7 +1008,7 @@ export default function DashboardEditPage() {
                         setAddTileEntitySearch("");
                       }}
                       className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
-                      aria-label={t("modal.close")}
+                      aria-label={t("editPanel.close")}
                     >
                       <X className="h-5 w-5" />
                     </button>
@@ -1020,34 +1016,34 @@ export default function DashboardEditPage() {
                   <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4">
                   {addTileStep === "type" ? (
                     <div className="grid grid-cols-3 gap-2">
-                      {ADDABLE_WIDGET_TILES.map(({ type, labelKey, Icon }) => (
+                      {ADDABLE_WIDGET_TILES.map(({ type, label, Icon }) => (
                         <button
                           key={type}
                           type="button"
                           onClick={() => {
                             if (type === "text_card") {
-                              handleAddTile("text_card", "", t("edit.newText"));
+                              handleAddTile("text_card", "", t("editPanel.newText"));
                               setAddTileOpen(false);
                               return;
                             }
                             if (type === "card_group") {
-                              handleAddTile("card_group", "", t("edit.widgetCardGroup"));
+                              handleAddTile("card_group", "", "Kaartgroep");
                               setAddTileOpen(false);
                               return;
                             }
                             if (type === "room_card") {
-                              const newId = handleAddTile("room_card", "", t("edit.widgetRoom"));
+                              const newId = handleAddTile("room_card", "", "Kamer");
                               if (newId) setEditingWidgetId(newId);
                               return;
                             }
                             if (type === "energy_monitor_card") {
-                              const newId = handleAddTile("energy_monitor_card", "", t("edit.widgetImageCard"));
+                              const newId = handleAddTile("energy_monitor_card", "", "Afbeeldingskaart");
                               if (newId) setEditingWidgetId(newId);
                               setAddTileOpen(false);
                               return;
                             }
                             if (type === "power_usage_card") {
-                              const newId = handleAddTile("power_usage_card", "", t("edit.widgetPowerUsage"));
+                              const newId = handleAddTile("power_usage_card", "", "Stroomverbruik");
                               if (newId) setEditingWidgetId(newId);
                               setAddTileOpen(false);
                               return;
@@ -1059,7 +1055,7 @@ export default function DashboardEditPage() {
                         >
                           <Icon className="h-7 w-7 text-gray-600 dark:text-gray-400" />
                           <span className="text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight">
-                            {t(labelKey)}
+                            {label}
                           </span>
                         </button>
                       ))}
@@ -1081,7 +1077,7 @@ export default function DashboardEditPage() {
                         type="text"
                         value={addTileEntitySearch}
                         onChange={(e) => setAddTileEntitySearch(e.target.value)}
-                        placeholder={t("edit.searchByNameOrEntity")}
+                        placeholder={t("editPanel.addTileSearchPlaceholder")}
                         className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         autoFocus
                       />
@@ -1099,8 +1095,8 @@ export default function DashboardEditPage() {
                             return (
                               <p className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400 text-center">
                                 {entitiesToShow.length === 0
-                                  ? "Geen entities gevonden. Controleer je HA-verbinding in Instellingen."
-                                  : "Geen resultaten voor je zoekopdracht."}
+                                  ? t("editPanel.noEntitiesFound")
+                                  : t("editPanel.noSearchResults")}
                               </p>
                             );
                           }
@@ -1115,7 +1111,7 @@ export default function DashboardEditPage() {
                                 onClick={() => {
                                   if (addTileSelectedType) {
                                     const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                                    const titleOverride = addTileSelectedType === "nuts_card" ? (name || t("edit.widgetNuts")) : addTileSelectedType === "energy_monitor_card" ? (name || t("edit.widgetImageCard")) : addTileSelectedType === "power_usage_card" ? (name || t("edit.widgetPowerUsage")) : addTileSelectedType === "stat_pill_card" ? (name || t("edit.widgetStatPill")) : undefined;
+                                    const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "power_usage_card" ? (name || "Stroomverbruik") : addTileSelectedType === "stat_pill_card" ? (name || "Stat") : undefined;
                                     const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride);
                                     if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card") && newId) setEditingWidgetId(newId);
                                   }
@@ -1146,7 +1142,7 @@ export default function DashboardEditPage() {
                 onClick={handleSave}
                 disabled={saveMutation.isPending}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-white/20"
-                aria-label={t("edit.doneEditing")}
+                aria-label={t("editPanel.doneEditing")}
               >
                 <Check className="h-4 w-4" />
               </button>
@@ -1158,7 +1154,7 @@ export default function DashboardEditPage() {
           onClick={() => setEditMode(true)}
           className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
           style={{ backgroundColor: "#4D2FB2" }}
-          aria-label={t("edit.editDashboard")}
+          aria-label={t("editPanel.editDashboard")}
         >
           <Pencil className="h-4 w-4" />
         </button>
@@ -1227,7 +1223,7 @@ export default function DashboardEditPage() {
                         type="button"
                         onClick={() => setEditingWidgetId(w.id)}
                         className="absolute -right-8 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gray-600 text-white shadow hover:bg-gray-700"
-                        aria-label={t("edit.editTile")}
+                        aria-label={t("editPanel.editTile")}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -1235,7 +1231,7 @@ export default function DashboardEditPage() {
                         type="button"
                         onClick={() => handleRemoveTile(w.id)}
                         className="absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
-                        aria-label={t("edit.removeTile")}
+                        aria-label={t("editPanel.remove")}
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -1338,7 +1334,7 @@ export default function DashboardEditPage() {
               key={w.id}
               widget={{
                 id: w.id,
-                title: w.title ?? t("edit.newText"),
+                title: w.title ?? t("editPanel.newText"),
                 textMode: (w as { textMode?: "title" | "subtitle" | "text" }).textMode ?? "title",
                 show_icon: w.show_icon ?? false,
                 icon: w.icon ?? "Type",
@@ -1364,7 +1360,7 @@ export default function DashboardEditPage() {
               key={w.id}
               widget={{
                 id: w.id,
-                title: w.title ?? "Lamp",
+                title: w.title ?? t("editPanel.iconLabelLamp"),
                 entity_id: w.entity_id,
                 icon: w.icon,
               }}
@@ -1436,7 +1432,7 @@ export default function DashboardEditPage() {
           const firstPowerUsage = widgets.find((w) => w.type === "power_usage_card");
           return firstPowerUsage ? (
             <FloatingPowerUsageCard
-              title={firstPowerUsage.title ?? t("edit.widgetPowerUsage")}
+              title={firstPowerUsage.title ?? "Stroomverbruik"}
               entity_id={firstPowerUsage.entity_id}
               device_entity_ids={firstPowerUsage.device_entity_ids}
               cost_per_kwh={firstPowerUsage.cost_per_kwh}
@@ -1493,7 +1489,7 @@ export default function DashboardEditPage() {
                   key={w.id}
                   widgetId={w.id}
                   widgetIndex={i}
-                  title={w.title ?? t("edit.widgetSensor")}
+                  title={w.title ?? "Sensor"}
                   entity_id={w.entity_id}
                   icon={w.icon}
                   show_icon={w.show_icon !== false}
@@ -1708,16 +1704,16 @@ export default function DashboardEditPage() {
               <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {(editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card")
-                  ? t("edit.editText")
+                  ? t("editPanel.editText")
                   : editingWidget.type === "card_group"
                     ? editingGroupChildId
-                      ? t("edit.editCardInGroup")
-                      : t("edit.editCardGroup")
+                      ? t("editPanel.editCardInGroup")
+                      : t("editPanel.editCardGroup")
                     : editingWidget.type === "room_card"
-                      ? t("edit.editRoom")
+                      ? t("editPanel.editRoom")
                       : editingWidget.type === "power_usage_card"
-                        ? t("edit.editPowerUsage")
-                        : t("edit.editTile")}
+                        ? t("editPanel.editPowerUsage")
+                        : t("editPanel.editTile")}
               </h3>
               <button
                 type="button"
@@ -1729,7 +1725,7 @@ export default function DashboardEditPage() {
                   }
                 }}
                 className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
-                aria-label={t("modal.close")}
+                aria-label={t("editPanel.close")}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1739,7 +1735,7 @@ export default function DashboardEditPage() {
                   <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Tekstwaarde
+                        {t("editPanel.textValue")}
                       </label>
                       <input
                         type="text"
@@ -1747,13 +1743,13 @@ export default function DashboardEditPage() {
                         onChange={(e) =>
                           setEditForm((prev) => ({ ...prev, title: e.target.value }))
                         }
-                        placeholder={t("edit.roomTitlePlaceholder")}
+                        placeholder={t("editPanel.placeholderTitleExample")}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Type
+                        {t("editPanel.type")}
                       </label>
                       <select
                         value={editForm.textMode ?? "title"}
@@ -1762,9 +1758,9 @@ export default function DashboardEditPage() {
                         }
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                       >
-                        <option value="title">Titel</option>
-                        <option value="subtitle">Ondertitel</option>
-                        <option value="text">Tekst</option>
+                        <option value="title">{t("editPanel.title")}</option>
+                        <option value="subtitle">{t("editPanel.subtitle")}</option>
+                        <option value="text">{t("editPanel.text")}</option>
                       </select>
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -1774,12 +1770,12 @@ export default function DashboardEditPage() {
                         onChange={(e) => setEditForm((prev) => ({ ...prev, show_icon: e.target.checked }))}
                         className="rounded border-gray-300 dark:border-gray-600"
                       />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{t("edit.showIcon")}</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t("editPanel.showIcon")}</span>
                     </label>
                     {(editForm.show_icon ?? false) && (
                       <div>
                         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {t("edit.icon")}
+                          {t("editPanel.icon")}
                         </label>
                         <select
                           value={editForm.icon ?? "Type"}
@@ -1796,7 +1792,7 @@ export default function DashboardEditPage() {
                       <>
                         <div>
                           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                            Breedte (px)
+                            {t("editPanel.widthPx")}
                           </label>
                           <input
                             type="number"
@@ -1811,11 +1807,11 @@ export default function DashboardEditPage() {
                             placeholder="280"
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                           />
-                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Standaard 280 px</p>
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.default280px")}</p>
                         </div>
                         <div>
                           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                            Schakelaar (optioneel)
+                            {t("editPanel.switchOptional")}
                           </label>
                           <EntitySelectWithSearch
                             entities={entities}
@@ -1827,10 +1823,10 @@ export default function DashboardEditPage() {
                               e.entity_id.startsWith("input_boolean.")
                             }
                             label=""
-                            placeholder={t("edit.entityIdPlaceholder")}
-                            emptyOption={t("edit.none")}
+                            placeholder={t("editPanel.entityPlaceholder")}
+                            emptyOption={t("editPanel.none")}
                           />
-                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont aan/uit-knop aan het eind van de kaart</p>
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.switchHint")}</p>
                         </div>
                       </>
                     )}
@@ -1851,19 +1847,19 @@ export default function DashboardEditPage() {
                                 : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                             )}
                           >
-                            {tab === "algemeen" ? t("edit.general") : t("edit.conditions")}
+                            {tab === "algemeen" ? t("editPanel.general") : t("editPanel.conditions")}
                           </button>
                         ))}
                       </div>
                       {editTab === "algemeen" && (
                         <>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Naam</label>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.name")}</label>
                         <input
                           type="text"
                           value={editForm.title}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
-                          placeholder={t("edit.roomTitlePlaceholder")}
+                          placeholder={t("editPanel.placeholderTitleExample")}
                           className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         />
                       </div>
@@ -1872,12 +1868,12 @@ export default function DashboardEditPage() {
                         value={editForm.entity_id}
                         onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
                         filter={(e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + "."))}
-                        label={t("edit.entityLabel")}
-                        placeholder={t("edit.searchByNameOrEntity")}
-                        emptyOption={t("edit.none")}
+                        label={t("editPanel.entity")}
+                        placeholder={t("editPanel.searchEntity")}
+                        emptyOption={t("editPanel.none")}
                       />
                       <label className="flex items-center justify-between gap-3 cursor-pointer">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Toon entiteitstatus</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("editPanel.showEntityState")}</span>
                         <button
                           type="button"
                           role="switch"
@@ -1897,13 +1893,13 @@ export default function DashboardEditPage() {
                         </button>
                       </label>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("edit.icon")}</label>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.icon")}</label>
                         <input
                           type="text"
                           value={pillIconSearch}
                           onChange={(e) => setPillIconSearch(e.target.value)}
                           onFocus={() => setPillIconSearch(pillIconSearch || (editForm.icon ?? ""))}
-                          placeholder={t("edit.iconSearchPlaceholder")}
+                          placeholder={t("editPanel.iconSearchPlaceholder")}
                           className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         />
                         <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
@@ -1918,7 +1914,7 @@ export default function DashboardEditPage() {
                               !editForm.icon ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                             )}
                           >
-                            Default (CircleDot)
+                            {t("editPanel.defaultCircleDot")}
                           </button>
                           {SENSOR_ICON_OPTIONS.filter((name) => name.toLowerCase().includes((pillIconSearch || "").toLowerCase())).map((name) => (
                             <button
@@ -1942,7 +1938,7 @@ export default function DashboardEditPage() {
                       )}
                       {editTab === "voorwaarden" && (
                       <div>
-                        <p className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Voorwaardelijke kleur (eerste match)</p>
+                        <p className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.conditionalColor")}</p>
                         {(editForm.conditions ?? []).map((cond, idx) => (
                           <div key={idx} className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2 mb-1.5">
                             <select
@@ -1970,7 +1966,7 @@ export default function DashboardEditPage() {
                                   conditions: (prev.conditions ?? []).map((c, i) => (i === idx ? { ...c, value: e.target.value } : c)),
                                 }))
                               }
-                              placeholder={t("edit.value")}
+                              placeholder={t("editPanel.value")}
                               className="w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                             />
                             <select
@@ -1998,7 +1994,7 @@ export default function DashboardEditPage() {
                                 }))
                               }
                               className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                              aria-label={t("edit.removeCondition")}
+                              aria-label={t("editPanel.removeCondition")}
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -2014,7 +2010,7 @@ export default function DashboardEditPage() {
                           }
                           className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full"
                         >
-                          + {t("edit.addCondition")}
+                          {"+ " + t("editPanel.addCondition")}
                         </button>
                       </div>
                       )}
@@ -2034,13 +2030,13 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "weergave" ? t("edit.view") : t("edit.cards")}
+                          {tab === "weergave" ? t("editPanel.display") : t("editPanel.cards")}
                         </button>
                       ))}
                     </div>
                     {editTab === "weergave" && (
                   <div className="space-y-3">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("edit.alignment")}</p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.alignment")}</p>
                     <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5">
                       {(["start", "center", "end", "between"] as const).map((align) => (
                         <button
@@ -2058,7 +2054,7 @@ export default function DashboardEditPage() {
                               : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                           )}
                         >
-                          {align === "start" ? t("edit.left") : align === "center" ? t("edit.center") : align === "end" ? t("edit.right") : t("edit.between")}
+                          {align === "start" ? t("editPanel.left") : align === "center" ? t("editPanel.center") : align === "end" ? t("editPanel.right") : t("editPanel.between")}
                         </button>
                       ))}
                     </div>
@@ -2066,7 +2062,7 @@ export default function DashboardEditPage() {
                     )}
                     {editTab === "kaarten" && (
                   <div className="space-y-3">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("edit.cardsInGroup")}</p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardsInGroup")}</p>
                     <ul className="space-y-1 max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
                       {(editingWidget.children ?? []).map((c) => (
                         <li key={c.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
@@ -2076,8 +2072,8 @@ export default function DashboardEditPage() {
                               type="button"
                               onClick={() => setEditingGroupChildId(c.id)}
                               className="p-1 rounded text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
-                              aria-label={t("edit.editTile")}
-                              title={t("edit.editCard")}
+                              aria-label={t("editPanel.edit")}
+                              title={t("editPanel.editCard")}
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -2090,7 +2086,7 @@ export default function DashboardEditPage() {
                                 saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                               }}
                               className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                              aria-label={t("edit.delete")}
+                              aria-label={t("editPanel.remove")}
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -2098,12 +2094,12 @@ export default function DashboardEditPage() {
                         </li>
                       ))}
                     </ul>
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("edit.addCard")}</p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.addCard")}</p>
                     <input
                       type="text"
                       value={groupAddEntitySearch}
                       onChange={(e) => setGroupAddEntitySearch(e.target.value)}
-                      placeholder={t("edit.searchByNameOrEntity")}
+                      placeholder={t("editPanel.searchEntityPlaceholder")}
                       className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                     />
                     <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
@@ -2149,7 +2145,7 @@ export default function DashboardEditPage() {
                   <>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                    {t("edit.name")}
+                    {t("editPanel.name")}
                   </label>
                   <input
                     type="text"
@@ -2157,7 +2153,7 @@ export default function DashboardEditPage() {
                     onChange={(e) =>
                       setEditForm((prev) => ({ ...prev, title: e.target.value }))
                     }
-                    placeholder={t("edit.tileName")}
+                    placeholder={t("editPanel.tileNamePlaceholder")}
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                   />
                 </div>
@@ -2175,17 +2171,17 @@ export default function DashboardEditPage() {
                     }
                     label={
                       editingWidget.type === "solar_card"
-                        ? t("edit.yieldLabel")
+                        ? t("editPanel.yieldEntity")
                         : editingWidget.type === "energy_monitor_card"
-                          ? t("edit.entityForConditions")
+                          ? t("editPanel.entityForConditions")
                           : editingWidget.type === "power_usage_card"
-                            ? t("edit.totalConsumption")
+                            ? t("editPanel.totalUsage")
                             : editingWidget.type === "stat_pill_card"
-                              ? t("edit.sensorLabel")
-                              : t("edit.entityLabel")
+                              ? t("editPanel.sensor")
+                              : t("editPanel.entity")
                     }
-                    placeholder={t("edit.searchByNameOrEntity")}
-                    emptyOption={editingWidget.type === "energy_monitor_card" ? t("edit.noneImageOnly") : t("edit.none")}
+                    placeholder={t("editPanel.searchEntity")}
+                    emptyOption={editingWidget.type === "energy_monitor_card" ? t("editPanel.noEntityImageOnly") : t("editPanel.none")}
                   />
                 )}
                 {editingWidget.type === "media_card" && (
@@ -2203,17 +2199,17 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "algemeen" ? t("edit.general") : t("edit.view")}
+                          {tab === "algemeen" ? t("editPanel.general") : t("editPanel.display")}
                         </button>
                       ))}
                     </div>
                     {editTab === "algemeen" && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{t("edit.mediaPlayerSelectedAbove")}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.mediaPlayerSelectedAbove")}</p>
                     )}
                     {editTab === "weergave" && (
                       <div className="space-y-3">
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("edit.cardWidthPx")}</label>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Breedte kaart (px)</label>
                           <input
                             type="number"
                             min={240}
@@ -2230,7 +2226,7 @@ export default function DashboardEditPage() {
                           <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">240–500 px (standaard 320)</p>
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("edit.cardHeightPx")}</label>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Hoogte kaart (px)</label>
                           <input
                             type="number"
                             min={120}
@@ -2263,13 +2259,13 @@ export default function DashboardEditPage() {
                             : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                         )}
                       >
-                        {t("edit.general")}
+                        Algemeen
                       </button>
                     </div>
                     {editTab === "algemeen" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {t("rooms.icon")}
+                      Icoon
                     </label>
                     <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5">
                       {LIGHT_ICON_OPTIONS.map((key) => {
@@ -2281,16 +2277,16 @@ export default function DashboardEditPage() {
                               : key === "spotlight"
                                 ? "Spotlight"
                                 : key === "lamp"
-                                  ? "Lamp"
+                                  ? t("editPanel.iconLabelLamp")
                                   : key === "lamp-ceiling"
-                                    ? "Plafond"
+                                    ? t("editPanel.iconLabelCeiling")
                                     : key === "lamp-desk"
-                                      ? "Bureau"
+                                      ? t("editPanel.iconLabelDesk")
                                       : key === "lamp-floor"
-                                        ? "Vloer"
+                                        ? t("editPanel.iconLabelFloor")
                                         : key === "lamp-wall-down"
-                                          ? "Wall down"
-                                          : "Wall up";
+                                          ? t("editPanel.wallDown")
+                                          : t("editPanel.wallUp");
                         return (
                           <button
                             key={key}
@@ -2329,7 +2325,7 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "entiteiten" ? t("edit.entities") : tab === "algemeen" ? t("edit.general") : tab === "achtergrond" ? t("edit.background") : t("edit.view")}
+                          {tab === "entiteiten" ? t("editPanel.entities") : tab === "algemeen" ? t("editPanel.general") : tab === "achtergrond" ? t("editPanel.background") : t("editPanel.display")}
                         </button>
                       ))}
                     </div>
@@ -2340,11 +2336,11 @@ export default function DashboardEditPage() {
                             entities={entities}
                             value={editForm.entity_id ?? ""}
                             onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v || "" }))}
-                            label={t("edit.sensorValueDisplay")}
-                            placeholder={t("edit.searchByNameOrEntity")}
-                            emptyOption={t("edit.none")}
+                            label={t("editPanel.sensorValueDisplay")}
+                            placeholder={t("editPanel.searchEntity")}
+                            emptyOption={t("editPanel.none")}
                           />
-                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Optioneel. Toont de actuele waarde van de sensor op de kaart.</p>
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.sensorValueHint")}</p>
                         </div>
                         <div>
                           <EntitySelectWithSearch
@@ -2352,11 +2348,11 @@ export default function DashboardEditPage() {
                             value={editForm.light_entity_id ?? ""}
                             onChange={(v) => setEditForm((prev) => ({ ...prev, light_entity_id: v || undefined }))}
                             filter={(e) => e.entity_id.startsWith("light.") || e.entity_id.startsWith("group.")}
-                            label={t("edit.widgetLight")}
-                            placeholder={t("edit.searchLightPlaceholder")}
-                            emptyOption={t("edit.none")}
+                            label={t("editPanel.light")}
+                            placeholder={t("editPanel.searchLight")}
+                            emptyOption={t("editPanel.none")}
                           />
-                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont een lamp-icoon om het licht aan/uit te zetten. Tik op de kaart om meerdere lampen los te schakelen in de modal.</p>
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.lightHint")}</p>
                         </div>
                         <div>
                           <EntitySelectWithSearch
@@ -2364,11 +2360,11 @@ export default function DashboardEditPage() {
                             value={editForm.media_player_entity_id ?? ""}
                             onChange={(v) => setEditForm((prev) => ({ ...prev, media_player_entity_id: v || undefined }))}
                             filter={(e) => e.entity_id.startsWith("media_player.")}
-                            label={t("edit.widgetMedia")}
-                            placeholder={t("edit.searchMediaPlaceholder")}
-                            emptyOption={t("edit.none")}
+                            label={t("editPanel.mediaPlayer")}
+                            placeholder={t("editPanel.searchMediaPlayer")}
+                            emptyOption={t("editPanel.none")}
                           />
-                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont een music-icoon wanneer er iets wordt afgespeeld.</p>
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.mediaPlayerHint")}</p>
                         </div>
                         <div>
                           <EntitySelectWithSearch
@@ -2376,23 +2372,23 @@ export default function DashboardEditPage() {
                             value={editForm.climate_entity_id ?? ""}
                             onChange={(v) => setEditForm((prev) => ({ ...prev, climate_entity_id: v || undefined }))}
                             filter={(e) => e.entity_id.startsWith("climate.") || e.entity_id.startsWith("sensor.")}
-                            label={t("edit.widgetClimate")}
-                            placeholder={t("edit.searchClimatePlaceholder")}
-                            emptyOption={t("edit.none")}
+                            label={t("editPanel.climate")}
+                            placeholder={t("editPanel.searchClimate")}
+                            emptyOption={t("editPanel.none")}
                           />
-                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Toont temperatuur met thermometer-icoon.</p>
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.climateHint")}</p>
                         </div>
                       </div>
                     )}
                     {editTab === "algemeen" && (
                       <div className="space-y-3">
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("edit.icon")}</label>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.icon")}</label>
                           <input
                             type="text"
                             value={iconSearch || ""}
                             onChange={(e) => setIconSearch(e.target.value)}
-                            placeholder={t("edit.iconSearchPlaceholder")}
+                            placeholder={t("editPanel.searchIcon")}
                             className="mb-1.5 w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                           />
                           <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-28 overflow-auto">
@@ -2416,7 +2412,7 @@ export default function DashboardEditPage() {
                           </div>
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Kleur icoon-badge</label>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.iconBadgeColor")}</label>
                           <div className="flex items-center gap-2">
                             <input
                               type="color"
@@ -2438,7 +2434,7 @@ export default function DashboardEditPage() {
                     {editTab === "achtergrond" && (
                       <div className="space-y-3">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {t("edit.roomBackgroundHint")}
+                          {t("editPanel.backgroundImageHint")}
                         </p>
                         {editForm.background_image && (
                           <div
@@ -2448,7 +2444,7 @@ export default function DashboardEditPage() {
                         )}
                         <div className="flex gap-2">
                           <label className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/10">
-                            {uploadingRoomBg ? t("edit.uploading") : t("edit.uploadImage")}
+                            {uploadingRoomBg ? t("editPanel.uploading") : t("editPanel.uploadImage")}
                             <input
                               type="file"
                               accept="image/jpeg,image/png,image/webp,image/gif"
@@ -2463,7 +2459,7 @@ export default function DashboardEditPage() {
                                   formData.set("file", file);
                                   const res = await fetch("/api/upload", { method: "POST", body: formData });
                                   const json = await res.json();
-                                  if (!res.ok) throw new Error(json.error || t("edit.uploadFailed"));
+                                  if (!res.ok) throw new Error(json.error || "Upload failed");
                                   setEditForm((prev) => ({ ...prev, background_image: json.url }));
                                 } finally {
                                   setUploadingRoomBg(false);
@@ -2478,7 +2474,7 @@ export default function DashboardEditPage() {
                               onClick={() => setEditForm((prev) => ({ ...prev, background_image: undefined }))}
                               className="rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
                             >
-                              {t("edit.delete")}
+                              {t("editPanel.remove")}
                             </button>
                           )}
                         </div>
@@ -2486,7 +2482,7 @@ export default function DashboardEditPage() {
                           type="url"
                           value={editForm.background_image ?? ""}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, background_image: e.target.value || undefined }))}
-                          placeholder={t("edit.imageUrlPlaceholder")}
+                          placeholder={t("editPanel.backgroundUrlPlaceholder")}
                           className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         />
                       </div>
@@ -2494,7 +2490,7 @@ export default function DashboardEditPage() {
                     {editTab === "weergave" && (
                       <div className="space-y-3">
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("edit.cardWidthPx")}</label>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardWidthPx")}</label>
                           <input
                             type="number"
                             min={200}
@@ -2508,10 +2504,10 @@ export default function DashboardEditPage() {
                             placeholder="280"
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                           />
-                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–500 px (standaard 280)</p>
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange280")}</p>
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("edit.cardHeightPx")}</label>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardHeightPx")}</label>
                           <input
                             type="number"
                             min={80}
@@ -2525,7 +2521,7 @@ export default function DashboardEditPage() {
                             placeholder="120"
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                           />
-                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">80–300 px (standaard 120)</p>
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange120")}</p>
                         </div>
                       </div>
                     )}
@@ -2546,7 +2542,7 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "algemeen" ? t("edit.general") : t("edit.view")}
+                          {tab === "algemeen" ? t("editPanel.general") : t("editPanel.display")}
                         </button>
                       ))}
                     </div>
@@ -2554,7 +2550,7 @@ export default function DashboardEditPage() {
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.icon")}
+                        {t("editPanel.icon")}
                       </label>
                       <select
                         value={editForm.icon ?? "Thermometer"}
@@ -2580,9 +2576,9 @@ export default function DashboardEditPage() {
                         }))
                       }
                       filter={(e) => e.entity_id.startsWith("sensor.")}
-                      label={t("edit.humidityOptional")}
-                      placeholder={t("edit.searchSensorPlaceholder")}
-                      emptyOption={t("edit.none")}
+                      label={t("editPanel.humidityOptional")}
+                      placeholder={t("editPanel.searchSensor")}
+                      emptyOption={t("editPanel.none")}
                     />
                     </>
                     )}
@@ -2590,7 +2586,7 @@ export default function DashboardEditPage() {
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.cardWidthPx")}
+                        {t("editPanel.cardWidthPx")}
                       </label>
                       <input
                         type="number"
@@ -2608,11 +2604,11 @@ export default function DashboardEditPage() {
                         placeholder="320"
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–500 px (standaard 320)</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange320")}</p>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.cardHeightPx")}
+                        {t("editPanel.cardHeightPx")}
                       </label>
                       <input
                         type="number"
@@ -2630,7 +2626,7 @@ export default function DashboardEditPage() {
                         placeholder="180"
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">100–400 px (standaard 180)</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange180")}</p>
                     </div>
                     </>
                     )}
@@ -2649,7 +2645,7 @@ export default function DashboardEditPage() {
                             : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                         )}
                       >
-                        {t("edit.general")}
+                        {t("editPanel.general")}
                       </button>
                     </div>
                     {editTab === "algemeen" && (
@@ -2663,9 +2659,9 @@ export default function DashboardEditPage() {
                       }))
                     }
                     filter={(e) => e.entity_id.startsWith("sensor.")}
-                    label={t("edit.consumptionOptional")}
-                    placeholder={t("edit.searchSensorPlaceholder")}
-                    emptyOption={t("edit.none")}
+                    label={t("editPanel.consumptionOptional")}
+                    placeholder={t("editPanel.searchSensor")}
+                    emptyOption={t("editPanel.none")}
                   />
                     )}
                   </>
@@ -2685,7 +2681,7 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "achtergrond" ? t("edit.background") : tab === "weergave" ? t("edit.view") : t("edit.conditions")}
+                          {tab === "achtergrond" ? t("editPanel.background") : tab === "weergave" ? t("editPanel.display") : t("editPanel.conditions")}
                         </button>
                       ))}
                     </div>
@@ -2869,7 +2865,7 @@ export default function DashboardEditPage() {
                   <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.devicesPerDeviceConsumption")}
+                        Apparaten (per-apparaat verbruik)
                       </label>
                       <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
                         Selecteer energie-sensoren voor een breakdown per apparaat. Bijv. sensor.tv_energy, sensor.fridge_energy.
@@ -2943,7 +2939,7 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "algemeen" ? t("edit.general") : t("edit.conditions")}
+                          {tab === "algemeen" ? t("editPanel.general") : t("editPanel.conditions")}
                         </button>
                       ))}
                     </div>
@@ -2965,7 +2961,7 @@ export default function DashboardEditPage() {
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.icon")}
+                        Icoon
                       </label>
                       <select
                         value={editForm.icon ?? "Sun"}
@@ -3075,25 +3071,25 @@ export default function DashboardEditPage() {
                               }))
                             }
                             className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            aria-label={t("edit.removeCondition")}
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            conditions: [...(prev.conditions ?? []), { operator: "eq", value: "", color: "green" }],
-                          }))
-                        }
-                        className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full"
-                      >
-                        + {t("edit.addCondition")}
-                      </button>
-                    </div>
+aria-label={t("editPanel.removeCondition")}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              conditions: [...(prev.conditions ?? []), { operator: "eq", value: "", color: "green" }],
+                            }))
+                          }
+                          className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full"
+                        >
+                          {"+ " + t("editPanel.addCondition")}
+                        </button>
+                      </div>
                     )}
                   </>
                 )}
@@ -3112,7 +3108,7 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "algemeen" ? t("edit.general") : t("edit.view")}
+                          {tab === "algemeen" ? t("editPanel.general") : t("editPanel.display")}
                         </button>
                       ))}
                     </div>
@@ -3122,7 +3118,7 @@ export default function DashboardEditPage() {
                       Vacuum Room (scripts)
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      Kies scripts en geef ze optioneel een weergavenaam.
+                      {t("editPanel.vacuumScriptsHint")}
                     </p>
                     <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 p-2 space-y-1 mb-2">
                       {entities
@@ -3204,7 +3200,7 @@ export default function DashboardEditPage() {
                         filter={(e) => e.entity_id.startsWith("sensor.")}
                         label="Sensor onder status (bijv. cleaned area)"
                         placeholder="Zoek sensor…"
-                        emptyOption={t("edit.none")}
+                        emptyOption="Geen"
                       />
                     </div>
                   </div>
@@ -3212,14 +3208,14 @@ export default function DashboardEditPage() {
                     {editTab === "weergave" && (
                   <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.icon")}
+                        Icoon
                       </label>
                       <input
                         type="text"
                         value={vacuumIconSearch}
                         onChange={(e) => setVacuumIconSearch(e.target.value)}
                         onFocus={() => setVacuumIconSearch(vacuumIconSearch || (editForm.icon ?? ""))}
-                        placeholder={t("edit.iconSearchPlaceholder")}
+                        placeholder="Zoek icoon (bijv. home, bot, sparkles…)"
                         className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                       <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
@@ -3278,21 +3274,21 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "algemeen" ? t("edit.general") : t("edit.conditionalConditions")}
+                          {tab === "algemeen" ? t("editPanel.general") : t("editPanel.conditions")}
                         </button>
                       ))}
                     </div>
                     {editTab === "algemeen" && (
                       <>
                         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {t("edit.icon")}
+                          Icoon
                         </label>
                         <input
                           type="text"
                           value={sensorIconSearch}
                           onChange={(e) => setSensorIconSearch(e.target.value)}
                           onFocus={() => setSensorIconSearch(sensorIconSearch || (editForm.icon ?? ""))}
-                          placeholder={t("edit.iconSearchPlaceholder")}
+                          placeholder="Zoek icoon (bijv. gauge, thermometer…)"
                           className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         />
                         <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
@@ -3359,7 +3355,7 @@ export default function DashboardEditPage() {
                             className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                           />
                           <label htmlFor="sensor-show-icon" className="text-sm text-gray-700 dark:text-gray-300">
-                            {t("edit.showIcon")}
+                            Icoon tonen
                           </label>
                         </div>
                       </>
@@ -3403,7 +3399,7 @@ export default function DashboardEditPage() {
                                   ),
                                 }))
                               }
-                              placeholder={t("edit.value")}
+                              placeholder={t("editPanel.value")}
                               className="w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                             />
                             <select
@@ -3433,7 +3429,7 @@ export default function DashboardEditPage() {
                                 }))
                               }
                               className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                              aria-label={t("edit.removeCondition")}
+                              aria-label={t("editPanel.removeCondition")}
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -3449,7 +3445,7 @@ export default function DashboardEditPage() {
                           }
                           className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full"
                         >
-                          + {t("edit.addCondition")}
+                          {"+ " + t("editPanel.addCondition")}
                         </button>
                       </div>
                     )}
@@ -3470,7 +3466,7 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "algemeen" ? t("edit.general") : t("edit.conditions")}
+                          {tab === "algemeen" ? t("editPanel.general") : t("editPanel.conditions")}
                         </button>
                       ))}
                     </div>
@@ -3507,14 +3503,14 @@ export default function DashboardEditPage() {
                     </p>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.icon")}
+                        Icoon
                       </label>
                       <input
                         type="text"
                         value={pillIconSearch}
                         onChange={(e) => setPillIconSearch(e.target.value)}
                         onFocus={() => setPillIconSearch(pillIconSearch || (editForm.icon ?? ""))}
-                        placeholder={t("edit.iconSearchPlaceholder")}
+                        placeholder="Zoek icoon (bijv. CircleDot, Sun…)"
                         className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                       <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
@@ -3599,7 +3595,7 @@ export default function DashboardEditPage() {
                                 ),
                               }))
                             }
-                            placeholder={t("edit.value")}
+                            placeholder="Waarde"
                             className="w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                           />
                           <select
@@ -3629,7 +3625,7 @@ export default function DashboardEditPage() {
                               }))
                             }
                             className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            aria-label={t("edit.removeCondition")}
+                            aria-label={t("editPanel.removeCondition")}
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -3645,7 +3641,7 @@ export default function DashboardEditPage() {
                         }
                         className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full"
                       >
-                        + {t("edit.addCondition")}
+                        {"+ " + t("editPanel.addCondition")}
                       </button>
                     </div>
                     )}
@@ -3666,7 +3662,7 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "algemeen" ? t("edit.general") : t("edit.view")}
+                          {tab === "algemeen" ? t("editPanel.general") : t("editPanel.display")}
                         </button>
                       ))}
                     </div>
@@ -3726,7 +3722,7 @@ export default function DashboardEditPage() {
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.cardWidthPx")}
+                        Breedte kaart (px)
                       </label>
                       <input
                         type="number"
@@ -3748,7 +3744,7 @@ export default function DashboardEditPage() {
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.cardHeightPx")}
+                        Hoogte kaart (px)
                       </label>
                       <input
                         type="number"
@@ -3787,7 +3783,7 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "algemeen" ? t("edit.general") : t("edit.view")}
+                          {tab === "algemeen" ? t("editPanel.general") : t("editPanel.display")}
                         </button>
                       ))}
                     </div>
@@ -3823,7 +3819,7 @@ export default function DashboardEditPage() {
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.cardWidthPx")}
+                        Breedte kaart (px)
                       </label>
                       <input
                         type="number"
@@ -3845,7 +3841,7 @@ export default function DashboardEditPage() {
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.cardHeightPx")}
+                        Hoogte kaart (px)
                       </label>
                       <input
                         type="number"
@@ -3884,7 +3880,7 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "algemeen" ? t("edit.general") : t("edit.view")}
+                          {tab === "algemeen" ? t("editPanel.general") : t("editPanel.display")}
                         </button>
                       ))}
                     </div>
@@ -3892,7 +3888,7 @@ export default function DashboardEditPage() {
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("edit.icon")}
+                        Icoon
                       </label>
                       <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto">
                         {(["Fuel", "Droplets", "Zap", "Gauge", "Thermometer"].filter((n) => CARD_ICON_OPTIONS.includes(n)) as string[]).map((name) => (
@@ -3949,7 +3945,7 @@ export default function DashboardEditPage() {
                       value={editForm.entity_id ?? ""}
                       onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
                       filter={(e) => e.entity_id.startsWith("sensor.")}
-                      label={t("edit.entityDailyConsumption")}
+                      label="Entity dagverbruik (totaal per dag)"
                       placeholder="Zoek sensor…"
                       emptyOption="Kies entity…"
                     />
@@ -3960,7 +3956,7 @@ export default function DashboardEditPage() {
                         setEditForm((prev) => ({ ...prev, current_entity_id: v || undefined }))
                       }
                       filter={(e) => e.entity_id.startsWith("sensor.")}
-                      label={t("edit.entityCurrentConsumption")}
+                      label="Entity huidig verbruik (optioneel)"
                       placeholder="Zoek sensor…"
                       emptyOption="Geen (toont 0 voor huidig)"
                     />
@@ -3983,7 +3979,7 @@ export default function DashboardEditPage() {
                         placeholder="10"
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("edit.scaleVerticalBar")}</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Schaal voor verticale verbruiksbalk</p>
                     </div>
                     </>
                     )}
@@ -4119,9 +4115,9 @@ export default function DashboardEditPage() {
                           });
                         }}
                         className="rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        aria-label={t("modal.removeGroup")}
+                        aria-label={t("editPanel.removeCardGroup")}
                       >
-                        {t("edit.delete")}
+                        {t("editPanel.remove")}
                       </button>
                       <button
                         type="button"
@@ -4129,16 +4125,16 @@ export default function DashboardEditPage() {
                           handleDuplicateTile(editingWidgetId!);
                         }}
                         className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
-                        aria-label={t("modal.duplicateGroup")}
+                        aria-label={t("editPanel.duplicateCardGroup")}
                       >
-                        {t("edit.duplicate")}
+                        {t("editPanel.duplicate")}
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingWidgetId(null)}
                         className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300"
                       >
-                        {t("edit.cancel")}
+                        {t("editPanel.cancel")}
                       </button>
                     </>
                   ) : (
@@ -4159,9 +4155,9 @@ export default function DashboardEditPage() {
                       });
                     }}
                     className="rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    aria-label={t("modal.removeCard")}
+                    aria-label={t("editPanel.removeCard")}
                   >
-                    {t("edit.delete")}
+                    {t("editPanel.remove")}
                   </button>
                   <div className="flex gap-2">
                   <button
@@ -4169,7 +4165,7 @@ export default function DashboardEditPage() {
                     onClick={() => setEditingWidgetId(null)}
                     className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300"
                   >
-                    {t("edit.cancel")}
+                    {t("editPanel.cancel")}
                   </button>
                   <button
                     type="button"
@@ -4177,9 +4173,9 @@ export default function DashboardEditPage() {
                       handleDuplicateTile(editingWidgetId!);
                     }}
                     className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
-                    aria-label={t("modal.duplicateCard")}
+                    aria-label={t("editPanel.duplicateCard")}
                   >
-                    {t("edit.duplicate")}
+                    {t("editPanel.duplicate")}
                   </button>
                       <button
                     type="button"

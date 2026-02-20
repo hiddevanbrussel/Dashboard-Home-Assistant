@@ -7,13 +7,13 @@ import { getEntities } from "@/lib/ha/rest";
  * Client polls this; no token sent. For realtime, poll every 5–10s.
  */
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const connectionId = searchParams.get("connectionId") ?? undefined;
+  const config = await getHaConnection(connectionId);
+  if (!config) {
+    return NextResponse.json([]);
+  }
   try {
-    const { searchParams } = new URL(request.url);
-    const connectionId = searchParams.get("connectionId") ?? undefined;
-    const config = await getHaConnection(connectionId);
-    if (!config) {
-      return NextResponse.json([]);
-    }
     const entities = await getEntities(config);
     const state = entities.map((e) => ({
       entity_id: e.entity_id,
@@ -22,10 +22,8 @@ export async function GET(request: Request) {
     }));
     return NextResponse.json(state);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to fetch state";
-    console.error("[api/ha/state]", message);
     return NextResponse.json(
-      { error: message },
+      { error: err instanceof Error ? err.message : "Failed to fetch state" },
       { status: 500 }
     );
   }
