@@ -329,7 +329,7 @@ export default function MusicPage() {
     if (!selectedQueueId || !ids.has(selectedQueueId)) {
       setSelectedQueueId(maPlayers[0].queue_id);
     }
-  }, [maPlayers, selectedQueueId]);
+  }, [maPlayers, selectedQueueId, setSelectedQueueId]);
 
   const allowedIds = musicAssistant.allowedSpeakerIds;
   const selectablePlayers = allowedIds.length > 0 ? maPlayers.filter((p) => allowedIds.includes(p.queue_id)) : maPlayers;
@@ -339,7 +339,7 @@ export default function MusicPage() {
     if (!selectedQueueId || !inSelectable) {
       setSelectedQueueId(selectablePlayers[0].queue_id);
     }
-  }, [selectablePlayers, selectedQueueId]);
+  }, [selectablePlayers, selectedQueueId, setSelectedQueueId]);
 
   useEffect(() => {
     if (!selectedAlbum || !musicAssistant.enabled || !musicAssistant.baseUrl) {

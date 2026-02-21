@@ -36,7 +36,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         setMaPlayers(list as MAPlayer[]);
       })
       .catch(() => setMaPlayers([]));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, setMaPlayers, setQueueState]);
+  }, [musicAssistant, setMaPlayers, setQueueState]);
 
   useEffect(() => {
     if (maPlayers.length > 0 && !selectedQueueId) {
@@ -92,7 +92,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     fetchState();
     const interval = setInterval(fetchState, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId, setQueueState]);
+  }, [musicAssistant, selectedQueueId, setQueueState]);
 
   return <>{children}</>;
 }
