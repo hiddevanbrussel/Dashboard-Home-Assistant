@@ -42,6 +42,14 @@
     user-select: text;
     -webkit-touch-callout: default;
   }
+
+  /* Dropdowns: minder afgerond, kleiner lettertype (overschrijft component-classes) */
+  select {
+    border-radius: 0.375rem !important; /* rounded-md */
+    font-size: 0.75rem !important; /* text-xs */
+    line-height: 1rem;
+    padding: 0.375rem 0.5rem;
+  }
 }
 
 /* Side panel modal slide-in animatie */
@@ -67,6 +75,20 @@
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Muziekpagina: verticale scroll heeft voorrang (makkelijker van boven naar onder sliden) */
+.music-page-content {
+  touch-action: pan-y;
+}
+
+/* Muziek-carousels: alleen horizontale swipe, verticale scroll van de pagina blijft mogelijk */
+.music-h-scroll {
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  /* Beperk verticale capture: alleen horizontale beweging scrollt de carousel */
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: none;
 }
 
 @layer utilities {

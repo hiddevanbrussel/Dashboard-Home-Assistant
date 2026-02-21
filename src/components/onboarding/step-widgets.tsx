@@ -65,7 +65,7 @@ export function StepWidgets() {
               <select
                 value={w.entity_id}
                 onChange={(e) => updateWidget(w.id, { entity_id: e.target.value })}
-                className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1 text-sm min-w-[200px]"
+                className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1 text-xs min-w-[200px]"
               >
                 <option value="">Select entity</option>
                 {entities.slice(0, 50).map((e) => (

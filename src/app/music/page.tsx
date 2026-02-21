@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, ChevronDown, X, ArrowLeft, Heart, Donut, Radio } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -1135,30 +1135,32 @@ export default function MusicPage() {
       }
     >
       {searchOverlay}
-      <div className={cn("space-y-6 w-full max-w-full px-4 sm:px-6 overflow-x-hidden", showPlayerBar && "pb-24")}>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t("music.title")}</h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {useMA ? t("music.subtitleMa") : t("music.subtitleHa")}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <OfflinePill />
-            {useMA && maPlayers.length > 0 && allowSpeakerSelection && selectablePlayers.length > 0 && (
-              <select
-                value={selectedQueueId ?? ""}
-                onChange={(e) => setSelectedQueueId(e.target.value || null)}
-                className="rounded-lg border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
-                aria-label={t("music.choosePlayer")}
-              >
-                {selectablePlayers.map((p) => (
-                  <option key={p.queue_id} value={p.queue_id} className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-                    {playerLabel(p)}
-                  </option>
-                ))}
-              </select>
-            )}
+      <div className={cn("music-page-content space-y-6 w-full max-w-full px-4 sm:px-6 overflow-x-hidden", showPlayerBar && "pb-24")}>
+        <div className="sticky top-0 z-10 -mx-4 px-4 sm:-mx-6 sm:px-6 py-3 bg-[var(--page-bg)] border-b border-gray-200/50 dark:border-white/10">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t("music.title")}</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {useMA ? t("music.subtitleMa") : t("music.subtitleHa")}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <OfflinePill />
+              {useMA && maPlayers.length > 0 && allowSpeakerSelection && selectablePlayers.length > 0 && (
+                <select
+                  value={selectedQueueId ?? ""}
+                  onChange={(e) => setSelectedQueueId(e.target.value || null)}
+                  className="rounded border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
+                  aria-label={t("music.choosePlayer")}
+                >
+                  {selectablePlayers.map((p) => (
+                    <option key={p.queue_id} value={p.queue_id} className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+                      {playerLabel(p)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1212,7 +1214,7 @@ export default function MusicPage() {
               ) : artistAlbums.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noAlbums")}</p>
               ) : (
-                <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
+                <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
                   {artistAlbums.map((item, index) => {
                     const albumUri = getPlayableUri(item, "album");
                     const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
@@ -1454,7 +1456,7 @@ export default function MusicPage() {
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                     </div>
                   ) : (
-                    <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
+                    <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
                         {favoriteAlbums.map((item, index) => {
                           const albumUri = getPlayableUri(item, "album");
                           const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
@@ -1501,7 +1503,7 @@ export default function MusicPage() {
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                     </div>
                   ) : (
-                    <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
+                    <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
                         {favoriteItems.map((item, index) => {
                           const uri = getPlayableUri(item, "track");
                           const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
@@ -1546,7 +1548,7 @@ export default function MusicPage() {
                   ) : radioStations.length === 0 ? (
                     <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noRadioStations")}</p>
                   ) : (
-                    <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
+                    <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
                         {radioStations.map((item, index) => {
                           const radioUri = getPlayableUri(item, "radio");
                           const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
@@ -1592,7 +1594,7 @@ export default function MusicPage() {
                   ) : recentItems.length === 0 ? (
                     <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noHistory")}</p>
                   ) : (
-                    <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
+                    <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
                         {recentItems.map((item, index) => {
                           const uri = getPlayableUri(item, "track");
                           const albumUri = getPlayableUri(item, "album");
@@ -1750,7 +1752,7 @@ export default function MusicPage() {
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
                 aria-label={t("music.volumeDown")}
               >
-                <ChevronDown className="h-5 w-5" />
+                <CircleMinus className="h-5 w-5" />
               </button>
               <button
                 type="button"
@@ -1759,7 +1761,7 @@ export default function MusicPage() {
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
                 aria-label={t("music.volumeUp")}
               >
-                <ChevronUp className="h-5 w-5" />
+                <CirclePlus className="h-5 w-5" />
               </button>
               <button
                 type="button"

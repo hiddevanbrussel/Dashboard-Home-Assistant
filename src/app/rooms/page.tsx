@@ -466,7 +466,7 @@ export default function RoomsPage() {
                 <select
                   value={newFloor}
                   onChange={(e) => setNewFloor(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white"
+                  className="w-full rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-white"
                 >
                   {FLOOR_OPTIONS.map((opt) => (
                     <option key={opt.value || "_"} value={opt.value}>
@@ -659,7 +659,7 @@ export default function RoomsPage() {
                 <select
                   value={editFloor}
                   onChange={(e) => setEditFloor(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white"
+                  className="w-full rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-white"
                 >
                   {FLOOR_OPTIONS.map((opt) => (
                     <option key={opt.value || "_"} value={opt.value}>

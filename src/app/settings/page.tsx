@@ -406,7 +406,7 @@ export default function SettingsPage() {
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as "en" | "nl")}
-                  className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                  className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200"
                 >
                   <option value="en">{t("settings.language.en")}</option>
                   <option value="nl">{t("settings.language.nl")}</option>
@@ -445,7 +445,7 @@ export default function SettingsPage() {
                     setScreensaverDelaySecondsState(v);
                     setScreensaverDelaySeconds(v);
                   }}
-                  className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                  className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200"
                 >
                   <option value={0}>{t("settings.screensaver.off")}</option>
                   <option value={10}>{t("settings.screensaver.10s")}</option>
@@ -468,7 +468,7 @@ export default function SettingsPage() {
                     setScreensaverClock24hState(v);
                     setScreensaverClock24h(v);
                   }}
-                  className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                  className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200"
                 >
                   <option value="24">{t("settings.screensaver.24h")}</option>
                   <option value="12">{t("settings.screensaver.12h")}</option>
@@ -484,7 +484,7 @@ export default function SettingsPage() {
                     setScreensaverWeatherEntityIdState(v);
                     setScreensaverWeatherEntityId(v);
                   }}
-                  className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 w-full"
+                  className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200 w-full"
                 >
                   <option value="">{t("settings.screensaver.weatherDefault")}</option>
                   {entities
@@ -512,7 +512,7 @@ export default function SettingsPage() {
                     setScreensaverFootballEntityIdState(v);
                     setScreensaverFootballEntityId(v);
                   }}
-                  className="rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 w-full"
+                  className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200 w-full"
                 >
                   <option value="">{t("settings.screensaver.footballOff")}</option>
                   {entities
