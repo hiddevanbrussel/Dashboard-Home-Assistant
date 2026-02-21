@@ -1473,7 +1473,7 @@ export default function MusicPage() {
               {(() => {
                 const album = albumDetails ?? selectedAlbum;
                 return (
-                  <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-4 shrink-0">
+                  <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-4 shrink-0 lg:sticky lg:top-16 lg:self-start">
                     <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-52 lg:h-52 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
                       {getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token) ? (
                         <Image
