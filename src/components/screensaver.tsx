@@ -139,31 +139,8 @@ function ScreensaverFootball() {
 
   const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
   const status = String(attrs.status ?? "").toUpperCase();
-  const rawDate = attrs.date as string | undefined;
-  const date =
-    rawDate
-      ? (() => {
-          try {
-            const d = new Date(rawDate);
-            if (Number.isNaN(d.getTime())) return rawDate;
-            const datePart = d.toLocaleDateString("nl-NL", {
-              timeZone: "Europe/Amsterdam",
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            });
-            const timePart = d.toLocaleTimeString("nl-NL", {
-              timeZone: "Europe/Amsterdam",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            });
-            return `${datePart} | ${timePart}`;
-          } catch {
-            return rawDate;
-          }
-        })()
-      : undefined;
+  const kickoffIn = attrs.kickoff_in as string | number | undefined;
+  const kickoffInStr = kickoffIn != null ? String(kickoffIn) : undefined;
   const teamLogo = attrs.team_logo as string | undefined;
   const teamLongName = attrs.team_long_name as string | undefined;
   const opponentLogo = attrs.opponent_logo as string | undefined;
@@ -171,18 +148,27 @@ function ScreensaverFootball() {
   const teamScore = attrs.team_score as number | string | undefined;
   const opponentScore = attrs.opponent_score as number | string | undefined;
 
-  const teamScoreStr = teamScore != null ? String(teamScore) : null;
-  const opponentScoreStr = opponentScore != null ? String(opponentScore) : null;
+  const teamScoreStr = teamScore != null ? String(teamScore) : "—";
+  const opponentScoreStr = opponentScore != null ? String(opponentScore) : "—";
+  const showScores = status === "IN" || status === "POST";
 
-  const isPre = status === "PRE";
-  const showScores = (status === "IN" || status === "POST") && (teamScoreStr != null || opponentScoreStr != null);
+  const statusLabel =
+    status === "PRE"
+      ? "Nog niet begonnen"
+      : status === "IN"
+        ? "Bezig"
+        : status === "POST"
+          ? "Afgelopen"
+          : status
+            ? status
+            : null;
 
-  if (!teamLongName && !opponentLongName && !date && !showScores) return null;
+  if (!teamLongName && !opponentLongName && !kickoffInStr && !statusLabel) return null;
 
   return (
     <div className="flex flex-col gap-1 px-4 py-3 text-white/95 drop-shadow-md min-w-[280px]">
-      {date && (
-        <p className="text-xs text-white/90 text-center w-full mb-1">{date}</p>
+      {kickoffInStr && (
+        <p className="text-xs text-white/90 text-center w-full mb-1">{kickoffInStr}</p>
       )}
       <div className="flex items-center gap-3 w-full justify-between">
         {/* Thuisteam */}
@@ -190,16 +176,19 @@ function ScreensaverFootball() {
           <ScreensaverFootballLogo src={teamLogo} alt="" />
           <span className="text-sm font-medium truncate w-full text-center">{teamLongName ?? "—"}</span>
         </div>
-        {/* Scheidingsstreep / scores */}
-        <div className="flex items-center gap-2 shrink-0 px-2">
+        {/* Scheidingsstreep / scores + status */}
+        <div className="flex flex-col items-center gap-0.5 shrink-0 px-2">
           {showScores ? (
             <>
-              <span className="text-xl font-bold tabular-nums">{teamScoreStr ?? "—"}</span>
+              <span className="text-xl font-bold tabular-nums">{teamScoreStr}</span>
               <span className="text-white/60">-</span>
-              <span className="text-xl font-bold tabular-nums">{opponentScoreStr ?? "—"}</span>
+              <span className="text-xl font-bold tabular-nums">{opponentScoreStr}</span>
             </>
           ) : (
             <span className="text-white/60 text-sm">-</span>
+          )}
+          {statusLabel && (
+            <span className="text-[10px] uppercase tracking-wide text-white/70 mt-0.5">{statusLabel}</span>
           )}
         </div>
         {/* Uitteam */}
