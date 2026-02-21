@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     return new NextResponse(blob, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "private, max-age=86400",
+        "Cache-Control": "private, max-age=604800, stale-while-revalidate=86400",
       },
     });
   } catch {

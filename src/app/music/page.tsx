@@ -12,6 +12,10 @@ import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
+/** Tiny gray placeholder shown while music images load (blur placeholder). */
+const MUSIC_IMAGE_BLUR =
+  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjZTBlMGUwIi8+PC9zdmc+";
+
 type HaEntity = { entity_id: string; attributes?: Record<string, unknown> };
 
 type MAPlayer = { queue_id: string; display_name?: string; [key: string]: unknown };
@@ -1450,6 +1454,9 @@ export default function MusicPage() {
                     fill
                     className="object-cover"
                     sizes="192px"
+                    placeholder="blur"
+                    blurDataURL={MUSIC_IMAGE_BLUR}
+                    priority
                     unoptimized
                   />
                 ) : (
@@ -1495,7 +1502,7 @@ export default function MusicPage() {
                       >
                         {imageSrc ? (
                           <span className="relative block w-full h-full">
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                           </span>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
@@ -1623,6 +1630,9 @@ export default function MusicPage() {
                           fill
                           className="object-cover"
                           sizes="224px"
+                          placeholder="blur"
+                          blurDataURL={MUSIC_IMAGE_BLUR}
+                          priority
                           unoptimized
                         />
                       ) : (
@@ -1747,7 +1757,7 @@ export default function MusicPage() {
                     >
                       <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                         {imageSrc ? (
-                          <Image src={imageSrc} alt="" fill className="object-cover rounded-full" sizes="128px" unoptimized />
+                          <Image src={imageSrc} alt="" fill className="object-cover rounded-full" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <User className="h-12 w-12 text-gray-500 dark:text-gray-400" />
@@ -1799,7 +1809,7 @@ export default function MusicPage() {
                     >
                       <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                         {imageSrc ? (
-                          <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                          <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <Disc3 className="h-12 w-12 text-gray-500 dark:text-gray-400" />
@@ -1849,7 +1859,7 @@ export default function MusicPage() {
                     >
                       <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                         {imageSrc ? (
-                          <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                          <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <ListMusic className="h-12 w-12 text-gray-500 dark:text-gray-400" />
@@ -1911,7 +1921,7 @@ export default function MusicPage() {
                       >
                         <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                           {imageSrc ? (
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Disc3 className="h-12 w-12 text-gray-500 dark:text-gray-400" />
@@ -1946,7 +1956,7 @@ export default function MusicPage() {
                       >
                         <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                           {imageSrc ? (
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Radio className="h-12 w-12 text-gray-500 dark:text-gray-400" />
@@ -1984,7 +1994,7 @@ export default function MusicPage() {
                       >
                         <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                           {imageSrc ? (
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Disc3 className="h-12 w-12 text-gray-500 dark:text-gray-400" />
@@ -2019,7 +2029,7 @@ export default function MusicPage() {
                       >
                         <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                           {imageSrc ? (
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Disc3 className="h-12 w-12 text-gray-500 dark:text-gray-400" />
@@ -2065,6 +2075,9 @@ export default function MusicPage() {
                     fill
                     className="object-cover"
                     sizes="192px"
+                    placeholder="blur"
+                    blurDataURL={MUSIC_IMAGE_BLUR}
+                    priority
                     unoptimized
                   />
                 ) : (
@@ -2110,7 +2123,7 @@ export default function MusicPage() {
                       >
                         {imageSrc ? (
                           <span className="relative block w-full h-full">
-                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                           </span>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
@@ -2238,6 +2251,9 @@ export default function MusicPage() {
                           fill
                           className="object-cover"
                           sizes="224px"
+                          placeholder="blur"
+                          blurDataURL={MUSIC_IMAGE_BLUR}
+                          priority
                           unoptimized
                         />
                       ) : (
@@ -2422,7 +2438,7 @@ export default function MusicPage() {
                             >
                               {imageSrc ? (
                                 <span className="relative block w-full h-full">
-                                  <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                                  <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                                 </span>
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
@@ -2474,7 +2490,7 @@ export default function MusicPage() {
                             >
                               {imageSrc ? (
                                 <span className="relative block w-full h-full">
-                                  <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                                  <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                                 </span>
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
@@ -2527,7 +2543,7 @@ export default function MusicPage() {
                             >
                               {imageSrc ? (
                                 <span className="relative block w-full h-full">
-                                  <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                                  <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                                 </span>
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
@@ -2585,7 +2601,7 @@ export default function MusicPage() {
                             >
                               {imageSrc ? (
                                 <span className="relative block w-full h-full">
-                                  <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                                  <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                                 </span>
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
@@ -2648,7 +2664,7 @@ export default function MusicPage() {
                   <>
                     <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-white/10">
                       {coverSrc ? (
-                        <Image src={coverSrc} alt="" fill className="object-cover" sizes="56px" unoptimized />
+                        <Image src={coverSrc} alt="" fill className="object-cover" sizes="56px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Disc3 className="h-7 w-7 text-white/50" aria-hidden />
