@@ -54,8 +54,8 @@ function getPlayableUri(item: MASearchItem, mediaType: "track" | "album" | "arti
   return `${String(provider).replace(/\/+$/, "")}://${mediaType}/${itemId}`;
 }
 
-/** Get item_id and provider for MA album_tracks API. */
-function getAlbumParams(item: MASearchItem): { item_id: string; provider_instance_id_or_domain: string } | null {
+/** Get item_id and provider for MA API (album_tracks, albums/get, artist_albums, etc.). */
+function getItemParams(item: MASearchItem): { item_id: string; provider_instance_id_or_domain: string } | null {
   const mappings = (item as { provider_mappings?: { provider_instance_id?: string; provider_instance?: string; item_id?: string | number }[] }).provider_mappings;
   if (Array.isArray(mappings) && mappings.length > 0) {
     const first = mappings[0];
@@ -80,6 +80,16 @@ function getAlbumParams(item: MASearchItem): { item_id: string; provider_instanc
     (item as { provider_domain?: string }).provider_domain ??
     "library";
   return { item_id: String(itemId), provider_instance_id_or_domain: String(provider).replace(/\/+$/, "") };
+}
+
+/** Alias for album flows (album_tracks, albums/get). */
+function getAlbumParams(item: MASearchItem): { item_id: string; provider_instance_id_or_domain: string } | null {
+  return getItemParams(item);
+}
+
+/** Alias for artist flows (artist_albums). */
+function getArtistParams(item: MASearchItem): { item_id: string; provider_instance_id_or_domain: string } | null {
+  return getItemParams(item);
 }
 
 /** Normalize MA URI: "provider--instance://type/id" -> "provider://type/id" for play_media (avoids 500 on some MA versions). */
@@ -254,6 +264,9 @@ export default function MusicPage() {
   const [albumDetails, setAlbumDetails] = useState<MASearchItem | null>(null);
   const [albumTracks, setAlbumTracks] = useState<MASearchItem[]>([]);
   const [albumTracksLoading, setAlbumTracksLoading] = useState(false);
+  const [selectedArtist, setSelectedArtist] = useState<MASearchItem | null>(null);
+  const [artistAlbums, setArtistAlbums] = useState<MASearchItem[]>([]);
+  const [artistAlbumsLoading, setArtistAlbumsLoading] = useState(false);
   const [favoritePending, setFavoritePending] = useState<Set<string>>(new Set());
   const [favorited, setFavorited] = useState<Set<string>>(new Set());
   const [favoriteItems, setFavoriteItems] = useState<MASearchItem[]>([]);
@@ -448,6 +461,39 @@ export default function MusicPage() {
       })
       .finally(() => setAlbumTracksLoading(false));
   }, [selectedAlbum, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+
+  useEffect(() => {
+    if (!selectedArtist || !musicAssistant.enabled || !musicAssistant.baseUrl) {
+      setArtistAlbums([]);
+      return;
+    }
+    const params = getArtistParams(selectedArtist);
+    if (!params) {
+      setArtistAlbums([]);
+      return;
+    }
+    setArtistAlbumsLoading(true);
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/artists/artist_albums", {
+      item_id: params.item_id,
+      provider_instance_id_or_domain: params.provider_instance_id_or_domain,
+    })
+      .then((data: unknown) => {
+        const d = data as Record<string, unknown>;
+        const err = (d?.error as string) ?? (d?.message as string);
+        if (err) return;
+        const result = d?.result ?? d;
+        const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+        let list: MASearchItem[] = [];
+        if (Array.isArray(resultObj.albums)) list = resultObj.albums as MASearchItem[];
+        else if (Array.isArray(resultObj.items)) list = resultObj.items as MASearchItem[];
+        else if (Array.isArray(result)) list = result as MASearchItem[];
+        else if (Array.isArray(d.albums)) list = d.albums as MASearchItem[];
+        else if (Array.isArray(d.items)) list = d.items as MASearchItem[];
+        setArtistAlbums(list);
+      })
+      .catch(() => setArtistAlbums([]))
+      .finally(() => setArtistAlbumsLoading(false));
+  }, [selectedArtist, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   useEffect(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !musicAssistant.sectionFavoriteAlbumsEnabled) {
@@ -944,13 +990,24 @@ export default function MusicPage() {
               const isPlayPending = uri && playPending === uri;
               const canPlay = !!uri && !!selectedQueueId;
               const isAlbum = mediaType === "album";
+              const isArtist = mediaType === "artist";
               const canOpenAlbum = isAlbum && getAlbumParams(item);
+              const canOpenArtist = isArtist && getArtistParams(item);
               const openAlbum = () => {
                 if (canOpenAlbum) {
                   setSelectedAlbum(item);
                   setSearchOverlayOpen(false);
                 }
               };
+              const openArtist = () => {
+                if (canOpenArtist) {
+                  setSelectedArtist(item);
+                  setSearchOverlayOpen(false);
+                }
+              };
+              const canOpen = canOpenAlbum || canOpenArtist;
+              const openAction = canOpenAlbum ? openAlbum : canOpenArtist ? openArtist : undefined;
+              const openTitle = canOpenAlbum ? t("music.viewAlbum") : canOpenArtist ? t("music.viewArtist") : undefined;
               return (
                 <li
                   key={uri ?? `item-${index}`}
@@ -959,23 +1016,27 @@ export default function MusicPage() {
                   <div
                     className={cn(
                       "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800",
-                      canOpenAlbum && "cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
+                      canOpen && "cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
                     )}
-                    onClick={canOpenAlbum ? openAlbum : undefined}
-                    onKeyDown={canOpenAlbum ? (e) => e.key === "Enter" && openAlbum() : undefined}
-                    role={canOpenAlbum ? "button" : undefined}
-                    tabIndex={canOpenAlbum ? 0 : undefined}
-                    title={canOpenAlbum ? t("music.viewAlbum") : undefined}
+                    onClick={canOpen ? openAction : undefined}
+                    onKeyDown={canOpen ? (e) => e.key === "Enter" && openAction?.() : undefined}
+                    role={canOpen ? "button" : undefined}
+                    tabIndex={canOpen ? 0 : undefined}
+                    title={openTitle}
                   >
-                    <Disc3 className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
+                    {isArtist ? (
+                      <User className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
+                    ) : (
+                      <Disc3 className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
+                    )}
                   </div>
                   <div
-                    className={cn("min-w-0 flex-1", canOpenAlbum ? "cursor-pointer" : "cursor-default")}
-                    onClick={canOpenAlbum ? openAlbum : undefined}
-                    onKeyDown={canOpenAlbum ? (e) => e.key === "Enter" && openAlbum() : undefined}
-                    role={canOpenAlbum ? "button" : undefined}
-                    tabIndex={canOpenAlbum ? 0 : undefined}
-                    title={canOpenAlbum ? t("music.viewAlbum") : undefined}
+                    className={cn("min-w-0 flex-1", canOpen ? "cursor-pointer" : "cursor-default")}
+                    onClick={canOpen ? openAction : undefined}
+                    onKeyDown={canOpen ? (e) => e.key === "Enter" && openAction?.() : undefined}
+                    role={canOpen ? "button" : undefined}
+                    tabIndex={canOpen ? 0 : undefined}
+                    title={openTitle}
                   >
                     <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
                     <p className="truncate text-xs text-gray-500 dark:text-gray-400">
@@ -1094,7 +1155,86 @@ export default function MusicPage() {
           </div>
         )}
 
-        {selectedAlbum ? (
+        {selectedArtist ? (
+          <div className="space-y-6">
+            <button
+              type="button"
+              onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setError(null); }}
+              className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t("music.back")}
+            </button>
+            <div className="flex flex-col sm:flex-row gap-4 items-start">
+              <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
+                {getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token) ? (
+                  <Image
+                    src={getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token)!}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="192px"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <User className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedArtist.name ?? t("music.unknown")}</h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("music.artistAlbums")}</p>
+              </div>
+            </div>
+            <section>
+              <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albums")}</h3>
+              {artistAlbumsLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                </div>
+              ) : artistAlbums.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noAlbums")}</p>
+              ) : (
+                <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x">
+                  {artistAlbums.map((item, index) => {
+                    const albumUri = getPlayableUri(item, "album");
+                    const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
+                    const albumParams = getAlbumParams(item);
+                    const handleClick = () => {
+                      if (albumParams) {
+                        setSelectedArtist(null);
+                        setSelectedAlbum(item);
+                        setAlbumDetails(null);
+                        setAlbumTracks([]);
+                      }
+                    };
+                    return (
+                      <button
+                        key={albumUri ?? `artist-album-${index}`}
+                        type="button"
+                        onClick={handleClick}
+                        disabled={!albumParams}
+                        className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always]"
+                        title={item.name as string}
+                      >
+                        {imageSrc ? (
+                          <span className="relative block w-full h-full">
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" unoptimized />
+                          </span>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                            <Disc3 className="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
+        ) : selectedAlbum ? (
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <button
