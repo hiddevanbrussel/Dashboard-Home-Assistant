@@ -1861,7 +1861,7 @@ export default function MusicPage() {
               {(() => {
                 const cur = queueState?.current_item as (MASearchItem & { artist?: string; stream_title?: string }) | undefined;
                 const coverSrc = cur ? getImageSrc(getItemImageUrl(cur), musicAssistant.baseUrl, musicAssistant.token) : null;
-                const artistLine =
+                let artistLine =
                   cur?.artists != null
                     ? Array.isArray(cur.artists)
                       ? (cur.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
@@ -1871,12 +1871,20 @@ export default function MusicPage() {
                     : typeof cur?.artist === "string"
                       ? cur.artist.trim()
                       : "";
-                const titleLine =
+                let titleLine =
                   typeof cur?.name === "string" && cur.name.trim()
                     ? cur.name.trim()
                     : typeof cur?.stream_title === "string" && cur.stream_title.trim()
                       ? cur.stream_title.trim()
                       : "";
+                if (titleLine && !artistLine) {
+                  const combined = titleLine;
+                  const sep = combined.match(/\s*[–—-]\s+|\s*:\s+/)?.index;
+                  if (typeof sep === "number" && sep > 0) {
+                    artistLine = combined.slice(0, sep).trim();
+                    titleLine = combined.slice(sep).replace(/^\s*[–—-:]+\s*/, "").trim();
+                  }
+                }
                 return (
                   <>
                     <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-white/10">
