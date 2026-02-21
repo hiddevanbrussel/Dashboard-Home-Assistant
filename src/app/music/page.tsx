@@ -894,6 +894,7 @@ export default function MusicPage() {
     if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
     setVolumePending(true);
     callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_mute", {
+      queue_id: selectedQueueId,
       player_id: selectedQueueId,
     })
       .then((data: unknown) => {
@@ -1150,7 +1151,7 @@ export default function MusicPage() {
     >
       {searchOverlay}
       <div className={cn("music-page-content space-y-6 w-full max-w-full px-4 sm:px-6 overflow-x-hidden", showPlayerBar && "pb-24")}>
-        <div className="sticky top-0 z-10 -mx-4 px-4 sm:-mx-6 sm:px-6 py-3 bg-[var(--page-bg)] border-b border-gray-200/50 dark:border-white/10">
+        <div className="sticky top-0 z-10 -mx-4 px-4 sm:-mx-6 sm:px-6 py-3">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t("music.title")}</h2>
