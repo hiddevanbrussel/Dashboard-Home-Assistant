@@ -7,8 +7,8 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker } from "lucide-react";
-import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker, ChevronRight } from "lucide-react";
+import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
@@ -285,6 +285,7 @@ export default function MusicPage() {
   const [dontStopTheMusicPending, setDontStopTheMusicPending] = useState(false);
   const [speakerPopoverOpen, setSpeakerPopoverOpen] = useState(false);
   const speakerPopoverRef = useRef<HTMLDivElement>(null);
+  const [selectedCategory, setSelectedCategory] = useState<MusicSectionId | null>(null);
   const musicAssistant = useMusicAssistantStore();
   const { t } = useTranslation();
 
@@ -893,7 +894,7 @@ export default function MusicPage() {
     if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
     setVolumePending(true);
     callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_mute", {
-      queue_id: selectedQueueId,
+      player_id: selectedQueueId,
     })
       .then((data: unknown) => {
         const err = (data as { error?: string })?.error;
@@ -1172,7 +1173,188 @@ export default function MusicPage() {
           </div>
         )}
 
-        {selectedArtist ? (
+        {selectedCategory ? (
+          <div className="space-y-6">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory(null)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t("music.back")}
+            </button>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              {selectedCategory === "favoriteAlbums"
+                ? t("music.favoriteAlbums")
+                : selectedCategory === "favoriteTracks"
+                  ? t("music.favoriteTracks")
+                  : selectedCategory === "radio"
+                    ? t("music.radioStations")
+                    : t("music.recentlyPlayed")}
+            </h2>
+            {selectedCategory === "recentlyPlayed" && (recentLoading || recentItems.length > 0) && (
+              recentLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {recentItems.map((item, index) => {
+                    const uri = getPlayableUri(item, "track");
+                    const albumUri = getPlayableUri(item, "album");
+                    const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
+                    const canPlay = !!(uri || albumUri) && !!selectedQueueId;
+                    const isAlbum = isAlbumItem(item);
+                    const albumParams = isAlbum ? getAlbumParams(item) : null;
+                    const handleClick = () => {
+                      if (albumParams) setSelectedAlbum(item);
+                      else if (canPlay && uri) playOnPlayer(uri);
+                      else if (canPlay && albumUri) playOnPlayer(albumUri);
+                    };
+                    return (
+                      <button
+                        key={uri || albumUri || `recent-${index}`}
+                        type="button"
+                        onClick={handleClick}
+                        disabled={!albumParams && !canPlay}
+                        className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                      >
+                        <div className="aspect-square relative bg-gray-200 dark:bg-gray-700">
+                          {imageSrc ? (
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="(max-width: 640px) 50vw, 20vw" unoptimized />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Disc3 className="h-12 w-12 text-gray-500 dark:text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="mt-1.5 truncate text-sm font-medium text-gray-900 dark:text-white">{item.name ?? t("music.unknown")}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            )}
+            {selectedCategory === "radio" && (radioStationsLoading || radioStations.length > 0) && (
+              radioStationsLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {radioStations.map((item, index) => {
+                    const radioUri = getPlayableUri(item, "radio");
+                    const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
+                    const canPlay = !!radioUri && !!selectedQueueId;
+                    return (
+                      <button
+                        key={radioUri || `radio-${index}`}
+                        type="button"
+                        onClick={() => canPlay && radioUri && playOnPlayer(normalizePlayMediaUri(radioUri))}
+                        disabled={!canPlay}
+                        className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                      >
+                        <div className="aspect-square relative bg-gray-200 dark:bg-gray-700">
+                          {imageSrc ? (
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="(max-width: 640px) 50vw, 20vw" unoptimized />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Radio className="h-12 w-12 text-gray-500 dark:text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="mt-1.5 truncate text-sm font-medium text-gray-900 dark:text-white">{item.name ?? t("music.unknown")}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            )}
+            {selectedCategory === "favoriteAlbums" && (favoritesLoading || favoriteAlbums.length > 0) && (
+              favoritesLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {favoriteAlbums.map((item, index) => {
+                    const albumUri = getPlayableUri(item, "album");
+                    const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
+                    const albumParams = getAlbumParams(item);
+                    const handleClick = () => albumParams && setSelectedAlbum(item);
+                    return (
+                      <button
+                        key={albumUri || `fav-album-${index}`}
+                        type="button"
+                        onClick={handleClick}
+                        disabled={!albumParams}
+                        className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                      >
+                        <div className="aspect-square relative bg-gray-200 dark:bg-gray-700">
+                          {imageSrc ? (
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="(max-width: 640px) 50vw, 20vw" unoptimized />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Disc3 className="h-12 w-12 text-gray-500 dark:text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="mt-1.5 truncate text-sm font-medium text-gray-900 dark:text-white">{item.name ?? t("music.unknown")}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            )}
+            {selectedCategory === "favoriteTracks" && (favoriteItemsLoading || favoriteItems.length > 0) && (
+              favoriteItemsLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {favoriteItems.map((item, index) => {
+                    const uri = getPlayableUri(item, "track");
+                    const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
+                    const canPlay = !!uri && !!selectedQueueId;
+                    return (
+                      <button
+                        key={uri || `fav-track-${index}`}
+                        type="button"
+                        onClick={() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri))}
+                        disabled={!canPlay}
+                        className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                      >
+                        <div className="aspect-square relative bg-gray-200 dark:bg-gray-700">
+                          {imageSrc ? (
+                            <Image src={imageSrc} alt="" fill className="object-cover" sizes="(max-width: 640px) 50vw, 20vw" unoptimized />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Disc3 className="h-12 w-12 text-gray-500 dark:text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="mt-1.5 truncate text-sm font-medium text-gray-900 dark:text-white">{item.name ?? t("music.unknown")}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            )}
+            {selectedCategory === "recentlyPlayed" && !recentLoading && recentItems.length === 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-8">{t("music.noHistory")}</p>
+            )}
+            {selectedCategory === "radio" && !radioStationsLoading && radioStations.length === 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-8">{t("music.noRadioStations")}</p>
+            )}
+            {selectedCategory === "favoriteAlbums" && !favoritesLoading && favoriteAlbums.length === 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-8">{t("music.noAlbums")}</p>
+            )}
+            {selectedCategory === "favoriteTracks" && !favoriteItemsLoading && favoriteItems.length === 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-8">{t("music.noHistory")}</p>
+            )}
+          </div>
+        ) : selectedArtist ? (
           <div className="space-y-6">
             <button
               type="button"
@@ -1449,7 +1631,14 @@ export default function MusicPage() {
               if (!show) return null;
               return (
                 <section key="favoriteAlbums" className="mt-8">
-                  <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.favoriteAlbums")}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory("favoriteAlbums")}
+                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-700 dark:text-gray-300 mb-3 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
+                    {t("music.favoriteAlbums")}
+                    <ChevronRight className="h-5 w-5 shrink-0 opacity-70" />
+                  </button>
                   {favoritesLoading ? (
                     <div className="flex justify-center py-8">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
@@ -1496,7 +1685,14 @@ export default function MusicPage() {
               if (!show) return null;
               return (
                 <section key="favoriteTracks" className="mt-8">
-                  <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.favoriteTracks")}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory("favoriteTracks")}
+                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-700 dark:text-gray-300 mb-3 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
+                    {t("music.favoriteTracks")}
+                    <ChevronRight className="h-5 w-5 shrink-0 opacity-70" />
+                  </button>
                   {favoriteItemsLoading ? (
                     <div className="flex justify-center py-8">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
@@ -1539,7 +1735,14 @@ export default function MusicPage() {
             if (sectionId === "radio") {
               return (
                 <section key="radio" className="mt-8">
-                  <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.radioStations")}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory("radio")}
+                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-700 dark:text-gray-300 mb-3 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
+                    {t("music.radioStations")}
+                    <ChevronRight className="h-5 w-5 shrink-0 opacity-70" />
+                  </button>
                   {radioStationsLoading ? (
                     <div className="flex justify-center py-8">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
@@ -1585,7 +1788,14 @@ export default function MusicPage() {
             if (sectionId === "recentlyPlayed") {
               return (
                 <section key="recentlyPlayed" className="mt-8">
-                  <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.recentlyPlayed")}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory("recentlyPlayed")}
+                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-700 dark:text-gray-300 mb-3 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
+                    {t("music.recentlyPlayed")}
+                    <ChevronRight className="h-5 w-5 shrink-0 opacity-70" />
+                  </button>
                   {recentLoading ? (
                     <div className="flex justify-center py-8">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
