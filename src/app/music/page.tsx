@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, ChevronDown, X, ArrowLeft, Heart, Donut } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, ChevronDown, X, ArrowLeft, Heart, Donut, Radio } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -90,6 +90,14 @@ function getAlbumParams(item: MASearchItem): { item_id: string; provider_instanc
 /** Alias for artist flows (artist_albums). */
 function getArtistParams(item: MASearchItem): { item_id: string; provider_instance_id_or_domain: string } | null {
   return getItemParams(item);
+}
+
+/** True if this item is an album (so album_tracks is valid). Recently played can contain tracks; only open album view for albums. */
+function isAlbumItem(item: MASearchItem): boolean {
+  const raw = item.uri ?? (item as { item_uri?: string }).item_uri ?? "";
+  if (typeof raw === "string" && raw.includes("/album/")) return true;
+  const mt = (item as { media_type?: string }).media_type ?? (item as { type?: string }).type;
+  return mt === "album";
 }
 
 /** Normalize MA URI: "provider--instance://type/id" -> "provider://type/id" for play_media (avoids 500 on some MA versions). */
@@ -239,7 +247,7 @@ export default function MusicPage() {
   const [playersLoading, setPlayersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchFilter, setSearchFilter] = useState<"all" | "track" | "artist" | "album">("all");
+  const [searchFilter, setSearchFilter] = useState<"all" | "track" | "artist" | "album" | "radio">("all");
   const [searchResults, setSearchResults] = useState<MASearchItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null);
@@ -649,7 +657,15 @@ export default function MusicPage() {
     setError(null);
     const query = searchQuery.trim();
     const mediaType =
-      searchFilter === "track" ? "track" : searchFilter === "artist" ? "artist" : searchFilter === "album" ? "album" : undefined;
+      searchFilter === "track"
+        ? "track"
+        : searchFilter === "artist"
+          ? "artist"
+          : searchFilter === "album"
+            ? "album"
+            : searchFilter === "radio"
+              ? "radio"
+              : undefined;
     const baseArgs = { search_query: query, limit: 24 };
     const argsWithFilter = mediaType ? { ...baseArgs, media_types: [mediaType] } : baseArgs;
     const argsList: Record<string, unknown>[] = [
@@ -690,14 +706,24 @@ export default function MusicPage() {
       if (Array.isArray(resultObj.albums)) return resultObj.albums as MASearchItem[];
       return [];
     }
-    function collectResults(data: unknown): (MASearchItem & { __mediaType?: "track" | "artist" | "album" })[] {
+    function parseRadios(data: unknown): MASearchItem[] {
+      const d = data as Record<string, unknown>;
+      const resultObj = getResultObj(data);
+      if (Array.isArray(resultObj.radios)) return resultObj.radios as MASearchItem[];
+      if (Array.isArray(resultObj.radio)) return resultObj.radio as MASearchItem[];
+      if (Array.isArray(d.radios)) return d.radios as MASearchItem[];
+      return [];
+    }
+    function collectResults(data: unknown): (MASearchItem & { __mediaType?: "track" | "artist" | "album" | "radio" })[] {
       if (searchFilter === "artist") return parseArtists(data).map((a) => ({ ...a, __mediaType: "artist" as const }));
       if (searchFilter === "album") return parseAlbums(data).map((a) => ({ ...a, __mediaType: "album" as const }));
       if (searchFilter === "track") return parseTracks(data).map((t) => ({ ...t, __mediaType: "track" as const }));
+      if (searchFilter === "radio") return parseRadios(data).map((r) => ({ ...r, __mediaType: "radio" as const }));
       const tracks = parseTracks(data).map((t) => ({ ...t, __mediaType: "track" as const }));
       const artists = parseArtists(data).map((a) => ({ ...a, __mediaType: "artist" as const }));
       const albums = parseAlbums(data).map((a) => ({ ...a, __mediaType: "album" as const }));
-      return [...tracks, ...artists, ...albums];
+      const radios = parseRadios(data).map((r) => ({ ...r, __mediaType: "radio" as const }));
+      return [...tracks, ...artists, ...albums, ...radios];
     }
     const tryAttempt = (cmdIndex: number, argIndex: number): Promise<void> =>
       callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, commands[cmdIndex]!, argsList[argIndex]!).then(
@@ -940,7 +966,7 @@ export default function MusicPage() {
         </button>
       </div>
       <div className="shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-200 dark:border-white/10 bg-white/50 dark:bg-gray-900/50">
-        {(["all", "track", "artist", "album"] as const).map((filter) => (
+        {(["all", "track", "artist", "album", "radio"] as const).map((filter) => (
           <button
             key={filter}
             type="button"
@@ -952,7 +978,15 @@ export default function MusicPage() {
                 : "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
             )}
           >
-            {filter === "all" ? t("music.filterAll") : filter === "track" ? t("music.filterTrack") : filter === "artist" ? t("music.filterArtist") : t("music.filterAlbum")}
+            {filter === "all"
+              ? t("music.filterAll")
+              : filter === "track"
+                ? t("music.filterTrack")
+                : filter === "artist"
+                  ? t("music.filterArtist")
+                  : filter === "album"
+                    ? t("music.filterAlbum")
+                    : t("music.filterRadio")}
           </button>
         ))}
       </div>
@@ -968,9 +1002,16 @@ export default function MusicPage() {
               const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
               const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
               const provider = (item as { provider?: string })?.provider ?? "library";
-              const itemMediaType = (item as { __mediaType?: "track" | "artist" | "album" }).__mediaType;
+              const itemMediaType = (item as { __mediaType?: "track" | "artist" | "album" | "radio" }).__mediaType;
               const mediaType =
-                itemMediaType ?? (searchFilter === "artist" ? "artist" : searchFilter === "album" ? "album" : "track");
+                itemMediaType ??
+                (searchFilter === "artist"
+                  ? "artist"
+                  : searchFilter === "album"
+                    ? "album"
+                    : searchFilter === "radio"
+                      ? "radio"
+                      : "track");
               const uri =
                 typeof rawUri === "string" && rawUri
                   ? rawUri
@@ -991,6 +1032,7 @@ export default function MusicPage() {
               const canPlay = !!uri && !!selectedQueueId;
               const isAlbum = mediaType === "album";
               const isArtist = mediaType === "artist";
+              const isRadio = mediaType === "radio";
               const canOpenAlbum = isAlbum && getAlbumParams(item);
               const canOpenArtist = isArtist && getArtistParams(item);
               const openAlbum = () => {
@@ -1026,6 +1068,8 @@ export default function MusicPage() {
                   >
                     {isArtist ? (
                       <User className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
+                    ) : isRadio ? (
+                      <Radio className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
                     ) : (
                       <Disc3 className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
                     )}
@@ -1071,7 +1115,7 @@ export default function MusicPage() {
                   )}
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); canPlay && playOnPlayer(uri); }}
+                    onClick={(e) => { e.stopPropagation(); canPlay && playOnPlayer(normalizePlayMediaUri(uri)); }}
                     disabled={!canPlay || !!isPlayPending}
                     className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
                     title={`${t("music.playOn")} ${selectedQueueId ? playerLabel(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : t("music.player")}`}
@@ -1583,7 +1627,8 @@ export default function MusicPage() {
                           const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
                           const isPlayPending = (uri && playPending === uri) || (albumUri && playPending === albumUri);
                           const canPlay = !!(uri || albumUri) && !!selectedQueueId;
-                          const albumParams = getAlbumParams(item);
+                          const isAlbum = isAlbumItem(item);
+                          const albumParams = isAlbum ? getAlbumParams(item) : null;
                           const handleClick = () => {
                             if (albumParams) setSelectedAlbum(item);
                             else if (canPlay && uri) playOnPlayer(uri);
