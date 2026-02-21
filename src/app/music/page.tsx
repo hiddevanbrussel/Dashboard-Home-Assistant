@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -283,6 +283,8 @@ export default function MusicPage() {
   const [radioStationsLoading, setRadioStationsLoading] = useState(false);
   const [dontStopTheMusicEnabled, setDontStopTheMusicEnabled] = useState(false);
   const [dontStopTheMusicPending, setDontStopTheMusicPending] = useState(false);
+  const [speakerPopoverOpen, setSpeakerPopoverOpen] = useState(false);
+  const speakerPopoverRef = useRef<HTMLDivElement>(null);
   const musicAssistant = useMusicAssistantStore();
   const { t } = useTranslation();
 
@@ -291,6 +293,17 @@ export default function MusicPage() {
       searchInputRef.current?.focus();
     }
   }, [searchOverlayOpen]);
+
+  useEffect(() => {
+    if (!speakerPopoverOpen) return;
+    const close = (e: MouseEvent) => {
+      if (speakerPopoverRef.current && !speakerPopoverRef.current.contains(e.target as Node)) {
+        setSpeakerPopoverOpen(false);
+      }
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [speakerPopoverOpen]);
 
   useEffect(() => {
     hydrateMusicAssistantStore();
@@ -1146,20 +1159,6 @@ export default function MusicPage() {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <OfflinePill />
-              {useMA && maPlayers.length > 0 && allowSpeakerSelection && selectablePlayers.length > 0 && (
-                <select
-                  value={selectedQueueId ?? ""}
-                  onChange={(e) => setSelectedQueueId(e.target.value || null)}
-                  className="rounded border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
-                  aria-label={t("music.choosePlayer")}
-                >
-                  {selectablePlayers.map((p) => (
-                    <option key={p.queue_id} value={p.queue_id} className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-                      {playerLabel(p)}
-                    </option>
-                  ))}
-                </select>
-              )}
             </div>
           </div>
         </div>
@@ -1752,8 +1751,50 @@ export default function MusicPage() {
               </div>
             </div>
 
-            {/* Rechts: volume (-, +, mute) */}
+            {/* Rechts: speaker keuze + volume (-, +, mute) */}
             <div className="relative flex items-center gap-1 shrink-0">
+              {allowSpeakerSelection && selectablePlayers.length > 0 && (
+                <div className="relative" ref={speakerPopoverRef}>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setSpeakerPopoverOpen((v) => !v); }}
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
+                      speakerPopoverOpen ? "bg-white/20 text-white" : "text-white/90 hover:bg-white/10"
+                    )}
+                    aria-label={t("music.choosePlayer")}
+                    aria-expanded={speakerPopoverOpen}
+                  >
+                    <Speaker className="h-5 w-5" />
+                  </button>
+                  {speakerPopoverOpen && (
+                    <div
+                      className="absolute bottom-full right-0 mb-2 py-2 min-w-[180px] rounded-lg border border-white/20 bg-gray-900 dark:bg-black shadow-xl z-50 max-h-[60vh] overflow-y-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <p className="px-3 py-1.5 text-xs font-medium text-white/70 border-b border-white/10">
+                        {t("music.choosePlayer")}
+                      </p>
+                      {selectablePlayers.map((p) => (
+                        <button
+                          key={p.queue_id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedQueueId(p.queue_id);
+                            setSpeakerPopoverOpen(false);
+                          }}
+                          className={cn(
+                            "w-full text-left px-3 py-2 text-sm text-white/90 hover:bg-white/10 transition-colors",
+                            selectedQueueId === p.queue_id && "bg-white/15 font-medium"
+                          )}
+                        >
+                          {playerLabel(p)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={volumeDown}
