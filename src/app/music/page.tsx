@@ -1647,18 +1647,27 @@ export default function MusicPage() {
         >
           {/* Balk: links = hoes + artiest/titel, midden = knoppen + voortgang, rechts = volume */}
           <div className="w-full flex items-center gap-4 sm:gap-6 min-w-0">
-            {/* Links: albumhoes, naast artiest (boven) en titel (onder) */}
+            {/* Links: albumhoes, naast artiest (boven) en nummer/titel (onder) */}
             <div className="flex items-center gap-3 min-w-[120px] max-w-[220px] sm:max-w-xs shrink-0 flex-shrink-0">
               {(() => {
-                const cur = queueState?.current_item as MASearchItem | undefined;
+                const cur = queueState?.current_item as (MASearchItem & { artist?: string; stream_title?: string }) | undefined;
                 const coverSrc = cur ? getImageSrc(getItemImageUrl(cur), musicAssistant.baseUrl, musicAssistant.token) : null;
-                const artistNames = cur?.artists
-                  ? Array.isArray(cur.artists)
-                    ? (cur.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
-                    : typeof (cur.artists as { name?: string }).name === "string"
-                      ? (cur.artists as { name: string }).name
-                      : ""
-                  : "";
+                const artistLine =
+                  cur?.artists != null
+                    ? Array.isArray(cur.artists)
+                      ? (cur.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
+                      : typeof (cur.artists as { name?: string }).name === "string"
+                        ? (cur.artists as { name: string }).name
+                        : ""
+                    : typeof cur?.artist === "string"
+                      ? cur.artist.trim()
+                      : "";
+                const titleLine =
+                  typeof cur?.name === "string" && cur.name.trim()
+                    ? cur.name.trim()
+                    : typeof cur?.stream_title === "string" && cur.stream_title.trim()
+                      ? cur.stream_title.trim()
+                      : "";
                 return (
                   <>
                     <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-white/10">
@@ -1670,9 +1679,9 @@ export default function MusicPage() {
                         </div>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs text-white/70">{artistNames || "—"}</p>
-                      <p className="truncate text-sm font-medium text-white/95">{cur?.name ?? "—"}</p>
+                    <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                      <p className="truncate text-xs text-white/70">{artistLine || "—"}</p>
+                      <p className="truncate text-sm font-medium text-white/95">{titleLine || "—"}</p>
                     </div>
                   </>
                 );
