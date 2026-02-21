@@ -35,8 +35,8 @@ export function GlobalMusicBar() {
       type="button"
       onClick={() => setPlayerBarExpanded(true)}
       className={cn(
-        "fixed bottom-2 right-2 z-40 flex h-9 w-9 items-center justify-center rounded-full",
-        "bg-gray-800/90 dark:bg-black/80 backdrop-blur-sm border border-white/10",
+        "fixed bottom-0 left-6 z-40 flex h-10 min-w-[2.5rem] items-center justify-center rounded-t-lg px-3",
+        "bg-gray-800/90 dark:bg-black/80 backdrop-blur-sm border border-b-0 border-white/10",
         "text-white/80 hover:text-white hover:bg-gray-700/90 dark:hover:bg-white/10 transition-colors shadow-lg"
       )}
       aria-label={t("music.playerBar")}

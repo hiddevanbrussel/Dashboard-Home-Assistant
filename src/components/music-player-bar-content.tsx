@@ -57,7 +57,8 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose }:
   const isPlaying = queueState?.state === "playing";
   const position = queueState?.position ?? 0;
   const duration = queueState?.duration ?? 0;
-  const selectablePlayers = maPlayers;
+  const allowedIds = musicAssistant.allowedSpeakerIds;
+  const selectablePlayers = allowedIds.length > 0 ? maPlayers.filter((p) => allowedIds.includes(p.queue_id)) : maPlayers;
 
   useEffect(() => {
     if (!speakerPopoverOpen) return;
