@@ -147,31 +147,14 @@ function ScreensaverFootball() {
   const teamLongName = attrs.team_long_name as string | undefined;
   const opponentLogo = attrs.opponent_logo as string | undefined;
   const opponentLongName = attrs.opponent_long_name as string | undefined;
-  // HA gebruikt vaak team_score / opponent_score (getal); ondersteun ook camelCase
-  const teamScoreRaw =
-    attrs.team_score ?? (attrs as Record<string, unknown>).teamScore;
-  const opponentScoreRaw =
-    attrs.opponent_score ?? (attrs as Record<string, unknown>).opponentScore;
-  const teamScore =
-    typeof teamScoreRaw === "number"
-      ? teamScoreRaw
-      : typeof teamScoreRaw === "string"
-        ? teamScoreRaw.trim()
-        : undefined;
-  const opponentScore =
-    typeof opponentScoreRaw === "number"
-      ? opponentScoreRaw
-      : typeof opponentScoreRaw === "string"
-        ? opponentScoreRaw.trim()
-        : undefined;
-
+  // team_score en opponent_score zijn in HA strings, bijv. "1"
   const teamScoreStr =
-    teamScore !== undefined && teamScore !== null && teamScore !== ""
-      ? String(teamScore)
+    attrs.team_score != null && String(attrs.team_score).trim() !== ""
+      ? String(attrs.team_score).trim()
       : "—";
   const opponentScoreStr =
-    opponentScore !== undefined && opponentScore !== null && opponentScore !== ""
-      ? String(opponentScore)
+    attrs.opponent_score != null && String(attrs.opponent_score).trim() !== ""
+      ? String(attrs.opponent_score).trim()
       : "—";
   const showScores = status === "IN" || status === "POST";
 
