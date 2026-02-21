@@ -862,9 +862,9 @@ export default function MusicPage() {
       const level = Math.max(0, Math.min(100, pct)) / 100;
       setVolume(Math.round(pct));
       setVolumePending(true);
-      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "config/players/save", {
+      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_set", {
         player_id: selectedQueueId,
-        values: { volume_level: level },
+        volume_level: level,
       })
         .then((data: unknown) => {
           const err = (data as { error?: string })?.error;
