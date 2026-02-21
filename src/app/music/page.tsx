@@ -261,8 +261,6 @@ export default function MusicPage() {
   const [seekPending, setSeekPending] = useState(false);
   const [volume, setVolume] = useState<number>(80);
   const [volumePending, setVolumePending] = useState(false);
-  const [volumePopoverOpen, setVolumePopoverOpen] = useState(false);
-  const volumePopoverRef = useRef<HTMLDivElement>(null);
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [recentItems, setRecentItems] = useState<MASearchItem[]>([]);
@@ -287,32 +285,6 @@ export default function MusicPage() {
   const [dontStopTheMusicPending, setDontStopTheMusicPending] = useState(false);
   const musicAssistant = useMusicAssistantStore();
   const { t } = useTranslation();
-
-  useEffect(() => {
-    if (!volumePopoverOpen) return;
-    const close = (e: MouseEvent) => {
-      if (volumePopoverRef.current && !volumePopoverRef.current.contains(e.target as Node)) {
-        setVolumePopoverOpen(false);
-      }
-    };
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
-  }, [volumePopoverOpen]);
-
-  useEffect(() => {
-    if (!volumePopoverOpen || !musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "config/players/get", {
-      player_id: selectedQueueId,
-    })
-      .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
-        if (err) return;
-        const res = (data as { result?: { volume_level?: number } })?.result ?? data as { volume_level?: number };
-        const vol = res?.volume_level;
-        if (typeof vol === "number" && vol >= 0 && vol <= 1) setVolume(Math.round(vol * 100));
-      })
-      .catch(() => {});
-  }, [volumePopoverOpen, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
 
   useEffect(() => {
     if (searchOverlayOpen) {
@@ -908,7 +880,7 @@ export default function MusicPage() {
     if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
     setVolumePending(true);
     callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_mute", {
-      player_id: selectedQueueId,
+      queue_id: selectedQueueId,
     })
       .then((data: unknown) => {
         const err = (data as { error?: string })?.error;
@@ -1769,46 +1741,35 @@ export default function MusicPage() {
               </div>
             </div>
 
-            {/* Rechts: volume */}
-            <div className="relative flex items-center gap-2 shrink-0 w-[140px] sm:w-[180px]" ref={volumePopoverRef}>
+            {/* Rechts: volume (-, +, mute) */}
+            <div className="relative flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); setVolumePopoverOpen((v) => !v); }}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                aria-label={t("music.volume")}
-                aria-expanded={volumePopoverOpen}
-              >
-                <Volume2 className="h-5 w-5" />
-              </button>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={volume}
-                onChange={(e) => setVolumeLevel(Number(e.target.value))}
+                onClick={volumeDown}
                 disabled={volumePending}
-                className="flex-1 min-w-0 h-2 appearance-none rounded-full bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-yellow dark:[&::-webkit-slider-thumb]:bg-accent-green [&::-webkit-slider-thumb]:cursor-pointer"
-                aria-label={t("music.volume")}
-              />
-              {volumePopoverOpen && (
-                <div
-                  className="absolute bottom-full left-0 mb-2 flex flex-col items-center gap-3 rounded-xl border border-white/20 bg-gray-900 dark:bg-black py-4 px-4 shadow-xl min-w-[140px] z-10"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <span className="text-sm text-white/90 font-medium tabular-nums">{volume}%</span>
-                  <div className="flex items-center gap-1">
-                    <button type="button" onClick={volumeDown} disabled={volumePending} className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50" aria-label={t("music.volumeDown")}>
-                      <ChevronDown className="h-5 w-5" />
-                    </button>
-                    <button type="button" onClick={volumeUp} disabled={volumePending} className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50" aria-label={t("music.volumeUp")}>
-                      <ChevronUp className="h-5 w-5" />
-                    </button>
-                    <button type="button" onClick={volumeMute} disabled={volumePending} className="flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50" aria-label={t("music.volumeMute")}>
-                      <VolumeX className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-              )}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
+                aria-label={t("music.volumeDown")}
+              >
+                <ChevronDown className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={volumeUp}
+                disabled={volumePending}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
+                aria-label={t("music.volumeUp")}
+              >
+                <ChevronUp className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={volumeMute}
+                disabled={volumePending}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
+                aria-label={t("music.volumeMute")}
+              >
+                <VolumeX className="h-5 w-5" />
+              </button>
             </div>
           </div>
         </footer>
