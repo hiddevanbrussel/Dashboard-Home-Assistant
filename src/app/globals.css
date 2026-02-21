@@ -85,16 +85,16 @@
   display: none;
 }
 
-/* Muziekpagina: verticale scroll heeft voorrang (makkelijker van boven naar onder sliden) */
+/* Muziekpagina: manipulation = geen 300ms delay, geen pan-restrictie (tablet kan overal verticaal scrollen) */
 .music-page-content {
-  touch-action: pan-y;
+  touch-action: manipulation;
 }
 
-/* Muziek-carousels: alleen horizontale swipe, verticale scroll van de pagina blijft mogelijk */
+/* Muziek-carousels: pan-y = dit element claimt alleen verticale pan → verticale vegen scrollen de pagina.
+   Horizontale vegen scrollen de carousel (overflow-x) nog steeds in veel browsers. */
 .music-h-scroll {
-  touch-action: pan-x;
+  touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
-  /* Beperk verticale capture: alleen horizontale beweging scrollt de carousel */
   overscroll-behavior-x: contain;
   overscroll-behavior-y: none;
 }
