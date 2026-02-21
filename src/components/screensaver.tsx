@@ -139,6 +139,8 @@ function ScreensaverFootball() {
 
   const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
   const status = String(attrs.status ?? "").toUpperCase();
+  const clock = attrs.clock as string | number | undefined;
+  const clockStr = clock != null ? String(clock) : null;
   const kickoffIn = attrs.kickoff_in as string | number | undefined;
   const kickoffInStr = kickoffIn != null ? String(kickoffIn) : undefined;
   const teamLogo = attrs.team_logo as string | undefined;
@@ -162,40 +164,46 @@ function ScreensaverFootball() {
           : status
             ? status
             : null;
+  const centerLabel = clockStr ?? statusLabel;
 
-  if (!teamLongName && !opponentLongName && !kickoffInStr && !statusLabel) return null;
+  if (!teamLongName && !opponentLongName && !kickoffInStr && !centerLabel) return null;
 
   return (
-    <div className="flex flex-col gap-1 px-4 py-3 text-white/95 drop-shadow-md min-w-[280px]">
+    <div className="flex flex-col gap-2 px-4 py-3 text-white/95 drop-shadow-md min-w-[280px]">
       {kickoffInStr && (
-        <p className="text-xs text-white/90 text-center w-full mb-1">{kickoffInStr}</p>
+        <p className="text-xs text-white/90 text-center w-full mb-0">{kickoffInStr}</p>
       )}
-      <div className="flex items-center gap-3 w-full justify-between">
-        {/* Thuisteam */}
-        <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
+      {/* Rij 1: team_logo | team_score | clock | opponent_score | opponent_logo */}
+      <div className="grid grid-cols-5 items-center gap-2 w-full min-w-0">
+        <div className="flex justify-center min-w-0">
           <ScreensaverFootballLogo src={teamLogo} alt="" />
-          <span className="text-sm font-medium truncate w-full text-center">{teamLongName ?? "—"}</span>
         </div>
-        {/* Scheidingsstreep / scores + status */}
-        <div className="flex flex-col items-center gap-0.5 shrink-0 px-2">
-          {showScores ? (
-            <>
-              <span className="text-xl font-bold tabular-nums">{teamScoreStr}</span>
-              <span className="text-white/60">-</span>
-              <span className="text-xl font-bold tabular-nums">{opponentScoreStr}</span>
-            </>
-          ) : (
-            <span className="text-white/60 text-sm">-</span>
-          )}
-          {statusLabel && (
-            <span className="text-[10px] uppercase tracking-wide text-white/70 mt-0.5">{statusLabel}</span>
+        <div className="flex justify-center">
+          <span className="inline-flex h-9 min-w-[2.25rem] items-center justify-center rounded-md bg-white/20 px-2 text-lg font-bold tabular-nums text-white">
+            {showScores ? teamScoreStr : "—"}
+          </span>
+        </div>
+        <div className="flex justify-center min-w-0">
+          {centerLabel && (
+            <span className="text-xs font-medium uppercase tracking-wide text-white/90 truncate">
+              {centerLabel}
+            </span>
           )}
         </div>
-        {/* Uitteam */}
-        <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
+        <div className="flex justify-center">
+          <span className="inline-flex h-9 min-w-[2.25rem] items-center justify-center rounded-md bg-white/20 px-2 text-lg font-bold tabular-nums text-white">
+            {showScores ? opponentScoreStr : "—"}
+          </span>
+        </div>
+        <div className="flex justify-center min-w-0">
           <ScreensaverFootballLogo src={opponentLogo} alt="" />
-          <span className="text-sm font-medium truncate w-full text-center">{opponentLongName ?? "—"}</span>
         </div>
+      </div>
+      {/* Rij 2: team_long_name (links) | ... | opponent_long_name (rechts) */}
+      <div className="grid grid-cols-5 gap-2 w-full min-w-0">
+        <span className="text-sm font-medium truncate text-center col-span-1">{teamLongName ?? "—"}</span>
+        <div className="col-span-3" />
+        <span className="text-sm font-medium truncate text-center col-span-1">{opponentLongName ?? "—"}</span>
       </div>
     </div>
   );
