@@ -1459,7 +1459,7 @@ export default function MusicPage() {
                 )}
               </div>
               <div className="min-w-0">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedArtist.name ?? t("music.unknown")}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{(selectedArtist as MASearchItem).name ?? t("music.unknown")}</h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("music.artistAlbums")}</p>
               </div>
             </div>
@@ -2074,7 +2074,7 @@ export default function MusicPage() {
                 )}
               </div>
               <div className="min-w-0">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedArtist.name ?? t("music.unknown")}</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{(selectedArtist as MASearchItem).name ?? t("music.unknown")}</h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("music.artistAlbums")}</p>
               </div>
             </div>
