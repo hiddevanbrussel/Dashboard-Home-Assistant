@@ -4,6 +4,8 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { OnboardingGuard } from "@/components/onboarding-guard";
 import { PageBackgroundProvider } from "@/components/page-background";
+import { MusicPlayerProvider } from "@/components/music-player-provider";
+import { GlobalMusicBar } from "@/components/global-music-bar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -36,9 +38,12 @@ export default function RootLayout({
       <body className={`relative ${inter.className}`}>
         <Providers>
           <OnboardingGuard>
-            <PageBackgroundProvider>
-              <div className="relative z-0 min-h-screen">{children}</div>
-            </PageBackgroundProvider>
+            <MusicPlayerProvider>
+              <PageBackgroundProvider>
+                <div className="relative z-0 min-h-screen">{children}</div>
+              </PageBackgroundProvider>
+              <GlobalMusicBar />
+            </MusicPlayerProvider>
           </OnboardingGuard>
         </Providers>
       </body>

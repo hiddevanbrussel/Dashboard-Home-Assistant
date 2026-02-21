@@ -9,7 +9,9 @@ import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
 import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker, ChevronRight, Menu, PanelLeftClose, ListMusic, Home } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
+import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useTranslation } from "@/hooks/use-translation";
+import { MusicPlayerBarContent } from "@/components/music-player-bar-content";
 import { cn } from "@/lib/utils";
 
 /** Tiny gray placeholder shown while music images load (blur placeholder). */
@@ -247,24 +249,14 @@ function formatDuration(seconds?: number): string {
 
 export default function MusicPage() {
   const [entities, setEntities] = useState<HaEntity[]>([]);
-  const [maPlayers, setMaPlayers] = useState<MAPlayer[]>([]);
+  const { maPlayers, selectedQueueId, setSelectedQueueId } = useMusicPlayerStore();
   const [playersLoading, setPlayersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFilter, setSearchFilter] = useState<"all" | "track" | "artist" | "album" | "radio">("all");
   const [searchResults, setSearchResults] = useState<MASearchItem[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null);
   const [playPending, setPlayPending] = useState<string | null>(null);
-  const [queueState, setQueueState] = useState<{
-    state?: "playing" | "paused" | "idle";
-    position?: number;
-    duration?: number;
-    current_item?: { name?: string; artists?: { name?: string }[] | { name?: string }; image?: string; [key: string]: unknown };
-  } | null>(null);
-  const [seekPending, setSeekPending] = useState(false);
-  const [volume, setVolume] = useState<number>(80);
-  const [volumePending, setVolumePending] = useState(false);
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [recentItems, setRecentItems] = useState<MASearchItem[]>([]);
@@ -293,10 +285,6 @@ export default function MusicPage() {
   const [libraryArtistsLoading, setLibraryArtistsLoading] = useState(false);
   const [libraryAlbums, setLibraryAlbums] = useState<MASearchItem[]>([]);
   const [libraryAlbumsLoading, setLibraryAlbumsLoading] = useState(false);
-  const [dontStopTheMusicEnabled, setDontStopTheMusicEnabled] = useState(false);
-  const [dontStopTheMusicPending, setDontStopTheMusicPending] = useState(false);
-  const [speakerPopoverOpen, setSpeakerPopoverOpen] = useState(false);
-  const speakerPopoverRef = useRef<HTMLDivElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<MusicSectionId | null>(null);
   const [musicMenuOpen, setMusicMenuOpen] = useState(true);
   const [selectedMenu, setSelectedMenu] = useState<"artists" | "albums" | "tracks" | "playlists" | null>(null);
@@ -310,41 +298,13 @@ export default function MusicPage() {
   }, [searchOverlayOpen]);
 
   useEffect(() => {
-    if (!speakerPopoverOpen) return;
-    const close = (e: MouseEvent) => {
-      if (speakerPopoverRef.current && !speakerPopoverRef.current.contains(e.target as Node)) {
-        setSpeakerPopoverOpen(false);
-      }
-    };
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
-  }, [speakerPopoverOpen]);
-
-  useEffect(() => {
     hydrateMusicAssistantStore();
   }, []);
 
   useEffect(() => {
     setPlayersLoading(true);
     setError(null);
-    setMaPlayers([]);
     setEntities([]);
-
-    if (musicAssistant.enabled && musicAssistant.baseUrl) {
-      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "player_queues/all")
-        .then((data: unknown) => {
-          const err = (data as { error?: string })?.error;
-          if (err) {
-            setError(err);
-            return;
-          }
-          const list = Array.isArray(data) ? data : (data as { result?: MAPlayer[] })?.result ?? [];
-          setMaPlayers(list);
-        })
-        .catch((err) => setError(err instanceof Error ? err.message : "Er is iets misgegaan."))
-        .finally(() => setPlayersLoading(false));
-      return;
-    }
 
     fetch("/api/ha/entities")
       .then((r) => {
@@ -358,6 +318,10 @@ export default function MusicPage() {
       .catch((err) => setError(err instanceof Error ? err.message : "Er is iets misgegaan."))
       .finally(() => setPlayersLoading(false));
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+
+  useEffect(() => {
+    if (musicAssistant.enabled && maPlayers.length > 0) setPlayersLoading(false);
+  }, [musicAssistant.enabled, maPlayers.length]);
 
   useEffect(() => {
     if (maPlayers.length === 0) return;
@@ -376,21 +340,6 @@ export default function MusicPage() {
       setSelectedQueueId(selectablePlayers[0].queue_id);
     }
   }, [selectablePlayers, selectedQueueId]);
-
-  useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "config/players/get", {
-      player_id: selectedQueueId,
-    })
-      .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
-        if (err) return;
-        const res = (data as { result?: { volume_level?: number } })?.result ?? data as { volume_level?: number };
-        const vol = res?.volume_level;
-        if (typeof vol === "number" && vol >= 0 && vol <= 1) setVolume(Math.round(vol * 100));
-      })
-      .catch(() => {});
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
 
   useEffect(() => {
     if (!selectedAlbum || !musicAssistant.enabled || !musicAssistant.baseUrl) {
@@ -808,36 +757,6 @@ export default function MusicPage() {
     return () => clearInterval(interval);
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.sectionRecentlyPlayedEnabled, fetchRecentItems]);
 
-  useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
-    const fetchState = () => {
-      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "player_queues/get", {
-        queue_id: selectedQueueId,
-      })
-        .then((data: unknown) => {
-          const err = (data as { error?: string })?.error;
-          if (err) return;
-          const r = data as { result?: { state?: string; elapsed_time?: number; current_item?: { duration?: number; name?: string; artists?: { name?: string }[] | { name?: string }; image?: string; image_url?: string; [key: string]: unknown }; volume_level?: number } } | Record<string, unknown>;
-          type QueueStateRes = { state?: string; elapsed_time?: number; position?: number; current_item?: { duration?: number; name?: string; artists?: { name?: string }[] | { name?: string }; image?: string; image_url?: string; [key: string]: unknown } };
-          const res = (r?.result ?? r) as QueueStateRes | null | undefined;
-          const state = res?.state;
-          const elapsed = res?.elapsed_time ?? res?.position;
-          const cur = res?.current_item;
-          const duration = cur?.duration;
-          setQueueState({
-            state: state === "playing" ? "playing" : state === "paused" ? "paused" : "idle",
-            position: typeof elapsed === "number" ? elapsed : undefined,
-            duration: typeof duration === "number" ? duration : undefined,
-            current_item: cur ? { name: cur.name, artists: cur.artists, image: cur.image ?? cur.image_url, ...cur } : undefined,
-          });
-        })
-        .catch(() => {});
-    };
-    fetchState();
-    const interval = setInterval(fetchState, 3000);
-    return () => clearInterval(interval);
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
-
   const runSearch = useCallback(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !searchQuery.trim()) return;
     setSearching(true);
@@ -991,130 +910,10 @@ export default function MusicPage() {
     [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, t]
   );
 
-  const queueControl = useCallback(
-    (action: "previous" | "play" | "pause" | "next") => {
-      if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
-      const cmd =
-        action === "play" ? "player_queues/play" :
-        action === "pause" ? "player_queues/pause" :
-        action === "next" ? "player_queues/next" : "player_queues/previous";
-      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, cmd, { queue_id: selectedQueueId })
-        .then((data: unknown) => {
-          const err = (data as { error?: string })?.error;
-          if (err) setError(err);
-        })
-        .catch((err) => setError(err instanceof Error ? err.message : "Actie mislukt."));
-    },
-    [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
-  );
-
-  const toggleDontStopTheMusic = useCallback(() => {
-    if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
-    const next = !dontStopTheMusicEnabled;
-    setDontStopTheMusicPending(true);
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "player_queues/dont_stop_the_music", {
-      queue_id: selectedQueueId,
-      dont_stop_the_music_enabled: next,
-    })
-      .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
-        if (err) setError(err);
-        else setDontStopTheMusicEnabled(next);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Actie mislukt."))
-      .finally(() => setDontStopTheMusicPending(false));
-  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, dontStopTheMusicEnabled]);
-
-  const seekTo = useCallback(
-    (positionSeconds: number) => {
-      if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
-      setSeekPending(true);
-      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "player_queues/seek", {
-        queue_id: selectedQueueId,
-        position: positionSeconds,
-      })
-        .then((data: unknown) => {
-          const err = (data as { error?: string })?.error;
-          if (err) setError(err);
-          else setQueueState((q) => (q ? { ...q, position: positionSeconds } : null));
-        })
-        .catch((err) => setError(err instanceof Error ? err.message : "Seek mislukt."))
-        .finally(() => setSeekPending(false));
-    },
-    [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
-  );
-
-  const setVolumeLevel = useCallback(
-    (pct: number) => {
-      if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
-      const level = Math.max(0, Math.min(100, pct)) / 100;
-      setVolume(Math.round(pct));
-      setVolumePending(true);
-      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_set", {
-        player_id: selectedQueueId,
-        volume_level: level,
-      })
-        .then((data: unknown) => {
-          const err = (data as { error?: string })?.error;
-          if (err) setError(err);
-        })
-        .catch(() => {})
-        .finally(() => setVolumePending(false));
-    },
-    [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
-  );
-
-  const volumeUp = useCallback(() => {
-    if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
-    setVolumePending(true);
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_up", {
-      player_id: selectedQueueId,
-    })
-      .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
-        if (err) setError(err);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Volume failed"))
-      .finally(() => setVolumePending(false));
-  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
-
-  const volumeDown = useCallback(() => {
-    if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
-    setVolumePending(true);
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_down", {
-      player_id: selectedQueueId,
-    })
-      .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
-        if (err) setError(err);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Volume failed"))
-      .finally(() => setVolumePending(false));
-  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
-
-  const volumeMute = useCallback(() => {
-    if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
-    setVolumePending(true);
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_mute", {
-      queue_id: selectedQueueId,
-      player_id: selectedQueueId,
-    })
-      .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
-        if (err) setError(err);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Volume failed"))
-      .finally(() => setVolumePending(false));
-  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
-
   const useMA = musicAssistant.enabled;
   const playerLabel = (p: MAPlayer) => (p.display_name as string) ?? p.queue_id ?? String(p.queue_id);
 
   const showPlayerBar = useMA && maPlayers.length > 0;
-  const isPlaying = queueState?.state === "playing";
-  const position = queueState?.position ?? 0;
-  const duration = queueState?.duration ?? 0;
-  const progress = duration > 0 ? Math.min(1, position / duration) : 0;
 
   const searchOverlay = searchOverlayOpen && typeof document !== "undefined" && createPortal(
     <div
@@ -2624,201 +2423,7 @@ export default function MusicPage() {
         </div>
       </div>
 
-      {showPlayerBar && (
-        <footer
-          className="fixed bottom-0 left-0 right-0 z-40 flex flex-col border-t border-white/10 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md px-4 sm:px-6 py-2"
-          aria-label={t("music.playerBar")}
-        >
-          {/* Balk: links = hoes + artiest/titel, midden = knoppen + voortgang, rechts = volume */}
-          <div className="w-full flex items-center gap-4 sm:gap-6 min-w-0">
-            {/* Links: albumhoes, naast artiest (boven) en nummer/titel (onder) */}
-            <div className="flex items-center gap-3 min-w-[120px] max-w-[220px] sm:max-w-xs shrink-0 flex-shrink-0">
-              {(() => {
-                const cur = queueState?.current_item as (MASearchItem & { artist?: string; stream_title?: string }) | undefined;
-                const coverSrc = cur ? getImageSrc(getItemImageUrl(cur), musicAssistant.baseUrl, musicAssistant.token) : null;
-                let artistLine =
-                  cur?.artists != null
-                    ? Array.isArray(cur.artists)
-                      ? (cur.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
-                      : typeof (cur.artists as { name?: string }).name === "string"
-                        ? (cur.artists as { name: string }).name
-                        : ""
-                    : typeof cur?.artist === "string"
-                      ? cur.artist.trim()
-                      : "";
-                let titleLine =
-                  typeof cur?.name === "string" && cur.name.trim()
-                    ? cur.name.trim()
-                    : typeof cur?.stream_title === "string" && cur.stream_title.trim()
-                      ? cur.stream_title.trim()
-                      : "";
-                if (titleLine && !artistLine) {
-                  const combined = titleLine;
-                  const sep = combined.match(/\s*[\-\u2013\u2014]\s+|\s*:\s+/)?.index;
-                  if (typeof sep === "number" && sep > 0) {
-                    artistLine = combined.slice(0, sep).trim();
-                    titleLine = combined.slice(sep).replace(/^\s*[\-\u2013\u2014:]+\s*/, "").trim();
-                  }
-                }
-                return (
-                  <>
-                    <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-white/10">
-                      {coverSrc ? (
-                        <Image src={coverSrc} alt="" fill className="object-cover" sizes="56px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Disc3 className="h-7 w-7 text-white/50" aria-hidden />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1 flex flex-col gap-0.5">
-                      <p className="truncate text-xs text-white/70">{artistLine || "—"}</p>
-                      <p className="truncate text-sm font-medium text-white/95">{titleLine || "—"}</p>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Midden: vorige / play / volgende, dan voortgang */}
-            <div className="flex-1 min-w-0 flex flex-col gap-2 items-center">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => queueControl("previous")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                  aria-label={t("music.previous")}
-                >
-                  <SkipBack className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => queueControl(isPlaying ? "pause" : "play")}
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-yellow dark:bg-accent-green text-gray-900 hover:opacity-90 transition-opacity"
-                  aria-label={isPlaying ? t("music.pause") : t("music.play")}
-                >
-                  {isPlaying ? (
-                    <Pause className="h-6 w-6 fill-current" />
-                  ) : (
-                    <Play className="h-6 w-6 fill-current ml-0.5" />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => queueControl("next")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
-                  aria-label={t("music.next")}
-                >
-                  <SkipForward className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleDontStopTheMusic}
-                  disabled={dontStopTheMusicPending}
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full transition-colors",
-                    dontStopTheMusicEnabled
-                      ? "bg-accent-yellow dark:bg-accent-green text-gray-900"
-                      : "text-white/90 hover:bg-white/10"
-                  )}
-                  aria-label={t("music.dontStopTheMusic")}
-                  title={t("music.dontStopTheMusic")}
-                >
-                  <Donut className="h-5 w-5" aria-hidden />
-                </button>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-white/70 tabular-nums w-full min-w-0 sm:min-w-[320px] max-w-[560px] sm:max-w-[720px] shrink">
-                <span className="w-9 shrink-0">{formatDuration(position)}</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={duration || 100}
-                  value={position}
-                  step={1}
-                  disabled={seekPending || duration <= 0}
-                  onChange={(e) => seekTo(Number(e.target.value))}
-                  className="flex-1 min-w-0 h-1.5 rounded-full appearance-none bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50"
-                  aria-label={t("music.position")}
-                />
-                <span className="w-9 shrink-0 text-right">{formatDuration(duration)}</span>
-              </div>
-            </div>
-
-            {/* Rechts: speaker keuze + volume (-, +, mute) */}
-            <div className="relative flex items-center gap-1 shrink-0">
-              {allowSpeakerSelection && selectablePlayers.length > 0 && (
-                <div className="relative" ref={speakerPopoverRef}>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setSpeakerPopoverOpen((v) => !v); }}
-                    className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
-                      speakerPopoverOpen ? "bg-white/20 text-white" : "text-white/90 hover:bg-white/10"
-                    )}
-                    aria-label={t("music.choosePlayer")}
-                    aria-expanded={speakerPopoverOpen}
-                  >
-                    <Speaker className="h-5 w-5" />
-                  </button>
-                  {speakerPopoverOpen && (
-                    <div
-                      className="absolute bottom-full right-0 mb-2 py-2 min-w-[180px] rounded-lg border border-white/20 bg-gray-900 dark:bg-black shadow-xl z-50 max-h-[60vh] overflow-y-auto"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <p className="px-3 py-1.5 text-xs font-medium text-white/70 border-b border-white/10">
-                        {t("music.choosePlayer")}
-                      </p>
-                      {selectablePlayers.map((p) => (
-                        <button
-                          key={p.queue_id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedQueueId(p.queue_id);
-                            setSpeakerPopoverOpen(false);
-                          }}
-                          className={cn(
-                            "w-full text-left px-3 py-2 text-sm text-white/90 hover:bg-white/10 transition-colors",
-                            selectedQueueId === p.queue_id && "bg-white/15 font-medium"
-                          )}
-                        >
-                          {playerLabel(p)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={volumeDown}
-                disabled={volumePending}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
-                aria-label={t("music.volumeDown")}
-              >
-                <CircleMinus className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={volumeUp}
-                disabled={volumePending}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
-                aria-label={t("music.volumeUp")}
-              >
-                <CirclePlus className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={volumeMute}
-                disabled={volumePending}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
-                aria-label={t("music.volumeMute")}
-              >
-                <VolumeX className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        </footer>
-      )}
+      {showPlayerBar && <MusicPlayerBarContent allowSpeakerSelection />}
     </AppShell>
   );
 }
