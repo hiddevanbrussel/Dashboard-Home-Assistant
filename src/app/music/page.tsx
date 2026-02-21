@@ -1879,10 +1879,10 @@ export default function MusicPage() {
                       : "";
                 if (titleLine && !artistLine) {
                   const combined = titleLine;
-                  const sep = combined.match(/\s*[–—-]\s+|\s*:\s+/)?.index;
+                  const sep = combined.match(/\s*[\-\u2013\u2014]\s+|\s*:\s+/)?.index;
                   if (typeof sep === "number" && sep > 0) {
                     artistLine = combined.slice(0, sep).trim();
-                    titleLine = combined.slice(sep).replace(/^\s*[–—-:]+\s*/, "").trim();
+                    titleLine = combined.slice(sep).replace(/^\s*[\-\u2013\u2014:]+\s*/, "").trim();
                   }
                 }
                 return (
