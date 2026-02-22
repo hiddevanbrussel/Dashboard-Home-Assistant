@@ -80,12 +80,19 @@ export async function PUT(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes("welcomeTitle") || message.includes("welcomeSubtitle") || message.includes("no such column")) {
-      dashboard = await prisma.dashboard.update({
-        where: { id },
-        data: baseData,
-      });
+      try {
+        dashboard = await prisma.dashboard.update({
+          where: { id },
+          data: baseData,
+        });
+      } catch (fallbackErr) {
+        console.error("[PUT /api/dashboards/[id]] fallback update failed", fallbackErr);
+        const fallbackMessage = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+        return NextResponse.json({ error: fallbackMessage }, { status: 500 });
+      }
     } else {
-      throw err;
+      console.error("[PUT /api/dashboards/[id]]", err);
+      return NextResponse.json({ error: message }, { status: 500 });
     }
   }
 

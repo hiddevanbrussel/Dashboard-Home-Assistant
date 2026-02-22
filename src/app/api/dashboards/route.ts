@@ -37,15 +37,21 @@ export async function POST(request: Request) {
   }
   const name = body.name ?? "New Dashboard";
   const theme = body.theme ?? "auto";
-  const dashboard = await prisma.dashboard.create({
-    data: { name, theme },
-  });
-  return NextResponse.json({
-    id: dashboard.id,
-    name: dashboard.name,
-    theme: dashboard.theme,
-    layout: dashboard.layout,
-    widgets: dashboard.widgets,
-    background: dashboard.background,
-  });
+  try {
+    const dashboard = await prisma.dashboard.create({
+      data: { name, theme },
+    });
+    return NextResponse.json({
+      id: dashboard.id,
+      name: dashboard.name,
+      theme: dashboard.theme,
+      layout: dashboard.layout,
+      widgets: dashboard.widgets,
+      background: dashboard.background,
+    });
+  } catch (err) {
+    console.error("[POST /api/dashboards]", err);
+    const message = err instanceof Error ? err.message : "Failed to create dashboard";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
