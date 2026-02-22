@@ -9,17 +9,21 @@ export default function DashboardsPage() {
 
   useEffect(() => {
     fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.id) {
+      .then((r) =>
+        r.ok
+          ? r.json().then((data) => ({ ok: true as const, data }))
+          : Promise.resolve({ ok: false as const, data: null })
+      )
+      .then(({ ok, data: d }) => {
+        if (ok && d?.id) {
           router.replace(`/dashboards/${d.id}`);
-        } else {
+        } else if (ok && d === null) {
           router.replace("/onboarding/start");
+        } else if (!ok) {
+          router.replace("/");
         }
       })
-      .catch(() => {
-        router.replace("/onboarding/start");
-      });
+      .catch(() => router.replace("/"));
   }, [router]);
 
   return (

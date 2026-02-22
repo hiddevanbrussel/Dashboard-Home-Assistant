@@ -126,11 +126,36 @@ function ScreensaverFootballLogo({ src, alt }: { src?: string | null; alt: strin
     <img
       src={url}
       alt={alt}
-      className="h-12 w-12 object-contain shrink-0"
+      className="h-8 w-8 object-contain shrink-0"
       loading="lazy"
       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
     />
   );
+}
+
+/** Leest score uit attributes: direct of genest (data), ondersteunt number en string. */
+function readScoreAttr(attrs: Record<string, unknown>, ...keys: string[]): string {
+  const data = attrs.data as Record<string, unknown> | undefined;
+  for (const key of keys) {
+    const v = attrs[key] ?? (data && data[key]);
+    if (v !== undefined && v !== null) {
+      const s = String(v).trim();
+      if (s !== "") return s;
+    }
+  }
+  return "—";
+}
+
+/** Parsed entity.state als "1-0" of "2 - 1" → [team, opponent] of null. */
+function parseStateAsScore(state: string | undefined): [string, string] | null {
+  if (state == null || typeof state !== "string") return null;
+  const trimmed = state.trim();
+  const parts = trimmed.split(/\s*[-–]\s*/);
+  if (parts.length !== 2) return null;
+  const a = parts[0].trim();
+  const b = parts[1].trim();
+  if (a === "" || b === "" || !/^\d+$/.test(a) || !/^\d+$/.test(b)) return null;
+  return [a, b];
 }
 
 function ScreensaverFootball() {
@@ -148,16 +173,18 @@ function ScreensaverFootball() {
   const teamLongName = attrs.team_long_name as string | undefined;
   const opponentLogo = attrs.opponent_logo as string | undefined;
   const opponentLongName = attrs.opponent_long_name as string | undefined;
-  // team_score en opponent_score zijn in HA strings, bijv. "1"
-  const teamScoreStr =
-    attrs.team_score != null && String(attrs.team_score).trim() !== ""
-      ? String(attrs.team_score).trim()
-      : "—";
-  const opponentScoreStr =
-    attrs.opponent_score != null && String(attrs.opponent_score).trim() !== ""
-      ? String(attrs.opponent_score).trim()
-      : "—";
-  const showScores = status === "IN" || status === "POST";
+  // Scores: uit attributes (meerdere keys) of uit entity.state als "1-0" / "2 - 1"
+  let teamScoreStr = readScoreAttr(attrs, "team_score", "team_goals", "home_score");
+  let opponentScoreStr = readScoreAttr(attrs, "opponent_score", "opponent_goals", "away_score");
+  if (teamScoreStr === "—" && opponentScoreStr === "—") {
+    const fromState = parseStateAsScore(entity.state);
+    if (fromState) {
+      teamScoreStr = fromState[0];
+      opponentScoreStr = fromState[1];
+    }
+  }
+  const hasScoreValues = teamScoreStr !== "—" || opponentScoreStr !== "—";
+  const showScores = status === "IN" || status === "POST" || hasScoreValues;
 
   const statusLabel =
     status === "PRE"
@@ -174,29 +201,29 @@ function ScreensaverFootball() {
   if (!teamLongName && !opponentLongName && !kickoffInStr && !centerLabel) return null;
 
   return (
-    <div className="flex flex-col gap-2 px-4 py-3 text-white/95 drop-shadow-md min-w-[280px]">
+    <div className="flex flex-col gap-1 px-2 py-1.5 text-white/95 drop-shadow-md w-max max-w-[168px]">
       {kickoffInStr && (
-        <p className="text-xs text-white/90 text-center w-full mb-0">{kickoffInStr}</p>
+        <p className="text-[10px] text-white/90 text-center w-full mb-0 leading-tight">{kickoffInStr}</p>
       )}
       {/* Rij 1: team_logo | team_score | clock | opponent_score | opponent_logo */}
-      <div className="grid grid-cols-5 items-center gap-2 w-full min-w-0">
+      <div className="grid grid-cols-5 items-center gap-1 w-full min-w-0">
         <div className="flex justify-center min-w-0">
           <ScreensaverFootballLogo src={teamLogo} alt="" />
         </div>
         <div className="flex justify-center">
-          <span className="inline-flex h-9 min-w-[2.25rem] items-center justify-center rounded-md bg-white/20 px-2 text-lg font-bold tabular-nums text-white">
+          <span className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded bg-white/20 px-1 text-xs font-bold tabular-nums text-white">
             {showScores ? teamScoreStr : "—"}
           </span>
         </div>
         <div className="flex justify-center min-w-0">
           {centerLabel && (
-            <span className="text-xs font-medium uppercase tracking-wide text-white/90 truncate">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-white/90 truncate max-w-[2.5rem]">
               {centerLabel}
             </span>
           )}
         </div>
         <div className="flex justify-center">
-          <span className="inline-flex h-9 min-w-[2.25rem] items-center justify-center rounded-md bg-white/20 px-2 text-lg font-bold tabular-nums text-white">
+          <span className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded bg-white/20 px-1 text-xs font-bold tabular-nums text-white">
             {showScores ? opponentScoreStr : "—"}
           </span>
         </div>
@@ -205,10 +232,10 @@ function ScreensaverFootball() {
         </div>
       </div>
       {/* Rij 2: team_long_name (links) | ... | opponent_long_name (rechts) */}
-      <div className="grid grid-cols-5 gap-2 w-full min-w-0">
-        <span className="text-sm font-medium truncate text-center col-span-1">{teamLongName ?? "—"}</span>
+      <div className="grid grid-cols-5 gap-1 w-full min-w-0">
+        <span className="text-[10px] font-medium truncate text-center col-span-1">{teamLongName ?? "—"}</span>
         <div className="col-span-3" />
-        <span className="text-sm font-medium truncate text-center col-span-1">{opponentLongName ?? "—"}</span>
+        <span className="text-[10px] font-medium truncate text-center col-span-1">{opponentLongName ?? "—"}</span>
       </div>
     </div>
   );

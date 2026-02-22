@@ -21,22 +21,27 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
 
     // Geen onboarding-flag in localStorage: check of er al een dashboard is (bijv. eerste start na deploy met bestaande data)
     fetch("/api/dashboard")
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.resolve({ _fetchError: true })))
       .then((d) => {
+        if (d && typeof d === "object" && (d as { _fetchError?: boolean })._fetchError) {
+          setAllowed(true);
+          return;
+        }
         if (d?.id) {
           setOnboardingCompleted();
           setAllowed(true);
           if (pathname === "/" || pathname === "/dashboards") {
             router.replace(`/dashboards/${d.id}`);
           }
-        } else {
-          router.replace("/onboarding/start");
+        } else if (d === null) {
           setAllowed(false);
+          router.replace("/onboarding/start");
+        } else {
+          setAllowed(true);
         }
       })
       .catch(() => {
-        router.replace("/onboarding/start");
-        setAllowed(false);
+        setAllowed(true);
       });
   }, [pathname, router]);
 
