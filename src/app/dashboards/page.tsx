@@ -17,6 +17,8 @@ export default function DashboardsPage() {
         if (d?.id) {
           router.replace(`/dashboards/${d.id}`);
         } else {
+        } else if (!ok) {
+          router.replace("/");
           router.replace("/onboarding/start");
         }
       } catch {

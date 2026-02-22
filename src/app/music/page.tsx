@@ -1287,7 +1287,6 @@ export default function MusicPage() {
                       setSelectedAlbum(item);
                       setAlbumDetails(null);
                       setAlbumTracks([]);
-                      setSelectedArtist(null);
                     };
                     return (
                       <button
@@ -1905,7 +1904,6 @@ export default function MusicPage() {
                       setSelectedAlbum(item);
                       setAlbumDetails(null);
                       setAlbumTracks([]);
-                      setSelectedArtist(null);
                     };
                     return (
                       <button
