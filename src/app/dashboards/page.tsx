@@ -8,22 +8,22 @@ export default function DashboardsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/dashboard")
-      .then((r) =>
-        r.ok
-          ? r.json().then((data) => ({ ok: true as const, data }))
-          : Promise.resolve({ ok: false as const, data: null })
-      )
-      .then(({ ok, data: d }) => {
-        if (ok && d?.id) {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/dashboard");
+        const d = r.ok ? await r.json() : null;
+        if (cancelled) return;
+        if (d?.id) {
           router.replace(`/dashboards/${d.id}`);
-        } else if (ok && d === null) {
+        } else {
           router.replace("/onboarding/start");
-        } else if (!ok) {
-          router.replace("/");
         }
-      })
-      .catch(() => router.replace("/"));
+      } catch {
+        if (!cancelled) router.replace("/");
+      }
+    })();
+    return () => { cancelled = true; };
   }, [router]);
 
   return (
