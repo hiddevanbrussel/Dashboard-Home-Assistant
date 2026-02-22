@@ -8,11 +8,11 @@ import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode } from "@/stores/dashboard-settings-store";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
-import { Image, Link2, List, Monitor, Music2, Palette, LayoutDashboard, ChevronUp, ChevronDown } from "lucide-react";
+import { Image, Link2, List, Monitor, Music2, Palette, LayoutDashboard, RefreshCw, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "page-background" | "dashboard" | "connection" | "music-assistant" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "page-background" | "dashboard" | "connection" | "music-assistant" | "entities" | "system";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -22,6 +22,7 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   connection: "settings.connection",
   "music-assistant": "settings.musicAssistant",
   entities: "settings.entities",
+  system: "settings.system",
 };
 
 type HaEntity = {
@@ -78,6 +79,9 @@ export default function SettingsPage() {
   const [maTesting, setMaTesting] = useState(false);
   const [maPlayersList, setMaPlayersList] = useState<{ queue_id: string; display_name?: string }[]>([]);
   const [maPlayersLoading, setMaPlayersLoading] = useState(false);
+  const [updatePasscode, setUpdatePasscode] = useState("");
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [updateResult, setUpdateResult] = useState<{ ok: boolean; message?: string; steps?: { step: string; output: string; error?: string }[] } | null>(null);
   const musicAssistant = useMusicAssistantStore();
 
   useEffect(() => {
@@ -383,6 +387,9 @@ export default function SettingsPage() {
     { groupKey: "settings.groups.integrations", sections: [
       { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
       { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
+    ]},
+    { groupKey: "settings.groups.system", sections: [
+      { id: "system", labelKey: SECTION_KEYS.system, icon: RefreshCw },
     ]},
   ];
 
@@ -778,6 +785,82 @@ export default function SettingsPage() {
                 </p>
               </GlassCard>
             )
+          )}
+
+          {section === "system" && (
+            <GlassCard>
+              <h3 className="text-card-title font-medium mb-3">{t("settings.update.title")}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {t("settings.update.description")}
+              </p>
+              <div className="mb-4">
+                <label htmlFor="update-passcode" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("settings.update.passcode")}
+                </label>
+                <input
+                  id="update-passcode"
+                  type="password"
+                  value={updatePasscode}
+                  onChange={(e) => setUpdatePasscode(e.target.value)}
+                  placeholder={t("settings.update.passcodePlaceholder")}
+                  className="w-full max-w-xs rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
+                  autoComplete="off"
+                />
+              </div>
+              {updateResult && (
+                <div
+                  className={cn(
+                    "mb-4 rounded-lg p-3 text-sm",
+                    updateResult.ok
+                      ? "bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-200"
+                      : "bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200"
+                  )}
+                >
+                  {updateResult.ok ? t("settings.update.success") : (updateResult.message || t("settings.update.errorFailed"))}
+                  {updateResult.steps && updateResult.steps.length > 0 && (
+                    <pre className="mt-2 text-xs overflow-auto max-h-40 whitespace-pre-wrap break-words">
+                      {updateResult.steps.map((s) => `${s.step}${s.error ? " (failed)" : ""}\n${s.output}`).join("\n\n")}
+                    </pre>
+                  )}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={async () => {
+                  setUpdateResult(null);
+                  setUpdateLoading(true);
+                  try {
+                    const res = await fetch("/api/admin/update", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ passcode: updatePasscode }),
+                    });
+                    const data = await res.json();
+                    if (res.status === 403) {
+                      setUpdateResult({ ok: false, message: t("settings.update.errorWrongPasscode") });
+                      return;
+                    }
+                    if (res.status === 503) {
+                      setUpdateResult({ ok: false, message: t("settings.update.errorNotConfigured") });
+                      return;
+                    }
+                    setUpdateResult({
+                      ok: data.ok === true,
+                      message: data.error === "wrong_passcode" ? t("settings.update.errorWrongPasscode") : data.message,
+                      steps: data.steps,
+                    });
+                  } catch {
+                    setUpdateResult({ ok: false, message: t("settings.update.errorFailed") });
+                  } finally {
+                    setUpdateLoading(false);
+                  }
+                }}
+                disabled={updateLoading || !updatePasscode.trim()}
+                className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
+              >
+                {updateLoading ? t("settings.update.installing") : t("settings.update.install")}
+              </button>
+            </GlassCard>
           )}
 
           {section === "dashboard" && (
