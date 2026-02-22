@@ -126,7 +126,7 @@ function ScreensaverFootballLogo({ src, alt }: { src?: string | null; alt: strin
     <img
       src={url}
       alt={alt}
-      className="h-8 w-8 object-contain shrink-0"
+      className="h-12 w-12 sm:h-14 sm:w-14 object-contain shrink-0"
       loading="lazy"
       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
     />
@@ -201,29 +201,29 @@ function ScreensaverFootball() {
   if (!teamLongName && !opponentLongName && !kickoffInStr && !centerLabel) return null;
 
   return (
-    <div className="flex flex-col gap-1 px-2 py-1.5 text-white/95 drop-shadow-md w-max max-w-[168px]">
+    <div className="flex flex-col gap-2 px-3 py-2.5 text-white/95 drop-shadow-md w-max max-w-[240px] sm:max-w-[280px]">
       {kickoffInStr && (
-        <p className="text-[10px] text-white/90 text-center w-full mb-0 leading-tight">{kickoffInStr}</p>
+        <p className="text-xs sm:text-sm text-white/90 text-center w-full mb-0 leading-tight">{kickoffInStr}</p>
       )}
       {/* Rij 1: team_logo | team_score | clock | opponent_score | opponent_logo */}
-      <div className="grid grid-cols-5 items-center gap-1 w-full min-w-0">
+      <div className="grid grid-cols-5 items-center gap-2 w-full min-w-0">
         <div className="flex justify-center min-w-0">
           <ScreensaverFootballLogo src={teamLogo} alt="" />
         </div>
         <div className="flex justify-center">
-          <span className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded bg-white/20 px-1 text-xs font-bold tabular-nums text-white">
+          <span className="inline-flex h-8 min-w-[2rem] sm:h-9 sm:min-w-[2.25rem] items-center justify-center rounded bg-white/20 px-1.5 text-sm sm:text-base font-bold tabular-nums text-white">
             {showScores ? teamScoreStr : "—"}
           </span>
         </div>
         <div className="flex justify-center min-w-0">
           {centerLabel && (
-            <span className="text-[10px] font-medium uppercase tracking-wide text-white/90 truncate max-w-[2.5rem]">
+            <span className="text-xs sm:text-sm font-medium uppercase tracking-wide text-white/90 truncate max-w-[3.5rem] sm:max-w-[4rem]">
               {centerLabel}
             </span>
           )}
         </div>
         <div className="flex justify-center">
-          <span className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded bg-white/20 px-1 text-xs font-bold tabular-nums text-white">
+          <span className="inline-flex h-8 min-w-[2rem] sm:h-9 sm:min-w-[2.25rem] items-center justify-center rounded bg-white/20 px-1.5 text-sm sm:text-base font-bold tabular-nums text-white">
             {showScores ? opponentScoreStr : "—"}
           </span>
         </div>
@@ -232,10 +232,10 @@ function ScreensaverFootball() {
         </div>
       </div>
       {/* Rij 2: team_long_name (links) | ... | opponent_long_name (rechts) */}
-      <div className="grid grid-cols-5 gap-1 w-full min-w-0">
-        <span className="text-[10px] font-medium truncate text-center col-span-1">{teamLongName ?? "—"}</span>
+      <div className="grid grid-cols-5 gap-2 w-full min-w-0">
+        <span className="text-xs sm:text-sm font-medium truncate text-center col-span-1">{teamLongName ?? "—"}</span>
         <div className="col-span-3" />
-        <span className="text-[10px] font-medium truncate text-center col-span-1">{opponentLongName ?? "—"}</span>
+        <span className="text-xs sm:text-sm font-medium truncate text-center col-span-1">{opponentLongName ?? "—"}</span>
       </div>
     </div>
   );
