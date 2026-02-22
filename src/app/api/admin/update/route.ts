@@ -6,6 +6,17 @@ const MAX_DURATION_MS = 5 * 60 * 1000; // 5 min
 
 export const maxDuration = 300; // 5 min for build
 
+function getExecErrorOutput(e: unknown): string {
+  const err = e instanceof Error ? e.message : String(e);
+  if (e && typeof e === "object" && "stderr" in e) {
+    const stderr = (e as { stderr?: Buffer }).stderr;
+    if (typeof stderr === "object" && stderr && "toString" in stderr)
+      return (stderr as Buffer).toString("utf8") ?? err;
+    if (typeof stderr === "string") return stderr;
+  }
+  return err;
+}
+
 /**
  * POST /api/admin/update
  * Body: { passcode: string }
@@ -51,10 +62,7 @@ export async function POST(request: Request) {
       });
       steps.push({ step: "git pull", output: out.trim() || "(ok)" });
     } catch (e) {
-      const err = e instanceof Error ? e.message : String(e);
-      const out = "stderr" in e && typeof (e as { stderr?: Buffer }).stderr === "object"
-        ? (e as { stderr: Buffer }).stderr?.toString?.("utf8") ?? err
-        : err;
+      const out = getExecErrorOutput(e);
       steps.push({ step: "git pull", output: out, error: "failed" });
       return NextResponse.json({ ok: false, steps }, { status: 200 });
     }
@@ -68,11 +76,8 @@ export async function POST(request: Request) {
       });
       steps.push({ step: "npm ci", output: out.trim() ? out.trim().slice(-500) : "(ok)" });
     } catch (e) {
-      const err = e instanceof Error ? e.message : String(e);
-      const out = "stderr" in e && typeof (e as { stderr?: Buffer }).stderr === "object"
-        ? (e as { stderr: Buffer }).stderr?.toString?.("utf8") ?? err
-        : err;
-      steps.push({ step: "npm ci", output: out.slice(-800), error: "failed" });
+      const out = getExecErrorOutput(e).slice(-800);
+      steps.push({ step: "npm ci", output: out, error: "failed" });
       return NextResponse.json({ ok: false, steps }, { status: 200 });
     }
 
@@ -85,11 +90,8 @@ export async function POST(request: Request) {
       });
       steps.push({ step: "npm run build", output: out.trim() ? out.trim().slice(-800) : "(ok)" });
     } catch (e) {
-      const err = e instanceof Error ? e.message : String(e);
-      const out = "stderr" in e && typeof (e as { stderr?: Buffer }).stderr === "object"
-        ? (e as { stderr: Buffer }).stderr?.toString?.("utf8") ?? err
-        : err;
-      steps.push({ step: "npm run build", output: out.slice(-1000), error: "failed" });
+      const out = getExecErrorOutput(e).slice(-1000);
+      steps.push({ step: "npm run build", output: out, error: "failed" });
       return NextResponse.json({ ok: false, steps }, { status: 200 });
     }
 
