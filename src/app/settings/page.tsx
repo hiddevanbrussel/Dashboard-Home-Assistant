@@ -388,9 +388,10 @@ export default function SettingsPage() {
       { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
       { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
     ]},
-    { groupKey: "settings.groups.system", sections: [
-      { id: "system", labelKey: SECTION_KEYS.system, icon: RefreshCw },
-    ]},
+    // System/update section disabled for now
+    // { groupKey: "settings.groups.system", sections: [
+    //   { id: "system", labelKey: SECTION_KEYS.system, icon: RefreshCw },
+    // ]},
   ];
 
   return (
