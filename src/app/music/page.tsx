@@ -81,6 +81,7 @@ function getItemParams(item: MASearchItem): { item_id: string; provider_instance
   if (itemId == null) return null;
   const provider =
     (item as { provider_instance_id?: string }).provider_instance_id ??
+    (item as { provider_instance_id_or_domain?: string }).provider_instance_id_or_domain ??
     (item as { provider_instance?: string }).provider_instance ??
     (item as { provider?: string }).provider ??
     (item as { provider_domain?: string }).provider_domain ??
@@ -1184,7 +1185,7 @@ export default function MusicPage() {
                           if (id === "tracks") setSelectedCategory("favoriteTracks");
                           else setSelectedCategory(null);
                           if (id === "artists") setSelectedArtist(null);
-                          else if (id === "albums") setSelectedAlbum(null);
+                          if (id === "albums" || id === "tracks") setSelectedAlbum(null);
                         }
                       }}
                       className={cn(
@@ -1282,21 +1283,17 @@ export default function MusicPage() {
                   {artistAlbums.map((item, index) => {
                     const albumUri = getPlayableUri(item, "album");
                     const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
-                    const albumParams = getAlbumParams(item);
                     const handleClick = () => {
-                      if (albumParams) {
-                        setSelectedAlbum(item);
-                        setAlbumDetails(null);
-                        setAlbumTracks([]);
-                      }
+                      setSelectedAlbum(item);
+                      setAlbumDetails(null);
+                      setAlbumTracks([]);
                     };
                     return (
                       <button
                         key={albumUri ?? `artist-album-${index}`}
                         type="button"
                         onClick={handleClick}
-                        disabled={!albumParams}
-                        className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always]"
+                        className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] snap-start [scroll-snap-stop:always]"
                         title={item.name as string}
                       >
                         {imageSrc ? (
@@ -1903,21 +1900,17 @@ export default function MusicPage() {
                   {artistAlbums.map((item, index) => {
                     const albumUri = getPlayableUri(item, "album");
                     const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
-                    const albumParams = getAlbumParams(item);
                     const handleClick = () => {
-                      if (albumParams) {
-                        setSelectedAlbum(item);
-                        setAlbumDetails(null);
-                        setAlbumTracks([]);
-                      }
+                      setSelectedAlbum(item);
+                      setAlbumDetails(null);
+                      setAlbumTracks([]);
                     };
                     return (
                       <button
                         key={albumUri ?? `artist-album-${index}`}
                         type="button"
                         onClick={handleClick}
-                        disabled={!albumParams}
-                        className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always]"
+                        className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] snap-start [scroll-snap-stop:always]"
                         title={item.name as string}
                       >
                         {imageSrc ? (
