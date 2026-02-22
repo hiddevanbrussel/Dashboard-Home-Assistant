@@ -5,11 +5,11 @@ import { Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CARD_ICONS } from "./card-icons";
 
-const CARD_WIDTH = 200;
-const CARD_HEIGHT = 160;
+const CARD_WIDTH = 240;
+const CARD_HEIGHT = 200;
 const DEFAULT_ICON_BG = "#3B82F6";
-const ICON_CIRCLE_SIZE = 80;
-const ICON_SIZE = 32;
+const ICON_CIRCLE_SIZE = 90;
+const ICON_SIZE = 36;
 
 export type RoomPreviewCardProps = {
   areaId: string;
@@ -36,7 +36,7 @@ export function RoomPreviewCard({
   return (
     <Link
       href={`/rooms/${encodeURIComponent(areaId)}`}
-      className="group relative block w-[200px] h-[160px] overflow-hidden rounded-xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/50 shadow-lg backdrop-blur-2xl transition-all hover:ring-2 hover:ring-[#4D2FB2]/30"
+      className="group relative block w-[240px] h-[200px] overflow-hidden rounded-xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/50 shadow-lg backdrop-blur-2xl transition-all hover:ring-2 hover:ring-[#4D2FB2]/30"
     >
       {background && (
         <>
