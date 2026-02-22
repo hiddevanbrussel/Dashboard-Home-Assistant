@@ -20,10 +20,10 @@ function formatEntityValue(state: string | undefined, attributes: Record<string,
 
 const DEFAULT_ICON_BG = "#3B82F6";
 
-const BASE_CARD_WIDTH = 280;
-const BASE_CARD_HEIGHT = 120;
-const BASE_ICON_CIRCLE = 130;
-const BASE_ICON_SIZE = 52;
+const BASE_CARD_WIDTH = 240;
+const BASE_CARD_HEIGHT = 100;
+const BASE_ICON_CIRCLE = 100;
+const BASE_ICON_SIZE = 40;
 
 export function RoomCardWidget({
   title = "Kamer",

@@ -63,6 +63,7 @@ import {
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import type { ImageCondition, SensorCondition } from "@/components/widgets";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
 import { OfflinePill } from "@/components/offline-pill";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
@@ -408,6 +409,9 @@ export default function DashboardEditPage() {
     ? `/api/room-dashboards/${encodeURIComponent(areaId)}`
     : `/api/dashboards/${rawId}`;
   const [editMode, setEditMode] = useState(false);
+  const [editPasscodeModalOpen, setEditPasscodeModalOpen] = useState(false);
+  const [editPasscodeInput, setEditPasscodeInput] = useState("");
+  const [editPasscodeError, setEditPasscodeError] = useState<string | null>(null);
   const [layout, setLayout] = useState<Layout>([]);
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
   const [welcomeTitle, setWelcomeTitle] = useState<string>("");
@@ -1148,17 +1152,105 @@ export default function DashboardEditPage() {
               </button>
             </div>
           </>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setEditMode(true)}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
-          style={{ backgroundColor: "#4D2FB2" }}
-          aria-label={t("editPanel.editDashboard")}
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-      )}
+      ) : getEditModeAllowed() ? (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              const passcode = getEditModePasscode().trim();
+              if (passcode) {
+                setEditPasscodeInput("");
+                setEditPasscodeError(null);
+                setEditPasscodeModalOpen(true);
+              } else {
+                setEditMode(true);
+              }
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
+            style={{ backgroundColor: "#4D2FB2" }}
+            aria-label={t("editPanel.editDashboard")}
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          {editPasscodeModalOpen && typeof document !== "undefined" && createPortal(
+            <div className="fixed inset-0 z-[300]" aria-modal="true" role="dialog">
+              <div
+                className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
+                aria-hidden
+                onClick={() => {
+                  setEditPasscodeModalOpen(false);
+                  setEditPasscodeError(null);
+                  setEditPasscodeInput("");
+                }}
+              />
+              <div className="fixed left-1/2 top-1/2 z-[301] w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 p-5 shadow-2xl">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                  {t("settings.dashboard.enterPasscode")}
+                </h3>
+                <input
+                  type="password"
+                  value={editPasscodeInput}
+                  onChange={(e) => {
+                    setEditPasscodeInput(e.target.value);
+                    setEditPasscodeError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (checkEditModePasscode(editPasscodeInput)) {
+                        setEditMode(true);
+                        setEditPasscodeModalOpen(false);
+                        setEditPasscodeInput("");
+                        setEditPasscodeError(null);
+                      } else {
+                        setEditPasscodeError(t("settings.dashboard.wrongPasscode"));
+                      }
+                    }
+                  }}
+                  placeholder={t("settings.dashboard.editModePasscodePlaceholder")}
+                  className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
+                  autoFocus
+                  autoComplete="off"
+                />
+                {editPasscodeError && (
+                  <p className="mt-2 text-sm text-red-600 dark:text-red-400">{editPasscodeError}</p>
+                )}
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditPasscodeModalOpen(false);
+                      setEditPasscodeError(null);
+                      setEditPasscodeInput("");
+                    }}
+                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                  >
+                    {t("editPanel.close")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (checkEditModePasscode(editPasscodeInput)) {
+                        setEditMode(true);
+                        setEditPasscodeModalOpen(false);
+                        setEditPasscodeInput("");
+                        setEditPasscodeError(null);
+                      } else {
+                        setEditPasscodeError(t("settings.dashboard.wrongPasscode"));
+                      }
+                    }}
+                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
+                    style={{ backgroundColor: "#4D2FB2" }}
+                  >
+                    {t("settings.dashboard.unlock")}
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+        </>
+      ) : null}
     </>
   );
 

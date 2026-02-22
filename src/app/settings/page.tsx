@@ -6,17 +6,19 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { useThemeStore } from "@/stores/theme-store";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
+import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode } from "@/stores/dashboard-settings-store";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
-import { Image, Link2, List, Monitor, Music2, Palette, ChevronUp, ChevronDown } from "lucide-react";
+import { Image, Link2, List, Monitor, Music2, Palette, LayoutDashboard, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "page-background" | "connection" | "music-assistant" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "page-background" | "dashboard" | "connection" | "music-assistant" | "entities";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
   screensaver: "settings.screensaver",
   "page-background": "settings.pageBackground",
+  dashboard: "settings.dashboard",
   connection: "settings.connection",
   "music-assistant": "settings.musicAssistant",
   entities: "settings.entities",
@@ -61,6 +63,8 @@ export default function SettingsPage() {
   const [uploadingBgLight, setUploadingBgLight] = useState(false);
   const [uploadingBgDark, setUploadingBgDark] = useState(false);
   const [section, setSection] = useState<SettingsSection>("appearance");
+  const [editModeAllowed, setEditModeAllowedState] = useState(true);
+  const [editModePasscode, setEditModePasscodeState] = useState("");
   const [screensaverDelaySeconds, setScreensaverDelaySecondsState] = useState(0);
   const [screensaverBackground, setScreensaverBackgroundState] = useState("");
   const [screensaverClock24h, setScreensaverClock24hState] = useState(true);
@@ -78,6 +82,11 @@ export default function SettingsPage() {
 
   useEffect(() => {
     hydrateMusicAssistantStore();
+  }, []);
+
+  useEffect(() => {
+    setEditModeAllowedState(getEditModeAllowed());
+    setEditModePasscodeState(getEditModePasscode());
   }, []);
 
   useEffect(() => {
@@ -359,42 +368,58 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const { language, setLanguage } = useLanguageStore();
 
-  const SECTIONS: { id: SettingsSection; labelKey: string; icon: React.ElementType }[] = [
-    { id: "appearance", labelKey: SECTION_KEYS.appearance, icon: Palette },
-    { id: "screensaver", labelKey: SECTION_KEYS.screensaver, icon: Monitor },
-    { id: "page-background", labelKey: SECTION_KEYS["page-background"], icon: Image },
-    { id: "connection", labelKey: SECTION_KEYS.connection, icon: Link2 },
-    { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
-    { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
+  const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: React.ElementType }[] }[] = [
+    { groupKey: "settings.groups.weergave", sections: [
+      { id: "appearance", labelKey: SECTION_KEYS.appearance, icon: Palette },
+      { id: "page-background", labelKey: SECTION_KEYS["page-background"], icon: Image },
+      { id: "screensaver", labelKey: SECTION_KEYS.screensaver, icon: Monitor },
+    ]},
+    { groupKey: "settings.groups.dashboard", sections: [
+      { id: "dashboard", labelKey: SECTION_KEYS.dashboard, icon: LayoutDashboard },
+    ]},
+    { groupKey: "settings.groups.connection", sections: [
+      { id: "connection", labelKey: SECTION_KEYS.connection, icon: Link2 },
+    ]},
+    { groupKey: "settings.groups.integrations", sections: [
+      { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
+      { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
+    ]},
   ];
 
   return (
     <AppShell activeTab="/settings">
       <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 max-w-4xl">
         <nav
-          className="shrink-0 sm:w-52"
+          className="shrink-0 sm:w-56"
           aria-label="Settings sections"
         >
           <h2 className="text-xl font-semibold mb-3 sm:mb-4">{t("settings.title")}</h2>
-          <ul className="flex sm:flex-col gap-1 overflow-x-auto pb-2 sm:pb-0 sm:overflow-visible">
-            {SECTIONS.map(({ id, labelKey, icon: Icon }) => (
-              <li key={id}>
-                <button
-                  type="button"
-                  onClick={() => setSection(id)}
-                  className={cn(
-                    "w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors whitespace-nowrap",
-                    section === id
-                      ? "bg-[#4D2FB2] text-white"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                  {t(labelKey)}
-                </button>
-              </li>
+          <div className="flex sm:flex-col gap-4 overflow-x-auto pb-2 sm:pb-0 sm:overflow-visible">
+            {SECTION_GROUPS.map(({ groupKey, sections }) => (
+              <div key={groupKey}>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 px-3">{t(groupKey)}</p>
+                <ul className="flex sm:flex-col gap-0.5">
+                  {sections.map(({ id, labelKey, icon: Icon }) => (
+                    <li key={id}>
+                      <button
+                        type="button"
+                        onClick={() => setSection(id)}
+                        className={cn(
+                          "w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors whitespace-nowrap",
+                          section === id
+                            ? "bg-[#4D2FB2] text-white"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                        {t(labelKey)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </div>
         </nav>
 
         <div className="flex-1 min-w-0">
@@ -753,6 +778,51 @@ export default function SettingsPage() {
                 </p>
               </GlassCard>
             )
+          )}
+
+          {section === "dashboard" && (
+            <GlassCard>
+              <h3 className="text-card-title font-medium mb-3">{t("settings.dashboard")}</h3>
+              <label className="flex items-center gap-3 cursor-pointer mb-4">
+                <input
+                  type="checkbox"
+                  checked={editModeAllowed}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    setEditModeAllowedState(v);
+                    setEditModeAllowed(v);
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {t("settings.dashboard.editModeAllowed")}
+                </span>
+              </label>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {t("settings.dashboard.editModeAllowedHint")}
+              </p>
+              <div className="mb-2">
+                <label htmlFor="edit-mode-passcode" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("settings.dashboard.editModePasscode")}
+                </label>
+                <input
+                  id="edit-mode-passcode"
+                  type="password"
+                  value={editModePasscode}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setEditModePasscodeState(v);
+                    setEditModePasscode(v);
+                  }}
+                  placeholder={t("settings.dashboard.editModePasscodePlaceholder")}
+                  className="w-full max-w-xs rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
+                  autoComplete="off"
+                />
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t("settings.dashboard.editModePasscodeHint")}
+              </p>
+            </GlassCard>
           )}
 
           {section === "connection" && (

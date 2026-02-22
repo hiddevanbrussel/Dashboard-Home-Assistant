@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { cn } from "@/lib/utils";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
@@ -251,12 +252,15 @@ function ScreensaverClock() {
   );
 }
 
+const DISMISS_BLOCK_MS = 400;
+
 function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const customBg = getScreensaverBackgroundImage();
   const pexelsEnabled = getScreensaverPexelsEnabled();
   const pexelsQuery = getScreensaverPexelsQuery();
   const pexelsApiKey = getScreensaverPexelsApiKey();
 
+  const [dismissing, setDismissing] = useState(false);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [nextImage, setNextImage] = useState<string | null>(null);
   const [currentAttribution, setCurrentAttribution] = useState<{ url: string; photographer: string } | null>(null);
@@ -327,20 +331,36 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const singleImage = !usePexelsRotation || (!nextImage && !isFading);
   const fadeStyle = { transition: `opacity ${FADE_DURATION_MS}ms ease-in-out` as const };
 
+  useEffect(() => {
+    if (!dismissing) return;
+    const t = setTimeout(() => {
+      onDismiss();
+    }, DISMISS_BLOCK_MS);
+    return () => clearTimeout(t);
+  }, [dismissing, onDismiss]);
+
+  const handleDismiss = useCallback(() => {
+    if (dismissing) return;
+    setDismissing(true);
+  }, [dismissing]);
+
   return (
     <div
       role="button"
       tabIndex={0}
       aria-label="Screensaver aanraken om te sluiten"
-      className="fixed inset-0 z-[9999] flex flex-col justify-end p-8 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+      className={cn(
+        "fixed inset-0 z-[9999] flex flex-col justify-end p-8 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
+        dismissing && "opacity-0 pointer-events-auto"
+      )}
       style={
-        useGradient
+        useGradient && !dismissing
           ? { background: "linear-gradient(to bottom right, #111827, #1f2937, #000)" }
           : undefined
       }
-      onClick={onDismiss}
+      onClick={handleDismiss}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onDismiss();
+        if (e.key === "Enter" || e.key === " ") handleDismiss();
       }}
     >
       {!useGradient && (
