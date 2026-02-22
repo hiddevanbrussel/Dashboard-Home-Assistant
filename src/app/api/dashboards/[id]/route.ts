@@ -24,6 +24,7 @@ export async function GET(
     backgroundDark: dashboard.backgroundDark ?? null,
     welcomeTitle: dashboard.welcomeTitle ?? null,
     welcomeSubtitle: dashboard.welcomeSubtitle ?? null,
+    roomCardSize: dashboard.roomCardSize ?? null,
     createdAt: dashboard.createdAt.toISOString(),
     updatedAt: dashboard.updatedAt.toISOString(),
   });
@@ -47,6 +48,7 @@ export async function PUT(
     backgroundDark?: string | null;
     welcomeTitle?: string | null;
     welcomeSubtitle?: string | null;
+    roomCardSize?: string | null;
   } = {};
   try {
     body = await request.json();
@@ -66,6 +68,7 @@ export async function PUT(
   const welcomeData = {
     ...(body.welcomeTitle !== undefined && { welcomeTitle: body.welcomeTitle }),
     ...(body.welcomeSubtitle !== undefined && { welcomeSubtitle: body.welcomeSubtitle }),
+    ...(body.roomCardSize !== undefined && { roomCardSize: body.roomCardSize }),
   };
 
   let dashboard;
@@ -95,6 +98,7 @@ export async function PUT(
     background: dashboard.background,
     welcomeTitle: dashboard.welcomeTitle ?? null,
     welcomeSubtitle: dashboard.welcomeSubtitle ?? null,
+    roomCardSize: dashboard.roomCardSize ?? null,
   });
 }
 

@@ -134,6 +134,7 @@ type DashboardData = {
   background: string | null;
   welcomeTitle: string | null;
   welcomeSubtitle: string | null;
+  roomCardSize: string | null;
 };
 
 function parseLayout(layout: string | null): Layout {
@@ -416,6 +417,7 @@ export default function DashboardEditPage() {
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
   const [welcomeTitle, setWelcomeTitle] = useState<string>("");
   const [welcomeSubtitle, setWelcomeSubtitle] = useState<string>("");
+  const [roomCardSize, setRoomCardSize] = useState<"normal" | "large">("normal");
   const [initialized, setInitialized] = useState(false);
   const [entities, setEntities] = useState<HaEntity[]>([]);
   const [addTileOpen, setAddTileOpen] = useState(false);
@@ -727,6 +729,8 @@ export default function DashboardEditPage() {
         (isRoomMode ? (data as { name?: string }).name ?? "" : "")
     );
     setWelcomeSubtitle((data as { welcomeSubtitle?: string | null }).welcomeSubtitle ?? "");
+    const rcs = (data as { roomCardSize?: string | null }).roomCardSize;
+    setRoomCardSize(rcs === "large" ? "large" : "normal");
     setInitialized(true);
   }, [data, initialized, isRoomMode, id, areaId]);
 

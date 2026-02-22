@@ -26,6 +26,7 @@ model Dashboard {
   widgets          String?
   welcomeTitle     String?
   welcomeSubtitle  String?
+  roomCardSize     String?  // "normal" | "large" – size of all room cards
   createdAt        DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
