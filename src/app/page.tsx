@@ -1,10 +1,38 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 
 export default function HomePage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.id) {
+          router.replace(`/dashboards/${d.id}`);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch(() => setLoading(false));
+  }, [router]);
+
+  if (loading) {
+    return (
+      <AppShell activeTab="/dashboards">
+        <div className="flex min-h-[40vh] items-center justify-center">
+          <p className="text-sm text-gray-500">Laden…</p>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell activeTab="/dashboards">
       <div className="max-w-md space-y-4">
