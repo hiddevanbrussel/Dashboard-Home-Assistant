@@ -76,6 +76,21 @@
   animation: slide-in-from-right 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
+/* Muziekbar: slide-up + fade bij openen */
+@keyframes music-bar-in {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.animate-music-bar-in {
+  animation: music-bar-in 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
 /* Verberg scrollbalk maar behoud scroll (o.a. climate card temperatuurrij) */
 .scrollbar-hide {
   -ms-overflow-style: none;

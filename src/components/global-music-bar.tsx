@@ -32,7 +32,7 @@ export function GlobalMusicBar() {
   return (
     <>
       {playerBarExpanded && (
-        <MusicPlayerBarContent allowSpeakerSelection />
+        <MusicPlayerBarContent allowSpeakerSelection animateOpen />
       )}
       <button
         type="button"

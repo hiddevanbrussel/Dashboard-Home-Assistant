@@ -31,9 +31,11 @@ type MusicPlayerBarContentProps = {
   allowSpeakerSelection?: boolean;
   /** Called when user closes the bar (e.g. in GlobalMusicBar) */
   onClose?: () => void;
+  /** Play slide-up animation when bar appears (e.g. when opening from tab) */
+  animateOpen?: boolean;
 };
 
-export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose }: MusicPlayerBarContentProps) {
+export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, animateOpen = false }: MusicPlayerBarContentProps) {
   const { t } = useTranslation();
   const speakerPopoverRef = useRef<HTMLDivElement>(null);
   const [speakerPopoverOpen, setSpeakerPopoverOpen] = useState(false);
@@ -101,35 +103,38 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose }:
     <footer
       className={cn(
         "fixed bottom-0 left-0 right-0 flex flex-col border-t border-white/10 overflow-visible",
-        speakerPopoverOpen ? "z-[200]" : "z-40"
+        speakerPopoverOpen ? "z-[200]" : "z-40",
+        animateOpen && "animate-music-bar-in"
       )}
       aria-label={t("music.playerBar")}
     >
       {/* Vaste bar-achtergrond */}
       <div className="absolute inset-0 z-0 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md" aria-hidden />
-      {/* Album cover alleen links, licht uitfaden */}
+      {/* Album cover alleen links, zacht uitfaden (mask + gradient, geen harde rand) */}
       {coverSrc && (
-        <div className="absolute left-0 top-0 bottom-0 z-[1] w-[min(280px,35vw)]" aria-hidden>
+        <div
+          className="absolute left-0 top-0 bottom-0 z-[1] w-[min(300px,38vw)] overflow-hidden"
+          style={{
+            maskImage: "linear-gradient(to right, black 0%, black 15%, transparent 55%)",
+            WebkitMaskImage: "linear-gradient(to right, black 0%, black 15%, transparent 55%)",
+          }}
+          aria-hidden
+        >
           <Image
             src={coverSrc}
             alt=""
             fill
-            className="object-cover object-left"
-            sizes="280px"
+            className="object-cover object-left scale-105"
+            sizes="300px"
             priority={false}
             unoptimized
           />
           <div
-            className="absolute inset-0 dark:opacity-0"
+            className="absolute inset-0"
             style={{
-              background: "linear-gradient(to right, transparent 0%, rgba(17,24,39,0.92) 70%, rgba(17,24,39,0.98) 100%)",
+              background: "linear-gradient(to right, transparent 0%, rgba(17,17,17,0.75) 25%, rgba(17,17,17,0.95) 50%, rgba(17,17,17,1) 100%)",
             }}
-          />
-          <div
-            className="absolute inset-0 opacity-0 dark:opacity-100"
-            style={{
-              background: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.88) 70%, rgba(0,0,0,0.98) 100%)",
-            }}
+            aria-hidden
           />
         </div>
       )}

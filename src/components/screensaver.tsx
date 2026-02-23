@@ -283,29 +283,29 @@ function ScreensaverMusic() {
   if (!hasContent) return null;
 
   return (
-    <div className="flex flex-col gap-1.5 w-max max-w-[240px] sm:max-w-[280px] text-white/95 drop-shadow-md">
-      {/* Boven: cover + artiest (zoals music-bar) */}
-      <div className="flex items-center gap-3 min-w-0">
-        {coverUrl ? (
-          <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={coverUrl} alt="" className="w-full h-full object-cover" />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg text-white/80">
-            <Disc3 className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden />
-          </div>
-        )}
-        <p className="text-xs sm:text-sm truncate text-white/80 min-w-0">
+    <div className="flex gap-3 w-max max-w-[240px] sm:max-w-[280px] text-white/95 drop-shadow-md min-w-0">
+      {/* Links: cover */}
+      {coverUrl ? (
+        <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={coverUrl} alt="" className="w-full h-full object-cover" />
+        </div>
+      ) : (
+        <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg text-white/80">
+          <Disc3 className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden />
+        </div>
+      )}
+      {/* Rechts: artiest boven, titel eronder */}
+      <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1">
+        <p className="text-xs sm:text-sm truncate text-white/80">
           {artistLine || "—"}
         </p>
+        {titleLine && (
+          <p className="text-sm sm:text-base font-medium truncate text-white drop-shadow-md">
+            {titleLine}
+          </p>
+        )}
       </div>
-      {/* Daaronder: nummer */}
-      {titleLine && (
-        <p className="text-sm sm:text-base font-medium truncate text-white drop-shadow-md">
-          {titleLine}
-        </p>
-      )}
     </div>
   );
 }

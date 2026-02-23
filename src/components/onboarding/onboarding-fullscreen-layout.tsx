@@ -30,7 +30,7 @@ export function OnboardingFullscreenLayout({
   return (
     <div className="min-h-screen flex flex-col bg-page-light dark:bg-dark-page">
       <div
-        className="fixed inset-0 opacity-90 dark:opacity-95"
+        className="fixed inset-0 opacity-90"
         style={{ background: bg }}
         aria-hidden
       />

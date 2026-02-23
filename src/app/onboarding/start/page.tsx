@@ -15,7 +15,7 @@ export default function OnboardingStartPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-page-light dark:bg-dark-page">
       <div
-        className="absolute inset-0 opacity-90 dark:opacity-95"
+        className="absolute inset-0 opacity-90"
         style={{ background: bg }}
         aria-hidden
       />

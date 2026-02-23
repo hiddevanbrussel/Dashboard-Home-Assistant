@@ -169,7 +169,7 @@ export function WeatherCardWidget({
           />
         </div>
       )}
-      <div className="absolute inset-0 bg-black/25 dark:bg-black/50 rounded-2xl" />
+      <div className="absolute inset-0 bg-black/35 rounded-2xl" />
       <div className="relative flex flex-col z-10 h-full min-h-0">
         <div className="flex items-start justify-between gap-3 px-4 py-3 flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0 flex-1">

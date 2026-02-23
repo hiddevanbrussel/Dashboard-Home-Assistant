@@ -45,7 +45,7 @@ export function RoomPreviewCard({
             style={{ backgroundImage: `url(${background})` }}
             aria-hidden
           />
-          <div className="absolute inset-0 bg-black/35 dark:bg-black/50" aria-hidden />
+          <div className="absolute inset-0 bg-black/40" aria-hidden />
         </>
       )}
       <div
