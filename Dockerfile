@@ -25,6 +25,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# ws gebruikt anders de native bufferutil; in Docker faalt die vaak → pure JS fallback
+ENV WS_NO_BUFFER_UTIL=1
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
