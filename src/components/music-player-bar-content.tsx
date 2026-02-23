@@ -99,41 +99,39 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose }:
 
   return (
     <footer
-      className="fixed bottom-0 left-0 right-0 z-40 flex flex-col border-t border-white/10 overflow-hidden"
+      className={cn(
+        "fixed bottom-0 left-0 right-0 flex flex-col border-t border-white/10 overflow-visible",
+        speakerPopoverOpen ? "z-[200]" : "z-40"
+      )}
       aria-label={t("music.playerBar")}
     >
-      {/* Album cover als achtergrond van links, met fade naar rechts */}
+      {/* Vaste bar-achtergrond */}
+      <div className="absolute inset-0 z-0 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md" aria-hidden />
+      {/* Album cover alleen links, licht uitfaden */}
       {coverSrc && (
-        <>
-          <div className="absolute inset-0 z-0" aria-hidden>
-            <Image
-              src={coverSrc}
-              alt=""
-              fill
-              className="object-cover object-left scale-105"
-              sizes="100vw"
-              priority={false}
-              unoptimized
-            />
-          </div>
-          <div
-            className="absolute inset-0 z-[1] dark:opacity-0"
-            style={{
-              background: "linear-gradient(to right, transparent 0%, rgba(17,24,39,0.5) 28%, rgba(17,24,39,0.95) 100%)",
-            }}
-            aria-hidden
+        <div className="absolute left-0 top-0 bottom-0 z-[1] w-[min(280px,35vw)]" aria-hidden>
+          <Image
+            src={coverSrc}
+            alt=""
+            fill
+            className="object-cover object-left"
+            sizes="280px"
+            priority={false}
+            unoptimized
           />
           <div
-            className="absolute inset-0 z-[1] opacity-0 dark:opacity-100"
+            className="absolute inset-0 dark:opacity-0"
             style={{
-              background: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 28%, rgba(0,0,0,0.92) 100%)",
+              background: "linear-gradient(to right, transparent 0%, rgba(17,24,39,0.92) 70%, rgba(17,24,39,0.98) 100%)",
             }}
-            aria-hidden
           />
-        </>
-      )}
-      {!coverSrc && (
-        <div className="absolute inset-0 z-0 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md" aria-hidden />
+          <div
+            className="absolute inset-0 opacity-0 dark:opacity-100"
+            style={{
+              background: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.88) 70%, rgba(0,0,0,0.98) 100%)",
+            }}
+          />
+        </div>
       )}
       <div className="relative z-10 flex w-full flex-col px-4 py-2 sm:px-6">
       <div className="w-full flex items-center gap-4 sm:gap-6 min-w-0">
@@ -258,7 +256,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose }:
               </button>
               {speakerPopoverOpen && (
                 <div
-                  className="absolute bottom-full right-0 mb-2 py-2 min-w-[180px] rounded-lg border border-white/20 bg-gray-900 dark:bg-black shadow-xl z-50 max-h-[60vh] overflow-y-auto"
+                  className="absolute bottom-full right-0 mb-2 py-2 min-w-[180px] rounded-lg border border-white/20 bg-gray-900 dark:bg-black shadow-xl z-[201] max-h-[60vh] overflow-y-auto"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <p className="px-3 py-1.5 text-xs font-medium text-white/70 border-b border-white/10">
