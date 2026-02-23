@@ -3,6 +3,7 @@
 import { MoreVertical, Sun } from "lucide-react";
 import type { EnergyMonitorCardProps, ImageCondition } from "./widget-types";
 import { cn } from "@/lib/utils";
+import { useThemeStore } from "@/stores/theme-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 
 function matchImageCondition(
@@ -63,14 +64,18 @@ export function EnergyMonitorCardWidget({
   className,
   onMoreClick,
 }: EnergyMonitorCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { resolved: theme } = useThemeStore();
+  const isDark = theme === "dark";
   const entity = useEntityStateStore((s) => (entity_id ? s.states[entity_id] : undefined));
   useEntityStateStore((s) => s.updatedAt);
   const state = entity?.state as string | undefined;
   const matched = entity_id && image_conditions?.length
     ? matchImageCondition(state, image_conditions)
     : null;
-  const condImage = matched ? matched.image : null;
-  const effectiveImage = condImage ?? background_image;
+  const condImage = matched
+    ? (isDark && matched.image_dark ? matched.image_dark : matched.image)
+    : null;
+  const effectiveImage = condImage ?? (isDark && background_image_dark ? background_image_dark : background_image);
 
   return (
     <div
@@ -107,7 +112,7 @@ export function EnergyMonitorCardWidget({
         )
       )}
       {!minimal && (
-        <div className="absolute inset-0 bg-black/35 rounded-2xl" />
+        <div className="absolute inset-0 bg-black/30 dark:bg-black/40 rounded-2xl" />
       )}
 
       <div className="relative flex flex-col z-10 flex-1 min-h-0">
