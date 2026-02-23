@@ -35,9 +35,9 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/generated ./generated
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/package.json ./
-RUN npm install --omit=dev prisma effect valibot zeptomatch get-port-please
+# Volledige node_modules uit builder zodat prisma migrate deploy alle CLI-deps heeft (geen MODULE_NOT_FOUND meer)
+COPY --from=builder /app/node_modules ./node_modules
 
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
