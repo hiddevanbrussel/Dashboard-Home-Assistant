@@ -34,6 +34,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/package.json ./
 # Volledige node_modules uit builder zodat prisma migrate deploy alle CLI-deps heeft (geen MODULE_NOT_FOUND meer)
