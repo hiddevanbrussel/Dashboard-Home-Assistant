@@ -40,6 +40,11 @@ COPY --from=builder /app/package.json ./
 # Volledige node_modules uit builder zodat prisma migrate deploy alle CLI-deps heeft (geen MODULE_NOT_FOUND meer)
 COPY --from=builder /app/node_modules ./node_modules
 
+# better-sqlite3 is een native addon: opnieuw bouwen voor deze container (Alpine) zodat de .node-binding klopt
+RUN apk add --no-cache python3 make g++ \
+  && npm rebuild better-sqlite3 \
+  && apk del python3 make g++
+
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
 
