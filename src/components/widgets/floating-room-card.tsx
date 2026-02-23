@@ -2,17 +2,18 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { snapToGrid } from "@/lib/floating-card-grid";
+import { snapToGrid, FLOATING_CARD_GRID_STEP } from "@/lib/floating-card-grid";
 import { RoomCardWidget } from "./room-card-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingRoomCardPosition.";
 const DEFAULT_OFFSET = 24;
-const DEFAULT_CARD_WIDTH = 280;
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 500;
-const DEFAULT_CARD_HEIGHT = 120;
-const MIN_HEIGHT = 80;
-const MAX_HEIGHT = 300;
+const DEFAULT_CARD_WIDTH = 220;
+const MIN_WIDTH = 180;
+const MAX_WIDTH = 380;
+const DEFAULT_CARD_HEIGHT = 100;
+const MIN_HEIGHT = 72;
+const MAX_HEIGHT = 200;
+const ROOM_CARD_GAP = 12;
 
 type Position = { left: number; bottom: number };
 
@@ -47,23 +48,81 @@ function savePosition(scope: string | undefined, widgetId: string, p: Position) 
 
 const BOTTOM_MARGIN = 24;
 
-function defaultPosition(_widgetIndex: number, cardWidth: number, cardHeight: number): Position {
+function defaultPosition(widgetIndex: number, cardWidth: number, cardHeight: number): Position {
   if (typeof window === "undefined") return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET };
-  const maxLeft = window.innerWidth - cardWidth;
+  const stepX = cardWidth + ROOM_CARD_GAP;
+  const stepY = cardHeight + ROOM_CARD_GAP;
+  const col = widgetIndex % 3;
+  const row = Math.floor(widgetIndex / 3);
+  const left = Math.min(DEFAULT_OFFSET + col * stepX, window.innerWidth - cardWidth);
   const maxBottom = window.innerHeight - cardHeight - BOTTOM_MARGIN;
-  return { left: maxLeft / 2, bottom: maxBottom / 2 };
+  const bottom = Math.min(DEFAULT_OFFSET + row * stepY, maxBottom);
+  return { left: Math.max(0, left), bottom: Math.max(0, bottom) };
 }
 
-function clampWidth(w: unknown): number {
+export function clampRoomCardWidth(w: unknown): number {
   const n = Number(w);
   if (!Number.isFinite(n)) return DEFAULT_CARD_WIDTH;
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n)));
 }
 
-function clampHeight(w: unknown): number {
+export function clampRoomCardHeight(w: unknown): number {
   const n = Number(w);
   if (!Number.isFinite(n)) return DEFAULT_CARD_HEIGHT;
   return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.round(n)));
+}
+
+function clampWidth(w: unknown): number {
+  return clampRoomCardWidth(w);
+}
+
+function clampHeight(w: unknown): number {
+  return clampRoomCardHeight(w);
+}
+
+type Rect = { left: number; bottom: number; width: number; height: number };
+
+function overlaps(a: Rect, b: Rect): boolean {
+  return (
+    a.left < b.left + b.width &&
+    b.left < a.left + a.width &&
+    a.bottom < b.bottom + b.height &&
+    b.bottom < a.bottom + a.height
+  );
+}
+
+/** Bepaalt een positie op een plaatsingsgrid zodat kaarten niet overlappen. */
+function getNonOverlappingPosition(
+  desired: Position,
+  myWidth: number,
+  myHeight: number,
+  others: Rect[],
+  bounds: { maxLeft: number; maxBottom: number }
+): Position {
+  const stepX = myWidth + ROOM_CARD_GAP;
+  const stepY = myHeight + ROOM_CARD_GAP;
+  const myRect: Rect = { left: desired.left, bottom: desired.bottom, width: myWidth, height: myHeight };
+
+  const snapped = snapToGrid(desired, bounds);
+  let candidate: Position = { left: snapped.left, bottom: snapped.bottom };
+  const gridStep = FLOATING_CARD_GRID_STEP;
+
+  for (let attempt = 0; attempt < 200; attempt++) {
+    myRect.left = candidate.left;
+    myRect.bottom = candidate.bottom;
+    const anyOverlap = others.some((o) => overlaps(myRect, o));
+    if (!anyOverlap) return candidate;
+    // Volgende gridpositie: eerst naar rechts, dan nieuwe rij omhoog
+    candidate = {
+      left: candidate.left + gridStep,
+      bottom: candidate.bottom,
+    };
+    if (candidate.left > bounds.maxLeft) {
+      candidate.left = 0;
+      candidate.bottom = Math.min(candidate.bottom + gridStep, bounds.maxBottom);
+    }
+  }
+  return candidate;
 }
 
 export type RoomCardWidgetItem = {
@@ -85,11 +144,14 @@ export type RoomCardWidgetItem = {
 const LONG_PRESS_MS = 500;
 const DRAG_THRESHOLD_PX = 6;
 
+export type OtherRoomCardBounds = { id: string; width: number; height: number; index: number };
+
 export function FloatingRoomCard({
   widget,
   widgetIndex = 0,
   editMode = false,
   storageScope,
+  otherRoomCards,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -99,6 +161,8 @@ export function FloatingRoomCard({
   widgetIndex?: number;
   editMode?: boolean;
   storageScope?: string;
+  /** Andere kamerkaarten (id, width, height, index) om overlap mee te voorkomen. */
+  otherRoomCards?: OtherRoomCardBounds[];
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
@@ -112,6 +176,18 @@ export function FloatingRoomCard({
   const isPointerDownOnCard = useRef(false);
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const bounds = { maxLeft: typeof window !== "undefined" ? window.innerWidth - totalWidth : 400, maxBottom: typeof window !== "undefined" ? window.innerHeight - totalHeight - BOTTOM_MARGIN : 400 };
+
+  function getOthersRects(): Rect[] {
+    if (!otherRoomCards?.length) return [];
+    return otherRoomCards
+      .map((o) => {
+        const p = loadPosition(storageScope, o.id) ?? defaultPosition(o.index, o.width, o.height);
+        return { left: p.left, bottom: p.bottom, width: o.width, height: o.height };
+      })
+      .filter((r) => r.left >= 0 && r.bottom >= 0);
+  }
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -144,15 +220,16 @@ export function FloatingRoomCard({
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - BOTTOM_MARGIN : 400;
-    const bounds = { maxLeft, maxBottom };
     const saved = loadPosition(storageScope, widget.id);
+    const others = getOthersRects();
+    let p: Position;
     if (saved) {
-      setPosition(snapToGrid(saved, bounds));
-      return;
+      p = snapToGrid(saved, bounds);
+      if (others.length > 0) p = getNonOverlappingPosition(p, totalWidth, totalHeight, others, bounds);
+    } else {
+      p = snapToGrid(defaultPosition(widgetIndex, totalWidth, totalHeight), bounds);
+      if (others.length > 0) p = getNonOverlappingPosition(p, totalWidth, totalHeight, others, bounds);
     }
-    const p = snapToGrid(defaultPosition(widgetIndex, totalWidth, totalHeight), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
   }, [widget.id, widgetIndex, totalWidth, totalHeight, storageScope]);
@@ -173,9 +250,6 @@ export function FloatingRoomCard({
     [position, editMode]
   );
 
-  const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-  const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - BOTTOM_MARGIN : 400;
-
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!isPointerDownOnCard.current) return;
@@ -190,12 +264,12 @@ export function FloatingRoomCard({
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
       const raw = {
-        left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
-        bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
+        left: Math.max(0, Math.min(dragStart.current.left + dx, bounds.maxLeft)),
+        bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, bounds.maxBottom)),
       };
-      setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
+      setPosition(snapToGrid(raw, bounds));
     },
-    [isDragging, maxLeft, maxBottom]
+    [isDragging, bounds.maxLeft, bounds.maxBottom]
   );
 
   const handlePointerUp = useCallback(
@@ -207,16 +281,18 @@ export function FloatingRoomCard({
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
         const raw = {
-          left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
-          bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
+          left: Math.max(0, Math.min(dragStart.current.left + dx, bounds.maxLeft)),
+          bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, bounds.maxBottom)),
         };
-        const next = snapToGrid(raw, { maxLeft, maxBottom });
+        let next = snapToGrid(raw, bounds);
+        const others = getOthersRects();
+        if (others.length > 0) next = getNonOverlappingPosition(next, totalWidth, totalHeight, others, bounds);
         setPosition(next);
         savePosition(storageScope, widget.id, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft, maxBottom, widget.id, storageScope]
+    [isDragging, bounds, widget.id, storageScope, totalWidth, totalHeight]
   );
 
   return (

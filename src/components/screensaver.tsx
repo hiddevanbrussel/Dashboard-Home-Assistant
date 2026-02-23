@@ -12,9 +12,13 @@ import {
   Moon,
   Sun,
   Wind,
+  Disc3,
 } from "lucide-react";
 import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useMusicPlayerStore } from "@/stores/music-player-store";
+import { useMusicAssistantStore } from "@/stores/music-assistant-store";
+import { getItemImageUrl, getImageSrc } from "@/lib/music-item-image";
 import { cn } from "@/lib/utils";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
@@ -241,6 +245,71 @@ function ScreensaverFootball() {
   );
 }
 
+function ScreensaverMusic() {
+  const queueState = useMusicPlayerStore((s) => s.queueState);
+  const { baseUrl, token } = useMusicAssistantStore();
+  const isPlaying = queueState?.state === "playing" || queueState?.state === "paused";
+  const cur = queueState?.current_item as { name?: string; artists?: { name?: string }[] | { name?: string }; artist?: string; stream_title?: string; [key: string]: unknown } | undefined;
+
+  if (!isPlaying || !cur) return null;
+
+  const coverUrl = getImageSrc(getItemImageUrl(cur), baseUrl, token);
+  let artistLine =
+    cur?.artists != null
+      ? Array.isArray(cur.artists)
+        ? (cur.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
+        : typeof (cur?.artists as { name?: string })?.name === "string"
+          ? (cur.artists as { name: string }).name
+          : ""
+      : typeof cur?.artist === "string"
+        ? cur.artist.trim()
+        : "";
+  let titleLine =
+    typeof cur?.name === "string" && cur.name.trim()
+      ? cur.name.trim()
+      : typeof cur?.stream_title === "string" && cur.stream_title.trim()
+        ? cur.stream_title.trim()
+        : "";
+  if (titleLine && !artistLine) {
+    const combined = titleLine;
+    const sep = combined.match(/\s*[\-\u2013\u2014]\s+|\s*:\s+/)?.index;
+    if (typeof sep === "number" && sep > 0) {
+      artistLine = combined.slice(0, sep).trim();
+      titleLine = combined.slice(sep).replace(/^\s*[\-\u2013\u2014:]+\s*/, "").trim();
+    }
+  }
+  const hasContent = titleLine || artistLine || coverUrl;
+
+  if (!hasContent) return null;
+
+  return (
+    <div className="flex flex-col gap-1.5 w-max max-w-[240px] sm:max-w-[280px] text-white/95 drop-shadow-md">
+      {/* Boven: cover + artiest (zoals music-bar) */}
+      <div className="flex items-center gap-3 min-w-0">
+        {coverUrl ? (
+          <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverUrl} alt="" className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg text-white/80">
+            <Disc3 className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden />
+          </div>
+        )}
+        <p className="text-xs sm:text-sm truncate text-white/80 min-w-0">
+          {artistLine || "—"}
+        </p>
+      </div>
+      {/* Daaronder: nummer */}
+      {titleLine && (
+        <p className="text-sm sm:text-base font-medium truncate text-white drop-shadow-md">
+          {titleLine}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function ScreensaverClock() {
   const [time, setTime] = useState(() => new Date());
   const use24h = getScreensaverClock24h();
@@ -286,6 +355,11 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const pexelsEnabled = getScreensaverPexelsEnabled();
   const pexelsQuery = getScreensaverPexelsQuery();
   const pexelsApiKey = getScreensaverPexelsApiKey();
+
+  const showMusicOnScreensaver = useMusicPlayerStore((s) => {
+    const q = s.queueState;
+    return (q?.state === "playing" || q?.state === "paused") && q?.current_item;
+  });
 
   const [dismissing, setDismissing] = useState(false);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
@@ -440,7 +514,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       )}
       <div className="relative z-10 flex justify-between items-end w-full gap-4 max-w-full">
         <div className="flex flex-col items-start">
-          <ScreensaverFootball />
+          {showMusicOnScreensaver ? <ScreensaverMusic /> : <ScreensaverFootball />}
         </div>
         <div className="flex flex-col items-end gap-4">
           <ScreensaverWeather />

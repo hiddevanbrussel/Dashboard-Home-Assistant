@@ -49,6 +49,8 @@ import {
   FloatingCardGroup,
   RoomCardWidget,
   FloatingRoomCard,
+  clampRoomCardWidth,
+  clampRoomCardHeight,
   NutsCardWidget,
   FloatingNutsCard,
   EnergyMonitorCardWidget,
@@ -1681,9 +1683,9 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {widgets
-          .filter((w) => w.type === "room_card")
-          .map((w, i) => (
+        {(() => {
+          const roomCards = widgets.filter((w) => w.type === "room_card");
+          return roomCards.map((w, i) => (
             <FloatingRoomCard
               key={w.id}
               widget={{
@@ -1702,6 +1704,14 @@ export default function DashboardEditPage() {
               widgetIndex={i}
               editMode={editMode}
               storageScope={id}
+              otherRoomCards={roomCards
+                .filter((ow) => ow.id !== w.id)
+                .map((ow) => ({
+                  id: ow.id,
+                  width: clampRoomCardWidth(ow.width),
+                  height: clampRoomCardHeight(ow.height),
+                  index: roomCards.findIndex((x) => x.id === ow.id),
+                }))}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
@@ -1711,7 +1721,8 @@ export default function DashboardEditPage() {
                   : undefined
               }
             />
-          ))}
+          ));
+        })()}
 
         {widgets
           .filter((w) => w.type === "nuts_card")

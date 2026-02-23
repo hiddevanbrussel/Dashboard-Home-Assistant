@@ -30,7 +30,7 @@ export { TextCardWidget } from "./text-card-widget";
 export { FloatingTextCard } from "./floating-text-card";
 export { FloatingTitleCard } from "./floating-title-card";
 export { RoomCardWidget } from "./room-card-widget";
-export { FloatingRoomCard } from "./floating-room-card";
+export { FloatingRoomCard, clampRoomCardWidth, clampRoomCardHeight } from "./floating-room-card";
 export { NutsCardWidget } from "./nuts-card-widget";
 export { FloatingNutsCard } from "./floating-nuts-card";
 export { StatPillCardWidget } from "./stat-pill-card-widget";
