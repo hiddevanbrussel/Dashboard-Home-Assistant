@@ -54,6 +54,8 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+# Uploads in het data-volume zodat nextjs er mag schrijven (geen EACCES)
+ENV UPLOAD_DIR=/data/uploads
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
