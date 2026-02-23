@@ -74,6 +74,8 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
 
   const cur = queueState?.current_item as (MASearchItem & { artist?: string; stream_title?: string }) | undefined;
   const coverSrc = cur ? getImageSrc(getItemImageUrl(cur), musicAssistant.baseUrl, musicAssistant.token) : null;
+  const hasStreamTitle = typeof cur?.stream_title === "string" && cur.stream_title.trim().length > 0;
+  const stationName = typeof cur?.name === "string" ? cur.name.trim() : "";
   let artistLine =
     cur?.artists != null
       ? Array.isArray(cur.artists)
@@ -85,12 +87,15 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
         ? cur.artist.trim()
         : "";
   let titleLine =
-    typeof cur?.name === "string" && cur.name.trim()
-      ? cur.name.trim()
-      : typeof cur?.stream_title === "string" && cur.stream_title.trim()
-        ? cur.stream_title.trim()
+    hasStreamTitle
+      ? cur!.stream_title!.trim()
+      : stationName
+        ? stationName
         : "";
-  if (titleLine && !artistLine) {
+  if (hasStreamTitle && stationName && !artistLine) {
+    artistLine = stationName;
+  }
+  if (titleLine && !artistLine && !hasStreamTitle) {
     const combined = titleLine;
     const sep = combined.match(/\s*[\-\u2013\u2014]\s+|\s*:\s+/)?.index;
     if (typeof sep === "number" && sep > 0) {
@@ -113,7 +118,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
       {/* Album cover alleen links, zacht uitfaden (mask + gradient, geen harde rand) */}
       {coverSrc && (
         <div
-          className="absolute left-0 top-0 bottom-0 z-[1] w-[min(300px,38vw)] overflow-hidden"
+          className="image-theme-fixed absolute left-0 top-0 bottom-0 z-[1] w-[min(300px,38vw)] overflow-hidden"
           style={{
             maskImage: "linear-gradient(to right, black 0%, black 15%, transparent 55%)",
             WebkitMaskImage: "linear-gradient(to right, black 0%, black 15%, transparent 55%)",
@@ -142,7 +147,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
       <div className="w-full flex items-center gap-4 sm:gap-6 min-w-0">
         {/* Left: cover + artist/title */}
         <div className="flex items-center gap-3 min-w-[120px] max-w-[220px] sm:max-w-xs shrink-0 flex-shrink-0">
-          <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-white/10">
+          <div className="image-theme-fixed relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-white/10">
             {coverSrc ? (
               <Image
                 src={coverSrc}

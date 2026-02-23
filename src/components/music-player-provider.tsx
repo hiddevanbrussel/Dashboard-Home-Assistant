@@ -6,6 +6,7 @@ import { useMusicPlayerStore, type MAPlayer, type QueueState } from "@/stores/mu
 import { callMusicAssistant } from "@/lib/music-assistant";
 
 const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_PLAYING_MS = 1000; // vaker bij afspelen o.a. voor radio stream metadata
 
 /**
  * Fetches MA players and polls queue state when Music Assistant is enabled.
@@ -66,6 +67,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
                 artists?: { name?: string }[] | { name?: string };
                 image?: string;
                 image_url?: string;
+                stream_title?: string;
                 [key: string]: unknown;
               };
             };
@@ -74,7 +76,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
             state?: string;
             elapsed_time?: number;
             position?: number;
-            current_item?: { duration?: number; name?: string; artists?: unknown; image?: string; [key: string]: unknown };
+            current_item?: { duration?: number; name?: string; artists?: unknown; image?: string; stream_title?: string; [key: string]: unknown };
           } | null | undefined;
           const state = res?.state;
           const elapsed = res?.elapsed_time ?? res?.position;
@@ -90,7 +92,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         .catch(() => {});
     };
     fetchState();
-    const interval = setInterval(fetchState, POLL_INTERVAL_MS);
+    const interval = setInterval(fetchState, POLL_INTERVAL_PLAYING_MS);
     return () => clearInterval(interval);
   }, [musicAssistant, selectedQueueId, setQueueState]);
 

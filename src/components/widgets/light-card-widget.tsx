@@ -53,10 +53,11 @@ export function LightCardWidget({
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const setStates = useEntityStateStore((s) => s.setStates);
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
-  const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [sliderBrightness, setSliderBrightness] = useState(100);
   const brightnessDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastBrightnessPctRef = useRef<number | null>(null);
+  const toggleInFlightRef = useRef(false);
   const [slidePosition, setSlidePosition] = useState<number | null>(null);
   const dragStartRef = useRef<{ y: number; position: number } | null>(null);
 
@@ -83,7 +84,6 @@ export function LightCardWidget({
   }, [setStates]);
 
   async function callLight(service: string, serviceData?: Record<string, unknown>) {
-    setLoading(true);
     try {
       const res = await fetch("/api/ha/call-service", {
         method: "POST",
@@ -99,11 +99,13 @@ export function LightCardWidget({
         refreshState().catch(() => {});
       }
     } finally {
-      setLoading(false);
+      toggleInFlightRef.current = false;
     }
   }
 
   function handleToggle() {
+    if (toggleInFlightRef.current) return;
+    toggleInFlightRef.current = true;
     const nextOn = !isOn;
     updateEntityState(entity_id, { state: nextOn ? "on" : "off" });
     callLight(nextOn ? "turn_on" : "turn_off", nextOn ? { brightness_pct: brightnessPct || 100 } : undefined);
@@ -111,11 +113,25 @@ export function LightCardWidget({
 
   function handleBrightnessChange(pct: number) {
     setSliderBrightness(pct);
+    lastBrightnessPctRef.current = pct;
     if (brightnessDebounceRef.current) clearTimeout(brightnessDebounceRef.current);
     brightnessDebounceRef.current = setTimeout(() => {
       callLight("turn_on", { brightness_pct: pct });
       brightnessDebounceRef.current = null;
-    }, 80);
+      lastBrightnessPctRef.current = null;
+    }, 150);
+  }
+
+  function flushBrightness() {
+    if (brightnessDebounceRef.current) {
+      clearTimeout(brightnessDebounceRef.current);
+      brightnessDebounceRef.current = null;
+    }
+    const toSend = lastBrightnessPctRef.current ?? sliderBrightness;
+    if (toSend != null) {
+      lastBrightnessPctRef.current = null;
+      callLight("turn_on", { brightness_pct: toSend });
+    }
   }
 
   useEffect(() => () => {
@@ -147,7 +163,6 @@ export function LightCardWidget({
         <button
           type="button"
           onClick={handleToggle}
-          disabled={loading}
           className="flex shrink-0 items-center justify-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 disabled:opacity-70 h-10 w-10"
           aria-label={isOn ? "Lamp uitzetten" : "Lamp aanzetten"}
         >
@@ -241,7 +256,8 @@ export function LightCardWidget({
                         value={sliderBrightness}
                         onChange={(e) => handleBrightnessChange(Number(e.target.value))}
                         onInput={(e) => handleBrightnessChange(Number((e.target as HTMLInputElement).value))}
-                        disabled={loading}
+                        onPointerUp={flushBrightness}
+                        onPointerLeave={flushBrightness}
                         className="absolute top-1/2 left-1/2 w-64 h-20 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize opacity-0 [&::-webkit-slider-thumb]:cursor-ns-resize"
                         style={{ transform: "translate(-50%, -50%) rotate(-90deg)" }}
                         aria-label="Helderheid"
@@ -264,7 +280,6 @@ export function LightCardWidget({
                     <button
                       type="button"
                       onClick={() => { if (!isOn) handleToggle(); setModalOpen(false); }}
-                      disabled={loading}
                       className={cn(
                         "flex-1 rounded-xl py-3 px-4 text-sm font-medium transition-colors",
                         isOn ? "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" : "bg-[#FFD41D] text-gray-900 hover:opacity-90"
@@ -275,7 +290,6 @@ export function LightCardWidget({
                     <button
                       type="button"
                       onClick={() => { if (isOn) handleToggle(); setModalOpen(false); }}
-                      disabled={loading}
                       className={cn(
                         "flex-1 rounded-xl py-3 px-4 text-sm font-medium transition-colors",
                         !isOn ? "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" : "bg-gray-800 text-white dark:bg-gray-600 dark:text-white hover:opacity-90"
@@ -301,7 +315,6 @@ export function LightCardWidget({
                       className="relative w-[100px] flex flex-col justify-end select-none shrink-0"
                       style={{ height: SWITCH_AREA_HEIGHT_PX, paddingBottom: SWITCH_TRACK_PX, touchAction: "none" }}
                       onPointerDown={(e) => {
-                        if (loading) return;
                         e.preventDefault();
                         (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
                         dragStartRef.current = { y: e.clientY, position: displayPosition };
@@ -345,7 +358,6 @@ export function LightCardWidget({
                       />
                       <button
                         type="button"
-                        disabled={loading}
                         className={cn(
                           "absolute left-1/2 -translate-x-1/2 w-20 h-[131px] rounded-xl flex items-center justify-center shadow-lg select-none touch-none",
                           "transition-colors duration-200 disabled:opacity-70",
@@ -376,26 +388,6 @@ export function LightCardWidget({
           </div>,
           document.body
         )}
-
-      {isOn && supportsBrightness && (
-        <div className="px-4 pb-3 pt-0 flex items-center gap-2">
-          <span className={cn("text-xs shrink-0 w-10", isOn ? "text-gray-500 dark:text-gray-500" : "text-gray-500 dark:text-gray-600")}>Helderheid</span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={sliderBrightness}
-            onChange={(e) => handleBrightnessChange(Number(e.target.value))}
-            disabled={loading}
-            className={cn(
-              "flex-1 h-2 rounded-full appearance-none accent-amber-500 disabled:opacity-50",
-              isOn ? "bg-gray-200 dark:bg-gray-200" : "bg-gray-200 dark:bg-gray-300"
-            )}
-            aria-label="Helderheid"
-          />
-          <span className={cn("text-xs tabular-nums w-8", isOn ? "text-gray-600 dark:text-gray-600" : "text-gray-600 dark:text-gray-700")}>{sliderBrightness}%</span>
-        </div>
-      )}
     </div>
   );
 }

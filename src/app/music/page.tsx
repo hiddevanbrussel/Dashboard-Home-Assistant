@@ -250,7 +250,7 @@ function formatDuration(seconds?: number): string {
 
 export default function MusicPage() {
   const [entities, setEntities] = useState<HaEntity[]>([]);
-  const { maPlayers, selectedQueueId, setSelectedQueueId } = useMusicPlayerStore();
+  const { maPlayers, selectedQueueId, setSelectedQueueId, queueState } = useMusicPlayerStore();
   const [playersLoading, setPlayersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -723,24 +723,41 @@ export default function MusicPage() {
   const fetchRecentItems = useCallback(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl) return;
     setRecentLoading(true);
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/recently_played_items", {
+    function parseRecentResponse(data: unknown): MASearchItem[] {
+      const err = (data as { error?: string })?.error;
+      if (err) return [];
+      const d = data as Record<string, unknown>;
+      const result = d?.result ?? d;
+      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+      if (Array.isArray(resultObj.tracks)) return resultObj.tracks as MASearchItem[];
+      if (Array.isArray(resultObj.track)) return resultObj.track as MASearchItem[];
+      if (Array.isArray(resultObj.items)) return resultObj.items as MASearchItem[];
+      if (Array.isArray((resultObj as { recently_played?: MASearchItem[] }).recently_played)) return (resultObj as { recently_played: MASearchItem[] }).recently_played;
+      if (Array.isArray((resultObj as { recent_items?: MASearchItem[] }).recent_items)) return (resultObj as { recent_items: MASearchItem[] }).recent_items;
+      const dataItems = (resultObj as { data?: MASearchItem[] }).data;
+      if (Array.isArray(dataItems)) return dataItems;
+      if (Array.isArray(result)) return result as MASearchItem[];
+      if (Array.isArray(d.tracks)) return d.tracks as MASearchItem[];
+      if (Array.isArray((d as { items?: MASearchItem[] }).items)) return (d as { items: MASearchItem[] }).items;
+      const nested = (d as { result?: { items?: MASearchItem[] } }).result?.items;
+      if (Array.isArray(nested)) return nested;
+      return [];
+    }
+    const baseUrl = musicAssistant.baseUrl;
+    const token = musicAssistant.token;
+    callMusicAssistant(baseUrl, token, "music/recently_played_items", {
       limit: 24,
-      media_types: ["track", "album"],
+      media_types: ["track", "album", "radio"],
     })
-      .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
-        if (err) return;
-        const d = data as Record<string, unknown>;
-        const result = d?.result ?? d;
-        const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-        let items: MASearchItem[] = [];
-        if (Array.isArray(resultObj.tracks)) items = resultObj.tracks as MASearchItem[];
-        else if (Array.isArray(resultObj.track)) items = resultObj.track as MASearchItem[];
-        else if (Array.isArray(resultObj.items)) items = resultObj.items as MASearchItem[];
-        else if (Array.isArray(result)) items = result as MASearchItem[];
-        else if (Array.isArray(d.tracks)) items = d.tracks as MASearchItem[];
-        else if (Array.isArray((d as { items?: MASearchItem[] }).items)) items = (d as { items: MASearchItem[] }).items;
-        setRecentItems(Array.isArray(items) ? items : []);
+      .then((data) => {
+        const items = parseRecentResponse(data);
+        if (items.length > 0) {
+          setRecentItems(items);
+          return;
+        }
+        return callMusicAssistant(baseUrl, token, "music/recently_played", { limit: 24 }).then((fallback) => {
+          setRecentItems(parseRecentResponse(fallback));
+        });
       })
       .catch(() => setRecentItems([]))
       .finally(() => setRecentLoading(false));
@@ -757,6 +774,18 @@ export default function MusicPage() {
     const interval = setInterval(fetchRecentItems, 45000);
     return () => clearInterval(interval);
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.sectionRecentlyPlayedEnabled, fetchRecentItems]);
+
+  // Refresh recently played when playback starts (e.g. from bar or another tab)
+  const prevPlayingRef = useRef(false);
+  useEffect(() => {
+    const isPlaying = queueState?.state === "playing" || queueState?.state === "paused";
+    if (isPlaying && !prevPlayingRef.current && musicAssistant.sectionRecentlyPlayedEnabled) {
+      prevPlayingRef.current = true;
+      const t = setTimeout(fetchRecentItems, 3000);
+      return () => clearTimeout(t);
+    }
+    prevPlayingRef.current = isPlaying;
+  }, [queueState?.state, musicAssistant.sectionRecentlyPlayedEnabled, fetchRecentItems]);
 
   const runSearch = useCallback(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !searchQuery.trim()) return;

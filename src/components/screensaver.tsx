@@ -126,14 +126,16 @@ function ScreensaverFootballLogo({ src, alt }: { src?: string | null; alt: strin
   if (!src || typeof src !== "string") return null;
   const url = src.startsWith("http") ? src : src.startsWith("/") ? `${typeof window !== "undefined" ? window.location.origin : ""}${src}` : src;
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- Dynamic external URL from Home Assistant sensor
-    <img
-      src={url}
-      alt={alt}
-      className="h-12 w-12 sm:h-14 sm:w-14 object-contain shrink-0"
-      loading="lazy"
-      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-    />
+    <div className="image-theme-fixed flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center">
+      {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic external URL from Home Assistant sensor */}
+      <img
+        src={url}
+        alt={alt}
+        className="h-full w-full object-contain"
+        loading="lazy"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+      />
+    </div>
   );
 }
 
@@ -254,6 +256,8 @@ function ScreensaverMusic() {
   if (!isPlaying || !cur) return null;
 
   const coverUrl = getImageSrc(getItemImageUrl(cur), baseUrl, token);
+  const hasStreamTitle = typeof cur?.stream_title === "string" && cur.stream_title.trim().length > 0;
+  const stationName = typeof cur?.name === "string" ? cur.name.trim() : "";
   let artistLine =
     cur?.artists != null
       ? Array.isArray(cur.artists)
@@ -265,12 +269,15 @@ function ScreensaverMusic() {
         ? cur.artist.trim()
         : "";
   let titleLine =
-    typeof cur?.name === "string" && cur.name.trim()
-      ? cur.name.trim()
-      : typeof cur?.stream_title === "string" && cur.stream_title.trim()
-        ? cur.stream_title.trim()
+    hasStreamTitle
+      ? cur.stream_title!.trim()
+      : stationName
+        ? stationName
         : "";
-  if (titleLine && !artistLine) {
+  if (hasStreamTitle && stationName && !artistLine) {
+    artistLine = stationName;
+  }
+  if (titleLine && !artistLine && !hasStreamTitle) {
     const combined = titleLine;
     const sep = combined.match(/\s*[\-\u2013\u2014]\s+|\s*:\s+/)?.index;
     if (typeof sep === "number" && sep > 0) {
@@ -285,12 +292,12 @@ function ScreensaverMusic() {
   return (
     <div className="flex gap-3 w-max max-w-[240px] sm:max-w-[280px] text-white/95 drop-shadow-md min-w-0">
       {/* Links: cover */}
-      {coverUrl ? (
-        <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={coverUrl} alt="" className="w-full h-full object-cover" />
-        </div>
-      ) : (
+        {coverUrl ? (
+          <div className="image-theme-fixed relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverUrl} alt="" className="w-full h-full object-cover" />
+          </div>
+        ) : (
         <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg text-white/80">
           <Disc3 className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden />
         </div>
