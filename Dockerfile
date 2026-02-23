@@ -29,7 +29,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/package.json ./
-RUN npm install --omit=dev prisma effect valibot
+RUN npm install --omit=dev prisma effect valibot zeptomatch
 
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
