@@ -68,8 +68,10 @@ export function LightCardWidget({
 
   const brightnessRaw = (entity?.attributes?.brightness as number | undefined) ?? 255;
   const brightnessPct = Math.round((brightnessRaw / 255) * 100);
+  const supportedColorModes = (entity?.attributes?.supported_color_modes as string[] | undefined) ?? [];
   const supportedFeatures = (entity?.attributes?.supported_features as number | undefined) ?? 0;
-  const supportsBrightness = (supportedFeatures & 1) !== 0;
+  const supportsBrightness =
+    supportedColorModes.includes("brightness") || (supportedFeatures & 1) !== 0;
 
   useEffect(() => {
     setSliderBrightness(brightnessPct);
