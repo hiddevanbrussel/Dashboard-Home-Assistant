@@ -152,6 +152,7 @@ export function FloatingRoomCard({
   editMode = false,
   storageScope,
   otherRoomCards,
+  flowLayout = false,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -163,6 +164,8 @@ export function FloatingRoomCard({
   storageScope?: string;
   /** Andere kamerkaarten (id, width, height, index) om overlap mee te voorkomen. */
   otherRoomCards?: OtherRoomCardBounds[];
+  /** Flow-layout: kaarten in een flex-wrap rij met padding, geen overlap, volgende rij wanneer niet past. */
+  flowLayout?: boolean;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
@@ -295,6 +298,52 @@ export function FloatingRoomCard({
     [isDragging, bounds, widget.id, storageScope, totalWidth, totalHeight]
   );
 
+  const cardContent = (
+    <div className={cn("shrink-0 flex flex-col w-full", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
+      <RoomCardWidget
+        title={widget.title}
+        entity_id={widget.entity_id}
+        icon={widget.icon}
+        light_entity_id={widget.light_entity_id}
+        media_player_entity_id={widget.media_player_entity_id}
+        climate_entity_id={widget.climate_entity_id}
+        background_image={widget.background_image}
+        icon_background_color={widget.icon_background_color}
+        width={totalWidth}
+        height={totalHeight}
+        embedded
+        onMoreClick={editMode ? onEdit : undefined}
+        onCardClick={!editMode ? onCardClick : undefined}
+      />
+    </div>
+  );
+
+  if (flowLayout) {
+    return (
+      <div
+        className={cn(
+          "z-30 shadow-xl rounded-2xl overflow-hidden backdrop-blur-2xl border flex transition-colors duration-200 shrink-0",
+          "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
+          editMode && "animate-edit-wiggle"
+        )}
+        style={{
+          width: totalWidth,
+          minHeight: totalHeight,
+          ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
+        }}
+        {...(!editMode &&
+          onEnterEditMode && {
+            onPointerDown: startLongPress,
+            onPointerUp: endLongPress,
+            onPointerLeave: endLongPress,
+            onPointerCancel: endLongPress,
+          })}
+      >
+        {cardContent}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -328,23 +377,7 @@ export function FloatingRoomCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className={cn("shrink-0 flex flex-col w-full", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-        <RoomCardWidget
-          title={widget.title}
-          entity_id={widget.entity_id}
-          icon={widget.icon}
-          light_entity_id={widget.light_entity_id}
-          media_player_entity_id={widget.media_player_entity_id}
-          climate_entity_id={widget.climate_entity_id}
-          background_image={widget.background_image}
-          icon_background_color={widget.icon_background_color}
-          width={totalWidth}
-          height={totalHeight}
-          embedded
-          onMoreClick={editMode ? onEdit : undefined}
-          onCardClick={!editMode ? onCardClick : undefined}
-        />
-      </div>
+      {cardContent}
     </div>
   );
 }

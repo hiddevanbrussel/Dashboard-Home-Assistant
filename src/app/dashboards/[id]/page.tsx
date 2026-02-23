@@ -1688,43 +1688,41 @@ export default function DashboardEditPage() {
 
         {(() => {
           const roomCards = widgets.filter((w) => w.type === "room_card");
-          return roomCards.map((w, i) => (
-            <FloatingRoomCard
-              key={w.id}
-              widget={{
-                id: w.id,
-                title: w.title ?? "Kamer",
-                entity_id: w.entity_id,
-                icon: w.icon,
-                light_entity_id: w.light_entity_id,
-                media_player_entity_id: w.media_player_entity_id,
-                climate_entity_id: w.climate_entity_id,
-                background_image: w.background_image,
-                icon_background_color: w.icon_background_color,
-                width: w.width,
-                height: w.height,
-              }}
-              widgetIndex={i}
-              editMode={editMode}
-              storageScope={id}
-              otherRoomCards={roomCards
-                .filter((ow) => ow.id !== w.id)
-                .map((ow) => ({
-                  id: ow.id,
-                  width: clampRoomCardWidth(ow.width),
-                  height: clampRoomCardHeight(ow.height),
-                  index: roomCards.findIndex((x) => x.id === ow.id),
-                }))}
-              onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-              onCardClick={
-                !editMode
-                  ? () => setClickedCardForDefinition({ widgetId: w.id, title: w.title ?? "Kamer" })
-                  : undefined
-              }
-            />
-          ));
+          if (roomCards.length === 0) return null;
+          return (
+            <div className="fixed bottom-0 left-0 z-30 flex flex-wrap items-end gap-3 pb-4 pl-4 pr-4 pt-3 max-w-full">
+              {roomCards.map((w, i) => (
+                <FloatingRoomCard
+                  key={w.id}
+                  widget={{
+                    id: w.id,
+                    title: w.title ?? "Kamer",
+                    entity_id: w.entity_id,
+                    icon: w.icon,
+                    light_entity_id: w.light_entity_id,
+                    media_player_entity_id: w.media_player_entity_id,
+                    climate_entity_id: w.climate_entity_id,
+                    background_image: w.background_image,
+                    icon_background_color: w.icon_background_color,
+                    width: w.width,
+                    height: w.height,
+                  }}
+                  widgetIndex={i}
+                  editMode={editMode}
+                  storageScope={id}
+                  flowLayout
+                  onEnterEditMode={() => setEditMode(true)}
+                  onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                  onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                  onCardClick={
+                    !editMode
+                      ? () => setClickedCardForDefinition({ widgetId: w.id, title: w.title ?? "Kamer" })
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          );
         })()}
 
         {widgets
