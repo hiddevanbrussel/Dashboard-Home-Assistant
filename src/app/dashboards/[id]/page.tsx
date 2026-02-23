@@ -2852,7 +2852,7 @@ export default function DashboardEditPage() {
                             background_image: e.target.value || undefined,
                           }))
                         }
-                        placeholder="Of plak URL (bijv. /uploads/... of https://...)"
+                        placeholder="Of plak een URL (na upload staat die hier)"
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                     </div>
@@ -2911,7 +2911,7 @@ export default function DashboardEditPage() {
                             background_image_dark: e.target.value || undefined,
                           }))
                         }
-                        placeholder="Leeg =zelfde als light mode. Of plak URL."
+                        placeholder="Upload hierboven, of plak URL. Leeg =zelfde als light."
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                     </div>
@@ -2995,20 +2995,13 @@ export default function DashboardEditPage() {
                             className="flex-1 min-w-[80px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                           />
                           <div className="flex flex-wrap items-center gap-1 min-w-0 flex-1">
-                            <input
-                              type="text"
-                              value={cond.image}
-                              onChange={(e) =>
-                                setEditForm((prev) => ({
-                                  ...prev,
-                                  image_conditions: (prev.image_conditions ?? []).map((c, i) =>
-                                    i === idx ? { ...c, image: e.target.value } : c
-                                  ),
-                                }))
-                              }
-                              placeholder="Afbeelding (URL of upload)"
-                              className="flex-1 min-w-[80px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
-                            />
+                            {cond.image && (
+                              <div
+                                className="h-8 w-8 shrink-0 rounded bg-cover bg-center border border-gray-200 dark:border-white/10"
+                                style={{ backgroundImage: `url(${cond.image})` }}
+                                aria-hidden
+                              />
+                            )}
                             <label className="shrink-0 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/10">
                               {uploadingConditionImage?.idx === idx && uploadingConditionImage?.field === "image" ? t("editPanel.uploading") : t("editPanel.uploadImage")}
                               <input
@@ -3039,24 +3032,31 @@ export default function DashboardEditPage() {
                                 disabled={uploadingConditionImage != null}
                               />
                             </label>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1 w-24 sm:w-28">
                             <input
                               type="text"
-                              value={cond.image_dark ?? ""}
+                              value={cond.image}
                               onChange={(e) =>
                                 setEditForm((prev) => ({
                                   ...prev,
                                   image_conditions: (prev.image_conditions ?? []).map((c, i) =>
-                                    i === idx ? { ...c, image_dark: e.target.value || undefined } : c
+                                    i === idx ? { ...c, image: e.target.value } : c
                                   ),
                                 }))
                               }
-                              placeholder="Dark (opt.)"
-                              className="flex-1 min-w-0 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                              placeholder="Of plak URL"
+                              className="flex-1 min-w-[80px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                             />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1 min-w-0 flex-1">
+                            {cond.image_dark && (
+                              <div
+                                className="h-8 w-8 shrink-0 rounded bg-cover bg-center border border-gray-200 dark:border-white/10"
+                                style={{ backgroundImage: `url(${cond.image_dark})` }}
+                                aria-hidden
+                              />
+                            )}
                             <label className="shrink-0 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/10" title={t("editPanel.uploadImage")}>
-                              {uploadingConditionImage?.idx === idx && uploadingConditionImage?.field === "image_dark" ? "…" : "↑"}
+                              {uploadingConditionImage?.idx === idx && uploadingConditionImage?.field === "image_dark" ? t("editPanel.uploading") : t("editPanel.uploadImage") + " (dark)"}
                               <input
                                 type="file"
                                 accept="image/jpeg,image/png,image/webp,image/gif"
@@ -3085,6 +3085,20 @@ export default function DashboardEditPage() {
                                 disabled={uploadingConditionImage != null}
                               />
                             </label>
+                            <input
+                              type="text"
+                              value={cond.image_dark ?? ""}
+                              onChange={(e) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  image_conditions: (prev.image_conditions ?? []).map((c, i) =>
+                                    i === idx ? { ...c, image_dark: e.target.value || undefined } : c
+                                  ),
+                                }))
+                              }
+                              placeholder="Dark: upload of URL (opt.)"
+                              className="flex-1 min-w-0 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
+                            />
                           </div>
                           <button
                             type="button"
