@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useMusicPlayerStore, type MAPlayer } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerActions } from "@/hooks/use-music-player-actions";
 import { getItemImageUrl, getImageSrc, formatDuration, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
 import { useTranslation } from "@/hooks/use-translation";
@@ -72,6 +73,13 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
     return () => document.removeEventListener("click", close);
   }, [speakerPopoverOpen]);
 
+  const states = useEntityStateStore((s) => s.states);
+  const playingMediaPlayer = Object.values(states).find(
+    (e) => e.entity_id.startsWith("media_player.") && (e.state === "playing" || e.state === "paused")
+  );
+  const haArtist = (playingMediaPlayer?.attributes?.media_artist as string)?.trim() || "";
+  const haTitle = (playingMediaPlayer?.attributes?.media_title as string)?.trim() || "";
+
   const cur = queueState?.current_item as (MASearchItem & { artist?: string; stream_title?: string }) | undefined;
   const coverSrc = cur ? getImageSrc(getItemImageUrl(cur), musicAssistant.baseUrl, musicAssistant.token) : null;
   const hasStreamTitle = typeof cur?.stream_title === "string" && cur.stream_title.trim().length > 0;
@@ -103,6 +111,8 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
       titleLine = combined.slice(sep).replace(/^\s*[\-\u2013\u2014:]+\s*/, "").trim();
     }
   }
+  if (haArtist) artistLine = haArtist;
+  if (haTitle) titleLine = haTitle;
 
   return (
     <footer

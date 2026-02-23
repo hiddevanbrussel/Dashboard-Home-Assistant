@@ -249,11 +249,18 @@ function ScreensaverFootball() {
 
 function ScreensaverMusic() {
   const queueState = useMusicPlayerStore((s) => s.queueState);
+  const states = useEntityStateStore((s) => s.states);
   const { baseUrl, token } = useMusicAssistantStore();
   const isPlaying = queueState?.state === "playing" || queueState?.state === "paused";
   const cur = queueState?.current_item as { name?: string; artists?: { name?: string }[] | { name?: string }; artist?: string; stream_title?: string; [key: string]: unknown } | undefined;
 
   if (!isPlaying || !cur) return null;
+
+  const playingMediaPlayer = Object.values(states).find(
+    (e) => e.entity_id.startsWith("media_player.") && (e.state === "playing" || e.state === "paused")
+  );
+  const haArtist = (playingMediaPlayer?.attributes?.media_artist as string)?.trim() || "";
+  const haTitle = (playingMediaPlayer?.attributes?.media_title as string)?.trim() || "";
 
   const coverUrl = getImageSrc(getItemImageUrl(cur), baseUrl, token);
   const hasStreamTitle = typeof cur?.stream_title === "string" && cur.stream_title.trim().length > 0;
@@ -285,6 +292,8 @@ function ScreensaverMusic() {
       titleLine = combined.slice(sep).replace(/^\s*[\-\u2013\u2014:]+\s*/, "").trim();
     }
   }
+  if (haArtist) artistLine = haArtist;
+  if (haTitle) titleLine = haTitle;
   const hasContent = titleLine || artistLine || coverUrl;
 
   if (!hasContent) return null;

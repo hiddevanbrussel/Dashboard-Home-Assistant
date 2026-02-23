@@ -1,9 +1,25 @@
 import { NextResponse } from "next/server";
 
+const IMAGE_CACHE_MAX = 200;
+const imageCache = new Map<
+  string,
+  { body: ArrayBuffer; contentType: string }
+>();
+
+function getCacheKey(imageUrl: string): string {
+  try {
+    const u = new URL(imageUrl);
+    return u.origin + u.pathname + u.search;
+  } catch {
+    return imageUrl;
+  }
+}
+
 /**
  * GET /api/music-assistant-image?baseUrl=...&token=...&url=...
  * Proxies image requests to Music Assistant so auth and CORS work.
  * Only fetches URLs that belong to the given baseUrl (same origin).
+ * Caches responses in memory (and via Cache-Control in the browser) for faster repeat loads.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -27,6 +43,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid url" }, { status: 400 });
   }
 
+  const cacheKey = getCacheKey(imageUrl);
+  const cached = imageCache.get(cacheKey);
+  if (cached) {
+    return new NextResponse(cached.body, {
+      headers: {
+        "Content-Type": cached.contentType,
+        "Cache-Control": "private, max-age=604800, stale-while-revalidate=86400",
+        "X-Cache": "HIT",
+      },
+    });
+  }
+
   try {
     const headers: HeadersInit = { Accept: "image/*" };
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -37,13 +65,20 @@ export async function GET(request: Request) {
       return new NextResponse(null, { status: res.status });
     }
 
-    const blob = await res.blob();
+    const arrayBuffer = await res.arrayBuffer();
     const contentType = res.headers.get("content-type") || "image/jpeg";
 
-    return new NextResponse(blob, {
+    if (imageCache.size >= IMAGE_CACHE_MAX) {
+      const firstKey = imageCache.keys().next().value;
+      if (firstKey !== undefined) imageCache.delete(firstKey);
+    }
+    imageCache.set(cacheKey, { body: arrayBuffer, contentType });
+
+    return new NextResponse(arrayBuffer, {
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "private, max-age=604800, stale-while-revalidate=86400",
+        "X-Cache": "MISS",
       },
     });
   } catch {
