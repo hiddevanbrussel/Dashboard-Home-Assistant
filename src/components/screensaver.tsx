@@ -304,7 +304,7 @@ function ScreensaverMusic() {
         {coverUrl ? (
           <div className="image-theme-fixed relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={coverUrl} alt="" className="w-full h-full object-cover" />
+            <img src={coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
         ) : (
         <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg text-white/80">

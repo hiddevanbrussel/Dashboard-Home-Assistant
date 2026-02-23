@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const IMAGE_CACHE_MAX = 200;
+const IMAGE_CACHE_MAX = 350;
 const imageCache = new Map<
   string,
   { body: ArrayBuffer; contentType: string }

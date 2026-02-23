@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     return new NextResponse(blob, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "private, no-cache",
+        "Cache-Control": "private, max-age=5, stale-while-revalidate=5",
       },
     });
   } catch {

@@ -101,6 +101,8 @@ export function EnergyMonitorCardWidget({
             src={effectiveImage}
             alt=""
             className="w-full h-full object-contain object-center"
+            loading="lazy"
+            decoding="async"
           />
         </div>
       ) : (

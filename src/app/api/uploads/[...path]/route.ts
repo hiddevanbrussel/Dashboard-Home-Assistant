@@ -28,7 +28,10 @@ export async function GET(
     const mime = MIME[ext] || "application/octet-stream";
     const buffer = await readFile(filePath);
     return new NextResponse(buffer, {
-      headers: { "Content-Type": mime },
+      headers: {
+        "Content-Type": mime,
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
     });
   } catch {
     return new NextResponse("Not found", { status: 404 });
