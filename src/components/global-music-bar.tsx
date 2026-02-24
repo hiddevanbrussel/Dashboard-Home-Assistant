@@ -8,8 +8,8 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { MusicPlayerBarContent } from "@/components/music-player-bar-content";
 
-/** Bottom-offset van het tabje wanneer de bar open is: gelijk aan barhoogte (~96px), zodat het pieltje op de kaart rust. */
-const TAB_BOTTOM_WHEN_OPEN = "bottom-24"; /* 6rem = 96px */
+/** Bottom-offset van het tabje wanneer de bar open is: net op de bovenrand van de kaart. */
+const TAB_BOTTOM_WHEN_OPEN = "bottom-[82px]";
 
 /**
  * On non-music pages: shows a small chevron-tab at the bottom-left to expand
