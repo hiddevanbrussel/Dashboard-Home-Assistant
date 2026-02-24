@@ -133,6 +133,8 @@ export function LightCardWidget({
       : "Aan"
     : "Uit";
 
+  const displayName = (entity?.attributes?.friendly_name as string)?.trim() || title;
+
   return (
     <div
       className={cn(
@@ -181,7 +183,7 @@ export function LightCardWidget({
           aria-label="Verlichting bedienen"
         >
           <div className="min-w-0 flex-1 flex flex-col justify-center">
-            <p className="text-xs font-medium truncate text-inherit">{title}</p>
+            <p className="text-xs font-medium truncate text-inherit">{displayName}</p>
             <p className={cn(
               "text-xs truncate",
               isOn ? "text-gray-600 dark:text-gray-600" : "text-gray-500 dark:text-gray-400"
@@ -223,7 +225,7 @@ export function LightCardWidget({
               {supportsBrightness ? (
                 <>
                   <h3 className="text-xl font-semibold text-white mb-1">
-                    {title}
+                    {displayName}
                   </h3>
                   <p className="text-sm text-gray-300 mb-6">
                     {sliderBrightness}%
@@ -258,7 +260,7 @@ export function LightCardWidget({
               ) : (
                 <>
                   <h3 className="text-xl font-semibold text-white mb-1">
-                    {title}
+                    {displayName}
                   </h3>
                   <p className="text-sm text-gray-300 mb-6">
                     {isOn ? "Aan" : "Uit"}

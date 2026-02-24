@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { MusicPlayerBarContent } from "@/components/music-player-bar-content";
 
 /** Bottom-offset van het tabje wanneer de bar open is: net op de bovenrand van de kaart. */
-const TAB_BOTTOM_WHEN_OPEN = "bottom-[82px]";
+const TAB_BOTTOM_WHEN_OPEN = "bottom-[83px]";
 
 /**
  * On non-music pages: shows a small chevron-tab at the bottom-left to expand
