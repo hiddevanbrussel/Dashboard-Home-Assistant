@@ -213,11 +213,11 @@ export function LightCardWidget({
             <div
               className={cn(
                 "relative z-[101] w-full max-w-sm p-5 flex flex-col items-center text-center",
-                isOn && supportsBrightness ? "min-h-[420px]" : "min-h-[380px]"
+                supportsBrightness ? "min-h-[420px]" : "min-h-[380px]"
               )}
               onClick={(e) => e.stopPropagation()}
             >
-              {isOn && supportsBrightness ? (
+              {supportsBrightness ? (
                 <>
                   <h3 className="text-xl font-semibold text-white mb-1">
                     {title}
@@ -226,8 +226,8 @@ export function LightCardWidget({
                     {sliderBrightness}%
                   </p>
                   <div className="flex flex-col items-center gap-4">
-                    <div className="relative flex flex-col items-center w-20 h-64">
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-64 rounded-2xl bg-gray-700/80 dark:bg-gray-800/80 flex flex-col justify-end overflow-hidden">
+                    <div className="relative flex flex-col items-center w-36 h-64">
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-64 rounded-2xl bg-gray-700/80 dark:bg-gray-800/80 flex flex-col justify-end overflow-hidden">
                         <div
                           className="w-full rounded-b-2xl bg-[#FFD41D] min-h-0 transition-[height] duration-150 ease-out"
                           style={{ height: `${sliderBrightness}%` }}
@@ -242,7 +242,7 @@ export function LightCardWidget({
                         onInput={(e) => handleBrightnessChange(Number((e.target as HTMLInputElement).value))}
                         onPointerUp={flushBrightness}
                         onPointerLeave={flushBrightness}
-                        className="absolute top-1/2 left-1/2 w-64 h-20 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize opacity-0 [&::-webkit-slider-thumb]:cursor-ns-resize"
+                        className="absolute top-1/2 left-1/2 w-64 h-28 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize opacity-0 [&::-webkit-slider-thumb]:cursor-ns-resize"
                         style={{ transform: "translate(-50%, -50%) rotate(-90deg)" }}
                         aria-label="Helderheid"
                       />
@@ -250,37 +250,6 @@ export function LightCardWidget({
                         <IconComponent className="h-5 w-5 text-white drop-shadow" strokeWidth={1.5} fill="currentColor" aria-hidden />
                       </div>
                     </div>
-                  </div>
-                </>
-              ) : supportsBrightness ? (
-                <>
-                  <h3 className="text-xl font-semibold text-white mb-1">
-                    {title}
-                  </h3>
-                  <p className="text-sm text-gray-300 mb-4">
-                    {isOn ? "Aan" : "Uit"}
-                  </p>
-                  <div className="flex gap-3 w-full max-w-xs mx-auto">
-                    <button
-                      type="button"
-                      onClick={() => { if (!isOn) handleToggle(); setModalOpen(false); }}
-                      className={cn(
-                        "flex-1 rounded-xl py-3 px-4 text-sm font-medium transition-colors",
-                        isOn ? "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" : "bg-[#FFD41D] text-gray-900 hover:opacity-90"
-                      )}
-                    >
-                      Aan
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { if (isOn) handleToggle(); setModalOpen(false); }}
-                      className={cn(
-                        "flex-1 rounded-xl py-3 px-4 text-sm font-medium transition-colors",
-                        !isOn ? "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" : "bg-gray-800 text-white dark:bg-gray-600 dark:text-white hover:opacity-90"
-                      )}
-                    >
-                      Uit
-                    </button>
                   </div>
                 </>
               ) : (
