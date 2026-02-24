@@ -65,7 +65,10 @@ export function LightCardWidget({
   const displayPosition = slidePosition ?? (isOn ? 1 : 0);
   /* 0 = bottom (uit), 1 = top (aan); transform uses (1 - position) so thumb moves up when on */
 
-  const brightnessRaw = (entity?.attributes?.brightness as number | undefined) ?? 255;
+  const brightnessRaw =
+    entity?.state === "on"
+      ? ((entity?.attributes?.brightness as number | undefined) ?? 255)
+      : 0;
   const brightnessPct = Math.round((brightnessRaw / 255) * 100);
   const supportedColorModes = (entity?.attributes?.supported_color_modes as string[] | undefined) ?? [];
   const supportedFeatures = (entity?.attributes?.supported_features as number | undefined) ?? 0;

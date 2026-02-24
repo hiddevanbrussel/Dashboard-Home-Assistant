@@ -8,8 +8,8 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { MusicPlayerBarContent } from "@/components/music-player-bar-content";
 
-/** Hoogte van de uitgeklapte bar (py-2 + content), zodat de tab erbovenop past. */
-const BAR_HEIGHT_CLASS = "bottom-20"; /* 5rem = 80px */
+/** Bottom-offset van het tabje wanneer de bar open is: gelijk aan barhoogte (~96px), zodat het pieltje op de kaart rust. */
+const TAB_BOTTOM_WHEN_OPEN = "bottom-24"; /* 6rem = 96px */
 
 /**
  * On non-music pages: shows a small chevron-tab at the bottom-left to expand
@@ -39,7 +39,7 @@ export function GlobalMusicBar() {
         onClick={() => setPlayerBarExpanded(!playerBarExpanded)}
         className={cn(
           "fixed left-6 z-[41] flex h-10 min-w-[2.5rem] items-center justify-center rounded-t-lg px-3 transition-[bottom] duration-200",
-          playerBarExpanded ? BAR_HEIGHT_CLASS : "bottom-0",
+          playerBarExpanded ? TAB_BOTTOM_WHEN_OPEN : "bottom-0",
           "bg-gray-800/90 dark:bg-black/80 backdrop-blur-sm border border-b-0 border-white/10",
           "text-white/80 hover:text-white hover:bg-gray-700/90 dark:hover:bg-white/10 shadow-lg"
         )}

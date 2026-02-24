@@ -124,6 +124,8 @@ export function MediaCardWidget({
   // Key per nummer: oude afbeelding verdwijnt direct bij trackwissel, nieuwe laadt in
   const trackKey = [mediaTitle, entityPicture].filter(Boolean).join("|") || "none";
 
+  const hasFixedHeight = height != null && height > 0;
+
   return (
     <div
       className={cn(
@@ -135,9 +137,11 @@ export function MediaCardWidget({
       )}
       style={{
         ...(width != null && width > 0 && { width }),
-        ...(height != null && height > 0 && { minHeight: height }),
+        ...(hasFixedHeight && { height, minHeight: height }),
       }}
     >
+      {/* Bovenste deel: kan groeien/krimpen; onderaan blijft de controls-balk */}
+      <div className={cn("flex flex-col min-w-0", hasFixedHeight && "min-h-0 flex-1 overflow-auto")}>
       {/* Expanded: album art + progress boven de header (uitklapt naar boven); chevron alleen hier */}
       {expanded && (
         <>
@@ -278,9 +282,10 @@ export function MediaCardWidget({
         )}
         </div>
       </div>
+      </div>
 
-      {/* Onderste balk: track + controls — altijd hetzelfde */}
-      <div className="flex items-center justify-between gap-2 px-4 py-3 bg-gray-100/80 dark:bg-black/30 backdrop-blur-md rounded-b-2xl">
+      {/* Onderste balk: track + controls — altijd onderaan */}
+      <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-3 bg-gray-100/80 dark:bg-black/30 backdrop-blur-md rounded-b-2xl">
         <div className="min-w-0 flex-1">
           <p className="font-medium truncate text-sm text-gray-900 dark:text-white">
             {mediaTitle || "—"}
