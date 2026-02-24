@@ -53,6 +53,8 @@ type CardDefinitionModalProps = {
     media_player_entity_id?: string;
     climate_entity_id?: string;
   };
+  /** Light entity van de kamer: alleen als switch in de header (naam staat al in title) */
+  roomLightEntityId?: string;
   entities: HaEntity[];
   onClose: () => void;
   onSave: (definition: CardDefinition) => void;
@@ -61,6 +63,7 @@ type CardDefinitionModalProps = {
 export function CardDefinitionModal({
   title,
   definition,
+  roomLightEntityId,
   entities,
   onClose,
   onSave,
@@ -75,6 +78,8 @@ export function CardDefinitionModal({
   const setStates = useEntityStateStore((s) => s.setStates);
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const getEntityState = useEntityStateStore((s) => s.getState);
+  const roomLightState = useEntityStateStore((s) => (roomLightEntityId ? s.states[roomLightEntityId] : undefined));
+  const roomLightOn = roomLightState?.state === "on";
 
   const refreshState = useCallback(async () => {
     const res = await fetch("/api/ha/state").then((r) => r.json());
@@ -130,18 +135,32 @@ export function CardDefinitionModal({
   return (
     <>
       <div
-        className="fixed inset-0 z-40 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-40 bg-black/30 dark:bg-black/50 backdrop-blur-md"
         aria-hidden
         onClick={handleClose}
       />
-      <div className="fixed top-4 right-4 bottom-4 z-50 w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-2xl">
-        <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
-          <div className="flex items-center gap-2">
+      <div className="fixed top-4 right-4 bottom-4 z-50 w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/80 dark:bg-gray-900/85 backdrop-blur-xl shadow-2xl">
+        <div className="shrink-0 flex items-center justify-between gap-3 p-5 pb-3 border-b border-white/20 dark:border-white/10">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate min-w-0 flex-1">{title}</h3>
+          <div className="flex items-center gap-2 shrink-0">
+            {roomLightEntityId && (
+              <button
+                type="button"
+                onClick={() => toggleLight(roomLightEntityId, roomLightOn)}
+                disabled={loading}
+                className={cn(
+                  "flex shrink-0 items-center justify-center w-9 h-9 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-white/80 dark:focus:ring-offset-gray-900/80 disabled:opacity-70",
+                  roomLightOn ? "bg-amber-400 text-amber-900 shadow-sm" : "bg-white/60 dark:bg-white/10 text-gray-500 dark:text-gray-400"
+                )}
+                aria-label={roomLightOn ? t("editPanel.lightOff") : t("editPanel.lightOn")}
+              >
+                <Lightbulb className="h-5 w-5" strokeWidth={1.5} fill={roomLightOn ? "currentColor" : "none"} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowAdd(true)}
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400 hover:text-[#4D2FB2] dark:hover:text-[#4D2FB2] transition-colors"
+              className="p-2 rounded-xl text-gray-500 hover:bg-white/50 dark:hover:bg-white/10 dark:text-gray-400 hover:text-[#4D2FB2] dark:hover:text-[#4D2FB2] transition-colors"
               aria-label={t("editPanel.addLight")}
             >
               <Plus className="h-5 w-5" />
@@ -149,7 +168,7 @@ export function CardDefinitionModal({
             <button
               type="button"
               onClick={handleClose}
-              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
+              className="p-1.5 rounded-xl text-gray-500 hover:bg-white/50 dark:hover:bg-white/10 dark:text-gray-400"
               aria-label={t("editPanel.close")}
             >
               <X className="h-5 w-5" />
@@ -158,7 +177,7 @@ export function CardDefinitionModal({
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 pb-6 space-y-3">
           {showAdd && (
-            <div className="rounded-xl border border-gray-200 dark:border-white/10 p-4 space-y-4 bg-gray-50 dark:bg-white/5">
+            <div className="rounded-xl border border-white/20 dark:border-white/10 p-4 space-y-4 bg-white/50 dark:bg-white/5 backdrop-blur-sm">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{t("editPanel.addOrRemoveLight")}</span>
                 <button
@@ -185,7 +204,7 @@ export function CardDefinitionModal({
                   return (
                     <div
                       key={card.id}
-                      className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-white dark:bg-gray-800/50"
+                      className="flex items-center justify-between gap-3 py-2 px-3 rounded-xl bg-white/60 dark:bg-white/5"
                     >
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate flex-1 min-w-0">
                         {name}
@@ -214,7 +233,7 @@ export function CardDefinitionModal({
               return (
                 <div
                   key={card.id}
-                  className="rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden flex items-center gap-3 p-3"
+                  className="rounded-xl border border-white/20 dark:border-white/10 overflow-hidden flex items-center gap-3 p-3 bg-white/40 dark:bg-white/5 backdrop-blur-sm"
                 >
                   <button
                     type="button"

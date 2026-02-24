@@ -4603,6 +4603,10 @@ aria-label={t("editPanel.removeCondition")}
                   widgets.find((x) => x.id === clickedCardForDefinition.widgetId)
                     ?.climate_entity_id,
               }}
+              roomLightEntityId={
+                (widgets.find((x) => x.id === clickedCardForDefinition.widgetId) as { light_entity_id?: string } | undefined)
+                  ?.light_entity_id
+              }
               entities={definitionModalEntities}
               onClose={() => setClickedCardForDefinition(null)}
               onSave={(def) => {
