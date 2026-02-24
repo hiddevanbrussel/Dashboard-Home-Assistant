@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   Cone,
@@ -51,13 +51,11 @@ export function LightCardWidget({
   onMoreClick,
 }: LightControlProps & { className?: string; onMoreClick?: () => void }) {
   const entity = useEntityStateStore((s) => s.getState(entity_id));
-  const setStates = useEntityStateStore((s) => s.setStates);
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const [modalOpen, setModalOpen] = useState(false);
   const [sliderBrightness, setSliderBrightness] = useState(100);
   const brightnessDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastBrightnessPctRef = useRef<number | null>(null);
-  const lastCallIdRef = useRef(0);
   const [slidePosition, setSlidePosition] = useState<number | null>(null);
   const dragStartRef = useRef<{ y: number; position: number } | null>(null);
 
@@ -78,32 +76,17 @@ export function LightCardWidget({
     setSliderBrightness(brightnessPct);
   }, [brightnessPct]);
 
-  const refreshState = useCallback(async () => {
-    const res = await fetch("/api/ha/state").then((r) => r.json());
-    if (Array.isArray(res)) setStates(res);
-  }, [setStates]);
-
   async function callLight(service: string, serviceData?: Record<string, unknown>) {
-    const callId = ++lastCallIdRef.current;
-    try {
-      const res = await fetch("/api/ha/call-service", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          entity_id,
-          domain: "light",
-          service,
-          service_data: serviceData,
-        }),
-      });
-      if (res.ok && callId === lastCallIdRef.current) {
-        refreshState().catch(() => {});
-      }
-    } catch {
-      if (callId === lastCallIdRef.current) {
-        refreshState().catch(() => {});
-      }
-    }
+    await fetch("/api/ha/call-service", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        entity_id,
+        domain: "light",
+        service,
+        service_data: serviceData,
+      }),
+    });
   }
 
   function handleToggle() {
