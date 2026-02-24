@@ -146,15 +146,22 @@ export function CardDefinitionModal({
             {roomLightEntityId && (
               <button
                 type="button"
+                role="switch"
+                aria-checked={roomLightOn}
                 onClick={() => toggleLight(roomLightEntityId, roomLightOn)}
                 disabled={loading}
                 className={cn(
-                  "flex shrink-0 items-center justify-center w-9 h-9 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-white/80 dark:focus:ring-offset-gray-900/80 disabled:opacity-70",
-                  roomLightOn ? "bg-amber-400 text-amber-900 shadow-sm" : "bg-white/60 dark:bg-white/10 text-gray-500 dark:text-gray-400"
+                  "relative inline-flex h-6 w-11 shrink-0 rounded-full border border-white/30 dark:border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:opacity-70",
+                  roomLightOn ? "bg-amber-400 border-amber-500" : "bg-white/50 dark:bg-white/10"
                 )}
                 aria-label={roomLightOn ? t("editPanel.lightOff") : t("editPanel.lightOn")}
               >
-                <Lightbulb className="h-5 w-5" strokeWidth={1.5} fill={roomLightOn ? "currentColor" : "none"} />
+                <span
+                  className={cn(
+                    "absolute left-0.5 top-px h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+                    roomLightOn ? "translate-x-[19px]" : "translate-x-0"
+                  )}
+                />
               </button>
             )}
             <button

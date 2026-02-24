@@ -1264,7 +1264,147 @@ export default function MusicPage() {
           </div>
         )}
 
-        {selectedArtist ? (
+        {selectedAlbum ? (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
+                className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {t("music.back")}
+              </button>
+              {(() => {
+                const albumUri = getPlayableUri(selectedAlbum, "album");
+                const isFav = albumUri && (favorited.has(albumUri) || favoritePending.has(albumUri));
+                return albumUri ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); addToFavorites(albumUri); }}
+                    disabled={favoritePending.has(albumUri)}
+                    className={cn(
+                      "flex items-center justify-center rounded-full p-2 transition-colors",
+                      isFav ? "text-red-500 dark:text-red-400" : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                    )}
+                    title={t("music.addToFavorites")}
+                    aria-label={t("music.addToFavorites")}
+                  >
+                    {favoritePending.has(albumUri) ? (
+                      <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+                    ) : (
+                      <Heart className={cn("h-4 w-4", isFav && "fill-current")} aria-hidden />
+                    )}
+                  </button>
+                ) : null;
+              })()}
+            </div>
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+              {(() => {
+                const album = albumDetails ?? selectedAlbum;
+                return (
+                  <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-4 shrink-0 lg:sticky lg:top-16 lg:self-start">
+                    <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-52 lg:h-52 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
+                      {getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token) ? (
+                        <Image
+                          src={getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token)!}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="224px"
+                          placeholder="blur"
+                          blurDataURL={MUSIC_IMAGE_BLUR}
+                          priority
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Disc3 className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 lg:min-w-0">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{album.name ?? t("music.unknown")}</h2>
+                      <p className="mt-1 text-gray-600 dark:text-gray-400">
+                        {album.artists
+                          ? Array.isArray(album.artists)
+                            ? (album.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
+                            : (album.artists as { name?: string })?.name
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+              <section className="min-w-0 flex-1 w-full lg:ml-8">
+                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albumTracks")}</h3>
+                {albumTracksLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                  </div>
+                ) : albumTracks.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noAlbumTracks")}</p>
+                ) : (
+                  <ul className="space-y-1 max-w-2xl" role="list">
+                    {albumTracks.map((item, index) => {
+                      const uri = getPlayableUri(item, "track");
+                      const name = item.name ?? t("music.unknown");
+                      const duration = (item as { duration?: number }).duration;
+                      const isPlayPending = uri && playPending === uri;
+                      const canPlay = !!uri && !!selectedQueueId;
+                      return (
+                        <li
+                          key={uri ?? `album-track-${index}`}
+                          className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
+                        >
+                          <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums w-8">{index + 1}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
+                          </div>
+                          <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">{formatDuration(duration)}</span>
+                          {uri && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); addToFavorites(uri); }}
+                              disabled={favoritePending.has(uri)}
+                              className={cn(
+                                "shrink-0 rounded-full p-2 transition-colors",
+                                favorited.has(uri) || favoritePending.has(uri)
+                                  ? "text-red-500 dark:text-red-400"
+                                  : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                              )}
+                              title={t("music.addToFavorites")}
+                              aria-label={t("music.addToFavorites")}
+                            >
+                              {favoritePending.has(uri) ? (
+                                <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+                              ) : (
+                                <Heart className={cn("h-4 w-4", (favorited.has(uri) || favoritePending.has(uri)) && "fill-current")} aria-hidden />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri))}
+                            disabled={!canPlay || !!isPlayPending}
+                            className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
+                            aria-label={t("music.playOn")}
+                          >
+                            {isPlayPending ? (
+                              <span className="h-4 w-4 block animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-900 dark:border-t-transparent" aria-hidden />
+                            ) : (
+                              <Play className="h-4 w-4 fill-current" aria-hidden />
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            </div>
+          </div>
+        ) : selectedArtist ? (
           <div className="space-y-6">
             <button
               type="button"
@@ -1406,146 +1546,6 @@ export default function MusicPage() {
                 </ul>
               )}
             </section>
-          </div>
-        ) : selectedAlbum ? (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
-                className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {t("music.back")}
-              </button>
-              {(() => {
-                const albumUri = getPlayableUri(selectedAlbum, "album");
-                const isFav = albumUri && (favorited.has(albumUri) || favoritePending.has(albumUri));
-                return albumUri ? (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); addToFavorites(albumUri); }}
-                    disabled={favoritePending.has(albumUri)}
-                    className={cn(
-                      "flex items-center justify-center rounded-full p-2 transition-colors",
-                      isFav ? "text-red-500 dark:text-red-400" : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                    )}
-                    title={t("music.addToFavorites")}
-                    aria-label={t("music.addToFavorites")}
-                  >
-                    {favoritePending.has(albumUri) ? (
-                      <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
-                    ) : (
-                      <Heart className={cn("h-4 w-4", isFav && "fill-current")} aria-hidden />
-                    )}
-                  </button>
-                ) : null;
-              })()}
-            </div>
-            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
-              {(() => {
-                const album = albumDetails ?? selectedAlbum;
-                return (
-                  <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-4 shrink-0 lg:sticky lg:top-16 lg:self-start">
-                    <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-52 lg:h-52 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
-                      {getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token) ? (
-                        <Image
-                          src={getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token)!}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="224px"
-                          placeholder="blur"
-                          blurDataURL={MUSIC_IMAGE_BLUR}
-                          priority
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Disc3 className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 lg:min-w-0">
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{album.name ?? t("music.unknown")}</h2>
-                      <p className="mt-1 text-gray-600 dark:text-gray-400">
-                        {album.artists
-                          ? Array.isArray(album.artists)
-                            ? (album.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
-                            : (album.artists as { name?: string })?.name
-                          : "—"}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
-              <section className="min-w-0 flex-1 w-full lg:ml-8">
-                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albumTracks")}</h3>
-                {albumTracksLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
-                  </div>
-                ) : albumTracks.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noAlbumTracks")}</p>
-                ) : (
-                  <ul className="space-y-1 max-w-2xl" role="list">
-                    {albumTracks.map((item, index) => {
-                      const uri = getPlayableUri(item, "track");
-                      const name = item.name ?? t("music.unknown");
-                      const duration = item.duration;
-                      const isPlayPending = uri && playPending === uri;
-                      const canPlay = !!uri && !!selectedQueueId;
-                      return (
-                        <li
-                          key={uri ?? `track-${index}`}
-                          className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
-                        >
-                          <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums w-8">{index + 1}</span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
-                          </div>
-                          <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">{formatDuration(duration)}</span>
-                          {uri && (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.preventDefault(); addToFavorites(uri); }}
-                              disabled={favoritePending.has(uri)}
-                              className={cn(
-                                "shrink-0 rounded-full p-2 transition-colors",
-                                favorited.has(uri) || favoritePending.has(uri)
-                                  ? "text-red-500 dark:text-red-400"
-                                  : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                              )}
-                              title={t("music.addToFavorites")}
-                              aria-label={t("music.addToFavorites")}
-                            >
-                              {favoritePending.has(uri) ? (
-                                <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
-                              ) : (
-                                <Heart className={cn("h-4 w-4", (favorited.has(uri) || favoritePending.has(uri)) && "fill-current")} aria-hidden />
-                              )}
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => canPlay && playOnPlayer(normalizePlayMediaUri(uri))}
-                            disabled={!canPlay || !!isPlayPending}
-                            className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
-                            aria-label={t("music.playOn")}
-                          >
-                            {isPlayPending ? (
-                              <span className="h-4 w-4 block animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-900 dark:border-t-transparent" aria-hidden />
-                            ) : (
-                              <Play className="h-4 w-4 fill-current" aria-hidden />
-                            )}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </section>
-            </div>
           </div>
         ) : selectedMenu === "artists" && !selectedCategory ? (
           <div className="space-y-6">
@@ -1881,6 +1881,146 @@ export default function MusicPage() {
               <p className="text-sm text-gray-500 dark:text-gray-400 py-8">{t("music.noHistory")}</p>
             )}
           </div>
+        ) : selectedAlbum ? (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
+                className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {t("music.back")}
+              </button>
+              {(() => {
+                const albumUri = getPlayableUri(selectedAlbum, "album");
+                const isFav = albumUri && (favorited.has(albumUri) || favoritePending.has(albumUri));
+                return albumUri ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); addToFavorites(albumUri); }}
+                    disabled={favoritePending.has(albumUri)}
+                    className={cn(
+                      "flex items-center justify-center rounded-full p-2 transition-colors",
+                      isFav ? "text-red-500 dark:text-red-400" : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                    )}
+                    title={t("music.addToFavorites")}
+                    aria-label={t("music.addToFavorites")}
+                  >
+                    {favoritePending.has(albumUri) ? (
+                      <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+                    ) : (
+                      <Heart className={cn("h-4 w-4", isFav && "fill-current")} aria-hidden />
+                    )}
+                  </button>
+                ) : null;
+              })()}
+            </div>
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+              {(() => {
+                const album = albumDetails ?? selectedAlbum;
+                return (
+                  <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-4 shrink-0 lg:sticky lg:top-16 lg:self-start">
+                    <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-52 lg:h-52 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
+                      {getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token) ? (
+                        <Image
+                          src={getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token)!}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="224px"
+                          placeholder="blur"
+                          blurDataURL={MUSIC_IMAGE_BLUR}
+                          priority
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Disc3 className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 lg:min-w-0">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{album.name ?? t("music.unknown")}</h2>
+                      <p className="mt-1 text-gray-600 dark:text-gray-400">
+                        {album.artists
+                          ? Array.isArray(album.artists)
+                            ? (album.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
+                            : (album.artists as { name?: string })?.name
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+              <section className="min-w-0 flex-1 w-full lg:ml-8">
+                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albumTracks")}</h3>
+                {albumTracksLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                  </div>
+                ) : albumTracks.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noAlbumTracks")}</p>
+                ) : (
+                  <ul className="space-y-1 max-w-2xl" role="list">
+                    {albumTracks.map((item, index) => {
+                      const uri = getPlayableUri(item, "track");
+                      const name = item.name ?? t("music.unknown");
+                      const duration = item.duration;
+                      const isPlayPending = uri && playPending === uri;
+                      const canPlay = !!uri && !!selectedQueueId;
+                      return (
+                        <li
+                          key={uri ?? `track-${index}`}
+                          className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
+                        >
+                          <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums w-8">{index + 1}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
+                          </div>
+                          <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">{formatDuration(duration)}</span>
+                          {uri && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); addToFavorites(uri); }}
+                              disabled={favoritePending.has(uri)}
+                              className={cn(
+                                "shrink-0 rounded-full p-2 transition-colors",
+                                favorited.has(uri) || favoritePending.has(uri)
+                                  ? "text-red-500 dark:text-red-400"
+                                  : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                              )}
+                              title={t("music.addToFavorites")}
+                              aria-label={t("music.addToFavorites")}
+                            >
+                              {favoritePending.has(uri) ? (
+                                <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+                              ) : (
+                                <Heart className={cn("h-4 w-4", (favorited.has(uri) || favoritePending.has(uri)) && "fill-current")} aria-hidden />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => canPlay && playOnPlayer(normalizePlayMediaUri(uri))}
+                            disabled={!canPlay || !!isPlayPending}
+                            className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
+                            aria-label={t("music.playOn")}
+                          >
+                            {isPlayPending ? (
+                              <span className="h-4 w-4 block animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-900 dark:border-t-transparent" aria-hidden />
+                            ) : (
+                              <Play className="h-4 w-4 fill-current" aria-hidden />
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            </div>
+          </div>
         ) : selectedArtist ? (
           <div className="space-y-6">
             <button
@@ -2023,146 +2163,6 @@ export default function MusicPage() {
                 </ul>
               )}
             </section>
-          </div>
-        ) : selectedAlbum ? (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
-                className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {t("music.back")}
-              </button>
-              {(() => {
-                const albumUri = getPlayableUri(selectedAlbum, "album");
-                const isFav = albumUri && (favorited.has(albumUri) || favoritePending.has(albumUri));
-                return albumUri ? (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); addToFavorites(albumUri); }}
-                    disabled={favoritePending.has(albumUri)}
-                    className={cn(
-                      "flex items-center justify-center rounded-full p-2 transition-colors",
-                      isFav ? "text-red-500 dark:text-red-400" : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                    )}
-                    title={t("music.addToFavorites")}
-                    aria-label={t("music.addToFavorites")}
-                  >
-                    {favoritePending.has(albumUri) ? (
-                      <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
-                    ) : (
-                      <Heart className={cn("h-4 w-4", isFav && "fill-current")} aria-hidden />
-                    )}
-                  </button>
-                ) : null;
-              })()}
-            </div>
-            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
-              {(() => {
-                const album = albumDetails ?? selectedAlbum;
-                return (
-                  <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-4 shrink-0 lg:sticky lg:top-16 lg:self-start">
-                    <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-52 lg:h-52 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
-                      {getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token) ? (
-                        <Image
-                          src={getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token)!}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="224px"
-                          placeholder="blur"
-                          blurDataURL={MUSIC_IMAGE_BLUR}
-                          priority
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Disc3 className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 lg:min-w-0">
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{album.name ?? t("music.unknown")}</h2>
-                      <p className="mt-1 text-gray-600 dark:text-gray-400">
-                        {album.artists
-                          ? Array.isArray(album.artists)
-                            ? (album.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
-                            : (album.artists as { name?: string })?.name
-                          : "—"}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
-              <section className="min-w-0 flex-1 w-full lg:ml-8">
-                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albumTracks")}</h3>
-                {albumTracksLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
-                  </div>
-                ) : albumTracks.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noAlbumTracks")}</p>
-                ) : (
-                  <ul className="space-y-1 max-w-2xl" role="list">
-                    {albumTracks.map((item, index) => {
-                      const uri = getPlayableUri(item, "track");
-                      const name = item.name ?? t("music.unknown");
-                      const duration = item.duration;
-                      const isPlayPending = uri && playPending === uri;
-                      const canPlay = !!uri && !!selectedQueueId;
-                      return (
-                        <li
-                          key={uri ?? `track-${index}`}
-                          className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
-                        >
-                          <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums w-8">{index + 1}</span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
-                          </div>
-                          <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">{formatDuration(duration)}</span>
-                          {uri && (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.preventDefault(); addToFavorites(uri); }}
-                              disabled={favoritePending.has(uri)}
-                              className={cn(
-                                "shrink-0 rounded-full p-2 transition-colors",
-                                favorited.has(uri) || favoritePending.has(uri)
-                                  ? "text-red-500 dark:text-red-400"
-                                  : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                              )}
-                              title={t("music.addToFavorites")}
-                              aria-label={t("music.addToFavorites")}
-                            >
-                              {favoritePending.has(uri) ? (
-                                <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
-                              ) : (
-                                <Heart className={cn("h-4 w-4", (favorited.has(uri) || favoritePending.has(uri)) && "fill-current")} aria-hidden />
-                              )}
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => canPlay && playOnPlayer(normalizePlayMediaUri(uri))}
-                            disabled={!canPlay || !!isPlayPending}
-                            className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
-                            aria-label={t("music.playOn")}
-                          >
-                            {isPlayPending ? (
-                              <span className="h-4 w-4 block animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-900 dark:border-t-transparent" aria-hidden />
-                            ) : (
-                              <Play className="h-4 w-4 fill-current" aria-hidden />
-                            )}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </section>
-            </div>
           </div>
         ) : (
           <>
