@@ -230,9 +230,9 @@ export function LightCardWidget({
                   </p>
                   <div className="flex flex-col items-center gap-4">
                     <div className="relative flex flex-col items-center w-36 h-64">
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-64 rounded-2xl bg-gray-700/80 dark:bg-gray-800/80 flex flex-col justify-end overflow-hidden">
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-64 rounded-3xl bg-gray-700/80 dark:bg-gray-800/80 flex flex-col justify-end overflow-hidden">
                         <div
-                          className="w-full rounded-b-2xl bg-[#FFD41D] min-h-0 transition-[height] duration-150 ease-out"
+                          className="w-full rounded-b-3xl bg-[#FFD41D] min-h-0 transition-[height] duration-150 ease-out"
                           style={{ height: `${sliderBrightness}%` }}
                         />
                       </div>
@@ -264,7 +264,7 @@ export function LightCardWidget({
                     {isOn ? "Aan" : "Uit"}
                   </p>
                   <div
-                    className="flex flex-col items-center rounded-3xl bg-gradient-to-br from-gray-600/60 to-gray-700/80 dark:from-gray-800/70 dark:to-gray-900/90 pt-3 pb-4 w-[100px]"
+                    className="flex flex-col items-center rounded-[2rem] bg-gradient-to-br from-gray-600/60 to-gray-700/80 dark:from-gray-800/70 dark:to-gray-900/90 pt-3 pb-4 w-[100px]"
                     style={{ height: SWITCH_AREA_HEIGHT_PX + 12 + 16 }}
                   >
                     <div
@@ -315,7 +315,7 @@ export function LightCardWidget({
                       <button
                         type="button"
                         className={cn(
-                          "absolute left-1/2 -translate-x-1/2 w-20 h-[131px] rounded-xl flex items-center justify-center shadow-lg select-none touch-none",
+                          "absolute left-1/2 -translate-x-1/2 w-20 h-[131px] rounded-2xl flex items-center justify-center shadow-lg select-none touch-none",
                           "transition-colors duration-200 disabled:opacity-70",
                           displayPosition > 0.5 ? "bg-[#FFD41D]" : "bg-gray-600/80 dark:bg-gray-700/80"
                         )}
