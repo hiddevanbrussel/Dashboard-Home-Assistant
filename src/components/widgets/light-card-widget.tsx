@@ -266,7 +266,7 @@ export function LightCardWidget({
                     {isOn ? "Aan" : "Uit"}
                   </p>
                   <div
-                    className="flex flex-col items-center rounded-[2rem] bg-gradient-to-br from-gray-600/60 to-gray-700/80 dark:from-gray-800/70 dark:to-gray-900/90 pt-3 pb-4 w-[100px]"
+                    className="flex flex-col items-center rounded-[38px] bg-gradient-to-br from-gray-600/60 to-gray-700/80 dark:from-gray-800/70 dark:to-gray-900/90 pt-3 pb-4 w-[100px]"
                     style={{ height: SWITCH_AREA_HEIGHT_PX + 12 + 16 }}
                   >
                     <div
@@ -317,7 +317,7 @@ export function LightCardWidget({
                       <button
                         type="button"
                         className={cn(
-                          "absolute left-1/2 -translate-x-1/2 w-20 h-[131px] rounded-2xl flex items-center justify-center shadow-lg select-none touch-none",
+                          "absolute left-1/2 -translate-x-1/2 w-20 h-[131px] rounded-[28px] flex items-center justify-center shadow-lg select-none touch-none",
                           "transition-colors duration-200 disabled:opacity-70",
                           displayPosition > 0.5 ? "bg-[#FFD41D]" : "bg-gray-600/80 dark:bg-gray-700/80"
                         )}
