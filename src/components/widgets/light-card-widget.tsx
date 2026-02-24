@@ -232,9 +232,9 @@ export function LightCardWidget({
                   </p>
                   <div className="flex flex-col items-center gap-4">
                     <div className="relative flex flex-col items-center w-36 h-64">
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-64 rounded-3xl bg-gray-700/80 dark:bg-gray-800/80 flex flex-col justify-end overflow-hidden">
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-64 rounded-[38px] bg-gray-700/80 dark:bg-gray-800/80 flex flex-col justify-end overflow-hidden">
                         <div
-                          className="w-full rounded-b-3xl bg-[#FFD41D] min-h-0 transition-[height] duration-150 ease-out"
+                          className="w-full rounded-b-[38px] bg-[#FFD41D] min-h-0 transition-[height] duration-150 ease-out"
                           style={{ height: `${sliderBrightness}%` }}
                         />
                       </div>
