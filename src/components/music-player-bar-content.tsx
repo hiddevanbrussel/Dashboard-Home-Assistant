@@ -13,6 +13,7 @@ import {
   CircleMinus,
   CirclePlus,
   VolumeX,
+  Volume2,
   ChevronDown,
 } from "lucide-react";
 import { useMusicPlayerStore, type MAPlayer } from "@/stores/music-player-store";
@@ -49,6 +50,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
     volumeUp,
     volumeDown,
     volumeMute,
+    volumeMuted,
     volume,
     volumePending,
     seekPending,
@@ -117,14 +119,15 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
   return (
     <footer
       className={cn(
-        "fixed bottom-0 left-0 right-0 flex flex-col border-t border-white/10 overflow-visible",
+        "fixed bottom-0 left-0 right-0 flex flex-col border-t overflow-visible",
+        "border-gray-200/60 dark:border-white/10",
         speakerPopoverOpen ? "z-[200]" : "z-40",
         animateOpen && "animate-music-bar-in"
       )}
       aria-label={t("music.playerBar")}
     >
-      {/* Vaste bar-achtergrond */}
-      <div className="absolute inset-0 z-0 bg-gray-900/95 dark:bg-black/90 backdrop-blur-md" aria-hidden />
+      {/* Light mode: zachter; dark mode: donkere bar */}
+      <div className="absolute inset-0 z-0 bg-white/85 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-transparent" aria-hidden />
       {/* Album cover alleen links, zacht uitfaden (mask + gradient, geen harde rand) */}
       {coverSrc && (
         <div
@@ -145,9 +148,16 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
             unoptimized
           />
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 hidden dark:block"
             style={{
               background: "linear-gradient(to right, transparent 0%, rgba(17,17,17,0.75) 25%, rgba(17,17,17,0.95) 50%, rgba(17,17,17,1) 100%)",
+            }}
+            aria-hidden
+          />
+          <div
+            className="absolute inset-0 block dark:hidden"
+            style={{
+              background: "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.55) 25%, rgba(255,255,255,0.88) 50%, rgba(255,255,255,1) 100%)",
             }}
             aria-hidden
           />
@@ -157,7 +167,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
       <div className="w-full flex items-center gap-4 sm:gap-6 min-w-0">
         {/* Left: cover + artist/title */}
         <div className="flex items-center gap-3 min-w-[120px] max-w-[220px] sm:max-w-xs shrink-0 flex-shrink-0">
-          <div className="image-theme-fixed relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-white/10">
+          <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-gray-200/80 dark:bg-white/10">
             {coverSrc ? (
               <Image
                 src={coverSrc}
@@ -171,13 +181,13 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <Disc3 className="h-7 w-7 text-white/50" aria-hidden />
+                <Disc3 className="h-7 w-7 text-gray-500 dark:text-white/50" aria-hidden />
               </div>
             )}
           </div>
           <div className="min-w-0 flex-1 flex flex-col gap-0.5">
-            <p className="truncate text-xs text-white/70">{artistLine || "—"}</p>
-            <p className="truncate text-sm font-medium text-white/95">{titleLine || "—"}</p>
+            <p className="truncate text-xs text-gray-600 dark:text-white/70">{artistLine || "—"}</p>
+            <p className="truncate text-sm font-medium text-gray-900 dark:text-white/95">{titleLine || "—"}</p>
           </div>
         </div>
 
@@ -187,7 +197,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
             <button
               type="button"
               onClick={() => queueControl("previous")}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10 transition-colors"
               aria-label={t("music.previous")}
             >
               <SkipBack className="h-5 w-5" />
@@ -207,7 +217,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
             <button
               type="button"
               onClick={() => queueControl("next")}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10 transition-colors"
               aria-label={t("music.next")}
             >
               <SkipForward className="h-5 w-5" />
@@ -220,7 +230,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
                 "flex h-10 w-10 items-center justify-center rounded-full transition-colors",
                 dontStopTheMusicEnabled
                   ? "bg-accent-yellow dark:bg-accent-green text-gray-900"
-                  : "text-white/90 hover:bg-white/10"
+                  : "text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10"
               )}
               aria-label={t("music.dontStopTheMusic")}
               title={t("music.dontStopTheMusic")}
@@ -228,7 +238,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
               <Donut className="h-5 w-5" aria-hidden />
             </button>
           </div>
-          <div className="flex items-center gap-2 text-xs text-white/70 tabular-nums w-full min-w-0 sm:min-w-[320px] max-w-[560px] sm:max-w-[720px] shrink">
+          <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-white/70 tabular-nums w-full min-w-0 sm:min-w-[320px] max-w-[560px] sm:max-w-[720px] shrink">
             <span className="w-9 shrink-0">{formatDuration(position)}</span>
             <input
               type="range"
@@ -238,7 +248,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
               step={1}
               disabled={seekPending || duration <= 0}
               onChange={(e) => seekTo(Number(e.target.value))}
-              className="flex-1 min-w-0 h-1.5 rounded-full appearance-none bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50"
+              className="flex-1 min-w-0 h-1.5 rounded-full appearance-none bg-gray-300/80 dark:bg-white/20 accent-accent-yellow dark:accent-accent-green disabled:opacity-50"
               aria-label={t("music.position")}
             />
             <span className="w-9 shrink-0 text-right">{formatDuration(duration)}</span>
@@ -251,7 +261,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition-colors"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10 transition-colors"
               aria-label={t("music.close")}
             >
               <ChevronDown className="h-5 w-5" />
@@ -267,7 +277,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
                 }}
                 className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
-                  speakerPopoverOpen ? "bg-white/20 text-white" : "text-white/90 hover:bg-white/10"
+                  speakerPopoverOpen ? "bg-gray-300/80 dark:bg-white/20 text-gray-900 dark:text-white" : "text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10"
                 )}
                 aria-label={t("music.choosePlayer")}
                 aria-expanded={speakerPopoverOpen}
@@ -306,7 +316,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
             type="button"
             onClick={volumeDown}
             disabled={volumePending}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
             aria-label={t("music.volumeDown")}
           >
             <CircleMinus className="h-5 w-5" />
@@ -315,7 +325,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
             type="button"
             onClick={volumeUp}
             disabled={volumePending}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
             aria-label={t("music.volumeUp")}
           >
             <CirclePlus className="h-5 w-5" />
@@ -324,10 +334,10 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
             type="button"
             onClick={volumeMute}
             disabled={volumePending}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/10 disabled:opacity-50 transition-colors"
-            aria-label={t("music.volumeMute")}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
+            aria-label={volumeMuted ? t("music.volumeUnmute") : t("music.volumeMute")}
           >
-            <VolumeX className="h-5 w-5" />
+            {volumeMuted ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
           </button>
         </div>
       </div>

@@ -265,7 +265,7 @@ export function AppShell({
         className
       )}
     >
-      <header className="relative z-50 flex shrink-0 items-center border-b border-gray-200/50 px-4 py-3 dark:border-white/10">
+      <header className="relative z-50 flex shrink-0 items-center border-b border-gray-200/50 px-4 py-3 dark:border-white/10 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
         <div className="flex-1 min-w-0 flex items-center gap-4">
           {showSidebar && (
             <button

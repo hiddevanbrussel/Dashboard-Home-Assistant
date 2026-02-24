@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
@@ -11,7 +11,6 @@ import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume
 import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useTranslation } from "@/hooks/use-translation";
-import { MusicPlayerBarContent } from "@/components/music-player-bar-content";
 import { cn } from "@/lib/utils";
 
 /** Tiny gray placeholder shown while music images load (blur placeholder). */
@@ -250,7 +249,7 @@ function formatDuration(seconds?: number): string {
 
 export default function MusicPage() {
   const [entities, setEntities] = useState<HaEntity[]>([]);
-  const { maPlayers, selectedQueueId, setSelectedQueueId, queueState } = useMusicPlayerStore();
+  const { maPlayers, selectedQueueId, setSelectedQueueId, queueState, playerBarExpanded } = useMusicPlayerStore();
   const [playersLoading, setPlayersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -260,6 +259,10 @@ export default function MusicPage() {
   const [playPending, setPlayPending] = useState<string | null>(null);
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
+  const [heroHourSeed, setHeroHourSeed] = useState(() => new Date().getHours());
+  const [homeScrollTop, setHomeScrollTop] = useState(0);
+  const musicScrollRef = useRef<HTMLDivElement>(null);
   const [recentItems, setRecentItems] = useState<MASearchItem[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<MASearchItem | null>(null);
@@ -331,6 +334,48 @@ export default function MusicPage() {
       setSelectedQueueId(maPlayers[0].queue_id);
     }
   }, [maPlayers, selectedQueueId, setSelectedQueueId]);
+
+  useEffect(() => {
+    const tick = () => {
+      const h = new Date().getHours();
+      setHeroHourSeed((prev) => (prev !== h ? h : prev));
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const heroItems = useMemo(() => {
+    const combined = [...recentItems, ...favoriteAlbums, ...favoriteItems];
+    const seen = new Set<string>();
+    const deduped = combined.filter((item) => {
+      const uri = item.uri ?? (item as { item_uri?: string }).item_uri;
+      const key = typeof uri === "string" ? uri : item.item_id ?? item.name;
+      if (key && seen.has(String(key))) return false;
+      if (key) seen.add(String(key));
+      return true;
+    });
+    if (deduped.length === 0) return [];
+    const n = deduped.length;
+    const startIndex = (heroHourSeed * 7) % n;
+    const result: MASearchItem[] = [];
+    for (let i = 0; i < Math.min(6, n); i++) {
+      result.push(deduped[(startIndex + i) % n]!);
+    }
+    return result;
+  }, [recentItems, favoriteAlbums, favoriteItems, heroHourSeed]);
+
+  const heroItemCount = heroItems.length;
+  useEffect(() => {
+    setHeroSlideIndex(0);
+  }, [heroHourSeed]);
+  useEffect(() => {
+    if (heroItemCount <= 1) return;
+    const id = setInterval(() => {
+      setHeroSlideIndex((i) => (i + 1) % heroItemCount);
+    }, 5000);
+    return () => clearInterval(id);
+  }, [heroItemCount]);
 
   const allowedIds = musicAssistant.allowedSpeakerIds;
   const selectablePlayers = allowedIds.length > 0 ? maPlayers.filter((p) => allowedIds.includes(p.queue_id)) : maPlayers;
@@ -747,18 +792,9 @@ export default function MusicPage() {
     const token = musicAssistant.token;
     callMusicAssistant(baseUrl, token, "music/recently_played_items", {
       limit: 24,
-      media_types: ["track", "album", "radio"],
+      media_types: ["track", "album"],
     })
-      .then((data) => {
-        const items = parseRecentResponse(data);
-        if (items.length > 0) {
-          setRecentItems(items);
-          return;
-        }
-        return callMusicAssistant(baseUrl, token, "music/recently_played", { limit: 24 }).then((fallback) => {
-          setRecentItems(parseRecentResponse(fallback));
-        });
-      })
+      .then((data) => setRecentItems(parseRecentResponse(data)))
       .catch(() => setRecentItems([]))
       .finally(() => setRecentLoading(false));
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
@@ -1182,54 +1218,60 @@ export default function MusicPage() {
       }
     >
       {searchOverlay}
-      <div className={cn("music-page-content w-full max-w-full flex flex-col h-full min-h-0", showPlayerBar && "pb-24")}>
-        <div className="flex flex-1 min-h-0 min-w-0 overflow-auto">
+      <div className={cn("music-page-content w-full max-w-full flex flex-col h-full min-h-0", showPlayerBar && playerBarExpanded && "pb-24")}>
+        <div
+          ref={musicScrollRef}
+          className="flex flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto"
+          onScroll={() => {
+            if (!musicScrollRef.current) return;
+            setHomeScrollTop(musicScrollRef.current.scrollTop);
+          }}
+        >
           {musicMenuOpen ? (
-            <nav className="flex-shrink-0 w-44 pr-4 border-r border-gray-200 dark:border-gray-700/50 flex flex-col min-h-0">
-              <div className="flex flex-col gap-1">
-                {(
-                  [
-                    { id: "home" as const, label: t("music.menuHome"), icon: Home },
-                    { id: "artists" as const, label: t("music.menuArtists"), icon: User },
-                    { id: "albums" as const, label: t("music.menuAlbums"), icon: Disc3 },
-                    { id: "tracks" as const, label: t("music.menuTracks"), icon: Music2 },
-                    { id: "playlists" as const, label: t("music.menuPlaylists"), icon: ListMusic },
-                  ] as const
-                ).map(({ id, label, icon: Icon }) => {
-                  const active = id === "home"
-                    ? !selectedMenu && !selectedCategory
-                    : (selectedMenu ?? (selectedCategory === "favoriteTracks" ? "tracks" : null)) === id;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => {
-                        if (id === "home") {
-                          setSelectedMenu(null);
-                          setSelectedCategory(null);
-                          setSelectedArtist(null);
-                          setSelectedAlbum(null);
-                        } else {
-                          setSelectedMenu(id);
-                          if (id === "tracks") setSelectedCategory("favoriteTracks");
-                          else setSelectedCategory(null);
-                          if (id === "artists") setSelectedArtist(null);
-                          if (id === "albums" || id === "tracks") setSelectedAlbum(null);
-                        }
-                      }}
-                      className={cn(
-                        "flex items-center gap-3 w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
-                        active
-                          ? "bg-accent-yellow/20 dark:bg-accent-green/20 text-gray-900 dark:text-white"
-                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
-                      )}
-                    >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
+            <nav className="relative z-10 flex-shrink-0 w-14 py-2 pr-2 border-r border-gray-200 dark:border-gray-700/50 flex flex-col items-center gap-1 min-h-0">
+              {(
+                [
+                  { id: "home" as const, label: t("music.menuHome"), icon: Home },
+                  { id: "artists" as const, label: t("music.menuArtists"), icon: User },
+                  { id: "albums" as const, label: t("music.menuAlbums"), icon: Disc3 },
+                  { id: "tracks" as const, label: t("music.menuTracks"), icon: Music2 },
+                  { id: "playlists" as const, label: t("music.menuPlaylists"), icon: ListMusic },
+                ] as const
+              ).map(({ id, label, icon: Icon }) => {
+                const active = id === "home"
+                  ? !selectedMenu && !selectedCategory
+                  : (selectedMenu ?? (selectedCategory === "favoriteTracks" ? "tracks" : null)) === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      if (id === "home") {
+                        setSelectedMenu(null);
+                        setSelectedCategory(null);
+                        setSelectedArtist(null);
+                        setSelectedAlbum(null);
+                      } else {
+                        setSelectedMenu(id);
+                        if (id === "tracks") setSelectedCategory("favoriteTracks");
+                        else setSelectedCategory(null);
+                        if (id === "artists") setSelectedArtist(null);
+                        if (id === "albums" || id === "tracks") setSelectedAlbum(null);
+                      }
+                    }}
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
+                      active
+                        ? "bg-accent-yellow/20 dark:bg-accent-green/20 text-gray-900 dark:text-white"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
+                    )}
+                    aria-label={label}
+                    title={label}
+                  >
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                  </button>
+                );
+              })}
               <button
                 type="button"
                 onClick={() => setMusicMenuOpen(false)}
@@ -1240,18 +1282,18 @@ export default function MusicPage() {
               </button>
             </nav>
           ) : (
-            <div className="flex-shrink-0 w-11 flex flex-col justify-end min-h-0">
+            <div className="relative z-10 flex-shrink-0 w-14 flex flex-col items-center justify-end min-h-0 py-2">
               <button
                 type="button"
                 onClick={() => setMusicMenuOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                 aria-label={t("music.menuOpen")}
               >
                 <Menu className="h-5 w-5" />
               </button>
             </div>
           )}
-          <div className={cn("flex-1 min-w-0 overflow-x-hidden", musicMenuOpen && "pl-4")}>
+          <div className={cn("flex-1 min-w-0", !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum ? "overflow-x-visible" : "overflow-x-hidden", musicMenuOpen && "pl-3")}>
         <div className="flex flex-wrap items-center justify-end gap-4 pb-2">
           <OfflinePill />
         </div>
@@ -2165,7 +2207,7 @@ export default function MusicPage() {
             </section>
           </div>
         ) : (
-          <>
+          <div className="contents">
         {playersLoading && (
           <div className="flex justify-center py-12">
             <div
@@ -2215,7 +2257,89 @@ export default function MusicPage() {
           </div>
         )}
 
-        {!playersLoading && useMA && maPlayers.length > 0 && !selectedArtist && !selectedAlbum && musicAssistant.sectionOrder.map((sectionId) => {
+        {!playersLoading && useMA && maPlayers.length > 0 && !selectedArtist && !selectedAlbum && (
+          <>
+            {!selectedMenu && !selectedCategory && (() => {
+              const heroItem = heroItems[heroSlideIndex] ?? heroItems[0];
+              const heroImageSrc = heroItem ? getImageSrc(getItemImageUrl(heroItem), musicAssistant.baseUrl, musicAssistant.token) : null;
+              const heroArtists = heroItem?.artists
+                ? Array.isArray(heroItem.artists)
+                  ? (heroItem.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).slice(0, 3).join(", ")
+                  : (heroItem.artists as { name?: string })?.name
+                : "";
+              const heroUri = heroItem ? (getPlayableUri(heroItem, "track") || getPlayableUri(heroItem, "album")) : null;
+              const heroScrolled = homeScrollTop > 80;
+              const heroTrackCount = heroItem && Array.isArray((heroItem as { tracks?: unknown[] }).tracks)
+                ? (heroItem as { tracks: unknown[] }).tracks.length
+                : (heroItem as { total_tracks?: number })?.total_tracks;
+              return heroItems.length > 0 ? (
+                <div className="relative z-0 w-[calc(100%+1rem)] sm:w-[calc(100%+1.5rem)] -mt-4 -mr-4 sm:-mr-6 mb-8">
+                  <div
+                    className={cn(
+                      "w-full min-h-[min(62vw,380px)] sm:min-h-[320px] rounded-none overflow-hidden transition-[filter,opacity] duration-300",
+                      heroScrolled && "opacity-70"
+                    )}
+                    style={{ filter: heroScrolled ? "blur(3px)" : "none" }}
+                  >
+                  <div className="relative w-full h-full min-h-[min(62vw,380px)] sm:min-h-[320px] bg-gray-900">
+                    {heroImageSrc ? (
+                      <Image src={heroImageSrc} alt="" fill className="object-cover object-center scale-105" sizes="100vw" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized priority />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                        <Disc3 className="h-24 w-24 text-white/30" aria-hidden />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" aria-hidden />
+                    <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg truncate max-w-full">
+                          {(heroItem?.name as string) ?? t("music.unknown")}
+                        </h2>
+                        {heroArtists ? (
+                          <p className="mt-1 text-base sm:text-lg text-white/90 truncate max-w-full">{heroArtists}</p>
+                        ) : null}
+                        {heroTrackCount != null && heroTrackCount > 0 ? (
+                          <p className="mt-0.5 text-sm text-white/70">
+                            {heroTrackCount} {heroTrackCount === 1 ? t("music.trackCountOne") : t("music.trackCountMany")}
+                          </p>
+                        ) : null}
+                        {heroItems.length > 1 && (
+                          <div className="flex items-center gap-1.5 mt-3" role="tablist" aria-label={t("music.slides")}>
+                            {heroItems.map((_, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                role="tab"
+                                aria-selected={i === heroSlideIndex}
+                                onClick={() => setHeroSlideIndex(i)}
+                                className={cn(
+                                  "rounded-full transition-all duration-200",
+                                  i === heroSlideIndex ? "w-6 h-2 bg-white" : "w-2 h-2 bg-white/50 hover:bg-white/70"
+                                )}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm font-medium text-white/90 uppercase tracking-wider hidden sm:inline">{t("music.play")}</span>
+                        <button
+                          type="button"
+                          onClick={() => heroUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(heroUri))}
+                          disabled={!heroUri || !selectedQueueId}
+                          className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg hover:scale-105 disabled:opacity-50 transition-transform"
+                          aria-label={t("music.play")}
+                        >
+                          <Play className="h-6 w-6 fill-current ml-0.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                </div>
+              ) : null;
+            })()}
+            {musicAssistant.sectionOrder.map((sectionId) => {
             if (sectionId === "favoriteAlbums" && !musicAssistant.sectionFavoriteAlbumsEnabled) return null;
             if (sectionId === "favoriteTracks" && !musicAssistant.sectionFavoriteTracksEnabled) return null;
             if (sectionId === "radio" && !musicAssistant.sectionRadioEnabled) return null;
@@ -2441,11 +2565,12 @@ export default function MusicPage() {
           })}
           </>
         )}
+        </div>
+        )}
       </div>
         </div>
       </div>
 
-      {showPlayerBar && <MusicPlayerBarContent allowSpeakerSelection />}
     </AppShell>
   );
 }

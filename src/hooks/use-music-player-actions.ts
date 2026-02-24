@@ -10,6 +10,7 @@ export function useMusicPlayerActions() {
   const { selectedQueueId, queueState, setQueueState } = useMusicPlayerStore();
   const [volume, setVolume] = useState(80);
   const [volumePending, setVolumePending] = useState(false);
+  const [volumeMuted, setVolumeMuted] = useState(false);
   const [seekPending, setSeekPending] = useState(false);
   const [dontStopTheMusicEnabled, setDontStopTheMusicEnabled] = useState(false);
   const [dontStopTheMusicPending, setDontStopTheMusicPending] = useState(false);
@@ -22,9 +23,10 @@ export function useMusicPlayerActions() {
       .then((data: unknown) => {
         const err = (data as { error?: string })?.error;
         if (err) return;
-        const res = (data as { result?: { volume_level?: number } })?.result ?? (data as { volume_level?: number });
+        const res = (data as { result?: { volume_level?: number; volume_muted?: boolean } })?.result ?? (data as { volume_level?: number; volume_muted?: boolean });
         const vol = res?.volume_level;
         if (typeof vol === "number" && vol >= 0 && vol <= 1) setVolume(Math.round(vol * 100));
+        if (typeof res?.volume_muted === "boolean") setVolumeMuted(res.volume_muted);
       })
       .catch(() => {});
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
@@ -110,15 +112,19 @@ export function useMusicPlayerActions() {
 
   const volumeMute = useCallback(() => {
     if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+    const nextMuted = !volumeMuted;
     setVolumePending(true);
     callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_mute", {
-      queue_id: selectedQueueId,
       player_id: selectedQueueId,
+      muted: nextMuted,
     })
-      .then(() => {})
+      .then((data: unknown) => {
+        const err = (data as { error?: string })?.error;
+        if (!err) setVolumeMuted(nextMuted);
+      })
       .catch(() => {})
       .finally(() => setVolumePending(false));
-  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, volumeMuted]);
 
   const toggleDontStopTheMusic = useCallback(() => {
     if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
@@ -143,6 +149,7 @@ export function useMusicPlayerActions() {
     volumeUp,
     volumeDown,
     volumeMute,
+    volumeMuted,
     toggleDontStopTheMusic,
     volume,
     volumePending,
