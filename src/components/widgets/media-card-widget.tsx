@@ -140,8 +140,8 @@ export function MediaCardWidget({
         ...(hasFixedHeight && { height, minHeight: height }),
       }}
     >
-      {/* Bovenste deel: kan groeien/krimpen; onderaan blijft de controls-balk */}
-      <div className={cn("flex flex-col min-w-0", hasFixedHeight && "min-h-0 flex-1 overflow-auto")}>
+      {/* Bovenste deel: rekt mee bij grotere hoogte, onderaan blijft de controls-balk */}
+      <div className={cn("flex flex-col min-w-0", hasFixedHeight && "min-h-0 flex-1")}>
       {/* Expanded: album art + progress boven de header (uitklapt naar boven); chevron alleen hier */}
       {expanded && (
         <>
@@ -198,8 +198,8 @@ export function MediaCardWidget({
         </>
       )}
 
-      {/* Header: entity_picture als achtergrond, daarboven icon + titel + entity + thumbnail */}
-      <div className="relative overflow-hidden">
+      {/* Header: entity_picture als achtergrond, rekt mee bij vaste hoogte */}
+      <div className={cn("relative overflow-hidden min-w-0", hasFixedHeight && "flex-1 min-h-0")}>
         {mediaImageSrc && (
           <div className="absolute inset-0" aria-hidden>
             <Image
