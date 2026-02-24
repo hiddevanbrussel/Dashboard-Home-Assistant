@@ -185,6 +185,33 @@ function getItemImageUrl(item: MASearchItem): string | null {
   return null;
 }
 
+/** Extract hero display info from track or album. */
+function getHeroDisplayInfo(item: MASearchItem): { title: string; subtitle: string; trackCount?: number } {
+  const artistsStr = item.artists
+    ? Array.isArray(item.artists)
+      ? (item.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).slice(0, 3).join(", ")
+      : (item.artists as { name?: string })?.name ?? ""
+    : "";
+  const albumName = (item.album as { name?: string })?.name;
+  const mediaType = (item.media_type ?? (item as { type?: string }).type) as string | undefined;
+  const uri = (item.uri ?? (item as { item_uri?: string }).item_uri) ?? "";
+  const isAlbum = mediaType === "album" || uri.includes("/album/");
+  const isTrack = mediaType === "track" || uri.includes("/track/") || (item.album != null && !isAlbum);
+
+  if (isTrack) {
+    const title = (item.name as string) ?? "";
+    const parts = [albumName, artistsStr].filter(Boolean);
+    const subtitle = parts.join(" · ");
+    return { title, subtitle };
+  }
+  const title = (item.name as string) ?? "";
+  const trackCount =
+    Array.isArray((item as { tracks?: unknown[] }).tracks)
+      ? (item as { tracks: unknown[] }).tracks.length
+      : (item as { total_tracks?: number }).total_tracks;
+  return { title, subtitle: artistsStr, trackCount };
+}
+
 /** Build src for MA images: proxy relative/MA URLs so auth works and CORS is avoided. */
 function getImageSrc(rawUrl: string | null, baseUrl: string | undefined, token: string | undefined): string | null {
   if (!rawUrl || !rawUrl.trim()) return null;
@@ -346,7 +373,7 @@ export default function MusicPage() {
   }, []);
 
   const heroItems = useMemo(() => {
-    const combined = [...recentItems, ...favoriteAlbums, ...favoriteItems];
+    const combined = [...recentItems, ...favoriteAlbums, ...favoriteItems, ...libraryAlbums];
     const seen = new Set<string>();
     const deduped = combined.filter((item) => {
       const uri = item.uri ?? (item as { item_uri?: string }).item_uri;
@@ -363,12 +390,13 @@ export default function MusicPage() {
       result.push(deduped[(startIndex + i) % n]!);
     }
     return result;
-  }, [recentItems, favoriteAlbums, favoriteItems, heroHourSeed]);
+  }, [recentItems, favoriteAlbums, favoriteItems, libraryAlbums, heroHourSeed]);
 
   const heroItemCount = heroItems.length;
   useEffect(() => {
-    setHeroSlideIndex(0);
-  }, [heroHourSeed]);
+    if (heroItemCount > 0) setHeroSlideIndex(heroHourSeed % heroItemCount);
+  }, [heroHourSeed, heroItemCount]);
+
   useEffect(() => {
     if (heroItemCount <= 1) return;
     const id = setInterval(() => {
@@ -2262,18 +2290,11 @@ export default function MusicPage() {
             {!selectedMenu && !selectedCategory && (() => {
               const heroItem = heroItems[heroSlideIndex] ?? heroItems[0];
               const heroImageSrc = heroItem ? getImageSrc(getItemImageUrl(heroItem), musicAssistant.baseUrl, musicAssistant.token) : null;
-              const heroArtists = heroItem?.artists
-                ? Array.isArray(heroItem.artists)
-                  ? (heroItem.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).slice(0, 3).join(", ")
-                  : (heroItem.artists as { name?: string })?.name
-                : "";
+              const heroDisplay = heroItem ? getHeroDisplayInfo(heroItem) : { title: "", subtitle: "", trackCount: undefined };
               const heroUri = heroItem ? (getPlayableUri(heroItem, "track") || getPlayableUri(heroItem, "album")) : null;
               const heroScrolled = homeScrollTop > 80;
-              const heroTrackCount = heroItem && Array.isArray((heroItem as { tracks?: unknown[] }).tracks)
-                ? (heroItem as { tracks: unknown[] }).tracks.length
-                : (heroItem as { total_tracks?: number })?.total_tracks;
               return heroItems.length > 0 ? (
-                <div className="relative z-0 w-[calc(100%+1rem)] sm:w-[calc(100%+1.5rem)] -mt-4 -mr-4 sm:-mr-6 mb-8">
+                <div className={cn("relative z-0 w-[calc(100%+5.5rem)] sm:w-[calc(100%+6.5rem)] -mr-4 sm:-mr-6 -mt-16 pt-16 mb-8", musicMenuOpen ? "-ml-[5.25rem] sm:-ml-[5.75rem]" : "-ml-[4.5rem] sm:-ml-[5rem]")}>
                   <div
                     className={cn(
                       "w-full min-h-[min(62vw,380px)] sm:min-h-[320px] rounded-none overflow-hidden transition-[filter,opacity] duration-300",
@@ -2290,17 +2311,17 @@ export default function MusicPage() {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" aria-hidden />
-                    <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4">
+                    <div className="absolute bottom-0 left-0 right-0 px-[63px] sm:px-[95px] py-5 sm:py-6 flex flex-row items-end justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <h2 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg truncate max-w-full">
-                          {(heroItem?.name as string) ?? t("music.unknown")}
+                          {heroDisplay.title || t("music.unknown")}
                         </h2>
-                        {heroArtists ? (
-                          <p className="mt-1 text-base sm:text-lg text-white/90 truncate max-w-full">{heroArtists}</p>
+                        {heroDisplay.subtitle ? (
+                          <p className="mt-1 text-base sm:text-lg text-white/90 truncate max-w-full">{heroDisplay.subtitle}</p>
                         ) : null}
-                        {heroTrackCount != null && heroTrackCount > 0 ? (
+                        {heroDisplay.trackCount != null && heroDisplay.trackCount > 0 ? (
                           <p className="mt-0.5 text-sm text-white/70">
-                            {heroTrackCount} {heroTrackCount === 1 ? t("music.trackCountOne") : t("music.trackCountMany")}
+                            {heroDisplay.trackCount} {heroDisplay.trackCount === 1 ? t("music.trackCountOne") : t("music.trackCountMany")}
                           </p>
                         ) : null}
                         {heroItems.length > 1 && (
