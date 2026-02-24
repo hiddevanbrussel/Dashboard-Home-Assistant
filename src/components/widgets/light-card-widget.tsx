@@ -57,7 +57,7 @@ export function LightCardWidget({
   const [sliderBrightness, setSliderBrightness] = useState(100);
   const brightnessDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastBrightnessPctRef = useRef<number | null>(null);
-  const toggleInFlightRef = useRef(false);
+  const lastCallIdRef = useRef(0);
   const [slidePosition, setSlidePosition] = useState<number | null>(null);
   const dragStartRef = useRef<{ y: number; position: number } | null>(null);
 
@@ -84,6 +84,7 @@ export function LightCardWidget({
   }, [setStates]);
 
   async function callLight(service: string, serviceData?: Record<string, unknown>) {
+    const callId = ++lastCallIdRef.current;
     try {
       const res = await fetch("/api/ha/call-service", {
         method: "POST",
@@ -95,17 +96,17 @@ export function LightCardWidget({
           service_data: serviceData,
         }),
       });
-      if (res.ok) {
+      if (res.ok && callId === lastCallIdRef.current) {
         refreshState().catch(() => {});
       }
-    } finally {
-      toggleInFlightRef.current = false;
+    } catch {
+      if (callId === lastCallIdRef.current) {
+        refreshState().catch(() => {});
+      }
     }
   }
 
   function handleToggle() {
-    if (toggleInFlightRef.current) return;
-    toggleInFlightRef.current = true;
     const nextOn = !isOn;
     updateEntityState(entity_id, { state: nextOn ? "on" : "off" });
     callLight(nextOn ? "turn_on" : "turn_off", nextOn ? { brightness_pct: brightnessPct || 100 } : undefined);
