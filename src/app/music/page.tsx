@@ -1306,14 +1306,15 @@ export default function MusicPage() {
           const heroUri = heroItem
             ? (getPlayableUri(heroItem, "track") || getPlayableUri(heroItem, "album") || getPlayableUri(heroItem, "playlist"))
             : null;
-          const heroScrolled = homeScrollTop > 1;
+          const heroBlur = Math.min(24, 4 + homeScrollTop * 0.08);
+          const heroOverlay = Math.min(0.5, homeScrollTop * 0.002);
           return (
             <div
-              className="fixed inset-x-0 top-0 z-20 h-[min(75vh,600px)] w-screen transition-[filter] duration-300 will-change-[filter]"
+              className="fixed inset-x-0 top-0 z-20 h-[min(75vh,600px)] w-screen transition-[filter,opacity] duration-300 will-change-[filter]"
               style={{
                 maskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
                 WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
-                filter: heroScrolled ? "blur(12px)" : "none",
+                filter: heroBlur > 4 ? `blur(${heroBlur}px)` : "none",
               }}
             >
               <div className="absolute inset-0 bg-gray-900">
@@ -1325,6 +1326,13 @@ export default function MusicPage() {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
+                {heroOverlay > 0 && (
+                  <div
+                    className="absolute inset-0 bg-black/60 transition-opacity duration-300"
+                    style={{ opacity: heroOverlay }}
+                    aria-hidden
+                  />
+                )}
               </div>
               <div className="absolute bottom-[10%] left-0 right-0 pl-[calc(3.5rem+30px)] sm:pl-[calc(4rem+30px)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
                 <div className="min-w-0 flex-1 pointer-events-auto">
