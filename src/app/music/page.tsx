@@ -1609,7 +1609,6 @@ export default function MusicPage() {
                 )}
               </section>
             </div>
-          </div>
         ) : selectedArtist ? (
           <div className="space-y-6">
             <button
@@ -2173,7 +2172,6 @@ export default function MusicPage() {
                 )}
               </section>
             </div>
-          </div>
         ) : selectedArtist ? (
           <div className="space-y-6">
             <button

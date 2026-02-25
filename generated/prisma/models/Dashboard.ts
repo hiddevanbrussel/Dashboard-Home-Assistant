@@ -35,6 +35,7 @@ export type DashboardMinAggregateOutputType = {
   widgets: string | null
   welcomeTitle: string | null
   welcomeSubtitle: string | null
+  roomCardSize: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +51,7 @@ export type DashboardMaxAggregateOutputType = {
   widgets: string | null
   welcomeTitle: string | null
   welcomeSubtitle: string | null
+  roomCardSize: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -65,6 +67,7 @@ export type DashboardCountAggregateOutputType = {
   widgets: number
   welcomeTitle: number
   welcomeSubtitle: number
+  roomCardSize: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -82,6 +85,7 @@ export type DashboardMinAggregateInputType = {
   widgets?: true
   welcomeTitle?: true
   welcomeSubtitle?: true
+  roomCardSize?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -97,6 +101,7 @@ export type DashboardMaxAggregateInputType = {
   widgets?: true
   welcomeTitle?: true
   welcomeSubtitle?: true
+  roomCardSize?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -112,6 +117,7 @@ export type DashboardCountAggregateInputType = {
   widgets?: true
   welcomeTitle?: true
   welcomeSubtitle?: true
+  roomCardSize?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -200,6 +206,7 @@ export type DashboardGroupByOutputType = {
   widgets: string | null
   welcomeTitle: string | null
   welcomeSubtitle: string | null
+  roomCardSize: string | null
   createdAt: Date
   updatedAt: Date
   _count: DashboardCountAggregateOutputType | null
@@ -236,6 +243,7 @@ export type DashboardWhereInput = {
   widgets?: Prisma.StringNullableFilter<"Dashboard"> | string | null
   welcomeTitle?: Prisma.StringNullableFilter<"Dashboard"> | string | null
   welcomeSubtitle?: Prisma.StringNullableFilter<"Dashboard"> | string | null
+  roomCardSize?: Prisma.StringNullableFilter<"Dashboard"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Dashboard"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Dashboard"> | Date | string
 }
@@ -251,6 +259,7 @@ export type DashboardOrderByWithRelationInput = {
   widgets?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrderInput | Prisma.SortOrder
+  roomCardSize?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -269,6 +278,7 @@ export type DashboardWhereUniqueInput = Prisma.AtLeast<{
   widgets?: Prisma.StringNullableFilter<"Dashboard"> | string | null
   welcomeTitle?: Prisma.StringNullableFilter<"Dashboard"> | string | null
   welcomeSubtitle?: Prisma.StringNullableFilter<"Dashboard"> | string | null
+  roomCardSize?: Prisma.StringNullableFilter<"Dashboard"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Dashboard"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Dashboard"> | Date | string
 }, "id">
@@ -284,6 +294,7 @@ export type DashboardOrderByWithAggregationInput = {
   widgets?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrderInput | Prisma.SortOrder
+  roomCardSize?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.DashboardCountOrderByAggregateInput
@@ -305,6 +316,7 @@ export type DashboardScalarWhereWithAggregatesInput = {
   widgets?: Prisma.StringNullableWithAggregatesFilter<"Dashboard"> | string | null
   welcomeTitle?: Prisma.StringNullableWithAggregatesFilter<"Dashboard"> | string | null
   welcomeSubtitle?: Prisma.StringNullableWithAggregatesFilter<"Dashboard"> | string | null
+  roomCardSize?: Prisma.StringNullableWithAggregatesFilter<"Dashboard"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Dashboard"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Dashboard"> | Date | string
 }
@@ -320,6 +332,7 @@ export type DashboardCreateInput = {
   widgets?: string | null
   welcomeTitle?: string | null
   welcomeSubtitle?: string | null
+  roomCardSize?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -335,6 +348,7 @@ export type DashboardUncheckedCreateInput = {
   widgets?: string | null
   welcomeTitle?: string | null
   welcomeSubtitle?: string | null
+  roomCardSize?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -350,6 +364,7 @@ export type DashboardUpdateInput = {
   widgets?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  roomCardSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -365,6 +380,7 @@ export type DashboardUncheckedUpdateInput = {
   widgets?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  roomCardSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -380,6 +396,7 @@ export type DashboardCreateManyInput = {
   widgets?: string | null
   welcomeTitle?: string | null
   welcomeSubtitle?: string | null
+  roomCardSize?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -395,6 +412,7 @@ export type DashboardUpdateManyMutationInput = {
   widgets?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  roomCardSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -410,6 +428,7 @@ export type DashboardUncheckedUpdateManyInput = {
   widgets?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  roomCardSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -425,6 +444,7 @@ export type DashboardCountOrderByAggregateInput = {
   widgets?: Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrder
+  roomCardSize?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -440,6 +460,7 @@ export type DashboardMaxOrderByAggregateInput = {
   widgets?: Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrder
+  roomCardSize?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -455,6 +476,7 @@ export type DashboardMinOrderByAggregateInput = {
   widgets?: Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrder
+  roomCardSize?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -476,6 +498,7 @@ export type DashboardSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   widgets?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  roomCardSize?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["dashboard"]>
@@ -491,6 +514,7 @@ export type DashboardSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   widgets?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  roomCardSize?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["dashboard"]>
@@ -506,6 +530,7 @@ export type DashboardSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   widgets?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  roomCardSize?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["dashboard"]>
@@ -521,11 +546,12 @@ export type DashboardSelectScalar = {
   widgets?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  roomCardSize?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type DashboardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "theme" | "background" | "backgroundLight" | "backgroundDark" | "layout" | "widgets" | "welcomeTitle" | "welcomeSubtitle" | "createdAt" | "updatedAt", ExtArgs["result"]["dashboard"]>
+export type DashboardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "theme" | "background" | "backgroundLight" | "backgroundDark" | "layout" | "widgets" | "welcomeTitle" | "welcomeSubtitle" | "roomCardSize" | "createdAt" | "updatedAt", ExtArgs["result"]["dashboard"]>
 
 export type $DashboardPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Dashboard"
@@ -541,6 +567,7 @@ export type $DashboardPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     widgets: string | null
     welcomeTitle: string | null
     welcomeSubtitle: string | null
+    roomCardSize: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["dashboard"]>
@@ -976,6 +1003,7 @@ export interface DashboardFieldRefs {
   readonly widgets: Prisma.FieldRef<"Dashboard", 'String'>
   readonly welcomeTitle: Prisma.FieldRef<"Dashboard", 'String'>
   readonly welcomeSubtitle: Prisma.FieldRef<"Dashboard", 'String'>
+  readonly roomCardSize: Prisma.FieldRef<"Dashboard", 'String'>
   readonly createdAt: Prisma.FieldRef<"Dashboard", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Dashboard", 'DateTime'>
 }

@@ -761,6 +761,7 @@ export const DashboardScalarFieldEnum = {
   widgets: 'widgets',
   welcomeTitle: 'welcomeTitle',
   welcomeSubtitle: 'welcomeSubtitle',
+  roomCardSize: 'roomCardSize',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
