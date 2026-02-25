@@ -7,25 +7,26 @@ const STORAGE_KEY_BASE_URL = "dashboard.musicAssistant.baseUrl";
 const STORAGE_KEY_TOKEN = "dashboard.musicAssistant.token";
 const STORAGE_KEY_ALLOW_SPEAKER_SELECTION = "dashboard.musicAssistant.allowSpeakerSelection";
 const STORAGE_KEY_ALLOWED_SPEAKER_IDS = "dashboard.musicAssistant.allowedSpeakerIds";
-const STORAGE_KEY_SECTION_FAVORITE_ALBUMS = "dashboard.musicAssistant.sectionFavoriteAlbumsEnabled";
-const STORAGE_KEY_SECTION_FAVORITE_TRACKS = "dashboard.musicAssistant.sectionFavoriteTracksEnabled";
 const STORAGE_KEY_SECTION_RADIO = "dashboard.musicAssistant.sectionRadioEnabled";
 const STORAGE_KEY_SECTION_RECENTLY_PLAYED = "dashboard.musicAssistant.sectionRecentlyPlayedEnabled";
+const STORAGE_KEY_SECTION_RECENTLY_ADDED_ALBUMS = "dashboard.musicAssistant.sectionRecentlyAddedAlbumsEnabled";
+const STORAGE_KEY_SECTION_RECENTLY_ADDED_TRACKS = "dashboard.musicAssistant.sectionRecentlyAddedTracksEnabled";
+const STORAGE_KEY_SECTION_RECENTLY_ADDED_PLAYLISTS = "dashboard.musicAssistant.sectionRecentlyAddedPlaylistsEnabled";
 const STORAGE_KEY_SECTION_ORDER = "dashboard.musicAssistant.sectionOrder";
 
 const DEFAULT_BASE_URL = "http://localhost:8095";
 
-export const MUSIC_SECTION_IDS = ["favoriteAlbums", "favoriteTracks", "radio", "recentlyPlayed"] as const;
+export const MUSIC_SECTION_IDS = ["recentlyAddedPlaylists", "recentlyAddedAlbums", "recentlyAddedTracks", "radio", "recentlyPlayed"] as const;
 export type MusicSectionId = (typeof MUSIC_SECTION_IDS)[number];
 
-const DEFAULT_SECTION_ORDER: MusicSectionId[] = ["recentlyPlayed", "radio", "favoriteAlbums", "favoriteTracks"];
+const DEFAULT_SECTION_ORDER: MusicSectionId[] = ["recentlyPlayed", "radio", "recentlyAddedPlaylists"];
 
 function getStored<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
     const v = localStorage.getItem(key);
     if (v === null) return fallback;
-    if (key === STORAGE_KEY_ENABLED || key === STORAGE_KEY_ALLOW_SPEAKER_SELECTION || key === STORAGE_KEY_SECTION_FAVORITE_ALBUMS || key === STORAGE_KEY_SECTION_FAVORITE_TRACKS || key === STORAGE_KEY_SECTION_RADIO || key === STORAGE_KEY_SECTION_RECENTLY_PLAYED) return (v === "true") as T;
+    if (key === STORAGE_KEY_ENABLED || key === STORAGE_KEY_ALLOW_SPEAKER_SELECTION || key === STORAGE_KEY_SECTION_RADIO || key === STORAGE_KEY_SECTION_RECENTLY_PLAYED || key === STORAGE_KEY_SECTION_RECENTLY_ADDED_ALBUMS || key === STORAGE_KEY_SECTION_RECENTLY_ADDED_TRACKS || key === STORAGE_KEY_SECTION_RECENTLY_ADDED_PLAYLISTS) return (v === "true") as T;
     if (key === STORAGE_KEY_ALLOWED_SPEAKER_IDS) {
       const parsed = JSON.parse(v);
       return (Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []) as T;
@@ -33,7 +34,9 @@ function getStored<T>(key: string, fallback: T): T {
     if (key === STORAGE_KEY_SECTION_ORDER) {
       const parsed = JSON.parse(v);
       if (!Array.isArray(parsed)) return DEFAULT_SECTION_ORDER as T;
-      const mapped = (parsed as string[]).flatMap((id) => (id === "favorites" ? ["favoriteAlbums", "favoriteTracks"] : [id]));
+      const mapped = (parsed as string[]).flatMap((id) =>
+        id === "recentlyAdded" ? ["recentlyAddedPlaylists"] : [id]
+      );
       const valid = mapped.filter((id): id is MusicSectionId => MUSIC_SECTION_IDS.includes(id as MusicSectionId));
       const seen = new Set<MusicSectionId>();
       const deduped = valid.filter((id) => {
@@ -67,10 +70,12 @@ export type MusicAssistantStore = {
   allowSpeakerSelection: boolean;
   /** When non-empty, only these queue_ids may be chosen. Empty = all allowed. */
   allowedSpeakerIds: string[];
-  /** Music page: show Favorite albums section. Default off. */
-  sectionFavoriteAlbumsEnabled: boolean;
-  /** Music page: show Favorite tracks section. Default off. */
-  sectionFavoriteTracksEnabled: boolean;
+  /** Music page: show Recently added albums section. Default on. */
+  sectionRecentlyAddedAlbumsEnabled: boolean;
+  /** Music page: show Recently added tracks section. Default on. */
+  sectionRecentlyAddedTracksEnabled: boolean;
+  /** Music page: show Recently added playlists section (Apple Music). Default on. */
+  sectionRecentlyAddedPlaylistsEnabled: boolean;
   sectionRadioEnabled: boolean;
   sectionRecentlyPlayedEnabled: boolean;
   /** Order of sections on music page. */
@@ -80,10 +85,11 @@ export type MusicAssistantStore = {
   setToken: (v: string) => void;
   setAllowSpeakerSelection: (v: boolean) => void;
   setAllowedSpeakerIds: (ids: string[]) => void;
-  setSectionFavoriteAlbumsEnabled: (v: boolean) => void;
-  setSectionFavoriteTracksEnabled: (v: boolean) => void;
+  setSectionRecentlyAddedAlbumsEnabled: (v: boolean) => void;
+  setSectionRecentlyAddedTracksEnabled: (v: boolean) => void;
   setSectionRadioEnabled: (v: boolean) => void;
   setSectionRecentlyPlayedEnabled: (v: boolean) => void;
+  setSectionRecentlyAddedPlaylistsEnabled: (v: boolean) => void;
   setSectionOrder: (order: MusicSectionId[]) => void;
 };
 
@@ -93,10 +99,11 @@ export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => 
   token: getStored(STORAGE_KEY_TOKEN, ""),
   allowSpeakerSelection: getStored(STORAGE_KEY_ALLOW_SPEAKER_SELECTION, true),
   allowedSpeakerIds: getStored<string[]>(STORAGE_KEY_ALLOWED_SPEAKER_IDS, []),
-  sectionFavoriteAlbumsEnabled: getStored(STORAGE_KEY_SECTION_FAVORITE_ALBUMS, false),
-  sectionFavoriteTracksEnabled: getStored(STORAGE_KEY_SECTION_FAVORITE_TRACKS, false),
-  sectionRadioEnabled: getStored(STORAGE_KEY_SECTION_RADIO, true),
-  sectionRecentlyPlayedEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_PLAYED, true),
+  sectionRecentlyAddedAlbumsEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_ALBUMS, true),
+  sectionRecentlyAddedTracksEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_TRACKS, true),
+    sectionRadioEnabled: getStored(STORAGE_KEY_SECTION_RADIO, true),
+    sectionRecentlyPlayedEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_PLAYED, true),
+    sectionRecentlyAddedPlaylistsEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_PLAYLISTS, true),
   sectionOrder: getStored<MusicSectionId[]>(STORAGE_KEY_SECTION_ORDER, [...DEFAULT_SECTION_ORDER]),
   setEnabled: (v) => {
     setStored(STORAGE_KEY_ENABLED, v);
@@ -120,13 +127,17 @@ export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => 
     setStored(STORAGE_KEY_ALLOWED_SPEAKER_IDS, list);
     set({ allowedSpeakerIds: list });
   },
-  setSectionFavoriteAlbumsEnabled: (v) => {
-    setStored(STORAGE_KEY_SECTION_FAVORITE_ALBUMS, v);
-    set({ sectionFavoriteAlbumsEnabled: v });
+  setSectionRecentlyAddedAlbumsEnabled: (v) => {
+    setStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_ALBUMS, v);
+    set({ sectionRecentlyAddedAlbumsEnabled: v });
   },
-  setSectionFavoriteTracksEnabled: (v) => {
-    setStored(STORAGE_KEY_SECTION_FAVORITE_TRACKS, v);
-    set({ sectionFavoriteTracksEnabled: v });
+  setSectionRecentlyAddedTracksEnabled: (v) => {
+    setStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_TRACKS, v);
+    set({ sectionRecentlyAddedTracksEnabled: v });
+  },
+  setSectionRecentlyAddedPlaylistsEnabled: (v) => {
+    setStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_PLAYLISTS, v);
+    set({ sectionRecentlyAddedPlaylistsEnabled: v });
   },
   setSectionRadioEnabled: (v) => {
     setStored(STORAGE_KEY_SECTION_RADIO, v);
@@ -155,8 +166,9 @@ export function hydrateMusicAssistantStore() {
     token: getStored(STORAGE_KEY_TOKEN, ""),
     allowSpeakerSelection: getStored(STORAGE_KEY_ALLOW_SPEAKER_SELECTION, true),
     allowedSpeakerIds: getStored<string[]>(STORAGE_KEY_ALLOWED_SPEAKER_IDS, []),
-    sectionFavoriteAlbumsEnabled: getStored(STORAGE_KEY_SECTION_FAVORITE_ALBUMS, false),
-    sectionFavoriteTracksEnabled: getStored(STORAGE_KEY_SECTION_FAVORITE_TRACKS, false),
+    sectionRecentlyAddedAlbumsEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_ALBUMS, true),
+    sectionRecentlyAddedTracksEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_TRACKS, true),
+    sectionRecentlyAddedPlaylistsEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_PLAYLISTS, true),
     sectionRadioEnabled: getStored(STORAGE_KEY_SECTION_RADIO, true),
     sectionRecentlyPlayedEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_PLAYED, true),
     sectionOrder: getStored<MusicSectionId[]>(STORAGE_KEY_SECTION_ORDER, [...DEFAULT_SECTION_ORDER]),

@@ -1082,20 +1082,29 @@ export default function SettingsPage() {
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={musicAssistant.sectionFavoriteAlbumsEnabled}
-                          onChange={(e) => musicAssistant.setSectionFavoriteAlbumsEnabled(e.target.checked)}
+                          checked={musicAssistant.sectionRecentlyAddedAlbumsEnabled}
+                          onChange={(e) => musicAssistant.setSectionRecentlyAddedAlbumsEnabled(e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
                         />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowFavoriteAlbums")}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRecentlyAddedAlbums")}</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={musicAssistant.sectionFavoriteTracksEnabled}
-                          onChange={(e) => musicAssistant.setSectionFavoriteTracksEnabled(e.target.checked)}
+                          checked={musicAssistant.sectionRecentlyAddedTracksEnabled}
+                          onChange={(e) => musicAssistant.setSectionRecentlyAddedTracksEnabled(e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
                         />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowFavoriteTracks")}</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRecentlyAddedTracks")}</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={musicAssistant.sectionRecentlyAddedPlaylistsEnabled}
+                          onChange={(e) => musicAssistant.setSectionRecentlyAddedPlaylistsEnabled(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRecentlyAddedPlaylists")}</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
@@ -1119,7 +1128,7 @@ export default function SettingsPage() {
                     <p className="text-xs text-gray-500 dark:text-gray-400">{t("settings.musicAssistant.sectionOrderHint")}</p>
                     <div className="flex flex-col gap-1">
                       {musicAssistant.sectionOrder.map((id, i) => {
-                        const labelKey = id === "favoriteAlbums" ? "music.favoriteAlbums" : id === "favoriteTracks" ? "music.favoriteTracks" : id === "radio" ? "music.radioStations" : "music.recentlyPlayed";
+                        const labelKey = id === "recentlyAddedAlbums" ? "music.recentlyAddedAlbums" : id === "recentlyAddedTracks" ? "music.recentlyAddedTracks" : id === "recentlyAddedPlaylists" ? "music.recentlyAddedPlaylists" : id === "radio" ? "music.radioStations" : "music.recentlyPlayed";
                         return (
                           <div key={id} className="flex items-center gap-2 rounded bg-white dark:bg-white/5 px-2 py-1.5">
                             <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
