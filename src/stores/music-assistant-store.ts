@@ -12,8 +12,13 @@ const STORAGE_KEY_SECTION_RECENTLY_PLAYED = "dashboard.musicAssistant.sectionRec
 const STORAGE_KEY_SECTION_ORDER = "dashboard.musicAssistant.sectionOrder";
 const STORAGE_KEY_FEATURED_PLAYLIST_IDS = "dashboard.musicAssistant.featuredPlaylistIds";
 const STORAGE_KEY_SECTION_FEATURED_PLAYLIST = "dashboard.musicAssistant.sectionFeaturedPlaylistEnabled";
+const STORAGE_KEY_HERO_SLIDER_INTERVAL = "dashboard.musicAssistant.heroSliderIntervalMs";
+const STORAGE_KEY_HERO_SLIDER_SOURCES = "dashboard.musicAssistant.heroSliderSources";
 
 const DEFAULT_BASE_URL = "http://localhost:8095";
+
+export const HERO_SLIDER_SOURCE_IDS = ["featuredPlaylist", "recentlyPlayed", "libraryAlbums"] as const;
+export type HeroSliderSourceId = (typeof HERO_SLIDER_SOURCE_IDS)[number];
 
 export const MUSIC_SECTION_IDS = ["featuredPlaylist", "radio", "recentlyPlayed"] as const;
 export type MusicSectionId = (typeof MUSIC_SECTION_IDS)[number];
@@ -58,6 +63,16 @@ function getStored<T>(key: string, fallback: T): T {
       const missing = MUSIC_SECTION_IDS.filter((id) => !deduped.includes(id));
       return ([...deduped, ...missing] as MusicSectionId[]) as T;
     }
+    if (key === STORAGE_KEY_HERO_SLIDER_INTERVAL) {
+      const n = parseInt(v, 10);
+      return (Number.isFinite(n) && n >= 1000 && n <= 120000 ? n : 5000) as T;
+    }
+    if (key === STORAGE_KEY_HERO_SLIDER_SOURCES) {
+      const parsed = JSON.parse(v);
+      if (!Array.isArray(parsed)) return ([...HERO_SLIDER_SOURCE_IDS] as HeroSliderSourceId[]) as T;
+      const valid = (parsed as string[]).filter((id): id is HeroSliderSourceId => HERO_SLIDER_SOURCE_IDS.includes(id as HeroSliderSourceId));
+      return (valid.length > 0 ? valid : [...HERO_SLIDER_SOURCE_IDS]) as T;
+    }
     return v as T;
   } catch {
     return fallback;
@@ -89,6 +104,10 @@ export type MusicAssistantStore = {
   sectionRecentlyPlayedEnabled: boolean;
   /** Order of sections on music page. */
   sectionOrder: MusicSectionId[];
+  /** Hero slider: interval in ms (1000–120000). Default 5000. */
+  heroSliderIntervalMs: number;
+  /** Hero slider: which sources to use (featuredPlaylist, recentlyPlayed, libraryAlbums). */
+  heroSliderSources: HeroSliderSourceId[];
   setEnabled: (v: boolean) => void;
   setBaseUrl: (v: string) => void;
   setToken: (v: string) => void;
@@ -101,6 +120,9 @@ export type MusicAssistantStore = {
   setSectionRadioEnabled: (v: boolean) => void;
   setSectionRecentlyPlayedEnabled: (v: boolean) => void;
   setSectionOrder: (order: MusicSectionId[]) => void;
+  setHeroSliderIntervalMs: (ms: number) => void;
+  setHeroSliderSources: (sources: HeroSliderSourceId[]) => void;
+  toggleHeroSliderSource: (id: HeroSliderSourceId) => void;
 };
 
 export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => ({
@@ -114,6 +136,8 @@ export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => 
   sectionRadioEnabled: getStored(STORAGE_KEY_SECTION_RADIO, true),
   sectionRecentlyPlayedEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_PLAYED, true),
   sectionOrder: getStored<MusicSectionId[]>(STORAGE_KEY_SECTION_ORDER, [...DEFAULT_SECTION_ORDER]),
+  heroSliderIntervalMs: getStored<number>(STORAGE_KEY_HERO_SLIDER_INTERVAL, 5000),
+  heroSliderSources: getStored<HeroSliderSourceId[]>(STORAGE_KEY_HERO_SLIDER_SOURCES, [...HERO_SLIDER_SOURCE_IDS]),
   setEnabled: (v) => {
     setStored(STORAGE_KEY_ENABLED, v);
     set({ enabled: v });
@@ -177,6 +201,25 @@ export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => 
     setStored(STORAGE_KEY_SECTION_ORDER, list);
     set({ sectionOrder: list });
   },
+  setHeroSliderIntervalMs: (ms) => {
+    const val = Math.max(1000, Math.min(120000, Math.round(ms)));
+    setStored(STORAGE_KEY_HERO_SLIDER_INTERVAL, String(val));
+    set({ heroSliderIntervalMs: val });
+  },
+  setHeroSliderSources: (sources) => {
+    const list = Array.isArray(sources) ? sources.filter((id): id is HeroSliderSourceId => HERO_SLIDER_SOURCE_IDS.includes(id)) : [...HERO_SLIDER_SOURCE_IDS];
+    if (list.length === 0) return;
+    setStored(STORAGE_KEY_HERO_SLIDER_SOURCES, list);
+    set({ heroSliderSources: list });
+  },
+  toggleHeroSliderSource: (id) => {
+    const current = get().heroSliderSources;
+    const has = current.includes(id);
+    const next = has ? current.filter((x) => x !== id) : [...current, id];
+    if (next.length === 0) return;
+    setStored(STORAGE_KEY_HERO_SLIDER_SOURCES, next);
+    set({ heroSliderSources: next });
+  },
 }));
 
 /** Hydrate store from localStorage (call once in client, e.g. in layout or TopTabs). */
@@ -192,5 +235,7 @@ export function hydrateMusicAssistantStore() {
     sectionRadioEnabled: getStored(STORAGE_KEY_SECTION_RADIO, true),
     sectionRecentlyPlayedEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_PLAYED, true),
     sectionOrder: getStored<MusicSectionId[]>(STORAGE_KEY_SECTION_ORDER, [...DEFAULT_SECTION_ORDER]),
+    heroSliderIntervalMs: getStored<number>(STORAGE_KEY_HERO_SLIDER_INTERVAL, 5000),
+    heroSliderSources: getStored<HeroSliderSourceId[]>(STORAGE_KEY_HERO_SLIDER_SOURCES, [...HERO_SLIDER_SOURCE_IDS]),
   });
 }

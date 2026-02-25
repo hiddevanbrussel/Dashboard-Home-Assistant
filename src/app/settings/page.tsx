@@ -7,7 +7,7 @@ import { useThemeStore } from "@/stores/theme-store";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode } from "@/stores/dashboard-settings-store";
-import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useMusicAssistantStore, hydrateMusicAssistantStore, HERO_SLIDER_SOURCE_IDS } from "@/stores/music-assistant-store";
 import { Image, Link2, List, Monitor, Music2, Palette, LayoutDashboard, RefreshCw, ChevronUp, ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
@@ -1108,8 +1108,55 @@ export default function SettingsPage() {
                         <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRecentlyPlayed")}</span>
                       </label>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{t("settings.musicAssistant.sectionOrderHint")}</p>
-                    <div className="flex flex-col gap-1">
+                    <div className="mt-6">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        {t("settings.musicAssistant.heroSlider")}
+                      </label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        {t("settings.musicAssistant.heroSliderHint")}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-4 mb-3">
+                        <label className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.heroSliderInterval")}</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={120}
+                            value={Math.round(musicAssistant.heroSliderIntervalMs / 1000)}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              if (Number.isFinite(v) && v >= 1) musicAssistant.setHeroSliderIntervalMs(v * 1000);
+                            }}
+                            className="w-16 rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1 text-sm text-gray-900 dark:text-gray-200"
+                          />
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{t("settings.musicAssistant.heroSliderIntervalUnit")}</span>
+                        </label>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{t("settings.musicAssistant.heroSliderSources")}</span>
+                        {HERO_SLIDER_SOURCE_IDS.map((id) => {
+                          const labelKey =
+                            id === "featuredPlaylist"
+                              ? "settings.musicAssistant.heroSliderSourceFeatured"
+                              : id === "recentlyPlayed"
+                                ? "settings.musicAssistant.heroSliderSourceRecent"
+                                : "settings.musicAssistant.heroSliderSourceLibrary";
+                          return (
+                            <label key={id} className="flex items-center gap-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={musicAssistant.heroSliderSources.includes(id)}
+                                onChange={() => musicAssistant.toggleHeroSliderSource(id)}
+                                className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">{t("settings.musicAssistant.sectionOrderHint")}</p>
+                    <div className="flex flex-col gap-1 mt-2">
                       {musicAssistant.sectionOrder.map((id, i) => {
                         const labelKey =
                           id === "featuredPlaylist"

@@ -407,7 +407,12 @@ export default function MusicPage() {
   );
 
   const heroItems = useMemo(() => {
-    const combined = [...allFeaturedTracks, ...recentItems, ...libraryAlbums];
+    const sources = musicAssistant.heroSliderSources;
+    const parts: MASearchItem[][] = [];
+    if (sources.includes("featuredPlaylist")) parts.push(allFeaturedTracks);
+    if (sources.includes("recentlyPlayed")) parts.push(recentItems);
+    if (sources.includes("libraryAlbums")) parts.push(libraryAlbums);
+    const combined = parts.flat();
     const seen = new Set<string>();
     const deduped = combined.filter((item) => {
       const uri = item.uri ?? (item as { item_uri?: string }).item_uri;
@@ -424,20 +429,21 @@ export default function MusicPage() {
       result.push(deduped[(startIndex + i) % n]!);
     }
     return result;
-  }, [allFeaturedTracks, recentItems, libraryAlbums, heroHourSeed]);
+  }, [allFeaturedTracks, recentItems, libraryAlbums, heroHourSeed, musicAssistant.heroSliderSources]);
 
   const heroItemCount = heroItems.length;
   useEffect(() => {
     if (heroItemCount > 0) setHeroSlideIndex(heroHourSeed % heroItemCount);
   }, [heroHourSeed, heroItemCount]);
 
+  const heroIntervalMs = musicAssistant.heroSliderIntervalMs;
   useEffect(() => {
     if (heroItemCount <= 1) return;
     const id = setInterval(() => {
       setHeroSlideIndex((i) => (i + 1) % heroItemCount);
-    }, 5000);
+    }, heroIntervalMs);
     return () => clearInterval(id);
-  }, [heroItemCount]);
+  }, [heroItemCount, heroIntervalMs]);
 
   useEffect(() => {
     const el = musicScrollRef.current;
@@ -2565,7 +2571,7 @@ export default function MusicPage() {
             }
             if (sectionId === "recentlyPlayed") {
               return (
-                <section key="recentlyPlayed" className="relative z-30 mt-0">
+                <section key="recentlyPlayed" className="relative z-30 mt-8 pl-[10px]">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("recentlyPlayed")}
