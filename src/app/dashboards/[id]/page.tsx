@@ -11,6 +11,7 @@ import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
+import { ArrowRightLeft } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
@@ -157,6 +158,84 @@ function parseWidgets(widgets: string | null): WidgetConfig[] {
   } catch {
     return [];
   }
+}
+
+type RoomListItem = { areaId: string; name: string };
+
+function MoveCardToRoomSection({
+  currentAreaId,
+  widget,
+  onMove,
+  t,
+}: {
+  currentAreaId: string;
+  widget: WidgetConfig;
+  onMove: (targetAreaId: string) => Promise<void>;
+  t: (key: string) => string;
+}) {
+  const [rooms, setRooms] = useState<RoomListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [moving, setMoving] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/room-dashboards")
+      .then((res) => res.json())
+      .then((list: RoomListItem[]) => setRooms(Array.isArray(list) ? list : []))
+      .catch(() => setRooms([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const otherRooms = rooms.filter((r) => r.areaId !== currentAreaId);
+
+  async function handleMove(targetAreaId: string) {
+    setError(null);
+    setMoving(targetAreaId);
+    try {
+      await onMove(targetAreaId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("editPanel.moveToRoomError"));
+    } finally {
+      setMoving(null);
+    }
+  }
+
+  if (loading) {
+    return <p className="text-sm text-gray-500 dark:text-gray-400">{t("editPanel.loading")}</p>;
+  }
+
+  if (otherRooms.length === 0) {
+    return (
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        {t("editPanel.noOtherRooms")}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        {t("editPanel.moveToRoomDescription")}
+      </p>
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+      )}
+      <div className="flex flex-col gap-1.5 max-h-40 overflow-auto">
+        {otherRooms.map((r) => (
+          <button
+            key={r.areaId}
+            type="button"
+            onClick={() => handleMove(r.areaId)}
+            disabled={moving !== null}
+            className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2.5 text-left text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-50"
+          >
+            <span>{r.name || r.areaId}</span>
+            <ArrowRightLeft className="h-4 w-4 shrink-0 text-gray-400" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function WidgetByType({
@@ -2423,7 +2502,7 @@ export default function DashboardEditPage() {
                 {editingWidget.type === "room_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
-                      {(["entiteiten", "algemeen", "achtergrond", "weergave"] as const).map((tab) => (
+                      {(["entiteiten", "algemeen", "achtergrond", "weergave", "verplaats"] as const).map((tab) => (
                         <button
                           key={tab}
                           type="button"
@@ -2435,7 +2514,7 @@ export default function DashboardEditPage() {
                               : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {tab === "entiteiten" ? t("editPanel.entities") : tab === "algemeen" ? t("editPanel.general") : tab === "achtergrond" ? t("editPanel.background") : t("editPanel.display")}
+                          {tab === "entiteiten" ? t("editPanel.entities") : tab === "algemeen" ? t("editPanel.general") : tab === "achtergrond" ? t("editPanel.background") : tab === "weergave" ? t("editPanel.display") : t("editPanel.moveToRoom")}
                         </button>
                       ))}
                     </div>
@@ -2634,6 +2713,41 @@ export default function DashboardEditPage() {
                           <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange120")}</p>
                         </div>
                       </div>
+                    )}
+                    {editTab === "verplaats" && isRoomMode && areaId && (
+                      <MoveCardToRoomSection
+                        currentAreaId={areaId}
+                        widget={editingWidget}
+                        t={t}
+                        onMove={async (targetAreaId) => {
+                          const targetRes = await fetch(`/api/room-dashboards/${encodeURIComponent(targetAreaId)}`);
+                          if (!targetRes.ok) throw new Error(t("editPanel.moveToRoomError"));
+                          const targetData = await targetRes.json();
+                          const targetWidgets: WidgetConfig[] = targetData.widgets ? parseWidgets(targetData.widgets) : [];
+                          const targetLayout: Layout = targetData.layout ? parseLayout(targetData.layout) : [];
+                          const widgetToMove = { ...editingWidget };
+                          const newTargetWidgets = [...targetWidgets, widgetToMove];
+                          const targetPutRes = await fetch(`/api/room-dashboards/${encodeURIComponent(targetAreaId)}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ widgets: JSON.stringify(newTargetWidgets), layout: JSON.stringify(targetLayout) }),
+                          });
+                          if (!targetPutRes.ok) throw new Error(t("editPanel.moveToRoomError"));
+                          const newWidgets = widgets.filter((w) => w.id !== editingWidget.id);
+                          const newLayout = layout.filter((item) => item.i !== editingWidget.id);
+                          setWidgets(newWidgets);
+                          setLayout(newLayout);
+                          setEditingWidgetId(null);
+                          await fetch(apiBase, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ widgets: JSON.stringify(newWidgets), layout: JSON.stringify(newLayout) }),
+                          });
+                          queryClient.invalidateQueries({ queryKey: ["room-dashboard", areaId] });
+                          queryClient.invalidateQueries({ queryKey: ["room-dashboard", targetAreaId] });
+                          router.push(`/dashboards/room-${encodeURIComponent(targetAreaId)}`);
+                        }}
+                      />
                     )}
                   </>
                 )}
