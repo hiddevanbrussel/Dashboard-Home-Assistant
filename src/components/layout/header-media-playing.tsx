@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { MediaCardWidget } from "@/components/widgets/media-card-widget";
 
-export function HeaderMediaPlaying() {
+export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } = {}) {
   const states = useEntityStateStore((s) => s.states);
   const setStates = useEntityStateStore((s) => s.setStates);
   const [open, setOpen] = useState(false);
@@ -84,7 +84,10 @@ export function HeaderMediaPlaying() {
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-accent-purple dark:text-accent-purple hover:bg-gray-100 dark:hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4D2FB2]"
+        className={cn(
+        "flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4D2FB2]",
+        contentLight ? "text-white/90 hover:bg-white/10" : "text-accent-purple dark:text-accent-purple hover:bg-gray-100 dark:hover:bg-white/10"
+      )}
         aria-label="Media afspelen"
         aria-expanded={open}
       >

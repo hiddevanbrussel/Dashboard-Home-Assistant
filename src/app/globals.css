@@ -105,6 +105,21 @@
   touch-action: manipulation;
 }
 
+/* Muziekpagina content: tekst en iconen wit, behalve elementen met witte/accent-achtergrond */
+.music-content-area {
+  color: white;
+}
+.music-content-area [class*="bg-white/80"],
+.music-content-area [class*="bg-white/90"],
+.music-content-area .bg-accent-yellow,
+.music-content-area .bg-accent-green,
+.music-content-area .bg-white {
+  color: rgb(17 24 39);
+}
+.music-content-area [class*="bg-red-"] {
+  color: inherit;
+}
+
 /* Muziek-carousels: pan-y = dit element claimt alleen verticale pan → verticale vegen scrollen de pagina.
    Horizontale vegen scrollen de carousel (overflow-x) nog steeds in veel browsers. */
 .music-h-scroll {

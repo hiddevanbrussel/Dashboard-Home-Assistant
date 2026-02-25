@@ -66,6 +66,8 @@ type AppShellProps = {
   contentScrollbarHidden?: boolean;
   /** When set, show a chevron-left back link before the welcome title (e.g. /rooms). */
   backHref?: string;
+  /** When true, header content uses light colors (e.g. over dark hero image). */
+  headerContentLight?: boolean;
   className?: string;
 };
 
@@ -74,9 +76,9 @@ const DEFAULT_TEMPERATURE_ENTITY = "sensor.weather_temperature";
 
 type HaEntity = { entity_id: string; state: string; attributes: Record<string, unknown> };
 
-function WeatherIcon({ state }: { state: string }) {
+function WeatherIcon({ state, light }: { state: string; light?: boolean }) {
   const s = state?.toLowerCase() ?? "";
-  const iconClass = "h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400";
+  const iconClass = light ? "h-4 w-4 shrink-0 text-white/80" : "h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400";
   if (s === "sunny" || s === "clear") return <Sun className={iconClass} aria-hidden />;
   if (s === "clear-night") return <Moon className={iconClass} aria-hidden />;
   if (s === "fog" || s === "mist") return <CloudFog className={iconClass} aria-hidden />;
@@ -211,6 +213,7 @@ export function AppShell({
   contentNoScroll = false,
   contentScrollbarHidden = false,
   backHref,
+  headerContentLight = false,
   className,
 }: AppShellProps) {
   const { t } = useTranslation();
@@ -265,44 +268,50 @@ export function AppShell({
         className
       )}
     >
-      <header className="relative z-50 flex shrink-0 items-center border-b border-gray-200/50 px-4 py-3 dark:border-white/10">
+      <header className={cn("relative z-50 flex shrink-0 items-center border-b px-4 py-3", headerContentLight ? "border-white/20" : "border-gray-200/50 dark:border-white/10")}>
         <div className="flex-1 min-w-0 flex items-center gap-4">
           {showSidebar && (
             <button
               type="button"
               onClick={() => setSidebarOpen((v) => !v)}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                headerContentLight ? "text-white/90 hover:bg-white/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+              )}
               aria-label={sidebarOpen ? t("nav.menuClose") : t("nav.menuOpen")}
             >
               <Menu className="h-5 w-5" aria-hidden />
             </button>
           )}
-          <span className="text-sm font-medium tabular-nums text-gray-700 dark:text-gray-300" aria-live="polite">
+          <span className={cn("text-sm font-medium tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
             {headerTime}
           </span>
           {effectiveTempEntity != null && (
             <button
               type="button"
               onClick={() => setTemperatureModalOpen(true)}
-              className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg px-2 py-1 -mx-2 transition-colors"
+              className={cn(
+                "flex items-center gap-1.5 text-sm font-medium rounded-lg px-2 py-1 -mx-2 transition-colors",
+                headerContentLight ? "text-white/90 hover:bg-white/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+              )}
               aria-label="Choose temperature entity"
             >
               {effectiveTempEntity?.startsWith("weather.") && temperatureState?.state ? (
-                <WeatherIcon state={temperatureState.state} />
+                <WeatherIcon state={temperatureState.state} light={headerContentLight} />
               ) : (
-                <Thermometer className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
+                <Thermometer className={cn("h-4 w-4 shrink-0", headerContentLight ? "text-white/80" : "text-gray-500 dark:text-gray-400")} aria-hidden />
               )}
               {temperatureDisplay ?? "—"}
             </button>
           )}
         </div>
         <div className="flex justify-center px-4">
-          <TopTabs activeHref={activeTab} />
+          <TopTabs activeHref={activeTab} contentLight={headerContentLight} />
         </div>
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
           {headerEndAction}
-          <HeaderMediaPlaying />
-          <ThemeSwitcher />
+          <HeaderMediaPlaying contentLight={headerContentLight} />
+          <ThemeSwitcher contentLight={headerContentLight} />
         </div>
       </header>
 
@@ -394,6 +403,7 @@ export function AppShell({
             !contentNoScroll && contentScrollbarHidden && "scrollbar-hide",
             showSidebar && sidebarOpen && "ml-[88px]"
           )}
+          style={{ "--sidebar-width": showSidebar && sidebarOpen ? "88px" : "0" } as React.CSSProperties}
         >
           {children}
         </main>

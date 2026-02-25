@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker, ChevronRight, Menu, PanelLeftClose, ListMusic, Home } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker, ChevronRight, ListMusic, Home } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useTranslation } from "@/hooks/use-translation";
@@ -290,6 +290,7 @@ export default function MusicPage() {
   const [heroHourSeed, setHeroHourSeed] = useState(() => new Date().getHours());
   const [homeScrollTop, setHomeScrollTop] = useState(0);
   const musicScrollRef = useRef<HTMLDivElement>(null);
+  const scrollRafRef = useRef<number | null>(null);
   const [recentItems, setRecentItems] = useState<MASearchItem[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<MASearchItem | null>(null);
@@ -317,7 +318,7 @@ export default function MusicPage() {
   const [libraryAlbums, setLibraryAlbums] = useState<MASearchItem[]>([]);
   const [libraryAlbumsLoading, setLibraryAlbumsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<MusicSectionId | null>(null);
-  const [musicMenuOpen, setMusicMenuOpen] = useState(true);
+  const musicMenuOpen = true;
   const [selectedMenu, setSelectedMenu] = useState<"artists" | "albums" | "tracks" | "playlists" | null>(null);
   const musicAssistant = useMusicAssistantStore();
   const { t } = useTranslation();
@@ -404,6 +405,24 @@ export default function MusicPage() {
     }, 5000);
     return () => clearInterval(id);
   }, [heroItemCount]);
+
+  useEffect(() => {
+    const el = musicScrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      if (scrollRafRef.current != null) cancelAnimationFrame(scrollRafRef.current);
+      scrollRafRef.current = requestAnimationFrame(() => {
+        setHomeScrollTop(el.scrollTop);
+        scrollRafRef.current = null;
+      });
+    };
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      if (scrollRafRef.current != null) cancelAnimationFrame(scrollRafRef.current);
+    };
+  }, []);
 
   const allowedIds = musicAssistant.allowedSpeakerIds;
   const selectablePlayers = allowedIds.length > 0 ? maPlayers.filter((p) => allowedIds.includes(p.queue_id)) : maPlayers;
@@ -1232,12 +1251,18 @@ export default function MusicPage() {
     <AppShell
       activeTab="/music"
       contentNoScroll
+      headerContentLight={!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum}
       headerEndAction={
         useMA && maPlayers.length > 0 ? (
           <button
             type="button"
             onClick={() => setSearchOverlayOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+              !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum
+                ? "text-white/90 hover:bg-white/10"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+            )}
             aria-label={t("music.search")}
           >
             <Search className="h-5 w-5" />
@@ -1246,17 +1271,81 @@ export default function MusicPage() {
       }
     >
       {searchOverlay}
-      <div className={cn("music-page-content w-full max-w-full flex flex-col h-full min-h-0", showPlayerBar && playerBarExpanded && "pb-24")}>
-        <div
-          ref={musicScrollRef}
-          className="flex flex-1 min-h-0 min-w-0 overflow-x-hidden overflow-y-auto"
-          onScroll={() => {
-            if (!musicScrollRef.current) return;
-            setHomeScrollTop(musicScrollRef.current.scrollTop);
-          }}
-        >
-          {musicMenuOpen ? (
-            <nav className="relative z-10 flex-shrink-0 w-14 py-2 pr-2 border-r border-gray-200 dark:border-gray-700/50 flex flex-col items-center gap-1 min-h-0">
+      <div className={cn("music-page-content w-full max-w-full flex flex-col h-full min-h-0 relative", !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && "bg-page-light dark:bg-black", showPlayerBar && playerBarExpanded && "pb-24")}>
+        {!selectedMenu && !selectedCategory && heroItems.length > 0 && (() => {
+          const heroItem = heroItems[heroSlideIndex] ?? heroItems[0];
+          const heroImageSrc = heroItem ? getImageSrc(getItemImageUrl(heroItem), musicAssistant.baseUrl, musicAssistant.token) : null;
+          const heroDisplay = heroItem ? getHeroDisplayInfo(heroItem) : { title: "", subtitle: "", trackCount: undefined };
+          const heroUri = heroItem ? (getPlayableUri(heroItem, "track") || getPlayableUri(heroItem, "album")) : null;
+          const heroScrolled = homeScrollTop > 1;
+          return (
+            <div
+              className="fixed inset-x-0 top-0 z-20 h-[min(75vh,600px)] w-screen transition-[filter] duration-300 will-change-[filter]"
+              style={{
+                maskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
+                filter: heroScrolled ? "blur(12px)" : "none",
+              }}
+            >
+              <div className="absolute inset-0 bg-gray-900">
+                {heroImageSrc ? (
+                  <Image src={heroImageSrc} alt="" fill className="object-cover object-center scale-105" sizes="100vw" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized priority />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                    <Disc3 className="h-24 w-24 text-white/30" aria-hidden />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
+              </div>
+              <div className="absolute bottom-[10%] left-0 right-0 pl-[calc(3.5rem+30px)] sm:pl-[calc(4rem+30px)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
+                <div className="min-w-0 flex-1 pointer-events-auto">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg truncate max-w-full">
+                    {heroDisplay.title || t("music.unknown")}
+                  </h2>
+                  {heroDisplay.subtitle ? (
+                    <p className="mt-1 text-base sm:text-lg text-white/90 truncate max-w-full">{heroDisplay.subtitle}</p>
+                  ) : null}
+                  {heroDisplay.trackCount != null && heroDisplay.trackCount > 0 ? (
+                    <p className="mt-0.5 text-sm text-white/70">
+                      {heroDisplay.trackCount} {heroDisplay.trackCount === 1 ? t("music.trackCountOne") : t("music.trackCountMany")}
+                    </p>
+                  ) : null}
+                  {heroItems.length > 1 && (
+                    <div className="flex items-center gap-1.5 mt-3" role="tablist" aria-label={t("music.slides")}>
+                      {heroItems.map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          role="tab"
+                          aria-selected={i === heroSlideIndex}
+                          onClick={() => setHeroSlideIndex(i)}
+                          className={cn(
+                            "rounded-full transition-all duration-200",
+                            i === heroSlideIndex ? "w-6 h-2 bg-white" : "w-2 h-2 bg-white/50 hover:bg-white/70"
+                          )}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0 pointer-events-auto mr-5">
+                  <span className="text-sm font-medium text-white/90 uppercase tracking-wider hidden sm:inline">{t("music.play")}</span>
+                  <button
+                    type="button"
+                    onClick={() => heroUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(heroUri))}
+                    disabled={!heroUri || !selectedQueueId}
+                    className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg hover:scale-105 disabled:opacity-50 transition-transform"
+                    aria-label={t("music.play")}
+                  >
+                    <Play className="h-6 w-6 fill-current ml-0.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+        <div className="flex flex-1 min-h-0 min-w-0">
+          <nav className="fixed left-[10px] top-[8rem] bottom-0 w-14 py-2 pr-2 flex flex-col items-center gap-1 z-30">
               {(
                 [
                   { id: "home" as const, label: t("music.menuHome"), icon: Home },
@@ -1269,6 +1358,7 @@ export default function MusicPage() {
                 const active = id === "home"
                   ? !selectedMenu && !selectedCategory
                   : (selectedMenu ?? (selectedCategory === "favoriteTracks" ? "tracks" : null)) === id;
+                const isHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum;
                 return (
                   <button
                     key={id}
@@ -1289,9 +1379,13 @@ export default function MusicPage() {
                     }}
                     className={cn(
                       "flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
-                      active
-                        ? "bg-accent-yellow/20 dark:bg-accent-green/20 text-gray-900 dark:text-white"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
+                      isHome
+                        ? active
+                          ? "bg-white/20 text-white"
+                          : "text-white/80 hover:bg-white/10 hover:text-white"
+                        : active
+                          ? "bg-accent-yellow/20 dark:bg-accent-green/20 text-gray-900 dark:text-white"
+                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
                     )}
                     aria-label={label}
                     title={label}
@@ -1300,28 +1394,11 @@ export default function MusicPage() {
                   </button>
                 );
               })}
-              <button
-                type="button"
-                onClick={() => setMusicMenuOpen(false)}
-                className="mt-auto flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-                aria-label={t("music.menuClose")}
-              >
-                <PanelLeftClose className="h-5 w-5" />
-              </button>
             </nav>
-          ) : (
-            <div className="relative z-10 flex-shrink-0 w-14 flex flex-col items-center justify-end min-h-0 py-2">
-              <button
-                type="button"
-                onClick={() => setMusicMenuOpen(true)}
-                className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-                aria-label={t("music.menuOpen")}
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-            </div>
-          )}
-          <div className={cn("flex-1 min-w-0", !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum ? "overflow-x-visible" : "overflow-x-hidden", musicMenuOpen && "pl-3")}>
+          <div
+            ref={musicScrollRef}
+            className={cn("flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto music-content-area pl-[calc(3.5rem+0.75rem)]", !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum ? "overflow-x-visible text-gray-900 dark:text-white" : "overflow-x-hidden text-gray-900 dark:text-white")}
+          >
         <div className="flex flex-wrap items-center justify-end gap-4 pb-2">
           <OfflinePill />
         </div>
@@ -1340,7 +1417,7 @@ export default function MusicPage() {
               <button
                 type="button"
                 onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
-                className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t("music.back")}
@@ -1479,7 +1556,7 @@ export default function MusicPage() {
             <button
               type="button"
               onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); }}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white"
             >
               <ArrowLeft className="h-4 w-4" />
               {t("music.back")}
@@ -1622,7 +1699,7 @@ export default function MusicPage() {
             <button
               type="button"
               onClick={() => setSelectedMenu(null)}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white"
             >
               <ArrowLeft className="h-4 w-4" />
               {t("music.back")}
@@ -1671,7 +1748,7 @@ export default function MusicPage() {
             <button
               type="button"
               onClick={() => setSelectedMenu(null)}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white"
             >
               <ArrowLeft className="h-4 w-4" />
               {t("music.back")}
@@ -1723,7 +1800,7 @@ export default function MusicPage() {
             <button
               type="button"
               onClick={() => setSelectedMenu(null)}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white"
             >
               <ArrowLeft className="h-4 w-4" />
               {t("music.back")}
@@ -1773,7 +1850,7 @@ export default function MusicPage() {
             <button
               type="button"
               onClick={() => { setSelectedCategory(null); setSelectedMenu(null); }}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white"
             >
               <ArrowLeft className="h-4 w-4" />
               {t("music.back")}
@@ -1957,7 +2034,7 @@ export default function MusicPage() {
               <button
                 type="button"
                 onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
-                className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t("music.back")}
@@ -2096,7 +2173,7 @@ export default function MusicPage() {
             <button
               type="button"
               onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); }}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white"
             >
               <ArrowLeft className="h-4 w-4" />
               {t("music.back")}
@@ -2287,79 +2364,9 @@ export default function MusicPage() {
 
         {!playersLoading && useMA && maPlayers.length > 0 && !selectedArtist && !selectedAlbum && (
           <>
-            {!selectedMenu && !selectedCategory && (() => {
-              const heroItem = heroItems[heroSlideIndex] ?? heroItems[0];
-              const heroImageSrc = heroItem ? getImageSrc(getItemImageUrl(heroItem), musicAssistant.baseUrl, musicAssistant.token) : null;
-              const heroDisplay = heroItem ? getHeroDisplayInfo(heroItem) : { title: "", subtitle: "", trackCount: undefined };
-              const heroUri = heroItem ? (getPlayableUri(heroItem, "track") || getPlayableUri(heroItem, "album")) : null;
-              const heroScrolled = homeScrollTop > 80;
-              return heroItems.length > 0 ? (
-                <div className={cn("relative z-0 w-[calc(100%+5.5rem)] sm:w-[calc(100%+6.5rem)] -mr-4 sm:-mr-6 -mt-16 pt-16 mb-8", musicMenuOpen ? "-ml-[5.25rem] sm:-ml-[5.75rem]" : "-ml-[4.5rem] sm:-ml-[5rem]")}>
-                  <div
-                    className={cn(
-                      "w-full min-h-[min(62vw,380px)] sm:min-h-[320px] rounded-none overflow-hidden transition-[filter,opacity] duration-300",
-                      heroScrolled && "opacity-70"
-                    )}
-                    style={{ filter: heroScrolled ? "blur(3px)" : "none" }}
-                  >
-                  <div className="relative w-full h-full min-h-[min(62vw,380px)] sm:min-h-[320px] bg-gray-900">
-                    {heroImageSrc ? (
-                      <Image src={heroImageSrc} alt="" fill className="object-cover object-center scale-105" sizes="100vw" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized priority />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                        <Disc3 className="h-24 w-24 text-white/30" aria-hidden />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" aria-hidden />
-                    <div className="absolute bottom-0 left-0 right-0 px-[63px] sm:px-[95px] py-5 sm:py-6 flex flex-row items-end justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <h2 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg truncate max-w-full">
-                          {heroDisplay.title || t("music.unknown")}
-                        </h2>
-                        {heroDisplay.subtitle ? (
-                          <p className="mt-1 text-base sm:text-lg text-white/90 truncate max-w-full">{heroDisplay.subtitle}</p>
-                        ) : null}
-                        {heroDisplay.trackCount != null && heroDisplay.trackCount > 0 ? (
-                          <p className="mt-0.5 text-sm text-white/70">
-                            {heroDisplay.trackCount} {heroDisplay.trackCount === 1 ? t("music.trackCountOne") : t("music.trackCountMany")}
-                          </p>
-                        ) : null}
-                        {heroItems.length > 1 && (
-                          <div className="flex items-center gap-1.5 mt-3" role="tablist" aria-label={t("music.slides")}>
-                            {heroItems.map((_, i) => (
-                              <button
-                                key={i}
-                                type="button"
-                                role="tab"
-                                aria-selected={i === heroSlideIndex}
-                                onClick={() => setHeroSlideIndex(i)}
-                                className={cn(
-                                  "rounded-full transition-all duration-200",
-                                  i === heroSlideIndex ? "w-6 h-2 bg-white" : "w-2 h-2 bg-white/50 hover:bg-white/70"
-                                )}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-sm font-medium text-white/90 uppercase tracking-wider hidden sm:inline">{t("music.play")}</span>
-                        <button
-                          type="button"
-                          onClick={() => heroUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(heroUri))}
-                          disabled={!heroUri || !selectedQueueId}
-                          className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg hover:scale-105 disabled:opacity-50 transition-transform"
-                          aria-label={t("music.play")}
-                        >
-                          <Play className="h-6 w-6 fill-current ml-0.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                </div>
-              ) : null;
-            })()}
+            {!selectedMenu && !selectedCategory && heroItems.length > 0 ? (
+                <div className="h-[min(70vh,540px)] shrink-0" aria-hidden />
+              ) : null}
             {musicAssistant.sectionOrder.map((sectionId) => {
             if (sectionId === "favoriteAlbums" && !musicAssistant.sectionFavoriteAlbumsEnabled) return null;
             if (sectionId === "favoriteTracks" && !musicAssistant.sectionFavoriteTracksEnabled) return null;
@@ -2369,11 +2376,11 @@ export default function MusicPage() {
               const show = favoriteAlbums.length > 0 || favoritesLoading;
               if (!show) return null;
               return (
-                <section key="favoriteAlbums" className="mt-8">
+                <section key="favoriteAlbums" className="relative z-30 mt-8 pl-[10px]">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("favoriteAlbums")}
-                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-700 dark:text-gray-300 mb-3 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-900 dark:text-white mb-3 hover:text-gray-800 dark:hover:text-white/90 transition-colors"
                   >
                     {t("music.favoriteAlbums")}
                     <ChevronRight className="h-5 w-5 shrink-0 opacity-70" />
@@ -2423,11 +2430,11 @@ export default function MusicPage() {
               const show = favoriteItems.length > 0 || favoriteItemsLoading;
               if (!show) return null;
               return (
-                <section key="favoriteTracks" className="mt-8">
+                <section key="favoriteTracks" className="relative z-30 mt-8 pl-[10px]">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("favoriteTracks")}
-                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-700 dark:text-gray-300 mb-3 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-900 dark:text-white mb-3 hover:text-gray-800 dark:hover:text-white/90 transition-colors"
                   >
                     {t("music.favoriteTracks")}
                     <ChevronRight className="h-5 w-5 shrink-0 opacity-70" />
@@ -2473,11 +2480,11 @@ export default function MusicPage() {
             }
             if (sectionId === "radio") {
               return (
-                <section key="radio" className="mt-8">
+                <section key="radio" className="relative z-30 mt-8 pl-[10px]">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("radio")}
-                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-700 dark:text-gray-300 mb-3 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-900 dark:text-white mb-3 hover:text-gray-800 dark:hover:text-white/90 transition-colors"
                   >
                     {t("music.radioStations")}
                     <ChevronRight className="h-5 w-5 shrink-0 opacity-70" />
@@ -2526,11 +2533,11 @@ export default function MusicPage() {
             }
             if (sectionId === "recentlyPlayed") {
               return (
-                <section key="recentlyPlayed" className="mt-0">
+                <section key="recentlyPlayed" className="relative z-30 mt-0">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("recentlyPlayed")}
-                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-700 dark:text-gray-300 mb-3 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-900 dark:text-white mb-3 hover:text-gray-800 dark:hover:text-white/90 transition-colors"
                   >
                     {t("music.recentlyPlayed")}
                     <ChevronRight className="h-5 w-5 shrink-0 opacity-70" />
