@@ -328,6 +328,8 @@ export default function MusicPage() {
   const [recentlyAddedTracksLoading, setRecentlyAddedTracksLoading] = useState(false);
   const [featuredPlaylist, setFeaturedPlaylist] = useState<MASearchItem | null>(null);
   const [featuredPlaylistLoading, setFeaturedPlaylistLoading] = useState(false);
+  const [featuredPlaylistTracks, setFeaturedPlaylistTracks] = useState<MASearchItem[]>([]);
+  const [featuredPlaylistTracksLoading, setFeaturedPlaylistTracksLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<MusicSectionId | null>(null);
   const musicMenuOpen = true;
   const [selectedMenu, setSelectedMenu] = useState<"artists" | "albums" | "tracks" | "playlists" | null>(null);
@@ -392,7 +394,7 @@ export default function MusicPage() {
 
   const heroItems = useMemo(() => {
     const combined = [
-      ...(featuredPlaylist ? [featuredPlaylist] : []),
+      ...featuredPlaylistTracks,
       ...recentItems,
       ...recentlyAddedAlbums,
       ...recentlyAddedTracks,
@@ -414,7 +416,7 @@ export default function MusicPage() {
       result.push(deduped[(startIndex + i) % n]!);
     }
     return result;
-  }, [featuredPlaylist, recentItems, recentlyAddedAlbums, recentlyAddedTracks, libraryAlbums, heroHourSeed]);
+  }, [featuredPlaylistTracks, recentItems, recentlyAddedAlbums, recentlyAddedTracks, libraryAlbums, heroHourSeed]);
 
   const heroItemCount = heroItems.length;
   useEffect(() => {
@@ -720,6 +722,45 @@ export default function MusicPage() {
       })
       .catch(() => setFeaturedPlaylist(null))
       .finally(() => setFeaturedPlaylistLoading(false));
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, musicAssistant.featuredPlaylistId]);
+
+  useEffect(() => {
+    const playlistId = musicAssistant.featuredPlaylistId?.trim();
+    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !playlistId) {
+      setFeaturedPlaylistTracks([]);
+      setFeaturedPlaylistTracksLoading(false);
+      return;
+    }
+    setFeaturedPlaylistTracksLoading(true);
+    const parsePlaylistTracks = (data: unknown): MASearchItem[] => {
+      const err = (data as { error?: string })?.error;
+      if (err) return [];
+      const d = data as Record<string, unknown>;
+      const result = d?.result ?? d;
+      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+      const extractTrack = (x: unknown): MASearchItem | null => {
+        if (!x || typeof x !== "object") return null;
+        const obj = x as Record<string, unknown>;
+        const track = (obj?.track ?? obj) as MASearchItem;
+        return track && typeof track === "object" ? track : null;
+      };
+      let list: MASearchItem[] = [];
+      if (Array.isArray(resultObj.tracks)) list = resultObj.tracks as MASearchItem[];
+      else if (Array.isArray(resultObj.items)) {
+        list = (resultObj.items as unknown[]).map(extractTrack).filter((x): x is MASearchItem => x != null);
+      } else if (Array.isArray((resultObj as { playlist_tracks?: unknown[] }).playlist_tracks)) {
+        const raw = (resultObj as { playlist_tracks: unknown[] }).playlist_tracks;
+        list = raw.map(extractTrack).filter((x): x is MASearchItem => x != null);
+      } else if (Array.isArray(result)) list = result as MASearchItem[];
+      return list.filter((x) => x && typeof x === "object");
+    };
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/playlists/playlist_tracks", {
+      item_id: playlistId,
+      provider_instance_id_or_domain: "library",
+    })
+      .then((data) => setFeaturedPlaylistTracks(parsePlaylistTracks(data)))
+      .catch(() => setFeaturedPlaylistTracks([]))
+      .finally(() => setFeaturedPlaylistTracksLoading(false));
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, musicAssistant.featuredPlaylistId]);
 
   useEffect(() => {
@@ -2442,51 +2483,94 @@ export default function MusicPage() {
             if (sectionId === "recentlyPlayed" && !musicAssistant.sectionRecentlyPlayedEnabled) return null;
             if (sectionId === "featuredPlaylist" && !musicAssistant.sectionFeaturedPlaylistEnabled) return null;
             if (sectionId === "featuredPlaylist") {
-              const show = featuredPlaylist != null || featuredPlaylistLoading;
+              const show =
+                featuredPlaylist != null ||
+                featuredPlaylistLoading ||
+                featuredPlaylistTracks.length > 0 ||
+                featuredPlaylistTracksLoading;
               if (!show) return null;
               return (
                 <section key="featuredPlaylist" className="relative z-30 mt-8 pl-[8px]">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">{t("music.recentlyAdded")}</h2>
-                  {featuredPlaylistLoading ? (
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                      {featuredPlaylist?.name ?? t("music.recentlyAdded")}
+                    </h2>
+                    {featuredPlaylist && selectedQueueId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const playlistUri = getPlayableUri(featuredPlaylist, "playlist");
+                          if (playlistUri) playOnPlayer(normalizePlayMediaUri(playlistUri));
+                        }}
+                        className="text-sm font-medium text-accent-yellow dark:text-accent-green hover:underline shrink-0"
+                      >
+                        {t("music.play")} {t("music.playlist")}
+                      </button>
+                    )}
+                  </div>
+                  {featuredPlaylistTracksLoading ? (
                     <div className="flex justify-center py-8">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                     </div>
-                  ) : featuredPlaylist ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const playlistUri = getPlayableUri(featuredPlaylist, "playlist");
-                        if (playlistUri && selectedQueueId) playOnPlayer(normalizePlayMediaUri(playlistUri));
-                      }}
-                      disabled={!selectedQueueId}
-                      className="flex items-center gap-4 w-full rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left bg-gray-100 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-800"
-                    >
-                      <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
-                        {getImageSrc(getItemImageUrl(featuredPlaylist), musicAssistant.baseUrl, musicAssistant.token) ? (
-                          <Image
-                            src={getImageSrc(getItemImageUrl(featuredPlaylist), musicAssistant.baseUrl, musicAssistant.token)!}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            sizes="112px"
-                            placeholder="blur"
-                            blurDataURL={MUSIC_IMAGE_BLUR}
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <ListMusic className="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden />
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1 py-3">
-                        <p className="font-semibold text-gray-900 dark:text-white truncate">{featuredPlaylist.name ?? t("music.unknown")}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                          {t("music.playlist")} · {t("music.play")}
-                        </p>
-                      </div>
-                    </button>
-                  ) : null}
+                  ) : featuredPlaylistTracks.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noTracks")}</p>
+                  ) : (
+                    <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
+                      {featuredPlaylistTracks.map((item, index) => {
+                        const uri = getPlayableUri(item, "track");
+                        const albumUri = getPlayableUri(item, "album");
+                        const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
+                        const canPlay = !!(uri || albumUri) && !!selectedQueueId;
+                        const isAlbum = isAlbumItem(item);
+                        const albumParams = isAlbum ? getAlbumParams(item) : null;
+                        const artistNames = item.artists
+                          ? Array.isArray(item.artists)
+                            ? (item.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
+                            : (item.artists as { name?: string })?.name ?? ""
+                          : "";
+                        const handleClick = () => {
+                          if (albumParams) setSelectedAlbum(item);
+                          else if (canPlay && uri) playOnPlayer(normalizePlayMediaUri(uri));
+                          else if (canPlay && albumUri) playOnPlayer(normalizePlayMediaUri(albumUri));
+                        };
+                        return (
+                          <button
+                            key={uri || albumUri || `featured-track-${index}`}
+                            type="button"
+                            onClick={handleClick}
+                            disabled={!albumParams && !canPlay}
+                            className="shrink-0 w-28 sm:w-32 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always] text-left"
+                            title={albumParams ? t("music.viewAlbum") : (item.name as string)}
+                          >
+                            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700">
+                              {imageSrc ? (
+                                <Image
+                                  src={imageSrc}
+                                  alt=""
+                                  fill
+                                  className="object-cover"
+                                  sizes="128px"
+                                  placeholder="blur"
+                                  blurDataURL={MUSIC_IMAGE_BLUR}
+                                  unoptimized
+                                />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <Disc3 className="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden />
+                                </div>
+                              )}
+                            </div>
+                            <p className="mt-1.5 truncate text-sm font-medium text-gray-900 dark:text-white">
+                              {item.name ?? t("music.unknown")}
+                            </p>
+                            {artistNames ? (
+                              <p className="truncate text-xs text-gray-500 dark:text-gray-400">{artistNames}</p>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </section>
               );
             }
