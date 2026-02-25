@@ -427,17 +427,24 @@ export default function MusicPage() {
   useEffect(() => {
     const el = musicScrollRef.current;
     if (!el) return;
+    const syncScroll = () => {
+      setHomeScrollTop(el.scrollTop);
+    };
     const handleScroll = () => {
       if (scrollRafRef.current != null) cancelAnimationFrame(scrollRafRef.current);
       scrollRafRef.current = requestAnimationFrame(() => {
-        setHomeScrollTop(el.scrollTop);
+        syncScroll();
         scrollRafRef.current = null;
       });
     };
     el.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
+    el.addEventListener("touchmove", handleScroll, { passive: true });
+    const poll = setInterval(syncScroll, 150);
     return () => {
       el.removeEventListener("scroll", handleScroll);
+      el.removeEventListener("touchmove", handleScroll);
+      clearInterval(poll);
       if (scrollRafRef.current != null) cancelAnimationFrame(scrollRafRef.current);
     };
   }, []);
@@ -1306,15 +1313,15 @@ export default function MusicPage() {
           const heroUri = heroItem
             ? (getPlayableUri(heroItem, "track") || getPlayableUri(heroItem, "album") || getPlayableUri(heroItem, "playlist"))
             : null;
-          const heroBlur = Math.min(24, 4 + homeScrollTop * 0.08);
-          const heroOverlay = Math.min(0.5, homeScrollTop * 0.002);
+          const heroBlur = Math.min(20, Math.max(0, homeScrollTop * 0.06));
+          const heroOverlay = Math.min(0.6, homeScrollTop * 0.003);
           return (
             <div
               className="fixed inset-x-0 top-0 z-20 h-[min(75vh,600px)] w-screen transition-[filter,opacity] duration-300 will-change-[filter]"
               style={{
                 maskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
                 WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
-                filter: heroBlur > 4 ? `blur(${heroBlur}px)` : "none",
+                filter: heroBlur > 2 ? `blur(${heroBlur}px)` : "none",
               }}
             >
               <div className="absolute inset-0 bg-gray-900">
@@ -2349,7 +2356,7 @@ export default function MusicPage() {
                     <section key={id}>
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                          {playlist?.name ?? t("music.playlist")} ({id})
+                          {playlist?.name ?? t("music.playlist")}
                         </h2>
                         {playlist && selectedQueueId && (
                           <button
