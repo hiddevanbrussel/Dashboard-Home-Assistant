@@ -1082,6 +1082,15 @@ export default function SettingsPage() {
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
+                          checked={musicAssistant.sectionFeaturedPlaylistEnabled}
+                          onChange={(e) => musicAssistant.setSectionFeaturedPlaylistEnabled(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowFeaturedPlaylist")}</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
                           checked={musicAssistant.sectionRecentlyAddedAlbumsEnabled}
                           onChange={(e) => musicAssistant.setSectionRecentlyAddedAlbumsEnabled(e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
@@ -1096,15 +1105,6 @@ export default function SettingsPage() {
                           className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRecentlyAddedTracks")}</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={musicAssistant.sectionRecentlyAddedPlaylistsEnabled}
-                          onChange={(e) => musicAssistant.setSectionRecentlyAddedPlaylistsEnabled(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRecentlyAddedPlaylists")}</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
@@ -1128,7 +1128,16 @@ export default function SettingsPage() {
                     <p className="text-xs text-gray-500 dark:text-gray-400">{t("settings.musicAssistant.sectionOrderHint")}</p>
                     <div className="flex flex-col gap-1">
                       {musicAssistant.sectionOrder.map((id, i) => {
-                        const labelKey = id === "recentlyAddedAlbums" ? "music.recentlyAddedAlbums" : id === "recentlyAddedTracks" ? "music.recentlyAddedTracks" : id === "recentlyAddedPlaylists" ? "music.recentlyAddedPlaylists" : id === "radio" ? "music.radioStations" : "music.recentlyPlayed";
+                        const labelKey =
+                          id === "featuredPlaylist"
+                            ? "music.recentlyAdded"
+                            : id === "recentlyAddedAlbums"
+                              ? "music.recentlyAddedAlbums"
+                              : id === "recentlyAddedTracks"
+                                ? "music.recentlyAddedTracks"
+                                : id === "radio"
+                                  ? "music.radioStations"
+                                  : "music.recentlyPlayed";
                         return (
                           <div key={id} className="flex items-center gap-2 rounded bg-white dark:bg-white/5 px-2 py-1.5">
                             <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
@@ -1163,6 +1172,22 @@ export default function SettingsPage() {
                           </div>
                         );
                       })}
+                    </div>
+                    <div className="mt-3">
+                      <label htmlFor="ma-featuredPlaylistId" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                        {t("settings.musicAssistant.featuredPlaylistId")}
+                      </label>
+                      <input
+                        id="ma-featuredPlaylistId"
+                        type="text"
+                        value={musicAssistant.featuredPlaylistId}
+                        onChange={(e) => musicAssistant.setFeaturedPlaylistId(e.target.value)}
+                        placeholder="30"
+                        className="w-full rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-200"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {t("settings.musicAssistant.featuredPlaylistIdHint")}
+                      </p>
                     </div>
                   </div>
                 )}
