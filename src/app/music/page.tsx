@@ -185,13 +185,28 @@ function getItemImageUrl(item: MASearchItem): string | null {
   return null;
 }
 
-/** Extract hero display info from track or album. */
-function getHeroDisplayInfo(item: MASearchItem): { title: string; subtitle: string; trackCount?: number } {
-  const artistsStr = item.artists
+/** Extract artist string from track/album; MA/Spotify may use artists, artist, artist_names, or metadata.artists. */
+function getArtistsString(item: MASearchItem): string {
+  const fromArtists = item.artists
     ? Array.isArray(item.artists)
       ? (item.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).slice(0, 3).join(", ")
       : (item.artists as { name?: string })?.name ?? ""
     : "";
+  if (fromArtists) return fromArtists;
+  const artistNames = (item as { artist_names?: string[] }).artist_names;
+  if (Array.isArray(artistNames) && artistNames.length > 0) return artistNames.slice(0, 3).filter(Boolean).join(", ");
+  const singleArtist = (item as { artist?: { name?: string } }).artist;
+  if (singleArtist?.name) return singleArtist.name;
+  const metaArtists = (item.metadata as { artists?: { name?: string }[] })?.artists;
+  if (Array.isArray(metaArtists) && metaArtists.length > 0) return metaArtists.map((a) => a?.name).filter(Boolean).slice(0, 3).join(", ");
+  const albumArtists = (item.album as { artists?: { name?: string }[] })?.artists;
+  if (Array.isArray(albumArtists) && albumArtists.length > 0) return albumArtists.map((a) => a?.name).filter(Boolean).slice(0, 3).join(", ");
+  return "";
+}
+
+/** Extract hero display info from track or album. */
+function getHeroDisplayInfo(item: MASearchItem): { title: string; subtitle: string; trackCount?: number } {
+  const artistsStr = getArtistsString(item);
   const albumName = (item.album as { name?: string })?.name;
   const mediaType = (item.media_type ?? (item as { type?: string }).type) as string | undefined;
   const uri = (item.uri ?? (item as { item_uri?: string }).item_uri) ?? "";
