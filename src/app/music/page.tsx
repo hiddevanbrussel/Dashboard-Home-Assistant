@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker, ChevronRight, ListMusic, Home } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker, ChevronRight, ListMusic, Home, ListPlus } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useTranslation } from "@/hooks/use-translation";
@@ -298,6 +298,38 @@ function formatDuration(seconds?: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+const LONG_PRESS_MS = 500;
+
+function useLongPressAddToPlaylist(onLongPress: (item: MASearchItem) => void) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const itemRef = useRef<MASearchItem | null>(null);
+  const clearTimer = useCallback(() => {
+    if (timerRef.current != null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    itemRef.current = null;
+  }, []);
+  return useCallback(
+    (item: MASearchItem) => ({
+      onPointerDown: (e: React.PointerEvent) => {
+        const btn = (e.target as HTMLElement).closest("button");
+        if (btn && btn !== e.currentTarget) return;
+        itemRef.current = item;
+        clearTimer();
+        timerRef.current = setTimeout(() => {
+          timerRef.current = null;
+          if (itemRef.current) onLongPress(itemRef.current);
+          itemRef.current = null;
+        }, LONG_PRESS_MS);
+      },
+      onPointerUp: clearTimer,
+      onPointerLeave: clearTimer,
+    }),
+    [onLongPress, clearTimer]
+  );
+}
+
 export default function MusicPage() {
   const [entities, setEntities] = useState<HaEntity[]>([]);
   const { maPlayers, selectedQueueId, setSelectedQueueId, queueState, playerBarExpanded } = useMusicPlayerStore();
@@ -310,6 +342,41 @@ export default function MusicPage() {
   const [playPending, setPlayPending] = useState<string | null>(null);
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
+  const LONG_PRESS_MS = 500;
+
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimerRef.current != null) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  function createTrackLongPressHandlers(item: MASearchItem, onClick?: () => void) {
+    const trackUri = getPlayableUri(item, "track");
+    if (!trackUri) return { onPointerDown: undefined, onPointerUp: undefined, onPointerLeave: undefined, wrapClick: (fn: () => void) => fn };
+    return {
+      onPointerDown: (e: React.PointerEvent) => {
+        longPressFiredRef.current = false;
+        clearLongPressTimer();
+        longPressTimerRef.current = setTimeout(() => {
+          longPressTimerRef.current = null;
+          longPressFiredRef.current = true;
+          setAddToPlaylistTrack(item);
+        }, LONG_PRESS_MS);
+      },
+      onPointerUp: () => clearLongPressTimer(),
+      onPointerLeave: () => clearLongPressTimer(),
+      wrapClick: (fn: () => void) => () => {
+        if (longPressFiredRef.current) {
+          longPressFiredRef.current = false;
+          return;
+        }
+        fn();
+      },
+    };
+  }
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const [heroHourSeed, setHeroHourSeed] = useState(() => new Date().getHours());
   const [homeScrollTop, setHomeScrollTop] = useState(0);
@@ -342,6 +409,11 @@ export default function MusicPage() {
   const [selectedCategory, setSelectedCategory] = useState<MusicSectionId | null>(null);
   const musicMenuOpen = true;
   const [selectedMenu, setSelectedMenu] = useState<"artists" | "albums" | "playlists" | null>(null);
+  const [addToPlaylistTrack, setAddToPlaylistTrack] = useState<MASearchItem | null>(null);
+  const [addToPlaylistPlaylists, setAddToPlaylistPlaylists] = useState<MASearchItem[]>([]);
+  const [addToPlaylistLoading, setAddToPlaylistLoading] = useState(false);
+  const [addToPlaylistPending, setAddToPlaylistPending] = useState<string | null>(null);
+  const [addToPlaylistError, setAddToPlaylistError] = useState<string | null>(null);
   const musicAssistant = useMusicAssistantStore();
   const { t } = useTranslation();
 
@@ -360,6 +432,61 @@ export default function MusicPage() {
   useEffect(() => {
     hydrateMusicAssistantStore();
   }, []);
+
+  useEffect(() => {
+    if (!addToPlaylistTrack || !musicAssistant.enabled || !musicAssistant.baseUrl) {
+      setAddToPlaylistPlaylists([]);
+      return;
+    }
+    setAddToPlaylistLoading(true);
+    const parseItems = (data: unknown): MASearchItem[] => {
+      const err = (data as { error?: string })?.error;
+      if (err) return [];
+      const d = data as Record<string, unknown>;
+      const result = d?.result ?? d;
+      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+      if (Array.isArray(resultObj.items)) return resultObj.items as MASearchItem[];
+      if (Array.isArray(resultObj.playlists)) return resultObj.playlists as MASearchItem[];
+      if (Array.isArray(result)) return result as MASearchItem[];
+      return [];
+    };
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/playlists/library_items", { limit: 100, in_library_only: true })
+      .then((data) => setAddToPlaylistPlaylists(parseItems(data)))
+      .catch(() => setAddToPlaylistPlaylists([]))
+      .finally(() => setAddToPlaylistLoading(false));
+  }, [addToPlaylistTrack, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+
+  const getLongPressHandlers = useLongPressAddToPlaylist((item) => {
+    const uri = getPlayableUri(item, "track");
+    if (uri) setAddToPlaylistTrack(item);
+  });
+
+  async function handleAddTrackToPlaylist(playlist: MASearchItem) {
+    const trackUri = addToPlaylistTrack ? getPlayableUri(addToPlaylistTrack, "track") : null;
+    if (!trackUri || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+    const rawUri = playlist.uri ?? (playlist as { item_uri?: string }).item_uri;
+    const itemId = (playlist as { item_id?: string | number }).item_id ?? (playlist as { id?: string | number }).id;
+    const provider = (playlist as { provider_instance_id?: string }).provider_instance_id ?? (playlist as { provider_instance?: string }).provider_instance ?? "library";
+    const dbPlaylistId =
+      (playlist as { db_id?: string }).db_id ??
+      (typeof rawUri === "string" && rawUri ? rawUri : null) ??
+      (itemId != null ? `${String(provider).replace(/\/+$/, "")}://playlist/${itemId}` : null) ??
+      "";
+    if (!dbPlaylistId) return;
+    setAddToPlaylistPending(dbPlaylistId);
+    setAddToPlaylistError(null);
+    try {
+      await callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/playlists/add_playlist_tracks", {
+        db_playlist_id: dbPlaylistId,
+        uris: [trackUri],
+      });
+      setAddToPlaylistTrack(null);
+    } catch (e) {
+      setAddToPlaylistError(e instanceof Error ? e.message : "Kon nummer niet toevoegen.");
+    } finally {
+      setAddToPlaylistPending(null);
+    }
+  }
 
   useEffect(() => {
     setPlayersLoading(true);
@@ -1205,10 +1332,14 @@ export default function MusicPage() {
               const canOpen = canOpenAlbum || canOpenArtist;
               const openAction = canOpenAlbum ? openAlbum : canOpenArtist ? openArtist : undefined;
               const openTitle = canOpenAlbum ? t("music.viewAlbum") : canOpenArtist ? t("music.viewArtist") : undefined;
+              const lp = createTrackLongPressHandlers(item);
               return (
                 <li
                   key={uri ?? `item-${index}`}
                   className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
+                  onPointerDown={lp.onPointerDown}
+                  onPointerUp={lp.onPointerUp}
+                  onPointerLeave={lp.onPointerLeave}
                 >
                   <div
                     className={cn(
@@ -1270,7 +1401,7 @@ export default function MusicPage() {
                   )}
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); canPlay && playOnPlayer(normalizePlayMediaUri(uri)); }}
+                    onClick={(e) => { e.stopPropagation(); lp.wrapClick(() => canPlay && playOnPlayer(normalizePlayMediaUri(uri)))(); }}
                     disabled={!canPlay || !!isPlayPending}
                     className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
                     title={`${t("music.playOn")} ${selectedQueueId ? playerLabel(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : t("music.player")}`}
@@ -1326,6 +1457,71 @@ export default function MusicPage() {
       }
     >
       {searchOverlay}
+      {addToPlaylistTrack && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 dark:bg-black/70"
+          role="dialog"
+          aria-label={t("music.addToPlaylist")}
+          onClick={() => setAddToPlaylistTrack(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t("music.addToPlaylist")}</h3>
+              <button
+                type="button"
+                onClick={() => setAddToPlaylistTrack(null)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+                aria-label={t("music.close")}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 truncate">
+              {addToPlaylistTrack.name ?? t("music.unknown")}
+            </p>
+            {addToPlaylistError && (
+              <p className="px-4 py-2 text-sm text-red-600 dark:text-red-400" role="alert">{addToPlaylistError}</p>
+            )}
+            <div className="max-h-64 overflow-y-auto py-2">
+              {addToPlaylistLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                </div>
+              ) : addToPlaylistPlaylists.length === 0 ? (
+                <p className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{t("music.noPlaylists")}</p>
+              ) : (
+                <ul className="space-y-0">
+                  {addToPlaylistPlaylists.map((pl) => {
+                    const plId = (pl as { db_id?: string }).db_id ?? (pl as { item_id?: string }).item_id ?? pl.uri ?? "";
+                    const isPending = addToPlaylistPending === plId;
+                    return (
+                      <li key={plId || pl.name}>
+                        <button
+                          type="button"
+                          onClick={() => handleAddTrackToPlaylist(pl)}
+                          disabled={!!addToPlaylistPending}
+                          className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {isPending ? (
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+                          ) : (
+                            <ListPlus className="h-4 w-4 shrink-0 text-gray-500" aria-hidden />
+                          )}
+                          {pl.name ?? t("music.unknown")}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       <div className={cn("music-page-content w-full max-w-full flex flex-col h-full min-h-0 relative", !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum ? "bg-page-light dark:bg-black" : "bg-page-light dark:bg-dark-page", showPlayerBar && playerBarExpanded && "pb-24")}>
         {!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && heroItems.length > 0 && (() => {
           const heroItem = heroItems[heroSlideIndex] ?? heroItems[0];
@@ -1587,10 +1783,14 @@ export default function MusicPage() {
                       const duration = (item as { duration?: number }).duration;
                       const isPlayPending = uri && playPending === uri;
                       const canPlay = !!uri && !!selectedQueueId;
+                      const lp = createTrackLongPressHandlers(item);
                       return (
                         <li
                           key={uri ?? `album-track-${index}`}
                           className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
+                          onPointerDown={lp.onPointerDown}
+                          onPointerUp={lp.onPointerUp}
+                          onPointerLeave={lp.onPointerLeave}
                         >
                           <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums w-8">{index + 1}</span>
                           <div className="min-w-0 flex-1">
@@ -1620,7 +1820,7 @@ export default function MusicPage() {
                           )}
                           <button
                             type="button"
-                            onClick={() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri))}
+                            onClick={lp.wrapClick(() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri)))}
                             disabled={!canPlay || !!isPlayPending}
                             className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
                             aria-label={t("music.playOn")}
@@ -1730,10 +1930,14 @@ export default function MusicPage() {
                     const duration = (item as { duration?: number }).duration;
                     const isPlayPending = uri && playPending === uri;
                     const canPlay = !!uri && !!selectedQueueId;
+                    const lp = createTrackLongPressHandlers(item);
                     return (
                       <li
                         key={uri ?? `artist-track-${index}`}
                         className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
+                        onPointerDown={lp.onPointerDown}
+                        onPointerUp={lp.onPointerUp}
+                        onPointerLeave={lp.onPointerLeave}
                       >
                         <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums w-8">{index + 1}</span>
                         <div className="min-w-0 flex-1">
@@ -1763,7 +1967,7 @@ export default function MusicPage() {
                         )}
                         <button
                           type="button"
-                          onClick={() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri))}
+                          onClick={lp.wrapClick(() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri)))}
                           disabled={!canPlay || !!isPlayPending}
                           className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
                           aria-label={t("music.playOn")}
@@ -1967,15 +2171,19 @@ export default function MusicPage() {
                     const canPlay = !!(uri || albumUri) && !!selectedQueueId;
                     const isAlbum = isAlbumItem(item);
                     const albumParams = isAlbum ? getAlbumParams(item) : null;
-                    const handleClick = () => {
+                    const lp = createTrackLongPressHandlers(item);
+                    const handleClick = lp.wrapClick(() => {
                       if (albumParams) setSelectedAlbum(item);
                       else if (canPlay && uri) playOnPlayer(uri);
                       else if (canPlay && albumUri) playOnPlayer(albumUri);
-                    };
+                    });
                     return (
                       <button
                         key={uri || albumUri || `recent-${index}`}
                         type="button"
+                        onPointerDown={lp.onPointerDown}
+                        onPointerUp={lp.onPointerUp}
+                        onPointerLeave={lp.onPointerLeave}
                         onClick={handleClick}
                         disabled={!albumParams && !canPlay}
                         className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
@@ -2158,10 +2366,14 @@ export default function MusicPage() {
                       const duration = (item as { duration?: number }).duration ?? item.duration;
                       const isPlayPending = uri && playPending === uri;
                       const canPlay = !!uri && !!selectedQueueId;
+                      const lp = createTrackLongPressHandlers(item);
                       return (
                         <li
                           key={uri ?? `track-${index}`}
                           className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
+                          onPointerDown={lp.onPointerDown}
+                          onPointerUp={lp.onPointerUp}
+                          onPointerLeave={lp.onPointerLeave}
                         >
                           <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums w-8">{index + 1}</span>
                           <div className="min-w-0 flex-1">
@@ -2191,7 +2403,7 @@ export default function MusicPage() {
                           )}
                           <button
                             type="button"
-                            onClick={() => canPlay && playOnPlayer(normalizePlayMediaUri(uri))}
+                            onClick={lp.wrapClick(() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri)))}
                             disabled={!canPlay || !!isPlayPending}
                             className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
                             aria-label={t("music.playOn")}
@@ -2301,10 +2513,14 @@ export default function MusicPage() {
                     const duration = (item as { duration?: number }).duration;
                     const isPlayPending = uri && playPending === uri;
                     const canPlay = !!uri && !!selectedQueueId;
+                    const lp = createTrackLongPressHandlers(item);
                     return (
                       <li
                         key={uri ?? `artist-track-${index}`}
                         className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
+                        onPointerDown={lp.onPointerDown}
+                        onPointerUp={lp.onPointerUp}
+                        onPointerLeave={lp.onPointerLeave}
                       >
                         <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums w-8">{index + 1}</span>
                         <div className="min-w-0 flex-1">
@@ -2334,7 +2550,7 @@ export default function MusicPage() {
                         )}
                         <button
                           type="button"
-                          onClick={() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri))}
+                          onClick={lp.wrapClick(() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri)))}
                           disabled={!canPlay || !!isPlayPending}
                           className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
                           aria-label={t("music.playOn")}
@@ -2467,16 +2683,20 @@ export default function MusicPage() {
                             ? (item.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
                             : (item.artists as { name?: string })?.name ?? ""
                           : "";
-                        const handleClick = () => {
+                        const lp = createTrackLongPressHandlers(item);
+                        const handleClick = lp.wrapClick(() => {
                           if (albumParams) setSelectedAlbum(item);
                           else if (canPlay && uri) playOnPlayer(normalizePlayMediaUri(uri));
                           else if (canPlay && albumUri) playOnPlayer(normalizePlayMediaUri(albumUri));
-                        };
+                        });
                         return (
                           <button
                             key={uri || albumUri || `featured-track-${index}`}
                             type="button"
                             onClick={handleClick}
+                            onPointerDown={lp.onPointerDown}
+                            onPointerUp={lp.onPointerUp}
+                            onPointerLeave={lp.onPointerLeave}
                             disabled={!albumParams && !canPlay}
                             className="shrink-0 w-28 sm:w-32 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always] text-left"
                             title={albumParams ? t("music.viewAlbum") : (item.name as string)}
@@ -2596,14 +2816,18 @@ export default function MusicPage() {
                           const canPlay = !!(uri || albumUri) && !!selectedQueueId;
                           const isAlbum = isAlbumItem(item);
                           const albumParams = isAlbum ? getAlbumParams(item) : null;
-                          const handleClick = () => {
+                          const lp = createTrackLongPressHandlers(item);
+                          const handleClick = lp.wrapClick(() => {
                             if (albumParams) setSelectedAlbum(item);
                             else if (canPlay && uri) playOnPlayer(uri);
                             else if (canPlay && albumUri) playOnPlayer(albumUri);
-                          };
+                          });
                           return (
                             <button
                               key={uri || albumUri || `recent-${index}`}
+                              onPointerDown={lp.onPointerDown}
+                              onPointerUp={lp.onPointerUp}
+                              onPointerLeave={lp.onPointerLeave}
                               type="button"
                               onClick={handleClick}
                               disabled={!albumParams && !canPlay}
