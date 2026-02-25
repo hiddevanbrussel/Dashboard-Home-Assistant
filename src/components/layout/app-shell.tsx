@@ -68,6 +68,8 @@ type AppShellProps = {
   backHref?: string;
   /** When true, header content uses light colors (e.g. over dark hero image). */
   headerContentLight?: boolean;
+  /** When true, header stays fixed at top when scrolling. */
+  headerFixed?: boolean;
   className?: string;
 };
 
@@ -214,6 +216,7 @@ export function AppShell({
   contentScrollbarHidden = false,
   backHref,
   headerContentLight = false,
+  headerFixed = false,
   className,
 }: AppShellProps) {
   const { t } = useTranslation();
@@ -268,7 +271,15 @@ export function AppShell({
         className
       )}
     >
-      <header className={cn("relative z-50 flex shrink-0 items-center border-b px-4 py-3", headerContentLight ? "border-white/20" : "border-gray-200/50 dark:border-white/10")}>
+      <header
+        className={cn(
+          "z-50 flex shrink-0 items-center border-b px-4 py-3",
+          headerFixed && "fixed top-0 left-0 right-0 backdrop-blur-sm",
+          headerFixed && !headerContentLight && "bg-white/95 dark:bg-black/95",
+          headerFixed && headerContentLight && "bg-black/20",
+          headerContentLight ? "border-white/20" : "border-gray-200/50 dark:border-white/10"
+        )}
+      >
         <div className="flex-1 min-w-0 flex items-center gap-4">
           {showSidebar && (
             <button
@@ -314,6 +325,8 @@ export function AppShell({
           <ThemeSwitcher contentLight={headerContentLight} />
         </div>
       </header>
+
+      {headerFixed && <div className="h-14 shrink-0" aria-hidden />}
 
       {temperatureModalOpen &&
         typeof document !== "undefined" &&

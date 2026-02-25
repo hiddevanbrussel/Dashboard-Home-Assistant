@@ -1291,6 +1291,7 @@ export default function MusicPage() {
     <AppShell
       activeTab="/music"
       contentNoScroll
+      headerFixed
       headerContentLight={!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum}
       headerEndAction={
         useMA && maPlayers.length > 0 ? (
@@ -2455,7 +2456,7 @@ export default function MusicPage() {
         {!playersLoading && useMA && maPlayers.length > 0 && !selectedArtist && !selectedAlbum && (
           <>
             {!selectedMenu && !selectedCategory && heroItems.length > 0 ? (
-                <div className="h-[min(45vh,360px)] shrink-0" aria-hidden />
+                <div className="h-[min(55vh,440px)] shrink-0" aria-hidden />
               ) : null}
             {musicAssistant.sectionOrder.map((sectionId) => {
             if (sectionId === "recentlyAddedPlaylists" && !musicAssistant.sectionRecentlyAddedPlaylistsEnabled) return null;
