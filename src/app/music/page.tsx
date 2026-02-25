@@ -1454,78 +1454,95 @@ export default function MusicPage() {
         )}
 
         {selectedAlbum ? (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
-                className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {t("music.back")}
-              </button>
-              {(() => {
-                const albumUri = getPlayableUri(selectedAlbum, "album");
-                const isFav = albumUri && (favorited.has(albumUri) || favoritePending.has(albumUri));
-                return albumUri ? (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); addToFavorites(albumUri); }}
-                    disabled={favoritePending.has(albumUri)}
-                    className={cn(
-                      "flex items-center justify-center rounded-full p-2 transition-colors",
-                      isFav ? "text-red-500 dark:text-red-400" : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                    )}
-                    title={t("music.addToFavorites")}
-                    aria-label={t("music.addToFavorites")}
+          <div className="space-y-0">
+            {(() => {
+              const album = albumDetails ?? selectedAlbum;
+              const albumImageSrc = getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token);
+              const albumUri = getPlayableUri(selectedAlbum, "album");
+              const artistStr = album.artists
+                ? Array.isArray(album.artists)
+                  ? (album.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
+                  : (album.artists as { name?: string })?.name ?? "—"
+                : "—";
+              const isFav = albumUri && (favorited.has(albumUri) || favoritePending.has(albumUri));
+              return (
+                <>
+                  <div
+                    className="fixed inset-x-0 top-0 z-20 h-[min(55vh,420px)] w-screen"
+                    style={{
+                      maskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
+                      WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
+                    }}
                   >
-                    {favoritePending.has(albumUri) ? (
-                      <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
-                    ) : (
-                      <Heart className={cn("h-4 w-4", isFav && "fill-current")} aria-hidden />
-                    )}
-                  </button>
-                ) : null;
-              })()}
-            </div>
-            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
-              {(() => {
-                const album = albumDetails ?? selectedAlbum;
-                return (
-                  <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-4 shrink-0 lg:sticky lg:top-16 lg:self-start">
-                    <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-52 lg:h-52 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
-                      {getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token) ? (
-                        <Image
-                          src={getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token)!}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="224px"
-                          placeholder="blur"
-                          blurDataURL={MUSIC_IMAGE_BLUR}
-                          priority
-                          unoptimized
-                        />
+                    <div className="absolute inset-0 bg-gray-900">
+                      {albumImageSrc ? (
+                        <Image src={albumImageSrc} alt="" fill className="object-cover object-center scale-105" sizes="100vw" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized priority />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Disc3 className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                          <Disc3 className="h-24 w-24 text-white/30" aria-hidden />
                         </div>
                       )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
                     </div>
-                    <div className="min-w-0 lg:min-w-0">
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{album.name ?? t("music.unknown")}</h2>
-                      <p className="mt-1 text-gray-600 dark:text-gray-400">
-                        {album.artists
-                          ? Array.isArray(album.artists)
-                            ? (album.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
-                            : (album.artists as { name?: string })?.name
-                          : "—"}
-                      </p>
+                    <div className="absolute top-4 left-[calc(3.5rem+0.5rem)] sm:left-[calc(4rem+0.75rem)] flex items-center gap-2 z-10">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+                        aria-label={t("music.back")}
+                      >
+                        <ArrowLeft className="h-5 w-5" />
+                      </button>
+                    </div>
+                    <div className="absolute bottom-[12%] left-0 right-0 pl-[calc(3.5rem+30px)] sm:pl-[calc(4rem+30px)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
+                      <div className="min-w-0 flex-1 pointer-events-auto">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg truncate max-w-full">
+                          {album.name ?? t("music.unknown")}
+                        </h2>
+                        <p className="mt-1 text-base sm:text-lg text-white/90 truncate max-w-full">{artistStr}</p>
+                        {albumTracks.length > 0 && (
+                          <p className="mt-0.5 text-sm text-white/70">
+                            {albumTracks.length} {albumTracks.length === 1 ? t("music.trackCountOne") : t("music.trackCountMany")}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
+                        {albumUri && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); addToFavorites(albumUri); }}
+                            disabled={favoritePending.has(albumUri)}
+                            className={cn(
+                              "flex h-10 w-10 items-center justify-center rounded-full transition-colors",
+                              isFav ? "text-red-400" : "text-white/80 hover:text-white hover:bg-white/10"
+                            )}
+                            title={t("music.addToFavorites")}
+                            aria-label={t("music.addToFavorites")}
+                          >
+                            {favoritePending.has(albumUri) ? (
+                              <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+                            ) : (
+                              <Heart className={cn("h-5 w-5", isFav && "fill-current")} aria-hidden />
+                            )}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => albumUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(albumUri))}
+                          disabled={!albumUri || !selectedQueueId}
+                          className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg hover:scale-105 disabled:opacity-50 transition-transform"
+                          aria-label={t("music.play")}
+                        >
+                          <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current ml-0.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                );
-              })()}
-              <section className="min-w-0 flex-1 w-full lg:ml-8">
+                  <div className="h-[min(55vh,420px)] shrink-0" aria-hidden />
+                </>
+              );
+            })()}
+            <section className="min-w-0 flex-1 w-full pt-2">
                 <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albumTracks")}</h3>
                 {albumTracksLoading ? (
                   <div className="flex justify-center py-8">
@@ -1994,78 +2011,102 @@ export default function MusicPage() {
             )}
           </div>
         ) : selectedAlbum ? (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
-                className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {t("music.back")}
-              </button>
-              {(() => {
-                const albumUri = getPlayableUri(selectedAlbum, "album");
-                const isFav = albumUri && (favorited.has(albumUri) || favoritePending.has(albumUri));
-                return albumUri ? (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); addToFavorites(albumUri); }}
-                    disabled={favoritePending.has(albumUri)}
-                    className={cn(
-                      "flex items-center justify-center rounded-full p-2 transition-colors",
-                      isFav ? "text-red-500 dark:text-red-400" : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                    )}
-                    title={t("music.addToFavorites")}
-                    aria-label={t("music.addToFavorites")}
+          <div className="space-y-0">
+            {(() => {
+              const album = albumDetails ?? selectedAlbum;
+              const albumImageSrc = getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token);
+              const albumUri = getPlayableUri(selectedAlbum, "album");
+              const artistStr = album.artists
+                ? Array.isArray(album.artists)
+                  ? (album.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
+                  : (album.artists as { name?: string })?.name ?? "—"
+                : "—";
+              const isFav = albumUri && (favorited.has(albumUri) || favoritePending.has(albumUri));
+              return (
+                <>
+                  <div
+                    className="fixed inset-x-0 top-0 z-20 h-[min(42vh,320px)] w-screen"
+                    style={{
+                      maskImage: "linear-gradient(to bottom, black 0%, black 85%, transparent 100%)",
+                      WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 85%, transparent 100%)",
+                    }}
                   >
-                    {favoritePending.has(albumUri) ? (
-                      <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
-                    ) : (
-                      <Heart className={cn("h-4 w-4", isFav && "fill-current")} aria-hidden />
-                    )}
-                  </button>
-                ) : null;
-              })()}
-            </div>
-            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
-              {(() => {
-                const album = albumDetails ?? selectedAlbum;
-                return (
-                  <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-4 shrink-0 lg:sticky lg:top-16 lg:self-start">
-                    <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-52 lg:h-52 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
-                      {getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token) ? (
-                        <Image
-                          src={getImageSrc(getItemImageUrl(album), musicAssistant.baseUrl, musicAssistant.token)!}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="224px"
-                          placeholder="blur"
-                          blurDataURL={MUSIC_IMAGE_BLUR}
-                          priority
-                          unoptimized
-                        />
+                    <div className="absolute inset-0 bg-gray-900">
+                      {albumImageSrc ? (
+                        <Image src={albumImageSrc} alt="" fill className="object-cover object-center" sizes="100vw" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized priority />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Disc3 className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                          <Disc3 className="h-20 w-20 text-white/30" aria-hidden />
                         </div>
                       )}
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" aria-hidden />
                     </div>
-                    <div className="min-w-0 lg:min-w-0">
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{album.name ?? t("music.unknown")}</h2>
-                      <p className="mt-1 text-gray-600 dark:text-gray-400">
-                        {album.artists
-                          ? Array.isArray(album.artists)
-                            ? (album.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
-                            : (album.artists as { name?: string })?.name
-                          : "—"}
-                      </p>
+                    <div className="absolute inset-0 flex items-center pl-[calc(3.5rem+1rem)] sm:pl-[calc(4rem+1.5rem)] pr-4 sm:pr-6">
+                      <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-xl overflow-hidden bg-gray-700 shrink-0 shadow-xl">
+                        {albumImageSrc ? (
+                          <Image src={albumImageSrc} alt="" fill className="object-cover" sizes="176px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Disc3 className="h-12 w-12 text-gray-500" aria-hidden />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center pl-4 sm:pl-6 pr-4">
+                        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-md truncate">{album.name ?? t("music.unknown")}</h2>
+                        <p className="mt-0.5 text-sm sm:text-base text-white/90 truncate">{artistStr}</p>
+                        {albumTracks.length > 0 && (
+                          <p className="mt-0.5 text-xs text-white/70">
+                            {albumTracks.length} {albumTracks.length === 1 ? t("music.trackCountOne") : t("music.trackCountMany")}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {albumUri && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); addToFavorites(albumUri); }}
+                            disabled={favoritePending.has(albumUri)}
+                            className={cn(
+                              "flex h-10 w-10 items-center justify-center rounded-full transition-colors",
+                              isFav ? "text-red-400" : "text-white/80 hover:text-white hover:bg-white/10"
+                            )}
+                            title={t("music.addToFavorites")}
+                            aria-label={t("music.addToFavorites")}
+                          >
+                            {favoritePending.has(albumUri) ? (
+                              <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+                            ) : (
+                              <Heart className={cn("h-5 w-5", isFav && "fill-current")} aria-hidden />
+                            )}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => albumUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(albumUri))}
+                          disabled={!albumUri || !selectedQueueId}
+                          className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg hover:scale-105 disabled:opacity-50 transition-transform"
+                          aria-label={t("music.play")}
+                        >
+                          <Play className="h-5 w-5 fill-current ml-0.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="absolute top-4 left-[calc(3.5rem+0.5rem)] sm:left-[calc(4rem+0.75rem)] flex items-center gap-2 z-10">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+                        aria-label={t("music.back")}
+                      >
+                        <ArrowLeft className="h-5 w-5" />
+                      </button>
                     </div>
                   </div>
-                );
-              })()}
-              <section className="min-w-0 flex-1 w-full lg:ml-8">
+                  <div className="h-[min(42vh,320px)] shrink-0" aria-hidden />
+                </>
+              );
+            })()}
+            <section className="min-w-0 flex-1 w-full pt-2">
                 <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albumTracks")}</h3>
                 {albumTracksLoading ? (
                   <div className="flex justify-center py-8">
@@ -2078,7 +2119,7 @@ export default function MusicPage() {
                     {albumTracks.map((item, index) => {
                       const uri = getPlayableUri(item, "track");
                       const name = item.name ?? t("music.unknown");
-                      const duration = item.duration;
+                      const duration = (item as { duration?: number }).duration ?? item.duration;
                       const isPlayPending = uri && playPending === uri;
                       const canPlay = !!uri && !!selectedQueueId;
                       return (
