@@ -120,10 +120,9 @@
   color: inherit;
 }
 
-/* Muziek-carousels: pan-y = dit element claimt alleen verticale pan → verticale vegen scrollen de pagina.
-   Horizontale vegen scrollen de carousel (overflow-x) nog steeds in veel browsers. */
+/* Muziek-carousels: pan-x pan-y = horizontale vegen scrollen de carousel, verticale vegen scrollen de pagina. */
 .music-h-scroll {
-  touch-action: pan-y;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   overscroll-behavior-y: none;

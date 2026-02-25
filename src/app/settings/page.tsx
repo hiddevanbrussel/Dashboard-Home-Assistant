@@ -8,7 +8,7 @@ import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode } from "@/stores/dashboard-settings-store";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
-import { Image, Link2, List, Monitor, Music2, Palette, LayoutDashboard, RefreshCw, ChevronUp, ChevronDown } from "lucide-react";
+import { Image, Link2, List, Monitor, Music2, Palette, LayoutDashboard, RefreshCw, ChevronUp, ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -79,6 +79,7 @@ export default function SettingsPage() {
   const [maTesting, setMaTesting] = useState(false);
   const [maPlayersList, setMaPlayersList] = useState<{ queue_id: string; display_name?: string }[]>([]);
   const [maPlayersLoading, setMaPlayersLoading] = useState(false);
+  const [newPlaylistId, setNewPlaylistId] = useState("");
   const [updatePasscode, setUpdatePasscode] = useState("");
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateResult, setUpdateResult] = useState<{ ok: boolean; message?: string; steps?: { step: string; output: string; error?: string }[] } | null>(null);
@@ -1091,24 +1092,6 @@ export default function SettingsPage() {
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={musicAssistant.sectionRecentlyAddedAlbumsEnabled}
-                          onChange={(e) => musicAssistant.setSectionRecentlyAddedAlbumsEnabled(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRecentlyAddedAlbums")}</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={musicAssistant.sectionRecentlyAddedTracksEnabled}
-                          onChange={(e) => musicAssistant.setSectionRecentlyAddedTracksEnabled(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRecentlyAddedTracks")}</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
                           checked={musicAssistant.sectionRadioEnabled}
                           onChange={(e) => musicAssistant.setSectionRadioEnabled(e.target.checked)}
                           className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
@@ -1131,13 +1114,9 @@ export default function SettingsPage() {
                         const labelKey =
                           id === "featuredPlaylist"
                             ? "music.recentlyAdded"
-                            : id === "recentlyAddedAlbums"
-                              ? "music.recentlyAddedAlbums"
-                              : id === "recentlyAddedTracks"
-                                ? "music.recentlyAddedTracks"
-                                : id === "radio"
-                                  ? "music.radioStations"
-                                  : "music.recentlyPlayed";
+                            : id === "radio"
+                              ? "music.radioStations"
+                              : "music.recentlyPlayed";
                         return (
                           <div key={id} className="flex items-center gap-2 rounded bg-white dark:bg-white/5 px-2 py-1.5">
                             <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
@@ -1174,20 +1153,60 @@ export default function SettingsPage() {
                       })}
                     </div>
                     <div className="mt-3">
-                      <label htmlFor="ma-featuredPlaylistId" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                        {t("settings.musicAssistant.featuredPlaylistId")}
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        {t("settings.musicAssistant.featuredPlaylistIds")}
                       </label>
-                      <input
-                        id="ma-featuredPlaylistId"
-                        type="text"
-                        value={musicAssistant.featuredPlaylistId}
-                        onChange={(e) => musicAssistant.setFeaturedPlaylistId(e.target.value)}
-                        placeholder="30"
-                        className="w-full rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-200"
-                      />
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {t("settings.musicAssistant.featuredPlaylistIdHint")}
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        {t("settings.musicAssistant.featuredPlaylistIdsHint")}
                       </p>
+                      <div className="flex flex-col gap-2">
+                        {musicAssistant.featuredPlaylistIds.map((playlistId, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <span className="flex-1 rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-200">
+                              {playlistId}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => musicAssistant.removeFeaturedPlaylistId(i)}
+                              className="p-1.5 rounded text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+                              aria-label={t("settings.musicAssistant.removePlaylist")}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newPlaylistId}
+                            onChange={(e) => setNewPlaylistId(e.target.value)}
+                            placeholder="30"
+                            className="flex-1 rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-200"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                const val = newPlaylistId.trim();
+                                if (val) {
+                                  musicAssistant.addFeaturedPlaylistId(val);
+                                  setNewPlaylistId("");
+                                }
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = newPlaylistId.trim();
+                              if (val) {
+                                musicAssistant.addFeaturedPlaylistId(val);
+                                setNewPlaylistId("");
+                              }
+                            }}
+                            className="px-3 py-1.5 rounded border border-gray-300 dark:border-white/20 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
+                          >
+                            {t("settings.musicAssistant.addPlaylist")}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

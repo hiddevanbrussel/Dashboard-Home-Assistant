@@ -9,26 +9,37 @@ const STORAGE_KEY_ALLOW_SPEAKER_SELECTION = "dashboard.musicAssistant.allowSpeak
 const STORAGE_KEY_ALLOWED_SPEAKER_IDS = "dashboard.musicAssistant.allowedSpeakerIds";
 const STORAGE_KEY_SECTION_RADIO = "dashboard.musicAssistant.sectionRadioEnabled";
 const STORAGE_KEY_SECTION_RECENTLY_PLAYED = "dashboard.musicAssistant.sectionRecentlyPlayedEnabled";
-const STORAGE_KEY_SECTION_RECENTLY_ADDED_ALBUMS = "dashboard.musicAssistant.sectionRecentlyAddedAlbumsEnabled";
-const STORAGE_KEY_SECTION_RECENTLY_ADDED_TRACKS = "dashboard.musicAssistant.sectionRecentlyAddedTracksEnabled";
 const STORAGE_KEY_SECTION_ORDER = "dashboard.musicAssistant.sectionOrder";
-const STORAGE_KEY_FEATURED_PLAYLIST_ID = "dashboard.musicAssistant.featuredPlaylistId";
+const STORAGE_KEY_FEATURED_PLAYLIST_IDS = "dashboard.musicAssistant.featuredPlaylistIds";
 const STORAGE_KEY_SECTION_FEATURED_PLAYLIST = "dashboard.musicAssistant.sectionFeaturedPlaylistEnabled";
 
 const DEFAULT_BASE_URL = "http://localhost:8095";
 
-export const MUSIC_SECTION_IDS = ["featuredPlaylist", "recentlyAddedAlbums", "recentlyAddedTracks", "radio", "recentlyPlayed"] as const;
+export const MUSIC_SECTION_IDS = ["featuredPlaylist", "radio", "recentlyPlayed"] as const;
 export type MusicSectionId = (typeof MUSIC_SECTION_IDS)[number];
 
-const DEFAULT_SECTION_ORDER: MusicSectionId[] = ["featuredPlaylist", "recentlyPlayed", "radio", "recentlyAddedAlbums", "recentlyAddedTracks"];
+const DEFAULT_SECTION_ORDER: MusicSectionId[] = ["featuredPlaylist", "recentlyPlayed", "radio"];
 
 function getStored<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
     const v = localStorage.getItem(key);
     if (v === null) return fallback;
-    if (key === STORAGE_KEY_ENABLED || key === STORAGE_KEY_ALLOW_SPEAKER_SELECTION || key === STORAGE_KEY_SECTION_RADIO || key === STORAGE_KEY_SECTION_RECENTLY_PLAYED || key === STORAGE_KEY_SECTION_RECENTLY_ADDED_ALBUMS || key === STORAGE_KEY_SECTION_RECENTLY_ADDED_TRACKS || key === STORAGE_KEY_SECTION_FEATURED_PLAYLIST) return (v === "true") as T;
-    if (key === STORAGE_KEY_FEATURED_PLAYLIST_ID) return (v || "30") as T;
+    if (key === STORAGE_KEY_ENABLED || key === STORAGE_KEY_ALLOW_SPEAKER_SELECTION || key === STORAGE_KEY_SECTION_RADIO || key === STORAGE_KEY_SECTION_RECENTLY_PLAYED || key === STORAGE_KEY_SECTION_FEATURED_PLAYLIST) return (v === "true") as T;
+    if (key === STORAGE_KEY_FEATURED_PLAYLIST_IDS) {
+      try {
+        const parsed = JSON.parse(v);
+        if (Array.isArray(parsed)) {
+          const list = parsed.filter((id): id is string => typeof id === "string" && String(id).trim() !== "");
+          return (list.length > 0 ? list : ["30"]) as T;
+        }
+        return ["30"] as T;
+      } catch {
+        const legacy = localStorage.getItem("dashboard.musicAssistant.featuredPlaylistId");
+        if (legacy && legacy.trim()) return [legacy.trim()] as T;
+        return ["30"] as T;
+      }
+    }
     if (key === STORAGE_KEY_ALLOWED_SPEAKER_IDS) {
       const parsed = JSON.parse(v);
       return (Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []) as T;
@@ -36,9 +47,7 @@ function getStored<T>(key: string, fallback: T): T {
     if (key === STORAGE_KEY_SECTION_ORDER) {
       const parsed = JSON.parse(v);
       if (!Array.isArray(parsed)) return DEFAULT_SECTION_ORDER as T;
-      const mapped = (parsed as string[]).flatMap((id) =>
-        id === "recentlyAdded" ? ["recentlyAddedAlbums", "recentlyAddedTracks"] : [id]
-      );
+      const mapped = parsed as string[];
       const valid = mapped.filter((id): id is MusicSectionId => MUSIC_SECTION_IDS.includes(id as MusicSectionId));
       const seen = new Set<MusicSectionId>();
       const deduped = valid.filter((id) => {
@@ -72,13 +81,9 @@ export type MusicAssistantStore = {
   allowSpeakerSelection: boolean;
   /** When non-empty, only these queue_ids may be chosen. Empty = all allowed. */
   allowedSpeakerIds: string[];
-  /** Music page: show Recently added albums section. Default on. */
-  sectionRecentlyAddedAlbumsEnabled: boolean;
-  /** Music page: show Recently added tracks section. Default on. */
-  sectionRecentlyAddedTracksEnabled: boolean;
-  /** MA playlist ID to show as "Recently added" (e.g. "30" for library playlist). */
-  featuredPlaylistId: string;
-  /** Music page: show Featured playlist (recently added) section. Default on. */
+  /** MA playlist IDs to show on homepage (e.g. ["30"] for playlists/library/30). */
+  featuredPlaylistIds: string[];
+  /** Music page: show Featured playlists section. Default on. */
   sectionFeaturedPlaylistEnabled: boolean;
   sectionRadioEnabled: boolean;
   sectionRecentlyPlayedEnabled: boolean;
@@ -89,9 +94,9 @@ export type MusicAssistantStore = {
   setToken: (v: string) => void;
   setAllowSpeakerSelection: (v: boolean) => void;
   setAllowedSpeakerIds: (ids: string[]) => void;
-  setSectionRecentlyAddedAlbumsEnabled: (v: boolean) => void;
-  setSectionRecentlyAddedTracksEnabled: (v: boolean) => void;
-  setFeaturedPlaylistId: (v: string) => void;
+  setFeaturedPlaylistIds: (ids: string[]) => void;
+  addFeaturedPlaylistId: (id: string) => void;
+  removeFeaturedPlaylistId: (index: number) => void;
   setSectionFeaturedPlaylistEnabled: (v: boolean) => void;
   setSectionRadioEnabled: (v: boolean) => void;
   setSectionRecentlyPlayedEnabled: (v: boolean) => void;
@@ -104,9 +109,7 @@ export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => 
   token: getStored(STORAGE_KEY_TOKEN, ""),
   allowSpeakerSelection: getStored(STORAGE_KEY_ALLOW_SPEAKER_SELECTION, true),
   allowedSpeakerIds: getStored<string[]>(STORAGE_KEY_ALLOWED_SPEAKER_IDS, []),
-  sectionRecentlyAddedAlbumsEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_ALBUMS, true),
-  sectionRecentlyAddedTracksEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_TRACKS, true),
-  featuredPlaylistId: getStored(STORAGE_KEY_FEATURED_PLAYLIST_ID, "30"),
+  featuredPlaylistIds: getStored<string[]>(STORAGE_KEY_FEATURED_PLAYLIST_IDS, ["30"]),
   sectionFeaturedPlaylistEnabled: getStored(STORAGE_KEY_SECTION_FEATURED_PLAYLIST, true),
   sectionRadioEnabled: getStored(STORAGE_KEY_SECTION_RADIO, true),
   sectionRecentlyPlayedEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_PLAYED, true),
@@ -133,18 +136,25 @@ export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => 
     setStored(STORAGE_KEY_ALLOWED_SPEAKER_IDS, list);
     set({ allowedSpeakerIds: list });
   },
-  setSectionRecentlyAddedAlbumsEnabled: (v) => {
-    setStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_ALBUMS, v);
-    set({ sectionRecentlyAddedAlbumsEnabled: v });
+  setFeaturedPlaylistIds: (ids) => {
+    const list = Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string" && id.trim() !== "") : ["30"];
+    setStored(STORAGE_KEY_FEATURED_PLAYLIST_IDS, list);
+    set({ featuredPlaylistIds: list });
   },
-  setSectionRecentlyAddedTracksEnabled: (v) => {
-    setStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_TRACKS, v);
-    set({ sectionRecentlyAddedTracksEnabled: v });
+  addFeaturedPlaylistId: (id) => {
+    const trimmed = (id || "").trim();
+    if (!trimmed) return;
+    const list = [...get().featuredPlaylistIds];
+    if (list.includes(trimmed)) return;
+    list.push(trimmed);
+    setStored(STORAGE_KEY_FEATURED_PLAYLIST_IDS, list);
+    set({ featuredPlaylistIds: list });
   },
-  setFeaturedPlaylistId: (v) => {
-    const id = (v || "").trim() || "30";
-    setStored(STORAGE_KEY_FEATURED_PLAYLIST_ID, id);
-    set({ featuredPlaylistId: id });
+  removeFeaturedPlaylistId: (index) => {
+    const list = [...get().featuredPlaylistIds];
+    list.splice(index, 1);
+    setStored(STORAGE_KEY_FEATURED_PLAYLIST_IDS, list.length ? list : ["30"]);
+    set({ featuredPlaylistIds: list.length ? list : ["30"] });
   },
   setSectionFeaturedPlaylistEnabled: (v) => {
     setStored(STORAGE_KEY_SECTION_FEATURED_PLAYLIST, v);
@@ -177,9 +187,7 @@ export function hydrateMusicAssistantStore() {
     token: getStored(STORAGE_KEY_TOKEN, ""),
     allowSpeakerSelection: getStored(STORAGE_KEY_ALLOW_SPEAKER_SELECTION, true),
     allowedSpeakerIds: getStored<string[]>(STORAGE_KEY_ALLOWED_SPEAKER_IDS, []),
-    sectionRecentlyAddedAlbumsEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_ALBUMS, true),
-    sectionRecentlyAddedTracksEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_ADDED_TRACKS, true),
-    featuredPlaylistId: getStored(STORAGE_KEY_FEATURED_PLAYLIST_ID, "30"),
+    featuredPlaylistIds: getStored<string[]>(STORAGE_KEY_FEATURED_PLAYLIST_IDS, ["30"]),
     sectionFeaturedPlaylistEnabled: getStored(STORAGE_KEY_SECTION_FEATURED_PLAYLIST, true),
     sectionRadioEnabled: getStored(STORAGE_KEY_SECTION_RADIO, true),
     sectionRecentlyPlayedEnabled: getStored(STORAGE_KEY_SECTION_RECENTLY_PLAYED, true),
