@@ -1487,11 +1487,19 @@ export default function MusicPage() {
                     <div className="absolute top-4 left-[calc(3.5rem+0.5rem)] sm:left-[calc(4rem+0.75rem)] flex items-center gap-2 z-10">
                       <button
                         type="button"
-                        onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+                        onClick={() => {
+                          setSelectedAlbum(null);
+                          setAlbumDetails(null);
+                          setAlbumTracks([]);
+                          setError(null);
+                          setSelectedMenu("albums");
+                          setSelectedCategory(null);
+                        }}
+                        className="flex items-center gap-2 h-9 px-3 sm:px-4 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
                         aria-label={t("music.back")}
                       >
-                        <ArrowLeft className="h-5 w-5" />
+                        <ArrowLeft className="h-5 w-5 shrink-0" />
+                        <span className="text-sm font-medium hidden sm:inline">{t("music.back")}</span>
                       </button>
                     </div>
                     <div className="absolute bottom-[12%] left-0 right-0 pl-[calc(3.5rem+30px)] sm:pl-[calc(4rem+30px)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
@@ -2093,11 +2101,19 @@ export default function MusicPage() {
                     <div className="absolute top-4 left-[calc(3.5rem+0.5rem)] sm:left-[calc(4rem+0.75rem)] flex items-center gap-2 z-10">
                       <button
                         type="button"
-                        onClick={() => { setSelectedAlbum(null); setAlbumDetails(null); setAlbumTracks([]); setError(null); }}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+                        onClick={() => {
+                          setSelectedAlbum(null);
+                          setAlbumDetails(null);
+                          setAlbumTracks([]);
+                          setError(null);
+                          setSelectedMenu("albums");
+                          setSelectedCategory(null);
+                        }}
+                        className="flex items-center gap-2 h-9 px-3 sm:px-4 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
                         aria-label={t("music.back")}
                       >
-                        <ArrowLeft className="h-5 w-5" />
+                        <ArrowLeft className="h-5 w-5 shrink-0" />
+                        <span className="text-sm font-medium hidden sm:inline">{t("music.back")}</span>
                       </button>
                     </div>
                   </div>
