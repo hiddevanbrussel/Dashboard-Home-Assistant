@@ -2468,7 +2468,7 @@ export default function MusicPage() {
               const show = recentlyAddedPlaylists.length > 0 || recentlyAddedPlaylistsLoading;
               if (!show) return null;
               return (
-                <section key="recentlyAddedPlaylists" className="relative z-30 mt-8 pl-[10px]">
+                <section key="recentlyAddedPlaylists" className="relative z-30 mt-8 pl-[8px]">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("recentlyAddedPlaylists")}
@@ -2520,7 +2520,7 @@ export default function MusicPage() {
               const show = recentlyAddedAlbums.length > 0 || recentlyAddedAlbumsLoading;
               if (!show) return null;
               return (
-                <section key="recentlyAddedAlbums" className="relative z-30 mt-8 pl-[10px]">
+                <section key="recentlyAddedAlbums" className="relative z-30 mt-8 pl-[8px]">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("recentlyAddedAlbums")}
@@ -2574,7 +2574,7 @@ export default function MusicPage() {
               const show = recentlyAddedTracks.length > 0 || recentlyAddedTracksLoading;
               if (!show) return null;
               return (
-                <section key="recentlyAddedTracks" className="relative z-30 mt-8 pl-[10px]">
+                <section key="recentlyAddedTracks" className="relative z-30 mt-8 pl-[8px]">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("recentlyAddedTracks")}
@@ -2624,7 +2624,7 @@ export default function MusicPage() {
             }
             if (sectionId === "radio") {
               return (
-                <section key="radio" className="relative z-30 mt-8 pl-[10px]">
+                <section key="radio" className="relative z-30 mt-8 pl-[8px]">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("radio")}
