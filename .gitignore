@@ -3,3 +3,4 @@ node_modules/
 prisma/data/
 public/uploads/
 dev.db
+.cache/

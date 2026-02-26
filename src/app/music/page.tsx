@@ -573,6 +573,24 @@ export default function MusicPage() {
   }, [heroItemCount, heroIntervalMs]);
 
   useEffect(() => {
+    if (!musicAssistant.baseUrl || heroItems.length === 0) return;
+    const links: HTMLLinkElement[] = [];
+    for (const item of heroItems) {
+      const rawUrl = getItemImageUrl(item);
+      const src = getImageSrc(rawUrl, musicAssistant.baseUrl, musicAssistant.token);
+      if (src && typeof src === "string") {
+        const link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "image";
+        link.href = src;
+        document.head.appendChild(link);
+        links.push(link);
+      }
+    }
+    return () => links.forEach((l) => l.remove());
+  }, [heroItems, musicAssistant.baseUrl, musicAssistant.token]);
+
+  useEffect(() => {
     const el = musicScrollRef.current;
     if (!el) return;
     const syncScroll = () => {

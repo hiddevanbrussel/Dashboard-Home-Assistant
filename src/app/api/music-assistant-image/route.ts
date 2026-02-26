@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
+import { createHash } from "crypto";
+import { readFile, writeFile, mkdir } from "fs/promises";
+import { existsSync } from "fs";
+import path from "path";
 
 const IMAGE_CACHE_MAX = 350;
 const imageCache = new Map<
   string,
   { body: ArrayBuffer; contentType: string }
 >();
+
+const CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=2592000, stale-while-revalidate=604800, immutable",
+};
 
 function getCacheKey(imageUrl: string): string {
   try {
@@ -15,11 +23,58 @@ function getCacheKey(imageUrl: string): string {
   }
 }
 
+function getCacheFilename(cacheKey: string): string {
+  return createHash("sha256").update(cacheKey).digest("hex") + ".cache";
+}
+
+function getCacheDir(): string | null {
+  try {
+    const dir = path.join(process.cwd(), ".cache", "music-images");
+    return dir;
+  } catch {
+    return null;
+  }
+}
+
+async function readFromDisk(cacheKey: string): Promise<{ body: ArrayBuffer; contentType: string } | null> {
+  const dir = getCacheDir();
+  if (!dir) return null;
+  try {
+    const filePath = path.join(dir, getCacheFilename(cacheKey));
+    if (!existsSync(filePath)) return null;
+    const metaPath = filePath + ".meta";
+    if (!existsSync(metaPath)) return null;
+    const [buf, meta] = await Promise.all([
+      readFile(filePath),
+      readFile(metaPath, "utf-8"),
+    ]);
+    const contentType = meta.trim() || "image/jpeg";
+    return { body: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength), contentType };
+  } catch {
+    return null;
+  }
+}
+
+async function writeToDisk(cacheKey: string, body: ArrayBuffer, contentType: string): Promise<void> {
+  const dir = getCacheDir();
+  if (!dir) return;
+  try {
+    await mkdir(dir, { recursive: true });
+    const filePath = path.join(dir, getCacheFilename(cacheKey));
+    const metaPath = filePath + ".meta";
+    await Promise.all([
+      writeFile(filePath, Buffer.from(body)),
+      writeFile(metaPath, contentType, "utf-8"),
+    ]);
+  } catch {
+    // ignore disk write errors
+  }
+}
+
 /**
  * GET /api/music-assistant-image?baseUrl=...&token=...&url=...
  * Proxies image requests to Music Assistant so auth and CORS work.
- * Only fetches URLs that belong to the given baseUrl (same origin).
- * Caches responses in memory (and via Cache-Control in the browser) for faster repeat loads.
+ * Caches in memory + filesystem for fast repeat loads.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -44,14 +99,21 @@ export async function GET(request: Request) {
   }
 
   const cacheKey = getCacheKey(imageUrl);
-  const cached = imageCache.get(cacheKey);
-  if (cached) {
-    return new NextResponse(cached.body, {
-      headers: {
-        "Content-Type": cached.contentType,
-        "Cache-Control": "private, max-age=604800, stale-while-revalidate=86400",
-        "X-Cache": "HIT",
-      },
+
+  const memCached = imageCache.get(cacheKey);
+  if (memCached) {
+    return new NextResponse(memCached.body, {
+      headers: { "Content-Type": memCached.contentType, ...CACHE_HEADERS, "X-Cache": "HIT-MEM" },
+    });
+  }
+
+  const diskCached = await readFromDisk(cacheKey);
+  if (diskCached) {
+    if (imageCache.size < IMAGE_CACHE_MAX) {
+      imageCache.set(cacheKey, diskCached);
+    }
+    return new NextResponse(diskCached.body, {
+      headers: { "Content-Type": diskCached.contentType, ...CACHE_HEADERS, "X-Cache": "HIT-DISK" },
     });
   }
 
@@ -74,12 +136,10 @@ export async function GET(request: Request) {
     }
     imageCache.set(cacheKey, { body: arrayBuffer, contentType });
 
+    writeToDisk(cacheKey, arrayBuffer, contentType).catch(() => {});
+
     return new NextResponse(arrayBuffer, {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "private, max-age=604800, stale-while-revalidate=86400",
-        "X-Cache": "MISS",
-      },
+      headers: { "Content-Type": contentType, ...CACHE_HEADERS, "X-Cache": "MISS" },
     });
   } catch {
     return NextResponse.json({ error: "Failed to fetch image" }, { status: 502 });
