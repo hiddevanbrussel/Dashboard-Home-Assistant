@@ -59,3 +59,8 @@ export type Room = Prisma.RoomModel
  * 
  */
 export type RoomDashboard = Prisma.RoomDashboardModel
+/**
+ * Model EnergyDashboard
+ * 
+ */
+export type EnergyDashboard = Prisma.EnergyDashboardModel

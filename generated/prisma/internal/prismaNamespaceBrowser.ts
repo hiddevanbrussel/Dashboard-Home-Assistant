@@ -54,7 +54,8 @@ export const ModelName = {
   Connection: 'Connection',
   Dashboard: 'Dashboard',
   Room: 'Room',
-  RoomDashboard: 'RoomDashboard'
+  RoomDashboard: 'RoomDashboard',
+  EnergyDashboard: 'EnergyDashboard'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -128,6 +129,22 @@ export const RoomDashboardScalarFieldEnum = {
 } as const
 
 export type RoomDashboardScalarFieldEnum = (typeof RoomDashboardScalarFieldEnum)[keyof typeof RoomDashboardScalarFieldEnum]
+
+
+export const EnergyDashboardScalarFieldEnum = {
+  id: 'id',
+  layout: 'layout',
+  widgets: 'widgets',
+  background: 'background',
+  backgroundLight: 'backgroundLight',
+  backgroundDark: 'backgroundDark',
+  welcomeTitle: 'welcomeTitle',
+  welcomeSubtitle: 'welcomeSubtitle',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EnergyDashboardScalarFieldEnum = (typeof EnergyDashboardScalarFieldEnum)[keyof typeof EnergyDashboardScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -54,3 +54,16 @@ model RoomDashboard {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
+
+model EnergyDashboard {
+  id               String   @id @default(cuid())
+  layout           String?
+  widgets          String?
+  background       String?
+  backgroundLight  String?
+  backgroundDark   String?
+  welcomeTitle     String?
+  welcomeSubtitle  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}

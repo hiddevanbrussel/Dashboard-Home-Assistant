@@ -387,7 +387,8 @@ export const ModelName = {
   Connection: 'Connection',
   Dashboard: 'Dashboard',
   Room: 'Room',
-  RoomDashboard: 'RoomDashboard'
+  RoomDashboard: 'RoomDashboard',
+  EnergyDashboard: 'EnergyDashboard'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -403,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "connection" | "dashboard" | "room" | "roomDashboard"
+    modelProps: "connection" | "dashboard" | "room" | "roomDashboard" | "energyDashboard"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -703,6 +704,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    EnergyDashboard: {
+      payload: Prisma.$EnergyDashboardPayload<ExtArgs>
+      fields: Prisma.EnergyDashboardFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EnergyDashboardFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EnergyDashboardFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload>
+        }
+        findFirst: {
+          args: Prisma.EnergyDashboardFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EnergyDashboardFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload>
+        }
+        findMany: {
+          args: Prisma.EnergyDashboardFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload>[]
+        }
+        create: {
+          args: Prisma.EnergyDashboardCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload>
+        }
+        createMany: {
+          args: Prisma.EnergyDashboardCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EnergyDashboardCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload>[]
+        }
+        delete: {
+          args: Prisma.EnergyDashboardDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload>
+        }
+        update: {
+          args: Prisma.EnergyDashboardUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload>
+        }
+        deleteMany: {
+          args: Prisma.EnergyDashboardDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EnergyDashboardUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EnergyDashboardUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload>[]
+        }
+        upsert: {
+          args: Prisma.EnergyDashboardUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EnergyDashboardPayload>
+        }
+        aggregate: {
+          args: Prisma.EnergyDashboardAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEnergyDashboard>
+        }
+        groupBy: {
+          args: Prisma.EnergyDashboardGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EnergyDashboardGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EnergyDashboardCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EnergyDashboardCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -797,6 +872,22 @@ export const RoomDashboardScalarFieldEnum = {
 } as const
 
 export type RoomDashboardScalarFieldEnum = (typeof RoomDashboardScalarFieldEnum)[keyof typeof RoomDashboardScalarFieldEnum]
+
+
+export const EnergyDashboardScalarFieldEnum = {
+  id: 'id',
+  layout: 'layout',
+  widgets: 'widgets',
+  background: 'background',
+  backgroundLight: 'backgroundLight',
+  backgroundDark: 'backgroundDark',
+  welcomeTitle: 'welcomeTitle',
+  welcomeSubtitle: 'welcomeSubtitle',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EnergyDashboardScalarFieldEnum = (typeof EnergyDashboardScalarFieldEnum)[keyof typeof EnergyDashboardScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -940,6 +1031,7 @@ export type GlobalOmitConfig = {
   dashboard?: Prisma.DashboardOmit
   room?: Prisma.RoomOmit
   roomDashboard?: Prisma.RoomDashboardOmit
+  energyDashboard?: Prisma.EnergyDashboardOmit
 }
 
 /* Types for Logging */

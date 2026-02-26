@@ -2,10 +2,11 @@
 
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { DoorOpen, LayoutDashboard, Music2 } from "lucide-react";
+import { DoorOpen, LayoutDashboard, Music2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
 
 const tabKeys = [
   { href: "/dashboards", labelKey: "nav.dashboard", icon: LayoutDashboard },
@@ -13,6 +14,7 @@ const tabKeys = [
 ] as const;
 
 const musicTab = { href: "/music", labelKey: "nav.music", icon: Music2 } as const;
+const energyTab = { href: "/energy", labelKey: "nav.energy", icon: Zap } as const;
 
 type TopTabsProps = {
   activeHref?: string;
@@ -23,10 +25,16 @@ type TopTabsProps = {
 export function TopTabs({ activeHref, className, contentLight }: TopTabsProps) {
   const { t } = useTranslation();
   const musicAssistantEnabled = useMusicAssistantStore((s) => s.enabled);
+  const energyEnabled = useEnergyStore((s) => s.enabled);
   useEffect(() => {
     hydrateMusicAssistantStore();
+    hydrateEnergyStore();
   }, []);
-  const tabs = [...tabKeys, ...(musicAssistantEnabled ? [musicTab] : [])];
+  const tabs = [
+    ...tabKeys,
+    ...(energyEnabled ? [energyTab] : []),
+    ...(musicAssistantEnabled ? [musicTab] : []),
+  ];
   return (
     <nav
       className={cn(

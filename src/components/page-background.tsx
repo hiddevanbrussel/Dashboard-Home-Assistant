@@ -32,6 +32,17 @@ function fetchRoomBackground(areaId: string): Promise<BackgroundData> {
     .catch(() => ({ background: null, backgroundLight: null, backgroundDark: null }));
 }
 
+function fetchEnergyBackground(): Promise<BackgroundData> {
+  return fetch("/api/energy-dashboard")
+    .then((r) => r.json())
+    .then((d) => ({
+      background: d?.background ?? null,
+      backgroundLight: d?.backgroundLight ?? null,
+      backgroundDark: d?.backgroundDark ?? null,
+    }))
+    .catch(() => ({ background: null, backgroundLight: null, backgroundDark: null }));
+}
+
 const PageBackgroundContext = createContext<string | null>(null);
 
 export function usePageBackground() {
@@ -53,11 +64,15 @@ export function PageBackgroundProvider({
 
   const roomMatch = pathname?.match(/^\/rooms\/([^/]+)$/);
   const areaId = roomMatch?.[1];
+  const isEnergyPage = pathname === "/energy";
 
   useEffect(() => {
     async function load() {
       if (areaId) {
         const d = await fetchRoomBackground(decodeURIComponent(areaId));
+        setData(d);
+      } else if (isEnergyPage) {
+        const d = await fetchEnergyBackground();
         setData(d);
       } else {
         const d = await fetchDashboardBackground();
@@ -65,19 +80,21 @@ export function PageBackgroundProvider({
       }
     }
     load();
-  }, [areaId]);
+  }, [areaId, isEnergyPage]);
 
   useEffect(() => {
     const onUpdate = () => {
       if (areaId) {
         fetchRoomBackground(decodeURIComponent(areaId)).then(setData);
+      } else if (isEnergyPage) {
+        fetchEnergyBackground().then(setData);
       } else {
         fetchDashboardBackground().then(setData);
       }
     };
     window.addEventListener("page-background-changed", onUpdate);
     return () => window.removeEventListener("page-background-changed", onUpdate);
-  }, [areaId]);
+  }, [areaId, isEnergyPage]);
 
   const url =
     (resolved === "dark" ? data.backgroundDark : data.backgroundLight) ??

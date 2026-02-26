@@ -8,11 +8,12 @@ import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode } from "@/stores/dashboard-settings-store";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, HERO_SLIDER_SOURCE_IDS } from "@/stores/music-assistant-store";
-import { Image, Link2, List, Monitor, Music2, Palette, LayoutDashboard, RefreshCw, ChevronUp, ChevronDown, X } from "lucide-react";
+import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
+import { Image, Link2, List, Monitor, Music2, Palette, LayoutDashboard, RefreshCw, ChevronUp, ChevronDown, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "page-background" | "dashboard" | "connection" | "music-assistant" | "entities" | "system";
+type SettingsSection = "appearance" | "screensaver" | "page-background" | "dashboard" | "connection" | "energy" | "music-assistant" | "entities" | "system";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -20,6 +21,7 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   "page-background": "settings.pageBackground",
   dashboard: "settings.dashboard",
   connection: "settings.connection",
+  energy: "settings.energy",
   "music-assistant": "settings.musicAssistant",
   entities: "settings.entities",
   system: "settings.system",
@@ -84,9 +86,11 @@ export default function SettingsPage() {
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateResult, setUpdateResult] = useState<{ ok: boolean; message?: string; steps?: { step: string; output: string; error?: string }[] } | null>(null);
   const musicAssistant = useMusicAssistantStore();
+  const energyStore = useEnergyStore();
 
   useEffect(() => {
     hydrateMusicAssistantStore();
+    hydrateEnergyStore();
   }, []);
 
   useEffect(() => {
@@ -386,6 +390,7 @@ export default function SettingsPage() {
       { id: "connection", labelKey: SECTION_KEYS.connection, icon: Link2 },
     ]},
     { groupKey: "settings.groups.integrations", sections: [
+      { id: "energy", labelKey: SECTION_KEYS.energy, icon: Zap },
       { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
       { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
     ]},
@@ -976,6 +981,26 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
+            </GlassCard>
+          )}
+
+          {section === "energy" && (
+            <GlassCard>
+              <h3 className="text-card-title font-medium mb-3">{t("settings.energy")}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {t("settings.energy.description")}
+              </p>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={energyStore.enabled}
+                  onChange={(e) => energyStore.setEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {t("settings.energy.enabled")}
+                </span>
+              </label>
             </GlassCard>
           )}
 
