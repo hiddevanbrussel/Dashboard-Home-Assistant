@@ -1548,7 +1548,7 @@ export default function MusicPage() {
           const heroUri = heroItem
             ? (getPlayableUri(heroItem, "track") || getPlayableUri(heroItem, "album") || getPlayableUri(heroItem, "playlist"))
             : null;
-          const heroBlur = Math.min(20, Math.max(0, homeScrollTop * 0.06));
+          const heroBlur = Math.min(24, Math.max(0, homeScrollTop * 0.12));
           const heroOverlay = Math.min(0.6, homeScrollTop * 0.003);
           return (
             <div
@@ -1556,7 +1556,7 @@ export default function MusicPage() {
               style={{
                 maskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
                 WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
-                filter: heroBlur > 2 ? `blur(${heroBlur}px)` : "none",
+                filter: heroBlur > 0 ? `blur(${heroBlur}px)` : "none",
               }}
             >
               <div className="absolute inset-0 bg-gray-900">
@@ -1868,7 +1868,7 @@ export default function MusicPage() {
               {t("music.back")}
             </button>
             <div className="flex flex-col sm:flex-row gap-4 items-start">
-              <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
+              <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full overflow-hidden shrink-0">
                 {getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token) ? (
                   <Image
                     src={getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token)!}
@@ -2451,7 +2451,7 @@ export default function MusicPage() {
               {t("music.back")}
             </button>
             <div className="flex flex-col sm:flex-row gap-4 items-start">
-              <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
+              <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full overflow-hidden shrink-0">
                 {getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token) ? (
                   <Image
                     src={getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token)!}
@@ -2676,9 +2676,10 @@ export default function MusicPage() {
                               const playlistUri = getPlayableUri(playlist, "playlist");
                               if (playlistUri) playOnPlayer(normalizePlayMediaUri(playlistUri));
                             }}
-                            className="text-sm font-medium text-accent-yellow dark:text-accent-green hover:underline shrink-0"
+                            className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-yellow/20 dark:bg-accent-green/20 text-accent-yellow dark:text-accent-green hover:bg-accent-yellow/30 dark:hover:bg-accent-green/30 shrink-0 transition-colors"
+                            aria-label={t("music.play")}
                           >
-                            {t("music.play")} {t("music.playlist")}
+                            <Play className="h-4 w-4 fill-current ml-0.5" />
                           </button>
                         )}
                       </div>
