@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "npx prisma generate && next build",
+    "postbuild": "npx prisma migrate deploy",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",

@@ -1552,7 +1552,7 @@ export default function MusicPage() {
           const heroOverlay = Math.min(0.6, homeScrollTop * 0.003);
           return (
             <div
-              className="fixed inset-x-0 top-0 z-20 h-[min(75vh,600px)] w-screen transition-[filter,opacity] duration-300 will-change-[filter]"
+              className="fixed inset-x-0 top-0 z-20 h-[min(55vh,440px)] w-screen transition-[filter,opacity] duration-300 will-change-[filter]"
               style={{
                 maskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
                 WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
@@ -1675,13 +1675,17 @@ export default function MusicPage() {
             </nav>
           <div
             ref={musicScrollRef}
-            className={cn("flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto music-content-area pl-[calc(3.5rem+0.75rem)]", !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum ? "overflow-x-visible text-gray-900 dark:text-white" : "overflow-x-hidden text-gray-900 dark:text-white")}
+            className={cn(
+              "flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto music-content-area pl-[calc(3.5rem+0.75rem)]",
+              !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum ? "overflow-x-visible text-gray-900 dark:text-white" : "overflow-x-hidden text-gray-900 dark:text-white",
+              !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && heroItems.length > 0 && "relative z-10"
+            )}
           >
         <div className="flex flex-wrap items-center justify-end gap-4 pb-2">
           <OfflinePill />
         </div>
         {!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && heroItems.length > 0 && (
-          <div className="h-[min(75vh,600px)] shrink-0" aria-hidden />
+          <div className="h-[min(55vh,440px)] shrink-0" aria-hidden />
         )}
         {error && (
           <div
