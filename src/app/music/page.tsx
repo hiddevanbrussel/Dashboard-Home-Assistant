@@ -1437,7 +1437,7 @@ export default function MusicPage() {
       activeTab="/music"
       contentNoScroll
       headerFixed
-      headerContentLight={!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum}
+      headerContentLight={(!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || !!selectedAlbum}
       headerEndAction={
         useMA && maPlayers.length > 0 ? (
           <button
@@ -1445,7 +1445,7 @@ export default function MusicPage() {
             onClick={() => setSearchOverlayOpen(true)}
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-              !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum
+              (!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || selectedAlbum
                 ? "text-white/90 hover:bg-white/10"
                 : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
             )}
@@ -1619,6 +1619,7 @@ export default function MusicPage() {
                   ? !selectedMenu && !selectedCategory
                   : selectedMenu === id;
                 const isHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum;
+                const hasDarkHeader = isHome || selectedAlbum;
                 return (
                   <button
                     key={id}
@@ -1638,7 +1639,7 @@ export default function MusicPage() {
                     }}
                     className={cn(
                       "flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
-                      isHome
+                      hasDarkHeader
                         ? active
                           ? "bg-white/20 text-white"
                           : "text-white/80 hover:bg-white/10 hover:text-white"
