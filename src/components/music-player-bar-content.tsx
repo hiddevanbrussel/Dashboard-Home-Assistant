@@ -268,10 +268,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
             </button>
           )}
           {allowSpeakerSelection && selectablePlayers.length > 0 && (
-            <div className="relative flex items-center gap-2" ref={speakerPopoverRef}>
-              <span className="hidden sm:inline text-xs font-medium text-gray-600 dark:text-white/70 truncate max-w-[120px]" title={selectedQueueId ? playerLabel(selectablePlayers.find((p) => p.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : ""}>
-                {selectedQueueId ? playerLabel(selectablePlayers.find((p) => p.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : ""}
-              </span>
+            <div className="relative" ref={speakerPopoverRef}>
               <button
                 type="button"
                 onClick={(e) => {
@@ -279,13 +276,16 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
                   setSpeakerPopoverOpen((v) => !v);
                 }}
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
+                  "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
                   speakerPopoverOpen ? "bg-gray-300/80 dark:bg-white/20 text-gray-900 dark:text-white" : "text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10"
                 )}
                 aria-label={t("music.choosePlayer")}
                 aria-expanded={speakerPopoverOpen}
               >
                 <Speaker className="h-5 w-5" />
+                {selectedQueueId && (queueState?.state === "playing" || queueState?.state === "paused") && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-900" aria-hidden title={t("music.playing")} />
+                )}
               </button>
               {speakerPopoverOpen && (
                 <div

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { useState, useEffect, useRef } from "react";
 import { createPortal, flushSync } from "react-dom";
@@ -226,6 +227,7 @@ const STORAGE_SCOPE = "energy";
 
 export default function EnergyPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
   const [editPasscodeModalOpen, setEditPasscodeModalOpen] = useState(false);
@@ -329,6 +331,10 @@ export default function EnergyPage() {
       .then((d) => (Array.isArray(d) ? setEntities(d) : setEntities([])))
       .catch(() => setEntities([]));
   }, [editMode]);
+
+  useEffect(() => {
+    if (error) router.replace("/dashboards");
+  }, [error, router]);
 
   const requestRefresh = useEntityStateStore((s) => s.requestRefresh);
   useEffect(() => {

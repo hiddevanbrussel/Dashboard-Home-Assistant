@@ -1680,6 +1680,9 @@ export default function MusicPage() {
         <div className="flex flex-wrap items-center justify-end gap-4 pb-2">
           <OfflinePill />
         </div>
+        {!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && heroItems.length > 0 && (
+          <div className="h-[min(75vh,600px)] shrink-0" aria-hidden />
+        )}
         {error && (
           <div
             className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-200"
@@ -2688,9 +2691,6 @@ export default function MusicPage() {
 
         {!playersLoading && useMA && maPlayers.length > 0 && !selectedArtist && !selectedAlbum && (
           <>
-            {!selectedMenu && !selectedCategory && heroItems.length > 0 ? (
-                <div className="h-[min(55vh,440px)] shrink-0" aria-hidden />
-              ) : null}
             {musicAssistant.sectionOrder.map((sectionId) => {
             if (sectionId === "radio" && !musicAssistant.sectionRadioEnabled) return null;
             if (sectionId === "recentlyPlayed" && !musicAssistant.sectionRecentlyPlayedEnabled) return null;
