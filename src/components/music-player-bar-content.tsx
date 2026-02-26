@@ -268,7 +268,10 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
             </button>
           )}
           {allowSpeakerSelection && selectablePlayers.length > 0 && (
-            <div className="relative" ref={speakerPopoverRef}>
+            <div className="relative flex items-center gap-2" ref={speakerPopoverRef}>
+              <span className="hidden sm:inline text-xs font-medium text-gray-600 dark:text-white/70 truncate max-w-[120px]" title={selectedQueueId ? playerLabel(selectablePlayers.find((p) => p.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : ""}>
+                {selectedQueueId ? playerLabel(selectablePlayers.find((p) => p.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : ""}
+              </span>
               <button
                 type="button"
                 onClick={(e) => {
@@ -292,22 +295,29 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
                   <p className="px-3 py-1.5 text-xs font-medium text-white/70 border-b border-white/10">
                     {t("music.choosePlayer")}
                   </p>
-                  {selectablePlayers.map((p) => (
-                    <button
-                      key={p.queue_id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedQueueId(p.queue_id);
-                        setSpeakerPopoverOpen(false);
-                      }}
-                      className={cn(
-                        "w-full text-left px-3 py-2 text-sm text-white/90 hover:bg-white/10 transition-colors",
-                        selectedQueueId === p.queue_id && "bg-white/15 font-medium"
-                      )}
-                    >
-                      {playerLabel(p)}
-                    </button>
-                  ))}
+                  {selectablePlayers.map((p) => {
+                    const isSelected = selectedQueueId === p.queue_id;
+                    const isActive = isSelected && (queueState?.state === "playing" || queueState?.state === "paused");
+                    return (
+                      <button
+                        key={p.queue_id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedQueueId(p.queue_id);
+                          setSpeakerPopoverOpen(false);
+                        }}
+                        className={cn(
+                          "w-full text-left px-3 py-2 text-sm text-white/90 hover:bg-white/10 transition-colors flex items-center justify-between gap-2",
+                          isSelected && "bg-white/15 font-medium"
+                        )}
+                      >
+                        <span>{playerLabel(p)}</span>
+                        {isActive && (
+                          <span className="flex h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden title={t("music.playing")} />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

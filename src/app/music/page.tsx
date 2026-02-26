@@ -1463,7 +1463,7 @@ export default function MusicPage() {
             onClick={() => setSearchOverlayOpen(true)}
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-              (!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || selectedAlbum
+              (!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || selectedAlbum || selectedArtist
                 ? "text-white/90 hover:bg-white/10"
                 : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
             )}
@@ -1637,7 +1637,7 @@ export default function MusicPage() {
                   ? !selectedMenu && !selectedCategory
                   : selectedMenu === id;
                 const isHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum;
-                const hasDarkHeader = isHome || selectedAlbum;
+                const hasDarkHeader = isHome || selectedAlbum || selectedArtist;
                 return (
                   <button
                     key={id}
@@ -1786,8 +1786,8 @@ export default function MusicPage() {
                 </>
               );
             })()}
-            <section className="min-w-0 flex-1 w-full pt-2">
-                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albumTracks")}</h3>
+            <section className="min-w-0 flex-1 w-full pt-0 -mt-2">
+                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">{t("music.albumTracks")}</h3>
                 {albumTracksLoading ? (
                   <div className="flex justify-center py-8">
                     <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
@@ -1858,41 +1858,65 @@ export default function MusicPage() {
               </section>
             </div>
         ) : selectedArtist ? (
-          <div className="space-y-6">
-            <button
-              type="button"
-              onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); }}
-              className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {t("music.back")}
-            </button>
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
-              <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full overflow-hidden shrink-0">
-                {getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token) ? (
-                  <Image
-                    src={getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token)!}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="192px"
-                    placeholder="blur"
-                    blurDataURL={MUSIC_IMAGE_BLUR}
-                    priority
-                    unoptimized
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <User className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
+          <div className="space-y-0">
+            {(() => {
+              const artistImageSrc = getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token);
+              const artistUri = getPlayableUri(selectedArtist, "artist");
+              return (
+                <>
+                  <div
+                    className="fixed inset-x-0 top-0 z-20 h-[min(55vh,420px)] w-screen"
+                    style={{
+                      maskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
+                      WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gray-900">
+                      {artistImageSrc ? (
+                        <Image src={artistImageSrc} alt="" fill className="object-cover object-center scale-105" sizes="100vw" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized priority />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                          <User className="h-24 w-24 text-white/30" aria-hidden />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
+                    </div>
+                    <div className="absolute top-4 left-[calc(3.5rem+0.5rem)] sm:left-[calc(4rem+0.75rem)] flex items-center gap-2 z-10">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); setSelectedMenu("artists"); setSelectedCategory(null); }}
+                        className="flex items-center gap-2 h-9 px-3 sm:px-4 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+                        aria-label={t("music.back")}
+                      >
+                        <ArrowLeft className="h-5 w-5 shrink-0" />
+                        <span className="text-sm font-medium hidden sm:inline">{t("music.back")}</span>
+                      </button>
+                    </div>
+                    <div className="absolute bottom-[12%] left-0 right-0 pl-[calc(3.5rem+30px)] sm:pl-[calc(4rem+30px)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
+                      <div className="min-w-0 flex-1 pointer-events-auto">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg truncate max-w-full">
+                          {(selectedArtist as MASearchItem).name ?? t("music.unknown")}
+                        </h2>
+                        <p className="mt-1 text-base sm:text-lg text-white/90 truncate max-w-full">{t("music.artistAlbums")}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
+                        <button
+                          type="button"
+                          onClick={() => artistUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(artistUri))}
+                          disabled={!artistUri || !selectedQueueId}
+                          className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg hover:scale-105 disabled:opacity-50 transition-transform"
+                          aria-label={t("music.play")}
+                        >
+                          <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current ml-0.5" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{(selectedArtist as MASearchItem).name ?? t("music.unknown")}</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("music.artistAlbums")}</p>
-              </div>
-            </div>
-            <section>
+                  <div className="h-[min(55vh,420px)] shrink-0" aria-hidden />
+                </>
+              );
+            })()}
+            <section className="pt-2">
               <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albums")}</h3>
               {artistAlbumsLoading ? (
                 <div className="flex justify-center py-8">
@@ -2369,8 +2393,8 @@ export default function MusicPage() {
                 </>
               );
             })()}
-            <section className="min-w-0 flex-1 w-full pt-2">
-                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albumTracks")}</h3>
+            <section className="min-w-0 flex-1 w-full pt-0 -mt-2">
+                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">{t("music.albumTracks")}</h3>
                 {albumTracksLoading ? (
                   <div className="flex justify-center py-8">
                     <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
@@ -2441,41 +2465,65 @@ export default function MusicPage() {
               </section>
             </div>
         ) : selectedArtist ? (
-          <div className="space-y-6">
-            <button
-              type="button"
-              onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); }}
-              className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {t("music.back")}
-            </button>
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
-              <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full overflow-hidden shrink-0">
-                {getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token) ? (
-                  <Image
-                    src={getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token)!}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="192px"
-                    placeholder="blur"
-                    blurDataURL={MUSIC_IMAGE_BLUR}
-                    priority
-                    unoptimized
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <User className="h-16 w-16 text-gray-500 dark:text-gray-400" aria-hidden />
+          <div className="space-y-0">
+            {(() => {
+              const artistImageSrc = getImageSrc(getItemImageUrl(selectedArtist), musicAssistant.baseUrl, musicAssistant.token);
+              const artistUri = getPlayableUri(selectedArtist, "artist");
+              return (
+                <>
+                  <div
+                    className="fixed inset-x-0 top-0 z-20 h-[min(55vh,420px)] w-screen"
+                    style={{
+                      maskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
+                      WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gray-900">
+                      {artistImageSrc ? (
+                        <Image src={artistImageSrc} alt="" fill className="object-cover object-center scale-105" sizes="100vw" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized priority />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                          <User className="h-24 w-24 text-white/30" aria-hidden />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
+                    </div>
+                    <div className="absolute top-4 left-[calc(3.5rem+0.5rem)] sm:left-[calc(4rem+0.75rem)] flex items-center gap-2 z-10">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); setSelectedMenu("artists"); setSelectedCategory(null); }}
+                        className="flex items-center gap-2 h-9 px-3 sm:px-4 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+                        aria-label={t("music.back")}
+                      >
+                        <ArrowLeft className="h-5 w-5 shrink-0" />
+                        <span className="text-sm font-medium hidden sm:inline">{t("music.back")}</span>
+                      </button>
+                    </div>
+                    <div className="absolute bottom-[12%] left-0 right-0 pl-[calc(3.5rem+30px)] sm:pl-[calc(4rem+30px)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
+                      <div className="min-w-0 flex-1 pointer-events-auto">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg truncate max-w-full">
+                          {(selectedArtist as MASearchItem).name ?? t("music.unknown")}
+                        </h2>
+                        <p className="mt-1 text-base sm:text-lg text-white/90 truncate max-w-full">{t("music.artistAlbums")}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
+                        <button
+                          type="button"
+                          onClick={() => artistUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(artistUri))}
+                          disabled={!artistUri || !selectedQueueId}
+                          className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg hover:scale-105 disabled:opacity-50 transition-transform"
+                          aria-label={t("music.play")}
+                        >
+                          <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current ml-0.5" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{(selectedArtist as MASearchItem).name ?? t("music.unknown")}</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("music.artistAlbums")}</p>
-              </div>
-            </div>
-            <section>
+                  <div className="h-[min(55vh,420px)] shrink-0" aria-hidden />
+                </>
+              );
+            })()}
+            <section className="pt-2">
               <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">{t("music.albums")}</h3>
               {artistAlbumsLoading ? (
                 <div className="flex justify-center py-8">
