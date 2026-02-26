@@ -1552,7 +1552,7 @@ export default function MusicPage() {
           const heroOverlay = Math.min(0.6, homeScrollTop * 0.003);
           return (
             <div
-              className="fixed inset-x-0 top-0 z-20 h-[min(55vh,440px)] w-screen transition-[filter,opacity] duration-300 will-change-[filter]"
+              className="fixed inset-x-0 top-0 z-20 h-[min(65vh,520px)] w-screen transition-[filter,opacity] duration-300 will-change-[filter]"
               style={{
                 maskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
                 WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
@@ -1685,7 +1685,7 @@ export default function MusicPage() {
           <OfflinePill />
         </div>
         {!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && heroItems.length > 0 && (
-          <div className="h-[min(55vh,440px)] shrink-0" aria-hidden />
+          <div className="h-[min(65vh,520px)] shrink-0" aria-hidden />
         )}
         {error && (
           <div
@@ -1711,7 +1711,7 @@ export default function MusicPage() {
               return (
                 <>
                   <div
-                    className="fixed inset-x-0 top-0 z-20 h-[min(55vh,420px)] w-screen"
+                    className="fixed inset-x-0 top-0 z-20 h-[min(65vh,500px)] w-screen"
                     style={{
                       maskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
                       WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
@@ -1789,7 +1789,7 @@ export default function MusicPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="h-[min(55vh,420px)] shrink-0" aria-hidden />
+                  <div className="h-[min(65vh,500px)] shrink-0" aria-hidden />
                 </>
               );
             })()}
@@ -1872,7 +1872,7 @@ export default function MusicPage() {
               return (
                 <>
                   <div
-                    className="fixed inset-x-0 top-0 z-20 h-[min(55vh,420px)] w-screen"
+                    className="fixed inset-x-0 top-0 z-20 h-[min(65vh,500px)] w-screen"
                     style={{
                       maskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
                       WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
@@ -1919,7 +1919,7 @@ export default function MusicPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="h-[min(55vh,420px)] shrink-0" aria-hidden />
+                  <div className="h-[min(65vh,500px)] shrink-0" aria-hidden />
                 </>
               );
             })()}
@@ -2479,7 +2479,7 @@ export default function MusicPage() {
               return (
                 <>
                   <div
-                    className="fixed inset-x-0 top-0 z-20 h-[min(55vh,420px)] w-screen"
+                    className="fixed inset-x-0 top-0 z-20 h-[min(65vh,500px)] w-screen"
                     style={{
                       maskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
                       WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 75%, transparent 100%)",
@@ -2526,7 +2526,7 @@ export default function MusicPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="h-[min(55vh,420px)] shrink-0" aria-hidden />
+                  <div className="h-[min(65vh,500px)] shrink-0" aria-hidden />
                 </>
               );
             })()}
