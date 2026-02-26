@@ -1552,7 +1552,7 @@ export default function MusicPage() {
           const heroOverlay = Math.min(0.6, homeScrollTop * 0.003);
           return (
             <div
-              className="fixed inset-x-0 top-0 z-20 h-[min(65vh,520px)] w-screen transition-[filter,opacity] duration-300 will-change-[filter]"
+              className="fixed inset-x-0 top-0 z-20 h-[min(72vh,600px)] w-screen transition-[filter,opacity] duration-300 will-change-[filter]"
               style={{
                 maskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
                 WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
@@ -1685,7 +1685,7 @@ export default function MusicPage() {
           <OfflinePill />
         </div>
         {!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && heroItems.length > 0 && (
-          <div className="h-[min(65vh,520px)] shrink-0" aria-hidden />
+          <div className="h-[min(58vh,460px)] shrink-0" aria-hidden />
         )}
         {error && (
           <div
@@ -2706,7 +2706,7 @@ export default function MusicPage() {
                 featuredPlaylistData.some((d) => d.tracks.length > 0);
               if (!show) return null;
               return (
-                <div key="featuredPlaylist" className="relative z-30 mt-8 pl-[8px] space-y-8">
+                <div key="featuredPlaylist" className="relative z-30 mt-2 pl-[8px] space-y-8">
                   {featuredPlaylistLoading && featuredPlaylistData.length === 0 ? (
                     <section>
                       <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">{t("music.recentlyAdded")}</h2>
@@ -2810,7 +2810,7 @@ export default function MusicPage() {
             }
             if (sectionId === "radio") {
               return (
-                <section key="radio" className="relative z-30 mt-8 pl-[8px]">
+                <section key="radio" className="relative z-30 mt-6 pl-[8px]">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("radio")}
@@ -2863,7 +2863,7 @@ export default function MusicPage() {
             }
             if (sectionId === "recentlyPlayed") {
               return (
-                <section key="recentlyPlayed" className="relative z-30 mt-8 pl-[10px]">
+                <section key="recentlyPlayed" className="relative z-30 mt-6 pl-[10px]">
                   <button
                     type="button"
                     onClick={() => setSelectedCategory("recentlyPlayed")}
