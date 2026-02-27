@@ -76,89 +76,85 @@ export function PowerUsageCardWidget({
   const totalUsage = mainData.reduce((sum, d) => sum + d.consumption, 0);
   const expense = cost_per_kwh != null ? selectedDayConsumption * cost_per_kwh : null;
 
-  return (
-    <div
-      className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/10 dark:bg-black/50 backdrop-blur-2xl text-gray-900 dark:text-white shadow-xl border border-white/20 dark:border-white/10",
-        className
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-        <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
-        {onMoreClick && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
-            aria-label="Opties"
-          >
-            <MoreVertical className="h-5 w-5" />
-          </button>
-        )}
-      </div>
+  const cardBase =
+    "rounded-2xl bg-white/10 dark:bg-black/50 backdrop-blur-2xl text-gray-900 dark:text-white shadow-xl border border-white/20 dark:border-white/10 overflow-hidden";
 
-      <div className="p-4 space-y-4">
+  return (
+    <div className={cn("flex w-full flex-col gap-3", className)}>
+      {/* Kaart 1: Stroomverbruik (bar chart) */}
+      <div className={cn("flex flex-col", cardBase)}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
+          <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
+          {onMoreClick && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+              aria-label="Opties"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </button>
+          )}
+        </div>
         {allEntityIds.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 px-4">
             Configureer een totaal-verbruik entity in de bewerkmodus.
           </p>
         ) : (
-        <>
-        {/* Bar chart - last 7 days */}
-        <div>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Dagelijks verbruik</p>
-          {isLoading ? (
-            <div className="h-24 flex items-center justify-center text-gray-400">Laden…</div>
-          ) : (
-            <div className="flex items-end justify-between gap-1 h-20">
-              {mainData.map((d, i) => {
-                const date = new Date(d.date);
-                const dayName = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"][date.getDay()];
-                const isLast = i === mainData.length - 1;
-                const frac = maxVal > 0 ? d.consumption / maxVal : 0;
-                return (
-                  <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                    <div
-                      className={cn(
-                        "w-full rounded-t transition-all min-h-[4px]",
-                        isLast
-                          ? "bg-amber-500 dark:bg-amber-500"
-                          : "bg-gray-200 dark:bg-gray-600"
+          <div className="p-4">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Dagelijks verbruik</p>
+            {isLoading ? (
+              <div className="h-24 flex items-center justify-center text-gray-400">Laden…</div>
+            ) : (
+              <div className="flex items-end justify-between gap-1 h-20">
+                {mainData.map((d, i) => {
+                  const date = new Date(d.date);
+                  const dayName = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"][date.getDay()];
+                  const isLast = i === mainData.length - 1;
+                  const frac = maxVal > 0 ? d.consumption / maxVal : 0;
+                  return (
+                    <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                      <div
+                        className={cn(
+                          "w-full rounded-t transition-all min-h-[4px]",
+                          isLast ? "bg-amber-500 dark:bg-amber-500" : "bg-gray-200 dark:bg-gray-600"
+                        )}
+                        style={{ height: `${Math.max(4, frac * 64)}px` }}
+                      />
+                      {isLast && (
+                        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                          {formatKwh(d.consumption)}
+                        </span>
                       )}
-                      style={{ height: `${Math.max(4, frac * 64)}px` }}
-                    />
-                    {isLast && (
-                      <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                        {formatKwh(d.consumption)}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400">{dayName}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400">{dayName}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-        {/* Summary cards */}
+      {/* Kaart 2 & 3: Verbruik vandaag en Kosten vandaag (alleen tonen als entity geconfigureerd) */}
+      {allEntityIds.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 p-3 border border-amber-200/50 dark:border-amber-500/20">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20">
-              <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          <div className={cn("relative p-4", cardBase)}>
+            <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20">
+              <Zap className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 pr-5">
               <p className="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-400">
                 {formatKwh(selectedDayConsumption)}
               </p>
               <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Verbruik vandaag</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 p-3 border border-emerald-200/50 dark:border-emerald-500/20">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
-              <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <div className={cn("relative p-4", cardBase)}>
+            <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
+              <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 pr-5">
               <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                 {expense != null ? `€${expense.toFixed(2)}` : "—"}
               </p>
@@ -166,9 +162,7 @@ export function PowerUsageCardWidget({
             </div>
           </div>
         </div>
-        </>
-        )}
-      </div>
+      )}
     </div>
   );
 }
