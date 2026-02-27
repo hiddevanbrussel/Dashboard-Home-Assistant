@@ -63,9 +63,12 @@ export async function GET(request: Request) {
       const dayData: DayData[] = [];
       let prevEnd: number | null = null;
       for (const dateKey of sortedDates) {
-        const { last } = byDay.get(dateKey)!;
-        const consumption = prevEnd != null ? Math.max(0, last - prevEnd) : 0;
-        dayData.push({ date: dateKey, consumption });
+        const { first, last } = byDay.get(dateKey)!;
+        const consumption =
+          prevEnd != null
+            ? Math.max(0, last - prevEnd)
+            : last - first;
+        dayData.push({ date: dateKey, consumption: Math.max(0, consumption) });
         prevEnd = last;
       }
       result[entityId] = dayData;

@@ -185,7 +185,7 @@ export function FloatingPowerUsageCard({
         left: position.left,
         bottom: position.bottom,
         width: cardW,
-        minHeight: cardH,
+        height: height != null ? cardH : "fit-content",
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&

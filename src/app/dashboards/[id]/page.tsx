@@ -1657,21 +1657,28 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {widgets.filter((w) => w.type === "device_consumption_card").map((w) => (
-          <FloatingDeviceConsumptionCard
-            key={w.id}
-            title={w.title ?? "Verbruik per apparaat"}
-            device_entity_ids={w.device_entity_ids}
-            device_names={w.device_names}
-            width={w.width}
-            height={w.height}
-            editMode={editMode}
-            storageScope={`${id}-${w.id}`}
-            onEnterEditMode={() => setEditMode(true)}
-            onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-            onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-          />
-        ))}
+        {typeof document !== "undefined" &&
+          widgets.some((w) => w.type === "device_consumption_card") &&
+          createPortal(
+            widgets
+              .filter((w) => w.type === "device_consumption_card")
+              .map((w) => (
+                <FloatingDeviceConsumptionCard
+                  key={w.id}
+                  title={w.title ?? "Verbruik per apparaat"}
+                  device_entity_ids={w.device_entity_ids}
+                  device_names={w.device_names}
+                  width={w.width}
+                  height={w.height}
+                  editMode={editMode}
+                  storageScope={`${id}-${w.id}`}
+                  onEnterEditMode={() => setEditMode(true)}
+                  onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                  onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                />
+              )),
+            document.body
+          )}
 
         {typeof document !== "undefined" &&
           widgets.some((w) => w.type === "stat_pill_card") &&

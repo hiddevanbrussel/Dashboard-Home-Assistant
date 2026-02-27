@@ -424,7 +424,7 @@ export default function EnergyPage() {
       title: titleOverride ?? (type === "text_card" ? t("editPanel.newText") : type === "device_consumption_card" ? "Verbruik per apparaat" : type.replace(/_/g, " ")),
       entity_id: entityId,
       ...(type === "text_card" && { textMode: "title" as const, show_icon: false, icon: "Type" }),
-      ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
+      ...(type === "device_consumption_card" && { device_entity_ids: entityId ? [entityId] : [], device_names: {} }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
     const isTextCard = type === "text_card";
@@ -451,7 +451,7 @@ export default function EnergyPage() {
     setAddTileStep("type");
     setAddTileSelectedType(null);
     saveMutation.mutate({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
-    return type === "nuts_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "stat_pill_card" ? newId : undefined;
+    return type === "nuts_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" ? newId : undefined;
   }
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
@@ -830,6 +830,29 @@ export default function EnergyPage() {
           />
         ))}
 
+        {typeof document !== "undefined" &&
+          widgets.some((w) => w.type === "device_consumption_card") &&
+          createPortal(
+            widgets
+              .filter((w) => w.type === "device_consumption_card")
+              .map((w) => (
+                <FloatingDeviceConsumptionCard
+                  key={w.id}
+                  title={w.title ?? "Verbruik per apparaat"}
+                  device_entity_ids={w.device_entity_ids}
+                  device_names={w.device_names}
+                  width={w.width}
+                  height={w.height}
+                  editMode={editMode}
+                  storageScope={`${STORAGE_SCOPE}-${w.id}`}
+                  onEnterEditMode={() => setEditMode(true)}
+                  onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                  onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                />
+              )),
+            document.body
+          )}
+
         {widgets.filter((w) => w.type === "energy_monitor_card").map((w) => (
           <FloatingEnergyMonitorCard
             key={w.id}
@@ -979,7 +1002,7 @@ export default function EnergyPage() {
                         return filtered.map((e) => {
                           const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
                           return (
-                            <button key={e.entity_id} type="button" onClick={() => { if (!addTileSelectedType) return; const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "power_usage_card" ? (name || "Stroomverbruik") : addTileSelectedType === "device_consumption_card" ? (name || "Verbruik per apparaat") : addTileSelectedType === "stat_pill_card" ? (name || "Stat") : undefined; const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride); if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card") && newId) setEditingWidgetId(newId); setAddTileOpen(false); setAddTileStep("type"); setAddTileSelectedType(null); setAddTileEntitySearch(""); }} className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate" title={e.entity_id}>{name}</button>
+                            <button key={e.entity_id} type="button" onClick={() => { if (!addTileSelectedType) return; const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "power_usage_card" ? (name || "Stroomverbruik") : addTileSelectedType === "device_consumption_card" ? (name || "Verbruik per apparaat") : addTileSelectedType === "stat_pill_card" ? (name || "Stat") : undefined; const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride); if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card" || addTileSelectedType === "device_consumption_card") && newId) setEditingWidgetId(newId); setAddTileOpen(false); setAddTileStep("type"); setAddTileSelectedType(null); setAddTileEntitySearch(""); }} className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate" title={e.entity_id}>{name}</button>
                           );
                         });
                       })()}

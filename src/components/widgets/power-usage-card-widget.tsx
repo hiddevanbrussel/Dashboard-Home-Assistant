@@ -3,10 +3,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { MoreVertical, Zap, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEntityStateStore } from "@/stores/entity-state-store";
 
 function formatKwh(val: number): string {
   if (val >= 1000) return `${(val / 1000).toFixed(1)}MWh`;
   return `${Math.round(val * 10) / 10}Kwh`;
+}
+
+/** Converteer entity state naar kWh (ondersteunt kWh, Wh, W). */
+function stateToKwh(state: string | undefined, unit: string | undefined): number | null {
+  const val = state != null && state !== "unavailable" && state !== "unknown" ? parseFloat(state) : NaN;
+  if (Number.isNaN(val)) return null;
+  const u = (unit ?? "").toLowerCase();
+  if (u === "wh") return val / 1000;
+  if (u === "kwh" || u === "kw") return val;
+  if (u === "mwh") return val * 1000;
+  if (u === "w") return val / 1000; // momentaan vermogen, ruwe schatting als kWh
+  return val; // default: assume kWh
 }
 
 export function PowerUsageCardWidget({
@@ -23,6 +36,8 @@ export function PowerUsageCardWidget({
   onMoreClick?: () => void;
 }) {
   const allEntityIds = [entity_id].filter(Boolean);
+  const entityState = useEntityStateStore((s) => (entity_id ? s.getState(entity_id) : undefined));
+  const currentStateKwh = entity_id ? stateToKwh(entityState?.state, entityState?.attributes?.unit_of_measurement as string) : null;
 
   const { data: historyData, isLoading } = useQuery({
     queryKey: ["ha-history", allEntityIds.join(",")],
@@ -37,7 +52,6 @@ export function PowerUsageCardWidget({
 
   const rawMainData = historyData?.[entity_id ?? ""] ?? [];
   const daysToShow = 7;
-  const today = new Date().toISOString().slice(0, 10);
   const filledDates: string[] = [];
   for (let i = daysToShow - 1; i >= 0; i--) {
     const d = new Date();
@@ -45,14 +59,21 @@ export function PowerUsageCardWidget({
     filledDates.push(d.toISOString().slice(0, 10));
   }
   const dataByDate = new Map(rawMainData.map((d) => [d.date, d.consumption]));
+  const today = filledDates[filledDates.length - 1];
   const mainData = filledDates.map((date) => ({
     date,
     consumption: dataByDate.get(date) ?? 0,
   }));
+  const selectedDay = mainData[mainData.length - 1];
+  let selectedDayConsumption = selectedDay?.consumption ?? 0;
+  if (selectedDayConsumption === 0 && currentStateKwh != null && currentStateKwh >= 0) {
+    selectedDayConsumption = currentStateKwh;
+    if (today && mainData.length > 0) {
+      mainData[mainData.length - 1] = { ...mainData[mainData.length - 1]!, consumption: currentStateKwh };
+    }
+  }
   const maxVal = Math.max(1, ...mainData.map((d) => d.consumption));
   const totalUsage = mainData.reduce((sum, d) => sum + d.consumption, 0);
-  const selectedDay = mainData[mainData.length - 1];
-  const selectedDayConsumption = selectedDay?.consumption ?? 0;
   const expense = cost_per_kwh != null ? selectedDayConsumption * cost_per_kwh : null;
 
   return (
