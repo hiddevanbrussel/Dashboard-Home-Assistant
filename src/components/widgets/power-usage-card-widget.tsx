@@ -136,10 +136,10 @@ export function PowerUsageCardWidget({
         )}
       </div>
 
-      {/* Kaart 2 & 3: Verbruik vandaag en Kosten vandaag (alleen tonen als entity geconfigureerd) */}
+      {/* Kaart 2 & 3: Verbruik vandaag en Kosten vandaag (zelfde hoogte als zonnepanelen-kaarten) */}
       {allEntityIds.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
-          <div className={cn("relative p-4", cardBase)}>
+          <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
             <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20">
               <Zap className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
             </div>
@@ -150,7 +150,7 @@ export function PowerUsageCardWidget({
               <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Verbruik vandaag</p>
             </div>
           </div>
-          <div className={cn("relative p-4", cardBase)}>
+          <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
             <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
               <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             </div>

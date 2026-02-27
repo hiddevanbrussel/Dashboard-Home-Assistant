@@ -35,8 +35,12 @@ export type WidgetConfig = {
   /** Text card: weergavetype (title, subtitle, text). */
   textMode?: "title" | "subtitle" | "text";
   entity_id: string;
-  /** Optioneel verbruik-entity voor solar_card (gecombineerde kaart). */
+  /** @deprecated Gebruik yield_entity_id_today / yield_entity_id_month */
   consumption_entity_id?: string;
+  /** Solar card: entity voor kaart "Vandaag". Val terug op entity_id. */
+  yield_entity_id_today?: string;
+  /** Solar card: entity voor kaart "Deze maand". Val terug op entity_id. */
+  yield_entity_id_month?: string;
   /** Weather card: toon weersicoon (default true). */
   show_icon?: boolean;
   /** Vacuum card: script entity_ids om als knoppen te tonen (script.turn_on). */

@@ -248,6 +248,8 @@ function WidgetByType({
   subtitle,
   entity_id,
   consumption_entity_id,
+  yield_entity_id_today,
+  yield_entity_id_month,
   humidity_entity_id,
   show_icon,
   script_ids,
@@ -279,6 +281,8 @@ function WidgetByType({
   subtitle?: string;
   entity_id: string;
   consumption_entity_id?: string;
+  yield_entity_id_today?: string;
+  yield_entity_id_month?: string;
   humidity_entity_id?: string;
   show_icon?: boolean;
   script_ids?: string[];
@@ -382,7 +386,8 @@ function WidgetByType({
         <SolarCardWidget
           title={title}
           entity_id={entity_id}
-          consumption_entity_id={consumption_entity_id}
+          yield_entity_id_today={yield_entity_id_today}
+          yield_entity_id_month={yield_entity_id_month}
           size={sizeProp}
         />
       );
@@ -530,6 +535,8 @@ export default function DashboardEditPage() {
     textMode?: "title" | "subtitle" | "text";
     entity_id: string;
     consumption_entity_id?: string;
+    yield_entity_id_today?: string;
+    yield_entity_id_month?: string;
     grid_entity_id?: string;
     humidity_entity_id?: string;
     show_icon?: boolean;
@@ -694,6 +701,8 @@ export default function DashboardEditPage() {
           title: child.title ?? "",
           entity_id: child.entity_id ?? "",
           consumption_entity_id: "",
+          yield_entity_id_today: "",
+          yield_entity_id_month: "",
           humidity_entity_id: "",
           show_icon: true,
           script_ids: [],
@@ -725,6 +734,8 @@ export default function DashboardEditPage() {
         textMode: isCategoryCard ? deriveTextMode() : undefined,
         entity_id: editingWidget.entity_id ?? "",
         consumption_entity_id: editingWidget.consumption_entity_id ?? "",
+        yield_entity_id_today: (editingWidget as { yield_entity_id_today?: string }).yield_entity_id_today ?? "",
+        yield_entity_id_month: (editingWidget as { yield_entity_id_month?: string }).yield_entity_id_month ?? "",
         grid_entity_id: editingWidget.grid_entity_id ?? "",
         humidity_entity_id: editingWidget.humidity_entity_id ?? "",
         show_icon: isCategoryCard ? ((editingWidget as { show_icon?: boolean }).show_icon ?? false) : (editingWidget.show_icon !== false),
@@ -1446,6 +1457,8 @@ export default function DashboardEditPage() {
                       subtitle={w.subtitle}
                       entity_id={w.entity_id}
                       consumption_entity_id={w.consumption_entity_id}
+                      yield_entity_id_today={(w as { yield_entity_id_today?: string }).yield_entity_id_today}
+                      yield_entity_id_month={(w as { yield_entity_id_month?: string }).yield_entity_id_month}
                       humidity_entity_id={w.humidity_entity_id}
                       show_icon={w.show_icon}
                       script_ids={w.script_ids}
@@ -1585,7 +1598,8 @@ export default function DashboardEditPage() {
             <FloatingSolarCard
               title={firstSolar.title ?? "Zonnepanelen"}
               entity_id={firstSolar.entity_id}
-              consumption_entity_id={firstSolar.consumption_entity_id}
+              yield_entity_id_today={(firstSolar as { yield_entity_id_today?: string }).yield_entity_id_today}
+              yield_entity_id_month={(firstSolar as { yield_entity_id_month?: string }).yield_entity_id_month}
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
@@ -2923,20 +2937,35 @@ export default function DashboardEditPage() {
                       </button>
                     </div>
                     {editTab === "algemeen" && (
-                  <EntitySelectWithSearch
-                    entities={entities}
-                    value={editForm.consumption_entity_id ?? ""}
-                    onChange={(v) =>
-                      setEditForm((prev) => ({
-                        ...prev,
-                        consumption_entity_id: v || undefined,
-                      }))
-                    }
-                    filter={(e) => e.entity_id.startsWith("sensor.")}
-                    label={t("editPanel.consumptionOptional")}
-                    placeholder={t("editPanel.searchSensor")}
-                    emptyOption={t("editPanel.none")}
-                  />
+                      <>
+                        <EntitySelectWithSearch
+                          entities={entities}
+                          value={editForm.entity_id ?? ""}
+                          onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
+                          filter={(e) => e.entity_id.startsWith("sensor.")}
+                          label="Entity grafiek (opbrengst per uur)"
+                          placeholder={t("editPanel.searchEntity")}
+                          emptyOption={t("editPanel.none")}
+                        />
+                        <EntitySelectWithSearch
+                          entities={entities}
+                          value={editForm.yield_entity_id_today ?? ""}
+                          onChange={(v) => setEditForm((prev) => ({ ...prev, yield_entity_id_today: v || undefined }))}
+                          filter={(e) => e.entity_id.startsWith("sensor.")}
+                          label="Entity Vandaag"
+                          placeholder={t("editPanel.searchSensor")}
+                          emptyOption={t("editPanel.none")}
+                        />
+                        <EntitySelectWithSearch
+                          entities={entities}
+                          value={editForm.yield_entity_id_month ?? ""}
+                          onChange={(v) => setEditForm((prev) => ({ ...prev, yield_entity_id_month: v || undefined }))}
+                          filter={(e) => e.entity_id.startsWith("sensor.")}
+                          label="Entity Deze maand"
+                          placeholder={t("editPanel.searchSensor")}
+                          emptyOption={t("editPanel.none")}
+                        />
+                      </>
                     )}
                   </>
                 )}
@@ -4665,7 +4694,8 @@ aria-label={t("editPanel.removeCondition")}
                           entity_id: editForm.entity_id,
                         }),
                         ...(editingWidget.type === "solar_card" && {
-                          consumption_entity_id: editForm.consumption_entity_id || undefined,
+                          yield_entity_id_today: editForm.yield_entity_id_today || undefined,
+                          yield_entity_id_month: editForm.yield_entity_id_month || undefined,
                         }),
                         ...(editingWidget.type === "energy_monitor_card" && {
                           entity_id: editForm.entity_id || undefined,

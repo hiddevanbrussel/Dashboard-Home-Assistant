@@ -52,7 +52,8 @@ const LONG_PRESS_MS = 500;
 export function FloatingSolarCard({
   title,
   entity_id,
-  consumption_entity_id,
+  yield_entity_id_today,
+  yield_entity_id_month,
   editMode = false,
   storageScope,
   onRemove,
@@ -61,7 +62,8 @@ export function FloatingSolarCard({
 }: {
   title: string;
   entity_id?: string;
-  consumption_entity_id?: string;
+  yield_entity_id_today?: string;
+  yield_entity_id_month?: string;
   editMode?: boolean;
   storageScope?: string;
   onRemove?: () => void;
@@ -202,7 +204,7 @@ export function FloatingSolarCard({
       })}
     >
       <div>
-        <SolarCardWidget title={title} entity_id={entity_id ?? ""} consumption_entity_id={consumption_entity_id} size="md" onMoreClick={editMode ? onEdit : undefined} />
+        <SolarCardWidget title={title} entity_id={entity_id ?? ""} yield_entity_id_today={yield_entity_id_today} yield_entity_id_month={yield_entity_id_month} size="md" onMoreClick={editMode ? onEdit : undefined} />
       </div>
     </div>
   );

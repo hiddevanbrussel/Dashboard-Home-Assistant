@@ -22,6 +22,8 @@ type EditForm = {
   textMode?: "title" | "subtitle" | "text";
   entity_id: string;
   consumption_entity_id?: string;
+  yield_entity_id_today?: string;
+  yield_entity_id_month?: string;
   show_icon?: boolean;
   background_image?: string;
   background_image_dark?: string;
@@ -115,7 +117,7 @@ export function EditPanelModal(props: EditPanelModalProps) {
       };
     }
     const base: Partial<WidgetConfig> = { title: editForm.title };
-    if (editingWidget.type === "solar_card") Object.assign(base, { entity_id: editForm.entity_id, consumption_entity_id: editForm.consumption_entity_id || undefined });
+    if (editingWidget.type === "solar_card") Object.assign(base, { entity_id: editForm.entity_id, yield_entity_id_today: editForm.yield_entity_id_today || undefined, yield_entity_id_month: editForm.yield_entity_id_month || undefined });
     if (editingWidget.type === "energy_monitor_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, background_image: editForm.background_image || undefined, background_image_dark: editForm.background_image_dark || undefined, image_conditions: (editForm.image_conditions ?? []).filter((c) => c.image?.trim()).length > 0 ? (editForm.image_conditions ?? []).filter((c) => c.image?.trim()) : undefined, minimal: editForm.minimal ?? false, scale: editForm.scale ?? 1 });
     if (editingWidget.type === "power_usage_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
     if (editingWidget.type === "device_consumption_card") {
@@ -179,8 +181,9 @@ export function EditPanelModal(props: EditPanelModalProps) {
                 <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.name")}</label>
                 <input type="text" value={editForm.title} onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))} placeholder={t("editPanel.tileNamePlaceholder")} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500" />
               </div>
-              <EntitySelectWithSearch entities={entities} value={editForm.entity_id} onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))} filter={(e) => e.entity_id.startsWith("sensor.")} label={t("editPanel.yieldEntity")} placeholder={t("editPanel.searchEntity")} emptyOption={t("editPanel.none")} />
-              <EntitySelectWithSearch entities={entities} value={editForm.consumption_entity_id ?? ""} onChange={(v) => setEditForm((prev) => ({ ...prev, consumption_entity_id: v || undefined }))} filter={(e) => e.entity_id.startsWith("sensor.")} label={t("editPanel.consumptionOptional")} placeholder={t("editPanel.searchSensor")} emptyOption={t("editPanel.none")} />
+              <EntitySelectWithSearch entities={entities} value={editForm.entity_id} onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))} filter={(e) => e.entity_id.startsWith("sensor.")} label="Entity grafiek (opbrengst per uur)" placeholder={t("editPanel.searchEntity")} emptyOption={t("editPanel.none")} />
+              <EntitySelectWithSearch entities={entities} value={editForm.yield_entity_id_today ?? ""} onChange={(v) => setEditForm((prev) => ({ ...prev, yield_entity_id_today: v || undefined }))} filter={(e) => e.entity_id.startsWith("sensor.")} label="Entity Vandaag" placeholder={t("editPanel.searchSensor")} emptyOption={t("editPanel.none")} />
+              <EntitySelectWithSearch entities={entities} value={editForm.yield_entity_id_month ?? ""} onChange={(v) => setEditForm((prev) => ({ ...prev, yield_entity_id_month: v || undefined }))} filter={(e) => e.entity_id.startsWith("sensor.")} label="Entity Deze maand" placeholder={t("editPanel.searchSensor")} emptyOption={t("editPanel.none")} />
             </>
           ) : editingWidget.type === "energy_monitor_card" ? (
             <>

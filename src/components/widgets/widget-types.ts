@@ -47,7 +47,11 @@ export type LightingBrightnessProps = WidgetBaseProps & {
 export type SolarCardProps = WidgetBaseProps & {
   value?: number;
   unit?: string;
-  /** Optioneel: toont verbruik naast opbrengst (gecombineerde kaart). */
+  /** Entity voor kaart "Vandaag". Val terug op entity_id indien niet gezet. */
+  yield_entity_id_today?: string;
+  /** Entity voor kaart "Deze maand". Val terug op entity_id indien niet gezet. */
+  yield_entity_id_month?: string;
+  /** @deprecated Gebruik yield_entity_id_today / yield_entity_id_month */
   consumption_entity_id?: string;
 };
 

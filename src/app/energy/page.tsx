@@ -103,6 +103,8 @@ function WidgetByType({
   title,
   entity_id,
   consumption_entity_id,
+  yield_entity_id_today,
+  yield_entity_id_month,
   show_icon,
   background_image,
   background_image_dark,
@@ -125,6 +127,8 @@ function WidgetByType({
   title: string;
   entity_id: string;
   consumption_entity_id?: string;
+  yield_entity_id_today?: string;
+  yield_entity_id_month?: string;
   show_icon?: boolean;
   background_image?: string;
   background_image_dark?: string;
@@ -160,7 +164,8 @@ function WidgetByType({
         <SolarCardWidget
           title={title}
           entity_id={entity_id}
-          consumption_entity_id={consumption_entity_id}
+          yield_entity_id_today={yield_entity_id_today}
+          yield_entity_id_month={yield_entity_id_month}
           size={sizeProp}
         />
       );
@@ -263,6 +268,8 @@ export default function EnergyPage() {
     textMode?: "title" | "subtitle" | "text";
     entity_id: string;
     consumption_entity_id?: string;
+    yield_entity_id_today?: string;
+    yield_entity_id_month?: string;
     humidity_entity_id?: string;
     show_icon?: boolean;
     background_image?: string;
@@ -506,6 +513,8 @@ export default function EnergyPage() {
       title: isCategoryCard ? (editingWidget.title ?? "") : (editingWidget.title ?? ""),
       entity_id: editingWidget.entity_id ?? "",
       consumption_entity_id: editingWidget.consumption_entity_id ?? "",
+      yield_entity_id_today: (editingWidget as { yield_entity_id_today?: string }).yield_entity_id_today ?? "",
+      yield_entity_id_month: (editingWidget as { yield_entity_id_month?: string }).yield_entity_id_month ?? "",
       humidity_entity_id: editingWidget.humidity_entity_id ?? "",
       show_icon: isCategoryCard ? ((editingWidget as { show_icon?: boolean }).show_icon ?? false) : (editingWidget.show_icon !== false),
       background_image: editingWidget.background_image ?? "",
@@ -763,6 +772,8 @@ export default function EnergyPage() {
                         title={w.title}
                         entity_id={w.entity_id}
                         consumption_entity_id={w.consumption_entity_id}
+                        yield_entity_id_today={(w as { yield_entity_id_today?: string }).yield_entity_id_today}
+                        yield_entity_id_month={(w as { yield_entity_id_month?: string }).yield_entity_id_month}
                         show_icon={w.show_icon}
                         background_image={w.background_image}
                         background_image_dark={w.background_image_dark}
@@ -776,6 +787,7 @@ export default function EnergyPage() {
                         label={w.label}
                         color={w.color}
                         device_entity_ids={w.device_entity_ids}
+                        device_names={w.device_names}
                         cost_per_kwh={w.cost_per_kwh}
                         textMode={w.textMode}
                         onMoreClick={editMode ? () => setEditingWidgetId(w.id) : undefined}
@@ -805,7 +817,8 @@ export default function EnergyPage() {
             key={w.id}
             title={w.title ?? "Zonnepanelen"}
             entity_id={w.entity_id}
-            consumption_entity_id={w.consumption_entity_id}
+            yield_entity_id_today={(w as { yield_entity_id_today?: string }).yield_entity_id_today}
+            yield_entity_id_month={(w as { yield_entity_id_month?: string }).yield_entity_id_month}
             editMode={editMode}
             storageScope={`${STORAGE_SCOPE}-${w.id}`}
             onEnterEditMode={() => setEditMode(true)}

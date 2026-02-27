@@ -24,33 +24,53 @@ function useEntityValue(entityId: string) {
 export function SolarCardWidget({
   title = "Zonnepanelen",
   entity_id,
+  yield_entity_id_today,
+  yield_entity_id_month,
   consumption_entity_id,
   size = "md",
   className,
   onMoreClick,
 }: SolarCardProps & { className?: string; onMoreClick?: () => void }) {
-  const yieldData = useEntityValue(entity_id ?? "");
+  const entityToday = yield_entity_id_today ?? entity_id ?? "";
+  const entityMonth = yield_entity_id_month ?? entity_id ?? "";
+  const chartEntity = entity_id ?? "";
+  const yieldDataToday = useEntityValue(entityToday);
+  const yieldDataMonth = useEntityValue(entityMonth);
 
   const { data: hourlyData, isLoading: hourlyLoading } = useQuery({
-    queryKey: ["ha-history-hourly", entity_id ?? ""],
-    enabled: !!entity_id,
+    queryKey: ["ha-history-hourly", chartEntity],
+    enabled: !!chartEntity,
     queryFn: async () => {
       const res = await fetch(
-        `/api/ha/history?entity_ids=${encodeURIComponent(entity_id ?? "")}&granularity=hourly`
+        `/api/ha/history?entity_ids=${encodeURIComponent(chartEntity)}&granularity=hourly`
       );
       if (!res.ok) throw new Error("Failed to fetch hourly history");
       const json = (await res.json()) as Record<string, { hour: string; value: number }[]>;
-      return json[entity_id ?? ""] ?? [];
+      return json[chartEntity] ?? [];
+    },
+    staleTime: 60_000,
+  });
+
+  const { data: hourlyTodayData } = useQuery({
+    queryKey: ["ha-history-hourly", entityToday],
+    enabled: !!entityToday && entityToday !== chartEntity,
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/ha/history?entity_ids=${encodeURIComponent(entityToday)}&granularity=hourly`
+      );
+      if (!res.ok) throw new Error("Failed to fetch hourly history");
+      const json = (await res.json()) as Record<string, { hour: string; value: number }[]>;
+      return json[entityToday] ?? [];
     },
     staleTime: 60_000,
   });
 
   const { data: dailyData, isLoading: dailyLoading } = useQuery({
-    queryKey: ["ha-history", entity_id ?? "", "31"],
-    enabled: !!entity_id,
+    queryKey: ["ha-history", entityMonth, "31"],
+    enabled: !!entityMonth,
     queryFn: async () => {
       const res = await fetch(
-        `/api/ha/history?entity_ids=${encodeURIComponent(entity_id ?? "")}&days=31`
+        `/api/ha/history?entity_ids=${encodeURIComponent(entityMonth)}&days=31`
       );
       if (!res.ok) throw new Error("Failed to fetch daily history");
       return res.json() as Promise<Record<string, { date: string; consumption: number }[]>>;
@@ -59,6 +79,7 @@ export function SolarCardWidget({
   });
 
   const rawHourly = hourlyData ?? [];
+  const rawHourlyToday = entityToday !== chartEntity ? (hourlyTodayData ?? []) : rawHourly;
   const chartData =
     rawHourly.length > 0
       ? rawHourly
@@ -67,8 +88,8 @@ export function SolarCardWidget({
           value: 0,
         }));
 
-  const todayYield = rawHourly.reduce((sum, d) => sum + d.value, 0);
-  const rawDaily = dailyData?.[entity_id ?? ""] ?? [];
+  const todayYield = rawHourlyToday.reduce((sum, d) => sum + d.value, 0);
+  const rawDaily = dailyData?.[entityMonth] ?? [];
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -79,13 +100,13 @@ export function SolarCardWidget({
     })
     .reduce((sum, d) => sum + d.consumption, 0);
 
-  const displayToday = todayYield > 0 ? todayYield : yieldData.value;
-  const displayMonth = monthYield > 0 ? monthYield : undefined;
+  const displayToday = todayYield > 0 ? todayYield : yieldDataToday.value;
+  const displayMonth = monthYield > 0 ? monthYield : yieldDataMonth.value;
 
   const cardBase =
     "rounded-2xl bg-white/10 dark:bg-black/50 backdrop-blur-2xl text-gray-900 dark:text-white shadow-xl border border-white/20 dark:border-white/10 overflow-hidden";
 
-  const hasYieldEntity = !!entity_id;
+  const hasYieldEntity = !!(entity_id ?? entityToday ?? entityMonth);
 
   return (
     <div className={cn("flex w-full flex-col gap-3", className)}>
@@ -138,29 +159,29 @@ export function SolarCardWidget({
         )}
       </div>
 
-      {/* Kaart 2 & 3: Opbrengst vandaag en Opbrengst van de hele maand */}
+      {/* Kaart 2 & 3: Vandaag en Deze maand (zelfde hoogte als stroomverbruik-kaarten) */}
       {hasYieldEntity && (
         <div className="grid grid-cols-2 gap-3">
-          <div className={cn("relative p-4", cardBase)}>
+          <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
             <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20">
               <PanelTop className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
             </div>
             <div className="min-w-0 pr-5">
               <p className="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-400">
-                {formatValue(displayToday != null ? displayToday : undefined, yieldData.unit)}
+                {formatValue(displayToday != null ? displayToday : undefined, yieldDataToday.unit)}
               </p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Opbrengst vandaag</p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Vandaag</p>
             </div>
           </div>
-          <div className={cn("relative p-4", cardBase)}>
+          <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
             <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20">
               <Calendar className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
             </div>
             <div className="min-w-0 pr-5">
               <p className="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-400">
-                {dailyLoading ? "…" : formatValue(displayMonth, yieldData.unit)}
+                {dailyLoading ? "…" : formatValue(displayMonth, yieldDataMonth.unit)}
               </p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Opbrengst deze maand</p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Deze maand</p>
             </div>
           </div>
         </div>
