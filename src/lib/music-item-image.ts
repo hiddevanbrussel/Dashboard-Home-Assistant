@@ -62,6 +62,14 @@ export function getItemImageUrl(item: MASearchItemImage | null | undefined): str
     url = asStr(first) ?? (typeof first === "object" ? fromObj(first) : null);
     if (url) return url;
   }
+  // provider_mappings: Music Assistant stores images per provider (playlists, albums, etc.)
+  const mappings = (item as { provider_mappings?: { url?: string; image?: string | { url?: string; value?: string } }[] }).provider_mappings;
+  if (Array.isArray(mappings) && mappings.length > 0) {
+    for (const m of mappings) {
+      url = asStr(m?.url) ?? asStr(m?.image) ?? (typeof m?.image === "object" ? fromObj(m.image) : null);
+      if (url) return url;
+    }
+  }
   return null;
 }
 

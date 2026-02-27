@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker, ChevronRight, ListMusic, Home, ListPlus } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker, ChevronRight, ChevronDown, ListMusic, Home, ListPlus } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useTranslation } from "@/hooks/use-translation";
@@ -180,6 +180,15 @@ function getItemImageUrl(item: MASearchItem): string | null {
     const first = topLevelImages[0];
     url = asStr(first) ?? (typeof first === "object" ? fromObj(first) : null);
     if (url) return url;
+  }
+
+  // provider_mappings: MA stores images per provider (playlists, albums, etc.)
+  const mappings = (item as { provider_mappings?: { url?: string; image?: string | { url?: string; value?: string } }[] }).provider_mappings;
+  if (Array.isArray(mappings) && mappings.length > 0) {
+    for (const m of mappings) {
+      url = asStr(m?.url) ?? asStr(m?.image) ?? (typeof m?.image === "object" ? fromObj(m.image) : null);
+      if (url) return url;
+    }
   }
 
   return null;
@@ -400,6 +409,7 @@ export default function MusicPage() {
   const [radioStationsLoading, setRadioStationsLoading] = useState(false);
   const [libraryPlaylists, setLibraryPlaylists] = useState<MASearchItem[]>([]);
   const [libraryPlaylistsLoading, setLibraryPlaylistsLoading] = useState(false);
+  const [libraryPlaylistsProviderFilter, setLibraryPlaylistsProviderFilter] = useState<string>("");
   const [libraryArtists, setLibraryArtists] = useState<MASearchItem[]>([]);
   const [libraryArtistsLoading, setLibraryArtistsLoading] = useState(false);
   const [libraryAlbums, setLibraryAlbums] = useState<MASearchItem[]>([]);
@@ -411,6 +421,7 @@ export default function MusicPage() {
   const [selectedMenu, setSelectedMenu] = useState<"artists" | "albums" | "playlists" | null>(null);
   const [addToPlaylistTrack, setAddToPlaylistTrack] = useState<MASearchItem | null>(null);
   const [addToPlaylistPlaylists, setAddToPlaylistPlaylists] = useState<MASearchItem[]>([]);
+  const [addToPlaylistProviderFilter, setAddToPlaylistProviderFilter] = useState<string>("");
   const [addToPlaylistLoading, setAddToPlaylistLoading] = useState(false);
   const [addToPlaylistPending, setAddToPlaylistPending] = useState<string | null>(null);
   const [addToPlaylistError, setAddToPlaylistError] = useState<string | null>(null);
@@ -458,8 +469,65 @@ export default function MusicPage() {
 
   const getLongPressHandlers = useLongPressAddToPlaylist((item) => {
     const uri = getPlayableUri(item, "track");
-    if (uri) setAddToPlaylistTrack(item);
+    if (uri) {
+      setAddToPlaylistTrack(item);
+      setAddToPlaylistProviderFilter("");
+    }
   });
+
+  const addToPlaylistProviderOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const options: { value: string; label: string }[] = [{ value: "", label: t("music.providerFilterAll") }];
+    for (const pl of addToPlaylistPlaylists) {
+      const prov =
+        (pl as { provider_instance_id?: string }).provider_instance_id ??
+        (pl as { provider_instance?: string }).provider_instance ??
+        "library";
+      if (prov && !seen.has(prov)) {
+        seen.add(prov);
+        options.push({ value: prov, label: getProviderLabel({ ...pl, provider_instance_id: prov }) });
+      }
+    }
+    return options;
+  }, [addToPlaylistPlaylists, t]);
+
+  const addToPlaylistFiltered = useMemo(() => {
+    if (!addToPlaylistProviderFilter) return addToPlaylistPlaylists;
+    return addToPlaylistPlaylists.filter((pl) => {
+      const prov =
+        (pl as { provider_instance_id?: string }).provider_instance_id ??
+        (pl as { provider_instance?: string }).provider_instance ??
+        "library";
+      return prov === addToPlaylistProviderFilter;
+    });
+  }, [addToPlaylistPlaylists, addToPlaylistProviderFilter]);
+
+  const libraryPlaylistsProviderOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const options: { value: string; label: string }[] = [{ value: "", label: t("music.providerFilterAll") }];
+    for (const pl of libraryPlaylists) {
+      const prov =
+        (pl as { provider_instance_id?: string }).provider_instance_id ??
+        (pl as { provider_instance?: string }).provider_instance ??
+        "library";
+      if (prov && !seen.has(prov)) {
+        seen.add(prov);
+        options.push({ value: prov, label: getProviderLabel({ ...pl, provider_instance_id: prov }) });
+      }
+    }
+    return options;
+  }, [libraryPlaylists, t]);
+
+  const libraryPlaylistsFiltered = useMemo(() => {
+    if (!libraryPlaylistsProviderFilter) return libraryPlaylists;
+    return libraryPlaylists.filter((pl) => {
+      const prov =
+        (pl as { provider_instance_id?: string }).provider_instance_id ??
+        (pl as { provider_instance?: string }).provider_instance ??
+        "library";
+      return prov === libraryPlaylistsProviderFilter;
+    });
+  }, [libraryPlaylists, libraryPlaylistsProviderFilter]);
 
   async function handleAddTrackToPlaylist(playlist: MASearchItem) {
     const trackUri = addToPlaylistTrack ? getPlayableUri(addToPlaylistTrack, "track") : null;
@@ -467,19 +535,29 @@ export default function MusicPage() {
     const rawUri = playlist.uri ?? (playlist as { item_uri?: string }).item_uri;
     const itemId = (playlist as { item_id?: string | number }).item_id ?? (playlist as { id?: string | number }).id;
     const provider = (playlist as { provider_instance_id?: string }).provider_instance_id ?? (playlist as { provider_instance?: string }).provider_instance ?? "library";
-    const dbPlaylistId =
+    let dbPlaylistId =
       (playlist as { db_id?: string }).db_id ??
       (typeof rawUri === "string" && rawUri ? rawUri : null) ??
       (itemId != null ? `${String(provider).replace(/\/+$/, "")}://playlist/${itemId}` : null) ??
       "";
+    // Library playlists in MA use database://playlist/X; add_playlist_tracks expects db_playlist_id in that format
+    if (dbPlaylistId && provider === "library" && !dbPlaylistId.startsWith("database://")) {
+      const numId = typeof itemId === "number" || typeof itemId === "string" ? String(itemId) : dbPlaylistId.replace(/^.*\/+/, "");
+      if (numId) dbPlaylistId = `database://playlist/${numId}`;
+    }
     if (!dbPlaylistId) return;
     setAddToPlaylistPending(dbPlaylistId);
     setAddToPlaylistError(null);
     try {
-      await callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/playlists/add_playlist_tracks", {
+      const result = await callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/playlists/add_playlist_tracks", {
         db_playlist_id: dbPlaylistId,
-        uris: [trackUri],
+        uris: [normalizePlayMediaUri(trackUri)],
       });
+      const err = (result as { error?: string })?.error;
+      if (typeof err === "string" && err) {
+        setAddToPlaylistError(err);
+        return;
+      }
       setAddToPlaylistTrack(null);
     } catch (e) {
       setAddToPlaylistError(e instanceof Error ? e.message : "Kon nummer niet toevoegen.");
@@ -1503,16 +1581,31 @@ export default function MusicPage() {
             {addToPlaylistError && (
               <p className="px-4 py-2 text-sm text-red-600 dark:text-red-400" role="alert">{addToPlaylistError}</p>
             )}
+            {addToPlaylistProviderOptions.length > 0 && (
+              <div className="px-4 py-2">
+                <label htmlFor="add-to-playlist-provider" className="sr-only">{t("music.providerFilter")}</label>
+                <select
+                  id="add-to-playlist-provider"
+                  value={addToPlaylistProviderFilter}
+                  onChange={(e) => setAddToPlaylistProviderFilter(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:border-transparent"
+                >
+                  {addToPlaylistProviderOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="max-h-64 overflow-y-auto py-2">
               {addToPlaylistLoading ? (
                 <div className="flex justify-center py-8">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                 </div>
-              ) : addToPlaylistPlaylists.length === 0 ? (
+              ) : addToPlaylistFiltered.length === 0 ? (
                 <p className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{t("music.noPlaylists")}</p>
               ) : (
                 <ul className="space-y-0">
-                  {addToPlaylistPlaylists.map((pl) => {
+                  {addToPlaylistFiltered.map((pl) => {
                     const plId = (pl as { db_id?: string }).db_id ?? (pl as { item_id?: string }).item_id ?? pl.uri ?? "";
                     const isPending = addToPlaylistPending === plId;
                     return (
@@ -2153,15 +2246,30 @@ export default function MusicPage() {
               </button>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">{t("music.menuPlaylists")}</h2>
             </div>
+            {libraryPlaylistsProviderOptions.length > 1 && (
+              <div className="px-2">
+                <label htmlFor="playlists-provider-filter" className="sr-only">{t("music.providerFilter")}</label>
+                <select
+                  id="playlists-provider-filter"
+                  value={libraryPlaylistsProviderFilter}
+                  onChange={(e) => setLibraryPlaylistsProviderFilter(e.target.value)}
+                  className="w-full max-w-xs px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:border-transparent"
+                >
+                  {libraryPlaylistsProviderOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {libraryPlaylistsLoading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
               </div>
-            ) : libraryPlaylists.length === 0 ? (
+            ) : libraryPlaylistsFiltered.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400">{t("music.noPlaylists")}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {libraryPlaylists.map((item, index) => {
+                {libraryPlaylistsFiltered.map((item, index) => {
                   const playlistUri = getPlayableUri(item, "playlist");
                   const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
                   const canPlay = !!playlistUri && !!selectedQueueId;
