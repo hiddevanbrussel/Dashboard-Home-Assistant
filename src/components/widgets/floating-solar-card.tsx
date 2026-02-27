@@ -7,8 +7,7 @@ import { SolarCardWidget } from "./solar-card-widget";
 
 const STORAGE_KEY = "dashboard.floatingSolarCardPosition";
 const DEFAULT_OFFSET = 24;
-const CARD_WIDTH = 400;
-const CARD_HEIGHT = 380;
+const CARD_WIDTH = 320;
 
 type Position = { left: number; bottom: number };
 
@@ -24,7 +23,7 @@ function loadPosition(scope: string | undefined): Position | null {
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
     if (typeof p?.left === "number" && typeof p?.top === "number") {
-      return { left: p.left, bottom: window.innerHeight - p.top - CARD_HEIGHT };
+      return { left: p.left, bottom: window.innerHeight - p.top - 200 };
     }
   } catch {
     // ignore
@@ -55,8 +54,6 @@ export function FloatingSolarCard({
   entity_id,
   yield_entity_id_today,
   yield_entity_id_month,
-  width,
-  height,
   editMode = false,
   storageScope,
   onRemove,
@@ -67,16 +64,12 @@ export function FloatingSolarCard({
   entity_id?: string;
   yield_entity_id_today?: string;
   yield_entity_id_month?: string;
-  width?: number;
-  height?: number;
   editMode?: boolean;
   storageScope?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
-  const cardW = width ?? CARD_WIDTH;
-  const cardH = height ?? CARD_HEIGHT;
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
@@ -114,7 +107,7 @@ export function FloatingSolarCard({
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardW : 400;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
     const bounds = { maxLeft, maxBottom };
     const saved = loadPosition(storageScope);
@@ -149,7 +142,7 @@ export function FloatingSolarCard({
       if (!isDragging) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardW : 400;
+      const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
       const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
       const raw = {
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
@@ -157,7 +150,7 @@ export function FloatingSolarCard({
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging, cardW]
+    [isDragging]
   );
 
   const handlePointerUp = useCallback(
@@ -166,7 +159,7 @@ export function FloatingSolarCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardW : 400;
+        const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
         const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
@@ -178,7 +171,7 @@ export function FloatingSolarCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, storageScope, cardW]
+    [isDragging, storageScope]
   );
 
   return (
@@ -191,8 +184,6 @@ export function FloatingSolarCard({
       style={{
         left: position.left,
         bottom: position.bottom,
-        width: cardW,
-        height: height != null ? cardH : "fit-content",
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -213,7 +204,7 @@ export function FloatingSolarCard({
       })}
     >
       <div>
-        <SolarCardWidget title={title} entity_id={entity_id ?? ""} yield_entity_id_today={yield_entity_id_today} yield_entity_id_month={yield_entity_id_month} size="md" onMoreClick={editMode ? onEdit : undefined} className="relative h-full" />
+        <SolarCardWidget title={title} entity_id={entity_id ?? ""} yield_entity_id_today={yield_entity_id_today} yield_entity_id_month={yield_entity_id_month} size="md" onMoreClick={editMode ? onEdit : undefined} />
       </div>
     </div>
   );

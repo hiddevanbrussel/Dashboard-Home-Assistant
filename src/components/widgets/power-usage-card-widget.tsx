@@ -79,94 +79,90 @@ export function PowerUsageCardWidget({
   const cardBase =
     "rounded-2xl bg-white/10 dark:bg-black/50 backdrop-blur-2xl text-gray-900 dark:text-white shadow-xl border border-white/20 dark:border-white/10 overflow-hidden";
 
-  const headerRow = (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate min-w-0">{title}</p>
-      {onMoreClick && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 shrink-0"
-          aria-label="Opties"
-        >
-          <MoreVertical className="h-5 w-5" />
-        </button>
-      )}
-    </div>
-  );
-
   return (
     <div className={cn("flex w-full flex-col gap-3", className)}>
-      {/* Kaart: Stroomverbruik – titel, compacte kaarten, grafiek onderaan */}
+      {/* Kaart 1: Stroomverbruik (bar chart) */}
       <div className={cn("flex flex-col", cardBase)}>
-        {headerRow}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
+          <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
+          {onMoreClick && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+              aria-label="Opties"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </button>
+          )}
+        </div>
         {allEntityIds.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 px-4">
             Configureer een totaal-verbruik entity in de bewerkmodus.
           </p>
         ) : (
-          <>
-            {/* Compacte kaarten bovenaan */}
-            <div className="grid grid-cols-2 gap-3 p-4 pb-2">
-              <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center rounded-xl bg-white/5 dark:bg-black/30 border border-white/10 dark:border-white/5")}>
-                <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20">
-                  <Zap className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="min-w-0 pr-5">
-                  <p className="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-400">
-                    {formatKwh(selectedDayConsumption)}
-                  </p>
-                  <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Verbruik vandaag</p>
-                </div>
-              </div>
-              <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center rounded-xl bg-white/5 dark:bg-black/30 border border-white/10 dark:border-white/5")}>
-                <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
-                  <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="min-w-0 pr-5">
-                  <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-                    {expense != null ? `€${expense.toFixed(2)}` : "—"}
-                  </p>
-                  <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Kosten vandaag</p>
-                </div>
-              </div>
-            </div>
-            {/* Grafiek onderaan */}
-            <div className="px-4 pb-4 pt-1">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Dagelijks verbruik</p>
-              {isLoading ? (
-                <div className="h-24 flex items-center justify-center text-gray-400">Laden…</div>
-              ) : (
-                <div className="flex items-end justify-between gap-1 h-24">
-                  {mainData.map((d, i) => {
-                    const date = new Date(d.date);
-                    const dayName = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"][date.getDay()];
-                    const isLast = i === mainData.length - 1;
-                    const frac = maxVal > 0 ? d.consumption / maxVal : 0;
-                    return (
-                      <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                        <div
-                          className={cn(
-                            "w-full rounded-t transition-all min-h-[4px]",
-                            isLast ? "bg-amber-500 dark:bg-amber-500" : "bg-gray-200 dark:bg-gray-600"
-                          )}
-                          style={{ height: `${Math.max(4, frac * 76)}px` }}
-                        />
-                        {isLast && (
-                          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                            {formatKwh(d.consumption)}
-                          </span>
+          <div className="p-4">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Dagelijks verbruik</p>
+            {isLoading ? (
+              <div className="h-24 flex items-center justify-center text-gray-400">Laden…</div>
+            ) : (
+              <div className="flex items-end justify-between gap-1 h-24">
+                {mainData.map((d, i) => {
+                  const date = new Date(d.date);
+                  const dayName = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"][date.getDay()];
+                  const isLast = i === mainData.length - 1;
+                  const frac = maxVal > 0 ? d.consumption / maxVal : 0;
+                  return (
+                    <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                      <div
+                        className={cn(
+                          "w-full rounded-t transition-all min-h-[4px]",
+                          isLast ? "bg-amber-500 dark:bg-amber-500" : "bg-gray-200 dark:bg-gray-600"
                         )}
-                        <span className="text-[10px] text-gray-500 dark:text-gray-400">{dayName}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </>
+                        style={{ height: `${Math.max(4, frac * 76)}px` }}
+                      />
+                      {isLast && (
+                        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                          {formatKwh(d.consumption)}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400">{dayName}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
       </div>
+
+      {/* Kaart 2 & 3: Verbruik vandaag en Kosten vandaag (zelfde hoogte als zonnepanelen-kaarten) */}
+      {allEntityIds.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
+            <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20">
+              <Zap className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="min-w-0 pr-5">
+              <p className="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-400">
+                {formatKwh(selectedDayConsumption)}
+              </p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Verbruik vandaag</p>
+            </div>
+          </div>
+          <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
+            <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
+              <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="min-w-0 pr-5">
+              <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                {expense != null ? `€${expense.toFixed(2)}` : "—"}
+              </p>
+              <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Kosten vandaag</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

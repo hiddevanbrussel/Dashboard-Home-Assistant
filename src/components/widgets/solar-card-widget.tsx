@@ -110,15 +110,15 @@ export function SolarCardWidget({
 
   return (
     <div className={cn("flex w-full flex-col gap-3", className)}>
-      {/* Kaart 1: Zonnepanelen (grafiek bovenaan, dicht bij titel) */}
+      {/* Kaart 1: Zonnepanelen (zelfde opmaak als Stroomverbruik: titel, border, grafiek) */}
       <div className={cn("flex flex-col", cardBase)}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate min-w-0">{title}</p>
+          <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
           {onMoreClick && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 shrink-0"
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
               aria-label="Opties"
             >
               <MoreVertical className="h-5 w-5" />
@@ -130,7 +130,7 @@ export function SolarCardWidget({
             Configureer een opbrengst-entity in de bewerkmodus.
           </p>
         ) : (
-          <div className="px-4 pt-2 pb-4">
+          <div className="p-4">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Opbrengst per uur</p>
             {hourlyLoading ? (
               <div className="h-24 flex items-center justify-center text-gray-400">Laden…</div>
@@ -159,7 +159,7 @@ export function SolarCardWidget({
         )}
       </div>
 
-      {/* Kaart 2 & 3: Vandaag en Deze maand (zelfde hoogte als stroomverbruik-kaarten) */}
+      {/* Kaart 2 & 3: Vandaag en Deze maand (zelfde opmaak als stroomverbruik: amber + emerald) */}
       {hasYieldEntity && (
         <div className="grid grid-cols-2 gap-3">
           <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
