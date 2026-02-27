@@ -117,10 +117,11 @@ export function EditPanelModal(props: EditPanelModalProps) {
     const base: Partial<WidgetConfig> = { title: editForm.title };
     if (editingWidget.type === "solar_card") Object.assign(base, { entity_id: editForm.entity_id, consumption_entity_id: editForm.consumption_entity_id || undefined });
     if (editingWidget.type === "energy_monitor_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, background_image: editForm.background_image || undefined, background_image_dark: editForm.background_image_dark || undefined, image_conditions: (editForm.image_conditions ?? []).filter((c) => c.image?.trim()).length > 0 ? (editForm.image_conditions ?? []).filter((c) => c.image?.trim()) : undefined, minimal: editForm.minimal ?? false, scale: editForm.scale ?? 1 });
-    if (editingWidget.type === "power_usage_card") {
+    if (editingWidget.type === "power_usage_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
+    if (editingWidget.type === "device_consumption_card") {
       const dn = editForm.device_names ?? {};
       const hasCustomNames = Object.values(dn).some((v) => v?.trim());
-      Object.assign(base, { entity_id: editForm.entity_id || undefined, device_entity_ids: (editForm.device_entity_ids ?? []).length > 0 ? editForm.device_entity_ids : undefined, device_names: hasCustomNames ? dn : undefined, cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
+      Object.assign(base, { device_entity_ids: (editForm.device_entity_ids ?? []).length > 0 ? editForm.device_entity_ids : undefined, device_names: hasCustomNames ? dn : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
     }
     if (editingWidget.type === "stat_pill_card") Object.assign(base, { entity_id: editForm.entity_id, label: editForm.label || undefined, icon: editForm.icon || undefined, color: editForm.color || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "sensor_card") Object.assign(base, { entity_id: editForm.entity_id, icon: editForm.icon || undefined, show_icon: editForm.show_icon !== false, size: editForm.size || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
@@ -134,7 +135,7 @@ export function EditPanelModal(props: EditPanelModalProps) {
       <div className="fixed top-4 right-4 bottom-4 z-50 w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-2xl">
         <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {editingWidget.type === "text_card" ? t("editPanel.editText") : editingWidget.type === "power_usage_card" ? t("editPanel.editPowerUsage") : t("editPanel.editTile")}
+            {editingWidget.type === "text_card" ? t("editPanel.editText") : editingWidget.type === "power_usage_card" ? t("editPanel.editPowerUsage") : editingWidget.type === "device_consumption_card" ? "Verbruik per apparaat bewerken" : t("editPanel.editTile")}
           </h3>
           <button type="button" onClick={() => setEditingWidgetId(null)} className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400" aria-label={t("editPanel.close")}><X className="h-5 w-5" /></button>
         </div>
@@ -261,7 +262,29 @@ export function EditPanelModal(props: EditPanelModalProps) {
               </div>
               <EntitySelectWithSearch entities={entities} value={editForm.entity_id} onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))} filter={(e) => e.entity_id.startsWith("sensor.")} label={t("editPanel.totalUsage")} placeholder={t("editPanel.searchEntity")} emptyOption={t("editPanel.none")} />
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Apparaten (per-apparaat verbruik)</label>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Kosten per kWh (€)</label>
+                <input type="number" min={0} step={0.001} value={editForm.cost_per_kwh ?? ""} onChange={(e) => { const v = e.target.value === "" ? undefined : parseFloat(e.target.value); setEditForm((prev) => ({ ...prev, cost_per_kwh: v != null && !Number.isNaN(v) ? v : undefined })); }} placeholder="0.25" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500" />
+                <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Optioneel. Voor berekening kosten vandaag.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Breedte (px)</label>
+                  <input type="number" min={280} max={600} step={20} value={editForm.width ?? 400} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Hoogte (px)</label>
+                  <input type="number" min={200} max={600} step={20} value={editForm.height ?? 380} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" />
+                </div>
+              </div>
+            </>
+          ) : editingWidget.type === "device_consumption_card" ? (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.name")}</label>
+                <input type="text" value={editForm.title} onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Verbruik per apparaat" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Apparaten</label>
                 <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">Zoek op naam of entity_id.</p>
                 <input type="text" value={powerUsageDeviceSearch} onChange={(e) => setPowerUsageDeviceSearch(e.target.value)} placeholder="Zoek op naam of entity_id…" className="mb-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:text-gray-200 dark:placeholder-gray-500" />
                 <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 p-2 space-y-1">
@@ -312,19 +335,14 @@ export function EditPanelModal(props: EditPanelModalProps) {
                   </div>
                 </div>
               )}
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Kosten per kWh (€)</label>
-                <input type="number" min={0} step={0.001} value={editForm.cost_per_kwh ?? ""} onChange={(e) => { const v = e.target.value === "" ? undefined : parseFloat(e.target.value); setEditForm((prev) => ({ ...prev, cost_per_kwh: v != null && !Number.isNaN(v) ? v : undefined })); }} placeholder="0.25" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500" />
-                <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Optioneel. Voor berekening kosten vandaag.</p>
-              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Breedte (px)</label>
-                  <input type="number" min={280} max={600} step={20} value={editForm.width ?? 400} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" />
+                  <input type="number" min={200} max={500} step={20} value={editForm.width ?? 320} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Hoogte (px)</label>
-                  <input type="number" min={200} max={600} step={20} value={editForm.height ?? 380} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" />
+                  <input type="number" min={200} max={500} step={20} value={editForm.height ?? 320} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" />
                 </div>
               </div>
             </>

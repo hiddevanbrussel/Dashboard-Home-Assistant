@@ -183,14 +183,22 @@ export type NutsCardProps = WidgetBaseProps & {
   height?: number;
 };
 
-/** Power usage card: dagelijks verbruik, bar chart, per-apparaat breakdown. */
-export type PowerUsageCardProps = WidgetBaseProps & {
-  /** Hoofdentity voor totaal verbruik (kWh, cumulative). */
-  entity_id: string;
+/** Device consumption card: verbruik per apparaat (aparte kaart). */
+export type DeviceConsumptionCardProps = WidgetBaseProps & {
   /** Entity IDs voor per-apparaat verbruik. */
   device_entity_ids?: string[];
   /** Aangepaste weergavenamen per entity_id (entity_id -> naam). */
   device_names?: Record<string, string>;
+  /** Breedte kaart in px (standaard 320). */
+  width?: number;
+  /** Hoogte kaart in px (standaard 320). */
+  height?: number;
+};
+
+/** Power usage card: dagelijks verbruik, bar chart, verbruik vandaag, kosten. */
+export type PowerUsageCardProps = WidgetBaseProps & {
+  /** Hoofdentity voor totaal verbruik (kWh, cumulative). */
+  entity_id: string;
   /** Kosten per kWh voor expense weergave. */
   cost_per_kwh?: number;
   /** Breedte kaart in px (standaard 400). */

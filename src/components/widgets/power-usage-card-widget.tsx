@@ -12,38 +12,18 @@ function formatKwh(val: number): string {
 export function PowerUsageCardWidget({
   title = "Stroomverbruik",
   entity_id,
-  device_entity_ids = [],
-  device_names,
   cost_per_kwh,
   className,
   onMoreClick,
 }: {
   title?: string;
   entity_id?: string;
-  device_entity_ids?: string[];
-  device_names?: Record<string, string>;
   cost_per_kwh?: number;
   className?: string;
   onMoreClick?: () => void;
 }) {
-  const allEntityIds = [entity_id, ...(device_entity_ids ?? [])].filter(Boolean);
+  const allEntityIds = [entity_id].filter(Boolean);
 
-  const { data: entitiesData } = useQuery({
-    queryKey: ["ha-state"],
-    queryFn: async () => {
-      const res = await fetch("/api/ha/state");
-      if (!res.ok) return [];
-      const arr = await res.json();
-      return Array.isArray(arr) ? arr : [];
-    },
-    staleTime: 30_000,
-  });
-
-  const getEntityName = (eid: string) => {
-    if (device_names?.[eid]?.trim()) return device_names[eid].trim();
-    const e = entitiesData?.find((x: { entity_id: string }) => x.entity_id === eid);
-    return (e?.attributes?.friendly_name as string) ?? eid;
-  };
   const { data: historyData, isLoading } = useQuery({
     queryKey: ["ha-history", allEntityIds.join(",")],
     enabled: allEntityIds.length > 0,
@@ -74,20 +54,6 @@ export function PowerUsageCardWidget({
   const selectedDay = mainData[mainData.length - 1];
   const selectedDayConsumption = selectedDay?.consumption ?? 0;
   const expense = cost_per_kwh != null ? selectedDayConsumption * cost_per_kwh : null;
-
-  const deviceConsumption: { entity_id: string; name: string; consumption: number }[] = [];
-  for (const eid of device_entity_ids) {
-    const devData = historyData?.[eid] ?? [];
-    const last = devData[devData.length - 1];
-    if (last) {
-      deviceConsumption.push({
-        entity_id: eid,
-        name: getEntityName(eid),
-        consumption: last.consumption,
-      });
-    }
-  }
-  deviceConsumption.sort((a, b) => b.consumption - a.consumption);
 
   return (
     <div
@@ -173,41 +139,12 @@ export function PowerUsageCardWidget({
             </div>
             <div className="min-w-0">
               <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-                {expense != null ? `€${expense.toFixed(3)}` : "—"}
+                {expense != null ? `€${expense.toFixed(2)}` : "—"}
               </p>
               <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Kosten vandaag</p>
             </div>
           </div>
         </div>
-
-        {/* Device usage */}
-        {(device_entity_ids?.length ?? 0) > 0 && (
-          <div>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Verbruik per apparaat</p>
-            <div className="space-y-2 max-h-32 overflow-auto">
-              {deviceConsumption.length === 0 ? (
-                <p className="text-xs text-gray-500 dark:text-gray-400">Geen data beschikbaar</p>
-              ) : (
-                deviceConsumption.map(({ entity_id: eid, name, consumption }) => (
-                  <div
-                    key={eid}
-                    className="flex items-center justify-between gap-2 rounded-lg bg-gray-100 dark:bg-white/5 px-3 py-2"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="h-8 w-8 shrink-0 rounded-lg bg-gray-200 dark:bg-white/10 flex items-center justify-center">
-                        <Zap className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                      </div>
-                      <span className="text-sm font-medium truncate text-gray-900 dark:text-white">{name}</span>
-                    </div>
-                    <span className="text-sm font-semibold tabular-nums text-amber-600 dark:text-amber-400 shrink-0">
-                      {formatKwh(consumption)}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
         </>
         )}
       </div>

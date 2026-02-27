@@ -14,6 +14,8 @@ export { FloatingSolarCard } from "./floating-solar-card";
 export { EnergyMonitorCardWidget } from "./energy-monitor-card-widget";
 export { PowerUsageCardWidget } from "./power-usage-card-widget";
 export { FloatingPowerUsageCard } from "./floating-power-usage-card";
+export { DeviceConsumptionCardWidget } from "./device-consumption-card-widget";
+export { FloatingDeviceConsumptionCard } from "./floating-device-consumption-card";
 export { FloatingEnergyMonitorCard } from "./floating-energy-monitor-card";
 export { WeatherCardWidget } from "./weather-card-widget";
 export { FloatingWeatherCard } from "./floating-weather-card";

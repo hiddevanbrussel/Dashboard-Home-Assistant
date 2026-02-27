@@ -8,11 +8,12 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Check, CircleDot, Fuel, Gauge, Image as ImageIcon, Pencil, Plus, Sun, Type, X, Zap } from "lucide-react";
+import { Check, CircleDot, Fuel, Gauge, Image as ImageIcon, Pencil, Plug, Plus, Sun, Type, X, Zap } from "lucide-react";
 import {
   TextCardWidget,
   SolarCardWidget,
   PowerUsageCardWidget,
+  DeviceConsumptionCardWidget,
   EnergyMonitorCardWidget,
   StatPillCardWidget,
   SensorCardWidget,
@@ -20,6 +21,7 @@ import {
   FloatingTextCard,
   FloatingSolarCard,
   FloatingPowerUsageCard,
+  FloatingDeviceConsumptionCard,
   FloatingEnergyMonitorCard,
   FloatingStatPillCard,
   FloatingSensorCard,
@@ -37,12 +39,13 @@ import { EditPanelModal } from "./edit-panel";
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
 
-const ADDABLE_WIDGET_TYPES = ["text_card", "solar_card", "power_usage_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "nuts_card"] as const;
+const ADDABLE_WIDGET_TYPES = ["text_card", "solar_card", "power_usage_card", "device_consumption_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "nuts_card"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "text_card", label: "Tekst", Icon: Type },
   { type: "solar_card", label: "Zonnepanelen", Icon: Sun },
   { type: "power_usage_card", label: "Stroomverbruik", Icon: Zap },
+  { type: "device_consumption_card", label: "Verbruik per apparaat", Icon: Zap },
   { type: "energy_monitor_card", label: "Afbeeldingskaart", Icon: ImageIcon },
   { type: "stat_pill_card", label: "Stat pill", Icon: CircleDot },
   { type: "sensor_card", label: "Sensor", Icon: Gauge },
@@ -54,13 +57,14 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   solar_card: "sensor",
   energy_monitor_card: "sensor",
   power_usage_card: "sensor",
+  device_consumption_card: "sensor",
   stat_pill_card: "sensor",
   sensor_card: "sensor",
   nuts_card: "sensor",
 };
 
 const FLOATING_WIDGET_TYPES = new Set([
-  "text_card", "solar_card", "power_usage_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "nuts_card",
+  "text_card", "solar_card", "power_usage_card", "device_consumption_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "nuts_card",
 ]);
 
 type EnergyDashboardData = {
@@ -112,6 +116,7 @@ function WidgetByType({
   label,
   color,
   device_entity_ids,
+  device_names,
   cost_per_kwh,
   textMode,
   onMoreClick,
@@ -133,6 +138,7 @@ function WidgetByType({
   label?: string;
   color?: string;
   device_entity_ids?: string[];
+  device_names?: Record<string, string>;
   cost_per_kwh?: number;
   textMode?: "title" | "subtitle" | "text";
   onMoreClick?: () => void;
@@ -175,8 +181,16 @@ function WidgetByType({
         <PowerUsageCardWidget
           title={title}
           entity_id={entity_id}
-          device_entity_ids={device_entity_ids}
           cost_per_kwh={cost_per_kwh}
+          onMoreClick={onMoreClick}
+        />
+      );
+    case "device_consumption_card":
+      return (
+        <DeviceConsumptionCardWidget
+          title={title}
+          device_entity_ids={device_entity_ids}
+          device_names={device_names}
           onMoreClick={onMoreClick}
         />
       );
@@ -407,9 +421,10 @@ export default function EnergyPage() {
     const newWidget: WidgetConfig = {
       id: newId,
       type,
-      title: titleOverride ?? (type === "text_card" ? t("editPanel.newText") : type.replace(/_/g, " ")),
+      title: titleOverride ?? (type === "text_card" ? t("editPanel.newText") : type === "device_consumption_card" ? "Verbruik per apparaat" : type.replace(/_/g, " ")),
       entity_id: entityId,
       ...(type === "text_card" && { textMode: "title" as const, show_icon: false, icon: "Type" }),
+      ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
     const isTextCard = type === "text_card";
@@ -514,7 +529,7 @@ export default function EnergyPage() {
       textMode: isCategoryCard ? deriveTextMode() : undefined,
     });
     setSensorIconSearch(editingWidget.type === "sensor_card" ? (editingWidget.icon ?? "") : "");
-    if (editingWidget.type === "power_usage_card") setPowerUsageDeviceSearch("");
+    if (editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") setPowerUsageDeviceSearch("");
     if (editingWidget.type === "energy_monitor_card") setEditTab("achtergrond");
     else setEditTab("algemeen");
   }, [editingWidget]);
@@ -804,8 +819,6 @@ export default function EnergyPage() {
             key={w.id}
             title={w.title ?? "Stroomverbruik"}
             entity_id={w.entity_id}
-            device_entity_ids={w.device_entity_ids}
-            device_names={w.device_names}
             cost_per_kwh={w.cost_per_kwh}
             width={w.width}
             height={w.height}
@@ -943,6 +956,7 @@ export default function EnergyPage() {
                           if (type === "text_card") { handleAddTile("text_card", "", t("editPanel.newText")); setAddTileOpen(false); return; }
                           if (type === "energy_monitor_card") { const newId = handleAddTile("energy_monitor_card", "", "Afbeeldingskaart"); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           if (type === "power_usage_card") { const newId = handleAddTile("power_usage_card", "", "Stroomverbruik"); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
+                          if (type === "device_consumption_card") { const newId = handleAddTile("device_consumption_card", "", "Verbruik per apparaat"); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           setAddTileSelectedType(type);
                           setAddTileStep("entity");
                         }}
@@ -965,7 +979,7 @@ export default function EnergyPage() {
                         return filtered.map((e) => {
                           const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
                           return (
-                            <button key={e.entity_id} type="button" onClick={() => { if (!addTileSelectedType) return; const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "power_usage_card" ? (name || "Stroomverbruik") : addTileSelectedType === "stat_pill_card" ? (name || "Stat") : undefined; const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride); if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card") && newId) setEditingWidgetId(newId); setAddTileOpen(false); setAddTileStep("type"); setAddTileSelectedType(null); setAddTileEntitySearch(""); }} className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate" title={e.entity_id}>{name}</button>
+                            <button key={e.entity_id} type="button" onClick={() => { if (!addTileSelectedType) return; const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "power_usage_card" ? (name || "Stroomverbruik") : addTileSelectedType === "device_consumption_card" ? (name || "Verbruik per apparaat") : addTileSelectedType === "stat_pill_card" ? (name || "Stat") : undefined; const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride); if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card") && newId) setEditingWidgetId(newId); setAddTileOpen(false); setAddTileStep("type"); setAddTileSelectedType(null); setAddTileEntitySearch(""); }} className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate" title={e.entity_id}>{name}</button>
                           );
                         });
                       })()}

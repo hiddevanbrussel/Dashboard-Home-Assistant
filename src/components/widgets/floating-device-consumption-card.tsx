@@ -3,11 +3,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
-import { PowerUsageCardWidget } from "./power-usage-card-widget";
+import { DeviceConsumptionCardWidget } from "./device-consumption-card-widget";
 
-const STORAGE_KEY = "dashboard.floatingPowerUsageCardPosition";
-const CARD_WIDTH = 400;
-const CARD_HEIGHT = 380;
+const STORAGE_KEY = "dashboard.floatingDeviceConsumptionCardPosition";
+const CARD_WIDTH = 320;
+const CARD_HEIGHT = 320;
 
 type Position = { left: number; bottom: number };
 
@@ -45,10 +45,10 @@ function defaultPosition(): Position {
 
 const LONG_PRESS_MS = 500;
 
-export function FloatingPowerUsageCard({
+export function FloatingDeviceConsumptionCard({
   title,
-  entity_id,
-  cost_per_kwh,
+  device_entity_ids = [],
+  device_names,
   width,
   height,
   editMode = false,
@@ -58,8 +58,8 @@ export function FloatingPowerUsageCard({
   onEnterEditMode,
 }: {
   title: string;
-  entity_id?: string;
-  cost_per_kwh?: number;
+  device_entity_ids?: string[];
+  device_names?: Record<string, string>;
   width?: number;
   height?: number;
   editMode?: boolean;
@@ -206,10 +206,10 @@ export function FloatingPowerUsageCard({
       })}
     >
       <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-        <PowerUsageCardWidget
+        <DeviceConsumptionCardWidget
           title={title}
-          entity_id={entity_id}
-          cost_per_kwh={cost_per_kwh}
+          device_entity_ids={device_entity_ids}
+          device_names={device_names}
           onMoreClick={editMode ? onEdit : undefined}
           className="relative h-full"
         />
