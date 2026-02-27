@@ -110,15 +110,15 @@ export function SolarCardWidget({
 
   return (
     <div className={cn("flex w-full flex-col gap-3", className)}>
-      {/* Kaart 1: Zonnepanelen (lijn grafiek bovenaan) */}
+      {/* Kaart 1: Zonnepanelen (grafiek bovenaan, dicht bij titel) */}
       <div className={cn("flex flex-col", cardBase)}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-          <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate min-w-0">{title}</p>
           {onMoreClick && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 shrink-0"
               aria-label="Opties"
             >
               <MoreVertical className="h-5 w-5" />
@@ -130,7 +130,7 @@ export function SolarCardWidget({
             Configureer een opbrengst-entity in de bewerkmodus.
           </p>
         ) : (
-          <div className="p-4">
+          <div className="px-4 pt-2 pb-4">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Opbrengst per uur</p>
             {hourlyLoading ? (
               <div className="h-24 flex items-center justify-center text-gray-400">Laden…</div>
@@ -174,14 +174,14 @@ export function SolarCardWidget({
             </div>
           </div>
           <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
-            <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20">
-              <Calendar className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
+              <Calendar className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="min-w-0 pr-5">
-              <p className="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-400">
+              <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                 {dailyLoading ? "…" : formatValue(displayMonth, yieldDataMonth.unit)}
               </p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Deze maand</p>
+              <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Deze maand</p>
             </div>
           </div>
         </div>
