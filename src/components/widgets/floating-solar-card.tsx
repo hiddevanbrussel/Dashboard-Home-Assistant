@@ -60,7 +60,7 @@ export function FloatingSolarCard({
   onEnterEditMode,
 }: {
   title: string;
-  entity_id: string;
+  entity_id?: string;
   consumption_entity_id?: string;
   editMode?: boolean;
   storageScope?: string;
@@ -175,7 +175,7 @@ export function FloatingSolarCard({
   return (
     <div
       className={cn(
-        "fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "fixed z-30 w-[320px]",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -201,8 +201,8 @@ export function FloatingSolarCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-        <SolarCardWidget title={title} entity_id={entity_id} consumption_entity_id={consumption_entity_id} size="md" onMoreClick={editMode ? onEdit : undefined} />
+      <div>
+        <SolarCardWidget title={title} entity_id={entity_id ?? ""} consumption_entity_id={consumption_entity_id} size="md" onMoreClick={editMode ? onEdit : undefined} />
       </div>
     </div>
   );
