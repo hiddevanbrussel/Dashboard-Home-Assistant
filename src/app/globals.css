@@ -213,7 +213,23 @@
   cursor: grabbing;
 }
 
-/* Content-afbeeldingen (radio-cover, football-logos) niet laten meeveranderen met dark mode */
+/* Content-afbeeldingen (radio-cover, football-logos): wit en kleuren behouden in dark mode */
 .image-theme-fixed {
-  color-scheme: light;
+  color-scheme: light !important;
+  isolation: isolate;
+}
+.image-theme-fixed img,
+.image-theme-fixed svg {
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
+  forced-color-adjust: none !important;
+  -webkit-forced-color-adjust: none !important;
+}
+/* Football-logos: wit blijft wit in dark mode (geen invert of tint) */
+.dark .image-theme-fixed img,
+.dark .image-theme-fixed svg {
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 1 !important;
 }
