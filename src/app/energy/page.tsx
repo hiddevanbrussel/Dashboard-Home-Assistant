@@ -267,6 +267,7 @@ export default function EnergyPage() {
     color?: string;
     icon_background_color?: string;
     device_entity_ids?: string[];
+    device_names?: Record<string, string>;
     cost_per_kwh?: number;
   }>({
     title: "",
@@ -287,6 +288,7 @@ export default function EnergyPage() {
     label: "",
     color: "amber",
     device_entity_ids: [],
+    device_names: {},
     cost_per_kwh: undefined,
   });
   const [iconSearch, setIconSearch] = useState("");
