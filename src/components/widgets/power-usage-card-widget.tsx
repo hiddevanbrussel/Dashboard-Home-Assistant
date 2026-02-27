@@ -106,7 +106,7 @@ export function PowerUsageCardWidget({
             {isLoading ? (
               <div className="h-24 flex items-center justify-center text-gray-400">Laden…</div>
             ) : (
-              <div className="flex items-end justify-between gap-1 h-20">
+              <div className="flex items-end justify-between gap-1 h-24">
                 {mainData.map((d, i) => {
                   const date = new Date(d.date);
                   const dayName = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"][date.getDay()];
@@ -119,7 +119,7 @@ export function PowerUsageCardWidget({
                           "w-full rounded-t transition-all min-h-[4px]",
                           isLast ? "bg-amber-500 dark:bg-amber-500" : "bg-gray-200 dark:bg-gray-600"
                         )}
-                        style={{ height: `${Math.max(4, frac * 64)}px` }}
+                        style={{ height: `${Math.max(4, frac * 76)}px` }}
                       />
                       {isLast && (
                         <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap">
