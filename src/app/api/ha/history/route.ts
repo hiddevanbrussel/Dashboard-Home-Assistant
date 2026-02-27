@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const entityIdsParam = searchParams.get("entity_ids");
   const granularity = searchParams.get("granularity");
-  const days = Math.min(14, Math.max(1, parseInt(searchParams.get("days") ?? "7", 10)));
+  const days = Math.min(31, Math.max(1, parseInt(searchParams.get("days") ?? "7", 10)));
   const connectionId = searchParams.get("connectionId") ?? undefined;
 
   if (!entityIdsParam?.trim()) {
