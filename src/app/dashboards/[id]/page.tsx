@@ -738,8 +738,6 @@ export default function DashboardEditPage() {
         show_title: editingWidget.show_title !== false,
         device_entity_ids: editingWidget.device_entity_ids ?? [],
         cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
-        width: editingWidget.width ?? undefined,
-        height: editingWidget.height ?? undefined,
       });
       setIconSearch("");
       setVacuumIconSearch(editingWidget.type === "vacuum_card" ? (editingWidget.icon ?? "") : "");
