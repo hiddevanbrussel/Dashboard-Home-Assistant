@@ -14,6 +14,8 @@ export function useMusicPlayerActions() {
   const [seekPending, setSeekPending] = useState(false);
   const [dontStopTheMusicEnabled, setDontStopTheMusicEnabled] = useState(false);
   const [dontStopTheMusicPending, setDontStopTheMusicPending] = useState(false);
+  const [shuffleEnabled, setShuffleEnabled] = useState(false);
+  const [shufflePending, setShufflePending] = useState(false);
 
   useEffect(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
@@ -143,6 +145,33 @@ export function useMusicPlayerActions() {
       .finally(() => setDontStopTheMusicPending(false));
   }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, dontStopTheMusicEnabled]);
 
+  const toggleShuffle = useCallback(() => {
+    if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+    const next = !shuffleEnabled;
+    setShufflePending(true);
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "player_queues/shuffle", {
+      queue_id: selectedQueueId,
+      shuffle_enabled: next,
+    })
+      .then((data: unknown) => {
+        const err = (data as { error?: string })?.error;
+        if (err) return;
+        setShuffleEnabled(next);
+      })
+      .catch(() => {})
+      .finally(() => setShufflePending(false));
+  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, shuffleEnabled]);
+
+  useEffect(() => {
+    if (typeof queueState?.shuffle_enabled === "boolean") {
+      setShuffleEnabled(queueState.shuffle_enabled);
+    }
+  }, [queueState?.shuffle_enabled]);
+
+  useEffect(() => {
+    setShuffleEnabled(false);
+  }, [selectedQueueId]);
+
   return {
     queueControl,
     seekTo,
@@ -151,10 +180,13 @@ export function useMusicPlayerActions() {
     volumeMute,
     volumeMuted,
     toggleDontStopTheMusic,
+    toggleShuffle,
     volume,
     volumePending,
     seekPending,
     dontStopTheMusicEnabled,
     dontStopTheMusicPending,
+    shuffleEnabled,
+    shufflePending,
   };
 }

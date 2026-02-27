@@ -76,16 +76,19 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
             state?: string;
             elapsed_time?: number;
             position?: number;
+            shuffle_enabled?: boolean;
             current_item?: { duration?: number; name?: string; artists?: unknown; image?: string; stream_title?: string; [key: string]: unknown };
           } | null | undefined;
           const state = res?.state;
           const elapsed = res?.elapsed_time ?? res?.position;
           const cur = res?.current_item;
           const duration = cur?.duration;
+          const shuffleEnabled = res?.shuffle_enabled;
           setQueueState({
             state: state as "playing" | "paused" | "idle" | undefined,
             position: typeof elapsed === "number" ? elapsed : undefined,
             duration,
+            shuffle_enabled: typeof shuffleEnabled === "boolean" ? shuffleEnabled : undefined,
             current_item: cur,
           } as QueueState);
         })

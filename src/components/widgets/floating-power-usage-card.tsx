@@ -177,7 +177,7 @@ export function FloatingPowerUsageCard({
   return (
     <div
       className={cn(
-        "fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "fixed z-30",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -205,7 +205,7 @@ export function FloatingPowerUsageCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
+      <div>
         <PowerUsageCardWidget
           title={title}
           entity_id={entity_id}

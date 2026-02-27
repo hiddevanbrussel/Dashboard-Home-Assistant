@@ -8,6 +8,7 @@ export type QueueState = {
   state?: "playing" | "paused" | "idle";
   position?: number;
   duration?: number;
+  shuffle_enabled?: boolean;
   current_item?: {
     name?: string;
     artists?: { name?: string }[] | { name?: string };

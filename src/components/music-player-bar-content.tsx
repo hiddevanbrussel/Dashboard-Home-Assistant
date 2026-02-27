@@ -9,6 +9,7 @@ import {
   SkipBack,
   SkipForward,
   Donut,
+  Shuffle,
   Speaker,
   CircleMinus,
   CirclePlus,
@@ -57,6 +58,9 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
     dontStopTheMusicEnabled,
     dontStopTheMusicPending,
     toggleDontStopTheMusic,
+    shuffleEnabled,
+    shufflePending,
+    toggleShuffle,
   } = useMusicPlayerActions();
 
   const isPlaying = queueState?.state === "playing";
@@ -221,6 +225,21 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
               aria-label={t("music.next")}
             >
               <SkipForward className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={toggleShuffle}
+              disabled={shufflePending}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-full transition-colors",
+                shuffleEnabled
+                  ? "bg-accent-yellow dark:bg-accent-green text-gray-900"
+                  : "text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10"
+              )}
+              aria-label={t("music.shuffle")}
+              title={t("music.shuffle")}
+            >
+              <Shuffle className="h-5 w-5" aria-hidden />
             </button>
             <button
               type="button"
