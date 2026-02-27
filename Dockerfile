@@ -11,6 +11,8 @@ COPY package.json package-lock.json* ./
 RUN npm ci --ignore-scripts
 
 COPY . .
+# prisma generate vereist DATABASE_URL; bij build is er geen runtime-ENV, dus placeholder
+ENV DATABASE_URL="file:./dev.db"
 RUN npx prisma generate
 RUN npm run build
 
