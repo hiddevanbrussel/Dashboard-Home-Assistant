@@ -89,7 +89,7 @@ export function PowerUsageCardWidget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-xl border border-gray-200 dark:border-white/10",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/95 dark:bg-black/50 backdrop-blur-2xl text-gray-900 dark:text-white shadow-xl border border-gray-200 dark:border-white/10",
         className
       )}
     >

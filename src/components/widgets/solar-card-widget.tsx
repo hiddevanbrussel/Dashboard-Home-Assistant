@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, PanelTop, UtilityPole } from "lucide-react";
 import type { SolarCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -34,7 +34,9 @@ export function SolarCardWidget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/10 dark:bg-black/50 text-white shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "flex w-full flex-col overflow-hidden rounded-2xl shadow-xl backdrop-blur-2xl border",
+        "bg-white/95 dark:bg-black/50 border-gray-200 dark:border-white/10",
+        "text-gray-900 dark:text-white",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
@@ -43,14 +45,14 @@ export function SolarCardWidget({
     >
       <div className="flex items-center gap-3 px-4 py-3">
         <div className="min-w-0 flex-1">
-          <p className="font-medium truncate text-white/90">{title}</p>
-          <p className="text-xs text-white/60 truncate">{yieldData.friendlyName}</p>
+          <p className="font-medium truncate text-gray-900 dark:text-white/90">{title}</p>
+          <p className="text-xs text-gray-600 dark:text-white/60 truncate">{yieldData.friendlyName}</p>
         </div>
         {onMoreClick && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-            className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg shrink-0 text-gray-500 dark:text-white/70 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-white/10 transition-colors"
             aria-label="Opties"
           >
             <MoreVertical className="h-5 w-5" aria-hidden />
@@ -59,15 +61,21 @@ export function SolarCardWidget({
       </div>
       <div className="px-4 pb-4 pt-0 space-y-3">
         <div>
-          <p className="text-xs text-white/60 mb-0.5">Yield</p>
-          <p className="text-xl font-bold tabular-nums text-amber-400/95">
+          <p className="flex items-center gap-1.5 text-xs text-amber-800/80 dark:text-white/60 mb-0.5">
+            <PanelTop className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            Yield
+          </p>
+          <p className="text-xl font-bold tabular-nums text-amber-700 dark:text-amber-400/95">
             {formatValue(yieldData.value, yieldData.unit)}
           </p>
         </div>
         {consumption_entity_id && (
-          <div className="pt-2 border-t border-white/10">
-            <p className="text-xs text-white/60 mb-0.5">Consumption</p>
-            <p className="text-xl font-bold tabular-nums text-white/95">
+          <div className="pt-2 border-t border-gray-200 dark:border-white/10">
+            <p className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-white/60 mb-0.5">
+              <UtilityPole className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              Consumption
+            </p>
+            <p className="text-xl font-bold tabular-nums text-gray-900 dark:text-white/95">
               {formatValue(consumptionData.value, consumptionData.unit)}
             </p>
           </div>

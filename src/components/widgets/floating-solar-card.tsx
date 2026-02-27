@@ -175,7 +175,7 @@ export function FloatingSolarCard({
   return (
     <div
       className={cn(
-        "fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/95 dark:bg-black/50 backdrop-blur-2xl border border-gray-200 dark:border-white/10",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

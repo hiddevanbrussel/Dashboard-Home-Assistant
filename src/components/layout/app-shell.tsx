@@ -309,7 +309,8 @@ export function AppShell({
               onClick={() => setSidebarOpen((v) => !v)}
               className={cn(
                 "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                headerContentLight ? "text-white/90 hover:bg-white/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                sidebarOpen && "text-[#FFAA00]",
+                !sidebarOpen && (headerContentLight ? "text-white/90 hover:bg-white/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10")
               )}
               aria-label={sidebarOpen ? t("nav.menuClose") : t("nav.menuOpen")}
             >

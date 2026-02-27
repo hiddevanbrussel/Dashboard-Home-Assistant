@@ -291,6 +291,7 @@ export default function EnergyPage() {
   });
   const [iconSearch, setIconSearch] = useState("");
   const [sensorIconSearch, setSensorIconSearch] = useState("");
+  const [powerUsageDeviceSearch, setPowerUsageDeviceSearch] = useState("");
   const [editTab, setEditTab] = useState("algemeen");
   const [uploadingEnergyBg, setUploadingEnergyBg] = useState(false);
   const [uploadingEnergyBgDark, setUploadingEnergyBgDark] = useState(false);
@@ -510,6 +511,7 @@ export default function EnergyPage() {
       textMode: isCategoryCard ? deriveTextMode() : undefined,
     });
     setSensorIconSearch(editingWidget.type === "sensor_card" ? (editingWidget.icon ?? "") : "");
+    if (editingWidget.type === "power_usage_card") setPowerUsageDeviceSearch("");
     if (editingWidget.type === "energy_monitor_card") setEditTab("achtergrond");
     else setEditTab("algemeen");
   }, [editingWidget]);
@@ -795,18 +797,20 @@ export default function EnergyPage() {
         ))}
 
         {widgets.filter((w) => w.type === "power_usage_card").map((w, i) => (
-          <div key={w.id} className={cn("relative", i > 0 && "mt-4")}>
-            <FloatingPowerUsageCard
-              title={w.title ?? "Stroomverbruik"}
-              entity_id={w.entity_id}
-              device_entity_ids={w.device_entity_ids}
-              cost_per_kwh={w.cost_per_kwh}
-              editMode={editMode}
-              onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-            />
-          </div>
+          <FloatingPowerUsageCard
+            key={w.id}
+            title={w.title ?? "Stroomverbruik"}
+            entity_id={w.entity_id}
+            device_entity_ids={w.device_entity_ids}
+            cost_per_kwh={w.cost_per_kwh}
+            width={w.width}
+            height={w.height}
+            editMode={editMode}
+            storageScope={`${STORAGE_SCOPE}-${w.id}`}
+            onEnterEditMode={() => setEditMode(true)}
+            onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+            onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+          />
         ))}
 
         {widgets.filter((w) => w.type === "energy_monitor_card").map((w) => (
@@ -910,6 +914,8 @@ export default function EnergyPage() {
             setUploadingConditionImage={setUploadingConditionImage}
             sensorIconSearch={sensorIconSearch}
             setSensorIconSearch={setSensorIconSearch}
+            powerUsageDeviceSearch={powerUsageDeviceSearch}
+            setPowerUsageDeviceSearch={setPowerUsageDeviceSearch}
           />,
           document.body
         )}

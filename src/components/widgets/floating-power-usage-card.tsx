@@ -1,7 +1,47 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { snapToGrid } from "@/lib/floating-card-grid";
 import { PowerUsageCardWidget } from "./power-usage-card-widget";
+
+const STORAGE_KEY = "dashboard.floatingPowerUsageCardPosition";
+const CARD_WIDTH = 400;
+const CARD_HEIGHT = 380;
+
+type Position = { left: number; bottom: number };
+
+function loadPosition(scope: string | undefined): Position | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const s = localStorage.getItem(scope ? `${STORAGE_KEY}.${scope}` : STORAGE_KEY);
+    if (!s) return null;
+    const p = JSON.parse(s) as Position & { top?: number };
+    if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
+    if (typeof p?.left === "number" && typeof p?.top === "number") {
+      return { left: p.left, bottom: window.innerHeight - p.top - CARD_HEIGHT };
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function savePosition(scope: string | undefined, p: Position) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(scope ? `${STORAGE_KEY}.${scope}` : STORAGE_KEY, JSON.stringify(p));
+  } catch {
+    // ignore
+  }
+}
+
+function defaultPosition(): Position {
+  if (typeof window === "undefined") return { left: 100, bottom: 24 };
+  const maxLeft = window.innerWidth - CARD_WIDTH;
+  const maxBottom = window.innerHeight - 120;
+  return { left: Math.max(0, maxLeft / 2), bottom: Math.max(24, maxBottom / 2) };
+}
 
 const LONG_PRESS_MS = 500;
 
@@ -10,7 +50,10 @@ export function FloatingPowerUsageCard({
   entity_id,
   device_entity_ids = [],
   cost_per_kwh,
+  width,
+  height,
   editMode = false,
+  storageScope,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -19,11 +62,20 @@ export function FloatingPowerUsageCard({
   entity_id?: string;
   device_entity_ids?: string[];
   cost_per_kwh?: number;
+  width?: number;
+  height?: number;
   editMode?: boolean;
+  storageScope?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
+  const cardW = width ?? CARD_WIDTH;
+  const cardH = height ?? CARD_HEIGHT;
+  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope) ?? { left: 0, bottom: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
+  const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearLongPress = useCallback(() => {
@@ -54,23 +106,117 @@ export function FloatingPowerUsageCard({
     [clearLongPress]
   );
 
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardW : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+    const bounds = { maxLeft, maxBottom };
+    const saved = loadPosition(storageScope);
+    if (saved) {
+      setPosition(snapToGrid(saved, bounds));
+      return;
+    }
+    const p = snapToGrid(defaultPosition(), bounds);
+    setPosition(p);
+    savePosition(storageScope, p);
+  }, [storageScope, cardW]);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!editMode) return;
+      if ((e.target as HTMLElement).closest?.("button")) return;
+      e.preventDefault();
+      setIsDragging(true);
+      dragStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        left: position.left,
+        bottom: position.bottom,
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    [position, editMode]
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardW : 400;
+      const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+      const raw = {
+        left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
+        bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
+      };
+      setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
+    },
+    [isDragging, cardW]
+  );
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (isDragging) {
+        setIsDragging(false);
+        const dx = e.clientX - dragStart.current.x;
+        const dy = e.clientY - dragStart.current.y;
+        const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardW : 400;
+        const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+        const raw = {
+          left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
+          bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
+        };
+        const next = snapToGrid(raw, { maxLeft, maxBottom });
+        setPosition(next);
+        savePosition(storageScope, next);
+      }
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    },
+    [isDragging, storageScope, cardW]
+  );
+
   return (
     <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[min(96vw,400px)] z-30"
-      onPointerDown={startLongPress}
-      onPointerUp={endLongPress}
-      onPointerLeave={endLongPress}
-      onPointerCancel={endLongPress}
-      style={{ touchAction: "none" }}
+      className={cn(
+        "fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-white/95 dark:bg-black/50 backdrop-blur-2xl border border-gray-200 dark:border-white/10",
+        editMode && "cursor-grab touch-none active:cursor-grabbing",
+        editMode && !isDragging && "animate-edit-wiggle"
+      )}
+      style={{
+        left: position.left,
+        bottom: position.bottom,
+        width: cardW,
+        minHeight: cardH,
+        ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
+      }}
+      {...(!editMode &&
+        onEnterEditMode && {
+          onPointerDown: startLongPress,
+          onPointerUp: endLongPress,
+          onPointerLeave: endLongPress,
+          onPointerCancel: endLongPress,
+        })}
+      {...(editMode && {
+        onPointerDown: handlePointerDown,
+        onPointerMove: handlePointerMove,
+        onPointerUp: handlePointerUp,
+        onPointerLeave: (e: React.PointerEvent) => {
+          if (isDragging) handlePointerUp(e);
+        },
+        onPointerCancel: handlePointerUp,
+      })}
     >
-      <PowerUsageCardWidget
-        title={title}
-        entity_id={entity_id}
-        device_entity_ids={device_entity_ids}
-        cost_per_kwh={cost_per_kwh}
-        onMoreClick={editMode ? onEdit : undefined}
-        className="relative"
-      />
+      <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
+        <PowerUsageCardWidget
+          title={title}
+          entity_id={entity_id}
+          device_entity_ids={device_entity_ids}
+          cost_per_kwh={cost_per_kwh}
+          onMoreClick={editMode ? onEdit : undefined}
+          className="relative h-full"
+        />
+      </div>
     </div>
   );
 }

@@ -191,6 +191,10 @@ export type PowerUsageCardProps = WidgetBaseProps & {
   device_entity_ids?: string[];
   /** Kosten per kWh voor expense weergave. */
   cost_per_kwh?: number;
+  /** Breedte kaart in px (standaard 400). */
+  width?: number;
+  /** Hoogte kaart in px (standaard 380). */
+  height?: number;
 };
 
 /** Room card: kamer met icoon, naam, entity-waarde, lichtstatus en optionele mediaplayer. */

@@ -68,6 +68,8 @@ type EditPanelModalProps = {
   setUploadingConditionImage: (v: { idx: number; field: "image" | "image_dark" } | null) => void;
   sensorIconSearch: string;
   setSensorIconSearch: (v: string) => void;
+  powerUsageDeviceSearch?: string;
+  setPowerUsageDeviceSearch?: (v: string) => void;
 };
 
 export function EditPanelModal(props: EditPanelModalProps) {
@@ -95,6 +97,8 @@ export function EditPanelModal(props: EditPanelModalProps) {
     setUploadingConditionImage,
     sensorIconSearch,
     setSensorIconSearch,
+    powerUsageDeviceSearch = "",
+    setPowerUsageDeviceSearch = () => {},
   } = props;
 
   const getSaveUpdates = () => {
@@ -112,7 +116,7 @@ export function EditPanelModal(props: EditPanelModalProps) {
     const base: Partial<WidgetConfig> = { title: editForm.title };
     if (editingWidget.type === "solar_card") Object.assign(base, { entity_id: editForm.entity_id, consumption_entity_id: editForm.consumption_entity_id || undefined });
     if (editingWidget.type === "energy_monitor_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, background_image: editForm.background_image || undefined, background_image_dark: editForm.background_image_dark || undefined, image_conditions: (editForm.image_conditions ?? []).filter((c) => c.image?.trim()).length > 0 ? (editForm.image_conditions ?? []).filter((c) => c.image?.trim()) : undefined, minimal: editForm.minimal ?? false, scale: editForm.scale ?? 1 });
-    if (editingWidget.type === "power_usage_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, device_entity_ids: (editForm.device_entity_ids ?? []).length > 0 ? editForm.device_entity_ids : undefined, cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined });
+    if (editingWidget.type === "power_usage_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, device_entity_ids: (editForm.device_entity_ids ?? []).length > 0 ? editForm.device_entity_ids : undefined, cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
     if (editingWidget.type === "stat_pill_card") Object.assign(base, { entity_id: editForm.entity_id, label: editForm.label || undefined, icon: editForm.icon || undefined, color: editForm.color || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "sensor_card") Object.assign(base, { entity_id: editForm.entity_id, icon: editForm.icon || undefined, show_icon: editForm.show_icon !== false, size: editForm.size || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "nuts_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, icon: editForm.icon || undefined, icon_background_color: editForm.icon_background_color || undefined, current_entity_id: editForm.current_entity_id || undefined, max_value: editForm.max_value != null && editForm.max_value > 0 ? editForm.max_value : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
@@ -253,20 +257,46 @@ export function EditPanelModal(props: EditPanelModalProps) {
               <EntitySelectWithSearch entities={entities} value={editForm.entity_id} onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))} filter={(e) => e.entity_id.startsWith("sensor.")} label={t("editPanel.totalUsage")} placeholder={t("editPanel.searchEntity")} emptyOption={t("editPanel.none")} />
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Apparaten (per-apparaat verbruik)</label>
+                <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">Zoek op naam of entity_id.</p>
+                <input type="text" value={powerUsageDeviceSearch} onChange={(e) => setPowerUsageDeviceSearch(e.target.value)} placeholder="Zoek op naam of entity_id…" className="mb-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:text-gray-200 dark:placeholder-gray-500" />
                 <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 p-2 space-y-1">
-                  {entities.filter((e) => e.entity_id.startsWith("sensor.")).map((e) => { const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id; const checked = (editForm.device_entity_ids ?? []).includes(e.entity_id); return (
-                    <label key={e.entity_id} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer">
-                      <input type="checkbox" checked={checked} onChange={() => { const ids = editForm.device_entity_ids ?? []; setEditForm((prev) => ({ ...prev, device_entity_ids: checked ? ids.filter((id) => id !== e.entity_id) : [...ids, e.entity_id] })); }} className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-[#4D2FB2] focus:ring-[#4D2FB2]" />
-                      <span className="text-sm truncate" title={e.entity_id}>{name}</span>
-                    </label>
-                  ); })}
-                  {entities.filter((e) => e.entity_id.startsWith("sensor.")).length === 0 && <p className="text-xs text-gray-500 py-2">Geen sensoren gevonden.</p>}
+                  {(() => {
+                    const q = powerUsageDeviceSearch.trim().toLowerCase();
+                    const filtered = entities.filter((e) => {
+                      const name = ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase();
+                      const eid = e.entity_id.toLowerCase();
+                      const matchesSearch = !q || name.includes(q) || eid.includes(q);
+                      const isEnergyRelated = e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("switch.") || e.entity_id.startsWith("light.") || e.entity_id.includes("energy") || e.entity_id.includes("power");
+                      return matchesSearch && (isEnergyRelated || !!q);
+                    });
+                    return (
+                      <>
+                        {filtered.map((e) => { const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id; const checked = (editForm.device_entity_ids ?? []).includes(e.entity_id); return (
+                          <label key={e.entity_id} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer">
+                            <input type="checkbox" checked={checked} onChange={() => { const ids = editForm.device_entity_ids ?? []; setEditForm((prev) => ({ ...prev, device_entity_ids: checked ? ids.filter((id) => id !== e.entity_id) : [...ids, e.entity_id] })); }} className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-[#4D2FB2] focus:ring-[#4D2FB2]" />
+                            <span className="text-sm truncate" title={e.entity_id}>{name}</span>
+                          </label>
+                        ); })}
+                        {filtered.length === 0 && <p className="text-xs text-gray-500 py-2">{q ? "Geen resultaten. Probeer een andere zoekterm." : "Geen sensoren gevonden."}</p>}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Kosten per kWh (€)</label>
                 <input type="number" min={0} step={0.001} value={editForm.cost_per_kwh ?? ""} onChange={(e) => { const v = e.target.value === "" ? undefined : parseFloat(e.target.value); setEditForm((prev) => ({ ...prev, cost_per_kwh: v != null && !Number.isNaN(v) ? v : undefined })); }} placeholder="0.25" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500" />
                 <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Optioneel. Voor berekening kosten vandaag.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Breedte (px)</label>
+                  <input type="number" min={280} max={600} step={20} value={editForm.width ?? 400} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Hoogte (px)</label>
+                  <input type="number" min={200} max={600} step={20} value={editForm.height ?? 380} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" />
+                </div>
               </div>
             </>
           ) : editingWidget.type === "stat_pill_card" ? (

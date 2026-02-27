@@ -506,6 +506,7 @@ export default function DashboardEditPage() {
   const [addTileSelectedType, setAddTileSelectedType] = useState<string | null>(null);
   const [addTileEntitySearch, setAddTileEntitySearch] = useState("");
   const [groupAddEntitySearch, setGroupAddEntitySearch] = useState("");
+  const [powerUsageDeviceSearch, setPowerUsageDeviceSearch] = useState("");
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
   /** When editing a card_group, id of the child pill being edited (null = editing group itself). */
   const [editingGroupChildId, setEditingGroupChildId] = useState<string | null>(null);
@@ -737,12 +738,15 @@ export default function DashboardEditPage() {
         show_title: editingWidget.show_title !== false,
         device_entity_ids: editingWidget.device_entity_ids ?? [],
         cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
+        width: editingWidget.width ?? undefined,
+        height: editingWidget.height ?? undefined,
       });
       setIconSearch("");
       setVacuumIconSearch(editingWidget.type === "vacuum_card" ? (editingWidget.icon ?? "") : "");
       setSensorIconSearch(editingWidget.type === "sensor_card" ? (editingWidget.icon ?? "") : "");
       setPillIconSearch(editingWidget.type === "pill_card" ? (editingWidget.icon ?? "") : "");
       setGroupAddEntitySearch("");
+      setPowerUsageDeviceSearch("");
       if (editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card") {
         setEditTab(editingWidget.type === "room_card" ? "entiteiten" : editingWidget.type === "media_card" ? "weergave" : "algemeen");
       }
@@ -1617,7 +1621,10 @@ export default function DashboardEditPage() {
               entity_id={firstPowerUsage.entity_id}
               device_entity_ids={firstPowerUsage.device_entity_ids}
               cost_per_kwh={firstPowerUsage.cost_per_kwh}
+              width={firstPowerUsage.width}
+              height={firstPowerUsage.height}
               editMode={editMode}
+              storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -3252,11 +3259,25 @@ export default function DashboardEditPage() {
                         Apparaten (per-apparaat verbruik)
                       </label>
                       <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                        Selecteer energie-sensoren voor een breakdown per apparaat. Bijv. sensor.tv_energy, sensor.fridge_energy.
+                        Selecteer energie-sensoren voor een breakdown per apparaat. Zoek op naam of entity_id.
                       </p>
+                      <input
+                        type="text"
+                        value={powerUsageDeviceSearch}
+                        onChange={(e) => setPowerUsageDeviceSearch(e.target.value)}
+                        placeholder="Zoek op naam of entity_id…"
+                        className="mb-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
                       <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 p-2 space-y-1">
                         {entities
-                          .filter((e) => e.entity_id.startsWith("sensor."))
+                          .filter((e) => {
+                            const name = ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase();
+                            const eid = e.entity_id.toLowerCase();
+                            const q = powerUsageDeviceSearch.trim().toLowerCase();
+                            const matchesSearch = !q || name.includes(q) || eid.includes(q);
+                            const isEnergyRelated = e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("switch.") || e.entity_id.startsWith("light.") || e.entity_id.includes("energy") || e.entity_id.includes("power");
+                            return matchesSearch && (isEnergyRelated || q);
+                          })
                           .map((e) => {
                             const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
                             const checked = (editForm.device_entity_ids ?? []).includes(e.entity_id);
@@ -3283,9 +3304,54 @@ export default function DashboardEditPage() {
                               </label>
                             );
                           })}
-                        {entities.filter((e) => e.entity_id.startsWith("sensor.")).length === 0 && (
-                          <p className="text-xs text-gray-500 py-2">Geen sensoren gevonden.</p>
+                        {entities.filter((e) => {
+                          const name = ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase();
+                          const eid = e.entity_id.toLowerCase();
+                          const q = powerUsageDeviceSearch.trim().toLowerCase();
+                          const matchesSearch = !q || name.includes(q) || eid.includes(q);
+                          const isEnergyRelated = e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("switch.") || e.entity_id.startsWith("light.") || e.entity_id.includes("energy") || e.entity_id.includes("power");
+                          return matchesSearch && (isEnergyRelated || q);
+                        }).length === 0 && (
+                          <p className="text-xs text-gray-500 py-2">
+                            {powerUsageDeviceSearch.trim() ? "Geen resultaten. Probeer een andere zoekterm." : "Geen sensoren gevonden."}
+                          </p>
                         )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Breedte (px)
+                        </label>
+                        <input
+                          type="number"
+                          min={280}
+                          max={600}
+                          step={20}
+                          value={editForm.width ?? 400}
+                          onChange={(e) => {
+                            const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10);
+                            setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
+                          }}
+                          className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Hoogte (px)
+                        </label>
+                        <input
+                          type="number"
+                          min={200}
+                          max={600}
+                          step={20}
+                          value={editForm.height ?? 380}
+                          onChange={(e) => {
+                            const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10);
+                            setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
+                          }}
+                          className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                        />
                       </div>
                     </div>
                     <div>
@@ -3305,6 +3371,42 @@ export default function DashboardEditPage() {
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Optioneel. Voor berekening kosten vandaag.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Breedte (px)
+                        </label>
+                        <input
+                          type="number"
+                          min={280}
+                          max={600}
+                          step={20}
+                          value={editForm.width ?? 400}
+                          onChange={(e) => {
+                            const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10);
+                            setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
+                          }}
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Hoogte (px)
+                        </label>
+                        <input
+                          type="number"
+                          min={200}
+                          max={600}
+                          step={20}
+                          value={editForm.height ?? 380}
+                          onChange={(e) => {
+                            const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10);
+                            setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
+                          }}
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                        />
+                      </div>
                     </div>
                   </>
                 )}
@@ -4598,6 +4700,8 @@ aria-label={t("editPanel.removeCondition")}
                           entity_id: editForm.entity_id || undefined,
                           device_entity_ids: (editForm.device_entity_ids ?? []).length > 0 ? editForm.device_entity_ids : undefined,
                           cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined,
+                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
                         }),
                         ...(editingWidget.type === "stat_pill_card" && {
                           label: editForm.label || undefined,
