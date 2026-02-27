@@ -1,2 +1,4 @@
--- No-op: contract columns (costPerKwh, networkFeesPerDay, fixedDeliveryCostMonth) are now created in 20260218000000_add_energy_dashboard
-SELECT 1;
+-- AlterTable
+ALTER TABLE "EnergyDashboard" ADD COLUMN "costPerKwh" REAL;
+ALTER TABLE "EnergyDashboard" ADD COLUMN "networkFeesPerDay" REAL;
+ALTER TABLE "EnergyDashboard" ADD COLUMN "fixedDeliveryCostMonth" REAL;

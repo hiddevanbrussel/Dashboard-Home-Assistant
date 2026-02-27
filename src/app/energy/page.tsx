@@ -331,7 +331,11 @@ export default function EnergyPage() {
     queryKey: ["energy-dashboard"],
     queryFn: async () => {
       const res = await fetch("/api/energy-dashboard");
-      if (!res.ok) throw new Error("Failed to load");
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        const hint = (json as { hint?: string }).hint;
+        throw new Error(hint ? `${(json as { error?: string }).error ?? "Failed to load"}. ${hint}` : (json as { error?: string }).error ?? "Failed to load");
+      }
       return res.json();
     },
     refetchOnWindowFocus: false,
@@ -356,9 +360,6 @@ export default function EnergyPage() {
       .catch(() => setEntities([]));
   }, [editMode]);
 
-  useEffect(() => {
-    if (error) router.replace("/dashboards");
-  }, [error, router]);
 
   const requestRefresh = useEntityStateStore((s) => s.requestRefresh);
   useEffect(() => {
@@ -695,7 +696,20 @@ export default function EnergyPage() {
   if (isLoading || error) {
     return (
       <AppShell activeTab="/energy">
-        <p className="text-sm text-gray-500">{error ? t("editPanel.dashboardNotFound") : t("editPanel.loading")}</p>
+        <div className="flex flex-col items-center justify-center gap-4 py-12 px-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            {error ? (error.message || t("editPanel.dashboardNotFound")) : t("editPanel.loading")}
+          </p>
+          {error && (
+            <button
+              type="button"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["energy-dashboard"] })}
+              className="rounded-lg bg-[#4D2FB2] px-4 py-2 text-sm text-white hover:opacity-90"
+            >
+              {t("editPanel.retry")}
+            </button>
+          )}
+        </div>
       </AppShell>
     );
   }

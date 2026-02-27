@@ -29,6 +29,13 @@ export async function GET() {
   } catch (err) {
     console.error("[GET /api/energy-dashboard]", err);
     const message = err instanceof Error ? err.message : "Database error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const hint =
+      message.includes("no such table") || message.includes("EnergyDashboard")
+        ? "Run: npx prisma migrate deploy"
+        : undefined;
+    return NextResponse.json(
+      { error: message, hint },
+      { status: 500 }
+    );
   }
 }

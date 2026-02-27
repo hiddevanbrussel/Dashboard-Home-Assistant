@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "npx prisma migrate deploy && next dev --turbopack",
     "build": "npx prisma generate && next build",
     "postbuild": "npx prisma migrate deploy",
     "start": "next start",
