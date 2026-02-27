@@ -33,6 +33,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
     background: rd.background,
     welcomeTitle: rd.welcomeTitle ?? null,
     welcomeSubtitle: rd.welcomeSubtitle ?? null,
+    temperatureEntityId: rd.temperatureEntityId ?? null,
+    humidityEntityId: rd.humidityEntityId ?? null,
     createdAt: rd.createdAt.toISOString(),
     updatedAt: rd.updatedAt.toISOString(),
   });
@@ -57,6 +59,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
     background?: string | null;
     welcomeTitle?: string | null;
     welcomeSubtitle?: string | null;
+    temperatureEntityId?: string | null;
+    humidityEntityId?: string | null;
   } = {};
   try {
     body = await request.json();
@@ -74,6 +78,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
     ...(body.background !== undefined && { background: body.background }),
     ...(body.welcomeTitle !== undefined && { welcomeTitle: body.welcomeTitle }),
     ...(body.welcomeSubtitle !== undefined && { welcomeSubtitle: body.welcomeSubtitle }),
+    ...(body.temperatureEntityId !== undefined && { temperatureEntityId: body.temperatureEntityId || null }),
+    ...(body.humidityEntityId !== undefined && { humidityEntityId: body.humidityEntityId || null }),
   };
 
   const rd = await prisma.roomDashboard.upsert({
@@ -89,6 +95,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
       background: body.background ?? null,
       welcomeTitle: body.welcomeTitle ?? null,
       welcomeSubtitle: body.welcomeSubtitle ?? null,
+      temperatureEntityId: body.temperatureEntityId ?? null,
+      humidityEntityId: body.humidityEntityId ?? null,
     },
     update: data,
   });
@@ -105,6 +113,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
     background: rd.background,
     welcomeTitle: rd.welcomeTitle ?? null,
     welcomeSubtitle: rd.welcomeSubtitle ?? null,
+    temperatureEntityId: rd.temperatureEntityId ?? null,
+    humidityEntityId: rd.humidityEntityId ?? null,
     updatedAt: rd.updatedAt.toISOString(),
   });
 }

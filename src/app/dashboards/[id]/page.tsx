@@ -755,7 +755,7 @@ export default function DashboardEditPage() {
     }
   }, [editingWidget, editingGroupChildId]);
 
-  const { data, isLoading, error } = useQuery<DashboardData & { welcomeTitle?: string | null; welcomeSubtitle?: string | null }>({
+  const { data, isLoading, error } = useQuery<DashboardData & { welcomeTitle?: string | null; welcomeSubtitle?: string | null; temperatureEntityId?: string | null; humidityEntityId?: string | null }>({
     queryKey: isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id],
     queryFn: async () => {
       const res = await fetch(apiBase);
@@ -1351,6 +1351,7 @@ export default function DashboardEditPage() {
         backHref={isRoomMode ? "/rooms" : undefined}
         welcomeTitle={welcomeTitle || undefined}
         welcomeSubtitle={welcomeSubtitle || undefined}
+        welcomeEntityIds={isRoomMode && data ? { temperature: (data as { temperatureEntityId?: string | null }).temperatureEntityId ?? null, humidity: (data as { humidityEntityId?: string | null }).humidityEntityId ?? null } : undefined}
         hideWelcome={false}
         welcomeEditable={editMode}
         onWelcomeChange={editMode ? ({ title, subtitle }) => {
@@ -1364,7 +1365,7 @@ export default function DashboardEditPage() {
           <OfflinePill />
         </div>
 
-        <div className="rounded-card overflow-hidden">
+        <div className={cn("rounded-card overflow-hidden", editMode && "grid-edit-touch")}>
           <ReactGridLayout
             className="layout"
             layout={layoutForGrid}

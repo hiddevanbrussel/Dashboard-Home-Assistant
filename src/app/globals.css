@@ -189,6 +189,30 @@
   padding: 0;
 }
 
+/* iPad/iOS: betere touch-drag voor kaarten in edit mode */
+.grid-edit-touch .react-grid-layout {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.grid-edit-touch .react-grid-item .tile-drag-handle {
+  touch-action: none !important;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: grab;
+  /* Min. 44px touch target (Apple HIG) voor betere touch op iPad */
+  min-height: 44px;
+  min-width: 44px;
+}
+.grid-edit-touch .react-grid-item.react-draggable-dragging,
+.grid-edit-touch .react-grid-item.react-draggable-dragging * {
+  touch-action: none !important;
+}
+.grid-edit-touch .tile-drag-handle:active {
+  cursor: grabbing;
+}
+
 /* Content-afbeeldingen (radio-cover, football-logos) niet laten meeveranderen met dark mode */
 .image-theme-fixed {
   color-scheme: light;

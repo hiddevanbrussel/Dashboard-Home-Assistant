@@ -51,6 +51,8 @@ model RoomDashboard {
   background          String?
   welcomeTitle        String?
   welcomeSubtitle     String?
+  temperatureEntityId String?  // Entity to show temp under room title (e.g. sensor.woonkamer_temperature)
+  humidityEntityId    String?  // Entity to show humidity under room title (e.g. sensor.woonkamer_humidity)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }

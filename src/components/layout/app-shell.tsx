@@ -9,6 +9,7 @@ import {
     CloudLightning,
     CloudRain,
     CloudSnow,
+    Droplets,
     Menu,
     Moon,
     Sun,
@@ -60,6 +61,8 @@ type AppShellProps = {
   onWelcomeChange?: (value: { title: string; subtitle: string }) => void;
   /** Entity ID for temperature shown in header. If not set, uses chosen value from localStorage or default. Set to null to hide. */
   temperatureEntityId?: string | null;
+  /** Entity IDs to show under welcome title (e.g. room temp + humidity). */
+  welcomeEntityIds?: { temperature?: string | null; humidity?: string | null };
   /** When true, main content does not scroll (overflow hidden). */
   contentNoScroll?: boolean;
   /** When true, hide the main content scrollbar (scroll still works). */
@@ -212,6 +215,7 @@ export function AppShell({
   welcomeEditable = false,
   onWelcomeChange,
   temperatureEntityId,
+  welcomeEntityIds,
   contentNoScroll = false,
   contentScrollbarHidden = false,
   backHref,
@@ -244,6 +248,24 @@ export function AppShell({
   const temperatureState = useEntityStateStore((s) =>
     effectiveTempEntity ? s.getState(effectiveTempEntity) : undefined
   );
+  const welcomeTempState = useEntityStateStore((s) =>
+    welcomeEntityIds?.temperature ? s.getState(welcomeEntityIds.temperature) : undefined
+  );
+  const welcomeHumState = useEntityStateStore((s) =>
+    welcomeEntityIds?.humidity ? s.getState(welcomeEntityIds.humidity) : undefined
+  );
+  const welcomeTempRaw =
+    (welcomeTempState?.attributes?.temperature as number | undefined) ??
+    (welcomeTempState?.state != null ? Number(welcomeTempState.state) : undefined);
+  const welcomeTempDisplay =
+    welcomeTempRaw != null && !Number.isNaN(welcomeTempRaw) ? `${Math.round(welcomeTempRaw)}°` : null;
+  const welcomeHumRaw =
+    (welcomeHumState?.attributes?.humidity as number | undefined) ??
+    (welcomeHumState?.state != null ? Number(welcomeHumState.state) : undefined);
+  const welcomeHumDisplay =
+    welcomeHumRaw != null && !Number.isNaN(welcomeHumRaw) ? `${Math.round(welcomeHumRaw)}%` : null;
+  const welcomeEntityParts = [welcomeTempDisplay, welcomeHumDisplay].filter(Boolean);
+  const showWelcomeEntities = welcomeEntityIds && welcomeEntityParts.length > 0;
   const temperatureRaw =
     (temperatureState?.attributes?.temperature as number | undefined) ??
     (temperatureState?.state != null ? Number(temperatureState.state) : undefined);
@@ -386,6 +408,22 @@ export function AppShell({
               <p className="text-base md:text-lg font-normal text-gray-600 dark:text-gray-300 mt-1.5">
                 {welcomeSubtitle}
               </p>
+              {showWelcomeEntities && (
+                <p className="flex items-center gap-3 mt-1.5 text-sm text-gray-500 dark:text-gray-400">
+                  {welcomeTempDisplay && (
+                    <span className="flex items-center gap-1.5">
+                      <Thermometer className="h-4 w-4 shrink-0" aria-hidden />
+                      {welcomeTempDisplay}
+                    </span>
+                  )}
+                  {welcomeHumDisplay && (
+                    <span className="flex items-center gap-1.5">
+                      <Droplets className="h-4 w-4 shrink-0" aria-hidden />
+                      {welcomeHumDisplay}
+                    </span>
+                  )}
+                </p>
+              )}
             </>
           ) : null}
           </div>

@@ -8,6 +8,8 @@ export type RoomDashboardListItem = {
   iconBackgroundColor?: string | null;
   floor?: string | null;
   background?: string | null;
+  temperatureEntityId?: string | null;
+  humidityEntityId?: string | null;
   createdAt: string;
 };
 
@@ -17,7 +19,7 @@ export type RoomDashboardListItem = {
 export async function GET() {
   const list = await prisma.roomDashboard.findMany({
     orderBy: { updatedAt: "desc" },
-    select: { areaId: true, name: true, icon: true, iconBackgroundColor: true, floor: true, background: true, createdAt: true },
+    select: { areaId: true, name: true, icon: true, iconBackgroundColor: true, floor: true, background: true, temperatureEntityId: true, humidityEntityId: true, createdAt: true },
   });
   const items: RoomDashboardListItem[] = list.map((r) => ({
     areaId: r.areaId,
@@ -26,6 +28,8 @@ export async function GET() {
     iconBackgroundColor: r.iconBackgroundColor ?? null,
     floor: r.floor ?? null,
     background: r.background ?? null,
+    temperatureEntityId: r.temperatureEntityId ?? null,
+    humidityEntityId: r.humidityEntityId ?? null,
     createdAt: r.createdAt.toISOString(),
   }));
   return NextResponse.json(items);

@@ -695,7 +695,7 @@ export default function EnergyPage() {
           <OfflinePill />
         </div>
 
-        <div className="rounded-card overflow-hidden">
+        <div className={cn("rounded-card overflow-hidden", editMode && "grid-edit-touch")}>
           <ReactGridLayout
             className="layout"
             layout={layoutForGrid}

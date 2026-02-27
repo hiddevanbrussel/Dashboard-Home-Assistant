@@ -36,6 +36,8 @@ export type RoomDashboardMinAggregateOutputType = {
   background: string | null
   welcomeTitle: string | null
   welcomeSubtitle: string | null
+  temperatureEntityId: string | null
+  humidityEntityId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -52,6 +54,8 @@ export type RoomDashboardMaxAggregateOutputType = {
   background: string | null
   welcomeTitle: string | null
   welcomeSubtitle: string | null
+  temperatureEntityId: string | null
+  humidityEntityId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -68,6 +72,8 @@ export type RoomDashboardCountAggregateOutputType = {
   background: number
   welcomeTitle: number
   welcomeSubtitle: number
+  temperatureEntityId: number
+  humidityEntityId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -86,6 +92,8 @@ export type RoomDashboardMinAggregateInputType = {
   background?: true
   welcomeTitle?: true
   welcomeSubtitle?: true
+  temperatureEntityId?: true
+  humidityEntityId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -102,6 +110,8 @@ export type RoomDashboardMaxAggregateInputType = {
   background?: true
   welcomeTitle?: true
   welcomeSubtitle?: true
+  temperatureEntityId?: true
+  humidityEntityId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -118,6 +128,8 @@ export type RoomDashboardCountAggregateInputType = {
   background?: true
   welcomeTitle?: true
   welcomeSubtitle?: true
+  temperatureEntityId?: true
+  humidityEntityId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -207,6 +219,8 @@ export type RoomDashboardGroupByOutputType = {
   background: string | null
   welcomeTitle: string | null
   welcomeSubtitle: string | null
+  temperatureEntityId: string | null
+  humidityEntityId: string | null
   createdAt: Date
   updatedAt: Date
   _count: RoomDashboardCountAggregateOutputType | null
@@ -244,6 +258,8 @@ export type RoomDashboardWhereInput = {
   background?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   welcomeTitle?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   welcomeSubtitle?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
+  temperatureEntityId?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
+  humidityEntityId?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   createdAt?: Prisma.DateTimeFilter<"RoomDashboard"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"RoomDashboard"> | Date | string
 }
@@ -260,6 +276,8 @@ export type RoomDashboardOrderByWithRelationInput = {
   background?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrderInput | Prisma.SortOrder
+  temperatureEntityId?: Prisma.SortOrderInput | Prisma.SortOrder
+  humidityEntityId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -279,6 +297,8 @@ export type RoomDashboardWhereUniqueInput = Prisma.AtLeast<{
   background?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   welcomeTitle?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   welcomeSubtitle?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
+  temperatureEntityId?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
+  humidityEntityId?: Prisma.StringNullableFilter<"RoomDashboard"> | string | null
   createdAt?: Prisma.DateTimeFilter<"RoomDashboard"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"RoomDashboard"> | Date | string
 }, "id" | "areaId">
@@ -295,6 +315,8 @@ export type RoomDashboardOrderByWithAggregationInput = {
   background?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrderInput | Prisma.SortOrder
+  temperatureEntityId?: Prisma.SortOrderInput | Prisma.SortOrder
+  humidityEntityId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.RoomDashboardCountOrderByAggregateInput
@@ -317,6 +339,8 @@ export type RoomDashboardScalarWhereWithAggregatesInput = {
   background?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
   welcomeTitle?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
   welcomeSubtitle?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
+  temperatureEntityId?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
+  humidityEntityId?: Prisma.StringNullableWithAggregatesFilter<"RoomDashboard"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"RoomDashboard"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"RoomDashboard"> | Date | string
 }
@@ -333,6 +357,8 @@ export type RoomDashboardCreateInput = {
   background?: string | null
   welcomeTitle?: string | null
   welcomeSubtitle?: string | null
+  temperatureEntityId?: string | null
+  humidityEntityId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -349,6 +375,8 @@ export type RoomDashboardUncheckedCreateInput = {
   background?: string | null
   welcomeTitle?: string | null
   welcomeSubtitle?: string | null
+  temperatureEntityId?: string | null
+  humidityEntityId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -365,6 +393,8 @@ export type RoomDashboardUpdateInput = {
   background?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  temperatureEntityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  humidityEntityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -381,6 +411,8 @@ export type RoomDashboardUncheckedUpdateInput = {
   background?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  temperatureEntityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  humidityEntityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -397,6 +429,8 @@ export type RoomDashboardCreateManyInput = {
   background?: string | null
   welcomeTitle?: string | null
   welcomeSubtitle?: string | null
+  temperatureEntityId?: string | null
+  humidityEntityId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -413,6 +447,8 @@ export type RoomDashboardUpdateManyMutationInput = {
   background?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  temperatureEntityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  humidityEntityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -429,6 +465,8 @@ export type RoomDashboardUncheckedUpdateManyInput = {
   background?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  temperatureEntityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  humidityEntityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -445,6 +483,8 @@ export type RoomDashboardCountOrderByAggregateInput = {
   background?: Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrder
+  temperatureEntityId?: Prisma.SortOrder
+  humidityEntityId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -461,6 +501,8 @@ export type RoomDashboardMaxOrderByAggregateInput = {
   background?: Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrder
+  temperatureEntityId?: Prisma.SortOrder
+  humidityEntityId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -477,6 +519,8 @@ export type RoomDashboardMinOrderByAggregateInput = {
   background?: Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrder
+  temperatureEntityId?: Prisma.SortOrder
+  humidityEntityId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -495,6 +539,8 @@ export type RoomDashboardSelect<ExtArgs extends runtime.Types.Extensions.Interna
   background?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  temperatureEntityId?: boolean
+  humidityEntityId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["roomDashboard"]>
@@ -511,6 +557,8 @@ export type RoomDashboardSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   background?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  temperatureEntityId?: boolean
+  humidityEntityId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["roomDashboard"]>
@@ -527,6 +575,8 @@ export type RoomDashboardSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   background?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  temperatureEntityId?: boolean
+  humidityEntityId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["roomDashboard"]>
@@ -543,11 +593,13 @@ export type RoomDashboardSelectScalar = {
   background?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  temperatureEntityId?: boolean
+  humidityEntityId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type RoomDashboardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "areaId" | "name" | "icon" | "iconBackgroundColor" | "floor" | "layout" | "widgets" | "background" | "welcomeTitle" | "welcomeSubtitle" | "createdAt" | "updatedAt", ExtArgs["result"]["roomDashboard"]>
+export type RoomDashboardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "areaId" | "name" | "icon" | "iconBackgroundColor" | "floor" | "layout" | "widgets" | "background" | "welcomeTitle" | "welcomeSubtitle" | "temperatureEntityId" | "humidityEntityId" | "createdAt" | "updatedAt", ExtArgs["result"]["roomDashboard"]>
 
 export type $RoomDashboardPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "RoomDashboard"
@@ -564,6 +616,8 @@ export type $RoomDashboardPayload<ExtArgs extends runtime.Types.Extensions.Inter
     background: string | null
     welcomeTitle: string | null
     welcomeSubtitle: string | null
+    temperatureEntityId: string | null
+    humidityEntityId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["roomDashboard"]>
@@ -1000,6 +1054,8 @@ export interface RoomDashboardFieldRefs {
   readonly background: Prisma.FieldRef<"RoomDashboard", 'String'>
   readonly welcomeTitle: Prisma.FieldRef<"RoomDashboard", 'String'>
   readonly welcomeSubtitle: Prisma.FieldRef<"RoomDashboard", 'String'>
+  readonly temperatureEntityId: Prisma.FieldRef<"RoomDashboard", 'String'>
+  readonly humidityEntityId: Prisma.FieldRef<"RoomDashboard", 'String'>
   readonly createdAt: Prisma.FieldRef<"RoomDashboard", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"RoomDashboard", 'DateTime'>
 }

@@ -867,6 +867,8 @@ export const RoomDashboardScalarFieldEnum = {
   background: 'background',
   welcomeTitle: 'welcomeTitle',
   welcomeSubtitle: 'welcomeSubtitle',
+  temperatureEntityId: 'temperatureEntityId',
+  humidityEntityId: 'humidityEntityId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

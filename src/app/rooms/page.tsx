@@ -7,10 +7,11 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { CARD_ICONS } from "@/components/widgets/card-icons";
 import { RoomPreviewCard } from "@/components/widgets/room-preview-card";
+import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
 
 const ROOM_ICON_OPTIONS = ["trees", "popcorn", "utensils-crossed", "towel-rack", "baby", "rocket", "gamepad", "tent-tree", "footprints", "eye-closed", "drill", "shelving-unit", "tool-case"] as const;
 
-type RoomItem = { areaId: string; name: string; icon?: string | null; iconBackgroundColor?: string | null; floor?: string | null; background?: string | null; createdAt: string };
+type RoomItem = { areaId: string; name: string; icon?: string | null; iconBackgroundColor?: string | null; floor?: string | null; background?: string | null; temperatureEntityId?: string | null; humidityEntityId?: string | null; createdAt: string };
 
 /** Floor options for create form. Value is stored; order is for display. */
 const FLOOR_OPTIONS = [
@@ -76,9 +77,20 @@ export default function RoomsPage() {
   const [editBackgroundPreview, setEditBackgroundPreview] = useState<string | null>(null);
   const [editFloor, setEditFloor] = useState("");
   const [editCustomFloor, setEditCustomFloor] = useState("");
+  const [editTemperatureEntityId, setEditTemperatureEntityId] = useState("");
+  const [editHumidityEntityId, setEditHumidityEntityId] = useState("");
+  const [editEntities, setEditEntities] = useState<{ entity_id: string; attributes?: Record<string, unknown> }[]>([]);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!editModalOpen) return;
+    fetch("/api/ha/entities")
+      .then((r) => r.json())
+      .then((data) => (Array.isArray(data) ? setEditEntities(data) : setEditEntities([])))
+      .catch(() => setEditEntities([]));
+  }, [editModalOpen]);
 
   const loadRooms = useCallback(() => {
     setLoading(true);
@@ -159,6 +171,8 @@ export default function RoomsPage() {
     const isPreset = FLOOR_ORDER.includes(r.floor || "");
     setEditFloor(isPreset ? (r.floor || "") : "");
     setEditCustomFloor(isPreset ? "" : (r.floor || ""));
+    setEditTemperatureEntityId(r.temperatureEntityId ?? "");
+    setEditHumidityEntityId(r.humidityEntityId ?? "");
     setUpdateError(null);
     setEditModalOpen(true);
   }
@@ -192,6 +206,8 @@ export default function RoomsPage() {
           iconBackgroundColor: editIconBackgroundColor || undefined,
           floor: floorValue,
           background: backgroundUrl,
+          temperatureEntityId: editTemperatureEntityId.trim() || null,
+          humidityEntityId: editHumidityEntityId.trim() || null,
         }),
       });
       const data = await res.json();
@@ -676,6 +692,32 @@ export default function RoomsPage() {
                     className="mt-2 w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
                   />
                 )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.temperatureEntity")}
+                </label>
+                <EntitySelectWithSearch
+                  entities={editEntities}
+                  value={editTemperatureEntityId}
+                  onChange={setEditTemperatureEntityId}
+                  filter={(e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("climate.")}
+                  placeholder={t("rooms.entitySearchPlaceholder")}
+                  emptyOption={t("rooms.entityNone")}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  {t("rooms.humidityEntity")}
+                </label>
+                <EntitySelectWithSearch
+                  entities={editEntities}
+                  value={editHumidityEntityId}
+                  onChange={setEditHumidityEntityId}
+                  filter={(e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("climate.")}
+                  placeholder={t("rooms.entitySearchPlaceholder")}
+                  emptyOption={t("rooms.entityNone")}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
