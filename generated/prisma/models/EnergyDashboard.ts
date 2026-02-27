@@ -20,8 +20,22 @@ export type EnergyDashboardModel = runtime.Types.Result.DefaultSelection<Prisma.
 
 export type AggregateEnergyDashboard = {
   _count: EnergyDashboardCountAggregateOutputType | null
+  _avg: EnergyDashboardAvgAggregateOutputType | null
+  _sum: EnergyDashboardSumAggregateOutputType | null
   _min: EnergyDashboardMinAggregateOutputType | null
   _max: EnergyDashboardMaxAggregateOutputType | null
+}
+
+export type EnergyDashboardAvgAggregateOutputType = {
+  costPerKwh: number | null
+  networkFeesPerDay: number | null
+  fixedDeliveryCostMonth: number | null
+}
+
+export type EnergyDashboardSumAggregateOutputType = {
+  costPerKwh: number | null
+  networkFeesPerDay: number | null
+  fixedDeliveryCostMonth: number | null
 }
 
 export type EnergyDashboardMinAggregateOutputType = {
@@ -33,6 +47,9 @@ export type EnergyDashboardMinAggregateOutputType = {
   backgroundDark: string | null
   welcomeTitle: string | null
   welcomeSubtitle: string | null
+  costPerKwh: number | null
+  networkFeesPerDay: number | null
+  fixedDeliveryCostMonth: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -46,6 +63,9 @@ export type EnergyDashboardMaxAggregateOutputType = {
   backgroundDark: string | null
   welcomeTitle: string | null
   welcomeSubtitle: string | null
+  costPerKwh: number | null
+  networkFeesPerDay: number | null
+  fixedDeliveryCostMonth: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -59,11 +79,26 @@ export type EnergyDashboardCountAggregateOutputType = {
   backgroundDark: number
   welcomeTitle: number
   welcomeSubtitle: number
+  costPerKwh: number
+  networkFeesPerDay: number
+  fixedDeliveryCostMonth: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
+
+export type EnergyDashboardAvgAggregateInputType = {
+  costPerKwh?: true
+  networkFeesPerDay?: true
+  fixedDeliveryCostMonth?: true
+}
+
+export type EnergyDashboardSumAggregateInputType = {
+  costPerKwh?: true
+  networkFeesPerDay?: true
+  fixedDeliveryCostMonth?: true
+}
 
 export type EnergyDashboardMinAggregateInputType = {
   id?: true
@@ -74,6 +109,9 @@ export type EnergyDashboardMinAggregateInputType = {
   backgroundDark?: true
   welcomeTitle?: true
   welcomeSubtitle?: true
+  costPerKwh?: true
+  networkFeesPerDay?: true
+  fixedDeliveryCostMonth?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -87,6 +125,9 @@ export type EnergyDashboardMaxAggregateInputType = {
   backgroundDark?: true
   welcomeTitle?: true
   welcomeSubtitle?: true
+  costPerKwh?: true
+  networkFeesPerDay?: true
+  fixedDeliveryCostMonth?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -100,6 +141,9 @@ export type EnergyDashboardCountAggregateInputType = {
   backgroundDark?: true
   welcomeTitle?: true
   welcomeSubtitle?: true
+  costPerKwh?: true
+  networkFeesPerDay?: true
+  fixedDeliveryCostMonth?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -143,6 +187,18 @@ export type EnergyDashboardAggregateArgs<ExtArgs extends runtime.Types.Extension
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: EnergyDashboardAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: EnergyDashboardSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: EnergyDashboardMinAggregateInputType
@@ -173,6 +229,8 @@ export type EnergyDashboardGroupByArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   _count?: EnergyDashboardCountAggregateInputType | true
+  _avg?: EnergyDashboardAvgAggregateInputType
+  _sum?: EnergyDashboardSumAggregateInputType
   _min?: EnergyDashboardMinAggregateInputType
   _max?: EnergyDashboardMaxAggregateInputType
 }
@@ -186,9 +244,14 @@ export type EnergyDashboardGroupByOutputType = {
   backgroundDark: string | null
   welcomeTitle: string | null
   welcomeSubtitle: string | null
+  costPerKwh: number | null
+  networkFeesPerDay: number | null
+  fixedDeliveryCostMonth: number | null
   createdAt: Date
   updatedAt: Date
   _count: EnergyDashboardCountAggregateOutputType | null
+  _avg: EnergyDashboardAvgAggregateOutputType | null
+  _sum: EnergyDashboardSumAggregateOutputType | null
   _min: EnergyDashboardMinAggregateOutputType | null
   _max: EnergyDashboardMaxAggregateOutputType | null
 }
@@ -220,6 +283,9 @@ export type EnergyDashboardWhereInput = {
   backgroundDark?: Prisma.StringNullableFilter<"EnergyDashboard"> | string | null
   welcomeTitle?: Prisma.StringNullableFilter<"EnergyDashboard"> | string | null
   welcomeSubtitle?: Prisma.StringNullableFilter<"EnergyDashboard"> | string | null
+  costPerKwh?: Prisma.FloatNullableFilter<"EnergyDashboard"> | number | null
+  networkFeesPerDay?: Prisma.FloatNullableFilter<"EnergyDashboard"> | number | null
+  fixedDeliveryCostMonth?: Prisma.FloatNullableFilter<"EnergyDashboard"> | number | null
   createdAt?: Prisma.DateTimeFilter<"EnergyDashboard"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"EnergyDashboard"> | Date | string
 }
@@ -233,6 +299,9 @@ export type EnergyDashboardOrderByWithRelationInput = {
   backgroundDark?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrderInput | Prisma.SortOrder
+  costPerKwh?: Prisma.SortOrderInput | Prisma.SortOrder
+  networkFeesPerDay?: Prisma.SortOrderInput | Prisma.SortOrder
+  fixedDeliveryCostMonth?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -249,6 +318,9 @@ export type EnergyDashboardWhereUniqueInput = Prisma.AtLeast<{
   backgroundDark?: Prisma.StringNullableFilter<"EnergyDashboard"> | string | null
   welcomeTitle?: Prisma.StringNullableFilter<"EnergyDashboard"> | string | null
   welcomeSubtitle?: Prisma.StringNullableFilter<"EnergyDashboard"> | string | null
+  costPerKwh?: Prisma.FloatNullableFilter<"EnergyDashboard"> | number | null
+  networkFeesPerDay?: Prisma.FloatNullableFilter<"EnergyDashboard"> | number | null
+  fixedDeliveryCostMonth?: Prisma.FloatNullableFilter<"EnergyDashboard"> | number | null
   createdAt?: Prisma.DateTimeFilter<"EnergyDashboard"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"EnergyDashboard"> | Date | string
 }, "id">
@@ -262,11 +334,16 @@ export type EnergyDashboardOrderByWithAggregationInput = {
   backgroundDark?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrderInput | Prisma.SortOrder
+  costPerKwh?: Prisma.SortOrderInput | Prisma.SortOrder
+  networkFeesPerDay?: Prisma.SortOrderInput | Prisma.SortOrder
+  fixedDeliveryCostMonth?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.EnergyDashboardCountOrderByAggregateInput
+  _avg?: Prisma.EnergyDashboardAvgOrderByAggregateInput
   _max?: Prisma.EnergyDashboardMaxOrderByAggregateInput
   _min?: Prisma.EnergyDashboardMinOrderByAggregateInput
+  _sum?: Prisma.EnergyDashboardSumOrderByAggregateInput
 }
 
 export type EnergyDashboardScalarWhereWithAggregatesInput = {
@@ -281,6 +358,9 @@ export type EnergyDashboardScalarWhereWithAggregatesInput = {
   backgroundDark?: Prisma.StringNullableWithAggregatesFilter<"EnergyDashboard"> | string | null
   welcomeTitle?: Prisma.StringNullableWithAggregatesFilter<"EnergyDashboard"> | string | null
   welcomeSubtitle?: Prisma.StringNullableWithAggregatesFilter<"EnergyDashboard"> | string | null
+  costPerKwh?: Prisma.FloatNullableWithAggregatesFilter<"EnergyDashboard"> | number | null
+  networkFeesPerDay?: Prisma.FloatNullableWithAggregatesFilter<"EnergyDashboard"> | number | null
+  fixedDeliveryCostMonth?: Prisma.FloatNullableWithAggregatesFilter<"EnergyDashboard"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"EnergyDashboard"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"EnergyDashboard"> | Date | string
 }
@@ -294,6 +374,9 @@ export type EnergyDashboardCreateInput = {
   backgroundDark?: string | null
   welcomeTitle?: string | null
   welcomeSubtitle?: string | null
+  costPerKwh?: number | null
+  networkFeesPerDay?: number | null
+  fixedDeliveryCostMonth?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -307,6 +390,9 @@ export type EnergyDashboardUncheckedCreateInput = {
   backgroundDark?: string | null
   welcomeTitle?: string | null
   welcomeSubtitle?: string | null
+  costPerKwh?: number | null
+  networkFeesPerDay?: number | null
+  fixedDeliveryCostMonth?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -320,6 +406,9 @@ export type EnergyDashboardUpdateInput = {
   backgroundDark?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  costPerKwh?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  networkFeesPerDay?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  fixedDeliveryCostMonth?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -333,6 +422,9 @@ export type EnergyDashboardUncheckedUpdateInput = {
   backgroundDark?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  costPerKwh?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  networkFeesPerDay?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  fixedDeliveryCostMonth?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -346,6 +438,9 @@ export type EnergyDashboardCreateManyInput = {
   backgroundDark?: string | null
   welcomeTitle?: string | null
   welcomeSubtitle?: string | null
+  costPerKwh?: number | null
+  networkFeesPerDay?: number | null
+  fixedDeliveryCostMonth?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -359,6 +454,9 @@ export type EnergyDashboardUpdateManyMutationInput = {
   backgroundDark?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  costPerKwh?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  networkFeesPerDay?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  fixedDeliveryCostMonth?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -372,6 +470,9 @@ export type EnergyDashboardUncheckedUpdateManyInput = {
   backgroundDark?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   welcomeSubtitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  costPerKwh?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  networkFeesPerDay?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  fixedDeliveryCostMonth?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -385,8 +486,17 @@ export type EnergyDashboardCountOrderByAggregateInput = {
   backgroundDark?: Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrder
+  costPerKwh?: Prisma.SortOrder
+  networkFeesPerDay?: Prisma.SortOrder
+  fixedDeliveryCostMonth?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type EnergyDashboardAvgOrderByAggregateInput = {
+  costPerKwh?: Prisma.SortOrder
+  networkFeesPerDay?: Prisma.SortOrder
+  fixedDeliveryCostMonth?: Prisma.SortOrder
 }
 
 export type EnergyDashboardMaxOrderByAggregateInput = {
@@ -398,6 +508,9 @@ export type EnergyDashboardMaxOrderByAggregateInput = {
   backgroundDark?: Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrder
+  costPerKwh?: Prisma.SortOrder
+  networkFeesPerDay?: Prisma.SortOrder
+  fixedDeliveryCostMonth?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -411,8 +524,25 @@ export type EnergyDashboardMinOrderByAggregateInput = {
   backgroundDark?: Prisma.SortOrder
   welcomeTitle?: Prisma.SortOrder
   welcomeSubtitle?: Prisma.SortOrder
+  costPerKwh?: Prisma.SortOrder
+  networkFeesPerDay?: Prisma.SortOrder
+  fixedDeliveryCostMonth?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type EnergyDashboardSumOrderByAggregateInput = {
+  costPerKwh?: Prisma.SortOrder
+  networkFeesPerDay?: Prisma.SortOrder
+  fixedDeliveryCostMonth?: Prisma.SortOrder
+}
+
+export type NullableFloatFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 
@@ -426,6 +556,9 @@ export type EnergyDashboardSelect<ExtArgs extends runtime.Types.Extensions.Inter
   backgroundDark?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  costPerKwh?: boolean
+  networkFeesPerDay?: boolean
+  fixedDeliveryCostMonth?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["energyDashboard"]>
@@ -439,6 +572,9 @@ export type EnergyDashboardSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   backgroundDark?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  costPerKwh?: boolean
+  networkFeesPerDay?: boolean
+  fixedDeliveryCostMonth?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["energyDashboard"]>
@@ -452,6 +588,9 @@ export type EnergyDashboardSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   backgroundDark?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  costPerKwh?: boolean
+  networkFeesPerDay?: boolean
+  fixedDeliveryCostMonth?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["energyDashboard"]>
@@ -465,11 +604,14 @@ export type EnergyDashboardSelectScalar = {
   backgroundDark?: boolean
   welcomeTitle?: boolean
   welcomeSubtitle?: boolean
+  costPerKwh?: boolean
+  networkFeesPerDay?: boolean
+  fixedDeliveryCostMonth?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type EnergyDashboardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "layout" | "widgets" | "background" | "backgroundLight" | "backgroundDark" | "welcomeTitle" | "welcomeSubtitle" | "createdAt" | "updatedAt", ExtArgs["result"]["energyDashboard"]>
+export type EnergyDashboardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "layout" | "widgets" | "background" | "backgroundLight" | "backgroundDark" | "welcomeTitle" | "welcomeSubtitle" | "costPerKwh" | "networkFeesPerDay" | "fixedDeliveryCostMonth" | "createdAt" | "updatedAt", ExtArgs["result"]["energyDashboard"]>
 
 export type $EnergyDashboardPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "EnergyDashboard"
@@ -483,6 +625,9 @@ export type $EnergyDashboardPayload<ExtArgs extends runtime.Types.Extensions.Int
     backgroundDark: string | null
     welcomeTitle: string | null
     welcomeSubtitle: string | null
+    costPerKwh: number | null
+    networkFeesPerDay: number | null
+    fixedDeliveryCostMonth: number | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["energyDashboard"]>
@@ -916,6 +1061,9 @@ export interface EnergyDashboardFieldRefs {
   readonly backgroundDark: Prisma.FieldRef<"EnergyDashboard", 'String'>
   readonly welcomeTitle: Prisma.FieldRef<"EnergyDashboard", 'String'>
   readonly welcomeSubtitle: Prisma.FieldRef<"EnergyDashboard", 'String'>
+  readonly costPerKwh: Prisma.FieldRef<"EnergyDashboard", 'Float'>
+  readonly networkFeesPerDay: Prisma.FieldRef<"EnergyDashboard", 'Float'>
+  readonly fixedDeliveryCostMonth: Prisma.FieldRef<"EnergyDashboard", 'Float'>
   readonly createdAt: Prisma.FieldRef<"EnergyDashboard", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"EnergyDashboard", 'DateTime'>
 }

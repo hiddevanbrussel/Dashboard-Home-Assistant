@@ -5,6 +5,7 @@ import type { NutsCardProps } from "./widget-types";
 import { CARD_ICONS } from "./card-icons";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useEnergyStore } from "@/stores/energy-store";
 
 function useEntityValue(entityId: string) {
   const entity = useEntityStateStore((s) => s.getState(entityId));
@@ -38,12 +39,23 @@ export function NutsCardWidget({
 }: NutsCardProps & { className?: string; onMoreClick?: () => void }) {
   const dailyData = useEntityValue(entity_id);
   const currentData = useEntityValue(current_entity_id ?? "");
+  const energyConfig = useEnergyStore();
 
   const currentVal = currentData.value ?? 0;
   const dailyVal = dailyData.value ?? 0;
   const unit = dailyData.unit || currentData.unit || "";
 
   const barPercent = max_value > 0 ? Math.min(100, (currentVal / max_value) * 100) : 0;
+
+  const isGasUnit = /m³|m3|m\^3/i.test(unit);
+  const gasCostPerM3 = energyConfig.gasCostPerM3;
+  let gasExpense: number | null = null;
+  if (isGasUnit && gasCostPerM3 != null && gasCostPerM3 >= 0 && dailyVal != null && !Number.isNaN(dailyVal)) {
+    gasExpense = dailyVal * gasCostPerM3;
+    gasExpense += energyConfig.gasNetbeheerkostenPerDag ?? 0;
+    const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    gasExpense += (energyConfig.gasVasteLeveringskostenPerMaand ?? 0) / daysInMonth;
+  }
 
   const IconComponent = CARD_ICONS[icon] ?? CARD_ICONS.Fuel;
   const iconBg = icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(icon_background_color) ? icon_background_color : DEFAULT_ICON_COLOR;
@@ -84,6 +96,11 @@ export function NutsCardWidget({
         <p className="text-sm text-gray-600 dark:text-white/70 tabular-nums mt-1">
           {formatValue(currentVal, unit)} • {formatValue(dailyVal, unit)}
         </p>
+        {gasExpense != null && (
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+            Kosten vandaag: €{gasExpense.toFixed(2)}
+          </p>
+        )}
       </div>
       <div className="relative shrink-0 self-center w-5 h-[110px] my-3 mx-2 bg-white/20 dark:bg-white/10 rounded-full overflow-hidden">
         <div

@@ -885,6 +885,9 @@ export const EnergyDashboardScalarFieldEnum = {
   backgroundDark: 'backgroundDark',
   welcomeTitle: 'welcomeTitle',
   welcomeSubtitle: 'welcomeSubtitle',
+  costPerKwh: 'costPerKwh',
+  networkFeesPerDay: 'networkFeesPerDay',
+  fixedDeliveryCostMonth: 'fixedDeliveryCostMonth',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -925,6 +928,13 @@ export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
     
 
 

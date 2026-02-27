@@ -990,7 +990,7 @@ export default function SettingsPage() {
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 {t("settings.energy.description")}
               </p>
-              <label className="flex items-center gap-3 cursor-pointer">
+              <label className="flex items-center gap-3 cursor-pointer mb-4">
                 <input
                   type="checkbox"
                   checked={energyStore.enabled}
@@ -1001,6 +1001,138 @@ export default function SettingsPage() {
                   {t("settings.energy.enabled")}
                 </span>
               </label>
+              <div className="border-t border-gray-200 dark:border-white/10 pt-4 space-y-4">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {t("settings.energy.contract")}
+                </p>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {t("settings.energy.costPerKwh")}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.001}
+                    value={energyStore.costPerKwh ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
+                      energyStore.setCostPerKwh(v != null && !Number.isNaN(v) ? v : undefined);
+                    }}
+                    placeholder="0.25"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                  />
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {t("settings.energy.costPerKwhHint")}
+                  </p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {t("settings.energy.netbeheerkostenPerDag")}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={energyStore.netbeheerkostenPerDag ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
+                      energyStore.setNetbeheerkostenPerDag(v != null && !Number.isNaN(v) ? v : undefined);
+                    }}
+                    placeholder="0.50"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                  />
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {t("settings.energy.netbeheerkostenPerDagHint")}
+                  </p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {t("settings.energy.vasteLeveringskostenPerMaand")}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={energyStore.vasteLeveringskostenPerMaand ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
+                      energyStore.setVasteLeveringskostenPerMaand(v != null && !Number.isNaN(v) ? v : undefined);
+                    }}
+                    placeholder="5.00"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                  />
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {t("settings.energy.vasteLeveringskostenPerMaandHint")}
+                  </p>
+                </div>
+                <div className="border-t border-gray-200 dark:border-white/10 pt-4 mt-4">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+                    {t("settings.energy.gasContract")}
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("settings.energy.gasCostPerM3")}
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.001}
+                        value={energyStore.gasCostPerM3 ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
+                          energyStore.setGasCostPerM3(v != null && !Number.isNaN(v) ? v : undefined);
+                        }}
+                        placeholder="1.20"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {t("settings.energy.gasCostPerM3Hint")}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("settings.energy.gasNetbeheerkostenPerDag")}
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={energyStore.gasNetbeheerkostenPerDag ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
+                          energyStore.setGasNetbeheerkostenPerDag(v != null && !Number.isNaN(v) ? v : undefined);
+                        }}
+                        placeholder="0.30"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {t("settings.energy.gasNetbeheerkostenPerDagHint")}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("settings.energy.gasVasteLeveringskostenPerMaand")}
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={energyStore.gasVasteLeveringskostenPerMaand ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
+                          energyStore.setGasVasteLeveringskostenPerMaand(v != null && !Number.isNaN(v) ? v : undefined);
+                        }}
+                        placeholder="5.00"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {t("settings.energy.gasVasteLeveringskostenPerMaandHint")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </GlassCard>
           )}
 

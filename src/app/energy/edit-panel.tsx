@@ -267,7 +267,7 @@ export function EditPanelModal(props: EditPanelModalProps) {
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Kosten per kWh (€)</label>
                 <input type="number" min={0} step={0.001} value={editForm.cost_per_kwh ?? ""} onChange={(e) => { const v = e.target.value === "" ? undefined : parseFloat(e.target.value); setEditForm((prev) => ({ ...prev, cost_per_kwh: v != null && !Number.isNaN(v) ? v : undefined })); }} placeholder="0.25" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500" />
-                <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Optioneel. Voor berekening kosten vandaag.</p>
+                <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Optioneel. Overschrijft de waarde uit Instellingen → Energie.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

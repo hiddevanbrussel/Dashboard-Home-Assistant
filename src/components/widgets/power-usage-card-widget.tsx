@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MoreVertical, Zap, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useEnergyStore } from "@/stores/energy-store";
 
 function formatKwh(val: number): string {
   if (val >= 1000) return `${(val / 1000).toFixed(1)}MWh`;
@@ -74,7 +75,17 @@ export function PowerUsageCardWidget({
   }
   const maxVal = Math.max(1, ...mainData.map((d) => d.consumption));
   const totalUsage = mainData.reduce((sum, d) => sum + d.consumption, 0);
-  const expense = cost_per_kwh != null ? selectedDayConsumption * cost_per_kwh : null;
+
+  const energyConfig = useEnergyStore();
+  const effectiveCostPerKwh = cost_per_kwh ?? energyConfig.costPerKwh;
+  let expense: number | null = null;
+  if (effectiveCostPerKwh != null && effectiveCostPerKwh >= 0) {
+    expense = selectedDayConsumption * effectiveCostPerKwh;
+    const netbeheer = energyConfig.netbeheerkostenPerDag ?? 0;
+    const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    const vastePerDag = (energyConfig.vasteLeveringskostenPerMaand ?? 0) / daysInMonth;
+    expense += netbeheer + vastePerDag;
+  }
 
   const cardBase =
     "rounded-2xl bg-white/10 dark:bg-black/50 backdrop-blur-2xl text-gray-900 dark:text-white shadow-xl border border-white/20 dark:border-white/10 overflow-hidden";
