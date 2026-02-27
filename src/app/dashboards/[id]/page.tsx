@@ -545,6 +545,7 @@ export default function DashboardEditPage() {
     refresh?: number;
     show_title?: boolean;
     device_entity_ids?: string[];
+    device_names?: Record<string, string>;
     cost_per_kwh?: number;
   }>({
     title: "",
@@ -578,6 +579,7 @@ export default function DashboardEditPage() {
     refresh: 10,
     show_title: true,
     device_entity_ids: [],
+    device_names: {},
     cost_per_kwh: undefined as number | undefined,
   });
   const [iconSearch, setIconSearch] = useState("");
@@ -737,6 +739,7 @@ export default function DashboardEditPage() {
         refresh: editingWidget.refresh ?? 10,
         show_title: editingWidget.show_title !== false,
         device_entity_ids: editingWidget.device_entity_ids ?? [],
+        device_names: editingWidget.device_names ?? {},
         cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
       });
       setIconSearch("");
@@ -1618,6 +1621,7 @@ export default function DashboardEditPage() {
               title={firstPowerUsage.title ?? "Stroomverbruik"}
               entity_id={firstPowerUsage.entity_id}
               device_entity_ids={firstPowerUsage.device_entity_ids}
+              device_names={firstPowerUsage.device_names}
               cost_per_kwh={firstPowerUsage.cost_per_kwh}
               width={firstPowerUsage.width}
               height={firstPowerUsage.height}
@@ -3316,6 +3320,34 @@ export default function DashboardEditPage() {
                         )}
                       </div>
                     </div>
+                    {(editForm.device_entity_ids ?? []).length > 0 && (
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Weergavenamen apparaten
+                        </label>
+                        <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                          Pas de naam aan zoals die op de kaart wordt getoond.
+                        </p>
+                        <div className="space-y-2 max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 p-2">
+                          {(editForm.device_entity_ids ?? []).map((eid) => {
+                            const defaultName = (entities.find((x) => x.entity_id === eid)?.attributes as { friendly_name?: string })?.friendly_name ?? eid;
+                            const customName = (editForm.device_names ?? {})[eid] ?? "";
+                            return (
+                              <div key={eid} className="flex flex-col gap-0.5">
+                                <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate" title={eid}>{eid}</span>
+                                <input
+                                  type="text"
+                                  value={customName}
+                                  onChange={(e) => setEditForm((prev) => ({ ...prev, device_names: { ...(prev.device_names ?? {}), [eid]: e.target.value } }))}
+                                  placeholder={defaultName}
+                                  className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:text-gray-200 dark:placeholder-gray-500"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -4697,6 +4729,7 @@ aria-label={t("editPanel.removeCondition")}
                         ...(editingWidget.type === "power_usage_card" && {
                           entity_id: editForm.entity_id || undefined,
                           device_entity_ids: (editForm.device_entity_ids ?? []).length > 0 ? editForm.device_entity_ids : undefined,
+                          device_names: Object.values(editForm.device_names ?? {}).some((v) => v?.trim()) ? editForm.device_names : undefined,
                           cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined,
                           width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
                           height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,

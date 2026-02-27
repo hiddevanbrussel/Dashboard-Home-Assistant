@@ -97,6 +97,8 @@ export type WidgetConfig = {
   show_title?: boolean;
   /** Power usage card: entity IDs voor per-apparaat verbruik (bijv. sensor.tv_energy, sensor.fridge_energy). */
   device_entity_ids?: string[];
+  /** Power usage card: aangepaste weergavenamen per entity_id (entity_id -> naam). */
+  device_names?: Record<string, string>;
   /** Power usage card: kosten per kWh (bijv. 0.25) voor berekening expense. */
   cost_per_kwh?: number;
 };

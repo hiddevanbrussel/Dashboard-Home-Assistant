@@ -63,7 +63,7 @@ export function TopTabs({ activeHref, className, contentLight }: TopTabsProps) {
                   : "text-gray-600 hover:bg-white/50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
             )}
           >
-            <Icon className="h-4 w-4" aria-hidden />
+            <Icon className={cn("h-4 w-4", href === "/energy" && isActive && "text-[#FFAA00]")} aria-hidden />
             {t(labelKey)}
           </Link>
         );

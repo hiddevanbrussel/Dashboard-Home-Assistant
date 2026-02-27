@@ -39,6 +39,7 @@ type EditForm = {
   color?: string;
   icon_background_color?: string;
   device_entity_ids?: string[];
+  device_names?: Record<string, string>;
   cost_per_kwh?: number;
 };
 
@@ -116,7 +117,11 @@ export function EditPanelModal(props: EditPanelModalProps) {
     const base: Partial<WidgetConfig> = { title: editForm.title };
     if (editingWidget.type === "solar_card") Object.assign(base, { entity_id: editForm.entity_id, consumption_entity_id: editForm.consumption_entity_id || undefined });
     if (editingWidget.type === "energy_monitor_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, background_image: editForm.background_image || undefined, background_image_dark: editForm.background_image_dark || undefined, image_conditions: (editForm.image_conditions ?? []).filter((c) => c.image?.trim()).length > 0 ? (editForm.image_conditions ?? []).filter((c) => c.image?.trim()) : undefined, minimal: editForm.minimal ?? false, scale: editForm.scale ?? 1 });
-    if (editingWidget.type === "power_usage_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, device_entity_ids: (editForm.device_entity_ids ?? []).length > 0 ? editForm.device_entity_ids : undefined, cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
+    if (editingWidget.type === "power_usage_card") {
+      const dn = editForm.device_names ?? {};
+      const hasCustomNames = Object.values(dn).some((v) => v?.trim());
+      Object.assign(base, { entity_id: editForm.entity_id || undefined, device_entity_ids: (editForm.device_entity_ids ?? []).length > 0 ? editForm.device_entity_ids : undefined, device_names: hasCustomNames ? dn : undefined, cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
+    }
     if (editingWidget.type === "stat_pill_card") Object.assign(base, { entity_id: editForm.entity_id, label: editForm.label || undefined, icon: editForm.icon || undefined, color: editForm.color || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "sensor_card") Object.assign(base, { entity_id: editForm.entity_id, icon: editForm.icon || undefined, show_icon: editForm.show_icon !== false, size: editForm.size || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "nuts_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, icon: editForm.icon || undefined, icon_background_color: editForm.icon_background_color || undefined, current_entity_id: editForm.current_entity_id || undefined, max_value: editForm.max_value != null && editForm.max_value > 0 ? editForm.max_value : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
@@ -283,6 +288,30 @@ export function EditPanelModal(props: EditPanelModalProps) {
                   })()}
                 </div>
               </div>
+              {(editForm.device_entity_ids ?? []).length > 0 && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Weergavenamen apparaten</label>
+                  <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">Pas de naam aan zoals die op de kaart wordt getoond.</p>
+                  <div className="space-y-2 max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 p-2">
+                    {(editForm.device_entity_ids ?? []).map((eid) => {
+                      const defaultName = (entities.find((x) => x.entity_id === eid)?.attributes as { friendly_name?: string })?.friendly_name ?? eid;
+                      const customName = (editForm.device_names ?? {})[eid] ?? "";
+                      return (
+                        <div key={eid} className="flex flex-col gap-0.5">
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate" title={eid}>{eid}</span>
+                          <input
+                            type="text"
+                            value={customName}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, device_names: { ...(prev.device_names ?? {}), [eid]: e.target.value } }))}
+                            placeholder={defaultName}
+                            className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:text-gray-200 dark:placeholder-gray-500"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Kosten per kWh (€)</label>
                 <input type="number" min={0} step={0.001} value={editForm.cost_per_kwh ?? ""} onChange={(e) => { const v = e.target.value === "" ? undefined : parseFloat(e.target.value); setEditForm((prev) => ({ ...prev, cost_per_kwh: v != null && !Number.isNaN(v) ? v : undefined })); }} placeholder="0.25" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500" />

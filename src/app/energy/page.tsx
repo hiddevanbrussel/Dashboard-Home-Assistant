@@ -507,6 +507,7 @@ export default function EnergyPage() {
       color: editingWidget.color ?? "amber",
       icon_background_color: editingWidget.icon_background_color ?? "",
       device_entity_ids: editingWidget.device_entity_ids ?? [],
+      device_names: editingWidget.device_names ?? {},
       cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
       textMode: isCategoryCard ? deriveTextMode() : undefined,
     });
@@ -802,6 +803,7 @@ export default function EnergyPage() {
             title={w.title ?? "Stroomverbruik"}
             entity_id={w.entity_id}
             device_entity_ids={w.device_entity_ids}
+            device_names={w.device_names}
             cost_per_kwh={w.cost_per_kwh}
             width={w.width}
             height={w.height}

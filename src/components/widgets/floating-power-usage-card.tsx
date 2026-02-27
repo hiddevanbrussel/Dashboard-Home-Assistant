@@ -49,6 +49,7 @@ export function FloatingPowerUsageCard({
   title,
   entity_id,
   device_entity_ids = [],
+  device_names,
   cost_per_kwh,
   width,
   height,
@@ -61,6 +62,7 @@ export function FloatingPowerUsageCard({
   title: string;
   entity_id?: string;
   device_entity_ids?: string[];
+  device_names?: Record<string, string>;
   cost_per_kwh?: number;
   width?: number;
   height?: number;
@@ -179,7 +181,7 @@ export function FloatingPowerUsageCard({
   return (
     <div
       className={cn(
-        "fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-white/95 dark:bg-black/50 backdrop-blur-2xl border border-gray-200 dark:border-white/10",
+        "fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -212,6 +214,7 @@ export function FloatingPowerUsageCard({
           title={title}
           entity_id={entity_id}
           device_entity_ids={device_entity_ids}
+          device_names={device_names}
           cost_per_kwh={cost_per_kwh}
           onMoreClick={editMode ? onEdit : undefined}
           className="relative h-full"

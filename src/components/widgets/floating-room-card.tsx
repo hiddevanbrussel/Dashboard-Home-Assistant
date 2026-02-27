@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, FLOATING_CARD_GRID_STEP } from "@/lib/floating-card-grid";
 import { RoomCardWidget } from "./room-card-widget";
@@ -180,9 +180,15 @@ export function FloatingRoomCard({
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const bounds = { maxLeft: typeof window !== "undefined" ? window.innerWidth - totalWidth : 400, maxBottom: typeof window !== "undefined" ? window.innerHeight - totalHeight - BOTTOM_MARGIN : 400 };
+  const bounds = useMemo(
+    () => ({
+      maxLeft: typeof window !== "undefined" ? window.innerWidth - totalWidth : 400,
+      maxBottom: typeof window !== "undefined" ? window.innerHeight - totalHeight - BOTTOM_MARGIN : 400,
+    }),
+    [totalWidth, totalHeight]
+  );
 
-  function getOthersRects(): Rect[] {
+  const getOthersRects = useCallback((): Rect[] => {
     if (!otherRoomCards?.length) return [];
     return otherRoomCards
       .map((o) => {
@@ -190,7 +196,7 @@ export function FloatingRoomCard({
         return { left: p.left, bottom: p.bottom, width: o.width, height: o.height };
       })
       .filter((r) => r.left >= 0 && r.bottom >= 0);
-  }
+  }, [otherRoomCards, storageScope]);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -235,7 +241,7 @@ export function FloatingRoomCard({
     }
     setPosition(p);
     savePosition(storageScope, widget.id, p);
-  }, [widget.id, widgetIndex, totalWidth, totalHeight, storageScope]);
+  }, [widget.id, widgetIndex, totalWidth, totalHeight, storageScope, bounds, getOthersRects]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -272,7 +278,7 @@ export function FloatingRoomCard({
       };
       setPosition(snapToGrid(raw, bounds));
     },
-    [isDragging, bounds.maxLeft, bounds.maxBottom]
+    [isDragging, bounds]
   );
 
   const handlePointerUp = useCallback(
@@ -295,7 +301,7 @@ export function FloatingRoomCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, bounds, widget.id, storageScope, totalWidth, totalHeight]
+    [isDragging, bounds, widget.id, storageScope, totalWidth, totalHeight, getOthersRects]
   );
 
   const cardContent = (

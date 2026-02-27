@@ -189,6 +189,8 @@ export type PowerUsageCardProps = WidgetBaseProps & {
   entity_id: string;
   /** Entity IDs voor per-apparaat verbruik. */
   device_entity_ids?: string[];
+  /** Aangepaste weergavenamen per entity_id (entity_id -> naam). */
+  device_names?: Record<string, string>;
   /** Kosten per kWh voor expense weergave. */
   cost_per_kwh?: number;
   /** Breedte kaart in px (standaard 400). */

@@ -13,6 +13,7 @@ export function PowerUsageCardWidget({
   title = "Stroomverbruik",
   entity_id,
   device_entity_ids = [],
+  device_names,
   cost_per_kwh,
   className,
   onMoreClick,
@@ -20,6 +21,7 @@ export function PowerUsageCardWidget({
   title?: string;
   entity_id?: string;
   device_entity_ids?: string[];
+  device_names?: Record<string, string>;
   cost_per_kwh?: number;
   className?: string;
   onMoreClick?: () => void;
@@ -38,6 +40,7 @@ export function PowerUsageCardWidget({
   });
 
   const getEntityName = (eid: string) => {
+    if (device_names?.[eid]?.trim()) return device_names[eid].trim();
     const e = entitiesData?.find((x: { entity_id: string }) => x.entity_id === eid);
     return (e?.attributes?.friendly_name as string) ?? eid;
   };
@@ -89,7 +92,7 @@ export function PowerUsageCardWidget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/95 dark:bg-black/50 backdrop-blur-2xl text-gray-900 dark:text-white shadow-xl border border-gray-200 dark:border-white/10",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/10 dark:bg-black/50 backdrop-blur-2xl text-gray-900 dark:text-white shadow-xl border border-white/20 dark:border-white/10",
         className
       )}
     >

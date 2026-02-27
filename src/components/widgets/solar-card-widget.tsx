@@ -35,7 +35,7 @@ export function SolarCardWidget({
     <div
       className={cn(
         "flex w-full flex-col overflow-hidden rounded-2xl shadow-xl backdrop-blur-2xl border",
-        "bg-white/95 dark:bg-black/50 border-gray-200 dark:border-white/10",
+        "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
         "text-gray-900 dark:text-white",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
@@ -43,23 +43,23 @@ export function SolarCardWidget({
         className
       )}
     >
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
         <div className="min-w-0 flex-1">
-          <p className="font-medium truncate text-gray-900 dark:text-white/90">{title}</p>
+          <p className="font-semibold truncate text-gray-900 dark:text-white">{title}</p>
           <p className="text-xs text-gray-600 dark:text-white/60 truncate">{yieldData.friendlyName}</p>
         </div>
         {onMoreClick && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-            className="p-1.5 rounded-lg shrink-0 text-gray-500 dark:text-white/70 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg shrink-0 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
             aria-label="Opties"
           >
             <MoreVertical className="h-5 w-5" aria-hidden />
           </button>
         )}
       </div>
-      <div className="px-4 pb-4 pt-0 space-y-3">
+      <div className="p-4 space-y-3">
         <div>
           <p className="flex items-center gap-1.5 text-xs text-amber-800/80 dark:text-white/60 mb-0.5">
             <PanelTop className="h-3.5 w-3.5 shrink-0" aria-hidden />
