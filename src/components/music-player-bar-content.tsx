@@ -117,8 +117,10 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
       titleLine = combined.slice(sep).replace(/^\s*[\-\u2013\u2014:]+\s*/, "").trim();
     }
   }
-  if (haArtist) artistLine = haArtist;
-  if (haTitle) titleLine = haTitle;
+  /* Bij speaker-switch: MA queueState (cur) is gekoppeld aan selectedQueueId en update direct.
+     HA media_player kan een andere speaker tonen of vertraagd zijn. Prioriteer MA (cur), vul alleen aan met HA. */
+  if (haArtist && !artistLine) artistLine = haArtist;
+  if (haTitle && !titleLine) titleLine = haTitle;
 
   return (
     <footer
