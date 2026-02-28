@@ -313,79 +313,106 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
                   <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-900" aria-hidden title={t("music.playing")} />
                 )}
               </button>
-              {speakerPopoverOpen && (
-                <div
-                  className="absolute bottom-full right-0 mb-2 py-2 min-w-[180px] rounded-lg border border-white/20 bg-gray-900 dark:bg-black shadow-xl z-[201] max-h-[60vh] overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <p className="px-3 py-1.5 text-xs font-medium text-white/70 border-b border-white/10">
-                    {t("music.choosePlayer")}
-                  </p>
-                  {selectablePlayers.map((p) => {
-                    const isSelected = selectedQueueId === p.queue_id;
-                    const isActive = isSelected && (queueState?.state === "playing" || queueState?.state === "paused");
-                    const entityId = resolveEntityId(p, entityMap);
-                    const mainEntityId = selectedQueueId ? resolveEntityId(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId } as MAPlayer, entityMap) : null;
-                    const canJoin = entityId && mainEntityId && entityId !== mainEntityId && !groupMembers.has(entityId);
-                    const canUnjoin = entityId && groupMembers.has(entityId);
-                    return (
-                      <div
-                        key={p.queue_id}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-2 text-sm text-white/90 hover:bg-white/5 transition-colors group",
-                          isSelected && "bg-white/10"
-                        )}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedQueueId(p.queue_id);
-                            setSpeakerPopoverOpen(false);
-                          }}
-                          className="flex-1 min-w-0 text-left flex items-center justify-between gap-2"
-                        >
-                          <span className="truncate font-medium">{playerLabel(p)}</span>
+              {speakerPopoverOpen && (() => {
+                const mainPlayer = selectablePlayers.find((p) => p.queue_id === selectedQueueId) ?? null;
+                const mainEntityId = mainPlayer ? resolveEntityId(mainPlayer, entityMap) : null;
+                const otherPlayers = selectablePlayers.filter((p) => p.queue_id !== selectedQueueId);
+                const isActive = queueState?.state === "playing" || queueState?.state === "paused";
+                return (
+                  <div
+                    className="absolute bottom-full right-0 mb-2 min-w-[220px] rounded-xl border border-white/15 bg-gray-900 dark:bg-black shadow-2xl z-[201] overflow-hidden"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Actieve speaker */}
+                    <div className="px-3 pt-3 pb-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-1.5">
+                        {t("music.mainSpeaker")}
+                      </p>
+                      {mainPlayer ? (
+                        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-white/10">
+                          <span className="flex h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden />
+                          <span className="flex-1 min-w-0 text-sm font-medium text-white truncate">
+                            {playerLabel(mainPlayer)}
+                          </span>
                           {isActive && (
-                            <span className="flex h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden title={t("music.playing")} />
-                          )}
-                        </button>
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          {canJoin && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (mainEntityId && entityId) handleJoin([mainEntityId, entityId]);
-                              }}
-                              disabled={joinUnjoinPending}
-                              className="p-1.5 rounded hover:bg-white/15 text-white/80 hover:text-white disabled:opacity-50 transition-colors"
-                              title={t("music.joinSpeakers")}
-                              aria-label={t("music.joinSpeakers")}
-                            >
-                              <Users className="h-4 w-4" />
-                            </button>
-                          )}
-                          {canUnjoin && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (entityId) handleUnjoin(entityId);
-                              }}
-                              disabled={joinUnjoinPending}
-                              className="p-1.5 rounded hover:bg-white/15 text-white/80 hover:text-white disabled:opacity-50 transition-colors"
-                              title={t("music.unjoinSpeaker")}
-                              aria-label={t("music.unjoinSpeaker")}
-                            >
-                              <User className="h-4 w-4" />
-                            </button>
+                            <span className="text-[10px] text-green-400 shrink-0">{t("music.playing")}</span>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      ) : (
+                        <p className="text-xs text-white/40 px-2">{t("music.noActiveSpeaker")}</p>
+                      )}
+                    </div>
+
+                    {/* Andere speakers om aan groep toe te voegen */}
+                    {otherPlayers.length > 0 && (
+                      <>
+                        <div className="mx-3 border-t border-white/10" />
+                        <div className="px-3 pt-2 pb-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-1.5">
+                            {t("music.groupMembers")}
+                          </p>
+                          <div className="space-y-0.5">
+                            {otherPlayers.map((p) => {
+                              const entityId = resolveEntityId(p, entityMap);
+                              const isGrouped = entityId ? groupMembers.has(entityId) : false;
+                              const canJoin = !!entityId && !!mainEntityId && !isGrouped;
+                              const canUnjoin = !!entityId && isGrouped;
+                              return (
+                                <div
+                                  key={p.queue_id}
+                                  className="flex items-center gap-2 py-1.5"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedQueueId(p.queue_id);
+                                      setSpeakerPopoverOpen(false);
+                                    }}
+                                    className="flex-1 min-w-0 text-left flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors"
+                                  >
+                                    <span className={cn("flex h-1.5 w-1.5 shrink-0 rounded-full", isGrouped ? "bg-green-400" : "bg-white/20")} aria-hidden />
+                                    <span className="truncate">{playerLabel(p)}</span>
+                                  </button>
+                                  {canJoin && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (mainEntityId && entityId) handleJoin([mainEntityId, entityId]);
+                                      }}
+                                      disabled={joinUnjoinPending}
+                                      className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs font-medium disabled:opacity-50 transition-colors"
+                                      title={t("music.joinSpeakers")}
+                                    >
+                                      <Users className="h-3 w-3" aria-hidden />
+                                      {t("music.add")}
+                                    </button>
+                                  )}
+                                  {canUnjoin && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (entityId) handleUnjoin(entityId);
+                                      }}
+                                      disabled={joinUnjoinPending}
+                                      className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 hover:bg-red-500/20 text-white/70 hover:text-red-400 text-xs font-medium disabled:opacity-50 transition-colors"
+                                      title={t("music.unjoinSpeaker")}
+                                    >
+                                      <User className="h-3 w-3" aria-hidden />
+                                      {t("music.remove")}
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
           <button
