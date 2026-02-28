@@ -9,7 +9,7 @@ import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { MediaCardWidget } from "@/components/widgets/media-card-widget";
 
-function getMaArtistTitle(cur: { name?: string; artists?: { name?: string }[] | { name?: string }; artist?: string; stream_title?: string } | undefined): { artist: string; title: string } {
+function getMaArtistTitle(cur: { name?: string; artists?: unknown; artist?: string; stream_title?: string } | undefined): { artist: string; title: string } {
   if (!cur) return { artist: "", title: "" };
   const hasStreamTitle = typeof cur.stream_title === "string" && cur.stream_title.trim().length > 0;
   const stationName = typeof cur.name === "string" ? cur.name.trim() : "";

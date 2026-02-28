@@ -405,24 +405,64 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
                   {selectablePlayers.map((p) => {
                     const isSelected = selectedQueueId === p.queue_id;
                     const isActive = isSelected && (queueState?.state === "playing" || queueState?.state === "paused");
+                    const entityId = resolveEntityId(p);
+                    const mainEntityId = selectedQueueId ? resolveEntityId(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId } as MAPlayer) : null;
+                    const canJoin = entityId && mainEntityId && entityId !== mainEntityId && !groupMembers.has(entityId);
+                    const canUnjoin = entityId && groupMembers.has(entityId);
                     return (
-                      <button
+                      <div
                         key={p.queue_id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedQueueId(p.queue_id);
-                          setSpeakerPopoverOpen(false);
-                        }}
                         className={cn(
-                          "w-full text-left px-3 py-2 text-sm text-white/90 hover:bg-white/10 transition-colors flex items-center justify-between gap-2",
-                          isSelected && "bg-white/15 font-medium"
+                          "flex items-center gap-2 px-3 py-2 text-sm text-white/90 hover:bg-white/5 transition-colors group",
+                          isSelected && "bg-white/10"
                         )}
                       >
-                        <span>{playerLabel(p)}</span>
-                        {isActive && (
-                          <span className="flex h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden title={t("music.playing")} />
-                        )}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedQueueId(p.queue_id);
+                            setSpeakerPopoverOpen(false);
+                          }}
+                          className="flex-1 min-w-0 text-left flex items-center justify-between gap-2"
+                        >
+                          <span className="truncate font-medium">{playerLabel(p)}</span>
+                          {isActive && (
+                            <span className="flex h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden title={t("music.playing")} />
+                          )}
+                        </button>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          {canJoin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (mainEntityId && entityId) handleJoin([mainEntityId, entityId]);
+                              }}
+                              disabled={joinUnjoinPending}
+                              className="p-1.5 rounded hover:bg-white/15 text-white/80 hover:text-white disabled:opacity-50 transition-colors"
+                              title={t("music.joinSpeakers")}
+                              aria-label={t("music.joinSpeakers")}
+                            >
+                              <Users className="h-4 w-4" />
+                            </button>
+                          )}
+                          {canUnjoin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (entityId) handleUnjoin(entityId);
+                              }}
+                              disabled={joinUnjoinPending}
+                              className="p-1.5 rounded hover:bg-white/15 text-white/80 hover:text-white disabled:opacity-50 transition-colors"
+                              title={t("music.unjoinSpeaker")}
+                              aria-label={t("music.unjoinSpeaker")}
+                            >
+                              <User className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
