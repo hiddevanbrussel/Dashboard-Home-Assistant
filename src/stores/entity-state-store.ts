@@ -6,15 +6,23 @@ export type EntityState = {
   attributes: Record<string, unknown>;
 };
 
+// How long (ms) to protect an optimistically-updated entity from being
+// overwritten by a background poll. Gives HA time to process the command.
+const OPTIMISTIC_LOCK_MS = 4000;
+
 type EntityStateStore = {
   states: Record<string, EntityState>;
   updatedAt: number | null;
   error: string | null;
   /** Verhoog om directe refresh aan te vragen (bv. bij dashboard met stat pills). */
   refreshRequested: number;
+  /** entity_id → timestamp until which poll results should not overwrite optimistic state */
+  optimisticLockUntil: Record<string, number>;
   setStates: (entities: EntityState[]) => void;
   /** Optimistic update voor één entity (bijv. direct aan/uit tonen). */
   updateEntityState: (entityId: string, patch: Partial<Pick<EntityState, "state" | "attributes">>) => void;
+  /** Revert an optimistic update (e.g. when the API call failed). */
+  revertEntityState: (entityId: string, previous: EntityState | undefined) => void;
   setError: (error: string | null) => void;
   getState: (entityId: string) => EntityState | undefined;
   isOffline: () => boolean;
@@ -27,10 +35,19 @@ export const useEntityStateStore = create<EntityStateStore>((set, get) => ({
   updatedAt: null,
   error: null,
   refreshRequested: 0,
+  optimisticLockUntil: {},
   setStates: (entities) => {
+    const now = Date.now();
+    const current = get().states;
+    const locks = get().optimisticLockUntil;
     const states: Record<string, EntityState> = {};
     for (const e of entities) {
-      states[e.entity_id] = e;
+      // Keep optimistic state if the lock is still active
+      if (locks[e.entity_id] && locks[e.entity_id] > now) {
+        states[e.entity_id] = current[e.entity_id] ?? e;
+      } else {
+        states[e.entity_id] = e;
+      }
     }
     set({ states, updatedAt: Date.now(), error: null });
   },
@@ -40,12 +57,22 @@ export const useEntityStateStore = create<EntityStateStore>((set, get) => ({
       ? { ...current, ...patch }
       : { entity_id: entityId, state: (patch.state as string) ?? "unknown", attributes: patch.attributes ?? {} };
     set({
-      states: {
-        ...get().states,
-        [entityId]: next,
+      states: { ...get().states, [entityId]: next },
+      optimisticLockUntil: {
+        ...get().optimisticLockUntil,
+        [entityId]: Date.now() + OPTIMISTIC_LOCK_MS,
       },
       updatedAt: Date.now(),
     });
+  },
+  revertEntityState: (entityId, previous) => {
+    const locks = { ...get().optimisticLockUntil };
+    delete locks[entityId];
+    if (previous) {
+      set({ states: { ...get().states, [entityId]: previous }, optimisticLockUntil: locks });
+    } else {
+      set({ optimisticLockUntil: locks });
+    }
   },
   setError: (error) => set({ error }),
   getState: (entityId) => get().states[entityId],

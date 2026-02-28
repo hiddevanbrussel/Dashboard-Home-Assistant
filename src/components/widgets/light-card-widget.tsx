@@ -52,6 +52,8 @@ export function LightCardWidget({
 }: LightControlProps & { className?: string; onMoreClick?: () => void }) {
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
+  const revertEntityState = useEntityStateStore((s) => s.revertEntityState);
+  const pendingRef = useRef(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [sliderBrightness, setSliderBrightness] = useState(100);
   const brightnessDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -80,7 +82,7 @@ export function LightCardWidget({
   }, [brightnessPct]);
 
   async function callLight(service: string, serviceData?: Record<string, unknown>) {
-    await fetch("/api/ha/call-service", {
+    const res = await fetch("/api/ha/call-service", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -90,12 +92,18 @@ export function LightCardWidget({
         service_data: serviceData,
       }),
     });
+    if (!res.ok) throw new Error(`call-service failed: ${res.status}`);
   }
 
   function handleToggle() {
+    if (pendingRef.current) return; // prevent double-tap
+    pendingRef.current = true;
     const nextOn = !isOn;
+    const previous = entity; // snapshot for revert
     updateEntityState(entity_id, { state: nextOn ? "on" : "off" });
-    callLight(nextOn ? "turn_on" : "turn_off", nextOn ? { brightness_pct: brightnessPct || 100 } : undefined);
+    callLight(nextOn ? "turn_on" : "turn_off", nextOn ? { brightness_pct: brightnessPct || 100 } : undefined)
+      .catch(() => revertEntityState(entity_id, previous))
+      .finally(() => { pendingRef.current = false; });
   }
 
   function handleBrightnessChange(pct: number) {
@@ -296,8 +304,10 @@ export function LightCardWidget({
                         } else {
                           const committedOn = displayPosition > 0.5;
                           if (committedOn !== isOn) {
+                            const previous = entity;
                             updateEntityState(entity_id, { state: committedOn ? "on" : "off" });
-                            callLight(committedOn ? "turn_on" : "turn_off", committedOn ? { brightness_pct: 100 } : undefined);
+                            callLight(committedOn ? "turn_on" : "turn_off", committedOn ? { brightness_pct: 100 } : undefined)
+                              .catch(() => revertEntityState(entity_id, previous));
                           }
                         }
                         dragStartRef.current = null;
