@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState } from "react";
 import Image from "next/image";
 import {
   Disc3,
@@ -23,6 +23,7 @@ import { useMusicPlayerStore, type MAPlayer } from "@/stores/music-player-store"
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerActions } from "@/hooks/use-music-player-actions";
+import { useSpeakerPairing, resolveEntityId } from "@/hooks/use-speaker-pairing";
 import { getItemImageUrl, getImageSrc, formatDuration, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -71,89 +72,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
   const allowedIds = musicAssistant.allowedSpeakerIds;
   const selectablePlayers = allowedIds.length > 0 ? maPlayers.filter((p) => allowedIds.includes(p.queue_id)) : maPlayers;
 
-  const [entityMap, setEntityMap] = useState<Record<string, string>>({});
-  const [groupMembers, setGroupMembers] = useState<Set<string>>(new Set());
-  const [joinUnjoinPending, setJoinUnjoinPending] = useState(false);
-
-  const resolveEntityId = useCallback(
-    (p: MAPlayer): string | null => {
-      const q = p.queue_id;
-      const name = (p.display_name as string) ?? "";
-      return (
-        entityMap[q] ??
-        entityMap[q?.toLowerCase?.() ?? ""] ??
-        entityMap[name.toLowerCase().replace(/\s+/g, "_")] ??
-        null
-      );
-    },
-    [entityMap]
-  );
-
-  useEffect(() => {
-    if (!speakerPopoverOpen) return;
-    fetch("/api/ha/ma-entity-map")
-      .then((r) => (r.ok ? r.json() : {}))
-      .then((map: Record<string, string>) => setEntityMap(map))
-      .catch(() => setEntityMap({}));
-
-    fetch("/api/ha/entities")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((entities: { entity_id?: string; attributes?: { group_members?: string[] } }[]) => {
-        const members = new Set<string>();
-        for (const e of entities) {
-          const gm = e.attributes?.group_members;
-          if (Array.isArray(gm) && gm.length > 0) {
-            members.add(e.entity_id ?? "");
-            gm.forEach((id) => members.add(id));
-          }
-        }
-        setGroupMembers(members);
-      })
-      .catch(() => setGroupMembers(new Set()));
-  }, [speakerPopoverOpen]);
-
-  const handleJoin = useCallback(
-    async (entityIds: string[]) => {
-      if (entityIds.length < 2) return;
-      setJoinUnjoinPending(true);
-      try {
-        const res = await fetch("/api/ha/join-speakers", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ entity_ids: entityIds }),
-        });
-        const json = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new Error(json.error ?? "Join failed");
-        setGroupMembers((prev) => new Set([...prev, ...entityIds]));
-      } finally {
-        setJoinUnjoinPending(false);
-      }
-    },
-    []
-  );
-
-  const handleUnjoin = useCallback(
-    async (entityId: string) => {
-      setJoinUnjoinPending(true);
-      try {
-        const res = await fetch("/api/ha/unjoin-speaker", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ entity_id: entityId }),
-        });
-        const json = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new Error(json.error ?? "Unjoin failed");
-        setGroupMembers((prev) => {
-          const next = new Set(prev);
-          next.delete(entityId);
-          return next;
-        });
-      } finally {
-        setJoinUnjoinPending(false);
-      }
-    },
-    []
-  );
+  const { entityMap, groupMembers, joinUnjoinPending, handleJoin, handleUnjoin } = useSpeakerPairing({ enabled: speakerPopoverOpen });
 
   useEffect(() => {
     if (!speakerPopoverOpen) return;
@@ -405,8 +324,8 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
                   {selectablePlayers.map((p) => {
                     const isSelected = selectedQueueId === p.queue_id;
                     const isActive = isSelected && (queueState?.state === "playing" || queueState?.state === "paused");
-                    const entityId = resolveEntityId(p);
-                    const mainEntityId = selectedQueueId ? resolveEntityId(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId } as MAPlayer) : null;
+                    const entityId = resolveEntityId(p, entityMap);
+                    const mainEntityId = selectedQueueId ? resolveEntityId(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId } as MAPlayer, entityMap) : null;
                     const canJoin = entityId && mainEntityId && entityId !== mainEntityId && !groupMembers.has(entityId);
                     const canUnjoin = entityId && groupMembers.has(entityId);
                     return (

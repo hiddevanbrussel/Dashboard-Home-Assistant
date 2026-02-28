@@ -71,28 +71,53 @@ async function writeToDisk(cacheKey: string, body: ArrayBuffer, contentType: str
   }
 }
 
+/** Allowlisted music CDN domains for external playlist/album covers (Spotify, Apple, etc.) */
+const ALLOWED_IMAGE_HOSTS = new Set([
+  "i.scdn.co", "m.scdn.co", "image-cdn-ak.spotifycdn.com", "image-cdn-fa.spotifycdn.com",
+  "mzstatic.com", "is1-ssl.mzstatic.com", "is2-ssl.mzstatic.com", "is3-ssl.mzstatic.com", "is4-ssl.mzstatic.com", "is5-ssl.mzstatic.com",
+  "s.mzstatic.com", "a1.mzstatic.com", "a2.mzstatic.com", "a3.mzstatic.com", "a4.mzstatic.com", "a5.mzstatic.com",
+  "m.media-amazon.com", "images-na.ssl-images-amazon.com",
+  "lh3.googleusercontent.com", "i.ytimg.com",
+]);
+
 /**
  * GET /api/music-assistant-image?baseUrl=...&token=...&url=...
  * Proxies image requests to Music Assistant so auth and CORS work.
+ * Also proxies external URLs from allowlisted music CDN domains (Spotify, Apple Music, etc.).
  * Caches in memory + filesystem for fast repeat loads.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const baseUrl = searchParams.get("baseUrl")?.replace(/\/+$/, "");
+  const baseUrl = searchParams.get("baseUrl")?.replace(/\/+$/, "") ?? "";
   const token = searchParams.get("token") ?? "";
   const urlParam = searchParams.get("url");
 
-  if (!baseUrl || !urlParam) {
-    return NextResponse.json({ error: "baseUrl and url required" }, { status: 400 });
+  if (!urlParam) {
+    return NextResponse.json({ error: "url required" }, { status: 400 });
   }
 
-  const imageUrl = urlParam.startsWith("http") ? urlParam : `${baseUrl}${urlParam.startsWith("/") ? "" : "/"}${urlParam}`;
+  const imageUrl = urlParam.startsWith("http") ? urlParam : `${baseUrl}${baseUrl ? (urlParam.startsWith("/") ? "" : "/") : ""}${urlParam}`;
 
   try {
     const parsed = new URL(imageUrl);
-    const baseParsed = new URL(baseUrl.startsWith("http") ? baseUrl : `http://${baseUrl}`);
-    if (parsed.hostname !== baseParsed.hostname || parsed.port !== baseParsed.port) {
-      return NextResponse.json({ error: "URL must be same host as baseUrl" }, { status: 400 });
+    const isExternal = imageUrl.startsWith("http");
+    const isAllowedExternal = isExternal && ALLOWED_IMAGE_HOSTS.has(parsed.hostname);
+    const isSameHost = baseUrl && (() => {
+      try {
+        const baseParsed = new URL(baseUrl.startsWith("http") ? baseUrl : `http://${baseUrl}`);
+        return parsed.hostname === baseParsed.hostname && parsed.port === baseParsed.port;
+      } catch {
+        return false;
+      }
+    })();
+
+    if (!isSameHost && !isAllowedExternal) {
+      if (isExternal) {
+        return NextResponse.json({ error: "External URL not from allowed music CDN" }, { status: 400 });
+      }
+      if (!baseUrl) {
+        return NextResponse.json({ error: "baseUrl required for relative URLs" }, { status: 400 });
+      }
     }
   } catch {
     return NextResponse.json({ error: "Invalid url" }, { status: 400 });
@@ -119,7 +144,15 @@ export async function GET(request: Request) {
 
   try {
     const headers: HeadersInit = { Accept: "image/*" };
-    if (token) headers.Authorization = `Bearer ${token}`;
+    const isExternalCdn = (() => {
+      try {
+        const u = new URL(imageUrl);
+        return ALLOWED_IMAGE_HOSTS.has(u.hostname);
+      } catch {
+        return false;
+      }
+    })();
+    if (!isExternalCdn && token) headers.Authorization = `Bearer ${token}`;
 
     const res = await fetch(imageUrl, { headers });
 

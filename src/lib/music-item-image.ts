@@ -38,6 +38,10 @@ export function getItemImageUrl(item: MASearchItemImage | null | undefined): str
     asStr((item as { artwork?: string }).artwork) ??
     asStr((item as { picture?: string }).picture) ??
     (typeof (item as { artwork?: unknown }).artwork === "object" ? fromObj((item as { artwork: unknown }).artwork) : null) ??
+    asStr((item as { cover?: string }).cover) ??
+    asStr((item as { cover_image?: string }).cover_image) ??
+    asStr((item as { cover_url?: string }).cover_url) ??
+    asStr((item as { icon?: string }).icon) ??
     null;
   if (url) return url;
   const meta = item.metadata as { images?: { url?: string; value?: string; path?: string }[] } | undefined;
@@ -63,10 +67,10 @@ export function getItemImageUrl(item: MASearchItemImage | null | undefined): str
     if (url) return url;
   }
   // provider_mappings: Music Assistant stores images per provider (playlists, albums, etc.)
-  const mappings = (item as { provider_mappings?: { url?: string; image?: string | { url?: string; value?: string } }[] }).provider_mappings;
+  const mappings = (item as { provider_mappings?: { url?: string; image?: string | { url?: string; value?: string }; image_url?: string }[] }).provider_mappings;
   if (Array.isArray(mappings) && mappings.length > 0) {
     for (const m of mappings) {
-      url = asStr(m?.url) ?? asStr(m?.image) ?? (typeof m?.image === "object" ? fromObj(m.image) : null);
+      url = asStr(m?.url) ?? asStr(m?.image) ?? asStr(m?.image_url) ?? (typeof m?.image === "object" ? fromObj(m.image) : null);
       if (url) return url;
     }
   }

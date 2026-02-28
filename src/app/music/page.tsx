@@ -9,6 +9,7 @@ import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
 import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, Speaker, ChevronRight, ChevronDown, ListMusic, Home, ListPlus } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
+import { SpeakerPairingModal } from "@/components/speaker-pairing-modal";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -418,6 +419,7 @@ export default function MusicPage() {
   const [selectedCategory, setSelectedCategory] = useState<MusicSectionId | null>(null);
   const musicMenuOpen = true;
   const [selectedMenu, setSelectedMenu] = useState<"artists" | "albums" | "playlists" | null>(null);
+  const [speakerPairingOpen, setSpeakerPairingOpen] = useState(false);
   const [addToPlaylistTrack, setAddToPlaylistTrack] = useState<MASearchItem | null>(null);
   const [addToPlaylistPlaylists, setAddToPlaylistPlaylists] = useState<MASearchItem[]>([]);
   const [addToPlaylistLoading, setAddToPlaylistLoading] = useState(false);
@@ -1477,23 +1479,39 @@ export default function MusicPage() {
       headerContentLight={(!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || !!selectedAlbum}
       headerEndAction={
         useMA && maPlayers.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => setSearchOverlayOpen(true)}
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-              (!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || selectedAlbum || selectedArtist
-                ? "text-white/90 hover:bg-white/10"
-                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-            )}
-            aria-label={t("music.search")}
-          >
-            <Search className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setSpeakerPairingOpen(true)}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+                (!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || selectedAlbum || selectedArtist
+                  ? "text-white/90 hover:bg-white/10"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+              )}
+              aria-label={t("music.speakerPairing")}
+            >
+              <Speaker className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchOverlayOpen(true)}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+                (!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || selectedAlbum || selectedArtist
+                  ? "text-white/90 hover:bg-white/10"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+              )}
+              aria-label={t("music.search")}
+            >
+              <Search className="h-5 w-5" />
+            </button>
+          </div>
         ) : undefined
       }
     >
       {searchOverlay}
+      <SpeakerPairingModal isOpen={speakerPairingOpen} onClose={() => setSpeakerPairingOpen(false)} />
       {addToPlaylistTrack && typeof document !== "undefined" && createPortal(
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 dark:bg-black/70"
