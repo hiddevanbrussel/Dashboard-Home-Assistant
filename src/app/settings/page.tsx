@@ -9,12 +9,13 @@ import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverB
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode } from "@/stores/dashboard-settings-store";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, HERO_SLIDER_SOURCE_IDS } from "@/stores/music-assistant-store";
 import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
+import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useNewsStore } from "@/stores/news-store";
-import { Globe, Image, Link2, List, Monitor, Music2, Newspaper, Palette, LayoutDashboard, ChevronUp, ChevronDown, X, Zap } from "lucide-react";
+import { CalendarDays, Globe, Image, Link2, List, Monitor, Music2, Newspaper, Palette, LayoutDashboard, ChevronUp, ChevronDown, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "page-background" | "language" | "dashboard" | "connection" | "energy" | "music-assistant" | "news" | "entities" | "system";
+type SettingsSection = "appearance" | "screensaver" | "page-background" | "language" | "dashboard" | "connection" | "energy" | "calendar" | "music-assistant" | "news" | "entities" | "system";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -24,6 +25,7 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   dashboard: "settings.dashboard",
   connection: "settings.connection",
   energy: "settings.energy",
+  calendar: "settings.calendar",
   "music-assistant": "settings.musicAssistant",
   news: "news.settings.title",
   entities: "settings.entities",
@@ -91,13 +93,17 @@ export default function SettingsPage() {
   const [updateResult, setUpdateResult] = useState<{ ok: boolean; message?: string; steps?: { step: string; output: string; error?: string }[] } | null>(null);
   const musicAssistant = useMusicAssistantStore();
   const energyStore = useEnergyStore();
+  const calendarStore = useCalendarStore();
   const newsStore = useNewsStore();
   const [newsFeedDraft, setNewsFeedDraft] = useState<string[]>([]);
   const [newsFeedInput, setNewsFeedInput] = useState("");
+  const [calendarEntities, setCalendarEntities] = useState<HaEntity[]>([]);
+  const [calendarEntitiesLoading, setCalendarEntitiesLoading] = useState(false);
 
   useEffect(() => {
     hydrateMusicAssistantStore();
     hydrateEnergyStore();
+    hydrateCalendarStore();
   }, []);
 
   useEffect(() => {
@@ -401,7 +407,8 @@ export default function SettingsPage() {
       { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
     ]},
     { groupKey: "settings.groups.pages", sections: [
-      { id: "energy", labelKey: SECTION_KEYS.energy, icon: Zap },
+      { id: "energy",    labelKey: SECTION_KEYS.energy,    icon: Zap          },
+      { id: "calendar",  labelKey: SECTION_KEYS.calendar,  icon: CalendarDays },
     ]},
     { groupKey: "settings.groups.integrations", sections: [
       { id: "news", labelKey: SECTION_KEYS.news, icon: Newspaper },
@@ -1147,6 +1154,98 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </GlassCard>
+          )}
+
+          {section === "calendar" && (
+            <GlassCard>
+              <h3 className="text-card-title font-medium mb-3">{t("settings.calendar")}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {t("settings.calendar.description")}
+              </p>
+              <label className="flex items-center gap-3 cursor-pointer mb-5">
+                <input
+                  type="checkbox"
+                  checked={calendarStore.enabled}
+                  onChange={(e) => calendarStore.setEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-600"
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {t("settings.calendar.enabled")}
+                </span>
+              </label>
+
+              <div className="border-t border-gray-200 dark:border-white/10 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {t("settings.calendar.entities")}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCalendarEntitiesLoading(true);
+                      try {
+                        const res = await fetch("/api/ha/entities");
+                        const data = await res.json();
+                        if (Array.isArray(data)) {
+                          setCalendarEntities(
+                            (data as HaEntity[]).filter((e) => e.entity_id.startsWith("calendar."))
+                          );
+                        }
+                      } catch { /* ignore */ } finally {
+                        setCalendarEntitiesLoading(false);
+                      }
+                    }}
+                    disabled={calendarEntitiesLoading}
+                    className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50"
+                  >
+                    {calendarEntitiesLoading && (
+                      <div className="h-3 w-3 animate-spin rounded-full border-2 border-indigo-400/40 border-t-indigo-600" />
+                    )}
+                    {t("settings.calendar.loadEntities")}
+                  </button>
+                </div>
+
+                {calendarEntities.length === 0 && !calendarEntitiesLoading ? (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {t("settings.calendar.noEntities")}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {calendarEntities.map((entity) => {
+                      const checked = calendarStore.calendarEntityIds.includes(entity.entity_id);
+                      const friendlyName = (entity.attributes as Record<string, unknown>)?.friendly_name as string | undefined;
+                      return (
+                        <label key={entity.entity_id} className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              const ids = calendarStore.calendarEntityIds;
+                              calendarStore.setCalendarEntityIds(
+                                e.target.checked
+                                  ? [...ids, entity.entity_id]
+                                  : ids.filter((id) => id !== entity.entity_id)
+                              );
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-600"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm text-gray-700 dark:text-gray-200 truncate">
+                              {friendlyName ?? entity.entity_id}
+                            </p>
+                            {friendlyName && (
+                              <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
+                                {entity.entity_id}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </GlassCard>
           )}

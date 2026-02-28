@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"c:\\\\Users\\\\HiddevanBrussel\\\\.cursor\\\\dashboard\\\\src\\\\app\\\\api\\\\ha\"\" 2>/dev/null || echo \"Directory not found \")"
+    ]
+  }
+}

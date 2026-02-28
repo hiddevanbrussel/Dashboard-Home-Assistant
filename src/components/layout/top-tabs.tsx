@@ -2,19 +2,21 @@
 
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { DoorOpen, LayoutDashboard, Music2, Zap } from "lucide-react";
+import { CalendarDays, DoorOpen, LayoutDashboard, Music2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
+import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 
 const tabKeys = [
   { href: "/dashboards", labelKey: "nav.dashboard", icon: LayoutDashboard },
   { href: "/rooms", labelKey: "nav.rooms", icon: DoorOpen },
 ] as const;
 
-const musicTab = { href: "/music", labelKey: "nav.music", icon: Music2 } as const;
-const energyTab = { href: "/energy", labelKey: "nav.energy", icon: Zap } as const;
+const musicTab    = { href: "/music",    labelKey: "nav.music",    icon: Music2       } as const;
+const energyTab   = { href: "/energy",   labelKey: "nav.energy",   icon: Zap          } as const;
+const calendarTab = { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays } as const;
 
 type TopTabsProps = {
   activeHref?: string;
@@ -26,13 +28,16 @@ export function TopTabs({ activeHref, className, contentLight }: TopTabsProps) {
   const { t } = useTranslation();
   const musicAssistantEnabled = useMusicAssistantStore((s) => s.enabled);
   const energyEnabled = useEnergyStore((s) => s.enabled);
+  const calendarEnabled = useCalendarStore((s) => s.enabled);
   useEffect(() => {
     hydrateMusicAssistantStore();
     hydrateEnergyStore();
+    hydrateCalendarStore();
   }, []);
   const tabs = [
     ...tabKeys,
-    ...(energyEnabled ? [energyTab] : []),
+    ...(energyEnabled    ? [energyTab]   : []),
+    ...(calendarEnabled  ? [calendarTab] : []),
     ...(musicAssistantEnabled ? [musicTab] : []),
   ];
   return (
