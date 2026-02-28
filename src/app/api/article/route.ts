@@ -1,6 +1,35 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 
+function extractImage(html: string, baseUrl: string): string | null {
+  // 1. og:image
+  const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+  if (ogMatch?.[1]) return resolveUrl(ogMatch[1], baseUrl);
+
+  // 2. twitter:image
+  const twMatch = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
+    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i);
+  if (twMatch?.[1]) return resolveUrl(twMatch[1], baseUrl);
+
+  // 3. First <img> with a meaningful src in the article/main zone
+  const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+  const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+  const zone = articleMatch?.[1] ?? mainMatch?.[1] ?? "";
+  const imgMatch = zone.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (imgMatch?.[1] && !imgMatch[1].startsWith("data:")) return resolveUrl(imgMatch[1], baseUrl);
+
+  return null;
+}
+
+function resolveUrl(src: string, base: string): string {
+  try {
+    return new URL(src, base).href;
+  } catch {
+    return src;
+  }
+}
+
 function extractContent(html: string): string[] {
   // Remove noisy tags entirely
   const cleaned = html
@@ -69,8 +98,9 @@ export async function GET(request: NextRequest) {
 
     const html = await res.text();
     const paragraphs = extractContent(html);
+    const image = extractImage(html, articleUrl);
 
-    return NextResponse.json({ paragraphs });
+    return NextResponse.json({ paragraphs, image });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch" },

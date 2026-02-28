@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { X, Newspaper, RefreshCw, ArrowLeft, BookOpen } from "lucide-react";
+import { X, Newspaper, RefreshCw, ArrowLeft } from "lucide-react";
 import { useNewsStore } from "@/stores/news-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,7 @@ export function NewsOverlay({ isOpen, onClose }: Props) {
 
   const [selected, setSelected] = useState<NewsItem | null>(null);
   const [articleParagraphs, setArticleParagraphs] = useState<string[] | null>(null);
+  const [articleImage, setArticleImage] = useState<string | null>(null);
   const [articleLoading, setArticleLoading] = useState(false);
   const [articleError, setArticleError] = useState<string | null>(null);
 
@@ -107,6 +108,7 @@ export function NewsOverlay({ isOpen, onClose }: Props) {
     if (!isOpen) {
       setSelected(null);
       setArticleParagraphs(null);
+      setArticleImage(null);
       setArticleError(null);
     }
   }, [isOpen]);
@@ -116,7 +118,7 @@ export function NewsOverlay({ isOpen, onClose }: Props) {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (selected) { setSelected(null); setArticleParagraphs(null); }
+        if (selected) { setSelected(null); setArticleParagraphs(null); setArticleImage(null); }
         else onClose();
       }
     };
@@ -124,22 +126,19 @@ export function NewsOverlay({ isOpen, onClose }: Props) {
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen, onClose, selected]);
 
-  function selectArticle(item: NewsItem) {
+  async function selectArticle(item: NewsItem) {
     setSelected(item);
     setArticleParagraphs(null);
+    setArticleImage(null);
     setArticleError(null);
-    // Scroll detail panel to top
     setTimeout(() => detailRef.current?.scrollTo({ top: 0 }), 0);
-  }
 
-  async function loadFullArticle() {
-    if (!selected) return;
     setArticleLoading(true);
-    setArticleError(null);
     try {
-      const res = await fetch(`/api/article?url=${encodeURIComponent(selected.link)}`);
+      const res = await fetch(`/api/article?url=${encodeURIComponent(item.link)}`);
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error ?? "Failed");
+      setArticleImage(data.image ?? null);
       const paragraphs: string[] = data.paragraphs ?? [];
       if (paragraphs.length === 0) {
         setArticleError(t("news.noContent"));
@@ -178,7 +177,7 @@ export function NewsOverlay({ isOpen, onClose }: Props) {
             {selected ? (
               <button
                 type="button"
-                onClick={() => { setSelected(null); setArticleParagraphs(null); }}
+                onClick={() => { setSelected(null); setArticleParagraphs(null); setArticleImage(null); }}
                 className="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors sm:hidden"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -278,56 +277,49 @@ export function NewsOverlay({ isOpen, onClose }: Props) {
             )}
           >
             {selected ? (
-              <div className="p-5 space-y-4">
-                {/* Article header */}
-                <div>
-                  <p className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-1">
-                    {selected.source}
-                    {selected.pubDate && ` · ${relativeTime(selected.pubDate)}`}
-                  </p>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white leading-snug">
-                    {selected.title}
-                  </h3>
-                  {selected.description && (
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                      {selected.description}
-                    </p>
-                  )}
-                </div>
-
-                <hr className="border-gray-200 dark:border-white/10" />
-
-                {/* Full article content */}
-                {articleParagraphs ? (
-                  <div className="space-y-3">
-                    {articleParagraphs.map((para, i) => (
-                      <p key={i} className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
-                        {para}
-                      </p>
-                    ))}
-                  </div>
-                ) : articleError ? (
-                  <p className="text-sm text-amber-600 dark:text-amber-400">{articleError}</p>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={loadFullArticle}
-                    disabled={articleLoading}
-                    className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-50 transition-colors"
-                  >
-                    {articleLoading ? (
-                      <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 dark:border-white/20 border-t-gray-600 dark:border-t-white/70" />
-                        {t("news.readingFull")}
-                      </>
-                    ) : (
-                      <>
-                        <BookOpen className="h-4 w-4" />
-                        {t("news.readFull")}
-                      </>
-                    )}
-                  </button>
+              <div>
+                {/* Hero image */}
+                {articleImage && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={articleImage}
+                    alt=""
+                    className="w-full max-h-56 object-cover"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
                 )}
+
+                <div className="p-5 space-y-4">
+                  {/* Article header */}
+                  <div>
+                    <p className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-1">
+                      {selected.source}
+                      {selected.pubDate && ` · ${relativeTime(selected.pubDate)}`}
+                    </p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white leading-snug">
+                      {selected.title}
+                    </h3>
+                  </div>
+
+                  <hr className="border-gray-200 dark:border-white/10" />
+
+                  {/* Full article content */}
+                  {articleLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 dark:border-white/20 border-t-gray-600 dark:border-t-white/70" />
+                    </div>
+                  ) : articleError ? (
+                    <p className="text-sm text-amber-600 dark:text-amber-400">{articleError}</p>
+                  ) : articleParagraphs ? (
+                    <div className="space-y-3">
+                      {articleParagraphs.map((para, i) => (
+                        <p key={i} className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+                          {para}
+                        </p>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-2 text-gray-400 dark:text-white/30 py-12">
