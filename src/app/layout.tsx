@@ -10,13 +10,23 @@ import { GlobalMusicBar } from "@/components/global-music-bar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Home Assistant Dashboard Builder",
-  description: "Set up a working dashboard with live Home Assistant data in 5–10 minutes.",
+  title: "Home Assistant Dashboard",
+  description: "Dashboard met live Home Assistant data.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "HA Dashboard",
+    startupImage: "/api/pwa-icon?size=512",
+  },
+  icons: {
+    icon: [
+      { url: "/api/pwa-icon?size=192", sizes: "192x192", type: "image/png" },
+      { url: "/api/pwa-icon?size=512", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/api/pwa-icon?size=180", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 
