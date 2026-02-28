@@ -112,6 +112,10 @@ export type MediaCardProps = WidgetBaseProps & {
   entity_picture?: string;
   media_duration?: number;
   media_position?: number;
+  /** Override titel (bijv. van Music Assistant, prioriteit boven HA entity). */
+  mediaTitleOverride?: string;
+  /** Override artiest (bijv. van Music Assistant, prioriteit boven HA entity). */
+  mediaArtistOverride?: string;
   /** Breedte kaart in px (standaard 320). */
   width?: number;
   /** Hoogte kaart in px (standaard auto). */

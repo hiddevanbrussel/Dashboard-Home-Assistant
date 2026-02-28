@@ -31,6 +31,8 @@ export function MediaCardWidget({
   className,
   onMoreClick,
   onExpandedChange,
+  mediaTitleOverride,
+  mediaArtistOverride,
 }: MediaCardProps & { className?: string; onMoreClick?: () => void; onExpandedChange?: (expanded: boolean) => void }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -48,8 +50,10 @@ export function MediaCardWidget({
     entity?.state !== "unavailable" &&
     entity?.state !== "unknown";
   const isPlaying = entity?.state === "playing";
-  const mediaTitle = (entity?.attributes?.media_title as string) ?? "";
-  const mediaArtist = (entity?.attributes?.media_artist as string) ?? "";
+  const entityTitle = (entity?.attributes?.media_title as string) ?? "";
+  const entityArtist = (entity?.attributes?.media_artist as string) ?? "";
+  const mediaTitle = (mediaTitleOverride?.trim() || entityTitle) || "";
+  const mediaArtist = (mediaArtistOverride?.trim() || entityArtist) || "";
   const entityPicture = entity?.attributes?.entity_picture as string | undefined;
   const duration = Number(entity?.attributes?.media_duration) || 0;
   const position = Number(entity?.attributes?.media_position) || 0;

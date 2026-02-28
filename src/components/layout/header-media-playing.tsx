@@ -1,16 +1,48 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Disc3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useMusicPlayerStore } from "@/stores/music-player-store";
+import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { MediaCardWidget } from "@/components/widgets/media-card-widget";
+
+function getMaArtistTitle(cur: { name?: string; artists?: { name?: string }[] | { name?: string }; artist?: string; stream_title?: string } | undefined): { artist: string; title: string } {
+  if (!cur) return { artist: "", title: "" };
+  const hasStreamTitle = typeof cur.stream_title === "string" && cur.stream_title.trim().length > 0;
+  const stationName = typeof cur.name === "string" ? cur.name.trim() : "";
+  let artist =
+    cur.artists != null
+      ? Array.isArray(cur.artists)
+        ? (cur.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
+        : typeof (cur.artists as { name?: string })?.name === "string"
+          ? (cur.artists as { name: string }).name
+          : ""
+      : typeof cur.artist === "string"
+        ? cur.artist.trim()
+        : "";
+  let title = hasStreamTitle ? cur.stream_title!.trim() : stationName ? stationName : "";
+  if (hasStreamTitle && stationName && !artist) artist = stationName;
+  if (title && !artist && !hasStreamTitle) {
+    const sep = title.match(/\s*[\-\u2013\u2014]\s+|\s*:\s+/)?.index;
+    if (typeof sep === "number" && sep > 0) {
+      artist = title.slice(0, sep).trim();
+      title = title.slice(sep).replace(/^\s*[\-\u2013\u2014:]+\s*/, "").trim();
+    }
+  }
+  return { artist, title };
+}
 
 export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } = {}) {
   const states = useEntityStateStore((s) => s.states);
   const setStates = useEntityStateStore((s) => s.setStates);
+  const queueState = useMusicPlayerStore((s) => s.queueState);
+  const selectedQueueId = useMusicPlayerStore((s) => s.selectedQueueId);
+  const musicAssistant = useMusicAssistantStore();
   const [open, setOpen] = useState(false);
+  const [entityMap, setEntityMap] = useState<Record<string, string>>({});
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -19,20 +51,33 @@ export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } 
       e.entity_id.startsWith("media_player.") &&
       (e.state === "playing" || e.state === "paused")
   );
-  // Bij meerdere spelers: geef voorrang aan TV Woonkamer
-  const playingEntity =
-    playingEntities.length === 0
-      ? null
-      : playingEntities.length === 1
-        ? playingEntities[0].entity_id
-        : (() => {
-            const woonkamer = playingEntities.find(
-              (e) =>
-                (e.attributes?.friendly_name as string)?.toLowerCase().includes("woonkamer") ||
-                e.entity_id.toLowerCase().includes("woonkamer")
-            );
-            return woonkamer?.entity_id ?? playingEntities[0].entity_id;
-          })();
+
+  useEffect(() => {
+    if (musicAssistant.enabled && (queueState?.state === "playing" || queueState?.state === "paused")) {
+      fetch("/api/ha/ma-entity-map")
+        .then((r) => (r.ok ? r.json() : {}))
+        .then((map: Record<string, string>) => setEntityMap(map))
+        .catch(() => setEntityMap({}));
+    }
+  }, [musicAssistant.enabled, queueState?.state]);
+
+  const playingEntity = useMemo(() => {
+    if (playingEntities.length === 0) return null;
+    if (playingEntities.length === 1) return playingEntities[0].entity_id;
+    const maPlaying = musicAssistant.enabled && (queueState?.state === "playing" || queueState?.state === "paused") && selectedQueueId;
+    if (maPlaying && entityMap[selectedQueueId!]) {
+      const maEntity = entityMap[selectedQueueId!];
+      const isPlaying = playingEntities.some((e) => e.entity_id === maEntity);
+      if (isPlaying) return maEntity;
+    }
+    const woonkamer = playingEntities.find(
+      (e) =>
+        (e.attributes?.friendly_name as string)?.toLowerCase().includes("woonkamer") ||
+        e.entity_id.toLowerCase().includes("woonkamer")
+    );
+    return woonkamer?.entity_id ?? playingEntities[0].entity_id;
+  }, [playingEntities, musicAssistant.enabled, queueState?.state, selectedQueueId, entityMap]);
+
   const isActivelyPlaying = playingEntities.some((e) => e.state === "playing");
 
   useEffect(() => {
@@ -78,6 +123,10 @@ export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } 
 
   if (playingEntity == null) return null;
 
+  const cur = queueState?.current_item as { name?: string; artists?: unknown; artist?: string; stream_title?: string } | undefined;
+  const useMaOverride = musicAssistant.enabled && (queueState?.state === "playing" || queueState?.state === "paused") && cur;
+  const { artist: maArtist, title: maTitle } = useMaOverride ? getMaArtistTitle(cur) : { artist: "", title: "" };
+
   return (
     <div className="relative flex items-center">
       <button
@@ -103,6 +152,8 @@ export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } 
             panelRef={panelRef}
             anchorRect={buttonRef.current?.getBoundingClientRect()}
             entity_id={playingEntity}
+            mediaTitleOverride={maTitle || undefined}
+            mediaArtistOverride={maArtist || undefined}
           />,
           document.body
         )}
@@ -114,10 +165,14 @@ function MediaPanel({
   panelRef,
   anchorRect,
   entity_id,
+  mediaTitleOverride,
+  mediaArtistOverride,
 }: {
   panelRef: React.RefObject<HTMLDivElement | null>;
   anchorRect: DOMRect | undefined;
   entity_id: string;
+  mediaTitleOverride?: string;
+  mediaArtistOverride?: string;
 }) {
   const pos = anchorRect
     ? { top: anchorRect.bottom + 4, right: window.innerWidth - anchorRect.right }
@@ -128,7 +183,13 @@ function MediaPanel({
       className="fixed z-[200] w-[336px] p-2 rounded-xl border border-gray-200 bg-white/95 dark:bg-black/80 shadow-xl dark:border-white/10 dark:backdrop-blur-xl"
       style={{ top: pos.top, right: pos.right }}
     >
-      <MediaCardWidget title="Media" entity_id={entity_id} size="md" />
+      <MediaCardWidget
+        title="Media"
+        entity_id={entity_id}
+        size="md"
+        mediaTitleOverride={mediaTitleOverride}
+        mediaArtistOverride={mediaArtistOverride}
+      />
     </div>
   );
 }
