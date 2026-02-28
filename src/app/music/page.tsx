@@ -409,7 +409,6 @@ export default function MusicPage() {
   const [radioStationsLoading, setRadioStationsLoading] = useState(false);
   const [libraryPlaylists, setLibraryPlaylists] = useState<MASearchItem[]>([]);
   const [libraryPlaylistsLoading, setLibraryPlaylistsLoading] = useState(false);
-  const [libraryPlaylistsProviderFilter, setLibraryPlaylistsProviderFilter] = useState<string>("");
   const [libraryArtists, setLibraryArtists] = useState<MASearchItem[]>([]);
   const [libraryArtistsLoading, setLibraryArtistsLoading] = useState(false);
   const [libraryAlbums, setLibraryAlbums] = useState<MASearchItem[]>([]);
@@ -421,7 +420,6 @@ export default function MusicPage() {
   const [selectedMenu, setSelectedMenu] = useState<"artists" | "albums" | "playlists" | null>(null);
   const [addToPlaylistTrack, setAddToPlaylistTrack] = useState<MASearchItem | null>(null);
   const [addToPlaylistPlaylists, setAddToPlaylistPlaylists] = useState<MASearchItem[]>([]);
-  const [addToPlaylistProviderFilter, setAddToPlaylistProviderFilter] = useState<string>("");
   const [addToPlaylistLoading, setAddToPlaylistLoading] = useState(false);
   const [addToPlaylistPending, setAddToPlaylistPending] = useState<string | null>(null);
   const [addToPlaylistError, setAddToPlaylistError] = useState<string | null>(null);
@@ -469,65 +467,8 @@ export default function MusicPage() {
 
   const getLongPressHandlers = useLongPressAddToPlaylist((item) => {
     const uri = getPlayableUri(item, "track");
-    if (uri) {
-      setAddToPlaylistTrack(item);
-      setAddToPlaylistProviderFilter("");
-    }
+    if (uri) setAddToPlaylistTrack(item);
   });
-
-  const addToPlaylistProviderOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const options: { value: string; label: string }[] = [{ value: "", label: t("music.providerFilterAll") }];
-    for (const pl of addToPlaylistPlaylists) {
-      const prov =
-        (pl as { provider_instance_id?: string }).provider_instance_id ??
-        (pl as { provider_instance?: string }).provider_instance ??
-        "library";
-      if (prov && !seen.has(prov)) {
-        seen.add(prov);
-        options.push({ value: prov, label: getProviderLabel({ ...pl, provider_instance_id: prov }) });
-      }
-    }
-    return options;
-  }, [addToPlaylistPlaylists, t]);
-
-  const addToPlaylistFiltered = useMemo(() => {
-    if (!addToPlaylistProviderFilter) return addToPlaylistPlaylists;
-    return addToPlaylistPlaylists.filter((pl) => {
-      const prov =
-        (pl as { provider_instance_id?: string }).provider_instance_id ??
-        (pl as { provider_instance?: string }).provider_instance ??
-        "library";
-      return prov === addToPlaylistProviderFilter;
-    });
-  }, [addToPlaylistPlaylists, addToPlaylistProviderFilter]);
-
-  const libraryPlaylistsProviderOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const options: { value: string; label: string }[] = [{ value: "", label: t("music.providerFilterAll") }];
-    for (const pl of libraryPlaylists) {
-      const prov =
-        (pl as { provider_instance_id?: string }).provider_instance_id ??
-        (pl as { provider_instance?: string }).provider_instance ??
-        "library";
-      if (prov && !seen.has(prov)) {
-        seen.add(prov);
-        options.push({ value: prov, label: getProviderLabel({ ...pl, provider_instance_id: prov }) });
-      }
-    }
-    return options;
-  }, [libraryPlaylists, t]);
-
-  const libraryPlaylistsFiltered = useMemo(() => {
-    if (!libraryPlaylistsProviderFilter) return libraryPlaylists;
-    return libraryPlaylists.filter((pl) => {
-      const prov =
-        (pl as { provider_instance_id?: string }).provider_instance_id ??
-        (pl as { provider_instance?: string }).provider_instance ??
-        "library";
-      return prov === libraryPlaylistsProviderFilter;
-    });
-  }, [libraryPlaylists, libraryPlaylistsProviderFilter]);
 
   async function handleAddTrackToPlaylist(playlist: MASearchItem) {
     const trackUri = addToPlaylistTrack ? getPlayableUri(addToPlaylistTrack, "track") : null;
@@ -1581,31 +1522,16 @@ export default function MusicPage() {
             {addToPlaylistError && (
               <p className="px-4 py-2 text-sm text-red-600 dark:text-red-400" role="alert">{addToPlaylistError}</p>
             )}
-            {addToPlaylistProviderOptions.length > 0 && (
-              <div className="px-4 py-2">
-                <label htmlFor="add-to-playlist-provider" className="sr-only">{t("music.providerFilter")}</label>
-                <select
-                  id="add-to-playlist-provider"
-                  value={addToPlaylistProviderFilter}
-                  onChange={(e) => setAddToPlaylistProviderFilter(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:border-transparent"
-                >
-                  {addToPlaylistProviderOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
             <div className="max-h-64 overflow-y-auto py-2">
               {addToPlaylistLoading ? (
                 <div className="flex justify-center py-8">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                 </div>
-              ) : addToPlaylistFiltered.length === 0 ? (
+              ) : addToPlaylistPlaylists.length === 0 ? (
                 <p className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{t("music.noPlaylists")}</p>
               ) : (
                 <ul className="space-y-0">
-                  {addToPlaylistFiltered.map((pl) => {
+                  {addToPlaylistPlaylists.map((pl) => {
                     const plId = (pl as { db_id?: string }).db_id ?? (pl as { item_id?: string }).item_id ?? pl.uri ?? "";
                     const isPending = addToPlaylistPending === plId;
                     return (
@@ -2246,30 +2172,15 @@ export default function MusicPage() {
               </button>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">{t("music.menuPlaylists")}</h2>
             </div>
-            {libraryPlaylistsProviderOptions.length > 1 && (
-              <div className="px-2">
-                <label htmlFor="playlists-provider-filter" className="sr-only">{t("music.providerFilter")}</label>
-                <select
-                  id="playlists-provider-filter"
-                  value={libraryPlaylistsProviderFilter}
-                  onChange={(e) => setLibraryPlaylistsProviderFilter(e.target.value)}
-                  className="w-full max-w-xs px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:border-transparent"
-                >
-                  {libraryPlaylistsProviderOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
             {libraryPlaylistsLoading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
               </div>
-            ) : libraryPlaylistsFiltered.length === 0 ? (
+            ) : libraryPlaylists.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400">{t("music.noPlaylists")}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {libraryPlaylistsFiltered.map((item, index) => {
+                {libraryPlaylists.map((item, index) => {
                   const playlistUri = getPlayableUri(item, "playlist");
                   const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
                   const canPlay = !!playlistUri && !!selectedQueueId;
