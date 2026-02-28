@@ -9,11 +9,12 @@ import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverB
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode } from "@/stores/dashboard-settings-store";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, HERO_SLIDER_SOURCE_IDS } from "@/stores/music-assistant-store";
 import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
-import { Image, Link2, List, Monitor, Music2, Palette, LayoutDashboard, RefreshCw, ChevronUp, ChevronDown, X, Zap } from "lucide-react";
+import { useNewsStore } from "@/stores/news-store";
+import { Image, Link2, List, Monitor, Music2, Newspaper, Palette, LayoutDashboard, RefreshCw, ChevronUp, ChevronDown, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "page-background" | "dashboard" | "connection" | "energy" | "music-assistant" | "entities" | "system";
+type SettingsSection = "appearance" | "screensaver" | "page-background" | "dashboard" | "connection" | "energy" | "music-assistant" | "news" | "entities" | "system";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -23,6 +24,7 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   connection: "settings.connection",
   energy: "settings.energy",
   "music-assistant": "settings.musicAssistant",
+  news: "news.settings.title",
   entities: "settings.entities",
   system: "settings.system",
 };
@@ -87,11 +89,18 @@ export default function SettingsPage() {
   const [updateResult, setUpdateResult] = useState<{ ok: boolean; message?: string; steps?: { step: string; output: string; error?: string }[] } | null>(null);
   const musicAssistant = useMusicAssistantStore();
   const energyStore = useEnergyStore();
+  const newsStore = useNewsStore();
+  const [newsFeedDraft, setNewsFeedDraft] = useState<string[]>([]);
+  const [newsFeedInput, setNewsFeedInput] = useState("");
 
   useEffect(() => {
     hydrateMusicAssistantStore();
     hydrateEnergyStore();
   }, []);
+
+  useEffect(() => {
+    if (section === "news") setNewsFeedDraft(newsStore.rssUrls);
+  }, [section]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setEditModeAllowedState(getEditModeAllowed());
@@ -392,6 +401,7 @@ export default function SettingsPage() {
     { groupKey: "settings.groups.integrations", sections: [
       { id: "energy", labelKey: SECTION_KEYS.energy, icon: Zap },
       { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
+      { id: "news", labelKey: SECTION_KEYS.news, icon: Newspaper },
       { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
     ]},
     // System/update section disabled for now
@@ -1559,6 +1569,88 @@ export default function SettingsPage() {
                   </div>
                 </>
               )}
+            </GlassCard>
+          )}
+          {section === "news" && (
+            <GlassCard>
+              <h3 className="text-card-title font-medium mb-3">{t("news.settings.title")}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {t("news.settings.description")}
+              </p>
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newsStore.enabled}
+                    onChange={(e) => newsStore.setEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {t("news.settings.enabled")}
+                  </span>
+                </label>
+
+                <div className="space-y-2 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {t("news.settings.feeds")}
+                  </p>
+                  {newsFeedDraft.length > 0 && (
+                    <ul className="space-y-1.5">
+                      {newsFeedDraft.map((url, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="flex-1 min-w-0 text-xs text-gray-700 dark:text-gray-300 truncate font-mono bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded px-2 py-1.5">
+                            {url}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = newsFeedDraft.filter((_, j) => j !== i);
+                              setNewsFeedDraft(next);
+                              newsStore.setRssUrls(next);
+                            }}
+                            className="shrink-0 p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                            aria-label={t("news.settings.removeFeed")}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {newsFeedDraft.length < 10 && (
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={newsFeedInput}
+                        onChange={(e) => setNewsFeedInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && newsFeedInput.trim()) {
+                            const next = [...newsFeedDraft, newsFeedInput.trim()];
+                            setNewsFeedDraft(next);
+                            newsStore.setRssUrls(next);
+                            setNewsFeedInput("");
+                          }
+                        }}
+                        placeholder={t("news.settings.feedPlaceholder")}
+                        className="flex-1 min-w-0 rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-1.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!newsFeedInput.trim()) return;
+                          const next = [...newsFeedDraft, newsFeedInput.trim()];
+                          setNewsFeedDraft(next);
+                          newsStore.setRssUrls(next);
+                          setNewsFeedInput("");
+                        }}
+                        className="shrink-0 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-3 py-1.5 text-sm font-medium hover:opacity-80 transition-opacity"
+                      >
+                        {t("news.settings.addFeed")}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </GlassCard>
           )}
         </div>

@@ -12,6 +12,7 @@ import {
     Droplets,
     Menu,
     Moon,
+    Newspaper,
     Sun,
     Thermometer,
     Wind,
@@ -28,6 +29,8 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getScreensaverClock24h } from "@/stores/screensaver-store";
 import { HeaderMediaPlaying } from "./header-media-playing";
+import { useNewsStore } from "@/stores/news-store";
+import { NewsOverlay } from "@/components/news-overlay";
 
 async function fetchAndMergeEntityState(setStates: (entities: { entity_id: string; state: string; attributes: Record<string, unknown> }[]) => void) {
   try {
@@ -233,6 +236,8 @@ export function AppShell({
   const [temperatureModalOpen, setTemperatureModalOpen] = useState(false);
   const [chosenTemperatureEntityId, setChosenTemperatureEntityId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [newsOpen, setNewsOpen] = useState(false);
+  const { enabled: newsEnabled, rssUrls } = useNewsStore();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -343,6 +348,21 @@ export function AppShell({
           <TopTabs activeHref={activeTab} contentLight={headerContentLight} />
         </div>
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+          {newsEnabled && rssUrls.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setNewsOpen(true)}
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                headerContentLight
+                  ? "text-white/90 hover:bg-white/10"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+              )}
+              aria-label={t("news.title")}
+            >
+              <Newspaper className="h-5 w-5" />
+            </button>
+          )}
           {headerEndAction}
           <HeaderMediaPlaying contentLight={headerContentLight} />
           <ThemeSwitcher contentLight={headerContentLight} />
@@ -360,6 +380,8 @@ export function AppShell({
           />,
           document.body
         )}
+
+      <NewsOverlay isOpen={newsOpen} onClose={() => setNewsOpen(false)} />
 
       {(showWelcomeInHeader || backHref) && (
       <div className="shrink-0 flex items-center justify-between gap-4 pl-10 pr-4 py-4">
