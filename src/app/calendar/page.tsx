@@ -155,7 +155,7 @@ function WeekView({
   events: CalendarEvent[];
   colorMap: Record<string, { dot: string; bg: string; text: string }>;
   onSelectEvent: (ev: CalendarEvent) => void;
-  scrollRef: RefObject<HTMLDivElement>;
+  scrollRef: RefObject<HTMLDivElement | null>;
 }) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const now = new Date();
@@ -276,21 +276,23 @@ function WeekView({
                       type="button"
                       onClick={() => onSelectEvent(ev)}
                       className={cn(
-                        "absolute left-0.5 right-0.5 rounded px-1.5 py-0.5 text-left overflow-hidden z-10",
+                        "absolute left-0.5 right-0.5 rounded text-left z-10",
                         "hover:opacity-90 active:opacity-80 transition-opacity",
                         color.bg,
                         color.text
                       )}
                       style={{ top, height }}
                     >
-                      <p className="text-[10px] font-semibold truncate leading-tight">
-                        {ev.summary}
-                      </p>
-                      {height > 30 && (
-                        <p className="text-[9px] opacity-80 leading-tight">
-                          {formatClock(start)}
+                      <div className={cn("sticky top-0 px-1.5 py-0.5 rounded", color.bg)}>
+                        <p className="text-[10px] font-semibold truncate leading-tight">
+                          {ev.summary}
                         </p>
-                      )}
+                        {height > 30 && (
+                          <p className="text-[9px] opacity-80 leading-tight">
+                            {formatClock(start)}
+                          </p>
+                        )}
+                      </div>
                     </button>
                   );
                 })}
@@ -394,7 +396,7 @@ function DayView({
   events: CalendarEvent[];
   colorMap: Record<string, { dot: string; bg: string; text: string }>;
   onSelectEvent: (ev: CalendarEvent) => void;
-  scrollRef: RefObject<HTMLDivElement>;
+  scrollRef: RefObject<HTMLDivElement | null>;
 }) {
   const now = new Date();
   const nowMinutes = useNowMinutes();
@@ -476,22 +478,24 @@ function DayView({
                   type="button"
                   onClick={() => onSelectEvent(ev)}
                   className={cn(
-                    "absolute left-1 right-2 rounded-lg px-3 py-1.5 text-left overflow-hidden z-10",
+                    "absolute left-1 right-2 rounded-lg text-left z-10",
                     "hover:opacity-90 transition-opacity shadow-sm",
                     color.bg,
                     color.text
                   )}
                   style={{ top, height }}
                 >
-                  <p className="text-sm font-semibold truncate">{ev.summary}</p>
-                  {height > 36 && (
-                    <p className="text-xs opacity-80">
-                      {formatClock(start)} – {formatClock(end)}
-                    </p>
-                  )}
-                  {height > 56 && ev.location && (
-                    <p className="text-xs opacity-70 mt-0.5 truncate">📍 {ev.location}</p>
-                  )}
+                  <div className={cn("sticky top-0 px-3 py-1.5 rounded-lg", color.bg)}>
+                    <p className="text-sm font-semibold truncate">{ev.summary}</p>
+                    {height > 36 && (
+                      <p className="text-xs opacity-80">
+                        {formatClock(start)} – {formatClock(end)}
+                      </p>
+                    )}
+                    {height > 56 && ev.location && (
+                      <p className="text-xs opacity-70 mt-0.5 truncate">📍 {ev.location}</p>
+                    )}
+                  </div>
                 </button>
               );
             })}
