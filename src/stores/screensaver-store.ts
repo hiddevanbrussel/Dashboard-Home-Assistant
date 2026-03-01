@@ -165,6 +165,28 @@ export function setScreensaverPexelsApiKey(apiKey: string): void {
   }
 }
 
+const STORAGE_KEY_PEXELS_TYPE = "dashboard.screensaverPexelsType";
+
+/** Pexels-type: "photo" (foto's) of "video" (video's). Default: "photo". */
+export function getScreensaverPexelsType(): "photo" | "video" {
+  if (typeof window === "undefined") return "photo";
+  try {
+    const v = localStorage.getItem(STORAGE_KEY_PEXELS_TYPE);
+    return v === "video" ? "video" : "photo";
+  } catch {
+    return "photo";
+  }
+}
+
+export function setScreensaverPexelsType(type: "photo" | "video"): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_PEXELS_TYPE, type);
+    window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
+  } catch {
+    // ignore
+  }
+}
+
 const STORAGE_KEY_FOOTBALL_ENTITY = "dashboard.screensaverFootballEntityId";
 
 /** Voetbal sensor entity voor screensaver (bijv. sensor.team_variabele). Leeg = niet tonen. */

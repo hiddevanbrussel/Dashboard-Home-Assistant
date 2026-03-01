@@ -16,9 +16,10 @@ export async function GET(request: NextRequest) {
   const query = searchParams.get("query")?.trim() || "nature landscape";
   const useSearch = query.length > 0;
 
+  const page = Math.floor(Math.random() * 10) + 1;
   const url = useSearch
-    ? `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=20&orientation=landscape`
-    : `https://api.pexels.com/v1/curated?per_page=20`;
+    ? `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=40&page=${page}&orientation=landscape`
+    : `https://api.pexels.com/v1/curated?per_page=40&page=${page}`;
 
   try {
     const res = await fetch(url, {
@@ -56,7 +57,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Geen afbeeldings-URL" }, { status: 502 });
     }
 
-    return NextResponse.json({ imageUrl, pexelsUrl, photographer });
+    return NextResponse.json({ imageUrl, pexelsUrl, photographer }, {
+      headers: { "Cache-Control": "no-store, no-cache" },
+    });
   } catch (err) {
     console.error("[Pexels API]", err);
     return NextResponse.json(

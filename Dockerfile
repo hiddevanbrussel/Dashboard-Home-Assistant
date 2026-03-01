@@ -52,6 +52,9 @@ RUN apk add --no-cache python3 make g++ \
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
 
+# Maak de image-cache map aan en geef nextjs schrijfrechten
+RUN mkdir -p /app/.next/cache && chown -R nextjs:nodejs /app/.next/cache
+
 EXPOSE 3000
 
 ENV PORT=3000

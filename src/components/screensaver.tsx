@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import {
@@ -14,7 +14,7 @@ import {
   Wind,
   Disc3,
 } from "lucide-react";
-import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverFootballEntityId } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
@@ -374,6 +374,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const pexelsEnabled = getScreensaverPexelsEnabled();
   const pexelsQuery = getScreensaverPexelsQuery();
   const pexelsApiKey = getScreensaverPexelsApiKey();
+  const pexelsType = getScreensaverPexelsType();
 
   const showMusicOnScreensaver = useMusicPlayerStore((s) => {
     const q = s.queueState;
@@ -389,10 +390,18 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const [imageFailed, setImageFailed] = useState(false);
   const [pexelsError, setPexelsError] = useState(false);
 
+  // Video state
+  const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
+  const [nextVideoUrl, setNextVideoUrl] = useState<string | null>(null);
+  const [videoFading, setVideoFading] = useState(false);
+  const videoRotateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const VIDEO_MAX_SECONDS = 60;
+
   const fetchPexelsPhoto = useCallback(() => {
     if (!pexelsApiKey) return;
     setPexelsError(false);
-    fetch(`/api/pexels/photo?query=${encodeURIComponent(pexelsQuery)}`, {
+    fetch(`/api/pexels/photo?query=${encodeURIComponent(pexelsQuery)}&_t=${Date.now()}`, {
+      cache: "no-store",
       headers: { "X-Pexels-Api-Key": pexelsApiKey },
     })
       .then((r) => r.json())
@@ -444,9 +453,70 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
     return () => clearTimeout(timer);
   }, [isFading, nextImage, nextAttribution]);
 
-  const usePexelsRotation = pexelsEnabled && !customBg && pexelsApiKey;
+  // ── Video logic ──────────────────────────────────────────────────────────────
+  const isVideoMode = pexelsEnabled && !customBg && pexelsApiKey && pexelsType === "video";
+
+  const fetchPexelsVideo = useCallback(() => {
+    if (!pexelsApiKey) return;
+    if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current);
+    fetch(`/api/pexels/video?query=${encodeURIComponent(pexelsQuery)}&_t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "X-Pexels-Api-Key": pexelsApiKey },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.videoUrl) {
+          const attr = data.pexelsUrl && data.photographer
+            ? { url: data.pexelsUrl, photographer: data.photographer }
+            : null;
+          setCurrentVideoUrl((prev) => {
+            if (prev) {
+              setNextVideoUrl(data.videoUrl);
+              setNextAttribution(attr);
+              return prev;
+            }
+            setCurrentAttribution(attr);
+            return data.videoUrl;
+          });
+        }
+      })
+      .catch(() => {});
+  }, [pexelsApiKey, pexelsQuery]);
+
+  // Initial video load
+  useEffect(() => {
+    if (!isVideoMode) return;
+    fetchPexelsVideo();
+    return () => { if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current); };
+  }, [isVideoMode, fetchPexelsVideo]);
+
+  // Fade in next video when available
+  useEffect(() => {
+    if (!nextVideoUrl) return;
+    const start = requestAnimationFrame(() => setVideoFading(true));
+    return () => cancelAnimationFrame(start);
+  }, [nextVideoUrl]);
+
+  useEffect(() => {
+    if (!videoFading) return;
+    const timer = setTimeout(() => {
+      setCurrentVideoUrl(nextVideoUrl);
+      setCurrentAttribution(nextAttribution);
+      setNextVideoUrl(null);
+      setNextAttribution(null);
+      setVideoFading(false);
+    }, FADE_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [videoFading, nextVideoUrl, nextAttribution]);
+
+  const scheduleVideoRotation = useCallback(() => {
+    if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current);
+    videoRotateTimer.current = setTimeout(fetchPexelsVideo, VIDEO_MAX_SECONDS * 1000);
+  }, [fetchPexelsVideo]);
+
+  const usePexelsRotation = pexelsEnabled && !customBg && pexelsApiKey && pexelsType === "photo";
   const backgroundImage = customBg || currentImage || DEFAULT_SCREENSAVER_IMAGE;
-  const useGradient = imageFailed || (pexelsEnabled && !customBg && (pexelsError && !currentImage || !pexelsApiKey));
+  const useGradient = !isVideoMode && (imageFailed || (pexelsEnabled && !customBg && (pexelsError && !currentImage || !pexelsApiKey)));
 
   const singleImage = !usePexelsRotation || (!nextImage && !isFading);
   const fadeStyle = { transition: `opacity ${FADE_DURATION_MS}ms ease-in-out` as const };
@@ -485,7 +555,38 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
     >
       {!useGradient && (
         <>
-          {singleImage ? (
+          {isVideoMode ? (
+            <>
+              {currentVideoUrl && (
+                // eslint-disable-next-line jsx-a11y/media-has-caption
+                <video
+                  key={currentVideoUrl}
+                  src={currentVideoUrl}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ opacity: videoFading ? 0 : 1, transition: `opacity ${FADE_DURATION_MS}ms ease-in-out` }}
+                  onCanPlay={scheduleVideoRotation}
+                  onEnded={fetchPexelsVideo}
+                  aria-hidden
+                />
+              )}
+              {nextVideoUrl && (
+                // eslint-disable-next-line jsx-a11y/media-has-caption
+                <video
+                  key={nextVideoUrl}
+                  src={nextVideoUrl}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ opacity: videoFading ? 1 : 0, transition: `opacity ${FADE_DURATION_MS}ms ease-in-out` }}
+                  aria-hidden
+                />
+              )}
+            </>
+          ) : singleImage ? (
             <>
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"

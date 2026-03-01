@@ -5,7 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 import { useThemeStore } from "@/stores/theme-store";
 import { useLanguageStore } from "@/stores/language-store";
-import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode } from "@/stores/dashboard-settings-store";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, HERO_SLIDER_SOURCE_IDS } from "@/stores/music-assistant-store";
 import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
@@ -81,6 +81,7 @@ export default function SettingsPage() {
   const [screensaverPexelsEnabled, setScreensaverPexelsEnabledState] = useState(false);
   const [screensaverPexelsQuery, setScreensaverPexelsQueryState] = useState("nature landscape");
   const [screensaverPexelsApiKey, setScreensaverPexelsApiKeyState] = useState("");
+  const [screensaverPexelsType, setScreensaverPexelsTypeState] = useState<"photo" | "video">("photo");
   const [uploadingScreensaverBg, setUploadingScreensaverBg] = useState(false);
   const [maTestResult, setMaTestResult] = useState<"ok" | string | null>(null);
   const [maTesting, setMaTesting] = useState(false);
@@ -124,6 +125,7 @@ export default function SettingsPage() {
     setScreensaverPexelsEnabledState(getScreensaverPexelsEnabled());
     setScreensaverPexelsQueryState(getScreensaverPexelsQuery());
     setScreensaverPexelsApiKeyState(getScreensaverPexelsApiKey());
+    setScreensaverPexelsTypeState(getScreensaverPexelsType());
   }, []);
 
   useEffect(() => {
@@ -637,6 +639,25 @@ export default function SettingsPage() {
                       placeholder={t("settings.screensaver.pexelsQuery")}
                       className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
                     />
+                    <div className="flex items-center gap-1 p-0.5 rounded-lg bg-black/5 dark:bg-white/5 w-fit">
+                      {(["photo", "video"] as const).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            setScreensaverPexelsTypeState(type);
+                            setScreensaverPexelsType(type);
+                          }}
+                          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                            screensaverPexelsType === type
+                              ? "bg-white dark:bg-white/15 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                          }`}
+                        >
+                          {t(type === "photo" ? "settings.screensaver.pexelsTypePhoto" : "settings.screensaver.pexelsTypeVideo")}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
