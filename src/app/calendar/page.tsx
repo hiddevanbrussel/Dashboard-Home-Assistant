@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, RefObject } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { ChevronLeft, ChevronRight, Calendar, X, MapPin, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,24 @@ const CALENDAR_COLORS: { dot: string; bg: string; text: string }[] = [
   { dot: "bg-cyan-500",   bg: "bg-cyan-500/90",    text: "text-white" },
   { dot: "bg-orange-500", bg: "bg-orange-500/90",  text: "text-white" },
 ];
+
+// ─── live clock ──────────────────────────────────────────────────────────────
+
+/** Returns minutes-from-midnight for the current time, updated every 30 seconds. */
+function useNowMinutes(): number {
+  const [nowMinutes, setNowMinutes] = useState(() => {
+    const n = new Date();
+    return n.getHours() * 60 + n.getMinutes();
+  });
+  useEffect(() => {
+    const id = setInterval(() => {
+      const n = new Date();
+      setNowMinutes(n.getHours() * 60 + n.getMinutes());
+    }, 30_000);
+    return () => clearInterval(id);
+  }, []);
+  return nowMinutes;
+}
 
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
@@ -131,15 +149,17 @@ function WeekView({
   events,
   colorMap,
   onSelectEvent,
+  scrollRef,
 }: {
   weekDays: Date[];
   events: CalendarEvent[];
   colorMap: Record<string, { dot: string; bg: string; text: string }>;
   onSelectEvent: (ev: CalendarEvent) => void;
+  scrollRef: RefObject<HTMLDivElement>;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const now = new Date();
+  const nowMinutes = useNowMinutes();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -211,7 +231,6 @@ function WeekView({
           {weekDays.map((day, di) => {
             const isToday = isSameDay(day, now);
             const dayEvs = eventsForDay(events, day);
-            const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
             return (
               <div
@@ -369,14 +388,16 @@ function DayView({
   events,
   colorMap,
   onSelectEvent,
+  scrollRef,
 }: {
   date: Date;
   events: CalendarEvent[];
   colorMap: Record<string, { dot: string; bg: string; text: string }>;
   onSelectEvent: (ev: CalendarEvent) => void;
+  scrollRef: RefObject<HTMLDivElement>;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const now = new Date();
+  const nowMinutes = useNowMinutes();
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const isToday = isSameDay(date, now);
   const dayEvs = eventsForDay(events, date);
@@ -434,7 +455,7 @@ function DayView({
             {isToday && (
               <div
                 className="absolute w-full flex items-center pointer-events-none z-20"
-                style={{ top: ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_PX }}
+                style={{ top: (nowMinutes / 60) * HOUR_PX }}
               >
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500 -ml-1.5 shrink-0" />
                 <div className="flex-1 h-px bg-red-500" />
@@ -567,6 +588,12 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const timeGridScrollRef = useRef<HTMLDivElement>(null);
+
+  function scrollToNow() {
+    const top = Math.max(0, (new Date().getHours() - 1) * HOUR_PX);
+    timeGridScrollRef.current?.scrollTo({ top, behavior: "smooth" });
+  }
 
   const today = new Date();
 
@@ -649,7 +676,7 @@ export default function CalendarPage() {
     <AppShell activeTab="/calendar" contentNoScroll>
       <div className="flex flex-col h-full">
         {/* ── toolbar ── */}
-        <div className="shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 pt-4 pb-3 border-b border-gray-200 dark:border-white/10">
+        <div className="sticky top-0 z-10 shrink-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 pt-4 pb-3 border-b border-gray-200 dark:border-white/10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white min-w-0">
               {headerTitle}
@@ -688,6 +715,17 @@ export default function CalendarPage() {
               >
                 <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
               </button>
+              {/* Scroll to current time — only useful in week/day views */}
+              {viewMode !== "month" && (
+                <button
+                  type="button"
+                  onClick={scrollToNow}
+                  className="ml-1 px-3 py-1 text-xs font-medium rounded-lg border border-red-200 dark:border-red-800/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  title="Scroll naar huidige tijd"
+                >
+                  Nu
+                </button>
+              )}
             </div>
 
             {/* View switcher */}
@@ -727,6 +765,7 @@ export default function CalendarPage() {
                 events={events}
                 colorMap={colorMap}
                 onSelectEvent={setSelectedEvent}
+                scrollRef={timeGridScrollRef}
               />
             )}
             {viewMode === "month" && (
@@ -743,6 +782,7 @@ export default function CalendarPage() {
                 events={events}
                 colorMap={colorMap}
                 onSelectEvent={setSelectedEvent}
+                scrollRef={timeGridScrollRef}
               />
             )}
           </>
