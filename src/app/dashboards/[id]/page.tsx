@@ -2419,7 +2419,7 @@ export default function DashboardEditPage() {
                       editingWidget.type === "pill_card"
                         ? (e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + "."))
                         : editingWidget.type === "energy_monitor_card"
-                          ? (e) => e.entity_id.startsWith("weather.") || e.entity_id.startsWith("sensor.")
+                          ? (e) => e.entity_id.startsWith("weather.") || e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor.")
                           : (editingWidget.type === "sensor_card" || editingWidget.type === "stat_pill_card")
                             ? (e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor.")
                             : (e) => e.entity_id.startsWith((WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + ".")
