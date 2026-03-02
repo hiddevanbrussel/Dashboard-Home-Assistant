@@ -973,9 +973,11 @@ export default function DashboardEditPage() {
   const entitiesToShow =
     addTileSelectedType === "pill_card"
       ? entities.filter((e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + ".")))
-      : domain != null
-        ? entities.filter((e) => e.entity_id.startsWith(domain + "."))
-        : entities;
+      : (addTileSelectedType === "sensor_card" || addTileSelectedType === "stat_pill_card")
+        ? entities.filter((e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor."))
+        : domain != null
+          ? entities.filter((e) => e.entity_id.startsWith(domain + "."))
+          : entities;
 
   function handleRemoveTile(widgetId: string) {
     setWidgets((prev) => prev.filter((w) => w.id !== widgetId));
@@ -1235,7 +1237,7 @@ export default function DashboardEditPage() {
                                 onClick={() => {
                                   if (addTileSelectedType) {
                                     const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                                    const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "power_usage_card" ? (name || "Stroomverbruik") : addTileSelectedType === "stat_pill_card" ? (name || "Stat") : undefined;
+                                    const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "power_usage_card" ? (name || "Stroomverbruik") : (name || undefined);
                                     const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride);
                                     if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card") && newId) setEditingWidgetId(newId);
                                   }
@@ -2414,7 +2416,15 @@ export default function DashboardEditPage() {
                   <EntitySelectWithSearch
                     entities={entities}
                     value={editForm.entity_id}
-                    onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
+                    onChange={(v) => {
+                      const picked = entities.find((e) => e.entity_id === v);
+                      const friendlyName = (picked?.attributes as { friendly_name?: string })?.friendly_name?.trim();
+                      setEditForm((prev) => ({
+                        ...prev,
+                        entity_id: v,
+                        ...(friendlyName && { title: friendlyName }),
+                      }));
+                    }}
                     filter={
                       editingWidget.type === "pill_card"
                         ? (e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + "."))

@@ -282,7 +282,7 @@ export function LightCardWidget({
 
   // ── Derived display values ─────────────────────────────────────────────────
   const IconComponent = LIGHT_ICON_MAP[iconKey] ?? Lightbulb;
-  const displayName = (entity?.attributes?.friendly_name as string)?.trim() || title;
+  const displayName = title;
 
   const statusText = isOn
     ? colorMode === "color_temp" && colorTempK
