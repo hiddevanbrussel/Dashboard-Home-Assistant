@@ -146,6 +146,7 @@ export function FloatingTextCard({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode) return;
+      if ((e.target as HTMLElement)?.closest?.("button")) return;
       isPointerDownOnCard.current = true;
       dragStart.current = {
         x: e.clientX,

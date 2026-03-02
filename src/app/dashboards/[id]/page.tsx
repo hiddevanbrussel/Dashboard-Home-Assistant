@@ -672,6 +672,7 @@ export default function DashboardEditPage() {
 
   function startLongPressForEdit(e: React.PointerEvent) {
     if (editMode) return;
+    if ((e.target as HTMLElement)?.closest?.("button, a, [role=button], input, select, textarea")) return;
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     clearLongPressTimer();
@@ -1424,7 +1425,7 @@ export default function DashboardEditPage() {
                 <div
                   key={w.id}
                   className="relative h-full w-full"
-                  {...(!editMode && {
+                  {...(!editMode && getEditModeAllowed() && {
                     onPointerDown: startLongPressForEdit,
                     onPointerUp: clearLongPressTimerAndRelease,
                     onPointerLeave: clearLongPressTimerAndRelease,

@@ -3,7 +3,11 @@
     "allow": [
       "Bash(ls -la \"c:\\\\Users\\\\HiddevanBrussel\\\\.cursor\\\\dashboard\\\\src\\\\app\\\\api\\\\ha\"\" 2>/dev/null || echo \"Directory not found \")",
       "Bash(npx tsc --noEmit)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(grep -n \"roomBackground\\\\|AppShell\\\\|headerEnd\\\\|editMode.*background\\\\|background.*editMode\" src/app/dashboards/[id]/page.tsx)",
+      "Bash(grep -n \"startLongPressForEdit\\\\|clearLongPressTimerAndRelease\\\\|function startLong\\\\|LONG_PRESS\" src/app/dashboards/[id]/page.tsx)",
+      "Bash(grep -n \"isRoomMode\\\\|areaId\" src/app/dashboards/[id]/page.tsx)",
+      "Bash(ls \"c:\\\\Users\\\\HiddevanBrussel\\\\.cursor\\\\dashboard\"/*.md)"
     ]
   }
 }
