@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>home-assistant-dashboard</Name>
-  <Repository>ghcr.io/hiddevanbrussel/dashboard:latest</Repository>
+  <Repository>ghcr.io/hiddevanbrussel/dashboard-home-assistant:latest</Repository>
   <Registry>https://ghcr.io</Registry>
   <Network>bridge</Network>
   <Shell>sh</Shell>
