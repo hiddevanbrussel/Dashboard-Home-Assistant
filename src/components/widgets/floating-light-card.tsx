@@ -138,6 +138,8 @@ export function FloatingLightCard({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode) return;
+      // Let button clicks through so the ⋮ edit button still works
+      if ((e.target as HTMLElement)?.closest?.("button")) return;
       isPointerDownOnCard.current = true;
       dragStart.current = {
         x: e.clientX,

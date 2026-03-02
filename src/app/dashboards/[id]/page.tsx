@@ -329,6 +329,7 @@ function WidgetByType({
           type={textType}
           show_icon={show_icon ?? false}
           icon={icon ?? "Type"}
+          onMoreClick={onMoreClick}
         />
       );
     }
