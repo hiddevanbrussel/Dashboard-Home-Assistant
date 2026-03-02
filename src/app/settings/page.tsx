@@ -11,7 +11,7 @@ import { useMusicAssistantStore, hydrateMusicAssistantStore, HERO_SLIDER_SOURCE_
 import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useNewsStore } from "@/stores/news-store";
-import { CalendarDays, Globe, Image, Link2, List, Monitor, Music2, Newspaper, Palette, LayoutDashboard, ChevronUp, ChevronDown, X, Zap } from "lucide-react";
+import { CalendarDays, Globe, Image, Link2, List, Monitor, Music2, Newspaper, Palette, LayoutDashboard, ChevronUp, ChevronDown, X, Zap, Server } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -93,6 +93,7 @@ export default function SettingsPage() {
   const [updatePasscode, setUpdatePasscode] = useState("");
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateResult, setUpdateResult] = useState<{ ok: boolean; message?: string; steps?: { step: string; output: string; error?: string }[] } | null>(null);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
   const musicAssistant = useMusicAssistantStore();
   const energyStore = useEnergyStore();
   const calendarStore = useCalendarStore();
@@ -206,6 +207,15 @@ export default function SettingsPage() {
   useEffect(() => {
     loadEntities();
   }, [saveMessage]);
+
+  useEffect(() => {
+    if (section === "system" && appVersion === null) {
+      fetch("/api/version")
+        .then((r) => r.json())
+        .then((d) => setAppVersion(d.version ?? "onbekend"))
+        .catch(() => setAppVersion("onbekend"));
+    }
+  }, [section, appVersion]);
 
   const byDomain = useMemo(() => {
     const map = new Map<string, HaEntity[]>();
@@ -416,6 +426,9 @@ export default function SettingsPage() {
     { groupKey: "settings.groups.integrations", sections: [
       { id: "news", labelKey: SECTION_KEYS.news, icon: Newspaper },
       { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
+    ]},
+    { groupKey: "settings.groups.system", sections: [
+      { id: "system", labelKey: SECTION_KEYS.system, icon: Server },
     ]},
   ];
 
@@ -840,7 +853,15 @@ export default function SettingsPage() {
 
           {section === "system" && (
             <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">{t("settings.update.title")}</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-card-title font-medium">{t("settings.system")}</h3>
+                {appVersion && (
+                  <span className="rounded-full bg-gray-100 dark:bg-white/10 px-3 py-1 text-xs font-mono text-gray-600 dark:text-gray-300">
+                    v{appVersion}
+                  </span>
+                )}
+              </div>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">{t("settings.update.title")}</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 {t("settings.update.description")}
               </p>

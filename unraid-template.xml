@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>home-assistant-dashboard</Name>
+  <Repository>ghcr.io/hiddevanbrussel/dashboard:latest</Repository>
+  <Registry>https://ghcr.io</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Overview>Home Assistant Dashboard Builder – een persoonlijk dashboard voor Home Assistant met widgets, screensaver en kalender.</Overview>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <Description>Home Assistant Dashboard Builder</Description>
+
+  <Config
+    Name="Web UI poort"
+    Target="3000"
+    Default="3000"
+    Mode="tcp"
+    Description="Poort waarop het dashboard bereikbaar is."
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">3000</Config>
+
+  <Config
+    Name="Data map"
+    Target="/data"
+    Default="/mnt/user/appdata/dashboard"
+    Mode="rw"
+    Description="Locatie voor de database (SQLite) en geüploade afbeeldingen."
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">/mnt/user/appdata/dashboard</Config>
+
+  <Config
+    Name="Pexels API Key"
+    Target="PEXELS_API_KEY"
+    Default=""
+    Mode=""
+    Description="Optioneel: gratis API-key van pexels.com/api voor screensaver foto's/video's."
+    Type="Variable"
+    Display="always"
+    Required="false"
+    Mask="true"></Config>
+</Container>
