@@ -38,10 +38,11 @@ type HaEntity = {
   attributes: Record<string, unknown>;
 };
 
-const ENTITY_DOMAINS = ["automation", "climate", "light", "media_player", "weather"] as const;
+const ENTITY_DOMAINS = ["automation", "binary_sensor", "climate", "light", "media_player", "weather"] as const;
 
 const DOMAIN_KEYS: Record<(typeof ENTITY_DOMAINS)[number], string> = {
   automation: "settings.entities.automation",
+  binary_sensor: "settings.entities.binarySensor",
   climate: "settings.entities.climate",
   light: "settings.entities.light",
   media_player: "settings.entities.mediaPlayer",

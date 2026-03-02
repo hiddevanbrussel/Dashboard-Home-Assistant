@@ -124,7 +124,7 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   card_group: "",
 };
 
-const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor"];
+const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor", "binary_sensor"];
 
 const FLOATING_WIDGET_TYPES = new Set([
   "text_card", "media_card", "climate_card", "climate_card_2", "light_card", "solar_card",
@@ -2420,7 +2420,9 @@ export default function DashboardEditPage() {
                         ? (e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + "."))
                         : editingWidget.type === "energy_monitor_card"
                           ? (e) => e.entity_id.startsWith("weather.") || e.entity_id.startsWith("sensor.")
-                          : (e) => e.entity_id.startsWith((WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + ".")
+                          : (editingWidget.type === "sensor_card" || editingWidget.type === "stat_pill_card")
+                            ? (e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor.")
+                            : (e) => e.entity_id.startsWith((WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + ".")
                     }
                     label={
                       editingWidget.type === "solar_card"
