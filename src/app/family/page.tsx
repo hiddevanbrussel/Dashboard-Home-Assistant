@@ -3,18 +3,19 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench,
-  Check, X, Plus, Pencil, ListTodo, ChevronLeft,
+  Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Toothbrush,
+  Check, X, Plus, Pencil, ListTodo, ChevronLeft, Trophy,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import type { ChildRecord, ChoreRecord, ChildWithChores, ChoreCompletionsResponse } from "@/lib/chores-types";
+import type { ChildRecord, ChoreRecord, ChildWithChores, ChoreCompletionsResponse, ScoresResponse, ChoreFrequency } from "@/lib/chores-types";
 
 // ── icon picker ──────────────────────────────────────────────────────────────
 
 const CHORE_ICONS: { name: string; Icon: React.FC<{ className?: string }> }[] = [
   { name: "Backpack", Icon: Backpack },
+  { name: "Toothbrush", Icon: Toothbrush },
   { name: "Trash2", Icon: Trash2 },
   { name: "Dog", Icon: Dog },
   { name: "Book", Icon: Book },
@@ -108,6 +109,7 @@ type ChildColumnProps = {
 function ChildColumn({ child, onComplete, onUncomplete }: ChildColumnProps) {
   const { t } = useTranslation();
   const dailyChores = child.chores.filter((c) => c.frequency === "daily");
+  const weekdayChores = child.chores.filter((c) => c.frequency === "weekdays");
   const weeklyChores = child.chores.filter((c) => c.frequency === "weekly");
 
   return (
@@ -146,6 +148,27 @@ function ChildColumn({ child, onComplete, onUncomplete }: ChildColumnProps) {
               icon={chore.icon}
               completionId={chore.completionId}
               onComplete={(cId) => onComplete(cId, child.id, "daily")}
+              onUncomplete={onUncomplete}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* weekday chores */}
+      {weekdayChores.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="px-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            {t("family.weekdays")}
+          </p>
+          {weekdayChores.map((chore) => (
+            <ChoreRow
+              key={chore.choreId}
+              choreId={chore.choreId}
+              title={chore.title}
+              points={chore.points}
+              icon={chore.icon}
+              completionId={chore.completionId}
+              onComplete={(cId) => onComplete(cId, child.id, "weekdays")}
               onUncomplete={onUncomplete}
             />
           ))}
@@ -257,7 +280,7 @@ function EditPanel({ onClose }: EditPanelProps) {
   const [choreForm, setChoreForm] = useState({
     title: "",
     points: 1,
-    frequency: "daily" as "daily" | "weekly",
+    frequency: "daily" as ChoreFrequency,
     icon: null as string | null,
     childIds: null as string[] | null,
   });
@@ -460,7 +483,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreFrequency")}</label>
                     <div className="flex flex-col gap-1">
-                      {(["daily", "weekly"] as const).map((freq) => (
+                      {(["daily", "weekdays", "weekly"] as const).map((freq) => (
                         <label key={freq} className="flex cursor-pointer items-start gap-2 rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-gray-800">
                           <input
                             type="radio"
@@ -548,7 +571,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                     <ChoreIcon name={chore.icon} className="h-5 w-5 text-gray-400" />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-gray-800 dark:text-white">{chore.title}</p>
-                      <p className="text-xs text-gray-400">{chore.points} pt · {chore.frequency}</p>
+                      <p className="text-xs text-gray-400">{chore.points} pt · {t(`family.frequency.${chore.frequency}`).split(" (")[0]}</p>
                     </div>
                     <button onClick={() => openEditChore(chore)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Pencil className="h-4 w-4" />
@@ -570,6 +593,93 @@ function EditPanel({ onClose }: EditPanelProps) {
   );
 }
 
+// ── Scoreboard ────────────────────────────────────────────────────────────────
+
+const MEDALS = ["🥇", "🥈", "🥉"];
+
+function Scoreboard() {
+  const { t } = useTranslation();
+  const [period, setPeriod] = useState<"week" | "month" | "year">("week");
+  const todayDate = getTodayDate();
+
+  const { data, isLoading } = useQuery<ScoresResponse>({
+    queryKey: ["chore-scores", period, todayDate],
+    queryFn: () => fetch(`/api/chore-completions/scores?period=${period}&date=${todayDate}`).then((r) => r.json()),
+  });
+
+  const children = data?.children ?? [];
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* period tabs */}
+      <div className="flex gap-2">
+        {(["week", "month", "year"] as const).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            className={cn(
+              "rounded-xl px-4 py-2 text-sm font-medium transition-colors",
+              period === p
+                ? "bg-indigo-600 text-white"
+                : "bg-white/60 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-white/80 dark:hover:bg-white/10"
+            )}
+          >
+            {t(`family.scoreboard.${p}`)}
+          </button>
+        ))}
+      </div>
+
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+        </div>
+      )}
+
+      {!isLoading && children.every((c) => c.points === 0) && (
+        <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+          <Trophy className="h-10 w-10 text-gray-300" />
+          <p className="text-gray-500 dark:text-gray-400">{t("family.scoreboard.noData")}</p>
+        </div>
+      )}
+
+      {!isLoading && children.some((c) => c.points > 0) && (
+        <div className="flex flex-col gap-3 max-w-lg">
+          {children.map((child, i) => (
+            <div
+              key={child.id}
+              className={cn(
+                "flex items-center gap-4 rounded-2xl px-5 py-4",
+                i === 0 && child.points > 0
+                  ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+                  : "bg-white/60 dark:bg-white/5"
+              )}
+            >
+              <span className="text-2xl w-8 text-center">
+                {child.points > 0 && child.rank <= 3 ? MEDALS[child.rank - 1] : <span className="text-base font-bold text-gray-400">{child.rank}</span>}
+              </span>
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl"
+                style={{ background: child.color ?? "#6366F1", boxShadow: `0 0 0 3px ${child.color ?? "#6366F1"}44` }}
+              >
+                {child.emoji ?? "👤"}
+              </div>
+              <span className="flex-1 text-sm font-semibold text-gray-900 dark:text-white">{child.name}</span>
+              <span className={cn(
+                "rounded-full px-3 py-1 text-sm font-bold",
+                child.points > 0
+                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                  : "bg-gray-100 text-gray-400 dark:bg-gray-800"
+              )}>
+                {child.points} {t("family.scoreboard.pts")}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function FamilyPage() {
@@ -578,6 +688,7 @@ export default function FamilyPage() {
   const todayDate = getTodayDate();
   const [editOpen, setEditOpen] = useState(false);
   const [activeChildIndex, setActiveChildIndex] = useState(0);
+  const [view, setView] = useState<"tasks" | "scoreboard">("tasks");
 
   const { data, isLoading } = useQuery<ChoreCompletionsResponse>({
     queryKey: ["chore-completions", todayDate],
@@ -682,78 +793,118 @@ export default function FamilyPage() {
       <div className="flex h-full flex-col">
         {/* page header */}
         <div className="flex items-center justify-between px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("family.title")}</h1>
-          <button
-            onClick={() => setEditOpen((v) => !v)}
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
-          >
-            {editOpen ? t("family.done") : t("family.edit")}
-          </button>
-        </div>
-
-        {/* loading */}
-        {isLoading && (
-          <div className="flex flex-1 items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-          </div>
-        )}
-
-        {/* empty state */}
-        {!isLoading && children.length === 0 && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
-            <ListTodo className="h-12 w-12 text-gray-300" />
-            <p className="text-gray-500 dark:text-gray-400">{t("family.noChildren")}</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("family.addChildren")}</p>
-          </div>
-        )}
-
-        {/* tab strip for >3 children */}
-        {!isLoading && useTabLayout && children.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto px-6 pb-2">
-            {children.map((child, i) => (
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("family.title")}</h1>
+            <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
               <button
-                key={child.id}
-                onClick={() => setActiveChildIndex(i)}
+                onClick={() => setView("tasks")}
                 className={cn(
-                  "flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors",
-                  activeChildIndex === i
-                    ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
-                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                  "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
+                  view === "tasks"
+                    ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400"
                 )}
               >
-                <span>{child.emoji ?? "👤"}</span>
-                {child.name}
+                <ListTodo className="h-4 w-4" />
               </button>
-            ))}
+              <button
+                onClick={() => setView("scoreboard")}
+                className={cn(
+                  "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
+                  view === "scoreboard"
+                    ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400"
+                )}
+              >
+                <Trophy className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          {view === "tasks" && (
+            <button
+              onClick={() => setEditOpen((v) => !v)}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+            >
+              {editOpen ? t("family.done") : t("family.edit")}
+            </button>
+          )}
+        </div>
+
+        {/* scoreboard view */}
+        {view === "scoreboard" && (
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <Scoreboard />
           </div>
         )}
 
-        {/* content */}
-        {!isLoading && children.length > 0 && (
-          <div className={cn(
-            "flex-1 overflow-y-auto px-6 pb-6",
-            !useTabLayout && "flex gap-6 overflow-x-auto"
-          )}>
-            {useTabLayout ? (
-              children[activeChildIndex] && (
-                <ChildColumn
-                  key={children[activeChildIndex].id}
-                  child={children[activeChildIndex]}
-                  onComplete={handleComplete}
-                  onUncomplete={handleUncomplete}
-                />
-              )
-            ) : (
-              children.map((child) => (
-                <ChildColumn
-                  key={child.id}
-                  child={child}
-                  onComplete={handleComplete}
-                  onUncomplete={handleUncomplete}
-                />
-              ))
+        {/* tasks view */}
+        {view === "tasks" && (
+          <>
+            {/* loading */}
+            {isLoading && (
+              <div className="flex flex-1 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+              </div>
             )}
-          </div>
+
+            {/* empty state */}
+            {!isLoading && children.length === 0 && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
+                <ListTodo className="h-12 w-12 text-gray-300" />
+                <p className="text-gray-500 dark:text-gray-400">{t("family.noChildren")}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t("family.addChildren")}</p>
+              </div>
+            )}
+
+            {/* tab strip for >3 children */}
+            {!isLoading && useTabLayout && children.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto px-6 pb-2">
+                {children.map((child, i) => (
+                  <button
+                    key={child.id}
+                    onClick={() => setActiveChildIndex(i)}
+                    className={cn(
+                      "flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors",
+                      activeChildIndex === i
+                        ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+                        : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                    )}
+                  >
+                    <span>{child.emoji ?? "👤"}</span>
+                    {child.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* content */}
+            {!isLoading && children.length > 0 && (
+              <div className={cn(
+                "flex-1 overflow-y-auto px-6 pb-6",
+                !useTabLayout && "flex gap-6 overflow-x-auto"
+              )}>
+                {useTabLayout ? (
+                  children[activeChildIndex] && (
+                    <ChildColumn
+                      key={children[activeChildIndex].id}
+                      child={children[activeChildIndex]}
+                      onComplete={handleComplete}
+                      onUncomplete={handleUncomplete}
+                    />
+                  )
+                ) : (
+                  children.map((child) => (
+                    <ChildColumn
+                      key={child.id}
+                      child={child}
+                      onComplete={handleComplete}
+                      onUncomplete={handleUncomplete}
+                    />
+                  ))
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 

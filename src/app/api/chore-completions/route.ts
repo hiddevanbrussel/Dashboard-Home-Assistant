@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { ChoreCompletionsResponse, ChildWithChores, ChoreCompletionRecord } from "@/lib/chores-types";
+import type { ChoreCompletionsResponse, ChildWithChores, ChoreCompletionRecord, ChoreFrequency } from "@/lib/chores-types";
 
 function getMondayDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
@@ -8,6 +8,11 @@ function getMondayDate(dateStr: string): string {
   const diff = (day === 0 ? -6 : 1 - day); // shift to Monday
   d.setDate(d.getDate() + diff);
   return d.toISOString().slice(0, 10);
+}
+
+function isWeekend(dateStr: string): boolean {
+  const day = new Date(dateStr + "T00:00:00").getDay();
+  return day === 0 || day === 6;
 }
 
 function parseChildIds(raw: string | null): string[] | null {
@@ -26,6 +31,7 @@ export async function GET(request: Request) {
 
   const todayDate = dateParam;
   const mondayDate = getMondayDate(dateParam);
+  const weekendToday = isWeekend(todayDate);
 
   const [children, chores, completions] = await Promise.all([
     prisma.child.findMany({ orderBy: { order: "asc" } }),
@@ -39,7 +45,10 @@ export async function GET(request: Request) {
   const result: ChildWithChores[] = children.map((child) => {
     const childChores = chores.filter((chore) => {
       const ids = parseChildIds(chore.childIds);
-      return ids === null || ids.includes(child.id);
+      if (ids !== null && !ids.includes(child.id)) return false;
+      // Hide weekday-only chores on weekends
+      if (chore.frequency === "weekdays" && weekendToday) return false;
+      return true;
     });
 
     const choreRows: ChoreCompletionRecord[] = childChores.map((chore) => {
@@ -51,30 +60,36 @@ export async function GET(request: Request) {
         choreId: chore.id,
         title: chore.title,
         points: chore.points,
-        frequency: chore.frequency as "daily" | "weekly",
+        frequency: chore.frequency as ChoreFrequency,
         icon: chore.icon,
         completionId: completion?.id ?? null,
         completedAt: completion?.completedAt.toISOString() ?? null,
       };
     });
 
-    // todayPoints: daily chores completed today
+    // todayPoints: daily + weekday chores completed today
     const todayPoints = choreRows
-      .filter((r) => r.frequency === "daily" && r.completionId !== null)
+      .filter((r) => (r.frequency === "daily" || r.frequency === "weekdays") && r.completionId !== null)
       .reduce((sum, r) => sum + r.points, 0);
 
     // weekPoints: all chores completed this week (Mon–today)
     const childCompletions = completions.filter((c) => c.childId === child.id);
 
+    // Use all chores (including weekday ones) for weekPoints calculation
+    const allChildChores = chores.filter((chore) => {
+      const ids = parseChildIds(chore.childIds);
+      return ids === null || ids.includes(child.id);
+    });
+
     let weekPoints = 0;
-    for (const chore of childChores) {
+    for (const chore of allChildChores) {
       if (chore.frequency === "weekly") {
         const done = childCompletions.find(
           (c) => c.choreId === chore.id && c.date === mondayDate
         );
         if (done) weekPoints += chore.points;
       } else {
-        // daily: count each day this week that it was completed
+        // daily + weekdays: count each completion this week
         const doneCount = childCompletions.filter(
           (c) => c.choreId === chore.id
         ).length;
@@ -109,6 +124,12 @@ export async function POST(request: Request) {
   }
 
   const today = new Date().toISOString().slice(0, 10);
+
+  // Weekday-only chores cannot be completed on weekends
+  if (body.frequency === "weekdays" && isWeekend(today)) {
+    return NextResponse.json({ error: "Weekday chores cannot be completed on weekends" }, { status: 400 });
+  }
+
   const date = body.frequency === "weekly" ? getMondayDate(today) : today;
 
   try {

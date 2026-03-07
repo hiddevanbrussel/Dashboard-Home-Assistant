@@ -7,11 +7,13 @@ export type ChildRecord = {
   createdAt: string;
 };
 
+export type ChoreFrequency = "daily" | "weekdays" | "weekly";
+
 export type ChoreRecord = {
   id: string;
   title: string;
   points: number;
-  frequency: "daily" | "weekly";
+  frequency: ChoreFrequency;
   icon: string | null;
   order: number;
   childIds: string[] | null;
@@ -22,11 +24,22 @@ export type ChoreCompletionRecord = {
   choreId: string;
   title: string;
   points: number;
-  frequency: "daily" | "weekly";
+  frequency: ChoreFrequency;
   icon: string | null;
   completionId: string | null;
   completedAt: string | null;
 };
+
+export type ScoreRecord = {
+  id: string;
+  name: string;
+  emoji: string | null;
+  color: string | null;
+  points: number;
+  rank: number;
+};
+
+export type ScoresResponse = { children: ScoreRecord[] };
 
 export type ChildWithChores = {
   id: string;
