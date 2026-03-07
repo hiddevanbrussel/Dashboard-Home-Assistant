@@ -117,23 +117,23 @@ function ChildColumn({ child, onComplete, onUncomplete }: ChildColumnProps) {
   return (
     <div className="flex flex-col gap-4 min-w-[260px] flex-1">
       {/* avatar + name + points */}
-      <div className="flex flex-col gap-1 pb-1">
-        <div className="flex items-center gap-3">
-          <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
-            style={{ background: child.color ?? "#6366F1" }}
-          >
-            {child.emoji ?? "👤"}
-          </div>
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">{child.name}</span>
+      <div className="flex items-center gap-3 pb-1">
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
+          style={{ background: child.color ?? "#6366F1" }}
+        >
+          {child.emoji ?? "👤"}
         </div>
-        <div className="flex gap-1.5">
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-            {t("family.todayPoints").replace("{n}", String(child.todayPoints))}
-          </span>
-          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
-            {t("family.weekPoints").replace("{n}", String(child.weekPoints))}
-          </span>
+        <div className="flex flex-col min-w-0 gap-1">
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">{child.name}</span>
+          <div className="flex gap-1.5">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+              {t("family.todayPoints").replace("{n}", String(child.todayPoints))}
+            </span>
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+              {t("family.weekPoints").replace("{n}", String(child.weekPoints))}
+            </span>
+          </div>
         </div>
       </div>
 
