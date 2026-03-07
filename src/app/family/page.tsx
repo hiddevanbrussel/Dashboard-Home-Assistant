@@ -805,7 +805,7 @@ export default function FamilyPage() {
   const useTabLayout = children.length > 3;
 
   return (
-    <AppShell activeTab="/family">
+    <AppShell activeTab="/family" contentNoScroll>
       <div className="flex h-full flex-col">
         {/* page header */}
         <div className="flex items-center justify-between px-6 py-4">
