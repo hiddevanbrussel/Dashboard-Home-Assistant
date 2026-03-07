@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Smile,
-  Check, X, Plus, Pencil, ListTodo, ChevronLeft, Trophy,
+  Check, X, Plus, Pencil, ListTodo, ChevronLeft, Trophy, Eye, EyeOff,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useTranslation } from "@/hooks/use-translation";
@@ -104,15 +104,17 @@ function ChoreRow({ choreId, title, points, icon, completionId, onComplete, onUn
 
 type ChildColumnProps = {
   child: ChildWithChores;
+  showCompleted: boolean;
   onComplete: (choreId: string, childId: string, frequency: string) => void;
   onUncomplete: (completionId: string) => void;
 };
 
-function ChildColumn({ child, onComplete, onUncomplete }: ChildColumnProps) {
+function ChildColumn({ child, showCompleted, onComplete, onUncomplete }: ChildColumnProps) {
   const { t } = useTranslation();
-  const dailyChores = child.chores.filter((c) => c.frequency === "daily");
-  const weekdayChores = child.chores.filter((c) => c.frequency === "weekdays");
-  const weeklyChores = child.chores.filter((c) => c.frequency === "weekly");
+  const visibleChores = showCompleted ? child.chores : child.chores.filter((c) => c.completionId === null);
+  const dailyChores = visibleChores.filter((c) => c.frequency === "daily");
+  const weekdayChores = visibleChores.filter((c) => c.frequency === "weekdays");
+  const weeklyChores = visibleChores.filter((c) => c.frequency === "weekly");
 
   return (
     <div className="flex flex-col gap-4 min-w-[260px] flex-1">
@@ -726,6 +728,7 @@ export default function FamilyPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [activeChildIndex, setActiveChildIndex] = useState(0);
   const [view, setView] = useState<"tasks" | "scoreboard">("tasks");
+  const [showCompleted, setShowCompleted] = useState(true);
   const [passcodeModalOpen, setPasscodeModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState<string | null>(null);
@@ -869,6 +872,20 @@ export default function FamilyPage() {
               >
                 <Trophy className="h-4 w-4" />
               </button>
+              {view === "tasks" && (
+                <button
+                  onClick={() => setShowCompleted((v) => !v)}
+                  className={cn(
+                    "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
+                    showCompleted
+                      ? "text-gray-500 dark:text-gray-400"
+                      : "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                  )}
+                  title={showCompleted ? "Verberg afgeronde taken" : "Toon afgeronde taken"}
+                >
+                  {showCompleted ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                </button>
+              )}
             </div>
           {view === "tasks" && (
             editOpen ? (
@@ -984,6 +1001,7 @@ export default function FamilyPage() {
                     <ChildColumn
                       key={children[activeChildIndex].id}
                       child={children[activeChildIndex]}
+                      showCompleted={showCompleted}
                       onComplete={handleComplete}
                       onUncomplete={handleUncomplete}
                     />
@@ -993,6 +1011,7 @@ export default function FamilyPage() {
                     <ChildColumn
                       key={child.id}
                       child={child}
+                      showCompleted={showCompleted}
                       onComplete={handleComplete}
                       onUncomplete={handleUncomplete}
                     />
