@@ -25,6 +25,7 @@ export async function PUT(
     childIds?: string[] | null;
     timesPerDay?: number;
     shared?: boolean;
+    penalty?: boolean;
   } = {};
   try {
     body = await request.json();
@@ -45,6 +46,7 @@ export async function PUT(
         }),
         ...(body.timesPerDay !== undefined && { timesPerDay: body.timesPerDay }),
         ...(body.shared !== undefined && { shared: body.shared }),
+        ...(body.penalty !== undefined && { penalty: body.penalty }),
       },
     });
     return NextResponse.json({
@@ -57,6 +59,7 @@ export async function PUT(
       childIds: parseChildIds(chore.childIds),
       timesPerDay: chore.timesPerDay,
       shared: chore.shared,
+      penalty: (chore as { penalty?: boolean }).penalty ?? false,
       createdAt: chore.createdAt.toISOString(),
     });
   } catch (err) {

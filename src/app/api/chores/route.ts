@@ -24,6 +24,7 @@ export async function GET() {
       childIds: parseChildIds(c.childIds),
       timesPerDay: c.timesPerDay,
       shared: c.shared,
+      penalty: (c as { penalty?: boolean }).penalty ?? false,
       createdAt: c.createdAt.toISOString(),
     }))
   );
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
     childIds?: string[] | null;
     timesPerDay?: number;
     shared?: boolean;
+    penalty?: boolean;
   } = {};
   try {
     body = await request.json();
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
         childIds: body.childIds != null ? JSON.stringify(body.childIds) : null,
         timesPerDay: body.timesPerDay ?? 1,
         shared: body.shared ?? false,
+        penalty: body.penalty ?? false,
       },
     });
     return NextResponse.json({
@@ -74,6 +77,7 @@ export async function POST(request: Request) {
       childIds: parseChildIds(chore.childIds),
       timesPerDay: chore.timesPerDay,
       shared: chore.shared,
+      penalty: (chore as { penalty?: boolean }).penalty ?? false,
       createdAt: chore.createdAt.toISOString(),
     });
   } catch (err) {

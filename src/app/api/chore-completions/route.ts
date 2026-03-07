@@ -73,6 +73,8 @@ export async function GET(request: Request) {
       const timesPerDay = (chore as { timesPerDay?: number }).timesPerDay ?? 1;
       const dateKey = chore.frequency === "weekly" ? mondayDate : todayDate;
 
+      const chorepenalty = (chore as { penalty?: boolean }).penalty ?? false;
+
       if (timesPerDay > 1) {
         return Array.from({ length: timesPerDay }, (_, slot) => {
           const slottedChoreId = `${chore.id}:${slot}`;
@@ -86,6 +88,7 @@ export async function GET(request: Request) {
             points: chore.points,
             frequency: chore.frequency as ChoreFrequency,
             icon: chore.icon,
+            penalty: chorepenalty,
             completionId: completion?.id ?? null,
             completedAt: completion?.completedAt.toISOString() ?? null,
           };
@@ -101,15 +104,20 @@ export async function GET(request: Request) {
         points: chore.points,
         frequency: chore.frequency as ChoreFrequency,
         icon: chore.icon,
+        penalty: chorepenalty,
         completionId: completion?.id ?? null,
         completedAt: completion?.completedAt.toISOString() ?? null,
       }];
     });
 
-    // todayPoints: daily + weekday chores completed today
-    const todayPoints = choreRows
+    // todayPoints: daily + weekday chores completed today, minus penalty chores not completed today
+    const todayCompleted = choreRows
       .filter((r) => (r.frequency === "daily" || r.frequency === "weekdays") && r.completionId !== null)
       .reduce((sum, r) => sum + r.points, 0);
+    const todayPenalty = choreRows
+      .filter((r) => (r.frequency === "daily" || r.frequency === "weekdays") && r.penalty && r.completionId === null)
+      .reduce((sum, r) => sum + r.points, 0);
+    const todayPoints = todayCompleted - todayPenalty;
 
     // weekPoints: all chores completed this week (Mon–today)
     const childCompletions = completions.filter((c) => c.childId === child.id);
@@ -155,13 +163,16 @@ export async function GET(request: Request) {
       }
     }
 
+    // weekPoints: subtract today's uncompleted penalty chores (same as todayPenalty)
+    const weekPointsAdjusted = weekPoints - todayPenalty;
+
     return {
       id: child.id,
       name: child.name,
       emoji: child.emoji,
       color: child.color,
       todayPoints,
-      weekPoints,
+      weekPoints: weekPointsAdjusted,
       chores: choreRows,
     };
   });

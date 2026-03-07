@@ -19,6 +19,7 @@ export type ChoreRecord = {
   childIds: string[] | null;
   timesPerDay: number;
   shared: boolean;
+  penalty: boolean;
   createdAt: string;
 };
 
@@ -28,6 +29,7 @@ export type ChoreCompletionRecord = {
   points: number;
   frequency: ChoreFrequency;
   icon: string | null;
+  penalty: boolean;
   completionId: string | null;
   completedAt: string | null;
 };

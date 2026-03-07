@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Smile,
+  Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Smile, Bike,
   Check, X, Plus, Pencil, ListTodo, ChevronLeft, Trophy, Eye, EyeOff,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
@@ -28,6 +28,7 @@ const CHORE_ICONS: { name: string; Icon: React.FC<{ className?: string }> }[] = 
   { name: "Star", Icon: Star },
   { name: "Brush", Icon: Brush },
   { name: "Wrench", Icon: Wrench },
+  { name: "Bike", Icon: Bike },
 ];
 
 function ChoreIcon({ name, className }: { name: string | null; className?: string }) {
@@ -54,13 +55,15 @@ type ChoreRowProps = {
   title: string;
   points: number;
   icon: string | null;
+  penalty: boolean;
   completionId: string | null;
   onComplete: (choreId: string) => void;
   onUncomplete: (completionId: string) => void;
 };
 
-function ChoreRow({ choreId, title, points, icon, completionId, onComplete, onUncomplete }: ChoreRowProps) {
+function ChoreRow({ choreId, title, points, icon, penalty, completionId, onComplete, onUncomplete }: ChoreRowProps) {
   const done = completionId !== null;
+  const ispenalty = penalty && !done;
   return (
     <button
       onClick={() => done ? onUncomplete(completionId!) : onComplete(choreId)}
@@ -68,6 +71,8 @@ function ChoreRow({ choreId, title, points, icon, completionId, onComplete, onUn
         "flex items-center gap-3 w-full rounded-2xl px-4 py-3 text-left transition-all",
         done
           ? "bg-green-50 dark:bg-green-900/20"
+          : ispenalty
+          ? "bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/40"
           : "bg-white/60 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10",
       )}
     >
@@ -76,6 +81,8 @@ function ChoreRow({ choreId, title, points, icon, completionId, onComplete, onUn
         "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all",
         done
           ? "border-green-500 bg-green-500 text-white"
+          : ispenalty
+          ? "border-red-400 dark:border-red-500"
           : "border-gray-300 dark:border-gray-600",
       )}>
         {done && <Check className="h-4 w-4" strokeWidth={3} />}
@@ -83,7 +90,7 @@ function ChoreRow({ choreId, title, points, icon, completionId, onComplete, onUn
 
       {/* icon + title */}
       <span className="flex items-center gap-2 min-w-0 flex-1">
-        <ChoreIcon name={icon} className={cn("h-4 w-4 shrink-0", done ? "text-green-500" : "text-gray-400")} />
+        <ChoreIcon name={icon} className={cn("h-4 w-4 shrink-0", done ? "text-green-500" : ispenalty ? "text-red-400" : "text-gray-400")} />
         <span className={cn("truncate text-sm font-medium", done && "line-through text-gray-400 dark:text-gray-500")}>
           {title}
         </span>
@@ -92,9 +99,13 @@ function ChoreRow({ choreId, title, points, icon, completionId, onComplete, onUn
       {/* points */}
       <span className={cn(
         "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold",
-        done ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+        done
+          ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+          : ispenalty
+          ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+          : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
       )}>
-        {points}
+        {ispenalty ? `-${points}` : points}
       </span>
     </button>
   );
@@ -152,6 +163,7 @@ function ChildColumn({ child, showCompleted, onComplete, onUncomplete }: ChildCo
               title={chore.title}
               points={chore.points}
               icon={chore.icon}
+              penalty={chore.penalty}
               completionId={chore.completionId}
               onComplete={(cId) => onComplete(cId, child.id, "daily")}
               onUncomplete={onUncomplete}
@@ -173,6 +185,7 @@ function ChildColumn({ child, showCompleted, onComplete, onUncomplete }: ChildCo
               title={chore.title}
               points={chore.points}
               icon={chore.icon}
+              penalty={chore.penalty}
               completionId={chore.completionId}
               onComplete={(cId) => onComplete(cId, child.id, "weekdays")}
               onUncomplete={onUncomplete}
@@ -194,6 +207,7 @@ function ChildColumn({ child, showCompleted, onComplete, onUncomplete }: ChildCo
               title={chore.title}
               points={chore.points}
               icon={chore.icon}
+              penalty={chore.penalty}
               completionId={chore.completionId}
               onComplete={(cId) => onComplete(cId, child.id, "weekly")}
               onUncomplete={onUncomplete}
@@ -291,16 +305,17 @@ function EditPanel({ onClose }: EditPanelProps) {
     childIds: null as string[] | null,
     timesPerDay: 1,
     shared: false,
+    penalty: false,
   });
 
   function openNewChore() {
     setEditingChoreId("new");
-    setChoreForm({ title: "", points: 1, frequency: "daily", icon: null, childIds: null, timesPerDay: 1, shared: false });
+    setChoreForm({ title: "", points: 1, frequency: "daily", icon: null, childIds: null, timesPerDay: 1, shared: false, penalty: false });
   }
 
   function openEditChore(c: ChoreRecord) {
     setEditingChoreId(c.id);
-    setChoreForm({ title: c.title, points: c.points, frequency: c.frequency, icon: c.icon, childIds: c.childIds, timesPerDay: c.timesPerDay ?? 1, shared: c.shared ?? false });
+    setChoreForm({ title: c.title, points: c.points, frequency: c.frequency, icon: c.icon, childIds: c.childIds, timesPerDay: c.timesPerDay ?? 1, shared: c.shared ?? false, penalty: c.penalty ?? false });
   }
 
   function cancelChore() { setEditingChoreId(null); }
@@ -537,6 +552,15 @@ function EditPanel({ onClose }: EditPanelProps) {
                     />
                     <span className="text-xs text-gray-700 dark:text-gray-300">{t("family.choreShared")}</span>
                   </label>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-red-200 p-3 hover:bg-red-50 dark:border-red-800/40 dark:hover:bg-red-900/10">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 shrink-0"
+                      checked={choreForm.penalty}
+                      onChange={(e) => setChoreForm((f) => ({ ...f, penalty: e.target.checked }))}
+                    />
+                    <span className="text-xs text-gray-700 dark:text-gray-300">{t("family.chorePenalty")}</span>
+                  </label>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreIcon")}</label>
                     <div className="flex flex-wrap gap-2">
@@ -610,7 +634,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                     <ChoreIcon name={chore.icon} className="h-5 w-5 text-gray-400" />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-gray-800 dark:text-white">{chore.title}</p>
-                      <p className="text-xs text-gray-400">{chore.points} pt · {t(`family.frequency.${chore.frequency}`).split(" (")[0]}{(chore.timesPerDay ?? 1) > 1 ? ` · ${t("family.timesPerDay.twice")}` : ""}{chore.shared ? " · gedeeld" : ""}</p>
+                      <p className="text-xs text-gray-400">{chore.points} pt · {t(`family.frequency.${chore.frequency}`).split(" (")[0]}{(chore.timesPerDay ?? 1) > 1 ? ` · ${t("family.timesPerDay.twice")}` : ""}{chore.shared ? " · gedeeld" : ""}{chore.penalty ? " · straf" : ""}</p>
                     </div>
                     <button onClick={() => openEditChore(chore)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Pencil className="h-4 w-4" />
@@ -945,7 +969,7 @@ export default function FamilyPage() {
 
         {/* scoreboard view */}
         {view === "scoreboard" && (
-          <div className="flex-1 overflow-y-auto px-6 pb-6">
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
             <Scoreboard />
           </div>
         )}
@@ -993,7 +1017,7 @@ export default function FamilyPage() {
             {/* content */}
             {!isLoading && children.length > 0 && (
               <div className={cn(
-                "flex-1 overflow-y-auto px-6 pb-6",
+                "flex-1 min-h-0 overflow-y-auto px-6 pb-6",
                 !useTabLayout && "flex gap-6 overflow-x-auto"
               )}>
                 {useTabLayout ? (
