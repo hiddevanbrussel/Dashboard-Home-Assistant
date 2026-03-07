@@ -41,3 +41,5 @@ export { CameraCardWidget } from "./camera-card-widget";
 export { FloatingCameraCard } from "./floating-camera-card";
 export { CARD_ICON_OPTIONS } from "./card-icons";
 export * from "./widget-types";
+export { ChoreCardWidget } from "./chore-card-widget";
+export { FloatingChoreCard } from "./floating-chore-card";

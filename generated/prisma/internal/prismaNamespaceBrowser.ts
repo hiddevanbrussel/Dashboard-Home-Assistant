@@ -55,7 +55,10 @@ export const ModelName = {
   Dashboard: 'Dashboard',
   Room: 'Room',
   RoomDashboard: 'RoomDashboard',
-  EnergyDashboard: 'EnergyDashboard'
+  EnergyDashboard: 'EnergyDashboard',
+  Child: 'Child',
+  Chore: 'Chore',
+  ChoreCompletion: 'ChoreCompletion'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -150,6 +153,45 @@ export const EnergyDashboardScalarFieldEnum = {
 } as const
 
 export type EnergyDashboardScalarFieldEnum = (typeof EnergyDashboardScalarFieldEnum)[keyof typeof EnergyDashboardScalarFieldEnum]
+
+
+export const ChildScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  emoji: 'emoji',
+  color: 'color',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ChildScalarFieldEnum = (typeof ChildScalarFieldEnum)[keyof typeof ChildScalarFieldEnum]
+
+
+export const ChoreScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  points: 'points',
+  frequency: 'frequency',
+  icon: 'icon',
+  order: 'order',
+  childIds: 'childIds',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ChoreScalarFieldEnum = (typeof ChoreScalarFieldEnum)[keyof typeof ChoreScalarFieldEnum]
+
+
+export const ChoreCompletionScalarFieldEnum = {
+  id: 'id',
+  choreId: 'choreId',
+  childId: 'childId',
+  date: 'date',
+  completedAt: 'completedAt'
+} as const
+
+export type ChoreCompletionScalarFieldEnum = (typeof ChoreCompletionScalarFieldEnum)[keyof typeof ChoreCompletionScalarFieldEnum]
 
 
 export const SortOrder = {

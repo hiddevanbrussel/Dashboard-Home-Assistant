@@ -10,7 +10,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, Music2, Pencil, Plus, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
+import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
 import { ArrowRightLeft } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -64,6 +64,8 @@ import {
   FloatingStatPillCard,
   CameraCardWidget,
   FloatingCameraCard,
+  ChoreCardWidget,
+  FloatingChoreCard,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import type { ImageCondition, SensorCondition } from "@/components/widgets";
@@ -74,7 +76,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group"] as const;
+const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "text_card", label: "Tekst", Icon: Type },
@@ -94,6 +96,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "room_card", label: "Kamer", Icon: Home },
   { type: "nuts_card", label: "Nuts (Gas/Water)", Icon: Fuel },
   { type: "card_group", label: "Kaartgroep", Icon: LayoutGrid },
+  { type: "chore_card", label: "Taken", Icon: ListTodo },
 ];
 
 /** Map widget type to HA domain for filtering entities */
@@ -129,7 +132,7 @@ const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor", "binary
 const FLOATING_WIDGET_TYPES = new Set([
   "text_card", "media_card", "climate_card", "climate_card_2", "light_card", "solar_card",
   "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card",
-  "vacuum_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group",
+  "vacuum_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card",
 ]);
 
 type DashboardData = {
@@ -487,6 +490,13 @@ function WidgetByType({
           max_value={max_value as number | undefined}
         />
       );
+    case "chore_card":
+      return (
+        <ChoreCardWidget
+          title={title}
+          onMoreClick={onMoreClick}
+        />
+      );
     default:
       return (
         <div className="rounded-card border border-dashed p-4 text-sm text-gray-500">
@@ -521,6 +531,11 @@ export default function DashboardEditPage() {
   const [roomCardSize, setRoomCardSize] = useState<"normal" | "large">("normal");
   const [initialized, setInitialized] = useState(false);
   const [entities, setEntities] = useState<HaEntity[]>([]);
+  const { data: choreChildren = [] } = useQuery<{ id: string; name: string; emoji: string | null }[]>({
+    queryKey: ["children"],
+    queryFn: () => fetch("/api/children").then((r) => r.json()),
+    staleTime: 60_000,
+  });
   const [addTileOpen, setAddTileOpen] = useState(false);
   const [addTileStep, setAddTileStep] = useState<"type" | "entity">("type");
   const [addTileSelectedType, setAddTileSelectedType] = useState<string | null>(null);
@@ -569,6 +584,8 @@ export default function DashboardEditPage() {
     device_entity_ids?: string[];
     device_names?: Record<string, string>;
     cost_per_kwh?: number;
+    child_id?: string | null;
+    show_chore_points?: boolean;
   }>({
     title: "",
     entity_id: "",
@@ -603,6 +620,8 @@ export default function DashboardEditPage() {
     device_entity_ids: [],
     device_names: {},
     cost_per_kwh: undefined as number | undefined,
+    child_id: null as string | null,
+    show_chore_points: true,
   });
   const [iconSearch, setIconSearch] = useState("");
   const [vacuumIconSearch, setVacuumIconSearch] = useState("");
@@ -768,6 +787,8 @@ export default function DashboardEditPage() {
         device_entity_ids: editingWidget.device_entity_ids ?? [],
         device_names: editingWidget.device_names ?? {},
         cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
+        child_id: editingWidget.child_id ?? null,
+        show_chore_points: editingWidget.show_chore_points !== false,
       });
       setIconSearch("");
       setVacuumIconSearch(editingWidget.type === "vacuum_card" ? (editingWidget.icon ?? "") : "");
@@ -1417,7 +1438,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group")
+            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group" && w.type !== "chore_card")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -1897,6 +1918,26 @@ export default function DashboardEditPage() {
             />
           ))}
 
+
+        {widgets
+          .filter((w) => w.type === "chore_card")
+          .map((w, i) => (
+            <FloatingChoreCard
+              key={w.id}
+              widget={{
+                id: w.id,
+                title: w.title,
+                child_id: w.child_id,
+                show_chore_points: w.show_chore_points,
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              storageScope={id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
 
         {widgets
           .filter((w) => w.type === "pill_card")
@@ -4375,6 +4416,42 @@ aria-label={t("editPanel.removeCondition")}
                     )}
                   </>
                 )}
+                {editingWidget.type === "chore_card" && (
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("widget.chore_card.childId")}
+                      </label>
+                      <select
+                        value={editForm.child_id ?? ""}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, child_id: e.target.value || null }))}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      >
+                        <option value="">{t("widget.chore_card.allChildren")}</option>
+                        {choreChildren.map((c) => (
+                          <option key={c.id} value={c.id}>{c.emoji ? `${c.emoji} ` : ""}{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t("widget.chore_card.showPoints")}
+                      </label>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={editForm.show_chore_points !== false}
+                        onClick={() => setEditForm((prev) => ({ ...prev, show_chore_points: !(prev.show_chore_points !== false) }))}
+                        className={cn(
+                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2",
+                          editForm.show_chore_points !== false ? "bg-[#4D2FB2]" : "bg-gray-200 dark:bg-gray-600"
+                        )}
+                      >
+                        <span className={cn("pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition", editForm.show_chore_points !== false ? "translate-x-5" : "translate-x-1")} />
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {editingWidget.type === "nuts_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
@@ -4799,6 +4876,10 @@ aria-label={t("editPanel.removeCondition")}
                           icon_background_color: editForm.icon_background_color || undefined,
                           width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
                           height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
+                        }),
+                        ...(editingWidget.type === "chore_card" && {
+                          child_id: editForm.child_id ?? null,
+                          show_chore_points: editForm.show_chore_points !== false,
                         }),
                       };
                       handleUpdateTile(editingWidgetId, updates);

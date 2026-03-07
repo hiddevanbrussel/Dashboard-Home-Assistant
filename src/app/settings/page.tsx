@@ -10,12 +10,13 @@ import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditMod
 import { useMusicAssistantStore, hydrateMusicAssistantStore, HERO_SLIDER_SOURCE_IDS } from "@/stores/music-assistant-store";
 import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
+import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { useNewsStore } from "@/stores/news-store";
-import { CalendarDays, Globe, Image, Link2, List, Monitor, Music2, Newspaper, Palette, LayoutDashboard, ChevronUp, ChevronDown, X, Zap, Server } from "lucide-react";
+import { CalendarDays, Globe, Image, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, ChevronUp, ChevronDown, X, Zap, Server } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "page-background" | "language" | "dashboard" | "connection" | "energy" | "calendar" | "music-assistant" | "news" | "entities" | "system";
+type SettingsSection = "appearance" | "screensaver" | "page-background" | "language" | "dashboard" | "connection" | "energy" | "calendar" | "tasks" | "music-assistant" | "news" | "entities" | "system";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -26,6 +27,7 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   connection: "settings.connection",
   energy: "settings.energy",
   calendar: "settings.calendar",
+  tasks: "settings.tasks",
   "music-assistant": "settings.musicAssistant",
   news: "news.settings.title",
   entities: "settings.entities",
@@ -97,6 +99,7 @@ export default function SettingsPage() {
   const musicAssistant = useMusicAssistantStore();
   const energyStore = useEnergyStore();
   const calendarStore = useCalendarStore();
+  const choresStore = useChoresStore();
   const newsStore = useNewsStore();
   const [newsFeedDraft, setNewsFeedDraft] = useState<string[]>([]);
   const [newsFeedInput, setNewsFeedInput] = useState("");
@@ -107,6 +110,7 @@ export default function SettingsPage() {
     hydrateMusicAssistantStore();
     hydrateEnergyStore();
     hydrateCalendarStore();
+    hydrateChoresStore();
   }, []);
 
   useEffect(() => {
@@ -422,6 +426,7 @@ export default function SettingsPage() {
     { groupKey: "settings.groups.pages", sections: [
       { id: "energy",    labelKey: SECTION_KEYS.energy,    icon: Zap          },
       { id: "calendar",  labelKey: SECTION_KEYS.calendar,  icon: CalendarDays },
+      { id: "tasks",     labelKey: SECTION_KEYS.tasks,     icon: ListTodo     },
     ]},
     { groupKey: "settings.groups.integrations", sections: [
       { id: "news", labelKey: SECTION_KEYS.news, icon: Newspaper },
@@ -1198,6 +1203,37 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+            </GlassCard>
+          )}
+
+          {section === "tasks" && (
+            <GlassCard>
+              <h3 className="text-card-title font-medium mb-3">{t("settings.tasks")}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {t("settings.tasks.description")}
+              </p>
+              <label className="flex items-center gap-3 cursor-pointer mb-5">
+                <input
+                  type="checkbox"
+                  checked={choresStore.enabled}
+                  onChange={(e) => choresStore.setEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-600"
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {t("settings.tasks.enabled")}
+                </span>
+              </label>
+              {choresStore.enabled && (
+                <div className="border-t border-gray-200 dark:border-white/10 pt-4">
+                  <a
+                    href="/family"
+                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                  >
+                    <ListTodo className="h-4 w-4" />
+                    {t("settings.tasks.manage")}
+                  </a>
+                </div>
+              )}
             </GlassCard>
           )}
 

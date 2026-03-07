@@ -42,3 +42,18 @@ export type RoomDashboard = Prisma.RoomDashboardModel
  * 
  */
 export type EnergyDashboard = Prisma.EnergyDashboardModel
+/**
+ * Model Child
+ * 
+ */
+export type Child = Prisma.ChildModel
+/**
+ * Model Chore
+ * 
+ */
+export type Chore = Prisma.ChoreModel
+/**
+ * Model ChoreCompletion
+ * 
+ */
+export type ChoreCompletion = Prisma.ChoreCompletionModel

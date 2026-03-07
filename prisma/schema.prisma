@@ -72,3 +72,35 @@ model EnergyDashboard {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 }
+
+model Child {
+  id        String   @id @default(cuid())
+  name      String
+  emoji     String?
+  color     String?   // hex, e.g. "#FF6B6B"
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Chore {
+  id        String   @id @default(cuid())
+  title     String
+  points    Int      @default(1)
+  frequency String   // "daily" | "weekly"
+  icon      String?  // lucide icon name, e.g. "Backpack"
+  order     Int      @default(0)
+  childIds  String?  // JSON array of Child IDs; null = all children
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChoreCompletion {
+  id          String   @id @default(cuid())
+  choreId     String
+  childId     String
+  date        String   // "YYYY-MM-DD": today for daily, Monday of week for weekly
+  completedAt DateTime @default(now())
+
+  @@unique([choreId, childId, date])
+}

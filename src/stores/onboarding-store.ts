@@ -99,6 +99,10 @@ export type WidgetConfig = {
   refresh?: number;
   /** Camera card: toon titelbalk (default true). */
   show_title?: boolean;
+  /** Chore card: specifiek kind (null = alle kinderen). */
+  child_id?: string | null;
+  /** Chore card: puntenbadge tonen. */
+  show_chore_points?: boolean;
   /** Power usage card: kosten per kWh (bijv. 0.25) voor berekening expense. */
   cost_per_kwh?: number;
   /** Device consumption card: entity IDs voor per-apparaat verbruik. */
