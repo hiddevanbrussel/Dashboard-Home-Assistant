@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Toothbrush,
+  Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Smile,
   Check, X, Plus, Pencil, ListTodo, ChevronLeft, Trophy,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
@@ -17,7 +17,7 @@ import type { ChildRecord, ChoreRecord, ChildWithChores, ChoreCompletionsRespons
 
 const CHORE_ICONS: { name: string; Icon: React.FC<{ className?: string }> }[] = [
   { name: "Backpack", Icon: Backpack },
-  { name: "Toothbrush", Icon: Toothbrush },
+  { name: "Smile", Icon: Smile },
   { name: "Trash2", Icon: Trash2 },
   { name: "Dog", Icon: Dog },
   { name: "Book", Icon: Book },
