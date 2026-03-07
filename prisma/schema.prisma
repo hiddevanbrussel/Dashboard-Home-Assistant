@@ -107,3 +107,21 @@ model ChoreCompletion {
 
   @@unique([choreId, childId, date])
 }
+
+model Reward {
+  id         String   @id @default(cuid())
+  title      String
+  pointsCost Int      @default(10)
+  icon       String?  // lucide icon name
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model RewardClaim {
+  id          String   @id @default(cuid())
+  rewardId    String
+  childId     String
+  pointsSpent Int      // snapshot of pointsCost at time of claim
+  claimedAt   DateTime @default(now())
+}

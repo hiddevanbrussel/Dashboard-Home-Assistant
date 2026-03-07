@@ -391,7 +391,9 @@ export const ModelName = {
   EnergyDashboard: 'EnergyDashboard',
   Child: 'Child',
   Chore: 'Chore',
-  ChoreCompletion: 'ChoreCompletion'
+  ChoreCompletion: 'ChoreCompletion',
+  Reward: 'Reward',
+  RewardClaim: 'RewardClaim'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -407,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "connection" | "dashboard" | "room" | "roomDashboard" | "energyDashboard" | "child" | "chore" | "choreCompletion"
+    modelProps: "connection" | "dashboard" | "room" | "roomDashboard" | "energyDashboard" | "child" | "chore" | "choreCompletion" | "reward" | "rewardClaim"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1003,6 +1005,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Reward: {
+      payload: Prisma.$RewardPayload<ExtArgs>
+      fields: Prisma.RewardFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RewardFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RewardFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload>
+        }
+        findFirst: {
+          args: Prisma.RewardFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RewardFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload>
+        }
+        findMany: {
+          args: Prisma.RewardFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload>[]
+        }
+        create: {
+          args: Prisma.RewardCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload>
+        }
+        createMany: {
+          args: Prisma.RewardCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RewardCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload>[]
+        }
+        delete: {
+          args: Prisma.RewardDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload>
+        }
+        update: {
+          args: Prisma.RewardUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload>
+        }
+        deleteMany: {
+          args: Prisma.RewardDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RewardUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RewardUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload>[]
+        }
+        upsert: {
+          args: Prisma.RewardUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardPayload>
+        }
+        aggregate: {
+          args: Prisma.RewardAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateReward>
+        }
+        groupBy: {
+          args: Prisma.RewardGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RewardGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RewardCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RewardCountAggregateOutputType> | number
+        }
+      }
+    }
+    RewardClaim: {
+      payload: Prisma.$RewardClaimPayload<ExtArgs>
+      fields: Prisma.RewardClaimFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RewardClaimFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RewardClaimFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload>
+        }
+        findFirst: {
+          args: Prisma.RewardClaimFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RewardClaimFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload>
+        }
+        findMany: {
+          args: Prisma.RewardClaimFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload>[]
+        }
+        create: {
+          args: Prisma.RewardClaimCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload>
+        }
+        createMany: {
+          args: Prisma.RewardClaimCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RewardClaimCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload>[]
+        }
+        delete: {
+          args: Prisma.RewardClaimDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload>
+        }
+        update: {
+          args: Prisma.RewardClaimUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload>
+        }
+        deleteMany: {
+          args: Prisma.RewardClaimDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RewardClaimUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RewardClaimUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload>[]
+        }
+        upsert: {
+          args: Prisma.RewardClaimUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RewardClaimPayload>
+        }
+        aggregate: {
+          args: Prisma.RewardClaimAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRewardClaim>
+        }
+        groupBy: {
+          args: Prisma.RewardClaimGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RewardClaimGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RewardClaimCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RewardClaimCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1143,6 +1293,7 @@ export const ChoreScalarFieldEnum = {
   childIds: 'childIds',
   timesPerDay: 'timesPerDay',
   shared: 'shared',
+  penalty: 'penalty',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1159,6 +1310,30 @@ export const ChoreCompletionScalarFieldEnum = {
 } as const
 
 export type ChoreCompletionScalarFieldEnum = (typeof ChoreCompletionScalarFieldEnum)[keyof typeof ChoreCompletionScalarFieldEnum]
+
+
+export const RewardScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  pointsCost: 'pointsCost',
+  icon: 'icon',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RewardScalarFieldEnum = (typeof RewardScalarFieldEnum)[keyof typeof RewardScalarFieldEnum]
+
+
+export const RewardClaimScalarFieldEnum = {
+  id: 'id',
+  rewardId: 'rewardId',
+  childId: 'childId',
+  pointsSpent: 'pointsSpent',
+  claimedAt: 'claimedAt'
+} as const
+
+export type RewardClaimScalarFieldEnum = (typeof RewardClaimScalarFieldEnum)[keyof typeof RewardClaimScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1320,6 +1495,8 @@ export type GlobalOmitConfig = {
   child?: Prisma.ChildOmit
   chore?: Prisma.ChoreOmit
   choreCompletion?: Prisma.ChoreCompletionOmit
+  reward?: Prisma.RewardOmit
+  rewardClaim?: Prisma.RewardClaimOmit
 }
 
 /* Types for Logging */

@@ -58,3 +58,40 @@ export type ChildWithChores = {
 export type ChoreCompletionsResponse = {
   children: ChildWithChores[];
 };
+
+export type ChildStreakRecord = {
+  childId: string;
+  streak: number;
+};
+
+export type StreaksResponse = {
+  streaks: ChildStreakRecord[];
+};
+
+export type RewardRecord = {
+  id: string;
+  title: string;
+  pointsCost: number;
+  icon: string | null;
+  order: number;
+  createdAt: string;
+};
+
+export type RewardClaimRecord = {
+  id: string;
+  rewardId: string;
+  childId: string;
+  pointsSpent: number;
+  claimedAt: string;
+};
+
+export type ChildBalanceRecord = {
+  childId: string;
+  earned: number;
+  spent: number;
+  balance: number;
+};
+
+export type BalancesResponse = {
+  balances: ChildBalanceRecord[];
+};

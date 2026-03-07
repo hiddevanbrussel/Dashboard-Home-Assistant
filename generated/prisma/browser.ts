@@ -57,3 +57,13 @@ export type Chore = Prisma.ChoreModel
  * 
  */
 export type ChoreCompletion = Prisma.ChoreCompletionModel
+/**
+ * Model Reward
+ * 
+ */
+export type Reward = Prisma.RewardModel
+/**
+ * Model RewardClaim
+ * 
+ */
+export type RewardClaim = Prisma.RewardClaimModel

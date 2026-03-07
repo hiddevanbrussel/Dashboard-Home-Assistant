@@ -58,7 +58,9 @@ export const ModelName = {
   EnergyDashboard: 'EnergyDashboard',
   Child: 'Child',
   Chore: 'Chore',
-  ChoreCompletion: 'ChoreCompletion'
+  ChoreCompletion: 'ChoreCompletion',
+  Reward: 'Reward',
+  RewardClaim: 'RewardClaim'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -178,6 +180,7 @@ export const ChoreScalarFieldEnum = {
   childIds: 'childIds',
   timesPerDay: 'timesPerDay',
   shared: 'shared',
+  penalty: 'penalty',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -194,6 +197,30 @@ export const ChoreCompletionScalarFieldEnum = {
 } as const
 
 export type ChoreCompletionScalarFieldEnum = (typeof ChoreCompletionScalarFieldEnum)[keyof typeof ChoreCompletionScalarFieldEnum]
+
+
+export const RewardScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  pointsCost: 'pointsCost',
+  icon: 'icon',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RewardScalarFieldEnum = (typeof RewardScalarFieldEnum)[keyof typeof RewardScalarFieldEnum]
+
+
+export const RewardClaimScalarFieldEnum = {
+  id: 'id',
+  rewardId: 'rewardId',
+  childId: 'childId',
+  pointsSpent: 'pointsSpent',
+  claimedAt: 'claimedAt'
+} as const
+
+export type RewardClaimScalarFieldEnum = (typeof RewardClaimScalarFieldEnum)[keyof typeof RewardClaimScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -5,13 +5,13 @@ import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Smile, Bike,
-  Check, X, Plus, Pencil, ListTodo, ChevronLeft, Trophy, Eye, EyeOff,
+  Check, X, Plus, Pencil, ListTodo, ChevronLeft, Trophy, Eye, EyeOff, Gift, Flame,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
-import type { ChildRecord, ChoreRecord, ChildWithChores, ChoreCompletionsResponse, ScoresResponse, ChoreFrequency } from "@/lib/chores-types";
+import type { ChildRecord, ChoreRecord, ChildWithChores, ChoreCompletionsResponse, ScoresResponse, ChoreFrequency, RewardRecord, StreaksResponse, BalancesResponse } from "@/lib/chores-types";
 
 // ── icon picker ──────────────────────────────────────────────────────────────
 
@@ -34,6 +34,14 @@ const CHORE_ICONS: { name: string; Icon: React.FC<{ className?: string }> }[] = 
 function ChoreIcon({ name, className }: { name: string | null; className?: string }) {
   const entry = CHORE_ICONS.find((i) => i.name === name);
   if (!entry) return <ListTodo className={className} />;
+  return <entry.Icon className={className} />;
+}
+
+const REWARD_ICONS = CHORE_ICONS; // same set of icons for rewards
+
+function RewardIcon({ name, className }: { name: string | null; className?: string }) {
+  const entry = REWARD_ICONS.find((i) => i.name === name);
+  if (!entry) return <Gift className={className} />;
   return <entry.Icon className={className} />;
 }
 
@@ -115,12 +123,13 @@ function ChoreRow({ choreId, title, points, icon, penalty, completionId, onCompl
 
 type ChildColumnProps = {
   child: ChildWithChores;
+  streak: number;
   showCompleted: boolean;
   onComplete: (choreId: string, childId: string, frequency: string) => void;
   onUncomplete: (completionId: string) => void;
 };
 
-function ChildColumn({ child, showCompleted, onComplete, onUncomplete }: ChildColumnProps) {
+function ChildColumn({ child, streak, showCompleted, onComplete, onUncomplete }: ChildColumnProps) {
   const { t } = useTranslation();
   const visibleChores = showCompleted ? child.chores : child.chores.filter((c) => c.completionId === null);
   const dailyChores = visibleChores.filter((c) => c.frequency === "daily");
@@ -139,13 +148,18 @@ function ChildColumn({ child, showCompleted, onComplete, onUncomplete }: ChildCo
         </div>
         <div className="flex flex-col min-w-0 gap-1">
           <span className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">{child.name}</span>
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
               {t("family.todayPoints").replace("{n}", String(child.todayPoints))}
             </span>
             <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
               {t("family.weekPoints").replace("{n}", String(child.weekPoints))}
             </span>
+            {streak >= 2 && (
+              <span className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
+                <Flame className="h-3 w-3" /> {streak} {t("family.streak")}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -232,7 +246,7 @@ type EditPanelProps = {
 function EditPanel({ onClose }: EditPanelProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"children" | "chores">("children");
+  const [tab, setTab] = useState<"children" | "chores" | "rewards">("children");
 
   // -- Children data
   const { data: children = [] } = useQuery<ChildRecord[]>({
@@ -353,6 +367,59 @@ function EditPanel({ onClose }: EditPanelProps) {
     },
   });
 
+  // ── Rewards data ──
+  const { data: rewards = [] } = useQuery<RewardRecord[]>({
+    queryKey: ["rewards"],
+    queryFn: () => fetch("/api/rewards").then((r) => r.json()),
+  });
+
+  // ── Reward form state ──
+  const [editingRewardId, setEditingRewardId] = useState<string | "new" | null>(null);
+  const [rewardForm, setRewardForm] = useState({ title: "", pointsCost: 10, icon: null as string | null });
+
+  function openNewReward() {
+    setEditingRewardId("new");
+    setRewardForm({ title: "", pointsCost: 10, icon: null });
+  }
+
+  function openEditReward(r: RewardRecord) {
+    setEditingRewardId(r.id);
+    setRewardForm({ title: r.title, pointsCost: r.pointsCost, icon: r.icon });
+  }
+
+  function cancelReward() { setEditingRewardId(null); }
+
+  const saveRewardMutation = useMutation({
+    mutationFn: async () => {
+      if (editingRewardId === "new") {
+        return fetch("/api/rewards", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rewardForm),
+        }).then((r) => r.json());
+      } else {
+        return fetch(`/api/rewards/${editingRewardId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rewardForm),
+        }).then((r) => r.json());
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rewards"] });
+      setEditingRewardId(null);
+    },
+  });
+
+  const deleteRewardMutation = useMutation({
+    mutationFn: (id: string) =>
+      fetch(`/api/rewards/${id}`, { method: "DELETE" }).then((r) => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rewards"] });
+      setEditingRewardId(null);
+    },
+  });
+
   function toggleChildIdInChoreForm(childId: string) {
     setChoreForm((f) => {
       if (f.childIds === null) {
@@ -382,6 +449,13 @@ function EditPanel({ onClose }: EditPanelProps) {
               tab === "chores" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800")}
           >
             {t("family.chores")}
+          </button>
+          <button
+            onClick={() => { setTab("rewards"); setEditingChildId(null); setEditingChoreId(null); setEditingRewardId(null); }}
+            className={cn("rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+              tab === "rewards" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800")}
+          >
+            {t("family.rewards")}
           </button>
         </div>
         <button onClick={onClose} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
@@ -651,6 +725,101 @@ function EditPanel({ onClose }: EditPanelProps) {
             )}
           </div>
         )}
+
+        {/* ── REWARDS TAB ── */}
+        {tab === "rewards" && (
+          <div className="flex flex-col gap-3">
+            {editingRewardId !== null ? (
+              <div className="flex flex-col gap-3">
+                <button onClick={cancelReward} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                  <ChevronLeft className="h-4 w-4" /> {t("family.cancel")}
+                </button>
+                <div className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.rewardTitle")}</label>
+                    <input
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      value={rewardForm.title}
+                      onChange={(e) => setRewardForm((f) => ({ ...f, title: e.target.value }))}
+                      placeholder="bijv. Extra schermtijd"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.rewardCost")}</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={9999}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      value={rewardForm.pointsCost}
+                      onChange={(e) => setRewardForm((f) => ({ ...f, pointsCost: Math.max(1, parseInt(e.target.value) || 1) }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.rewardIcon")}</label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setRewardForm((f) => ({ ...f, icon: null }))}
+                        className={cn("flex h-9 w-9 items-center justify-center rounded-lg border-2 transition-all",
+                          rewardForm.icon === null ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30" : "border-gray-200 dark:border-gray-700")}
+                      >
+                        <X className="h-4 w-4 text-gray-400" />
+                      </button>
+                      {REWARD_ICONS.map(({ name, Icon }) => (
+                        <button
+                          key={name}
+                          onClick={() => setRewardForm((f) => ({ ...f, icon: name }))}
+                          className={cn("flex h-9 w-9 items-center justify-center rounded-lg border-2 transition-all",
+                            rewardForm.icon === name ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600" : "border-gray-200 text-gray-500 dark:border-gray-700")}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => saveRewardMutation.mutate()}
+                      disabled={!rewardForm.title.trim() || saveRewardMutation.isPending}
+                      className="flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      {t("family.save")}
+                    </button>
+                    {editingRewardId !== "new" && (
+                      <button
+                        onClick={() => { if (confirm(t("family.confirmDelete"))) deleteRewardMutation.mutate(editingRewardId); }}
+                        className="rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                      >
+                        {t("family.delete")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {rewards.map((reward) => (
+                  <div key={reward.id} className="flex items-center gap-3 rounded-xl border border-gray-200 px-3 py-2.5 dark:border-gray-700">
+                    <RewardIcon name={reward.icon} className="h-5 w-5 text-gray-400" />
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium text-gray-800 dark:text-white">{reward.title}</p>
+                      <p className="text-xs text-gray-400">{reward.pointsCost} pt</p>
+                    </div>
+                    <button onClick={() => openEditReward(reward)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={openNewReward}
+                  className="flex items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:hover:border-indigo-500"
+                >
+                  <Plus className="h-4 w-4" /> {t("family.addReward")}
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -751,7 +920,7 @@ export default function FamilyPage() {
   const todayDate = getTodayDate();
   const [editOpen, setEditOpen] = useState(false);
   const [activeChildIndex, setActiveChildIndex] = useState(0);
-  const [view, setView] = useState<"tasks" | "scoreboard">("tasks");
+  const [view, setView] = useState<"tasks" | "scoreboard" | "rewards">("tasks");
   const [showCompleted, setShowCompleted] = useState(true);
   const [passcodeModalOpen, setPasscodeModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
@@ -774,7 +943,26 @@ export default function FamilyPage() {
     refetchInterval: 60_000,
   });
 
+  const { data: streaksData } = useQuery<StreaksResponse>({
+    queryKey: ["chore-streaks"],
+    queryFn: () => fetch("/api/chore-completions/streaks").then((r) => r.json()),
+    refetchInterval: 300_000,
+  });
+
+  const { data: balancesData, refetch: refetchBalances } = useQuery<BalancesResponse>({
+    queryKey: ["reward-balances"],
+    queryFn: () => fetch("/api/reward-claims/balances").then((r) => r.json()),
+  });
+
+  const { data: rewardsData } = useQuery<RewardRecord[]>({
+    queryKey: ["rewards"],
+    queryFn: () => fetch("/api/rewards").then((r) => r.json()),
+  });
+
   const children = data?.children ?? [];
+  const streakMap = new Map((streaksData?.streaks ?? []).map((s) => [s.childId, s.streak]));
+  const balanceMap = new Map((balancesData?.balances ?? []).map((b) => [b.childId, b]));
+  const rewards = rewardsData ?? [];
 
   const completeMutation = useMutation({
     mutationFn: ({ choreId, childId, frequency }: { choreId: string; childId: string; frequency: string }) =>
@@ -864,6 +1052,22 @@ export default function FamilyPage() {
     uncompleteMutation.mutate(completionId);
   }, [uncompleteMutation]);
 
+  const [claimedRewardId, setClaimedRewardId] = useState<string | null>(null);
+
+  const claimMutation = useMutation({
+    mutationFn: ({ rewardId, childId }: { rewardId: string; childId: string }) =>
+      fetch("/api/reward-claims", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rewardId, childId }),
+      }).then((r) => r.json()),
+    onSuccess: (_data, vars) => {
+      setClaimedRewardId(vars.rewardId + ":" + vars.childId);
+      setTimeout(() => setClaimedRewardId(null), 2000);
+      refetchBalances();
+    },
+  });
+
   const useTabLayout = children.length > 3;
 
   return (
@@ -895,6 +1099,17 @@ export default function FamilyPage() {
                 )}
               >
                 <Trophy className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setView("rewards")}
+                className={cn(
+                  "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
+                  view === "rewards"
+                    ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400"
+                )}
+              >
+                <Gift className="h-4 w-4" />
               </button>
               {view === "tasks" && (
                 <button
@@ -974,6 +1189,84 @@ export default function FamilyPage() {
           </div>
         )}
 
+        {/* rewards view */}
+        {view === "rewards" && (
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+            {rewards.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+                <Gift className="h-12 w-12 text-gray-300" />
+                <p className="text-gray-500 dark:text-gray-400">{t("family.rewards.noRewards")}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t("family.rewards.addRewards")}</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {children.map((child) => {
+                  const bal = balanceMap.get(child.id);
+                  const balance = bal?.balance ?? 0;
+                  return (
+                    <div key={child.id} className="flex flex-col gap-3">
+                      {/* child header */}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
+                          style={{ background: child.color ?? "#6366F1" }}
+                        >
+                          {child.emoji ?? "👤"}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-semibold text-gray-800 dark:text-white">{child.name}</span>
+                          <span className="text-xs text-gray-400">
+                            {balance} pt {t("family.rewards.balance")}
+                          </span>
+                        </div>
+                      </div>
+                      {/* rewards list */}
+                      <div className="flex flex-col gap-2 pl-12">
+                        {rewards.map((reward) => {
+                          const claimKey = reward.id + ":" + child.id;
+                          const justClaimed = claimedRewardId === claimKey;
+                          const canAfford = balance >= reward.pointsCost;
+                          return (
+                            <div
+                              key={reward.id}
+                              className={cn(
+                                "flex items-center gap-3 rounded-2xl px-4 py-3",
+                                canAfford
+                                  ? "bg-white/60 dark:bg-white/5"
+                                  : "bg-gray-50 dark:bg-gray-900/30 opacity-60"
+                              )}
+                            >
+                              <RewardIcon name={reward.icon} className="h-5 w-5 shrink-0 text-indigo-400" />
+                              <span className="flex-1 text-sm font-medium text-gray-800 dark:text-white truncate">{reward.title}</span>
+                              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                                {reward.pointsCost} pt
+                              </span>
+                              <button
+                                disabled={!canAfford || claimMutation.isPending}
+                                onClick={() => claimMutation.mutate({ rewardId: reward.id, childId: child.id })}
+                                className={cn(
+                                  "shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                                  justClaimed
+                                    ? "bg-green-500 text-white"
+                                    : canAfford
+                                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                                    : "bg-gray-200 text-gray-400 dark:bg-gray-700 cursor-not-allowed"
+                                )}
+                              >
+                                {justClaimed ? t("family.rewards.claimed") : canAfford ? t("family.rewards.claim") : t("family.rewards.notEnough")}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* tasks view */}
         {view === "tasks" && (
           <>
@@ -1025,6 +1318,7 @@ export default function FamilyPage() {
                     <ChildColumn
                       key={children[activeChildIndex].id}
                       child={children[activeChildIndex]}
+                      streak={streakMap.get(children[activeChildIndex].id) ?? 0}
                       showCompleted={showCompleted}
                       onComplete={handleComplete}
                       onUncomplete={handleUncomplete}
@@ -1035,6 +1329,7 @@ export default function FamilyPage() {
                     <ChildColumn
                       key={child.id}
                       child={child}
+                      streak={streakMap.get(child.id) ?? 0}
                       showCompleted={showCompleted}
                       onComplete={handleComplete}
                       onUncomplete={handleUncomplete}
