@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Smile, Bike,
+  IceCreamCone, CakeSlice, Sandwich,
   Check, X, Plus, Pencil, ListTodo, ChevronLeft, Trophy, Eye, EyeOff, Gift, Flame,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
@@ -37,7 +38,12 @@ function ChoreIcon({ name, className }: { name: string | null; className?: strin
   return <entry.Icon className={className} />;
 }
 
-const REWARD_ICONS = CHORE_ICONS; // same set of icons for rewards
+const REWARD_ICONS: { name: string; Icon: React.FC<{ className?: string }> }[] = [
+  ...CHORE_ICONS,
+  { name: "IceCreamCone", Icon: IceCreamCone },
+  { name: "CakeSlice", Icon: CakeSlice },
+  { name: "Sandwich", Icon: Sandwich },
+];
 
 function RewardIcon({ name, className }: { name: string | null; className?: string }) {
   const entry = REWARD_ICONS.find((i) => i.name === name);
@@ -70,28 +76,42 @@ type ChoreRowProps = {
 };
 
 function ChoreRow({ choreId, title, points, icon, penalty, completionId, onComplete, onUncomplete }: ChoreRowProps) {
+  const [justDone, setJustDone] = useState(false);
   const done = completionId !== null;
   const ispenalty = penalty && !done;
+
+  function handleClick() {
+    if (done) {
+      onUncomplete(completionId!);
+    } else {
+      setJustDone(true);
+      setTimeout(() => setJustDone(false), 600);
+      onComplete(choreId);
+    }
+  }
+
   return (
     <button
-      onClick={() => done ? onUncomplete(completionId!) : onComplete(choreId)}
+      onClick={handleClick}
       className={cn(
-        "flex items-center gap-3 w-full rounded-2xl px-4 py-3 text-left transition-all",
+        "flex items-center gap-3 w-full rounded-2xl px-4 py-3 text-left transition-all duration-300",
         done
           ? "bg-green-50 dark:bg-green-900/20"
           : ispenalty
           ? "bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/40"
           : "bg-white/60 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10",
+        justDone && "scale-[0.97]",
       )}
     >
       {/* checkbox */}
       <span className={cn(
-        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all",
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300",
         done
           ? "border-green-500 bg-green-500 text-white"
           : ispenalty
           ? "border-red-400 dark:border-red-500"
           : "border-gray-300 dark:border-gray-600",
+        justDone && "scale-125",
       )}>
         {done && <Check className="h-4 w-4" strokeWidth={3} />}
       </span>
@@ -106,12 +126,13 @@ function ChoreRow({ choreId, title, points, icon, penalty, completionId, onCompl
 
       {/* points */}
       <span className={cn(
-        "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold",
+        "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold transition-all duration-300",
         done
           ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
           : ispenalty
           ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
           : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+        justDone && "scale-110",
       )}>
         {ispenalty ? `-${points}` : points}
       </span>
@@ -921,7 +942,7 @@ export default function FamilyPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [activeChildIndex, setActiveChildIndex] = useState(0);
   const [view, setView] = useState<"tasks" | "scoreboard" | "rewards">("tasks");
-  const [showCompleted, setShowCompleted] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [passcodeModalOpen, setPasscodeModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState<string | null>(null);
