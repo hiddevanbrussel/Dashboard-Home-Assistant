@@ -23,6 +23,7 @@ export async function GET() {
       order: c.order,
       childIds: parseChildIds(c.childIds),
       timesPerDay: c.timesPerDay,
+      shared: c.shared,
       createdAt: c.createdAt.toISOString(),
     }))
   );
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
     order?: number;
     childIds?: string[] | null;
     timesPerDay?: number;
+    shared?: boolean;
   } = {};
   try {
     body = await request.json();
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
         order: body.order ?? 0,
         childIds: body.childIds != null ? JSON.stringify(body.childIds) : null,
         timesPerDay: body.timesPerDay ?? 1,
+        shared: body.shared ?? false,
       },
     });
     return NextResponse.json({
@@ -70,6 +73,7 @@ export async function POST(request: Request) {
       order: chore.order,
       childIds: parseChildIds(chore.childIds),
       timesPerDay: chore.timesPerDay,
+      shared: chore.shared,
       createdAt: chore.createdAt.toISOString(),
     });
   } catch (err) {

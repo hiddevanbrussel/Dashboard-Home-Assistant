@@ -288,16 +288,17 @@ function EditPanel({ onClose }: EditPanelProps) {
     icon: null as string | null,
     childIds: null as string[] | null,
     timesPerDay: 1,
+    shared: false,
   });
 
   function openNewChore() {
     setEditingChoreId("new");
-    setChoreForm({ title: "", points: 1, frequency: "daily", icon: null, childIds: null, timesPerDay: 1 });
+    setChoreForm({ title: "", points: 1, frequency: "daily", icon: null, childIds: null, timesPerDay: 1, shared: false });
   }
 
   function openEditChore(c: ChoreRecord) {
     setEditingChoreId(c.id);
-    setChoreForm({ title: c.title, points: c.points, frequency: c.frequency, icon: c.icon, childIds: c.childIds, timesPerDay: c.timesPerDay ?? 1 });
+    setChoreForm({ title: c.title, points: c.points, frequency: c.frequency, icon: c.icon, childIds: c.childIds, timesPerDay: c.timesPerDay ?? 1, shared: c.shared ?? false });
   }
 
   function cancelChore() { setEditingChoreId(null); }
@@ -503,7 +504,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                       ))}
                     </div>
                   </div>
-                  {(choreForm.frequency === "daily" || choreForm.frequency === "weekdays") && (
+                  {(choreForm.frequency === "daily" || choreForm.frequency === "weekdays") && !choreForm.shared && (
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreTimesPerDay")}</label>
                       <div className="flex gap-2">
@@ -525,6 +526,15 @@ function EditPanel({ onClose }: EditPanelProps) {
                       </div>
                     </div>
                   )}
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 shrink-0"
+                      checked={choreForm.shared}
+                      onChange={(e) => setChoreForm((f) => ({ ...f, shared: e.target.checked, timesPerDay: e.target.checked ? 1 : f.timesPerDay }))}
+                    />
+                    <span className="text-xs text-gray-700 dark:text-gray-300">{t("family.choreShared")}</span>
+                  </label>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreIcon")}</label>
                     <div className="flex flex-wrap gap-2">
@@ -598,7 +608,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                     <ChoreIcon name={chore.icon} className="h-5 w-5 text-gray-400" />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-gray-800 dark:text-white">{chore.title}</p>
-                      <p className="text-xs text-gray-400">{chore.points} pt · {t(`family.frequency.${chore.frequency}`).split(" (")[0]}{(chore.timesPerDay ?? 1) > 1 ? ` · ${t("family.timesPerDay.twice")}` : ""}</p>
+                      <p className="text-xs text-gray-400">{chore.points} pt · {t(`family.frequency.${chore.frequency}`).split(" (")[0]}{(chore.timesPerDay ?? 1) > 1 ? ` · ${t("family.timesPerDay.twice")}` : ""}{chore.shared ? " · gedeeld" : ""}</p>
                     </div>
                     <button onClick={() => openEditChore(chore)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Pencil className="h-4 w-4" />

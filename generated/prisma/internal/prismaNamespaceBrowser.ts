@@ -177,6 +177,7 @@ export const ChoreScalarFieldEnum = {
   order: 'order',
   childIds: 'childIds',
   timesPerDay: 'timesPerDay',
+  shared: 'shared',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

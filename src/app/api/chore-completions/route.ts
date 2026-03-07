@@ -44,12 +44,27 @@ export async function GET(request: Request) {
     }),
   ]);
 
+  // Pre-compute: which shared chore base IDs have been completed by any child?
+  const sharedChoreIds = new Set(chores.filter((c) => c.shared).map((c) => c.id));
+  const completedSharedIds = new Set<string>();
+  for (const comp of completions) {
+    const baseId = comp.choreId.includes(":") ? comp.choreId.slice(0, comp.choreId.lastIndexOf(":")) : comp.choreId;
+    if (sharedChoreIds.has(baseId)) completedSharedIds.add(baseId);
+  }
+
   const result: ChildWithChores[] = children.map((child) => {
     const childChores = chores.filter((chore) => {
       const ids = parseChildIds(chore.childIds);
       if (ids !== null && !ids.includes(child.id)) return false;
       // Hide weekday-only chores on weekends
       if (chore.frequency === "weekdays" && weekendToday) return false;
+      // Hide shared chores already completed by another child
+      if (chore.shared && completedSharedIds.has(chore.id)) {
+        const thisChildDid = completions.some(
+          (c) => c.childId === child.id && (c.choreId === chore.id || c.choreId.startsWith(`${chore.id}:`))
+        );
+        if (!thisChildDid) return false;
+      }
       return true;
     });
 
