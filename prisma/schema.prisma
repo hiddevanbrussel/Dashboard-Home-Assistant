@@ -84,15 +84,16 @@ model Child {
 }
 
 model Chore {
-  id        String   @id @default(cuid())
-  title     String
-  points    Int      @default(1)
-  frequency String   // "daily" | "weekly"
-  icon      String?  // lucide icon name, e.g. "Backpack"
-  order     Int      @default(0)
-  childIds  String?  // JSON array of Child IDs; null = all children
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  points      Int      @default(1)
+  frequency   String   // "daily" | "weekdays" | "weekly"
+  icon        String?  // lucide icon name, e.g. "Backpack"
+  order       Int      @default(0)
+  childIds    String?  // JSON array of Child IDs; null = all children
+  timesPerDay Int      @default(1) // 1 or 2 (e.g. morning + evening)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model ChoreCompletion {

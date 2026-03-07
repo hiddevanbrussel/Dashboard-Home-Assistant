@@ -22,6 +22,7 @@ export async function GET() {
       icon: c.icon,
       order: c.order,
       childIds: parseChildIds(c.childIds),
+      timesPerDay: c.timesPerDay,
       createdAt: c.createdAt.toISOString(),
     }))
   );
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
     icon?: string;
     order?: number;
     childIds?: string[] | null;
+    timesPerDay?: number;
   } = {};
   try {
     body = await request.json();
@@ -44,8 +46,8 @@ export async function POST(request: Request) {
   if (!body.title?.trim()) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
   }
-  if (!body.frequency || !["daily", "weekly"].includes(body.frequency)) {
-    return NextResponse.json({ error: "frequency must be daily or weekly" }, { status: 400 });
+  if (!body.frequency || !["daily", "weekdays", "weekly"].includes(body.frequency)) {
+    return NextResponse.json({ error: "frequency must be daily, weekdays, or weekly" }, { status: 400 });
   }
   try {
     const chore = await prisma.chore.create({
@@ -56,6 +58,7 @@ export async function POST(request: Request) {
         icon: body.icon ?? null,
         order: body.order ?? 0,
         childIds: body.childIds != null ? JSON.stringify(body.childIds) : null,
+        timesPerDay: body.timesPerDay ?? 1,
       },
     });
     return NextResponse.json({
@@ -66,6 +69,7 @@ export async function POST(request: Request) {
       icon: chore.icon,
       order: chore.order,
       childIds: parseChildIds(chore.childIds),
+      timesPerDay: chore.timesPerDay,
       createdAt: chore.createdAt.toISOString(),
     });
   } catch (err) {

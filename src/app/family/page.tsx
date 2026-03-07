@@ -117,19 +117,21 @@ function ChildColumn({ child, onComplete, onUncomplete }: ChildColumnProps) {
   return (
     <div className="flex flex-col gap-4 min-w-[260px] flex-1">
       {/* avatar + name + points */}
-      <div className="flex flex-col items-center gap-2 pt-2">
-        <div
-          className="flex h-16 w-16 items-center justify-center rounded-full text-3xl shadow-md"
-          style={{ background: child.color ?? "#6366F1", boxShadow: `0 0 0 4px ${child.color ?? "#6366F1"}44` }}
-        >
-          {child.emoji ?? "👤"}
+      <div className="flex flex-col gap-1 pb-1">
+        <div className="flex items-center gap-3">
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
+            style={{ background: child.color ?? "#6366F1" }}
+          >
+            {child.emoji ?? "👤"}
+          </div>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">{child.name}</span>
         </div>
-        <span className="text-base font-bold text-gray-900 dark:text-white">{child.name}</span>
-        <div className="flex gap-2">
-          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+        <div className="flex gap-1.5">
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
             {t("family.todayPoints").replace("{n}", String(child.todayPoints))}
           </span>
-          <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
             {t("family.weekPoints").replace("{n}", String(child.weekPoints))}
           </span>
         </div>
@@ -285,16 +287,17 @@ function EditPanel({ onClose }: EditPanelProps) {
     frequency: "daily" as ChoreFrequency,
     icon: null as string | null,
     childIds: null as string[] | null,
+    timesPerDay: 1,
   });
 
   function openNewChore() {
     setEditingChoreId("new");
-    setChoreForm({ title: "", points: 1, frequency: "daily", icon: null, childIds: null });
+    setChoreForm({ title: "", points: 1, frequency: "daily", icon: null, childIds: null, timesPerDay: 1 });
   }
 
   function openEditChore(c: ChoreRecord) {
     setEditingChoreId(c.id);
-    setChoreForm({ title: c.title, points: c.points, frequency: c.frequency, icon: c.icon, childIds: c.childIds });
+    setChoreForm({ title: c.title, points: c.points, frequency: c.frequency, icon: c.icon, childIds: c.childIds, timesPerDay: c.timesPerDay ?? 1 });
   }
 
   function cancelChore() { setEditingChoreId(null); }
@@ -492,7 +495,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                             name="frequency"
                             value={freq}
                             checked={choreForm.frequency === freq}
-                            onChange={() => setChoreForm((f) => ({ ...f, frequency: freq }))}
+                            onChange={() => setChoreForm((f) => ({ ...f, frequency: freq, timesPerDay: freq === "weekly" ? 1 : f.timesPerDay }))}
                             className="mt-0.5"
                           />
                           <span className="text-sm text-gray-700 dark:text-gray-300">{t(`family.frequency.${freq}`)}</span>
@@ -500,6 +503,28 @@ function EditPanel({ onClose }: EditPanelProps) {
                       ))}
                     </div>
                   </div>
+                  {(choreForm.frequency === "daily" || choreForm.frequency === "weekdays") && (
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreTimesPerDay")}</label>
+                      <div className="flex gap-2">
+                        {[1, 2].map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => setChoreForm((f) => ({ ...f, timesPerDay: n }))}
+                            className={cn(
+                              "flex-1 rounded-lg border-2 py-2 text-sm font-medium transition-all",
+                              choreForm.timesPerDay === n
+                                ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                                : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-400"
+                            )}
+                          >
+                            {n === 1 ? t("family.timesPerDay.once") : t("family.timesPerDay.twice")}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreIcon")}</label>
                     <div className="flex flex-wrap gap-2">
@@ -573,7 +598,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                     <ChoreIcon name={chore.icon} className="h-5 w-5 text-gray-400" />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-gray-800 dark:text-white">{chore.title}</p>
-                      <p className="text-xs text-gray-400">{chore.points} pt · {t(`family.frequency.${chore.frequency}`).split(" (")[0]}</p>
+                      <p className="text-xs text-gray-400">{chore.points} pt · {t(`family.frequency.${chore.frequency}`).split(" (")[0]}{(chore.timesPerDay ?? 1) > 1 ? ` · ${t("family.timesPerDay.twice")}` : ""}</p>
                     </div>
                     <button onClick={() => openEditChore(chore)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Pencil className="h-4 w-4" />
@@ -809,8 +834,8 @@ export default function FamilyPage() {
       <div className="flex h-full flex-col">
         {/* page header */}
         <div className="flex items-center justify-between px-6 py-4">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{t("family.title")}</h1>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("family.title")}</h1>
             <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
               <button
                 onClick={() => setView("tasks")}
@@ -835,7 +860,6 @@ export default function FamilyPage() {
                 <Trophy className="h-4 w-4" />
               </button>
             </div>
-          </div>
           {view === "tasks" && (
             editOpen ? (
               <button
@@ -889,6 +913,7 @@ export default function FamilyPage() {
               </>
             ) : null
           )}
+          </div>
         </div>
 
         {/* scoreboard view */}

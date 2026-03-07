@@ -17,6 +17,7 @@ export type ChoreRecord = {
   icon: string | null;
   order: number;
   childIds: string[] | null;
+  timesPerDay: number;
   createdAt: string;
 };
 

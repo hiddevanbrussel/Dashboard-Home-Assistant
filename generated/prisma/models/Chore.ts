@@ -29,11 +29,13 @@ export type AggregateChore = {
 export type ChoreAvgAggregateOutputType = {
   points: number | null
   order: number | null
+  timesPerDay: number | null
 }
 
 export type ChoreSumAggregateOutputType = {
   points: number | null
   order: number | null
+  timesPerDay: number | null
 }
 
 export type ChoreMinAggregateOutputType = {
@@ -44,6 +46,7 @@ export type ChoreMinAggregateOutputType = {
   icon: string | null
   order: number | null
   childIds: string | null
+  timesPerDay: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -56,6 +59,7 @@ export type ChoreMaxAggregateOutputType = {
   icon: string | null
   order: number | null
   childIds: string | null
+  timesPerDay: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -68,6 +72,7 @@ export type ChoreCountAggregateOutputType = {
   icon: number
   order: number
   childIds: number
+  timesPerDay: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -77,11 +82,13 @@ export type ChoreCountAggregateOutputType = {
 export type ChoreAvgAggregateInputType = {
   points?: true
   order?: true
+  timesPerDay?: true
 }
 
 export type ChoreSumAggregateInputType = {
   points?: true
   order?: true
+  timesPerDay?: true
 }
 
 export type ChoreMinAggregateInputType = {
@@ -92,6 +99,7 @@ export type ChoreMinAggregateInputType = {
   icon?: true
   order?: true
   childIds?: true
+  timesPerDay?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -104,6 +112,7 @@ export type ChoreMaxAggregateInputType = {
   icon?: true
   order?: true
   childIds?: true
+  timesPerDay?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -116,6 +125,7 @@ export type ChoreCountAggregateInputType = {
   icon?: true
   order?: true
   childIds?: true
+  timesPerDay?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -215,6 +225,7 @@ export type ChoreGroupByOutputType = {
   icon: string | null
   order: number
   childIds: string | null
+  timesPerDay: number
   createdAt: Date
   updatedAt: Date
   _count: ChoreCountAggregateOutputType | null
@@ -250,6 +261,7 @@ export type ChoreWhereInput = {
   icon?: Prisma.StringNullableFilter<"Chore"> | string | null
   order?: Prisma.IntFilter<"Chore"> | number
   childIds?: Prisma.StringNullableFilter<"Chore"> | string | null
+  timesPerDay?: Prisma.IntFilter<"Chore"> | number
   createdAt?: Prisma.DateTimeFilter<"Chore"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Chore"> | Date | string
 }
@@ -262,6 +274,7 @@ export type ChoreOrderByWithRelationInput = {
   icon?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   childIds?: Prisma.SortOrderInput | Prisma.SortOrder
+  timesPerDay?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -277,6 +290,7 @@ export type ChoreWhereUniqueInput = Prisma.AtLeast<{
   icon?: Prisma.StringNullableFilter<"Chore"> | string | null
   order?: Prisma.IntFilter<"Chore"> | number
   childIds?: Prisma.StringNullableFilter<"Chore"> | string | null
+  timesPerDay?: Prisma.IntFilter<"Chore"> | number
   createdAt?: Prisma.DateTimeFilter<"Chore"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Chore"> | Date | string
 }, "id">
@@ -289,6 +303,7 @@ export type ChoreOrderByWithAggregationInput = {
   icon?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.SortOrder
   childIds?: Prisma.SortOrderInput | Prisma.SortOrder
+  timesPerDay?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ChoreCountOrderByAggregateInput
@@ -309,6 +324,7 @@ export type ChoreScalarWhereWithAggregatesInput = {
   icon?: Prisma.StringNullableWithAggregatesFilter<"Chore"> | string | null
   order?: Prisma.IntWithAggregatesFilter<"Chore"> | number
   childIds?: Prisma.StringNullableWithAggregatesFilter<"Chore"> | string | null
+  timesPerDay?: Prisma.IntWithAggregatesFilter<"Chore"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Chore"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Chore"> | Date | string
 }
@@ -321,6 +337,7 @@ export type ChoreCreateInput = {
   icon?: string | null
   order?: number
   childIds?: string | null
+  timesPerDay?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -333,6 +350,7 @@ export type ChoreUncheckedCreateInput = {
   icon?: string | null
   order?: number
   childIds?: string | null
+  timesPerDay?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -345,6 +363,7 @@ export type ChoreUpdateInput = {
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   childIds?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timesPerDay?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -357,6 +376,7 @@ export type ChoreUncheckedUpdateInput = {
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   childIds?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timesPerDay?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -369,6 +389,7 @@ export type ChoreCreateManyInput = {
   icon?: string | null
   order?: number
   childIds?: string | null
+  timesPerDay?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -381,6 +402,7 @@ export type ChoreUpdateManyMutationInput = {
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   childIds?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timesPerDay?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -393,6 +415,7 @@ export type ChoreUncheckedUpdateManyInput = {
   icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order?: Prisma.IntFieldUpdateOperationsInput | number
   childIds?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timesPerDay?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -405,6 +428,7 @@ export type ChoreCountOrderByAggregateInput = {
   icon?: Prisma.SortOrder
   order?: Prisma.SortOrder
   childIds?: Prisma.SortOrder
+  timesPerDay?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -412,6 +436,7 @@ export type ChoreCountOrderByAggregateInput = {
 export type ChoreAvgOrderByAggregateInput = {
   points?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  timesPerDay?: Prisma.SortOrder
 }
 
 export type ChoreMaxOrderByAggregateInput = {
@@ -422,6 +447,7 @@ export type ChoreMaxOrderByAggregateInput = {
   icon?: Prisma.SortOrder
   order?: Prisma.SortOrder
   childIds?: Prisma.SortOrder
+  timesPerDay?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -434,6 +460,7 @@ export type ChoreMinOrderByAggregateInput = {
   icon?: Prisma.SortOrder
   order?: Prisma.SortOrder
   childIds?: Prisma.SortOrder
+  timesPerDay?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -441,6 +468,7 @@ export type ChoreMinOrderByAggregateInput = {
 export type ChoreSumOrderByAggregateInput = {
   points?: Prisma.SortOrder
   order?: Prisma.SortOrder
+  timesPerDay?: Prisma.SortOrder
 }
 
 
@@ -453,6 +481,7 @@ export type ChoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   icon?: boolean
   order?: boolean
   childIds?: boolean
+  timesPerDay?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["chore"]>
@@ -465,6 +494,7 @@ export type ChoreSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   icon?: boolean
   order?: boolean
   childIds?: boolean
+  timesPerDay?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["chore"]>
@@ -477,6 +507,7 @@ export type ChoreSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   icon?: boolean
   order?: boolean
   childIds?: boolean
+  timesPerDay?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["chore"]>
@@ -489,11 +520,12 @@ export type ChoreSelectScalar = {
   icon?: boolean
   order?: boolean
   childIds?: boolean
+  timesPerDay?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ChoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "points" | "frequency" | "icon" | "order" | "childIds" | "createdAt" | "updatedAt", ExtArgs["result"]["chore"]>
+export type ChoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "points" | "frequency" | "icon" | "order" | "childIds" | "timesPerDay" | "createdAt" | "updatedAt", ExtArgs["result"]["chore"]>
 
 export type $ChorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Chore"
@@ -506,6 +538,7 @@ export type $ChorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     icon: string | null
     order: number
     childIds: string | null
+    timesPerDay: number
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["chore"]>
@@ -938,6 +971,7 @@ export interface ChoreFieldRefs {
   readonly icon: Prisma.FieldRef<"Chore", 'String'>
   readonly order: Prisma.FieldRef<"Chore", 'Int'>
   readonly childIds: Prisma.FieldRef<"Chore", 'String'>
+  readonly timesPerDay: Prisma.FieldRef<"Chore", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Chore", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Chore", 'DateTime'>
 }

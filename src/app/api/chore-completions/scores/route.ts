@@ -39,8 +39,15 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  // Build a map of choreId → points
+  // Build a map of choreId → points (also handle slotted choreIds like "${id}:0")
   const chorePoints = new Map<string, number>(chores.map((c) => [c.id, c.points]));
+  function resolvePoints(choreId: string): number {
+    const direct = chorePoints.get(choreId);
+    if (direct !== undefined) return direct;
+    // slotted choreId: strip slot suffix
+    const base = choreId.includes(":") ? choreId.slice(0, choreId.lastIndexOf(":")) : choreId;
+    return chorePoints.get(base) ?? 0;
+  }
 
   // Sum points per child
   const pointsMap = new Map<string, number>();
@@ -48,7 +55,7 @@ export async function GET(request: Request) {
     pointsMap.set(child.id, 0);
   }
   for (const completion of completions) {
-    const pts = chorePoints.get(completion.choreId) ?? 0;
+    const pts = resolvePoints(completion.choreId);
     pointsMap.set(completion.childId, (pointsMap.get(completion.childId) ?? 0) + pts);
   }
 

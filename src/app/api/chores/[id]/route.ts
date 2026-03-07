@@ -23,6 +23,7 @@ export async function PUT(
     icon?: string | null;
     order?: number;
     childIds?: string[] | null;
+    timesPerDay?: number;
   } = {};
   try {
     body = await request.json();
@@ -41,6 +42,7 @@ export async function PUT(
         ...(body.childIds !== undefined && {
           childIds: body.childIds != null ? JSON.stringify(body.childIds) : null,
         }),
+        ...(body.timesPerDay !== undefined && { timesPerDay: body.timesPerDay }),
       },
     });
     return NextResponse.json({
@@ -51,6 +53,7 @@ export async function PUT(
       icon: chore.icon,
       order: chore.order,
       childIds: parseChildIds(chore.childIds),
+      timesPerDay: chore.timesPerDay,
       createdAt: chore.createdAt.toISOString(),
     });
   } catch (err) {
@@ -65,8 +68,11 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
+    // Delete exact and slot-based completions (e.g. "${id}", "${id}:0", "${id}:1")
     await prisma.$transaction([
-      prisma.choreCompletion.deleteMany({ where: { choreId: id } }),
+      prisma.choreCompletion.deleteMany({
+        where: { choreId: { in: [id, `${id}:0`, `${id}:1`] } },
+      }),
       prisma.chore.delete({ where: { id } }),
     ]);
     return NextResponse.json({ ok: true });

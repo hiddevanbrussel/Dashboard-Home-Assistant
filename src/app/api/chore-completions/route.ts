@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { ChoreCompletionsResponse, ChildWithChores, ChoreCompletionRecord, ChoreFrequency } from "@/lib/chores-types";
 
+const SLOT_LABELS = ["ochtend", "avond"];
+
 function getMondayDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   const day = d.getDay(); // 0=Sun, 1=Mon, ...
@@ -51,12 +53,34 @@ export async function GET(request: Request) {
       return true;
     });
 
-    const choreRows: ChoreCompletionRecord[] = childChores.map((chore) => {
+    // Expand chores into slot-based ChoreCompletionRecord entries
+    const choreRows: ChoreCompletionRecord[] = childChores.flatMap((chore) => {
+      const timesPerDay = (chore as { timesPerDay?: number }).timesPerDay ?? 1;
       const dateKey = chore.frequency === "weekly" ? mondayDate : todayDate;
+
+      if (timesPerDay > 1) {
+        return Array.from({ length: timesPerDay }, (_, slot) => {
+          const slottedChoreId = `${chore.id}:${slot}`;
+          const completion = completions.find(
+            (c) => c.choreId === slottedChoreId && c.childId === child.id && c.date === dateKey
+          );
+          const slotLabel = SLOT_LABELS[slot] ?? `slot ${slot + 1}`;
+          return {
+            choreId: slottedChoreId,
+            title: `${chore.title} (${slotLabel})`,
+            points: chore.points,
+            frequency: chore.frequency as ChoreFrequency,
+            icon: chore.icon,
+            completionId: completion?.id ?? null,
+            completedAt: completion?.completedAt.toISOString() ?? null,
+          };
+        });
+      }
+
       const completion = completions.find(
         (c) => c.choreId === chore.id && c.childId === child.id && c.date === dateKey
       );
-      return {
+      return [{
         choreId: chore.id,
         title: chore.title,
         points: chore.points,
@@ -64,7 +88,7 @@ export async function GET(request: Request) {
         icon: chore.icon,
         completionId: completion?.id ?? null,
         completedAt: completion?.completedAt.toISOString() ?? null,
-      };
+      }];
     });
 
     // todayPoints: daily + weekday chores completed today
@@ -84,16 +108,35 @@ export async function GET(request: Request) {
     let weekPoints = 0;
     for (const chore of allChildChores) {
       if (chore.frequency === "weekly") {
-        const done = childCompletions.find(
-          (c) => c.choreId === chore.id && c.date === mondayDate
-        );
-        if (done) weekPoints += chore.points;
+        // weekly: count one completion per slot (slot 0 for timesPerDay=1)
+        const timesPerDay = (chore as { timesPerDay?: number }).timesPerDay ?? 1;
+        if (timesPerDay > 1) {
+          for (let slot = 0; slot < timesPerDay; slot++) {
+            const done = childCompletions.find(
+              (c) => c.choreId === `${chore.id}:${slot}` && c.date === mondayDate
+            );
+            if (done) weekPoints += chore.points;
+          }
+        } else {
+          const done = childCompletions.find(
+            (c) => c.choreId === chore.id && c.date === mondayDate
+          );
+          if (done) weekPoints += chore.points;
+        }
       } else {
-        // daily + weekdays: count each completion this week
-        const doneCount = childCompletions.filter(
-          (c) => c.choreId === chore.id
-        ).length;
-        weekPoints += doneCount * chore.points;
+        // daily + weekdays: count each completion this week (including slotted)
+        const timesPerDay = (chore as { timesPerDay?: number }).timesPerDay ?? 1;
+        if (timesPerDay > 1) {
+          const doneCount = childCompletions.filter(
+            (c) => c.choreId.startsWith(`${chore.id}:`)
+          ).length;
+          weekPoints += doneCount * chore.points;
+        } else {
+          const doneCount = childCompletions.filter(
+            (c) => c.choreId === chore.id
+          ).length;
+          weekPoints += doneCount * chore.points;
+        }
       }
     }
 
