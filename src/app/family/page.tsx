@@ -1074,6 +1074,7 @@ export default function FamilyPage() {
   }, [uncompleteMutation]);
 
   const [claimedRewardId, setClaimedRewardId] = useState<string | null>(null);
+  const [selectedRewardChildId, setSelectedRewardChildId] = useState<string | null>(null);
 
   const claimMutation = useMutation({
     mutationFn: ({ rewardId, childId }: { rewardId: string; childId: string }) =>
@@ -1211,82 +1212,97 @@ export default function FamilyPage() {
         )}
 
         {/* rewards view */}
-        {view === "rewards" && (
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
-            {rewards.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-                <Gift className="h-12 w-12 text-gray-300" />
-                <p className="text-gray-500 dark:text-gray-400">{t("family.rewards.noRewards")}</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t("family.rewards.addRewards")}</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-6">
-                {children.map((child) => {
-                  const bal = balanceMap.get(child.id);
-                  const balance = bal?.balance ?? 0;
-                  return (
-                    <div key={child.id} className="flex flex-col gap-3">
-                      {/* child header */}
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
-                          style={{ background: child.color ?? "#6366F1" }}
-                        >
-                          {child.emoji ?? "👤"}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-semibold text-gray-800 dark:text-white">{child.name}</span>
-                          <span className="text-xs text-gray-400">
-                            {balance} pt {t("family.rewards.balance")}
+        {view === "rewards" && (() => {
+          const activeChildId = selectedRewardChildId ?? children[0]?.id ?? null;
+          const activeChild = children.find((c) => c.id === activeChildId) ?? null;
+          const bal = activeChildId ? balanceMap.get(activeChildId) : null;
+          const balance = bal?.balance ?? 0;
+          return (
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 flex flex-col gap-4">
+              {/* child selector with balances */}
+              {children.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {children.map((child) => {
+                    const childBal = balanceMap.get(child.id);
+                    const childBalance = childBal?.balance ?? 0;
+                    const isActive = child.id === activeChildId;
+                    return (
+                      <button
+                        key={child.id}
+                        onClick={() => setSelectedRewardChildId(child.id)}
+                        className={cn(
+                          "flex items-center gap-2 rounded-2xl px-4 py-2.5 transition-all",
+                          isActive
+                            ? "shadow-sm"
+                            : "bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10"
+                        )}
+                        style={isActive ? { background: child.color ?? "#6366F1" } : undefined}
+                      >
+                        <span className="text-base">{child.emoji ?? "👤"}</span>
+                        <div className="flex flex-col items-start">
+                          <span className={cn("text-sm font-semibold leading-tight", isActive ? "text-white" : "text-gray-800 dark:text-white")}>
+                            {child.name}
+                          </span>
+                          <span className={cn("text-xs leading-tight", isActive ? "text-white/80" : "text-gray-400")}>
+                            {childBalance} pt
                           </span>
                         </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* rewards list */}
+              {rewards.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+                  <Gift className="h-12 w-12 text-gray-300" />
+                  <p className="text-gray-500 dark:text-gray-400">{t("family.rewards.noRewards")}</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">{t("family.rewards.addRewards")}</p>
+                </div>
+              ) : activeChild && (
+                <div className="flex flex-col gap-2">
+                  {rewards.map((reward) => {
+                    const claimKey = reward.id + ":" + activeChild.id;
+                    const justClaimed = claimedRewardId === claimKey;
+                    const canAfford = balance >= reward.pointsCost;
+                    return (
+                      <div
+                        key={reward.id}
+                        className={cn(
+                          "flex items-center gap-3 rounded-2xl px-4 py-3 transition-all",
+                          canAfford
+                            ? "bg-white/60 dark:bg-white/5"
+                            : "bg-gray-50 dark:bg-gray-900/30 opacity-50"
+                        )}
+                      >
+                        <RewardIcon name={reward.icon} className="h-5 w-5 shrink-0 text-indigo-400" />
+                        <span className="flex-1 text-sm font-medium text-gray-800 dark:text-white truncate">{reward.title}</span>
+                        <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                          {reward.pointsCost} pt
+                        </span>
+                        <button
+                          disabled={!canAfford || claimMutation.isPending}
+                          onClick={() => claimMutation.mutate({ rewardId: reward.id, childId: activeChild.id })}
+                          className={cn(
+                            "shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                            justClaimed
+                              ? "bg-green-500 text-white"
+                              : canAfford
+                              ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                              : "bg-gray-200 text-gray-400 dark:bg-gray-700 cursor-not-allowed"
+                          )}
+                        >
+                          {justClaimed ? t("family.rewards.claimed") : canAfford ? t("family.rewards.claim") : t("family.rewards.notEnough")}
+                        </button>
                       </div>
-                      {/* rewards list */}
-                      <div className="flex flex-col gap-2 pl-12">
-                        {rewards.map((reward) => {
-                          const claimKey = reward.id + ":" + child.id;
-                          const justClaimed = claimedRewardId === claimKey;
-                          const canAfford = balance >= reward.pointsCost;
-                          return (
-                            <div
-                              key={reward.id}
-                              className={cn(
-                                "flex items-center gap-3 rounded-2xl px-4 py-3",
-                                canAfford
-                                  ? "bg-white/60 dark:bg-white/5"
-                                  : "bg-gray-50 dark:bg-gray-900/30 opacity-60"
-                              )}
-                            >
-                              <RewardIcon name={reward.icon} className="h-5 w-5 shrink-0 text-indigo-400" />
-                              <span className="flex-1 text-sm font-medium text-gray-800 dark:text-white truncate">{reward.title}</span>
-                              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                                {reward.pointsCost} pt
-                              </span>
-                              <button
-                                disabled={!canAfford || claimMutation.isPending}
-                                onClick={() => claimMutation.mutate({ rewardId: reward.id, childId: child.id })}
-                                className={cn(
-                                  "shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
-                                  justClaimed
-                                    ? "bg-green-500 text-white"
-                                    : canAfford
-                                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                                    : "bg-gray-200 text-gray-400 dark:bg-gray-700 cursor-not-allowed"
-                                )}
-                              >
-                                {justClaimed ? t("family.rewards.claimed") : canAfford ? t("family.rewards.claim") : t("family.rewards.notEnough")}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* tasks view */}
         {view === "tasks" && (
