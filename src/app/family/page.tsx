@@ -631,7 +631,11 @@ function EditPanel({ onClose }: EditPanelProps) {
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreTimesPerDay")}</label>
                       <div className="flex gap-2">
-                        {[1, 2].map((n) => (
+                        {([
+                          [1, "family.timesPerDay.once"],
+                          [2, "family.timesPerDay.twice"],
+                          [3, "family.timesPerDay.evening"],
+                        ] as [number, string][]).map(([n, labelKey]) => (
                           <button
                             key={n}
                             type="button"
@@ -643,7 +647,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                                 : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-400"
                             )}
                           >
-                            {n === 1 ? t("family.timesPerDay.once") : t("family.timesPerDay.twice")}
+                            {t(labelKey)}
                           </button>
                         ))}
                       </div>

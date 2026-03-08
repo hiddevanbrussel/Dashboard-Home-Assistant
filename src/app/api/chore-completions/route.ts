@@ -75,8 +75,26 @@ export async function GET(request: Request) {
 
       const chorepenalty = (chore as { penalty?: boolean }).penalty ?? false;
 
-      if (timesPerDay > 1) {
-        return Array.from({ length: timesPerDay }, (_, slot) => {
+      if (timesPerDay === 3) {
+        // Evening-only: single slot :1, no slot label
+        const slottedChoreId = `${chore.id}:1`;
+        const completion = completions.find(
+          (c) => c.choreId === slottedChoreId && c.childId === child.id && c.date === dateKey
+        );
+        return [{
+          choreId: slottedChoreId,
+          title: chore.title,
+          points: chore.points,
+          frequency: chore.frequency as ChoreFrequency,
+          icon: chore.icon,
+          penalty: chorepenalty,
+          completionId: completion?.id ?? null,
+          completedAt: completion?.completedAt.toISOString() ?? null,
+        }];
+      }
+
+      if (timesPerDay === 2) {
+        return Array.from({ length: 2 }, (_, slot) => {
           const slottedChoreId = `${chore.id}:${slot}`;
           const completion = completions.find(
             (c) => c.choreId === slottedChoreId && c.childId === child.id && c.date === dateKey
@@ -130,11 +148,16 @@ export async function GET(request: Request) {
 
     let weekPoints = 0;
     for (const chore of allChildChores) {
+      const timesPerDay = (chore as { timesPerDay?: number }).timesPerDay ?? 1;
       if (chore.frequency === "weekly") {
-        // weekly: count one completion per slot (slot 0 for timesPerDay=1)
-        const timesPerDay = (chore as { timesPerDay?: number }).timesPerDay ?? 1;
-        if (timesPerDay > 1) {
-          for (let slot = 0; slot < timesPerDay; slot++) {
+        if (timesPerDay === 3) {
+          // Evening-only: single slot :1
+          const done = childCompletions.find(
+            (c) => c.choreId === `${chore.id}:1` && c.date === mondayDate
+          );
+          if (done) weekPoints += chore.points;
+        } else if (timesPerDay === 2) {
+          for (let slot = 0; slot < 2; slot++) {
             const done = childCompletions.find(
               (c) => c.choreId === `${chore.id}:${slot}` && c.date === mondayDate
             );
@@ -148,8 +171,7 @@ export async function GET(request: Request) {
         }
       } else {
         // daily + weekdays: count each completion this week (including slotted)
-        const timesPerDay = (chore as { timesPerDay?: number }).timesPerDay ?? 1;
-        if (timesPerDay > 1) {
+        if (timesPerDay >= 2) {
           const doneCount = childCompletions.filter(
             (c) => c.choreId.startsWith(`${chore.id}:`)
           ).length;
