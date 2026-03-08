@@ -1334,8 +1334,8 @@ export default function FamilyPage() {
                 </div>
               )}
 
-              {/* manual penalty — only visible in edit mode */}
-              {editOpen && activeChild && (
+              {/* manual penalty — always visible for parents in rewards view */}
+              {activeChild && (
                 <div className="mt-2 rounded-2xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/10 p-4 flex flex-col gap-3">
                   <p className="text-xs font-semibold uppercase tracking-wider text-red-500 dark:text-red-400">Straf geven</p>
                   <div className="flex gap-2">
