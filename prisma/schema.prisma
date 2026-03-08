@@ -120,8 +120,9 @@ model Reward {
 
 model RewardClaim {
   id          String   @id @default(cuid())
-  rewardId    String
+  rewardId    String?  // null = manual penalty by parent
   childId     String
-  pointsSpent Int      // snapshot of pointsCost at time of claim
+  pointsSpent Int      // positive = deducted from balance (reward claim or manual penalty)
+  reason      String?  // optional description for manual penalties
   claimedAt   DateTime @default(now())
 }

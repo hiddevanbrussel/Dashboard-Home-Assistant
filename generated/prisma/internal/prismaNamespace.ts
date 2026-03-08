@@ -1330,6 +1330,7 @@ export const RewardClaimScalarFieldEnum = {
   rewardId: 'rewardId',
   childId: 'childId',
   pointsSpent: 'pointsSpent',
+  reason: 'reason',
   claimedAt: 'claimedAt'
 } as const
 

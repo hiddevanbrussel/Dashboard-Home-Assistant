@@ -1090,6 +1090,9 @@ export default function FamilyPage() {
 
   const [claimedRewardId, setClaimedRewardId] = useState<string | null>(null);
   const [selectedRewardChildId, setSelectedRewardChildId] = useState<string | null>(null);
+  const [penaltyPoints, setPenaltyPoints] = useState(5);
+  const [penaltyReason, setPenaltyReason] = useState("");
+  const [penaltySuccess, setPenaltySuccess] = useState(false);
 
   const claimMutation = useMutation({
     mutationFn: ({ rewardId, childId }: { rewardId: string; childId: string }) =>
@@ -1101,6 +1104,21 @@ export default function FamilyPage() {
     onSuccess: (_data, vars) => {
       setClaimedRewardId(vars.rewardId + ":" + vars.childId);
       setTimeout(() => setClaimedRewardId(null), 2000);
+      refetchBalances();
+    },
+  });
+
+  const penaltyMutation = useMutation({
+    mutationFn: ({ childId, points, reason }: { childId: string; points: number; reason: string }) =>
+      fetch("/api/reward-claims", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ childId, points, reason: reason.trim() || undefined }),
+      }).then((r) => r.json()),
+    onSuccess: () => {
+      setPenaltySuccess(true);
+      setPenaltyReason("");
+      setTimeout(() => setPenaltySuccess(false), 2000);
       refetchBalances();
     },
   });
@@ -1313,6 +1331,46 @@ export default function FamilyPage() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* manual penalty — only visible in edit mode */}
+              {editOpen && activeChild && (
+                <div className="mt-2 rounded-2xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/10 p-4 flex flex-col gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-red-500 dark:text-red-400">Straf geven</p>
+                  <div className="flex gap-2">
+                    <div className="flex flex-col gap-1 flex-1">
+                      <label className="text-xs text-gray-500 dark:text-gray-400">Reden (optioneel)</label>
+                      <input
+                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm dark:text-white"
+                        placeholder="bijv. wc niet doorgespoeld"
+                        value={penaltyReason}
+                        onChange={(e) => setPenaltyReason(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1 w-20">
+                      <label className="text-xs text-gray-500 dark:text-gray-400">Punten</label>
+                      <input
+                        type="number"
+                        min={1}
+                        className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm dark:text-white"
+                        value={penaltyPoints}
+                        onChange={(e) => setPenaltyPoints(Math.max(1, parseInt(e.target.value) || 1))}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    disabled={penaltyMutation.isPending}
+                    onClick={() => penaltyMutation.mutate({ childId: activeChild.id, points: penaltyPoints, reason: penaltyReason })}
+                    className={cn(
+                      "self-start rounded-xl px-4 py-2 text-sm font-semibold transition-all",
+                      penaltySuccess
+                        ? "bg-green-500 text-white"
+                        : "bg-red-500 text-white hover:bg-red-600"
+                    )}
+                  >
+                    {penaltySuccess ? "Straf opgeslagen!" : `−${penaltyPoints} pt opleggen`}
+                  </button>
                 </div>
               )}
             </div>

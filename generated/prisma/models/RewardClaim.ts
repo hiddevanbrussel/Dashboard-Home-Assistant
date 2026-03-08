@@ -39,6 +39,7 @@ export type RewardClaimMinAggregateOutputType = {
   rewardId: string | null
   childId: string | null
   pointsSpent: number | null
+  reason: string | null
   claimedAt: Date | null
 }
 
@@ -47,6 +48,7 @@ export type RewardClaimMaxAggregateOutputType = {
   rewardId: string | null
   childId: string | null
   pointsSpent: number | null
+  reason: string | null
   claimedAt: Date | null
 }
 
@@ -55,6 +57,7 @@ export type RewardClaimCountAggregateOutputType = {
   rewardId: number
   childId: number
   pointsSpent: number
+  reason: number
   claimedAt: number
   _all: number
 }
@@ -73,6 +76,7 @@ export type RewardClaimMinAggregateInputType = {
   rewardId?: true
   childId?: true
   pointsSpent?: true
+  reason?: true
   claimedAt?: true
 }
 
@@ -81,6 +85,7 @@ export type RewardClaimMaxAggregateInputType = {
   rewardId?: true
   childId?: true
   pointsSpent?: true
+  reason?: true
   claimedAt?: true
 }
 
@@ -89,6 +94,7 @@ export type RewardClaimCountAggregateInputType = {
   rewardId?: true
   childId?: true
   pointsSpent?: true
+  reason?: true
   claimedAt?: true
   _all?: true
 }
@@ -181,9 +187,10 @@ export type RewardClaimGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 
 export type RewardClaimGroupByOutputType = {
   id: string
-  rewardId: string
+  rewardId: string | null
   childId: string
   pointsSpent: number
+  reason: string | null
   claimedAt: Date
   _count: RewardClaimCountAggregateOutputType | null
   _avg: RewardClaimAvgAggregateOutputType | null
@@ -212,17 +219,19 @@ export type RewardClaimWhereInput = {
   OR?: Prisma.RewardClaimWhereInput[]
   NOT?: Prisma.RewardClaimWhereInput | Prisma.RewardClaimWhereInput[]
   id?: Prisma.StringFilter<"RewardClaim"> | string
-  rewardId?: Prisma.StringFilter<"RewardClaim"> | string
+  rewardId?: Prisma.StringNullableFilter<"RewardClaim"> | string | null
   childId?: Prisma.StringFilter<"RewardClaim"> | string
   pointsSpent?: Prisma.IntFilter<"RewardClaim"> | number
+  reason?: Prisma.StringNullableFilter<"RewardClaim"> | string | null
   claimedAt?: Prisma.DateTimeFilter<"RewardClaim"> | Date | string
 }
 
 export type RewardClaimOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  rewardId?: Prisma.SortOrder
+  rewardId?: Prisma.SortOrderInput | Prisma.SortOrder
   childId?: Prisma.SortOrder
   pointsSpent?: Prisma.SortOrder
+  reason?: Prisma.SortOrderInput | Prisma.SortOrder
   claimedAt?: Prisma.SortOrder
 }
 
@@ -231,17 +240,19 @@ export type RewardClaimWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.RewardClaimWhereInput | Prisma.RewardClaimWhereInput[]
   OR?: Prisma.RewardClaimWhereInput[]
   NOT?: Prisma.RewardClaimWhereInput | Prisma.RewardClaimWhereInput[]
-  rewardId?: Prisma.StringFilter<"RewardClaim"> | string
+  rewardId?: Prisma.StringNullableFilter<"RewardClaim"> | string | null
   childId?: Prisma.StringFilter<"RewardClaim"> | string
   pointsSpent?: Prisma.IntFilter<"RewardClaim"> | number
+  reason?: Prisma.StringNullableFilter<"RewardClaim"> | string | null
   claimedAt?: Prisma.DateTimeFilter<"RewardClaim"> | Date | string
 }, "id">
 
 export type RewardClaimOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  rewardId?: Prisma.SortOrder
+  rewardId?: Prisma.SortOrderInput | Prisma.SortOrder
   childId?: Prisma.SortOrder
   pointsSpent?: Prisma.SortOrder
+  reason?: Prisma.SortOrderInput | Prisma.SortOrder
   claimedAt?: Prisma.SortOrder
   _count?: Prisma.RewardClaimCountOrderByAggregateInput
   _avg?: Prisma.RewardClaimAvgOrderByAggregateInput
@@ -255,65 +266,73 @@ export type RewardClaimScalarWhereWithAggregatesInput = {
   OR?: Prisma.RewardClaimScalarWhereWithAggregatesInput[]
   NOT?: Prisma.RewardClaimScalarWhereWithAggregatesInput | Prisma.RewardClaimScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"RewardClaim"> | string
-  rewardId?: Prisma.StringWithAggregatesFilter<"RewardClaim"> | string
+  rewardId?: Prisma.StringNullableWithAggregatesFilter<"RewardClaim"> | string | null
   childId?: Prisma.StringWithAggregatesFilter<"RewardClaim"> | string
   pointsSpent?: Prisma.IntWithAggregatesFilter<"RewardClaim"> | number
+  reason?: Prisma.StringNullableWithAggregatesFilter<"RewardClaim"> | string | null
   claimedAt?: Prisma.DateTimeWithAggregatesFilter<"RewardClaim"> | Date | string
 }
 
 export type RewardClaimCreateInput = {
   id?: string
-  rewardId: string
+  rewardId?: string | null
   childId: string
   pointsSpent: number
+  reason?: string | null
   claimedAt?: Date | string
 }
 
 export type RewardClaimUncheckedCreateInput = {
   id?: string
-  rewardId: string
+  rewardId?: string | null
   childId: string
   pointsSpent: number
+  reason?: string | null
   claimedAt?: Date | string
 }
 
 export type RewardClaimUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  rewardId?: Prisma.StringFieldUpdateOperationsInput | string
+  rewardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   childId?: Prisma.StringFieldUpdateOperationsInput | string
   pointsSpent?: Prisma.IntFieldUpdateOperationsInput | number
+  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   claimedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type RewardClaimUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  rewardId?: Prisma.StringFieldUpdateOperationsInput | string
+  rewardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   childId?: Prisma.StringFieldUpdateOperationsInput | string
   pointsSpent?: Prisma.IntFieldUpdateOperationsInput | number
+  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   claimedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type RewardClaimCreateManyInput = {
   id?: string
-  rewardId: string
+  rewardId?: string | null
   childId: string
   pointsSpent: number
+  reason?: string | null
   claimedAt?: Date | string
 }
 
 export type RewardClaimUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  rewardId?: Prisma.StringFieldUpdateOperationsInput | string
+  rewardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   childId?: Prisma.StringFieldUpdateOperationsInput | string
   pointsSpent?: Prisma.IntFieldUpdateOperationsInput | number
+  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   claimedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type RewardClaimUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  rewardId?: Prisma.StringFieldUpdateOperationsInput | string
+  rewardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   childId?: Prisma.StringFieldUpdateOperationsInput | string
   pointsSpent?: Prisma.IntFieldUpdateOperationsInput | number
+  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   claimedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -322,6 +341,7 @@ export type RewardClaimCountOrderByAggregateInput = {
   rewardId?: Prisma.SortOrder
   childId?: Prisma.SortOrder
   pointsSpent?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
   claimedAt?: Prisma.SortOrder
 }
 
@@ -334,6 +354,7 @@ export type RewardClaimMaxOrderByAggregateInput = {
   rewardId?: Prisma.SortOrder
   childId?: Prisma.SortOrder
   pointsSpent?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
   claimedAt?: Prisma.SortOrder
 }
 
@@ -342,6 +363,7 @@ export type RewardClaimMinOrderByAggregateInput = {
   rewardId?: Prisma.SortOrder
   childId?: Prisma.SortOrder
   pointsSpent?: Prisma.SortOrder
+  reason?: Prisma.SortOrder
   claimedAt?: Prisma.SortOrder
 }
 
@@ -356,6 +378,7 @@ export type RewardClaimSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   rewardId?: boolean
   childId?: boolean
   pointsSpent?: boolean
+  reason?: boolean
   claimedAt?: boolean
 }, ExtArgs["result"]["rewardClaim"]>
 
@@ -364,6 +387,7 @@ export type RewardClaimSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   rewardId?: boolean
   childId?: boolean
   pointsSpent?: boolean
+  reason?: boolean
   claimedAt?: boolean
 }, ExtArgs["result"]["rewardClaim"]>
 
@@ -372,6 +396,7 @@ export type RewardClaimSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   rewardId?: boolean
   childId?: boolean
   pointsSpent?: boolean
+  reason?: boolean
   claimedAt?: boolean
 }, ExtArgs["result"]["rewardClaim"]>
 
@@ -380,19 +405,21 @@ export type RewardClaimSelectScalar = {
   rewardId?: boolean
   childId?: boolean
   pointsSpent?: boolean
+  reason?: boolean
   claimedAt?: boolean
 }
 
-export type RewardClaimOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "rewardId" | "childId" | "pointsSpent" | "claimedAt", ExtArgs["result"]["rewardClaim"]>
+export type RewardClaimOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "rewardId" | "childId" | "pointsSpent" | "reason" | "claimedAt", ExtArgs["result"]["rewardClaim"]>
 
 export type $RewardClaimPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "RewardClaim"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    rewardId: string
+    rewardId: string | null
     childId: string
     pointsSpent: number
+    reason: string | null
     claimedAt: Date
   }, ExtArgs["result"]["rewardClaim"]>
   composites: {}
@@ -821,6 +848,7 @@ export interface RewardClaimFieldRefs {
   readonly rewardId: Prisma.FieldRef<"RewardClaim", 'String'>
   readonly childId: Prisma.FieldRef<"RewardClaim", 'String'>
   readonly pointsSpent: Prisma.FieldRef<"RewardClaim", 'Int'>
+  readonly reason: Prisma.FieldRef<"RewardClaim", 'String'>
   readonly claimedAt: Prisma.FieldRef<"RewardClaim", 'DateTime'>
 }
     
