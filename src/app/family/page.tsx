@@ -11,7 +11,7 @@ import {
 import { AppShell } from "@/components/layout/app-shell";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
+import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode, getEveningHour } from "@/stores/dashboard-settings-store";
 import type { ChildRecord, ChoreRecord, ChildWithChores, ChoreCompletionsResponse, ScoresResponse, ChoreFrequency, RewardRecord, StreaksResponse, BalancesResponse } from "@/lib/chores-types";
 
 // ── icon picker ──────────────────────────────────────────────────────────────
@@ -55,6 +55,15 @@ function RewardIcon({ name, className }: { name: string | null; className?: stri
 
 function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
+}
+
+// Slot 0 = morning (always visible), slot 1 = evening (visible from configured hour)
+function isChoreVisibleByTime(choreId: string): boolean {
+  const m = choreId.match(/:(\d+)$/);
+  if (!m) return true; // no slot suffix → always visible
+  const slot = parseInt(m[1]);
+  if (slot === 0) return true;
+  return new Date().getHours() >= getEveningHour();
 }
 
 const COLOR_PRESETS = [
@@ -152,7 +161,9 @@ type ChildColumnProps = {
 
 function ChildColumn({ child, streak, showCompleted, onComplete, onUncomplete }: ChildColumnProps) {
   const { t } = useTranslation();
-  const visibleChores = showCompleted ? child.chores : child.chores.filter((c) => c.completionId === null);
+  const visibleChores = child.chores
+    .filter((c) => isChoreVisibleByTime(c.choreId))
+    .filter((c) => showCompleted || c.completionId === null);
   const dailyChores = visibleChores.filter((c) => c.frequency === "daily");
   const weekdayChores = visibleChores.filter((c) => c.frequency === "weekdays");
   const weeklyChores = visibleChores.filter((c) => c.frequency === "weekly");

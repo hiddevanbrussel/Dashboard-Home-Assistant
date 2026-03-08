@@ -6,7 +6,7 @@ import { GlassCard } from "@/components/layout/glass-card";
 import { useThemeStore } from "@/stores/theme-store";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
-import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode } from "@/stores/dashboard-settings-store";
+import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, HERO_SLIDER_SOURCE_IDS } from "@/stores/music-assistant-store";
 import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
@@ -76,6 +76,7 @@ export default function SettingsPage() {
   const [section, setSection] = useState<SettingsSection>("appearance");
   const [editModeAllowed, setEditModeAllowedState] = useState(true);
   const [editModePasscode, setEditModePasscodeState] = useState("");
+  const [eveningHour, setEveningHourState] = useState(13);
   const [screensaverDelaySeconds, setScreensaverDelaySecondsState] = useState(0);
   const [screensaverBackground, setScreensaverBackgroundState] = useState("");
   const [screensaverClock24h, setScreensaverClock24hState] = useState(true);
@@ -120,6 +121,7 @@ export default function SettingsPage() {
   useEffect(() => {
     setEditModeAllowedState(getEditModeAllowed());
     setEditModePasscodeState(getEditModePasscode());
+    setEveningHourState(getEveningHour());
   }, []);
 
   useEffect(() => {
@@ -1224,10 +1226,30 @@ export default function SettingsPage() {
                 </span>
               </label>
               {choresStore.enabled && (
-                <div className="border-t border-gray-200 dark:border-white/10 pt-4">
+                <div className="border-t border-gray-200 dark:border-white/10 pt-4 flex flex-col gap-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                      {t("settings.tasks.eveningHour")}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={0}
+                        max={23}
+                        value={eveningHour}
+                        onChange={(e) => {
+                          const v = Math.max(0, Math.min(23, parseInt(e.target.value) || 0));
+                          setEveningHourState(v);
+                          setEveningHour(v);
+                        }}
+                        className="w-20 rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                      />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{t("settings.tasks.eveningHourSuffix")}</span>
+                    </div>
+                  </div>
                   <a
                     href="/family"
-                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 self-start"
                   >
                     <ListTodo className="h-4 w-4" />
                     {t("settings.tasks.manage")}
