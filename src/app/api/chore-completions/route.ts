@@ -223,11 +223,16 @@ export async function POST(request: Request) {
 
   const date = body.frequency === "weekly" ? getMondayDate(today) : today;
 
+  // Resolve chore to get points (store at completion time so they persist when chore is deleted)
+  const baseChoreId = body.choreId.includes(":") ? body.choreId.slice(0, body.choreId.indexOf(":")) : body.choreId;
+  const chore = await prisma.chore.findUnique({ where: { id: baseChoreId } });
+  const points = chore?.points ?? 0;
+
   try {
     const completion = await prisma.choreCompletion.upsert({
       where: { choreId_childId_date: { choreId: body.choreId, childId: body.childId, date } },
-      create: { choreId: body.choreId, childId: body.childId, date },
-      update: {},
+      create: { choreId: body.choreId, childId: body.childId, date, points },
+      update: { points },
     });
     return NextResponse.json({
       id: completion.id,

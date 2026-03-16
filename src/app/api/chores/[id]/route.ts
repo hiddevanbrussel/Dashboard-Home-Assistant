@@ -74,13 +74,8 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    // Delete exact and slot-based completions (e.g. "${id}", "${id}:0", "${id}:1")
-    await prisma.$transaction([
-      prisma.choreCompletion.deleteMany({
-        where: { choreId: { in: [id, `${id}:0`, `${id}:1`] } },
-      }),
-      prisma.chore.delete({ where: { id } }),
-    ]);
+    // Delete chore only; keep completions so earned points are preserved
+    await prisma.chore.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[DELETE /api/chores/[id]]", err);

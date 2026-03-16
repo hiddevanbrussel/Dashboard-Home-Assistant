@@ -39,13 +39,14 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  // Build a map of choreId → points (also handle slotted choreIds like "${id}:0")
+  // Build a map of choreId → points (fallback for old completions without stored points)
   const chorePoints = new Map<string, number>(chores.map((c) => [c.id, c.points]));
-  function resolvePoints(choreId: string): number {
-    const direct = chorePoints.get(choreId);
+  function resolvePoints(completion: { choreId: string; points?: number }): number {
+    // Prefer stored points (persists when chore is deleted)
+    if (typeof completion.points === "number" && completion.points > 0) return completion.points;
+    const direct = chorePoints.get(completion.choreId);
     if (direct !== undefined) return direct;
-    // slotted choreId: strip slot suffix
-    const base = choreId.includes(":") ? choreId.slice(0, choreId.lastIndexOf(":")) : choreId;
+    const base = completion.choreId.includes(":") ? completion.choreId.slice(0, completion.choreId.lastIndexOf(":")) : completion.choreId;
     return chorePoints.get(base) ?? 0;
   }
 
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
     pointsMap.set(child.id, 0);
   }
   for (const completion of completions) {
-    const pts = resolvePoints(completion.choreId);
+    const pts = resolvePoints(completion);
     pointsMap.set(completion.childId, (pointsMap.get(completion.childId) ?? 0) + pts);
   }
 

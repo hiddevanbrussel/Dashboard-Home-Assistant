@@ -21,19 +21,22 @@ export async function GET() {
   ]);
 
   const balances = children.map((child) => {
-    // All-time earned: sum of points for each completion
+    // All-time earned: sum of points for each completion (use stored points; fallback to chore for old records)
     let earned = 0;
     for (const comp of completions.filter((c) => c.childId === child.id)) {
-      // Find the base choreId (strip slot suffix)
       const baseId = comp.choreId.includes(":")
         ? comp.choreId.slice(0, comp.choreId.lastIndexOf(":"))
         : comp.choreId;
       const chore = chores.find((c) => c.id === baseId);
-      if (!chore) continue;
-      // Only count if chore applies to this child
-      const ids = parseChildIds(chore.childIds);
-      if (ids !== null && !ids.includes(child.id)) continue;
-      earned += chore.points;
+      // If chore was deleted, use stored points only
+      const pts = typeof comp.points === "number" && comp.points > 0
+        ? comp.points
+        : chore?.points ?? 0;
+      if (chore) {
+        const ids = parseChildIds(chore.childIds);
+        if (ids !== null && !ids.includes(child.id)) continue;
+      }
+      earned += pts;
     }
 
     // All-time spent

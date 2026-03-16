@@ -103,6 +103,7 @@ model ChoreCompletion {
   choreId     String
   childId     String
   date        String   // "YYYY-MM-DD": today for daily, Monday of week for weekly
+  points      Int      @default(0) // stored at completion time; preserved when chore is deleted
   completedAt DateTime @default(now())
 
   @@unique([choreId, childId, date])
