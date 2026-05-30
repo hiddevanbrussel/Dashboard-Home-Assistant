@@ -80,26 +80,26 @@ import { cn, generateId } from "@/lib/utils";
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
 const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card"] as const;
 
-const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { type: "text_card", label: "Tekst", Icon: Type },
-  { type: "climate_card_2", label: "Klimaat", Icon: Thermometer },
-  { type: "light_card", label: "Lamp", Icon: Lightbulb },
-  { type: "media_card", label: "Media", Icon: Music2 },
-  { type: "solar_card", label: "Zonnepanelen", Icon: Sun },
-  { type: "energy_monitor_card", label: "Afbeeldingskaart", Icon: ImageIcon },
-  { type: "power_usage_card", label: "Stroomverbruik", Icon: Zap },
-  { type: "device_consumption_card", label: "Verbruik per apparaat", Icon: Zap },
-  { type: "stat_pill_card", label: "Stat pill", Icon: CircleDot },
-  { type: "sensor_card", label: "Sensor", Icon: Gauge },
-  { type: "weather_card", label: "Weer", Icon: CloudSun },
-  { type: "vacuum_card", label: "Stofzuiger", Icon: Bot },
-  { type: "alarm_card", label: "Alarm", Icon: ShieldCheck },
-  { type: "camera_card", label: "Camera", Icon: Video },
-  { type: "pill_card", label: "Pill", Icon: CircleDot },
-  { type: "room_card", label: "Kamer", Icon: Home },
-  { type: "nuts_card", label: "Nuts (Gas/Water)", Icon: Fuel },
-  { type: "card_group", label: "Kaartgroep", Icon: LayoutGrid },
-  { type: "chore_card", label: "Taken", Icon: ListTodo },
+const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; labelKey: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { type: "text_card", labelKey: "cardType.text_card", Icon: Type },
+  { type: "climate_card_2", labelKey: "cardType.climate_card_2", Icon: Thermometer },
+  { type: "light_card", labelKey: "cardType.light_card", Icon: Lightbulb },
+  { type: "media_card", labelKey: "cardType.media_card", Icon: Music2 },
+  { type: "solar_card", labelKey: "cardType.solar_card", Icon: Sun },
+  { type: "energy_monitor_card", labelKey: "cardType.energy_monitor_card", Icon: ImageIcon },
+  { type: "power_usage_card", labelKey: "cardType.power_usage_card", Icon: Zap },
+  { type: "device_consumption_card", labelKey: "cardType.device_consumption_card", Icon: Zap },
+  { type: "stat_pill_card", labelKey: "cardType.stat_pill_card", Icon: CircleDot },
+  { type: "sensor_card", labelKey: "cardType.sensor_card", Icon: Gauge },
+  { type: "weather_card", labelKey: "cardType.weather_card", Icon: CloudSun },
+  { type: "vacuum_card", labelKey: "cardType.vacuum_card", Icon: Bot },
+  { type: "alarm_card", labelKey: "cardType.alarm_card", Icon: ShieldCheck },
+  { type: "camera_card", labelKey: "cardType.camera_card", Icon: Video },
+  { type: "pill_card", labelKey: "cardType.pill_card", Icon: CircleDot },
+  { type: "room_card", labelKey: "cardType.room_card", Icon: Home },
+  { type: "nuts_card", labelKey: "cardType.nuts_card", Icon: Fuel },
+  { type: "card_group", labelKey: "cardType.card_group", Icon: LayoutGrid },
+  { type: "chore_card", labelKey: "cardType.chore_card", Icon: ListTodo },
 ];
 
 /** Map widget type to HA domain for filtering entities */
@@ -1179,7 +1179,7 @@ export default function DashboardEditPage() {
                   <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4">
                   {addTileStep === "type" ? (
                     <div className="grid grid-cols-3 gap-2">
-                      {ADDABLE_WIDGET_TILES.map(({ type, label, Icon }) => (
+                      {ADDABLE_WIDGET_TILES.map(({ type, labelKey, Icon }) => (
                         <button
                           key={type}
                           type="button"
@@ -1218,7 +1218,7 @@ export default function DashboardEditPage() {
                         >
                           <Icon className="h-7 w-7 text-gray-600 dark:text-gray-400" />
                           <span className="text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight">
-                            {label}
+                            {t(labelKey)}
                           </span>
                         </button>
                       ))}
