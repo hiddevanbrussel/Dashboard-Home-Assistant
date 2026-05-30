@@ -20,8 +20,18 @@ export type ChoreCompletionModel = runtime.Types.Result.DefaultSelection<Prisma.
 
 export type AggregateChoreCompletion = {
   _count: ChoreCompletionCountAggregateOutputType | null
+  _avg: ChoreCompletionAvgAggregateOutputType | null
+  _sum: ChoreCompletionSumAggregateOutputType | null
   _min: ChoreCompletionMinAggregateOutputType | null
   _max: ChoreCompletionMaxAggregateOutputType | null
+}
+
+export type ChoreCompletionAvgAggregateOutputType = {
+  points: number | null
+}
+
+export type ChoreCompletionSumAggregateOutputType = {
+  points: number | null
 }
 
 export type ChoreCompletionMinAggregateOutputType = {
@@ -29,6 +39,7 @@ export type ChoreCompletionMinAggregateOutputType = {
   choreId: string | null
   childId: string | null
   date: string | null
+  points: number | null
   completedAt: Date | null
 }
 
@@ -37,6 +48,7 @@ export type ChoreCompletionMaxAggregateOutputType = {
   choreId: string | null
   childId: string | null
   date: string | null
+  points: number | null
   completedAt: Date | null
 }
 
@@ -45,16 +57,26 @@ export type ChoreCompletionCountAggregateOutputType = {
   choreId: number
   childId: number
   date: number
+  points: number
   completedAt: number
   _all: number
 }
 
+
+export type ChoreCompletionAvgAggregateInputType = {
+  points?: true
+}
+
+export type ChoreCompletionSumAggregateInputType = {
+  points?: true
+}
 
 export type ChoreCompletionMinAggregateInputType = {
   id?: true
   choreId?: true
   childId?: true
   date?: true
+  points?: true
   completedAt?: true
 }
 
@@ -63,6 +85,7 @@ export type ChoreCompletionMaxAggregateInputType = {
   choreId?: true
   childId?: true
   date?: true
+  points?: true
   completedAt?: true
 }
 
@@ -71,6 +94,7 @@ export type ChoreCompletionCountAggregateInputType = {
   choreId?: true
   childId?: true
   date?: true
+  points?: true
   completedAt?: true
   _all?: true
 }
@@ -113,6 +137,18 @@ export type ChoreCompletionAggregateArgs<ExtArgs extends runtime.Types.Extension
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: ChoreCompletionAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: ChoreCompletionSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: ChoreCompletionMinAggregateInputType
@@ -143,6 +179,8 @@ export type ChoreCompletionGroupByArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   _count?: ChoreCompletionCountAggregateInputType | true
+  _avg?: ChoreCompletionAvgAggregateInputType
+  _sum?: ChoreCompletionSumAggregateInputType
   _min?: ChoreCompletionMinAggregateInputType
   _max?: ChoreCompletionMaxAggregateInputType
 }
@@ -152,8 +190,11 @@ export type ChoreCompletionGroupByOutputType = {
   choreId: string
   childId: string
   date: string
+  points: number
   completedAt: Date
   _count: ChoreCompletionCountAggregateOutputType | null
+  _avg: ChoreCompletionAvgAggregateOutputType | null
+  _sum: ChoreCompletionSumAggregateOutputType | null
   _min: ChoreCompletionMinAggregateOutputType | null
   _max: ChoreCompletionMaxAggregateOutputType | null
 }
@@ -181,6 +222,7 @@ export type ChoreCompletionWhereInput = {
   choreId?: Prisma.StringFilter<"ChoreCompletion"> | string
   childId?: Prisma.StringFilter<"ChoreCompletion"> | string
   date?: Prisma.StringFilter<"ChoreCompletion"> | string
+  points?: Prisma.IntFilter<"ChoreCompletion"> | number
   completedAt?: Prisma.DateTimeFilter<"ChoreCompletion"> | Date | string
 }
 
@@ -189,6 +231,7 @@ export type ChoreCompletionOrderByWithRelationInput = {
   choreId?: Prisma.SortOrder
   childId?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  points?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
 }
 
@@ -201,6 +244,7 @@ export type ChoreCompletionWhereUniqueInput = Prisma.AtLeast<{
   choreId?: Prisma.StringFilter<"ChoreCompletion"> | string
   childId?: Prisma.StringFilter<"ChoreCompletion"> | string
   date?: Prisma.StringFilter<"ChoreCompletion"> | string
+  points?: Prisma.IntFilter<"ChoreCompletion"> | number
   completedAt?: Prisma.DateTimeFilter<"ChoreCompletion"> | Date | string
 }, "id" | "choreId_childId_date">
 
@@ -209,10 +253,13 @@ export type ChoreCompletionOrderByWithAggregationInput = {
   choreId?: Prisma.SortOrder
   childId?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  points?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   _count?: Prisma.ChoreCompletionCountOrderByAggregateInput
+  _avg?: Prisma.ChoreCompletionAvgOrderByAggregateInput
   _max?: Prisma.ChoreCompletionMaxOrderByAggregateInput
   _min?: Prisma.ChoreCompletionMinOrderByAggregateInput
+  _sum?: Prisma.ChoreCompletionSumOrderByAggregateInput
 }
 
 export type ChoreCompletionScalarWhereWithAggregatesInput = {
@@ -223,6 +270,7 @@ export type ChoreCompletionScalarWhereWithAggregatesInput = {
   choreId?: Prisma.StringWithAggregatesFilter<"ChoreCompletion"> | string
   childId?: Prisma.StringWithAggregatesFilter<"ChoreCompletion"> | string
   date?: Prisma.StringWithAggregatesFilter<"ChoreCompletion"> | string
+  points?: Prisma.IntWithAggregatesFilter<"ChoreCompletion"> | number
   completedAt?: Prisma.DateTimeWithAggregatesFilter<"ChoreCompletion"> | Date | string
 }
 
@@ -231,6 +279,7 @@ export type ChoreCompletionCreateInput = {
   choreId: string
   childId: string
   date: string
+  points?: number
   completedAt?: Date | string
 }
 
@@ -239,6 +288,7 @@ export type ChoreCompletionUncheckedCreateInput = {
   choreId: string
   childId: string
   date: string
+  points?: number
   completedAt?: Date | string
 }
 
@@ -247,6 +297,7 @@ export type ChoreCompletionUpdateInput = {
   choreId?: Prisma.StringFieldUpdateOperationsInput | string
   childId?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  points?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -255,6 +306,7 @@ export type ChoreCompletionUncheckedUpdateInput = {
   choreId?: Prisma.StringFieldUpdateOperationsInput | string
   childId?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  points?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -263,6 +315,7 @@ export type ChoreCompletionCreateManyInput = {
   choreId: string
   childId: string
   date: string
+  points?: number
   completedAt?: Date | string
 }
 
@@ -271,6 +324,7 @@ export type ChoreCompletionUpdateManyMutationInput = {
   choreId?: Prisma.StringFieldUpdateOperationsInput | string
   childId?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  points?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -279,6 +333,7 @@ export type ChoreCompletionUncheckedUpdateManyInput = {
   choreId?: Prisma.StringFieldUpdateOperationsInput | string
   childId?: Prisma.StringFieldUpdateOperationsInput | string
   date?: Prisma.StringFieldUpdateOperationsInput | string
+  points?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -293,7 +348,12 @@ export type ChoreCompletionCountOrderByAggregateInput = {
   choreId?: Prisma.SortOrder
   childId?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  points?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
+}
+
+export type ChoreCompletionAvgOrderByAggregateInput = {
+  points?: Prisma.SortOrder
 }
 
 export type ChoreCompletionMaxOrderByAggregateInput = {
@@ -301,6 +361,7 @@ export type ChoreCompletionMaxOrderByAggregateInput = {
   choreId?: Prisma.SortOrder
   childId?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  points?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
 }
 
@@ -309,7 +370,12 @@ export type ChoreCompletionMinOrderByAggregateInput = {
   choreId?: Prisma.SortOrder
   childId?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  points?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
+}
+
+export type ChoreCompletionSumOrderByAggregateInput = {
+  points?: Prisma.SortOrder
 }
 
 
@@ -319,6 +385,7 @@ export type ChoreCompletionSelect<ExtArgs extends runtime.Types.Extensions.Inter
   choreId?: boolean
   childId?: boolean
   date?: boolean
+  points?: boolean
   completedAt?: boolean
 }, ExtArgs["result"]["choreCompletion"]>
 
@@ -327,6 +394,7 @@ export type ChoreCompletionSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   choreId?: boolean
   childId?: boolean
   date?: boolean
+  points?: boolean
   completedAt?: boolean
 }, ExtArgs["result"]["choreCompletion"]>
 
@@ -335,6 +403,7 @@ export type ChoreCompletionSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   choreId?: boolean
   childId?: boolean
   date?: boolean
+  points?: boolean
   completedAt?: boolean
 }, ExtArgs["result"]["choreCompletion"]>
 
@@ -343,10 +412,11 @@ export type ChoreCompletionSelectScalar = {
   choreId?: boolean
   childId?: boolean
   date?: boolean
+  points?: boolean
   completedAt?: boolean
 }
 
-export type ChoreCompletionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "choreId" | "childId" | "date" | "completedAt", ExtArgs["result"]["choreCompletion"]>
+export type ChoreCompletionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "choreId" | "childId" | "date" | "points" | "completedAt", ExtArgs["result"]["choreCompletion"]>
 
 export type $ChoreCompletionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ChoreCompletion"
@@ -356,6 +426,7 @@ export type $ChoreCompletionPayload<ExtArgs extends runtime.Types.Extensions.Int
     choreId: string
     childId: string
     date: string
+    points: number
     completedAt: Date
   }, ExtArgs["result"]["choreCompletion"]>
   composites: {}
@@ -784,6 +855,7 @@ export interface ChoreCompletionFieldRefs {
   readonly choreId: Prisma.FieldRef<"ChoreCompletion", 'String'>
   readonly childId: Prisma.FieldRef<"ChoreCompletion", 'String'>
   readonly date: Prisma.FieldRef<"ChoreCompletion", 'String'>
+  readonly points: Prisma.FieldRef<"ChoreCompletion", 'Int'>
   readonly completedAt: Prisma.FieldRef<"ChoreCompletion", 'DateTime'>
 }
     

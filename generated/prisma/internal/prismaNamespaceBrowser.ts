@@ -193,6 +193,7 @@ export const ChoreCompletionScalarFieldEnum = {
   choreId: 'choreId',
   childId: 'childId',
   date: 'date',
+  points: 'points',
   completedAt: 'completedAt'
 } as const
 

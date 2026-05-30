@@ -12,11 +12,11 @@ import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { useNewsStore } from "@/stores/news-store";
-import { CalendarDays, Globe, Image, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, ChevronUp, ChevronDown, X, Zap, Server } from "lucide-react";
+import { CalendarDays, Globe, Image, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, ChevronUp, ChevronDown, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "page-background" | "language" | "dashboard" | "connection" | "energy" | "calendar" | "tasks" | "music-assistant" | "news" | "entities" | "system";
+type SettingsSection = "appearance" | "screensaver" | "page-background" | "language" | "dashboard" | "connection" | "energy" | "calendar" | "tasks" | "music-assistant" | "news" | "entities";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -31,7 +31,6 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   "music-assistant": "settings.musicAssistant",
   news: "news.settings.title",
   entities: "settings.entities",
-  system: "settings.system",
 };
 
 type HaEntity = {
@@ -93,9 +92,6 @@ export default function SettingsPage() {
   const [maPlayersLoading, setMaPlayersLoading] = useState(false);
   const [maTab, setMaTab] = useState<"speakers" | "sections" | "playlists" | "connection">("speakers");
   const [newPlaylistId, setNewPlaylistId] = useState("");
-  const [updatePasscode, setUpdatePasscode] = useState("");
-  const [updateLoading, setUpdateLoading] = useState(false);
-  const [updateResult, setUpdateResult] = useState<{ ok: boolean; message?: string; steps?: { step: string; output: string; error?: string }[] } | null>(null);
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const musicAssistant = useMusicAssistantStore();
   const energyStore = useEnergyStore();
@@ -215,13 +211,11 @@ export default function SettingsPage() {
   }, [saveMessage]);
 
   useEffect(() => {
-    if (section === "system" && appVersion === null) {
-      fetch("/api/version")
-        .then((r) => r.json())
-        .then((d) => setAppVersion(d.version ?? "onbekend"))
-        .catch(() => setAppVersion("onbekend"));
-    }
-  }, [section, appVersion]);
+    fetch("/api/version")
+      .then((r) => r.json())
+      .then((d) => setAppVersion(d.version ?? "onbekend"))
+      .catch(() => setAppVersion("onbekend"));
+  }, []);
 
   const byDomain = useMemo(() => {
     const map = new Map<string, HaEntity[]>();
@@ -433,9 +427,6 @@ export default function SettingsPage() {
     { groupKey: "settings.groups.integrations", sections: [
       { id: "news", labelKey: SECTION_KEYS.news, icon: Newspaper },
       { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
-    ]},
-    { groupKey: "settings.groups.system", sections: [
-      { id: "system", labelKey: SECTION_KEYS.system, icon: Server },
     ]},
   ];
 
@@ -856,90 +847,6 @@ export default function SettingsPage() {
                 </p>
               </GlassCard>
             )
-          )}
-
-          {section === "system" && (
-            <GlassCard>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-card-title font-medium">{t("settings.system")}</h3>
-                {appVersion && (
-                  <span className="rounded-full bg-gray-100 dark:bg-white/10 px-3 py-1 text-xs font-mono text-gray-600 dark:text-gray-300">
-                    v{appVersion}
-                  </span>
-                )}
-              </div>
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">{t("settings.update.title")}</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {t("settings.update.description")}
-              </p>
-              <div className="mb-4">
-                <label htmlFor="update-passcode" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("settings.update.passcode")}
-                </label>
-                <input
-                  id="update-passcode"
-                  type="password"
-                  value={updatePasscode}
-                  onChange={(e) => setUpdatePasscode(e.target.value)}
-                  placeholder={t("settings.update.passcodePlaceholder")}
-                  className="w-full max-w-xs rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
-                  autoComplete="off"
-                />
-              </div>
-              {updateResult && (
-                <div
-                  className={cn(
-                    "mb-4 rounded-lg p-3 text-sm",
-                    updateResult.ok
-                      ? "bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-200"
-                      : "bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200"
-                  )}
-                >
-                  {updateResult.ok ? t("settings.update.success") : (updateResult.message || t("settings.update.errorFailed"))}
-                  {updateResult.steps && updateResult.steps.length > 0 && (
-                    <pre className="mt-2 text-xs overflow-auto max-h-40 whitespace-pre-wrap break-words">
-                      {updateResult.steps.map((s) => `${s.step}${s.error ? " (failed)" : ""}\n${s.output}`).join("\n\n")}
-                    </pre>
-                  )}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={async () => {
-                  setUpdateResult(null);
-                  setUpdateLoading(true);
-                  try {
-                    const res = await fetch("/api/admin/update", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ passcode: updatePasscode }),
-                    });
-                    const data = await res.json();
-                    if (res.status === 403) {
-                      setUpdateResult({ ok: false, message: t("settings.update.errorWrongPasscode") });
-                      return;
-                    }
-                    if (res.status === 503) {
-                      setUpdateResult({ ok: false, message: t("settings.update.errorNotConfigured") });
-                      return;
-                    }
-                    setUpdateResult({
-                      ok: data.ok === true,
-                      message: data.error === "wrong_passcode" ? t("settings.update.errorWrongPasscode") : data.message,
-                      steps: data.steps,
-                    });
-                  } catch {
-                    setUpdateResult({ ok: false, message: t("settings.update.errorFailed") });
-                  } finally {
-                    setUpdateLoading(false);
-                  }
-                }}
-                disabled={updateLoading || !updatePasscode.trim()}
-                className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
-              >
-                {updateLoading ? t("settings.update.installing") : t("settings.update.install")}
-              </button>
-            </GlassCard>
           )}
 
           {section === "dashboard" && (
@@ -1903,6 +1810,11 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+      {appVersion && (
+        <p className="fixed bottom-4 right-4 text-xs font-mono text-gray-400 dark:text-gray-500 pointer-events-none select-none">
+          v{appVersion}
+        </p>
+      )}
     </AppShell>
   );
 }

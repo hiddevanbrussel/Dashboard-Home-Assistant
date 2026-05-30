@@ -97,6 +97,12 @@ export type VacuumCardProps = WidgetBaseProps & {
   cleaned_area_entity_id?: string;
 };
 
+/** Alarm card: bedient een alarm_control_panel-entity (aan/uit) met code-invoer. */
+export type AlarmCardProps = WidgetBaseProps & {
+  /** Optioneel icoon (Lucide-naam uit card-icons); default afhankelijk van status. */
+  icon?: string;
+};
+
 /** Camera card: toont live snapshot van een camera-entity. */
 export type CameraCardProps = WidgetBaseProps & {
   /** Vernieuwinterval in seconden (0 = handmatig). Default 10. */
