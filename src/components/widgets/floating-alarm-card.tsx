@@ -89,6 +89,9 @@ export function FloatingAlarmCard({
   const startLongPress = useCallback(
     (e: React.PointerEvent) => {
       if (editMode || !onEnterEditMode) return;
+      // Laat knopkliks door (arm/disarm/keypad) zodat ze niet door pointer-capture worden geslikt.
+      const target = e.target as HTMLElement;
+      if (target?.closest?.("button") || target?.closest?.("input")) return;
       clearLongPress();
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       longPressTimerRef.current = setTimeout(() => {

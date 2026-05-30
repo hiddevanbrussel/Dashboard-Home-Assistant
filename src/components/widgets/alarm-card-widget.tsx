@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   MoreVertical,
   Shield,
@@ -11,8 +12,8 @@ import {
   Plane,
   Moon,
   Palmtree,
-  Lock,
-  Delete,
+  Eye,
+  EyeOff,
   X,
   Check,
 } from "lucide-react";
@@ -217,20 +218,9 @@ export function AlarmCardWidget({
       </div>
 
       <div className="px-4 pb-4 pt-1 border-t border-gray-200 dark:border-white/10">
-        {pending ? (
-          <CodeEntry
-            label={pending.label}
-            codeFormat={codeFormat === "text" ? "text" : "number"}
-            code={code}
-            setCode={setCode}
-            busy={busy}
-            error={error}
-            onCancel={() => { setPending(null); setCode(""); setError(null); }}
-            onConfirm={() => void callAlarm(pending.service, code)}
-          />
-        ) : (
+        {(
           <div className="pt-3 space-y-2">
-            {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+            {error && !pending && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
             {isDisarmed ? (
               <div className="grid grid-cols-2 gap-2">
                 {availableArmActions.length === 0 && (
@@ -272,11 +262,24 @@ export function AlarmCardWidget({
           </div>
         )}
       </div>
+
+      {pending && (
+        <CodeModal
+          label={pending.label}
+          codeFormat={codeFormat === "text" ? "text" : "number"}
+          code={code}
+          setCode={setCode}
+          busy={busy}
+          error={error}
+          onCancel={() => { setPending(null); setCode(""); setError(null); }}
+          onConfirm={() => void callAlarm(pending.service, code)}
+        />
+      )}
     </div>
   );
 }
 
-function CodeEntry({
+function CodeModal({
   label,
   codeFormat,
   code,
@@ -295,96 +298,129 @@ function CodeEntry({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const [reveal, setReveal] = useState(false);
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
-  return (
-    <div className="pt-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Lock className="h-3.5 w-3.5 shrink-0 text-gray-500 dark:text-white/60" />
-          <span className="text-xs font-medium text-gray-600 dark:text-white/70 truncate">
-            Code voor: {label}
-          </span>
+  const content = (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Code voor ${label}`}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={onCancel} />
+      <div className="relative w-[320px] max-w-[90vw] rounded-3xl border border-gray-200/70 bg-white p-5 shadow-2xl dark:border-white/10 dark:bg-gray-900">
+        <div className="mb-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="-ml-1 rounded-lg p-1.5 text-gray-600 hover:bg-gray-100 dark:text-white/70 dark:hover:bg-white/10"
+            aria-label="Annuleren"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">{label}</h3>
         </div>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="p-1 rounded-lg text-gray-500 hover:bg-gray-200/60 dark:text-white/60 dark:hover:bg-white/10"
-          aria-label="Annuleren"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
 
-      {codeFormat === "text" ? (
-        <form
-          onSubmit={(e) => { e.preventDefault(); if (code) onConfirm(); }}
-          className="flex items-center gap-2"
-        >
+        <div className="relative mb-5 border-b border-gray-300 dark:border-white/15">
           <input
-            type="password"
+            type={reveal ? "text" : "password"}
+            inputMode={codeFormat === "number" ? "numeric" : "text"}
             autoFocus
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={(e) =>
+              setCode(codeFormat === "number" ? e.target.value.replace(/\D/g, "") : e.target.value)
+            }
+            onKeyDown={(e) => { if (e.key === "Enter" && code && !busy) onConfirm(); }}
             placeholder="Code"
-            className="flex-1 min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+            className="w-full bg-transparent px-1 py-2 pr-9 text-base text-gray-900 placeholder-gray-400 outline-none dark:text-white dark:placeholder-white/40"
           />
           <button
-            type="submit"
-            disabled={busy || !code}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#4D2FB2] text-white hover:opacity-90 disabled:opacity-50"
-            aria-label="Bevestigen"
+            type="button"
+            onClick={() => setReveal((v) => !v)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-500 hover:text-gray-800 dark:text-white/60 dark:hover:text-white"
+            aria-label={reveal ? "Code verbergen" : "Code tonen"}
           >
-            <Check className="h-4 w-4" />
+            {reveal ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
-        </form>
-      ) : (
-        <div>
-          <div className="mb-2 flex h-9 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/5 tracking-[0.4em] text-lg font-semibold text-gray-900 dark:text-white">
-            {code.length > 0 ? "•".repeat(code.length) : <span className="text-sm tracking-normal text-gray-400 dark:text-white/40">Voer code in</span>}
-          </div>
-          <div className="grid grid-cols-3 gap-1.5">
+        </div>
+
+        {codeFormat === "number" ? (
+          <div className="grid grid-cols-3 justify-items-center gap-3">
             {keys.map((k) => (
-              <button
-                key={k}
-                type="button"
-                disabled={busy}
-                onClick={() => setCode((prev) => prev + k)}
-                className="rounded-lg bg-gray-100 py-2.5 text-base font-medium text-gray-900 hover:bg-gray-200 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 disabled:opacity-50"
-              >
+              <KeyButton key={k} disabled={busy} onClick={() => setCode((prev) => prev + k)}>
                 {k}
-              </button>
+              </KeyButton>
             ))}
-            <button
-              type="button"
+            <KeyButton
+              variant="muted"
               disabled={busy || code.length === 0}
               onClick={() => setCode((prev) => prev.slice(0, -1))}
-              className="flex items-center justify-center rounded-lg bg-gray-100 py-2.5 text-gray-700 hover:bg-gray-200 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10 disabled:opacity-40"
               aria-label="Wissen"
             >
-              <Delete className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setCode((prev) => prev + "0")}
-              className="rounded-lg bg-gray-100 py-2.5 text-base font-medium text-gray-900 hover:bg-gray-200 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 disabled:opacity-50"
-            >
+              <X className="h-5 w-5" />
+            </KeyButton>
+            <KeyButton disabled={busy} onClick={() => setCode((prev) => prev + "0")}>
               0
-            </button>
-            <button
-              type="button"
+            </KeyButton>
+            <KeyButton
+              variant="confirm"
               disabled={busy || code.length === 0}
               onClick={onConfirm}
-              className="flex items-center justify-center rounded-lg bg-[#4D2FB2] py-2.5 text-white hover:opacity-90 disabled:opacity-50"
               aria-label="Bevestigen"
             >
               <Check className="h-5 w-5" />
-            </button>
+            </KeyButton>
           </div>
-        </div>
-      )}
-      {error && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
+        ) : (
+          <button
+            type="button"
+            disabled={busy || !code}
+            onClick={onConfirm}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4D2FB2] px-3 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+          >
+            <Check className="h-4 w-4" /> Bevestigen
+          </button>
+        )}
+
+        {error && <p className="mt-4 text-center text-sm text-red-600 dark:text-red-400">{error}</p>}
+      </div>
     </div>
+  );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(content, document.body);
+}
+
+function KeyButton({
+  children,
+  onClick,
+  disabled,
+  variant = "default",
+  "aria-label": ariaLabel,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: "default" | "muted" | "confirm";
+  "aria-label"?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      className={cn(
+        "flex h-16 w-16 items-center justify-center rounded-full text-xl font-medium transition-colors disabled:opacity-40",
+        variant === "confirm"
+          ? "bg-green-500/20 text-green-700 hover:bg-green-500/30 dark:text-green-300"
+          : variant === "muted"
+            ? "bg-gray-100 text-gray-400 hover:bg-gray-200 dark:bg-white/5 dark:text-white/50 dark:hover:bg-white/10"
+            : "bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+      )}
+    >
+      {children}
+    </button>
   );
 }
