@@ -20,6 +20,7 @@ import {
 import type { AlarmCardProps } from "./widget-types";
 import { cn, capitalizeFirst } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useTranslation } from "@/hooks/use-translation";
 import { CARD_ICONS } from "./card-icons";
 
 // Bitmask uit Home Assistant (AlarmControlPanelEntityFeature).
@@ -30,7 +31,8 @@ const FEATURE_ARM_CUSTOM_BYPASS = 16;
 const FEATURE_ARM_VACATION = 32;
 
 type AlarmStatus = {
-  label: string;
+  /** Vertaalsleutel voor het statuslabel; null = val terug op de ruwe state. */
+  labelKey: string | null;
   Icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   /** Tailwind kleur-tokens voor tekst + icoonbadge. */
   text: string;
@@ -42,49 +44,49 @@ function getStatus(state: string): AlarmStatus {
   switch (state) {
     case "disarmed":
       return {
-        label: "Uitgeschakeld",
+        labelKey: "alarm.state.disarmed",
         Icon: ShieldOff,
         text: "text-green-600 dark:text-green-400",
         badge: "bg-green-500/15 text-green-600 dark:text-green-400",
       };
     case "armed_home":
-      return { label: "Ingeschakeld (thuis)", Icon: ShieldCheck, text: "text-blue-600 dark:text-blue-400", badge: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
+      return { labelKey: "alarm.state.armed_home", Icon: ShieldCheck, text: "text-blue-600 dark:text-blue-400", badge: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
     case "armed_away":
-      return { label: "Ingeschakeld (afwezig)", Icon: ShieldCheck, text: "text-blue-600 dark:text-blue-400", badge: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
+      return { labelKey: "alarm.state.armed_away", Icon: ShieldCheck, text: "text-blue-600 dark:text-blue-400", badge: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
     case "armed_night":
-      return { label: "Ingeschakeld (nacht)", Icon: ShieldCheck, text: "text-indigo-600 dark:text-indigo-400", badge: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" };
+      return { labelKey: "alarm.state.armed_night", Icon: ShieldCheck, text: "text-indigo-600 dark:text-indigo-400", badge: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" };
     case "armed_vacation":
-      return { label: "Ingeschakeld (vakantie)", Icon: ShieldCheck, text: "text-blue-600 dark:text-blue-400", badge: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
+      return { labelKey: "alarm.state.armed_vacation", Icon: ShieldCheck, text: "text-blue-600 dark:text-blue-400", badge: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
     case "armed_custom_bypass":
-      return { label: "Ingeschakeld (aangepast)", Icon: ShieldCheck, text: "text-blue-600 dark:text-blue-400", badge: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
+      return { labelKey: "alarm.state.armed_custom_bypass", Icon: ShieldCheck, text: "text-blue-600 dark:text-blue-400", badge: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
     case "arming":
-      return { label: "Inschakelen…", Icon: Shield, text: "text-amber-600 dark:text-amber-400", badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400", pulse: true };
+      return { labelKey: "alarm.state.arming", Icon: Shield, text: "text-amber-600 dark:text-amber-400", badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400", pulse: true };
     case "pending":
-      return { label: "In afwachting…", Icon: Shield, text: "text-amber-600 dark:text-amber-400", badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400", pulse: true };
+      return { labelKey: "alarm.state.pending", Icon: Shield, text: "text-amber-600 dark:text-amber-400", badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400", pulse: true };
     case "disarming":
-      return { label: "Uitschakelen…", Icon: Shield, text: "text-amber-600 dark:text-amber-400", badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400", pulse: true };
+      return { labelKey: "alarm.state.disarming", Icon: Shield, text: "text-amber-600 dark:text-amber-400", badge: "bg-amber-500/15 text-amber-600 dark:text-amber-400", pulse: true };
     case "triggered":
-      return { label: "Alarm!", Icon: ShieldAlert, text: "text-red-600 dark:text-red-400", badge: "bg-red-500/20 text-red-600 dark:text-red-400", pulse: true };
+      return { labelKey: "alarm.state.triggered", Icon: ShieldAlert, text: "text-red-600 dark:text-red-400", badge: "bg-red-500/20 text-red-600 dark:text-red-400", pulse: true };
     case "unavailable":
-      return { label: "Niet beschikbaar", Icon: Shield, text: "text-gray-500 dark:text-white/50", badge: "bg-gray-200/80 dark:bg-white/15 text-gray-500 dark:text-white/60" };
+      return { labelKey: "alarm.state.unavailable", Icon: Shield, text: "text-gray-500 dark:text-white/50", badge: "bg-gray-200/80 dark:bg-white/15 text-gray-500 dark:text-white/60" };
     default:
-      return { label: capitalizeFirst(state), Icon: Shield, text: "text-gray-700 dark:text-white/80", badge: "bg-gray-200/80 dark:bg-white/15 text-gray-700 dark:text-white" };
+      return { labelKey: null, Icon: Shield, text: "text-gray-700 dark:text-white/80", badge: "bg-gray-200/80 dark:bg-white/15 text-gray-700 dark:text-white" };
   }
 }
 
 type ArmAction = {
   service: string;
-  label: string;
+  labelKey: string;
   Icon: React.ComponentType<{ className?: string }>;
   feature: number;
 };
 
 const ARM_ACTIONS: ArmAction[] = [
-  { service: "alarm_arm_home", label: "Thuis", Icon: Home, feature: FEATURE_ARM_HOME },
-  { service: "alarm_arm_away", label: "Afwezig", Icon: Plane, feature: FEATURE_ARM_AWAY },
-  { service: "alarm_arm_night", label: "Nacht", Icon: Moon, feature: FEATURE_ARM_NIGHT },
-  { service: "alarm_arm_vacation", label: "Vakantie", Icon: Palmtree, feature: FEATURE_ARM_VACATION },
-  { service: "alarm_arm_custom_bypass", label: "Aangepast", Icon: ShieldCheck, feature: FEATURE_ARM_CUSTOM_BYPASS },
+  { service: "alarm_arm_home", labelKey: "alarm.arm.home", Icon: Home, feature: FEATURE_ARM_HOME },
+  { service: "alarm_arm_away", labelKey: "alarm.arm.away", Icon: Plane, feature: FEATURE_ARM_AWAY },
+  { service: "alarm_arm_night", labelKey: "alarm.arm.night", Icon: Moon, feature: FEATURE_ARM_NIGHT },
+  { service: "alarm_arm_vacation", labelKey: "alarm.arm.vacation", Icon: Palmtree, feature: FEATURE_ARM_VACATION },
+  { service: "alarm_arm_custom_bypass", labelKey: "alarm.arm.custom", Icon: ShieldCheck, feature: FEATURE_ARM_CUSTOM_BYPASS },
 ];
 
 export function AlarmCardWidget({
@@ -95,6 +97,7 @@ export function AlarmCardWidget({
   className,
   onMoreClick,
 }: AlarmCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const setStates = useEntityStateStore((s) => s.setStates);
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
@@ -112,6 +115,7 @@ export function AlarmCardWidget({
   const features = Number(attrs.supported_features ?? 0);
 
   const status = getStatus(state);
+  const statusLabel = status.labelKey ? t(status.labelKey) : capitalizeFirst(state);
   const CustomIcon = iconName && iconName !== "auto" ? CARD_ICONS[iconName] : undefined;
   const HeaderIcon = CustomIcon ?? status.Icon;
 
@@ -153,10 +157,10 @@ export function AlarmCardWidget({
         setPending(null);
         setCode("");
       } else {
-        setError("Mislukt. Controleer de code.");
+        setError(t("alarm.error.failed"));
       }
     } catch {
-      setError("Geen verbinding.");
+      setError(t("alarm.error.connection"));
     } finally {
       setBusy(false);
     }
@@ -206,13 +210,13 @@ export function AlarmCardWidget({
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
               className="p-1.5 rounded-lg shrink-0 text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors"
-              aria-label="Opties"
+              aria-label={t("alarm.options")}
             >
               <MoreVertical className="h-5 w-5" aria-hidden />
             </button>
           )}
-          <p className={cn("text-sm font-medium truncate text-right", status.text)} title={status.label}>
-            {status.label}
+          <p className={cn("text-sm font-medium truncate text-right", status.text)} title={statusLabel}>
+            {statusLabel}
           </p>
         </div>
       </div>
@@ -227,10 +231,10 @@ export function AlarmCardWidget({
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => handleAction("alarm_arm_away", "Inschakelen", armNeedsCode)}
+                    onClick={() => handleAction("alarm_arm_away", t("alarm.arm"), armNeedsCode)}
                     className="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-blue-500/15 px-3 py-2.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-500/25 transition-colors disabled:opacity-50"
                   >
-                    <ShieldCheck className="h-4 w-4" /> Inschakelen
+                    <ShieldCheck className="h-4 w-4" /> {t("alarm.arm")}
                   </button>
                 )}
                 {availableArmActions.map((a) => (
@@ -238,14 +242,14 @@ export function AlarmCardWidget({
                     key={a.service}
                     type="button"
                     disabled={busy}
-                    onClick={() => handleAction(a.service, a.label, armNeedsCode)}
+                    onClick={() => handleAction(a.service, t(a.labelKey), armNeedsCode)}
                     className={cn(
                       "flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors disabled:opacity-50",
                       "bg-blue-500/15 text-blue-700 dark:text-blue-300 hover:bg-blue-500/25",
                       availableArmActions.length === 1 && "col-span-2"
                     )}
                   >
-                    <a.Icon className="h-4 w-4" /> {a.label}
+                    <a.Icon className="h-4 w-4" /> {t(a.labelKey)}
                   </button>
                 ))}
               </div>
@@ -253,10 +257,10 @@ export function AlarmCardWidget({
               <button
                 type="button"
                 disabled={busy || state === "unavailable"}
-                onClick={() => handleAction("alarm_disarm", "Uitschakelen", disarmNeedsCode)}
+                onClick={() => handleAction("alarm_disarm", t("alarm.disarm"), disarmNeedsCode)}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-500/15 px-3 py-3 text-sm font-semibold text-green-700 dark:text-green-300 hover:bg-green-500/25 transition-colors disabled:opacity-50"
               >
-                <ShieldOff className="h-4 w-4" /> Uitschakelen
+                <ShieldOff className="h-4 w-4" /> {t("alarm.disarm")}
               </button>
             )}
           </div>
@@ -298,6 +302,7 @@ function CodeModal({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const { t } = useTranslation();
   const [reveal, setReveal] = useState(false);
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -306,7 +311,7 @@ function CodeModal({
       className="fixed inset-0 z-[80] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={`Code voor ${label}`}
+      aria-label={`${t("alarm.code")} – ${label}`}
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={onCancel} />
       <div className="relative w-[320px] max-w-[90vw] rounded-3xl border border-gray-200/70 bg-white p-5 shadow-2xl dark:border-white/10 dark:bg-gray-900">
@@ -315,7 +320,7 @@ function CodeModal({
             type="button"
             onClick={onCancel}
             className="-ml-1 rounded-lg p-1.5 text-gray-600 hover:bg-gray-100 dark:text-white/70 dark:hover:bg-white/10"
-            aria-label="Annuleren"
+            aria-label={t("alarm.cancel")}
           >
             <X className="h-5 w-5" />
           </button>
@@ -332,14 +337,14 @@ function CodeModal({
               setCode(codeFormat === "number" ? e.target.value.replace(/\D/g, "") : e.target.value)
             }
             onKeyDown={(e) => { if (e.key === "Enter" && code && !busy) onConfirm(); }}
-            placeholder="Code"
+            placeholder={t("alarm.code")}
             className="w-full bg-transparent px-1 py-2 pr-9 text-base text-gray-900 placeholder-gray-400 outline-none dark:text-white dark:placeholder-white/40"
           />
           <button
             type="button"
             onClick={() => setReveal((v) => !v)}
             className="absolute right-0 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-500 hover:text-gray-800 dark:text-white/60 dark:hover:text-white"
-            aria-label={reveal ? "Code verbergen" : "Code tonen"}
+            aria-label={reveal ? t("alarm.hideCode") : t("alarm.showCode")}
           >
             {reveal ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
@@ -356,7 +361,7 @@ function CodeModal({
               variant="muted"
               disabled={busy || code.length === 0}
               onClick={() => setCode((prev) => prev.slice(0, -1))}
-              aria-label="Wissen"
+              aria-label={t("alarm.clear")}
             >
               <X className="h-5 w-5" />
             </KeyButton>
@@ -367,7 +372,7 @@ function CodeModal({
               variant="confirm"
               disabled={busy || code.length === 0}
               onClick={onConfirm}
-              aria-label="Bevestigen"
+              aria-label={t("alarm.confirm")}
             >
               <Check className="h-5 w-5" />
             </KeyButton>
@@ -379,7 +384,7 @@ function CodeModal({
             onClick={onConfirm}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4D2FB2] px-3 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
           >
-            <Check className="h-4 w-4" /> Bevestigen
+            <Check className="h-4 w-4" /> {t("alarm.confirm")}
           </button>
         )}
 

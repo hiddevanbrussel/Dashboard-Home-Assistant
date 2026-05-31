@@ -16,6 +16,7 @@ import {
 import type { LightControlProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 const LIGHT_ICON_MAP: Record<string, React.ElementType> = {
   lightbulb: Lightbulb,
@@ -142,6 +143,7 @@ export function LightCardWidget({
   className,
   onMoreClick,
 }: LightControlProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const revertEntityState = useEntityStateStore((s) => s.revertEntityState);
@@ -289,8 +291,8 @@ export function LightCardWidget({
       ? `${Math.round(colorTempK)}K`
       : supportsBrightness
         ? `${brightnessPct}%`
-        : "Aan"
-    : "Uit";
+        : t("lightCard.on")
+    : t("lightCard.off");
 
   const showColorDot = isOn && rgbColor && (colorMode === "xy" || colorMode === "hs");
   const colorDotStyle = showColorDot
@@ -299,9 +301,9 @@ export function LightCardWidget({
 
   // ── Tab configuration ──────────────────────────────────────────────────────
   const tabs = [
-    ...(supportsBrightness ? [{ id: "brightness" as const, label: "Helderheid" }] : []),
-    ...(supportsColorTemp ? [{ id: "colortemp" as const, label: "Temperatuur" }] : []),
-    ...(supportsColor ? [{ id: "color" as const, label: "Kleur" }] : []),
+    ...(supportsBrightness ? [{ id: "brightness" as const, label: t("lightCard.brightness") }] : []),
+    ...(supportsColorTemp ? [{ id: "colortemp" as const, label: t("lightCard.temperature") }] : []),
+    ...(supportsColor ? [{ id: "color" as const, label: t("lightCard.color") }] : []),
   ];
 
   function openModal() {
@@ -329,7 +331,7 @@ export function LightCardWidget({
           type="button"
           onClick={handleToggle}
           className="flex shrink-0 items-center justify-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 disabled:opacity-70 h-10 w-10"
-          aria-label={isOn ? "Lamp uitzetten" : "Lamp aanzetten"}
+          aria-label={isOn ? t("lightCard.turnOff") : t("lightCard.turnOn")}
         >
           <div
             className={cn(
@@ -354,7 +356,7 @@ export function LightCardWidget({
           type="button"
           onClick={openModal}
           className="flex flex-1 min-w-0 items-center gap-2 text-left rounded-xl cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 -mx-1 px-1 py-0.5 transition-colors"
-          aria-label="Verlichting bedienen"
+          aria-label={t("lightCard.control")}
         >
           <div className="min-w-0 flex-1 flex flex-col justify-center">
             <p className="text-xs font-medium truncate text-inherit">{displayName}</p>
@@ -374,7 +376,7 @@ export function LightCardWidget({
             type="button"
             onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
             className="p-1.5 rounded-lg shrink-0 text-inherit opacity-70 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-            aria-label="Opties"
+            aria-label={t("lightCard.options")}
           >
             <MoreVertical className="h-5 w-5" aria-hidden />
           </button>
@@ -388,7 +390,7 @@ export function LightCardWidget({
             <button
               type="button"
               className="absolute inset-0 z-[100] bg-black/40 dark:bg-black/50 backdrop-blur-md cursor-pointer"
-              aria-label="Modal sluiten"
+              aria-label={t("lightCard.closeModal")}
               onClick={() => setModalOpen(false)}
             />
             <div
@@ -402,7 +404,7 @@ export function LightCardWidget({
                   {showColorDot && (
                     <span className="w-2.5 h-2.5 rounded-full inline-block border border-white/20" style={colorDotStyle} aria-hidden />
                   )}
-                  {activeTab === "brightness" ? `${sliderBrightness}%` : activeTab === "colortemp" ? `${Math.round(sliderColorTemp)}K` : "Kleur"}
+                  {activeTab === "brightness" ? `${sliderBrightness}%` : activeTab === "colortemp" ? `${Math.round(sliderColorTemp)}K` : t("lightCard.color")}
                 </p>
               </div>
 
@@ -448,7 +450,7 @@ export function LightCardWidget({
                       onPointerLeave={flushBrightness}
                       className="absolute top-1/2 left-1/2 w-64 h-28 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize opacity-0 [&::-webkit-slider-thumb]:cursor-ns-resize"
                       style={{ transform: "translate(-50%, -50%) rotate(-90deg)" }}
-                      aria-label="Helderheid"
+                      aria-label={t("lightCard.brightness")}
                     />
                     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none flex items-center justify-center w-10 h-10 rounded-full bg-amber-400/40">
                       <IconComponent className="h-5 w-5 text-white drop-shadow" strokeWidth={1.5} fill="currentColor" aria-hidden />
@@ -516,7 +518,7 @@ export function LightCardWidget({
                         transform: `translate(-50%, ${(1 - displayPosition) * SWITCH_TRACK_PX}px)`,
                         transition: slidePosition != null ? "none" : "transform 0.15s ease-out",
                       }}
-                      aria-label={displayPosition > 0.5 ? "Lamp uitzetten" : "Lamp aanzetten"}
+                      aria-label={displayPosition > 0.5 ? t("lightCard.turnOff") : t("lightCard.turnOn")}
                     >
                       <IconComponent
                         className={cn("h-9 w-9 shrink-0 transition-colors", displayPosition > 0.5 ? "text-white drop-shadow" : "text-white/70")}
@@ -564,7 +566,7 @@ export function LightCardWidget({
                       onPointerLeave={flushColorTemp}
                       className="absolute top-1/2 left-1/2 w-64 h-28 opacity-0 cursor-ns-resize"
                       style={{ transform: "translate(-50%, -50%) rotate(-90deg)" }}
-                      aria-label="Kleurtemperatuur"
+                      aria-label={t("lightCard.colorTemp")}
                     />
                   </div>
                   {/* Min / max labels */}

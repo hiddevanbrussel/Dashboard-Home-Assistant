@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { Lightbulb, Disc3, MoreVertical, Thermometer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useTranslation } from "@/hooks/use-translation";
 import { CARD_ICONS } from "./card-icons";
 import type { RoomCardProps } from "./widget-types";
 
@@ -41,6 +42,7 @@ export function RoomCardWidget({
   onMoreClick,
   onCardClick,
 }: RoomCardProps & { className?: string; embedded?: boolean; width?: number; height?: number; onMoreClick?: () => void; onCardClick?: () => void }) {
+  const { t } = useTranslation();
   const entity = useEntityStateStore((s) => (entity_id ? s.getState(entity_id) : null));
   const lightEntity = useEntityStateStore((s) =>
     light_entity_id ? s.getState(light_entity_id) : null
@@ -160,7 +162,7 @@ export function RoomCardWidget({
                 "text-xs truncate w-full mt-0.5",
                 background_image ? "text-white/90" : embedded ? "text-gray-600 dark:text-white/70" : "text-gray-500 dark:text-gray-400"
               )}>
-                {isConfigured ? entityValue : (!entity_id && !light_entity_id && !media_player_entity_id ? "Kies entiteiten in bewerken" : null)}
+                {isConfigured ? entityValue : (!entity_id && !light_entity_id && !media_player_entity_id ? t("roomCard.chooseEntities") : null)}
               </p>
             </div>
             {onMoreClick && (
@@ -171,7 +173,7 @@ export function RoomCardWidget({
                   "p-1.5 rounded-lg shrink-0 transition-colors",
                   background_image ? "text-white/80 hover:text-white hover:bg-white/20" : embedded ? "text-gray-500 hover:text-gray-800 hover:bg-black/5 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
                 )}
-                aria-label="Bewerken"
+                aria-label={t("roomCard.edit")}
               >
                 <MoreVertical className="h-5 w-5" aria-hidden />
               </button>
@@ -186,7 +188,7 @@ export function RoomCardWidget({
                     ? "bg-gray-300 text-gray-600 dark:bg-white/20 dark:text-white/60"
                     : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
                 )}
-                title={tempStr ?? "Klimaat"}
+                title={tempStr ?? t("roomCard.climate")}
                 aria-hidden
               >
                 <Thermometer className="h-4 w-4 shrink-0" strokeWidth={1.5} />
@@ -206,7 +208,7 @@ export function RoomCardWidget({
                       : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
                 )}
                 aria-hidden
-                title={isMediaPlaying ? "Media speelt af" : "Geen media"}
+                title={isMediaPlaying ? t("roomCard.mediaPlaying") : t("roomCard.noMedia")}
               >
                 <Disc3
                   className={cn(
@@ -234,7 +236,7 @@ export function RoomCardWidget({
                       ? "bg-[#FFD41D] text-white shadow-sm"
                       : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
                 )}
-                aria-label={isLightOn ? "Lamp uitzetten" : "Lamp aanzetten"}
+                aria-label={isLightOn ? t("roomCard.lightOff") : t("roomCard.lightOn")}
               >
                 <Lightbulb
                   className="h-5 w-5 shrink-0"
