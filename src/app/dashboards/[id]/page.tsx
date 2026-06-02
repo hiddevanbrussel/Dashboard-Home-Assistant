@@ -2554,7 +2554,7 @@ export default function DashboardEditPage() {
                     {editTab === "weergave" && (
                       <div className="space-y-3">
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Breedte kaart (px)</label>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardWidthPx")}</label>
                           <input
                             type="number"
                             min={240}
@@ -2568,10 +2568,10 @@ export default function DashboardEditPage() {
                             placeholder="320"
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                           />
-                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">240–500 px (standaard 320)</p>
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange240")}</p>
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Hoogte kaart (px)</label>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardHeightPx")}</label>
                           <input
                             type="number"
                             min={120}
@@ -2585,7 +2585,7 @@ export default function DashboardEditPage() {
                             placeholder="Auto"
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                           />
-                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Optioneel. Minimaal 120 px. Laat leeg voor automatische hoogte.</p>
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.optionalMinHeight")}</p>
                         </div>
                       </div>
                     )}
@@ -2604,13 +2604,13 @@ export default function DashboardEditPage() {
                             : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                         )}
                       >
-                        Algemeen
+                        {t("editPanel.general")}
                       </button>
                     </div>
                     {editTab === "algemeen" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      Icoon
+                      {t("editPanel.icon")}
                     </label>
                     <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5">
                       {LIGHT_ICON_OPTIONS.map((key) => {
@@ -3035,7 +3035,7 @@ export default function DashboardEditPage() {
                           value={editForm.entity_id ?? ""}
                           onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
                           filter={(e) => e.entity_id.startsWith("sensor.")}
-                          label="Entity grafiek (opbrengst per uur)"
+                          label={t("editPanel.solarChartEntity")}
                           placeholder={t("editPanel.searchEntity")}
                           emptyOption={t("editPanel.none")}
                         />
@@ -3044,7 +3044,7 @@ export default function DashboardEditPage() {
                           value={editForm.yield_entity_id_today ?? ""}
                           onChange={(v) => setEditForm((prev) => ({ ...prev, yield_entity_id_today: v || undefined }))}
                           filter={(e) => e.entity_id.startsWith("sensor.")}
-                          label="Entity Vandaag"
+                          label={t("editPanel.solarTodayEntity")}
                           placeholder={t("editPanel.searchSensor")}
                           emptyOption={t("editPanel.none")}
                         />
@@ -3053,7 +3053,7 @@ export default function DashboardEditPage() {
                           value={editForm.yield_entity_id_month ?? ""}
                           onChange={(v) => setEditForm((prev) => ({ ...prev, yield_entity_id_month: v || undefined }))}
                           filter={(e) => e.entity_id.startsWith("sensor.")}
-                          label="Entity Deze maand"
+                          label={t("editPanel.solarMonthEntity")}
                           placeholder={t("editPanel.searchSensor")}
                           emptyOption={t("editPanel.none")}
                         />
@@ -3502,11 +3502,11 @@ export default function DashboardEditPage() {
                     )}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Breedte (px)</label>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.widthPx")}</label>
                         <input type="number" min={200} max={500} step={20} value={editForm.width ?? 320} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200" />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Hoogte (px)</label>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.heightPx")}</label>
                         <input type="number" min={200} max={500} step={20} value={editForm.height ?? 320} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200" />
                       </div>
                     </div>
@@ -4310,7 +4310,7 @@ aria-label={t("editPanel.removeCondition")}
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Breedte kaart (px)
+                        {t("editPanel.cardWidthPx")}
                       </label>
                       <input
                         type="number"
@@ -4328,11 +4328,11 @@ aria-label={t("editPanel.removeCondition")}
                         placeholder="360"
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–600 px (standaard 360)</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange360")}</p>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Hoogte kaart (px)
+                        {t("editPanel.cardHeightPx")}
                       </label>
                       <input
                         type="number"
@@ -4350,7 +4350,7 @@ aria-label={t("editPanel.removeCondition")}
                         placeholder="270"
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">150–450 px (standaard 270)</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange270")}</p>
                     </div>
                     </>
                     )}
@@ -4407,7 +4407,7 @@ aria-label={t("editPanel.removeCondition")}
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Breedte kaart (px)
+                        {t("editPanel.cardWidthPx")}
                       </label>
                       <input
                         type="number"
@@ -4425,11 +4425,11 @@ aria-label={t("editPanel.removeCondition")}
                         placeholder="320"
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">200–500 px (standaard 320)</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange320")}</p>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Hoogte kaart (px)
+                        {t("editPanel.cardHeightPx")}
                       </label>
                       <input
                         type="number"
@@ -4447,7 +4447,7 @@ aria-label={t("editPanel.removeCondition")}
                         placeholder="180"
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">100–400 px (standaard 180)</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange180")}</p>
                     </div>
                     </>
                     )}
@@ -4627,7 +4627,7 @@ aria-label={t("editPanel.removeCondition")}
                             placeholder="250"
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                           />
-                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Breedte</p>
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.width")}</p>
                         </div>
                         <div className="flex-1">
                           <input
@@ -4643,7 +4643,7 @@ aria-label={t("editPanel.removeCondition")}
                             placeholder="130"
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                           />
-                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Hoogte</p>
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.height")}</p>
                         </div>
                       </div>
                     </div>

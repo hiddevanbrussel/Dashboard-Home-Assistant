@@ -6,6 +6,7 @@ import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import type { SolarCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 function formatValue(value: number | undefined, unit: string): string {
   if (value == null || Number.isNaN(value)) return "—";
@@ -31,6 +32,7 @@ export function SolarCardWidget({
   className,
   onMoreClick,
 }: SolarCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const entityToday = yield_entity_id_today ?? entity_id ?? "";
   const entityMonth = yield_entity_id_month ?? entity_id ?? "";
   const chartEntity = entity_id ?? "";
@@ -119,7 +121,7 @@ export function SolarCardWidget({
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
               className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
-              aria-label="Opties"
+              aria-label={t("solarCard.options")}
             >
               <MoreVertical className="h-5 w-5" />
             </button>
@@ -127,13 +129,13 @@ export function SolarCardWidget({
         </div>
         {!hasYieldEntity ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 px-4">
-            Configureer een opbrengst-entity in de bewerkmodus.
+            {t("solarCard.configurePrompt")}
           </p>
         ) : (
           <div className="p-4">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Opbrengst per uur</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t("solarCard.yieldPerHour")}</p>
             {hourlyLoading ? (
-              <div className="h-24 flex items-center justify-center text-gray-400">Laden…</div>
+              <div className="h-24 flex items-center justify-center text-gray-400">{t("solarCard.loading")}</div>
             ) : (
               <div className="h-24 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -170,7 +172,7 @@ export function SolarCardWidget({
               <p className="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-400">
                 {formatValue(displayToday != null ? displayToday : undefined, yieldDataToday.unit)}
               </p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Vandaag</p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">{t("solarCard.today")}</p>
             </div>
           </div>
           <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
@@ -181,7 +183,7 @@ export function SolarCardWidget({
               <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                 {dailyLoading ? "…" : formatValue(displayMonth, yieldDataMonth.unit)}
               </p>
-              <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Deze maand</p>
+              <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">{t("solarCard.thisMonth")}</p>
             </div>
           </div>
         </div>
