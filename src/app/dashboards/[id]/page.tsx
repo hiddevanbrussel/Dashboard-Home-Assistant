@@ -4717,7 +4717,7 @@ aria-label={t("editPanel.removeCondition")}
                           }}
                           className="rounded-lg bg-[#4D2FB2] px-3 py-1.5 text-sm text-white hover:opacity-90"
                         >
-                          Opslaan
+                          {t("editPanel.save")}
                         </button>
                       </div>
                     </>
@@ -4933,7 +4933,7 @@ aria-label={t("editPanel.removeCondition")}
                     }}
                     className="rounded-lg bg-[#4D2FB2] px-3 py-1.5 text-sm text-white hover:opacity-90"
                   >
-                    Opslaan
+                    {t("editPanel.save")}
                   </button>
                   </div>
                     </>

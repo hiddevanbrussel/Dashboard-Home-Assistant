@@ -18,6 +18,7 @@ import type { ClimateProps } from "./widget-types";
 import { cn, capitalizeFirst } from "@/lib/utils";
 import { CARD_ICONS } from "./card-icons";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 const SELECTOR_STEP = 0.5;
 
@@ -32,25 +33,25 @@ function formatTempParts(value: number | undefined): { int: number; dec: string 
 const TEMP_MIN = 5;
 const TEMP_MAX = 35;
 
-const MODE_CONFIG: { mode: string; label: string; icon: React.ElementType }[] = [
-  { mode: "auto", label: "Auto", icon: Thermometer },
-  { mode: "heat", label: "Verwarmen", icon: Flame },
-  { mode: "off", label: "Uit", icon: Power },
-  { mode: "fan_only", label: "Wind", icon: Wind },
-  { mode: "cool", label: "Koelen", icon: Snowflake },
+const MODE_CONFIG: { mode: string; labelKey: string; icon: React.ElementType }[] = [
+  { mode: "auto", labelKey: "climateCard.auto", icon: Thermometer },
+  { mode: "heat", labelKey: "climateCard.heat", icon: Flame },
+  { mode: "off", labelKey: "climateCard.off", icon: Power },
+  { mode: "fan_only", labelKey: "climateCard.fan_only", icon: Wind },
+  { mode: "cool", labelKey: "climateCard.cool", icon: Snowflake },
 ];
 
-const STATE_LABELS: Record<string, string> = {
-  idle: "Idle",
-  heating: "Verwarmen…",
-  cooling: "Koelen…",
-  off: "Uit",
-  heat: "Verwarmen",
-  cool: "Koelen",
-  auto: "Auto",
-  dry: "Droog",
-  fan_only: "Ventilator",
-  unknown: "—",
+const STATE_LABEL_KEYS: Record<string, string> = {
+  idle: "climateCard.idle",
+  heating: "climateCard.heating",
+  cooling: "climateCard.cooling",
+  off: "climateCard.off",
+  heat: "climateCard.heat",
+  cool: "climateCard.cool",
+  auto: "climateCard.auto",
+  dry: "climateCard.dry",
+  fan_only: "climateCard.fan_only",
+  unknown: "climateCard.unknown",
 };
 
 export function ClimateCard2Widget({
@@ -62,6 +63,7 @@ export function ClimateCard2Widget({
   className,
   onMoreClick,
 }: ClimateProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const IconComponent = iconName && CARD_ICONS[iconName] ? CARD_ICONS[iconName] : Thermometer;
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const humidityEntity = useEntityStateStore((s) =>
@@ -178,7 +180,9 @@ export function ClimateCard2Widget({
     }
   }
 
-  const availableModes = MODE_CONFIG.filter((c) => hvacModes.includes(c.mode));
+  const availableModes: { mode: string; label: string; icon: React.ElementType }[] = MODE_CONFIG
+    .filter((c) => hvacModes.includes(c.mode))
+    .map((c) => ({ mode: c.mode, label: t(c.labelKey), icon: c.icon }));
   if (availableModes.length < hvacModes.length) {
     const configuredModes = new Set(availableModes.map((c) => c.mode));
     availableModes.push(
@@ -186,7 +190,7 @@ export function ClimateCard2Widget({
         .filter((mode) => !configuredModes.has(mode))
         .map((mode) => ({
           mode,
-          label: STATE_LABELS[mode] ?? capitalizeFirst(mode),
+          label: STATE_LABEL_KEYS[mode] ? t(STATE_LABEL_KEYS[mode]) : capitalizeFirst(mode),
           icon: Thermometer as React.ElementType,
         }))
     );
@@ -225,7 +229,7 @@ export function ClimateCard2Widget({
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {showHumidity && (
-            <div className="flex items-center gap-1.5 text-gray-600 dark:text-white/90" title="Luchtvochtigheid">
+            <div className="flex items-center gap-1.5 text-gray-600 dark:text-white/90" title={t("climateCard.humidity")}>
               <Droplets className="h-4 w-4" aria-hidden />
               <span className="text-sm tabular-nums">{Math.round(humidity)}%</span>
             </div>
@@ -235,7 +239,7 @@ export function ClimateCard2Widget({
               type="button"
               onClick={onMoreClick}
               className="p-1.5 rounded-lg text-gray-500 hover:bg-white/20 dark:text-gray-400 dark:hover:bg-white/10"
-              aria-label="More options"
+              aria-label={t("climateCard.moreOptions")}
             >
               <MoreVertical className="h-5 w-5" />
             </button>
@@ -250,7 +254,7 @@ export function ClimateCard2Widget({
           onClick={() => setTemperature(displayTemp - SELECTOR_STEP)}
           disabled={loading || isOff || displayTemp <= minTemp}
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gray-200/60 dark:bg-white/10 text-gray-700 dark:text-white hover:bg-gray-300/60 dark:hover:bg-white/20 disabled:opacity-40 disabled:pointer-events-none transition-colors"
-          aria-label="Temperatuur verlagen"
+          aria-label={t("climateCard.tempDown")}
         >
           <Minus className="h-6 w-6" />
         </button>
@@ -274,7 +278,7 @@ export function ClimateCard2Widget({
           onClick={() => setTemperature(displayTemp + SELECTOR_STEP)}
           disabled={loading || isOff || displayTemp >= maxTemp}
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gray-200/60 dark:bg-white/10 text-gray-700 dark:text-white hover:bg-gray-300/60 dark:hover:bg-white/20 disabled:opacity-40 disabled:pointer-events-none transition-colors"
-          aria-label="Temperatuur verhogen"
+          aria-label={t("climateCard.tempUp")}
         >
           <Plus className="h-6 w-6" />
         </button>
