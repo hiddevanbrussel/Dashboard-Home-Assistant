@@ -289,7 +289,10 @@ export function ClimateCard2Widget({
         const currentMode = isOff ? "off" : activeHvacMode;
         const current = availableModes.find((m) => m.mode === currentMode) ?? availableModes[0];
         const otherModes = availableModes.filter((m) => m.mode !== currentMode);
-        const offOption = MODE_CONFIG.find((m) => m.mode === "off");
+        const offConfig = MODE_CONFIG.find((m) => m.mode === "off");
+        const offOption = offConfig
+          ? { mode: offConfig.mode, label: t(offConfig.labelKey), icon: offConfig.icon }
+          : undefined;
         const dropdownOptions =
           currentMode === "off"
             ? otherModes
