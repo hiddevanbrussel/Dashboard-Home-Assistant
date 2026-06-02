@@ -4378,7 +4378,7 @@ aria-label={t("editPanel.removeCondition")}
                     {editTab === "algemeen" && (
                     <div className="flex items-center justify-between gap-3">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Toon icoon
+                        {t("editPanel.showIcon")}
                       </label>
                       <button
                         type="button"
