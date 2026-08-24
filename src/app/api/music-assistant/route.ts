@@ -19,7 +19,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const baseUrl = typeof body?.baseUrl === "string" ? body.baseUrl.replace(/\/+$/, "") : "";
+  const rawUrl =
+    (typeof body?.baseUrl === "string" && body.baseUrl) ||
+    (typeof (body as { url?: string }).url === "string" && (body as { url?: string }).url) ||
+    "";
+  const baseUrl = rawUrl.replace(/\/+$/, "");
   const token = typeof body?.token === "string" ? body.token : "";
   const command = typeof body?.command === "string" ? body.command : "";
   if (!baseUrl || !command) {
