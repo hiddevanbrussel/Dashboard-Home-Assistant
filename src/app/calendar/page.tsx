@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import {
   Calendar,
@@ -49,7 +49,17 @@ const FOCUS_HOUR = 8;
 
 function scrollTimeGrid(el: HTMLDivElement | null, hour = FOCUS_HOUR, smooth = false) {
   if (!el) return;
-  el.scrollTo({ top: hour * HOUR_H, behavior: smooth ? "smooth" : "auto" });
+  const top = hour * HOUR_H;
+  const apply = () => el.scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
+  apply();
+  let tries = 0;
+  const tick = () => {
+    if (!el.isConnected) return;
+    apply();
+    if (el.scrollHeight > el.clientHeight + 8 || tries++ >= 12) return;
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 type CalColor = { bar: string; soft: string; check: string; glow: string };
@@ -226,7 +236,7 @@ function WeekGrid({
   const nowMinutes = useNowMinutes();
   const labels = weekDayNames(locale, "short");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const id = requestAnimationFrame(() => scrollTimeGrid(scrollRef.current, FOCUS_HOUR));
     return () => cancelAnimationFrame(id);
   }, [scrollRef]);
@@ -273,7 +283,7 @@ function WeekGrid({
         })}
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex" style={{ minHeight: 24 * HOUR_H }}>
           <div className="relative w-14 shrink-0">
             {hours.map((h) => (
@@ -361,7 +371,7 @@ function DayGrid({
   const dayEvents = timedOnDay(events, date);
   const allDay = allDayOnDay(events, date);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const id = requestAnimationFrame(() => scrollTimeGrid(scrollRef.current, FOCUS_HOUR));
     return () => cancelAnimationFrame(id);
   }, [scrollRef]);
@@ -386,7 +396,7 @@ function DayGrid({
           })}
         </div>
       )}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex" style={{ minHeight: 24 * HOUR_H }}>
           <div className="w-16 shrink-0">
             {hours.map((h) => (
@@ -945,10 +955,10 @@ export default function CalendarPage() {
     loadEvents();
   }, [loadEvents]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (viewMode === "month") return;
     const frame = requestAnimationFrame(() => scrollTimeGrid(timeScrollRef.current));
-    const timer = window.setTimeout(() => scrollTimeGrid(timeScrollRef.current), 80);
+    const timer = window.setTimeout(() => scrollTimeGrid(timeScrollRef.current), 120);
     return () => {
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
