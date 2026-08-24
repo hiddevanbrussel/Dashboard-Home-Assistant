@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, isSameDay, monthGridDays, startOfWeek, stepTime, toDateKey } from "./calendar-utils";
+import { addDays, isSameDay, monthGridDays, startOfWeek, stepTime, toDateKey, visibleMonthDays } from "./calendar-utils";
 
 describe("calendar-utils", () => {
   it("starts the week on Monday", () => {
@@ -18,6 +18,14 @@ describe("calendar-utils", () => {
     const october = monthGridDays(new Date(2025, 9, 1)); // 1 Oct 2025 is Wednesday
     expect(october[0].getDay()).toBe(1);
     expect(toDateKey(october[0])).toBe("2025-09-29");
+  });
+
+  it("hides an unused sixth week so the month can fill the screen", () => {
+    const september = visibleMonthDays(new Date(2025, 8, 1));
+    expect(september).toHaveLength(35);
+
+    const march = visibleMonthDays(new Date(2026, 2, 1)); // 1 Mar 2026 is Sunday → 6 weeks
+    expect(march).toHaveLength(42);
   });
 
   it("compares calendar days without time", () => {

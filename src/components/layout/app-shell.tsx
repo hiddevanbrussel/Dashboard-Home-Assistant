@@ -473,7 +473,7 @@ export function AppShell({
         <main
           className={cn(
             "flex-1 px-4 py-4 min-w-0 transition-[margin] duration-200 sm:px-6",
-            contentNoScroll ? "overflow-hidden" : "overflow-auto",
+            contentNoScroll ? "flex flex-col overflow-hidden" : "overflow-auto",
             !contentNoScroll && contentScrollbarHidden && "scrollbar-hide",
             showSidebar && sidebarOpen && "ml-[88px]"
           )}
