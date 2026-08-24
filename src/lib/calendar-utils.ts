@@ -33,6 +33,14 @@ export function monthGridDays(date: Date): Date[] {
   return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
 }
 
+/** Drop the unused 6th week so the month grid can fill the screen with larger cells. */
+export function visibleMonthDays(date: Date): Date[] {
+  const days = monthGridDays(date);
+  const lastWeek = days.slice(35);
+  const lastWeekOutside = lastWeek.every((d) => d.getMonth() !== date.getMonth());
+  return lastWeekOutside ? days.slice(0, 35) : days;
+}
+
 export function toDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }

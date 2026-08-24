@@ -38,12 +38,19 @@ import {
   stepTime,
   timedOnDay,
   toDateKey,
+  visibleMonthDays,
   weekDayNames,
 } from "@/lib/calendar-utils";
 
 type ViewMode = "week" | "month" | "day";
 
-const HOUR_H = 64;
+const HOUR_H = 48;
+const FOCUS_HOUR = 8;
+
+function scrollTimeGrid(el: HTMLDivElement | null, hour = FOCUS_HOUR, smooth = false) {
+  if (!el) return;
+  el.scrollTo({ top: hour * HOUR_H, behavior: smooth ? "smooth" : "auto" });
+}
 
 type CalColor = { bar: string; soft: string; check: string; glow: string };
 
@@ -104,20 +111,24 @@ function MonthGrid({
   onSelectDay: (d: Date) => void;
   onSelectEvent: (ev: CalendarEvent) => void;
 }) {
-  const days = monthGridDays(currentDate);
+  const days = visibleMonthDays(currentDate);
   const today = new Date();
   const labels = weekDayNames(locale, "short");
+  const rows = days.length / 7;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-1">
       <div className="grid shrink-0 grid-cols-7 px-1">
         {labels.map((label) => (
-          <div key={label} className="py-1 text-center text-[11px] font-medium capitalize text-gray-400 dark:text-gray-500">
+          <div key={label} className="py-0.5 text-center text-[11px] font-medium capitalize text-gray-400 dark:text-gray-500">
             {label}
           </div>
         ))}
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-2">
+      <div
+        className="grid min-h-0 flex-1 grid-cols-7 gap-1.5"
+        style={{ gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` }}
+      >
         {days.map((day) => {
           const isToday = isSameDay(day, today);
           const isSelected = isSameDay(day, selectedDate);
@@ -139,7 +150,7 @@ function MonthGrid({
                 }
               }}
               className={cn(
-                "flex min-h-0 cursor-pointer flex-col overflow-hidden rounded-2xl border p-1.5 text-left transition-all duration-200",
+                "flex min-h-0 cursor-pointer flex-col overflow-hidden rounded-xl border p-1 text-left transition-all duration-200",
                 "bg-white/50 backdrop-blur-xl dark:bg-white/[0.05]",
                 isSelected
                   ? "border-dashed border-accent-purple shadow-[0_0_0_1px_rgba(180,139,255,0.45)]"
@@ -216,9 +227,9 @@ function WeekGrid({
   const labels = weekDayNames(locale, "short");
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = Math.max(0, (now.getHours() - 1) * HOUR_H);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const id = requestAnimationFrame(() => scrollTimeGrid(scrollRef.current, FOCUS_HOUR));
+    return () => cancelAnimationFrame(id);
+  }, [scrollRef]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border border-white/70 bg-white/40 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
@@ -351,9 +362,9 @@ function DayGrid({
   const allDay = allDayOnDay(events, date);
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = Math.max(0, (now.getHours() - 1) * HOUR_H);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const id = requestAnimationFrame(() => scrollTimeGrid(scrollRef.current, FOCUS_HOUR));
+    return () => cancelAnimationFrame(id);
+  }, [scrollRef]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border border-white/70 bg-white/40 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
@@ -463,8 +474,8 @@ function AgendaSidebar({
   const dateLabel = date.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" });
 
   return (
-    <aside className="flex h-[40vh] min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-card border border-white/70 bg-white/45 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.05] lg:h-auto lg:w-[340px]">
-      <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-5">
+    <aside className="flex h-[28vh] min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-card border border-white/70 bg-white/45 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.05] lg:h-full lg:w-[300px]">
+      <div className="flex items-start justify-between gap-3 px-4 pb-2 pt-4">
         <div>
           <h2 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{t("calendar.scheduled")}</h2>
           <p className="mt-0.5 text-xs capitalize text-gray-500 dark:text-gray-400">{dateLabel}</p>
@@ -884,10 +895,8 @@ export default function CalendarPage() {
   }
 
   function scrollToNow() {
-    timeScrollRef.current?.scrollTo({
-      top: Math.max(0, (new Date().getHours() - 1) * HOUR_H),
-      behavior: "smooth",
-    });
+    const hour = new Date().getHours();
+    scrollTimeGrid(timeScrollRef.current, hour < FOCUS_HOUR ? FOCUS_HOUR : hour, true);
   }
 
   function selectDay(day: Date) {
@@ -936,6 +945,16 @@ export default function CalendarPage() {
     loadEvents();
   }, [loadEvents]);
 
+  useEffect(() => {
+    if (viewMode === "month") return;
+    const frame = requestAnimationFrame(() => scrollTimeGrid(timeScrollRef.current));
+    const timer = window.setTimeout(() => scrollTimeGrid(timeScrollRef.current), 80);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [viewMode]);
+
   function navigate(dir: -1 | 1) {
     const d = new Date(currentDate);
     if (viewMode === "week") d.setDate(d.getDate() + dir * 7);
@@ -970,9 +989,9 @@ export default function CalendarPage() {
 
   return (
     <AppShell activeTab="/calendar" contentNoScroll>
-      <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto lg:flex-row lg:overflow-hidden">
-        <div className="flex min-h-[560px] min-w-0 flex-1 flex-col gap-3 lg:min-h-0">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden lg:flex-row lg:gap-3">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => navigate(-1)} className="rounded-xl p-1.5 hover:bg-black/5 dark:hover:bg-white/10">
@@ -985,7 +1004,7 @@ export default function CalendarPage() {
 
               <div className="flex items-center gap-1">
                 <label className="relative">
-                  <span className="pointer-events-none flex items-center gap-1 text-xl font-semibold capitalize tracking-tight text-gray-900 dark:text-white md:text-2xl">
+                  <span className="pointer-events-none flex items-center gap-1 text-lg font-semibold capitalize tracking-tight text-gray-900 dark:text-white md:text-xl">
                     {months[currentDate.getMonth()]}
                     <ChevronDown className="h-4 w-4 text-gray-400" />
                   </span>
@@ -1001,7 +1020,7 @@ export default function CalendarPage() {
                   </select>
                 </label>
                 <label className="relative">
-                  <span className="pointer-events-none flex items-center gap-1 text-xl font-semibold text-gray-400 dark:text-gray-500 md:text-2xl">
+                  <span className="pointer-events-none flex items-center gap-1 text-lg font-semibold text-gray-400 dark:text-gray-500 md:text-xl">
                     {currentDate.getFullYear()}
                     <ChevronDown className="h-4 w-4" />
                   </span>
