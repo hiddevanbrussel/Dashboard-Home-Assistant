@@ -113,3 +113,16 @@ export function stepTime(value: string, deltaMinutes: number): string {
   const total = (((h * 60 + m + deltaMinutes) % 1440) + 1440) % 1440;
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
+
+/** Default hour row height, used before the time grid has been measured. */
+export const DEFAULT_HOUR_H = 48;
+/** Floor so timed events stay tappable on small screens. */
+export const MIN_HOUR_H = 36;
+/** Typical workday length shown without scrolling (08:00–22:00). */
+export const VISIBLE_DAY_HOURS = 14;
+
+/** Scale hour rows so ~14 hours fit in the visible time-grid viewport. */
+export function hourHeightForViewport(clientHeight: number): number {
+  if (clientHeight <= 0) return DEFAULT_HOUR_H;
+  return Math.max(MIN_HOUR_H, Math.round(clientHeight / VISIBLE_DAY_HOURS));
+}

@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { addDays, isSameDay, monthGridDays, startOfWeek, stepTime, toDateKey, visibleMonthDays } from "./calendar-utils";
+import {
+  addDays,
+  DEFAULT_HOUR_H,
+  hourHeightForViewport,
+  isSameDay,
+  MIN_HOUR_H,
+  monthGridDays,
+  startOfWeek,
+  stepTime,
+  toDateKey,
+  visibleMonthDays,
+} from "./calendar-utils";
 
 describe("calendar-utils", () => {
   it("starts the week on Monday", () => {
@@ -39,5 +50,11 @@ describe("calendar-utils", () => {
     expect(stepTime("00:00", -15)).toBe("23:45");
     expect(stepTime("23:45", 15)).toBe("00:00");
     expect(stepTime("11:30", 90)).toBe("13:00");
+  });
+
+  it("scales hour rows to fit a workday in the viewport", () => {
+    expect(hourHeightForViewport(0)).toBe(DEFAULT_HOUR_H);
+    expect(hourHeightForViewport(700)).toBe(50);
+    expect(hourHeightForViewport(200)).toBe(MIN_HOUR_H);
   });
 });

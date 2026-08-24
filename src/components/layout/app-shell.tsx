@@ -291,7 +291,8 @@ export function AppShell({
   return (
     <div
       className={cn(
-        "flex min-h-screen flex-col",
+        "flex flex-col",
+        contentNoScroll ? "h-dvh max-h-dvh overflow-hidden" : "min-h-screen",
         pageBackground
           ? "bg-white/85 dark:bg-black/50"
           : "bg-page-light dark:bg-dark-page",
@@ -459,7 +460,7 @@ export function AppShell({
       </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className={cn("relative flex flex-1 overflow-hidden", contentNoScroll && "min-h-0")}>
         {showSidebar && (
           <div
             className={cn(
@@ -473,7 +474,7 @@ export function AppShell({
         <main
           className={cn(
             "flex-1 px-4 py-4 min-w-0 transition-[margin] duration-200 sm:px-6",
-            contentNoScroll ? "flex flex-col overflow-hidden" : "overflow-auto",
+            contentNoScroll ? "flex min-h-0 flex-col overflow-hidden" : "overflow-auto",
             !contentNoScroll && contentScrollbarHidden && "scrollbar-hide",
             showSidebar && sidebarOpen && "ml-[88px]"
           )}
