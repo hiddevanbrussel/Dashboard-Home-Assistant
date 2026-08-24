@@ -2,11 +2,10 @@
 
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { CalendarDays, DoorOpen, LayoutDashboard, ListTodo, Music2, Zap } from "lucide-react";
+import { CalendarDays, DoorOpen, LayoutDashboard, ListTodo, Music2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
-import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 
@@ -16,7 +15,6 @@ const tabKeys = [
 ] as const;
 
 const musicTab    = { href: "/music",    labelKey: "nav.music",    icon: Music2       } as const;
-const energyTab   = { href: "/energy",   labelKey: "nav.energy",   icon: Zap          } as const;
 const calendarTab = { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays } as const;
 const familyTab   = { href: "/family",   labelKey: "nav.family",   icon: ListTodo     } as const;
 
@@ -29,18 +27,15 @@ type TopTabsProps = {
 export function TopTabs({ activeHref, className, contentLight }: TopTabsProps) {
   const { t } = useTranslation();
   const musicAssistantEnabled = useMusicAssistantStore((s) => s.enabled);
-  const energyEnabled = useEnergyStore((s) => s.enabled);
   const calendarEnabled = useCalendarStore((s) => s.enabled);
   const choresEnabled = useChoresStore((s) => s.enabled);
   useEffect(() => {
     hydrateMusicAssistantStore();
-    hydrateEnergyStore();
     hydrateCalendarStore();
     hydrateChoresStore();
   }, []);
   const tabs = [
     ...tabKeys,
-    ...(energyEnabled    ? [energyTab]   : []),
     ...(calendarEnabled  ? [calendarTab] : []),
     ...(choresEnabled    ? [familyTab]   : []),
     ...(musicAssistantEnabled ? [musicTab] : []),
@@ -73,7 +68,7 @@ export function TopTabs({ activeHref, className, contentLight }: TopTabsProps) {
                   : "text-gray-600 hover:bg-white/50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
             )}
           >
-            <Icon className={cn("h-4 w-4", href === "/energy" && isActive && "text-[#FFAA00]")} aria-hidden />
+            <Icon className="h-4 w-4" aria-hidden />
             {t(labelKey)}
           </Link>
         );

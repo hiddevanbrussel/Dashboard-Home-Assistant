@@ -3,20 +3,22 @@
 import { useEffect, useState, useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
+import { SettingsPanel } from "@/components/settings/settings-panel";
+import { MusicAssistantSettings } from "@/components/settings/music-assistant-settings";
 import { useThemeStore } from "@/stores/theme-store";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
-import { useMusicAssistantStore, hydrateMusicAssistantStore, HERO_SLIDER_SOURCE_IDS } from "@/stores/music-assistant-store";
-import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
+import { hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { useNewsStore } from "@/stores/news-store";
-import { CalendarDays, Globe, Image, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, ChevronUp, ChevronDown, X, Zap } from "lucide-react";
+import { CalendarDays, Globe, Image, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "page-background" | "language" | "dashboard" | "connection" | "energy" | "calendar" | "tasks" | "music-assistant" | "news" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "page-background" | "language" | "dashboard" | "connection" | "calendar" | "tasks" | "music-assistant" | "news" | "entities";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -25,7 +27,6 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   language: "settings.language",
   dashboard: "settings.dashboard",
   connection: "settings.connection",
-  energy: "settings.energy",
   calendar: "settings.calendar",
   tasks: "settings.tasks",
   "music-assistant": "settings.musicAssistant",
@@ -86,15 +87,7 @@ export default function SettingsPage() {
   const [screensaverPexelsApiKey, setScreensaverPexelsApiKeyState] = useState("");
   const [screensaverPexelsType, setScreensaverPexelsTypeState] = useState<"photo" | "video">("photo");
   const [uploadingScreensaverBg, setUploadingScreensaverBg] = useState(false);
-  const [maTestResult, setMaTestResult] = useState<"ok" | string | null>(null);
-  const [maTesting, setMaTesting] = useState(false);
-  const [maPlayersList, setMaPlayersList] = useState<{ queue_id: string; display_name?: string }[]>([]);
-  const [maPlayersLoading, setMaPlayersLoading] = useState(false);
-  const [maTab, setMaTab] = useState<"speakers" | "sections" | "playlists" | "connection">("speakers");
-  const [newPlaylistId, setNewPlaylistId] = useState("");
   const [appVersion, setAppVersion] = useState<string | null>(null);
-  const musicAssistant = useMusicAssistantStore();
-  const energyStore = useEnergyStore();
   const calendarStore = useCalendarStore();
   const choresStore = useChoresStore();
   const newsStore = useNewsStore();
@@ -105,7 +98,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     hydrateMusicAssistantStore();
-    hydrateEnergyStore();
     hydrateCalendarStore();
     hydrateChoresStore();
   }, []);
@@ -140,36 +132,6 @@ export default function SettingsPage() {
       })
       .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (section !== "music-assistant" || !musicAssistant.enabled || !musicAssistant.baseUrl) {
-      setMaPlayersList([]);
-      return;
-    }
-    setMaPlayersLoading(true);
-    fetch("/api/music-assistant", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        baseUrl: musicAssistant.baseUrl,
-        token: musicAssistant.token,
-        command: "player_queues/all",
-        args: {},
-      }),
-    })
-      .then((r) => r.json())
-      .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
-        if (err) {
-          setMaPlayersList([]);
-          return;
-        }
-        const list = Array.isArray(data) ? data : (data as { result?: { queue_id: string; display_name?: string }[] })?.result ?? [];
-        setMaPlayersList(list);
-      })
-      .catch(() => setMaPlayersList([]))
-      .finally(() => setMaPlayersLoading(false));
-  }, [section, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   useEffect(() => {
     fetch("/api/dashboard")
@@ -407,7 +369,7 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const { language, setLanguage } = useLanguageStore();
 
-  const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: React.ElementType }[] }[] = [
+  const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: LucideIcon }[] }[] = [
     { groupKey: "settings.groups.display", sections: [
       { id: "appearance", labelKey: SECTION_KEYS.appearance, icon: Palette },
       { id: "page-background", labelKey: SECTION_KEYS["page-background"], icon: Image },
@@ -420,7 +382,6 @@ export default function SettingsPage() {
       { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
     ]},
     { groupKey: "settings.groups.pages", sections: [
-      { id: "energy",    labelKey: SECTION_KEYS.energy,    icon: Zap          },
       { id: "calendar",  labelKey: SECTION_KEYS.calendar,  icon: CalendarDays },
       { id: "tasks",     labelKey: SECTION_KEYS.tasks,     icon: ListTodo     },
     ]},
@@ -430,43 +391,74 @@ export default function SettingsPage() {
     ]},
   ];
 
+  const SECTION_META: Record<SettingsSection, { descriptionKey: string; icon: LucideIcon }> = {
+    appearance: { descriptionKey: "settings.theme.description", icon: Palette },
+    screensaver: { descriptionKey: "settings.screensaver.description", icon: Monitor },
+    "page-background": { descriptionKey: "settings.pageBackground.description", icon: Image },
+    language: { descriptionKey: "settings.language.intro", icon: Globe },
+    dashboard: { descriptionKey: "settings.dashboard.intro", icon: LayoutDashboard },
+    connection: { descriptionKey: "settings.connection.description", icon: Link2 },
+    calendar: { descriptionKey: "settings.calendar.description", icon: CalendarDays },
+    tasks: { descriptionKey: "settings.tasks.description", icon: ListTodo },
+    news: { descriptionKey: "news.settings.description", icon: Newspaper },
+    "music-assistant": { descriptionKey: "settings.musicAssistant.description", icon: Music2 },
+    entities: { descriptionKey: "settings.entities.description", icon: List },
+  };
+  const currentMeta = SECTION_META[section];
+
   return (
     <AppShell activeTab="/settings">
-      <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 max-w-4xl">
-        <nav
-          className="shrink-0 sm:w-56"
-          aria-label="Settings sections"
-        >
-          <h2 className="text-xl font-semibold mb-3 sm:mb-4">{t("settings.title")}</h2>
-          <div className="flex sm:flex-col gap-4 overflow-x-auto pb-2 sm:pb-0 sm:overflow-visible">
-            {SECTION_GROUPS.map(({ groupKey, sections }) => (
-              <div key={groupKey}>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 px-3">{t(groupKey)}</p>
-                <ul className="flex sm:flex-col gap-0.5">
-                  {sections.map(({ id, labelKey, icon: Icon }) => (
-                    <li key={id}>
-                      <button
-                        type="button"
-                        onClick={() => setSection(id)}
-                        className={cn(
-                          "w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors whitespace-nowrap",
-                          section === id
-                            ? "bg-[#4D2FB2] text-white"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-                        )}
-                      >
-                        <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                        {t(labelKey)}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 lg:flex-row lg:gap-8">
+        <aside className="shrink-0 lg:w-64">
+          <div className="lg:sticky lg:top-4">
+            <h1 className="mb-4 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+              {t("settings.title")}
+            </h1>
+            <nav
+              className="rounded-3xl border border-white/60 bg-white/40 p-2 dark:border-white/10 dark:bg-white/5"
+              aria-label={t("settings.title")}
+            >
+              <div className="flex gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+                {SECTION_GROUPS.map(({ groupKey, sections }, groupIndex) => (
+                  <div
+                    key={groupKey}
+                    className={cn(groupIndex > 0 && "lg:mt-1 lg:border-t lg:border-white/50 lg:pt-2 dark:lg:border-white/10")}
+                  >
+                    <p className="mb-1 hidden px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 lg:block">
+                      {t(groupKey)}
+                    </p>
+                    <ul className="flex gap-0.5 lg:flex-col">
+                      {sections.map(({ id, labelKey, icon: Icon }) => (
+                        <li key={id}>
+                          <button
+                            type="button"
+                            onClick={() => setSection(id)}
+                            className={cn(
+                              "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
+                              section === id
+                                ? "bg-[#4D2FB2] text-white shadow-sm"
+                                : "text-gray-700 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-white/10"
+                            )}
+                          >
+                            <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                            {t(labelKey)}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
-            ))}
+            </nav>
           </div>
-        </nav>
+        </aside>
 
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
+          <SettingsPanel
+            icon={currentMeta.icon}
+            title={t(SECTION_KEYS[section])}
+            description={t(currentMeta.descriptionKey)}
+          >
           {section === "appearance" && (
             <GlassCard>
               <h3 className="text-card-title font-medium mb-3">{t("settings.appearance")}</h3>
@@ -963,158 +955,6 @@ export default function SettingsPage() {
             </GlassCard>
           )}
 
-          {section === "energy" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">{t("settings.energy")}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {t("settings.energy.description")}
-              </p>
-              <label className="flex items-center gap-3 cursor-pointer mb-4">
-                <input
-                  type="checkbox"
-                  checked={energyStore.enabled}
-                  onChange={(e) => energyStore.setEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {t("settings.energy.enabled")}
-                </span>
-              </label>
-              <div className="border-t border-gray-200 dark:border-white/10 pt-4 space-y-4">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {t("settings.energy.contract")}
-                </p>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                    {t("settings.energy.costPerKwh")}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.001}
-                    value={energyStore.costPerKwh ?? ""}
-                    onChange={(e) => {
-                      const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
-                      energyStore.setCostPerKwh(v != null && !Number.isNaN(v) ? v : undefined);
-                    }}
-                    placeholder="0.25"
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                  />
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    {t("settings.energy.costPerKwhHint")}
-                  </p>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                    {t("settings.energy.netbeheerkostenPerDag")}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={energyStore.netbeheerkostenPerDag ?? ""}
-                    onChange={(e) => {
-                      const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
-                      energyStore.setNetbeheerkostenPerDag(v != null && !Number.isNaN(v) ? v : undefined);
-                    }}
-                    placeholder="0.50"
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                  />
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    {t("settings.energy.netbeheerkostenPerDagHint")}
-                  </p>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                    {t("settings.energy.vasteLeveringskostenPerMaand")}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={energyStore.vasteLeveringskostenPerMaand ?? ""}
-                    onChange={(e) => {
-                      const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
-                      energyStore.setVasteLeveringskostenPerMaand(v != null && !Number.isNaN(v) ? v : undefined);
-                    }}
-                    placeholder="5.00"
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                  />
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    {t("settings.energy.vasteLeveringskostenPerMaandHint")}
-                  </p>
-                </div>
-                <div className="border-t border-gray-200 dark:border-white/10 pt-4 mt-4">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
-                    {t("settings.energy.gasContract")}
-                  </p>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("settings.energy.gasCostPerM3")}
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.001}
-                        value={energyStore.gasCostPerM3 ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
-                          energyStore.setGasCostPerM3(v != null && !Number.isNaN(v) ? v : undefined);
-                        }}
-                        placeholder="1.20"
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                      />
-                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {t("settings.energy.gasCostPerM3Hint")}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("settings.energy.gasNetbeheerkostenPerDag")}
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        value={energyStore.gasNetbeheerkostenPerDag ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
-                          energyStore.setGasNetbeheerkostenPerDag(v != null && !Number.isNaN(v) ? v : undefined);
-                        }}
-                        placeholder="0.30"
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                      />
-                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {t("settings.energy.gasNetbeheerkostenPerDagHint")}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("settings.energy.gasVasteLeveringskostenPerMaand")}
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        value={energyStore.gasVasteLeveringskostenPerMaand ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? undefined : parseFloat(e.target.value);
-                          energyStore.setGasVasteLeveringskostenPerMaand(v != null && !Number.isNaN(v) ? v : undefined);
-                        }}
-                        placeholder="5.00"
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                      />
-                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {t("settings.energy.gasVasteLeveringskostenPerMaandHint")}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          )}
-
           {section === "tasks" && (
             <GlassCard>
               <h3 className="text-card-title font-medium mb-3">{t("settings.tasks")}</h3>
@@ -1258,396 +1098,7 @@ export default function SettingsPage() {
             </GlassCard>
           )}
 
-          {section === "music-assistant" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-1">{t("settings.musicAssistant")}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {t("settings.musicAssistant.description")}
-              </p>
-
-              {/* Enabled toggle — always visible */}
-              <label className="flex items-center gap-3 cursor-pointer mb-4">
-                <input
-                  type="checkbox"
-                  checked={musicAssistant.enabled}
-                  onChange={(e) => musicAssistant.setEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {t("settings.musicAssistant.enabled")}
-                </span>
-              </label>
-
-              {/* Tab bar */}
-              <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-white/10 p-1 mb-5" role="tablist">
-                {(["speakers", "sections", "playlists", "connection"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    role="tab"
-                    aria-selected={maTab === tab}
-                    onClick={() => setMaTab(tab)}
-                    className={cn(
-                      "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                      maTab === tab
-                        ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    )}
-                  >
-                    {t(`settings.musicAssistant.tabs.${tab}`)}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tab: Speakers */}
-              {maTab === "speakers" && (
-                <div className="space-y-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={musicAssistant.allowSpeakerSelection}
-                      onChange={(e) => musicAssistant.setAllowSpeakerSelection(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                    />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                      {t("settings.musicAssistant.allowSpeakerSelection")}
-                    </span>
-                  </label>
-                  {musicAssistant.allowSpeakerSelection && (
-                    <div className="space-y-2 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                        {t("settings.musicAssistant.allowedSpeakers")}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t("settings.musicAssistant.allowedSpeakersHint")}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setMaPlayersLoading(true);
-                          setMaPlayersList([]);
-                          try {
-                            const res = await fetch("/api/music-assistant", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                baseUrl: musicAssistant.baseUrl,
-                                token: musicAssistant.token,
-                                command: "player_queues/all",
-                                args: {},
-                              }),
-                            });
-                            const data = await res.json();
-                            const err = (data as { error?: string })?.error;
-                            if (err) return;
-                            const list = Array.isArray(data) ? data : (data as { result?: { queue_id: string; display_name?: string }[] })?.result ?? [];
-                            setMaPlayersList(list);
-                          } finally {
-                            setMaPlayersLoading(false);
-                          }
-                        }}
-                        disabled={maPlayersLoading || !musicAssistant.baseUrl}
-                        className="rounded-lg border border-gray-200 dark:border-white/20 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-50"
-                      >
-                        {maPlayersLoading ? t("settings.musicAssistant.testing") : t("settings.musicAssistant.loadSpeakers")}
-                      </button>
-                      {maPlayersList.length > 0 && (
-                        <div className="flex flex-col gap-1.5 max-h-48 overflow-auto">
-                          {maPlayersList.map((p) => {
-                            const allowed = musicAssistant.allowedSpeakerIds;
-                            const isChecked = allowed.length === 0 || allowed.includes(p.queue_id);
-                            return (
-                              <label key={p.queue_id} className="flex items-center gap-2 cursor-pointer text-sm">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => {
-                                    const ids = allowed.length === 0 ? maPlayersList.map((x) => x.queue_id) : [...allowed];
-                                    if (isChecked) {
-                                      musicAssistant.setAllowedSpeakerIds(ids.filter((id) => id !== p.queue_id));
-                                    } else {
-                                      musicAssistant.setAllowedSpeakerIds([...ids, p.queue_id]);
-                                    }
-                                  }}
-                                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                                />
-                                <span className="text-gray-700 dark:text-gray-200">{(p.display_name as string) ?? p.queue_id}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Tab: Sections */}
-              {maTab === "sections" && (
-                <div className="space-y-4">
-                  <div className="space-y-3 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                      {t("settings.musicAssistant.musicPageSections")}
-                    </p>
-                    <div className="flex flex-col gap-2">
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={musicAssistant.sectionFeaturedPlaylistEnabled}
-                          onChange={(e) => musicAssistant.setSectionFeaturedPlaylistEnabled(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowFeaturedPlaylist")}</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={musicAssistant.sectionRadioEnabled}
-                          onChange={(e) => musicAssistant.setSectionRadioEnabled(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRadio")}</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={musicAssistant.sectionRecentlyPlayedEnabled}
-                          onChange={(e) => musicAssistant.setSectionRecentlyPlayedEnabled(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionShowRecentlyPlayed")}</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3 space-y-3">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                      {t("settings.musicAssistant.heroSlider")}
-                    </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {t("settings.musicAssistant.heroSliderHint")}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-4">
-                      <label className="flex items-center gap-2">
-                        <span className="text-sm text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.heroSliderInterval")}</span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={120}
-                          value={Math.round(musicAssistant.heroSliderIntervalMs / 1000)}
-                          onChange={(e) => {
-                            const v = parseInt(e.target.value, 10);
-                            if (Number.isFinite(v) && v >= 1) musicAssistant.setHeroSliderIntervalMs(v * 1000);
-                          }}
-                          className="w-16 rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1 text-sm text-gray-900 dark:text-gray-200"
-                        />
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{t("settings.musicAssistant.heroSliderIntervalUnit")}</span>
-                      </label>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{t("settings.musicAssistant.heroSliderSources")}</span>
-                      {HERO_SLIDER_SOURCE_IDS.map((id) => {
-                        const labelKey =
-                          id === "featuredPlaylist"
-                            ? "settings.musicAssistant.heroSliderSourceFeatured"
-                            : id === "recentlyPlayed"
-                              ? "settings.musicAssistant.heroSliderSourceRecent"
-                              : "settings.musicAssistant.heroSliderSourceLibrary";
-                        return (
-                          <label key={id} className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={musicAssistant.heroSliderSources.includes(id)}
-                              onChange={() => musicAssistant.toggleHeroSliderSource(id)}
-                              className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                            />
-                            <span className="text-sm text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3 space-y-2">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t("settings.musicAssistant.sectionOrderHint")}</p>
-                    <div className="flex flex-col gap-1">
-                      {musicAssistant.sectionOrder.map((id, i) => {
-                        const labelKey =
-                          id === "featuredPlaylist"
-                            ? "music.recentlyAdded"
-                            : id === "radio"
-                              ? "music.radioStations"
-                              : "music.recentlyPlayed";
-                        return (
-                          <div key={id} className="flex items-center gap-2 rounded bg-white dark:bg-white/5 px-2 py-1.5">
-                            <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (i <= 0) return;
-                                const next = [...musicAssistant.sectionOrder];
-                                [next[i - 1], next[i]] = [next[i], next[i - 1]];
-                                musicAssistant.setSectionOrder(next);
-                              }}
-                              disabled={i === 0}
-                              className="p-1 rounded text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
-                              aria-label="Move up"
-                            >
-                              <ChevronUp className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (i >= musicAssistant.sectionOrder.length - 1) return;
-                                const next = [...musicAssistant.sectionOrder];
-                                [next[i], next[i + 1]] = [next[i + 1], next[i]];
-                                musicAssistant.setSectionOrder(next);
-                              }}
-                              disabled={i === musicAssistant.sectionOrder.length - 1}
-                              className="p-1 rounded text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 disabled:pointer-events-none"
-                              aria-label="Move down"
-                            >
-                              <ChevronDown className="h-4 w-4" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab: Playlists */}
-              {maTab === "playlists" && (
-                <div className="space-y-3 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                    {t("settings.musicAssistant.featuredPlaylistIds")}
-                  </label>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {t("settings.musicAssistant.featuredPlaylistIdsHint")}
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    {musicAssistant.featuredPlaylistIds.map((playlistId, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <span className="flex-1 rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-200">
-                          {playlistId}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => musicAssistant.removeFeaturedPlaylistId(i)}
-                          className="p-1.5 rounded text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
-                          aria-label={t("settings.musicAssistant.removePlaylist")}
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newPlaylistId}
-                        onChange={(e) => setNewPlaylistId(e.target.value)}
-                        placeholder="30"
-                        className="flex-1 rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-200"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            const val = newPlaylistId.trim();
-                            if (val) {
-                              musicAssistant.addFeaturedPlaylistId(val);
-                              setNewPlaylistId("");
-                            }
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const val = newPlaylistId.trim();
-                          if (val) {
-                            musicAssistant.addFeaturedPlaylistId(val);
-                            setNewPlaylistId("");
-                          }
-                        }}
-                        className="px-3 py-1.5 rounded border border-gray-300 dark:border-white/20 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10"
-                      >
-                        {t("settings.musicAssistant.addPlaylist")}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab: Connection */}
-              {maTab === "connection" && (
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="ma-baseUrl" className="block text-sm font-medium mb-1">
-                      {t("settings.musicAssistant.baseUrl")}
-                    </label>
-                    <input
-                      id="ma-baseUrl"
-                      type="url"
-                      value={musicAssistant.baseUrl}
-                      onChange={(e) => musicAssistant.setBaseUrl(e.target.value)}
-                      placeholder={t("settings.musicAssistant.baseUrlPlaceholder")}
-                      className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="ma-token" className="block text-sm font-medium mb-1">
-                      {t("settings.musicAssistant.token")}
-                    </label>
-                    <input
-                      id="ma-token"
-                      type="password"
-                      value={musicAssistant.token}
-                      onChange={(e) => musicAssistant.setToken(e.target.value)}
-                      placeholder={t("settings.musicAssistant.tokenPlaceholder")}
-                      className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
-                    />
-                  </div>
-                  {maTestResult && (
-                    <div
-                      className={`rounded-lg p-3 text-sm ${
-                        maTestResult === "ok"
-                          ? "bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-200"
-                          : "bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200"
-                      }`}
-                    >
-                      {maTestResult === "ok" ? t("settings.musicAssistant.testSuccess") : maTestResult}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setMaTestResult(null);
-                      setMaTesting(true);
-                      try {
-                        const res = await fetch("/api/music-assistant", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            baseUrl: musicAssistant.baseUrl,
-                            token: musicAssistant.token,
-                            command: "music/recently_played_items",
-                            args: { limit: 1 },
-                          }),
-                        });
-                        const data = await res.json();
-                        setMaTestResult(res.ok && !data?.error ? "ok" : (data?.error ?? t("settings.musicAssistant.testError")));
-                      } catch (e) {
-                        setMaTestResult(e instanceof Error ? e.message : t("settings.musicAssistant.testError"));
-                      } finally {
-                        setMaTesting(false);
-                      }
-                    }}
-                    disabled={maTesting}
-                    className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
-                  >
-                    {maTesting ? t("settings.musicAssistant.testing") : t("settings.musicAssistant.test")}
-                  </button>
-                </div>
-              )}
-            </GlassCard>
-          )}
+          {section === "music-assistant" && <MusicAssistantSettings />}
 
           {section === "entities" && (
             <GlassCard>
@@ -1808,6 +1259,7 @@ export default function SettingsPage() {
               </div>
             </GlassCard>
           )}
+          </SettingsPanel>
         </div>
       </div>
       {appVersion && (
