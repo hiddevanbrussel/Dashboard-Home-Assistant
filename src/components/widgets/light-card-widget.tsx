@@ -142,7 +142,8 @@ export function LightCardWidget({
   size = "md",
   className,
   onMoreClick,
-}: LightControlProps & { className?: string; onMoreClick?: () => void }) {
+  editMode = false,
+}: LightControlProps & { className?: string; onMoreClick?: () => void; editMode?: boolean }) {
   const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
@@ -315,6 +316,40 @@ export function LightCardWidget({
   // Color temp position: 0 (minK/warm) → 1 (maxK/cool)
   const tempFraction = Math.max(0, Math.min(1, (sliderColorTemp - minTempK) / (maxTempK - minTempK)));
 
+  const iconBadge = (
+    <div
+      className={cn(
+        "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200",
+        isOn ? "bg-[#FFD41D] shadow-sm dark:bg-[#FFD41D] dark:shadow-sm" : "bg-white/30 dark:bg-white/10 shadow-inner"
+      )}
+      aria-hidden
+    >
+      <IconComponent
+        className={cn(
+          "h-5 w-5 shrink-0 transition-colors",
+          isOn ? "text-white drop-shadow dark:text-white dark:drop-shadow" : "text-gray-500 dark:text-gray-400"
+        )}
+        strokeWidth={1.5}
+        fill={isOn ? "currentColor" : "none"}
+        aria-hidden
+      />
+    </div>
+  );
+
+  const titleBlock = (
+    <div className="flex min-w-0 flex-1 flex-col justify-center">
+      <p className="truncate text-xs font-medium text-inherit">{displayName}</p>
+      <div className="flex items-center gap-1.5">
+        {showColorDot && (
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10" style={colorDotStyle} aria-hidden />
+        )}
+        <p className={cn("truncate text-xs", isOn ? "text-gray-600 dark:text-gray-600" : "text-gray-500 dark:text-gray-400")}>
+          {statusText}
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <div
       className={cn(
@@ -327,55 +362,42 @@ export function LightCardWidget({
       )}
     >
       <div className="flex items-center gap-4 px-4 py-3">
-        <button
-          type="button"
-          onClick={handleToggle}
-          className="flex shrink-0 items-center justify-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 disabled:opacity-70 h-10 w-10"
-          aria-label={isOn ? t("lightCard.turnOff") : t("lightCard.turnOn")}
-        >
-          <div
-            className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200",
-              isOn ? "bg-[#FFD41D] shadow-sm dark:bg-[#FFD41D] dark:shadow-sm" : "bg-white/30 dark:bg-white/10 shadow-inner"
-            )}
-            aria-hidden
+        {editMode ? (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center">{iconBadge}</div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleToggle}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 disabled:opacity-70"
+            aria-label={isOn ? t("lightCard.turnOff") : t("lightCard.turnOn")}
           >
-            <IconComponent
-              className={cn(
-                "h-5 w-5 shrink-0 transition-colors",
-                isOn ? "text-white drop-shadow dark:text-white dark:drop-shadow" : "text-gray-500 dark:text-gray-400"
-              )}
-              strokeWidth={1.5}
-              fill={isOn ? "currentColor" : "none"}
-              aria-hidden
-            />
-          </div>
-        </button>
+            {iconBadge}
+          </button>
+        )}
 
-        <button
-          type="button"
-          onClick={openModal}
-          className="flex flex-1 min-w-0 items-center gap-2 text-left rounded-xl cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 -mx-1 px-1 py-0.5 transition-colors"
-          aria-label={t("lightCard.control")}
-        >
-          <div className="min-w-0 flex-1 flex flex-col justify-center">
-            <p className="text-xs font-medium truncate text-inherit">{displayName}</p>
-            <div className="flex items-center gap-1.5">
-              {showColorDot && (
-                <span className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10" style={colorDotStyle} aria-hidden />
-              )}
-              <p className={cn("text-xs truncate", isOn ? "text-gray-600 dark:text-gray-600" : "text-gray-500 dark:text-gray-400")}>
-                {statusText}
-              </p>
-            </div>
-          </div>
-        </button>
+        {editMode ? (
+          <div className="flex min-w-0 flex-1 items-center gap-2 text-left">{titleBlock}</div>
+        ) : (
+          <button
+            type="button"
+            onClick={openModal}
+            className="-mx-1 flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-xl px-1 py-0.5 text-left transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 active:bg-black/10 dark:hover:bg-white/5 dark:active:bg-white/10"
+            aria-label={t("lightCard.control")}
+          >
+            {titleBlock}
+          </button>
+        )}
 
         {onMoreClick && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-            className="p-1.5 rounded-lg shrink-0 text-inherit opacity-70 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            data-no-drag
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoreClick();
+            }}
+            className="shrink-0 rounded-lg p-1.5 text-inherit opacity-70 transition-colors hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/5"
             aria-label={t("lightCard.options")}
           >
             <MoreVertical className="h-5 w-5" aria-hidden />
