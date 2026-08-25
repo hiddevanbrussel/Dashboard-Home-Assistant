@@ -2,8 +2,21 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
-import { GlassCard } from "@/components/layout/glass-card";
-import { SettingsPanel } from "@/components/settings/settings-panel";
+import {
+  SettingsAlert,
+  SettingsCheckRow,
+  SettingsField,
+  SettingsGroup,
+  SettingsInput,
+  SettingsPanel,
+  SettingsPillTabs,
+  SettingsPreview,
+  SettingsPrimaryButton,
+  SettingsSecondaryButton,
+  SettingsSelect,
+  SettingsToggle,
+  SettingsUploadButton,
+} from "@/components/settings/settings-panel";
 import { MusicAssistantSettings } from "@/components/settings/music-assistant-settings";
 import { useThemeStore } from "@/stores/theme-store";
 import { useLanguageStore } from "@/stores/language-store";
@@ -56,6 +69,7 @@ function getDomain(entityId: string): string {
 }
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const [baseUrl, setBaseUrl] = useState("http://homeassistant.local:8123");
   const [token, setToken] = useState("");
   const [testing, setTesting] = useState(false);
@@ -208,9 +222,9 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (data.ok) setTestResult({ ok: true });
-      else setTestResult({ ok: false, error: data.error ?? "Connection failed" });
+      else setTestResult({ ok: false, error: data.error ?? t("settings.connection.test") });
     } catch (err) {
-      setTestResult({ ok: false, error: err instanceof Error ? err.message : "Request failed" });
+      setTestResult({ ok: false, error: err instanceof Error ? err.message : t("settings.connection.test") });
     } finally {
       setTesting(false);
     }
@@ -218,7 +232,7 @@ export default function SettingsPage() {
 
   async function handleSave() {
     if (!token.trim()) {
-      setTestResult({ ok: false, error: "Please enter a token." });
+      setTestResult({ ok: false, error: t("settings.connection.pleaseEnterToken") });
       return;
     }
     setSaveMessage(null);
@@ -235,11 +249,11 @@ export default function SettingsPage() {
         setTestResult({ ok: true });
       } else {
         setSaveMessage("error");
-        setTestResult({ ok: false, error: data.error ?? "Save failed" });
+        setTestResult({ ok: false, error: data.error ?? t("settings.connection.save") });
       }
     } catch {
       setSaveMessage("error");
-      setTestResult({ ok: false, error: "Save failed" });
+      setTestResult({ ok: false, error: t("settings.connection.save") });
     } finally {
       setSaving(false);
     }
@@ -366,7 +380,6 @@ export default function SettingsPage() {
   }
 
   const { mode, setMode, resolved } = useThemeStore();
-  const { t } = useTranslation();
   const { language, setLanguage } = useLanguageStore();
 
   const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: LucideIcon }[] }[] = [
@@ -436,7 +449,7 @@ export default function SettingsPage() {
                             className={cn(
                               "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
                               section === id
-                                ? "bg-[#4D2FB2] text-white shadow-sm"
+                                ? "bg-accent-purple text-gray-900 shadow-sm"
                                 : "text-gray-700 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-white/10"
                             )}
                           >
@@ -455,64 +468,42 @@ export default function SettingsPage() {
 
         <div className="min-w-0 flex-1">
           <SettingsPanel
+            key={section}
             icon={currentMeta.icon}
             title={t(SECTION_KEYS[section])}
             description={t(currentMeta.descriptionKey)}
           >
           {section === "appearance" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">{t("settings.appearance")}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                {t("settings.theme.description")}
-              </p>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={mode === "auto"}
-                  onChange={(e) => setMode(e.target.checked ? "auto" : resolved)}
-                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {t("settings.theme.auto")}
-                </span>
-              </label>
-            </GlassCard>
+            <SettingsToggle
+              checked={mode === "auto"}
+              onChange={(value) => setMode(value ? "auto" : resolved)}
+              label={t("settings.theme.auto")}
+            />
           )}
 
           {section === "language" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">{t("settings.language")}</h3>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.language.setting")}</label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as "en" | "nl")}
-                  className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200"
-                >
-                  <option value="en">{t("settings.language.en")}</option>
-                  <option value="nl">{t("settings.language.nl")}</option>
-                </select>
-              </div>
-            </GlassCard>
+            <SettingsField label={t("settings.language.setting")}>
+              <SettingsPillTabs
+                items={[
+                  { id: "en", label: t("settings.language.en") },
+                  { id: "nl", label: t("settings.language.nl") },
+                ]}
+                value={language}
+                onChange={(id) => setLanguage(id)}
+              />
+            </SettingsField>
           )}
 
           {section === "screensaver" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">{t("settings.screensaver")}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {t("settings.screensaver.description")}
-              </p>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.delay")}</label>
-                <select
+            <>
+              <SettingsField label={t("settings.screensaver.delay")}>
+                <SettingsSelect
                   value={screensaverDelaySeconds}
                   onChange={(e) => {
                     const v = parseInt(e.target.value, 10);
                     setScreensaverDelaySecondsState(v);
                     setScreensaverDelaySeconds(v);
                   }}
-                  className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200"
                 >
                   <option value={0}>{t("settings.screensaver.off")}</option>
                   <option value={10}>{t("settings.screensaver.10s")}</option>
@@ -523,35 +514,32 @@ export default function SettingsPage() {
                   <option value={600}>{t("settings.screensaver.10m")}</option>
                   <option value={900}>{t("settings.screensaver.15m")}</option>
                   <option value={1800}>{t("settings.screensaver.30m")}</option>
-                </select>
-              </div>
+                </SettingsSelect>
+              </SettingsField>
 
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.clockFormat")}</label>
-                <select
+              <SettingsField label={t("settings.screensaver.clockFormat")}>
+                <SettingsPillTabs
+                  items={[
+                    { id: "24", label: t("settings.screensaver.24h") },
+                    { id: "12", label: t("settings.screensaver.12h") },
+                  ]}
                   value={screensaverClock24h ? "24" : "12"}
-                  onChange={(e) => {
-                    const v = e.target.value === "24";
+                  onChange={(id) => {
+                    const v = id === "24";
                     setScreensaverClock24hState(v);
                     setScreensaverClock24h(v);
                   }}
-                  className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200"
-                >
-                  <option value="24">{t("settings.screensaver.24h")}</option>
-                  <option value="12">{t("settings.screensaver.12h")}</option>
-                </select>
-              </div>
+                />
+              </SettingsField>
 
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.weather")}</label>
-                <select
+              <SettingsField label={t("settings.screensaver.weather")} hint={t("settings.screensaver.weatherHint")}>
+                <SettingsSelect
                   value={screensaverWeatherEntityId ?? ""}
                   onChange={(e) => {
                     const v = e.target.value || null;
                     setScreensaverWeatherEntityIdState(v);
                     setScreensaverWeatherEntityId(v);
                   }}
-                  className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200 w-full"
                 >
                   <option value="">{t("settings.screensaver.weatherDefault")}</option>
                   {entities
@@ -564,22 +552,17 @@ export default function SettingsPage() {
                         </option>
                       );
                     })}
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t("settings.screensaver.weatherHint")}
-                </p>
-              </div>
+                </SettingsSelect>
+              </SettingsField>
 
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.football")}</label>
-                <select
+              <SettingsField label={t("settings.screensaver.football")} hint={t("settings.screensaver.footballHint")}>
+                <SettingsSelect
                   value={screensaverFootballEntityId ?? ""}
                   onChange={(e) => {
                     const v = e.target.value || null;
                     setScreensaverFootballEntityIdState(v);
                     setScreensaverFootballEntityId(v);
                   }}
-                  className="rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200 w-full"
                 >
                   <option value="">{t("settings.screensaver.footballOff")}</option>
                   {entities
@@ -592,35 +575,32 @@ export default function SettingsPage() {
                         </option>
                       );
                     })}
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t("settings.screensaver.footballHint")}
-                </p>
-              </div>
+                </SettingsSelect>
+              </SettingsField>
 
-              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.pexels")}</label>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  {t("settings.screensaver.pexelsHint")}{" "}
-                  <a href="https://www.pexels.com/api" target="_blank" rel="noopener noreferrer" className="text-[#4D2FB2] hover:underline">pexels.com/api</a>.
-                </p>
-                <div className="flex items-center gap-3 mb-2">
-                  <input
-                    type="checkbox"
-                    id="pexels-enabled"
-                    checked={screensaverPexelsEnabled}
-                    onChange={(e) => {
-                      const v = e.target.checked;
-                      setScreensaverPexelsEnabledState(v);
-                      setScreensaverPexelsEnabled(v);
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                  />
-                  <label htmlFor="pexels-enabled" className="text-sm font-medium text-gray-700 dark:text-gray-200">{t("settings.screensaver.pexelsUse")}</label>
-                </div>
+              <SettingsGroup
+                title={t("settings.screensaver.pexels")}
+                description={
+                  <>
+                    {t("settings.screensaver.pexelsHint")}{" "}
+                    <a href="https://www.pexels.com/api" target="_blank" rel="noopener noreferrer" className="text-accent-purple hover:underline">
+                      pexels.com/api
+                    </a>
+                    .
+                  </>
+                }
+              >
+                <SettingsToggle
+                  checked={screensaverPexelsEnabled}
+                  onChange={(v) => {
+                    setScreensaverPexelsEnabledState(v);
+                    setScreensaverPexelsEnabled(v);
+                  }}
+                  label={t("settings.screensaver.pexelsUse")}
+                />
                 {screensaverPexelsEnabled && (
-                  <div className="space-y-2 mt-3">
-                    <input
+                  <div className="space-y-3">
+                    <SettingsInput
                       type="password"
                       value={screensaverPexelsApiKey}
                       onChange={(e) => {
@@ -629,10 +609,9 @@ export default function SettingsPage() {
                         setScreensaverPexelsApiKey(v);
                       }}
                       placeholder={t("settings.screensaver.pexelsKey")}
-                      className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
                       autoComplete="off"
                     />
-                    <input
+                    <SettingsInput
                       type="text"
                       value={screensaverPexelsQuery}
                       onChange={(e) => {
@@ -641,67 +620,49 @@ export default function SettingsPage() {
                         setScreensaverPexelsQuery(v);
                       }}
                       placeholder={t("settings.screensaver.pexelsQuery")}
-                      className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
                     />
-                    <div className="flex items-center gap-1 p-0.5 rounded-lg bg-black/5 dark:bg-white/5 w-fit">
-                      {(["photo", "video"] as const).map((type) => (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() => {
-                            setScreensaverPexelsTypeState(type);
-                            setScreensaverPexelsType(type);
-                          }}
-                          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                            screensaverPexelsType === type
-                              ? "bg-white dark:bg-white/15 text-gray-900 dark:text-white shadow-sm"
-                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                          }`}
-                        >
-                          {t(type === "photo" ? "settings.screensaver.pexelsTypePhoto" : "settings.screensaver.pexelsTypeVideo")}
-                        </button>
-                      ))}
-                    </div>
+                    <SettingsPillTabs
+                      items={[
+                        { id: "photo", label: t("settings.screensaver.pexelsTypePhoto") },
+                        { id: "video", label: t("settings.screensaver.pexelsTypeVideo") },
+                      ]}
+                      value={screensaverPexelsType}
+                      onChange={(type) => {
+                        setScreensaverPexelsTypeState(type);
+                        setScreensaverPexelsType(type);
+                      }}
+                    />
                   </div>
                 )}
-              </div>
+              </SettingsGroup>
 
-              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{t("settings.screensaver.bgImage")}</label>
-                {screensaverBackground && (
-                  <div
-                    className="mb-3 h-24 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                    style={{ backgroundImage: `url(${screensaverBackground})` }}
-                  />
-                )}
-                <div className="flex flex-wrap gap-2 items-center">
-                  <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
-                    {uploadingScreensaverBg ? t("settings.screensaver.uploading") : t("settings.screensaver.uploadImage")}
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      className="sr-only"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        setUploadingScreensaverBg(true);
-                        try {
-                          const formData = new FormData();
-                          formData.append("file", file);
-                          const res = await fetch("/api/upload", { method: "POST", body: formData });
-                          const json = await res.json();
-                          if (json?.url) {
-                            setScreensaverBackgroundState(json.url);
-                            setScreensaverBackgroundImage(json.url);
-                          }
-                        } finally {
-                          setUploadingScreensaverBg(false);
+              <SettingsGroup title={t("settings.screensaver.bgImage")}>
+                {screensaverBackground ? <SettingsPreview url={screensaverBackground} /> : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  <SettingsUploadButton
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    disabled={uploadingScreensaverBg}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingScreensaverBg(true);
+                      try {
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        const res = await fetch("/api/upload", { method: "POST", body: formData });
+                        const json = await res.json();
+                        if (json?.url) {
+                          setScreensaverBackgroundState(json.url);
+                          setScreensaverBackgroundImage(json.url);
                         }
-                      }}
-                      disabled={uploadingScreensaverBg}
-                    />
-                  </label>
-                  <input
+                      } finally {
+                        setUploadingScreensaverBg(false);
+                      }
+                    }}
+                  >
+                    {uploadingScreensaverBg ? t("settings.screensaver.uploading") : t("settings.screensaver.uploadImage")}
+                  </SettingsUploadButton>
+                  <SettingsInput
                     type="url"
                     value={screensaverBackground}
                     onChange={(e) => {
@@ -710,163 +671,100 @@ export default function SettingsPage() {
                       setScreensaverBackgroundImage(v);
                     }}
                     placeholder={t("settings.screensaver.bgUrlPlaceholder")}
-                    className="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500"
+                    className="min-w-[200px] flex-1"
                   />
-                  {screensaverBackground && (
-                    <button
-                      type="button"
+                  {screensaverBackground ? (
+                    <SettingsSecondaryButton
                       onClick={() => {
                         setScreensaverBackgroundState("");
                         setScreensaverBackgroundImage("");
                       }}
-                      className="rounded-full border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300"
                     >
                       {t("settings.screensaver.remove")}
-                    </button>
-                  )}
+                    </SettingsSecondaryButton>
+                  ) : null}
                 </div>
-              </div>
-            </GlassCard>
+              </SettingsGroup>
+            </>
           )}
 
           {section === "page-background" && (
             dashboardId ? (
-              <div className="space-y-6">
-                <GlassCard>
-                  <h3 className="text-card-title font-medium mb-3">{t("settings.pageBackground")}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    {t("settings.pageBackground.description")}
-                  </p>
-                </GlassCard>
-                <GlassCard>
-                  <h3 className="text-card-title font-medium mb-3">{t("settings.pageBackground.light")}</h3>
-                  {pageBackgroundLight && (
-                    <div
-                      className="mb-3 h-32 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                      style={{ backgroundImage: `url(${pageBackgroundLight})` }}
-                    />
-                  )}
-                  <div className="flex gap-2">
-                    <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
+              <div className="space-y-4">
+                <SettingsGroup title={t("settings.pageBackground.light")}>
+                  {pageBackgroundLight ? <SettingsPreview url={pageBackgroundLight} /> : null}
+                  <div className="flex flex-wrap gap-2">
+                    <SettingsUploadButton
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      disabled={uploadingBgLight}
+                      onChange={handlePageBackgroundLightUpload}
+                    >
                       {uploadingBgLight ? t("settings.screensaver.uploading") : t("settings.pageBackground.upload")}
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif"
-                        className="sr-only"
-                        onChange={handlePageBackgroundLightUpload}
-                        disabled={uploadingBgLight}
-                      />
-                    </label>
-                    {pageBackgroundLight && (
-                      <button
-                        type="button"
-                        onClick={handlePageBackgroundLightRemove}
-                        className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
-                      >
+                    </SettingsUploadButton>
+                    {pageBackgroundLight ? (
+                      <SettingsSecondaryButton onClick={handlePageBackgroundLightRemove}>
                         {t("settings.pageBackground.remove")}
-                      </button>
-                    )}
+                      </SettingsSecondaryButton>
+                    ) : null}
                   </div>
-                </GlassCard>
-                <GlassCard>
-                  <h3 className="text-card-title font-medium mb-3">{t("settings.pageBackground.dark")}</h3>
-                  {pageBackgroundDark && (
-                    <div
-                      className="mb-3 h-32 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                      style={{ backgroundImage: `url(${pageBackgroundDark})` }}
-                    />
-                  )}
-                  <div className="flex gap-2">
-                    <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
+                </SettingsGroup>
+                <SettingsGroup title={t("settings.pageBackground.dark")}>
+                  {pageBackgroundDark ? <SettingsPreview url={pageBackgroundDark} /> : null}
+                  <div className="flex flex-wrap gap-2">
+                    <SettingsUploadButton
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      disabled={uploadingBgDark}
+                      onChange={handlePageBackgroundDarkUpload}
+                    >
                       {uploadingBgDark ? t("settings.screensaver.uploading") : t("settings.pageBackground.upload")}
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif"
-                        className="sr-only"
-                        onChange={handlePageBackgroundDarkUpload}
-                        disabled={uploadingBgDark}
-                      />
-                    </label>
-                    {pageBackgroundDark && (
-                      <button
-                        type="button"
-                        onClick={handlePageBackgroundDarkRemove}
-                        className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
-                      >
+                    </SettingsUploadButton>
+                    {pageBackgroundDark ? (
+                      <SettingsSecondaryButton onClick={handlePageBackgroundDarkRemove}>
                         {t("settings.pageBackground.remove")}
-                      </button>
-                    )}
+                      </SettingsSecondaryButton>
+                    ) : null}
                   </div>
-                </GlassCard>
-                <GlassCard>
-                  <h3 className="text-card-title font-medium mb-3">{t("settings.pageBackground.fallback")}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    {t("settings.pageBackground.fallbackDesc")}
-                  </p>
-                  {pageBackground && (
-                    <div
-                      className="mb-3 h-32 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                      style={{ backgroundImage: `url(${pageBackground})` }}
-                    />
-                  )}
-                  <div className="flex gap-2">
-                    <label className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 cursor-pointer hover:opacity-90">
+                </SettingsGroup>
+                <SettingsGroup title={t("settings.pageBackground.fallback")} description={t("settings.pageBackground.fallbackDesc")}>
+                  {pageBackground ? <SettingsPreview url={pageBackground} /> : null}
+                  <div className="flex flex-wrap gap-2">
+                    <SettingsUploadButton
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      disabled={uploadingBg}
+                      onChange={handlePageBackgroundUpload}
+                    >
                       {uploadingBg ? t("settings.screensaver.uploading") : t("settings.pageBackground.upload")}
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif"
-                        className="sr-only"
-                        onChange={handlePageBackgroundUpload}
-                        disabled={uploadingBg}
-                      />
-                    </label>
-                    {pageBackground && (
-                      <button
-                        type="button"
-                        onClick={handlePageBackgroundRemove}
-                        className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
-                      >
+                    </SettingsUploadButton>
+                    {pageBackground ? (
+                      <SettingsSecondaryButton onClick={handlePageBackgroundRemove}>
                         {t("settings.pageBackground.remove")}
-                      </button>
-                    )}
+                      </SettingsSecondaryButton>
+                    ) : null}
                   </div>
-                </GlassCard>
+                </SettingsGroup>
               </div>
             ) : (
-              <GlassCard>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("settings.pageBackground.needDashboard")}
-                </p>
-              </GlassCard>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t("settings.pageBackground.needDashboard")}</p>
             )
           )}
 
           {section === "dashboard" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">{t("settings.dashboard")}</h3>
-              <label className="flex items-center gap-3 cursor-pointer mb-4">
-                <input
-                  type="checkbox"
-                  checked={editModeAllowed}
-                  onChange={(e) => {
-                    const v = e.target.checked;
-                    setEditModeAllowedState(v);
-                    setEditModeAllowed(v);
-                  }}
-                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {t("settings.dashboard.editModeAllowed")}
-                </span>
-              </label>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {t("settings.dashboard.editModeAllowedHint")}
-              </p>
-              <div className="mb-2">
-                <label htmlFor="edit-mode-passcode" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("settings.dashboard.editModePasscode")}
-                </label>
-                <input
+            <>
+              <SettingsToggle
+                checked={editModeAllowed}
+                onChange={(v) => {
+                  setEditModeAllowedState(v);
+                  setEditModeAllowed(v);
+                }}
+                label={t("settings.dashboard.editModeAllowed")}
+                description={t("settings.dashboard.editModeAllowedHint")}
+              />
+              <SettingsField
+                label={t("settings.dashboard.editModePasscode")}
+                hint={t("settings.dashboard.editModePasscodeHint")}
+                htmlFor="edit-mode-passcode"
+              >
+                <SettingsInput
                   id="edit-mode-passcode"
                   type="password"
                   value={editModePasscode}
@@ -876,110 +774,65 @@ export default function SettingsPage() {
                     setEditModePasscode(v);
                   }}
                   placeholder={t("settings.dashboard.editModePasscodePlaceholder")}
-                  className="w-full max-w-xs rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
                   autoComplete="off"
+                  className="max-w-xs"
                 />
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {t("settings.dashboard.editModePasscodeHint")}
-              </p>
-            </GlassCard>
+              </SettingsField>
+            </>
           )}
 
           {section === "connection" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">{t("settings.connection")}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {t("settings.connection.description")}
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="ha-baseUrl" className="block text-sm font-medium mb-1">
-                    {t("settings.connection.baseUrl")}
-                  </label>
-                  <input
-                    id="ha-baseUrl"
-                    type="url"
-                    value={baseUrl}
-                    onChange={(e) => setBaseUrl(e.target.value)}
-                    placeholder="http://homeassistant.local:8123"
-                    className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="ha-token" className="block text-sm font-medium mb-1">
-                    Long-Lived Access Token
-                  </label>
-                  <input
-                    id="ha-token"
-                    type="password"
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
-                    placeholder="Token (hidden when a connection is already saved)"
-                    className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
-                  />
-                </div>
-                {testResult && (
-                  <div
-                    className={`rounded-lg p-3 text-sm ${
-                      testResult.ok
-                        ? "bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-200"
-                        : "bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200"
-                    }`}
-                  >
-                    {testResult.ok ? "Connection successful." : testResult.error}
-                  </div>
-                )}
-                {saveMessage === "success" && (
-                  <p className="text-sm text-green-600 dark:text-green-400">Connection saved.</p>
-                )}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleTest}
-                    disabled={testing}
-                    className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
-                  >
-                    {testing ? "Testing…" : "Test connection"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={saving || !token.trim()}
-                    className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium disabled:opacity-50"
-                  >
-                    {saving ? "Saving…" : "Save"}
-                  </button>
-                </div>
+            <div className="space-y-4">
+              <SettingsField label={t("settings.connection.baseUrl")} htmlFor="ha-baseUrl">
+                <SettingsInput
+                  id="ha-baseUrl"
+                  type="url"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  placeholder="http://homeassistant.local:8123"
+                />
+              </SettingsField>
+              <SettingsField label={t("settings.connection.token")} htmlFor="ha-token">
+                <SettingsInput
+                  id="ha-token"
+                  type="password"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  placeholder={t("settings.connection.tokenPlaceholder")}
+                  autoComplete="off"
+                />
+              </SettingsField>
+              {testResult ? (
+                <SettingsAlert tone={testResult.ok ? "ok" : "error"}>
+                  {testResult.ok ? t("settings.connection.success") : testResult.error}
+                </SettingsAlert>
+              ) : null}
+              {saveMessage === "success" ? (
+                <p className="text-sm text-emerald-700 dark:text-emerald-300">{t("settings.connection.saved")}</p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <SettingsPrimaryButton onClick={handleTest} disabled={testing}>
+                  {testing ? t("settings.connection.testing") : t("settings.connection.test")}
+                </SettingsPrimaryButton>
+                <SettingsSecondaryButton onClick={handleSave} disabled={saving || !token.trim()}>
+                  {saving ? t("settings.connection.saving") : t("settings.connection.save")}
+                </SettingsSecondaryButton>
               </div>
-            </GlassCard>
+            </div>
           )}
 
           {section === "tasks" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">{t("settings.tasks")}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {t("settings.tasks.description")}
-              </p>
-              <label className="flex items-center gap-3 cursor-pointer mb-5">
-                <input
-                  type="checkbox"
-                  checked={choresStore.enabled}
-                  onChange={(e) => choresStore.setEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-600"
-                />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {t("settings.tasks.enabled")}
-                </span>
-              </label>
-              {choresStore.enabled && (
-                <div className="border-t border-gray-200 dark:border-white/10 pt-4 flex flex-col gap-4">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {t("settings.tasks.eveningHour")}
-                    </label>
+            <>
+              <SettingsToggle
+                checked={choresStore.enabled}
+                onChange={choresStore.setEnabled}
+                label={t("settings.tasks.enabled")}
+              />
+              {choresStore.enabled ? (
+                <SettingsGroup>
+                  <SettingsField label={t("settings.tasks.eveningHour")}>
                     <div className="flex items-center gap-2">
-                      <input
+                      <SettingsInput
                         type="number"
                         min={0}
                         max={23}
@@ -989,48 +842,33 @@ export default function SettingsPage() {
                           setEveningHourState(v);
                           setEveningHour(v);
                         }}
-                        className="w-20 rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                        className="w-24"
                       />
                       <span className="text-sm text-gray-500 dark:text-gray-400">{t("settings.tasks.eveningHourSuffix")}</span>
                     </div>
-                  </div>
+                  </SettingsField>
                   <a
                     href="/family"
-                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 self-start"
+                    className="inline-flex items-center gap-2 self-start rounded-full bg-accent-purple px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:opacity-90"
                   >
                     <ListTodo className="h-4 w-4" />
                     {t("settings.tasks.manage")}
                   </a>
-                </div>
-              )}
-            </GlassCard>
+                </SettingsGroup>
+              ) : null}
+            </>
           )}
 
           {section === "calendar" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">{t("settings.calendar")}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {t("settings.calendar.description")}
-              </p>
-              <label className="flex items-center gap-3 cursor-pointer mb-5">
-                <input
-                  type="checkbox"
-                  checked={calendarStore.enabled}
-                  onChange={(e) => calendarStore.setEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-600"
-                />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {t("settings.calendar.enabled")}
-                </span>
-              </label>
-
-              <div className="border-t border-gray-200 dark:border-white/10 pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                    {t("settings.calendar.entities")}
-                  </p>
-                  <button
-                    type="button"
+            <>
+              <SettingsToggle
+                checked={calendarStore.enabled}
+                onChange={calendarStore.setEnabled}
+                label={t("settings.calendar.enabled")}
+              />
+              <SettingsGroup title={t("settings.calendar.entities")}>
+                <div className="flex items-center justify-end gap-2">
+                  <SettingsSecondaryButton
                     onClick={async () => {
                       setCalendarEntitiesLoading(true);
                       try {
@@ -1046,218 +884,157 @@ export default function SettingsPage() {
                       }
                     }}
                     disabled={calendarEntitiesLoading}
-                    className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs"
                   >
-                    {calendarEntitiesLoading && (
-                      <div className="h-3 w-3 animate-spin rounded-full border-2 border-indigo-400/40 border-t-indigo-600" />
-                    )}
+                    {calendarEntitiesLoading ? (
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-accent-purple/40 border-t-accent-purple" />
+                    ) : null}
                     {t("settings.calendar.loadEntities")}
-                  </button>
+                  </SettingsSecondaryButton>
                 </div>
-
                 {calendarEntities.length === 0 && !calendarEntitiesLoading ? (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {t("settings.calendar.noEntities")}
-                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t("settings.calendar.noEntities")}</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {calendarEntities.map((entity) => {
                       const checked = calendarStore.calendarEntityIds.includes(entity.entity_id);
                       const friendlyName = (entity.attributes as Record<string, unknown>)?.friendly_name as string | undefined;
                       return (
-                        <label key={entity.entity_id} className="flex items-center gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              const ids = calendarStore.calendarEntityIds;
-                              calendarStore.setCalendarEntityIds(
-                                e.target.checked
-                                  ? [...ids, entity.entity_id]
-                                  : ids.filter((id) => id !== entity.entity_id)
-                              );
-                            }}
-                            className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-indigo-600 focus:ring-indigo-600"
-                          />
-                          <div className="min-w-0">
-                            <p className="text-sm text-gray-700 dark:text-gray-200 truncate">
-                              {friendlyName ?? entity.entity_id}
-                            </p>
-                            {friendlyName && (
-                              <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
-                                {entity.entity_id}
-                              </p>
-                            )}
-                          </div>
-                        </label>
+                        <SettingsCheckRow
+                          key={entity.entity_id}
+                          checked={checked}
+                          onChange={(value) => {
+                            const ids = calendarStore.calendarEntityIds;
+                            calendarStore.setCalendarEntityIds(
+                              value
+                                ? [...ids, entity.entity_id]
+                                : ids.filter((id) => id !== entity.entity_id)
+                            );
+                          }}
+                          label={friendlyName ?? entity.entity_id}
+                          description={friendlyName ? entity.entity_id : undefined}
+                        />
                       );
                     })}
                   </div>
                 )}
-              </div>
-            </GlassCard>
+              </SettingsGroup>
+            </>
           )}
 
           {section === "music-assistant" && <MusicAssistantSettings />}
 
           {section === "entities" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-2">Entities by Type</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                Entities from your Home Assistant instance. Select a type in the tabs.
-                Save a connection first to load this list.
-              </p>
+            <>
               {entitiesLoading ? (
-                <p className="text-sm text-gray-500">Loading entities…</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t("settings.entities.loading")}</p>
               ) : entitiesError ? (
-                <p className="text-sm text-amber-600 dark:text-amber-400">{entitiesError}</p>
+                <SettingsAlert tone="error">{entitiesError}</SettingsAlert>
               ) : byDomain.length === 0 ? (
-                <p className="text-sm text-gray-500">No entities or no connection saved yet.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t("settings.entities.empty")}</p>
               ) : (
-                <>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div
-                      className="flex flex-wrap gap-1 rounded-full bg-gray-100 dark:bg-white/10 p-1"
-                      role="tablist"
-                    >
-                      {byDomain.map(([domain, list]) => (
-                        <button
-                          key={domain}
-                          type="button"
-                          role="tab"
-                          aria-selected={domain === activeDomain}
-                          onClick={() => setSelectedDomain(domain)}
-                          className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                            domain === activeDomain
-                              ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
-                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                          }`}
-                        >
-                          {t(DOMAIN_KEYS[domain as keyof typeof DOMAIN_KEYS])}
-                          <span className="ml-1 opacity-75">({list.length})</span>
-                        </button>
-                      ))}
-                    </div>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <SettingsPillTabs
+                      items={byDomain.map(([domain, list]) => ({
+                        id: domain,
+                        label: `${t(DOMAIN_KEYS[domain])} (${list.length})`,
+                      }))}
+                      value={(activeDomain ?? byDomain[0][0]) as (typeof ENTITY_DOMAINS)[number]}
+                      onChange={(id) => setSelectedDomain(id)}
+                    />
                     <button
                       type="button"
                       onClick={loadEntities}
-                      className="text-sm text-accent-purple dark:text-accent-green hover:underline shrink-0"
+                      className="shrink-0 text-sm font-medium text-accent-purple hover:underline"
                     >
-                      Vernieuwen
+                      {t("settings.entities.refresh")}
                     </button>
                   </div>
-                  <div
-                    role="tabpanel"
-                    className="rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3 max-h-[50vh] overflow-auto"
-                  >
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 sticky top-0 bg-gray-50/95 dark:bg-white/5 py-1">
-                      {activeDomain ? t(DOMAIN_KEYS[activeDomain as keyof typeof DOMAIN_KEYS]) : ""}
-                    </h4>
-                    <ul className="space-y-1">
-                      {activeList.map((e) => {
-                        const name =
-                          (e.attributes?.friendly_name as string) ?? e.entity_id;
-                        return (
-                          <li
-                            key={e.entity_id}
-                            className="flex items-center justify-between gap-2 text-sm py-2 px-2 rounded hover:bg-gray-100 dark:hover:bg-white/10"
-                          >
-                            <span className="truncate font-medium" title={e.entity_id}>
-                              {name}
-                            </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
-                              {e.state}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                </>
-              )}
-            </GlassCard>
-          )}
-          {section === "news" && (
-            <GlassCard>
-              <h3 className="text-card-title font-medium mb-3">{t("news.settings.title")}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {t("news.settings.description")}
-              </p>
-              <div className="space-y-4">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newsStore.enabled}
-                    onChange={(e) => newsStore.setEnabled(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-accent-yellow dark:text-accent-green focus:ring-accent-yellow dark:focus:ring-accent-green"
-                  />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                    {t("news.settings.enabled")}
-                  </span>
-                </label>
-
-                <div className="space-y-2 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 p-3">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                    {t("news.settings.feeds")}
-                  </p>
-                  {newsFeedDraft.length > 0 && (
-                    <ul className="space-y-1.5">
-                      {newsFeedDraft.map((url, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <span className="flex-1 min-w-0 text-xs text-gray-700 dark:text-gray-300 truncate font-mono bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded px-2 py-1.5">
-                            {url}
+                  <div role="tabpanel" className="max-h-[50vh] space-y-1 overflow-auto rounded-2xl bg-black/[0.03] p-2 dark:bg-white/5">
+                    {activeList.map((e) => {
+                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
+                      return (
+                        <div
+                          key={e.entity_id}
+                          className="flex items-center justify-between gap-2 rounded-2xl px-3 py-2 text-sm hover:bg-white/50 dark:hover:bg-white/10"
+                        >
+                          <span className="truncate font-medium text-gray-800 dark:text-gray-100" title={e.entity_id}>
+                            {name}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const next = newsFeedDraft.filter((_, j) => j !== i);
-                              setNewsFeedDraft(next);
-                              newsStore.setRssUrls(next);
-                            }}
-                            className="shrink-0 p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                            aria-label={t("news.settings.removeFeed")}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {newsFeedDraft.length < 10 && (
-                    <div className="flex gap-2">
-                      <input
-                        type="url"
-                        value={newsFeedInput}
-                        onChange={(e) => setNewsFeedInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && newsFeedInput.trim()) {
-                            const next = [...newsFeedDraft, newsFeedInput.trim()];
+                          <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">{e.state}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {section === "news" && (
+            <>
+              <SettingsToggle
+                checked={newsStore.enabled}
+                onChange={newsStore.setEnabled}
+                label={t("news.settings.enabled")}
+              />
+              <SettingsGroup title={t("news.settings.feeds")}>
+                {newsFeedDraft.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {newsFeedDraft.map((url, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="min-w-0 flex-1 truncate rounded-2xl bg-white/70 px-3 py-2 font-mono text-xs text-gray-700 dark:bg-white/5 dark:text-gray-300">
+                          {url}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = newsFeedDraft.filter((_, j) => j !== i);
                             setNewsFeedDraft(next);
                             newsStore.setRssUrls(next);
-                            setNewsFeedInput("");
-                          }
-                        }}
-                        placeholder={t("news.settings.feedPlaceholder")}
-                        className="flex-1 min-w-0 rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-1.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!newsFeedInput.trim()) return;
+                          }}
+                          className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-500"
+                          aria-label={t("news.settings.removeFeed")}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {newsFeedDraft.length < 10 ? (
+                  <div className="flex gap-2">
+                    <SettingsInput
+                      type="url"
+                      value={newsFeedInput}
+                      onChange={(e) => setNewsFeedInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && newsFeedInput.trim()) {
                           const next = [...newsFeedDraft, newsFeedInput.trim()];
                           setNewsFeedDraft(next);
                           newsStore.setRssUrls(next);
                           setNewsFeedInput("");
-                        }}
-                        className="shrink-0 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-3 py-1.5 text-sm font-medium hover:opacity-80 transition-opacity"
-                      >
-                        {t("news.settings.addFeed")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </GlassCard>
+                        }
+                      }}
+                      placeholder={t("news.settings.feedPlaceholder")}
+                    />
+                    <SettingsPrimaryButton
+                      onClick={() => {
+                        if (!newsFeedInput.trim()) return;
+                        const next = [...newsFeedDraft, newsFeedInput.trim()];
+                        setNewsFeedDraft(next);
+                        newsStore.setRssUrls(next);
+                        setNewsFeedInput("");
+                      }}
+                      className="shrink-0"
+                    >
+                      {t("news.settings.addFeed")}
+                    </SettingsPrimaryButton>
+                  </div>
+                ) : null}
+              </SettingsGroup>
+            </>
           )}
           </SettingsPanel>
         </div>
