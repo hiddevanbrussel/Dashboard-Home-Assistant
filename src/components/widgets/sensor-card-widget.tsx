@@ -5,6 +5,7 @@ import type { SensorCardProps, SensorCondition } from "./widget-types";
 import { cn, capitalizeFirst } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { CARD_ICONS } from "./card-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 const CONDITION_COLORS: Record<string, string> = {
   red: "border-red-400/50 dark:border-red-400/40 bg-red-500/25 dark:bg-red-900/30",
@@ -27,7 +28,7 @@ export const SENSOR_CONDITION_OPERATOR_LABELS: Record<string, string> = {
   gte: "≥",
   lt: "<",
   lte: "≤",
-  contains: "bevat",
+  contains: "contains",
 };
 
 function matchCondition(state: string | undefined, conditions: SensorCondition[] | undefined): string | null {
@@ -96,6 +97,7 @@ export function SensorCardWidget({
   className,
   onMoreClick,
 }: SensorCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const state = entity?.state as string | undefined;
   const unit = (entity?.attributes?.unit_of_measurement as string) ?? "";
@@ -131,7 +133,7 @@ export function SensorCardWidget({
             type="button"
             onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
             className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-            aria-label="Opties"
+            aria-label={t("common.options")}
           >
             <MoreVertical className="h-5 w-5" aria-hidden />
           </button>

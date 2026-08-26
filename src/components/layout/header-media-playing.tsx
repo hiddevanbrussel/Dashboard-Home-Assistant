@@ -8,6 +8,7 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { MediaCardWidget } from "@/components/widgets/media-card-widget";
+import { useTranslation } from "@/hooks/use-translation";
 
 function getMaArtistTitle(cur: { name?: string; artists?: unknown; artist?: string; stream_title?: string } | undefined): { artist: string; title: string } {
   if (!cur) return { artist: "", title: "" };
@@ -36,6 +37,7 @@ function getMaArtistTitle(cur: { name?: string; artists?: unknown; artist?: stri
 }
 
 export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } = {}) {
+  const { t } = useTranslation();
   const states = useEntityStateStore((s) => s.states);
   const setStates = useEntityStateStore((s) => s.setStates);
   const queueState = useMusicPlayerStore((s) => s.queueState);
@@ -137,7 +139,7 @@ export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } 
         "flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4D2FB2]",
         contentLight ? "text-white/90 hover:bg-white/10" : "text-accent-purple dark:text-accent-purple hover:bg-gray-100 dark:hover:bg-white/10"
       )}
-        aria-label="Media afspelen"
+        aria-label={t("roomCard.mediaPlaying")}
         aria-expanded={open}
       >
         <Disc3

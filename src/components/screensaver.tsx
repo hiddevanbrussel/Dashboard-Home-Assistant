@@ -20,6 +20,7 @@ import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { getItemImageUrl, getImageSrc } from "@/lib/music-item-image";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
@@ -165,6 +166,7 @@ function parseStateAsScore(state: string | undefined): [string, string] | null {
 }
 
 function ScreensaverFootball() {
+  const { t } = useTranslation();
   const entityId = getScreensaverFootballEntityId();
   const entity = useEntityStateStore((s) => (entityId ? s.getState(entityId) : null));
   if (!entityId || !entity) return null;
@@ -194,11 +196,11 @@ function ScreensaverFootball() {
 
   const statusLabel =
     status === "PRE"
-      ? "Nog niet begonnen"
+      ? t("screensaver.match.pre")
       : status === "IN"
-        ? "Bezig"
+        ? t("screensaver.match.in")
         : status === "POST"
-          ? "Afgelopen"
+          ? t("screensaver.match.post")
           : status
             ? status
             : null;
@@ -370,6 +372,7 @@ function ScreensaverClock() {
 const DISMISS_BLOCK_MS = 400;
 
 function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
+  const { t } = useTranslation();
   const customBg = getScreensaverBackgroundImage();
   const pexelsEnabled = getScreensaverPexelsEnabled();
   const pexelsQuery = getScreensaverPexelsQuery();
@@ -538,7 +541,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
     <div
       role="button"
       tabIndex={0}
-      aria-label="Screensaver aanraken om te sluiten"
+      aria-label={t("screensaver.dismiss")}
       className={cn(
         "fixed inset-0 z-[9999] flex flex-col justify-end p-8 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
         dismissing && "opacity-0 pointer-events-auto"

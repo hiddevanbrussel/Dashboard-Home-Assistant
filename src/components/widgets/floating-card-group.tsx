@@ -7,6 +7,7 @@ import { MoreVertical } from "lucide-react";
 import { PillCardWidget } from "./pill-card-widget";
 import type { SensorCondition } from "./widget-types";
 import type { WidgetConfig } from "@/stores/onboarding-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingCardGroupPosition.";
 const DEFAULT_OFFSET = 24;
@@ -79,6 +80,7 @@ export function FloatingCardGroup({
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
+  const { t } = useTranslation();
   const alignment = (group.alignment as keyof typeof JUSTIFY_MAP) ?? "start";
   const children = group.children ?? [];
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, group.id) ?? { left: 0, bottom: DEFAULT_OFFSET });
@@ -241,8 +243,8 @@ export function FloatingCardGroup({
           data-group-opts
           onClick={(e) => { e.stopPropagation(); onEdit(); }}
           className="absolute right-2 top-2 z-10 p-1.5 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-          aria-label="Opties"
-          title="Bewerken of verwijderen"
+          aria-label={t("common.options")}
+          title={t("common.editOrRemove")}
         >
           <MoreVertical className="h-5 w-5" aria-hidden />
         </button>
@@ -273,7 +275,7 @@ export function FloatingCardGroup({
             onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
             className="text-sm text-white/60 hover:text-white/90 border border-dashed border-white/30 rounded-lg px-3 py-2"
           >
-            + Kaart toevoegen
+            {"+ " + t("editPanel.addCard")}
           </button>
         )}
       </div>

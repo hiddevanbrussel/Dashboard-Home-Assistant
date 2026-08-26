@@ -27,7 +27,7 @@ const BASE_ICON_CIRCLE = 100;
 const BASE_ICON_SIZE = 40;
 
 export function RoomCardWidget({
-  title = "Kamer",
+  title,
   entity_id,
   icon = "Home",
   light_entity_id,
@@ -156,7 +156,7 @@ export function RoomCardWidget({
                 "text-base font-medium truncate w-full drop-shadow-sm",
                 background_image ? "text-white" : embedded ? "text-gray-900 dark:text-white/90" : "text-gray-900 dark:text-white"
               )}>
-                {title}
+                {title || t("cardType.room_card")}
               </p>
               <p className={cn(
                 "text-xs truncate w-full mt-0.5",

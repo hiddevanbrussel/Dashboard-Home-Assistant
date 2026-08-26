@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CARD_ICONS } from "./card-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 const CARD_WIDTH = 240;
 const CARD_HEIGHT = 200;
@@ -31,6 +32,7 @@ export function RoomPreviewCard({
   onEdit,
   onDelete,
 }: RoomPreviewCardProps) {
+  const { t } = useTranslation();
   const IconComponent = icon && icon in CARD_ICONS ? CARD_ICONS[icon] : CARD_ICONS.Home;
 
   return (
@@ -72,7 +74,7 @@ export function RoomPreviewCard({
                 onEdit(e);
               }}
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 dark:bg-black/50 text-gray-600 hover:text-[#4D2FB2] dark:text-gray-300 dark:hover:text-[#4D2FB2] shadow"
-              aria-label="Bewerken"
+              aria-label={t("editPanel.edit")}
             >
               <Pencil className="h-4 w-4" />
             </button>
@@ -86,7 +88,7 @@ export function RoomPreviewCard({
                 onDelete(e);
               }}
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 dark:bg-black/50 text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 shadow"
-              aria-label="Verwijderen"
+              aria-label={t("editPanel.remove")}
             >
               <Trash2 className="h-4 w-4" />
             </button>

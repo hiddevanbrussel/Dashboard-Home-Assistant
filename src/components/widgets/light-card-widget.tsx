@@ -136,7 +136,7 @@ function ColorWheelPicker({
 
 /** HomeKit-style: horizontale kaart met icoon links, titel + status rechts. Duidelijke aan/uit-weergave. */
 export function LightCardWidget({
-  title = "Lamp",
+  title,
   entity_id,
   icon: iconKey = "lightbulb",
   size = "md",
@@ -285,7 +285,7 @@ export function LightCardWidget({
 
   // ── Derived display values ─────────────────────────────────────────────────
   const IconComponent = LIGHT_ICON_MAP[iconKey] ?? Lightbulb;
-  const displayName = title;
+  const displayName = title || t("cardType.light_card");
 
   const statusText = isOn
     ? colorMode === "color_temp" && colorTempK

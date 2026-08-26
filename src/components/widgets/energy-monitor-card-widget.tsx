@@ -5,6 +5,7 @@ import type { EnergyMonitorCardProps, ImageCondition } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/theme-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 function matchImageCondition(
   state: string | undefined,
@@ -54,7 +55,7 @@ function matchImageCondition(
 }
 
 export function EnergyMonitorCardWidget({
-  title = "Afbeeldingskaart",
+  title,
   entity_id,
   background_image,
   background_image_dark,
@@ -64,6 +65,7 @@ export function EnergyMonitorCardWidget({
   className,
   onMoreClick,
 }: EnergyMonitorCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const { resolved: theme } = useThemeStore();
   const isDark = theme === "dark";
   const entity = useEntityStateStore((s) => (entity_id ? s.states[entity_id] : undefined));
@@ -124,7 +126,7 @@ export function EnergyMonitorCardWidget({
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/30 text-amber-400">
                 <Sun className="h-5 w-5" aria-hidden />
               </div>
-              <p className="font-semibold text-white/95">{title}</p>
+              <p className="font-semibold text-white/95">{title || t("cardType.energy_monitor_card")}</p>
             </div>
             {onMoreClick && (
               <button
@@ -134,7 +136,7 @@ export function EnergyMonitorCardWidget({
                   onMoreClick();
                 }}
                 className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                aria-label="Opties"
+                aria-label={t("common.options")}
               >
                 <MoreVertical className="h-5 w-5" aria-hidden />
               </button>
@@ -149,7 +151,7 @@ export function EnergyMonitorCardWidget({
                 onMoreClick();
               }}
               className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Opties"
+              aria-label={t("common.options")}
             >
               <MoreVertical className="h-5 w-5" aria-hidden />
             </button>

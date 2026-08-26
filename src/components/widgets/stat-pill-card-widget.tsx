@@ -5,6 +5,7 @@ import type { StatPillCardProps, SensorCondition } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { CARD_ICONS } from "./card-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 const CONDITION_COLORS: Record<string, string> = {
   red: "border-red-400/50 dark:border-red-400/40 bg-red-500/25 dark:bg-red-900/30",
@@ -121,6 +122,7 @@ export function StatPillCardWidget({
   className,
   onMoreClick,
 }: StatPillCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.states[entity_id]);
   useEntityStateStore((s) => s.updatedAt);
   const state = entity?.state as string | undefined;
@@ -171,7 +173,7 @@ export function StatPillCardWidget({
             onMoreClick();
           }}
           className="absolute right-2 bottom-2 p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-900/5 dark:hover:bg-white/10 transition-colors"
-          aria-label="Opties"
+          aria-label={t("common.options")}
         >
           <MoreVertical className="h-4 w-4" aria-hidden />
         </button>

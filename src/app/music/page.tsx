@@ -501,7 +501,7 @@ export default function MusicPage() {
       }
       setAddToPlaylistTrack(null);
     } catch (e) {
-      setAddToPlaylistError(e instanceof Error ? e.message : "Kon nummer niet toevoegen.");
+      setAddToPlaylistError(e instanceof Error ? e.message : t("music.addTrackFailed"));
     } finally {
       setAddToPlaylistPending(null);
     }
@@ -514,7 +514,7 @@ export default function MusicPage() {
 
     fetch("/api/ha/entities")
       .then((r) => {
-        if (!r.ok) throw new Error("Kon geen verbinding maken met Home Assistant.");
+        if (!r.ok) throw new Error(t("music.haConnectionError"));
         return r.json();
       })
       .then((data: HaEntity[]) => {
@@ -715,7 +715,7 @@ export default function MusicPage() {
         setAlbumTracks(list);
       })
       .catch((e) => {
-        const msg = e instanceof Error ? e.message : "Kon albumnummers niet laden.";
+        const msg = e instanceof Error ? e.message : t("music.albumTracksLoadFailed");
         setError(msg);
         setAlbumTracks([]);
       })
@@ -760,7 +760,7 @@ export default function MusicPage() {
         setAlbumTracks(list);
       })
       .catch((e) => {
-        setError(e instanceof Error ? e.message : "Kon albumnummers niet laden.");
+        setError(e instanceof Error ? e.message : t("music.albumTracksLoadFailed"));
         setAlbumTracks([]);
       })
       .finally(() => setAlbumTracksLoading(false));
@@ -1177,14 +1177,14 @@ export default function MusicPage() {
           setSearchResults(items);
         }
       );
-    tryAttempt(0, 0).catch((err) => setError(err instanceof Error ? err.message : "Zoeken mislukt.")).finally(() => setSearching(false));
+    tryAttempt(0, 0).catch((err) => setError(err instanceof Error ? err.message : t("music.searchFailed"))).finally(() => setSearching(false));
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, searchQuery, searchFilter]);
 
   const playOnPlayer = useCallback(
     (uri: string) => {
       const trimmedUri = typeof uri === "string" ? uri.trim() : "";
       if (!trimmedUri || !selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) {
-        if (!trimmedUri) setError("Geen nummer om af te spelen (ontbrekende gegevens).");
+        if (!trimmedUri) setError(t("music.noTrackToPlay"));
         return;
       }
       setPlayPending(trimmedUri);
@@ -1213,7 +1213,7 @@ export default function MusicPage() {
       }
       p.then(() => fetchRecentItems())
         .catch((err) => {
-          const msg = err instanceof Error ? err.message : "Afspelen mislukt.";
+          const msg = err instanceof Error ? err.message : t("music.playFailed");
           setError(msg);
         })
         .finally(() => setPlayPending(null));

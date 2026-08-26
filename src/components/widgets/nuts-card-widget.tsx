@@ -6,6 +6,7 @@ import { CARD_ICONS } from "./card-icons";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useEnergyStore } from "@/stores/energy-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 function useEntityValue(entityId: string) {
   const entity = useEntityStateStore((s) => s.getState(entityId));
@@ -37,6 +38,7 @@ export function NutsCardWidget({
   className,
   onMoreClick,
 }: NutsCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const dailyData = useEntityValue(entity_id);
   const currentData = useEntityValue(current_entity_id ?? "");
   const energyConfig = useEnergyStore();
@@ -87,7 +89,7 @@ export function NutsCardWidget({
               onMoreClick();
             }}
             className="p-1.5 rounded-lg shrink-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
-            aria-label="Opties"
+            aria-label={t("common.options")}
           >
             <MoreVertical className="h-5 w-5" aria-hidden />
           </button>
@@ -98,7 +100,7 @@ export function NutsCardWidget({
         </p>
         {gasExpense != null && (
           <p className="text-xs text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
-            Kosten vandaag: €{gasExpense.toFixed(2)}
+            {t("powerUsage.costToday")}: €{gasExpense.toFixed(2)}
           </p>
         )}
       </div>

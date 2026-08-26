@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { MoreVertical, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/use-translation";
 
 function formatKwh(val: number): string {
   if (val >= 1000) return `${(val / 1000).toFixed(1)}MWh`;
@@ -10,7 +11,7 @@ function formatKwh(val: number): string {
 }
 
 export function DeviceConsumptionCardWidget({
-  title = "Verbruik per apparaat",
+  title,
   device_entity_ids = [],
   device_names,
   className,
@@ -22,6 +23,7 @@ export function DeviceConsumptionCardWidget({
   className?: string;
   onMoreClick?: () => void;
 }) {
+  const { t } = useTranslation();
   const { data: entitiesData } = useQuery({
     queryKey: ["ha-state"],
     queryFn: async () => {
@@ -72,13 +74,13 @@ export function DeviceConsumptionCardWidget({
       )}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-        <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
+        <p className="font-semibold text-gray-900 dark:text-white">{title || t("cardType.device_consumption_card")}</p>
         {onMoreClick && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
             className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
-            aria-label="Opties"
+            aria-label={t("common.options")}
           >
             <MoreVertical className="h-5 w-5" />
           </button>
@@ -88,13 +90,13 @@ export function DeviceConsumptionCardWidget({
       <div className="p-4">
         {device_entity_ids.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
-            Configureer apparaten in de bewerkmodus.
+            {t("deviceConsumption.configurePrompt")}
           </p>
         ) : isLoading ? (
-          <div className="flex items-center justify-center py-8 text-gray-400">Laden…</div>
+          <div className="flex items-center justify-center py-8 text-gray-400">{t("editPanel.loading")}</div>
         ) : deviceConsumption.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
-            Geen data beschikbaar
+            {t("deviceConsumption.noData")}
           </p>
         ) : (
           <div className="space-y-2 max-h-64 overflow-auto">

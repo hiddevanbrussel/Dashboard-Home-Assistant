@@ -41,15 +41,15 @@ type Layout = LayoutItem[];
 
 const ADDABLE_WIDGET_TYPES = ["text_card", "solar_card", "power_usage_card", "device_consumption_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "nuts_card"] as const;
 
-const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { type: "text_card", label: "Tekst", Icon: Type },
-  { type: "solar_card", label: "Zonnepanelen", Icon: Sun },
-  { type: "power_usage_card", label: "Stroomverbruik", Icon: Zap },
-  { type: "device_consumption_card", label: "Verbruik per apparaat", Icon: Zap },
-  { type: "energy_monitor_card", label: "Afbeeldingskaart", Icon: ImageIcon },
-  { type: "stat_pill_card", label: "Stat pill", Icon: CircleDot },
-  { type: "sensor_card", label: "Sensor", Icon: Gauge },
-  { type: "nuts_card", label: "Nuts (Gas/Water)", Icon: Fuel },
+const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { type: "text_card", Icon: Type },
+  { type: "solar_card", Icon: Sun },
+  { type: "power_usage_card", Icon: Zap },
+  { type: "device_consumption_card", Icon: Zap },
+  { type: "energy_monitor_card", Icon: ImageIcon },
+  { type: "stat_pill_card", Icon: CircleDot },
+  { type: "sensor_card", Icon: Gauge },
+  { type: "nuts_card", Icon: Fuel },
 ];
 
 const WIDGET_TYPE_DOMAIN: Record<string, string> = {
@@ -429,7 +429,7 @@ export default function EnergyPage() {
     const newWidget: WidgetConfig = {
       id: newId,
       type,
-      title: titleOverride ?? (type === "text_card" ? t("editPanel.newText") : type === "device_consumption_card" ? "Verbruik per apparaat" : type.replace(/_/g, " ")),
+      title: titleOverride ?? (type === "text_card" ? t("editPanel.newText") : t(`cardType.${type}`)),
       entity_id: entityId,
       ...(type === "text_card" && { textMode: "title" as const, show_icon: false, icon: "Type" }),
       ...(type === "device_consumption_card" && { device_entity_ids: entityId ? [entityId] : [], device_names: {} }),
@@ -829,7 +829,7 @@ export default function EnergyPage() {
         {widgets.filter((w) => w.type === "solar_card").map((w) => (
           <FloatingSolarCard
             key={w.id}
-            title={w.title ?? "Zonnepanelen"}
+            title={w.title ?? t("cardType.solar_card")}
             entity_id={w.entity_id}
             yield_entity_id_today={(w as { yield_entity_id_today?: string }).yield_entity_id_today}
             yield_entity_id_month={(w as { yield_entity_id_month?: string }).yield_entity_id_month}
@@ -844,7 +844,7 @@ export default function EnergyPage() {
         {widgets.filter((w) => w.type === "power_usage_card").map((w, i) => (
           <FloatingPowerUsageCard
             key={w.id}
-            title={w.title ?? "Stroomverbruik"}
+            title={w.title ?? t("cardType.power_usage_card")}
             entity_id={w.entity_id}
             cost_per_kwh={w.cost_per_kwh}
             width={w.width}
@@ -865,7 +865,7 @@ export default function EnergyPage() {
               .map((w) => (
                 <FloatingDeviceConsumptionCard
                   key={w.id}
-                  title={w.title ?? "Verbruik per apparaat"}
+                  title={w.title ?? t("cardType.device_consumption_card")}
                   device_entity_ids={w.device_entity_ids}
                   device_names={w.device_names}
                   width={w.width}
@@ -883,7 +883,7 @@ export default function EnergyPage() {
         {widgets.filter((w) => w.type === "energy_monitor_card").map((w) => (
           <FloatingEnergyMonitorCard
             key={w.id}
-            title={w.title ?? "Afbeeldingskaart"}
+            title={w.title ?? t("cardType.energy_monitor_card")}
             entity_id={w.entity_id}
             background_image={w.background_image}
             background_image_dark={w.background_image_dark}
@@ -998,28 +998,28 @@ export default function EnergyPage() {
               <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4">
                 {addTileStep === "type" ? (
                   <div className="grid grid-cols-3 gap-2">
-                    {ADDABLE_WIDGET_TILES.map(({ type, label, Icon }) => (
+                    {ADDABLE_WIDGET_TILES.map(({ type, Icon }) => (
                       <button
                         key={type}
                         type="button"
                         onClick={() => {
                           if (type === "text_card") { handleAddTile("text_card", "", t("editPanel.newText")); setAddTileOpen(false); return; }
-                          if (type === "energy_monitor_card") { const newId = handleAddTile("energy_monitor_card", "", "Afbeeldingskaart"); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
-                          if (type === "power_usage_card") { const newId = handleAddTile("power_usage_card", "", "Stroomverbruik"); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
-                          if (type === "device_consumption_card") { const newId = handleAddTile("device_consumption_card", "", "Verbruik per apparaat"); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
+                          if (type === "energy_monitor_card") { const newId = handleAddTile("energy_monitor_card", "", t("cardType.energy_monitor_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
+                          if (type === "power_usage_card") { const newId = handleAddTile("power_usage_card", "", t("cardType.power_usage_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
+                          if (type === "device_consumption_card") { const newId = handleAddTile("device_consumption_card", "", t("cardType.device_consumption_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           setAddTileSelectedType(type);
                           setAddTileStep("entity");
                         }}
                         className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4D2FB2]/40 hover:bg-[#4D2FB2]/5 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4D2FB2]/50 dark:hover:bg-[#4D2FB2]/10"
                       >
                         <Icon className="h-7 w-7 text-gray-600 dark:text-gray-400" />
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight">{label}</span>
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight">{t(`cardType.${type}`)}</span>
                       </button>
                     ))}
                   </div>
                 ) : (
                   <div className="flex flex-col">
-                    <button type="button" onClick={() => { setAddTileStep("type"); setAddTileSelectedType(null); setAddTileEntitySearch(""); }} className="mb-3 self-start px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg">← Terug</button>
+                    <button type="button" onClick={() => { setAddTileStep("type"); setAddTileSelectedType(null); setAddTileEntitySearch(""); }} className="mb-3 self-start px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg">← {t("editPanel.back")}</button>
                     <input type="text" value={addTileEntitySearch} onChange={(e) => setAddTileEntitySearch(e.target.value)} placeholder={t("editPanel.addTileSearchPlaceholder")} className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500" autoFocus />
                     <div className="overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
                       {(() => {
@@ -1029,7 +1029,7 @@ export default function EnergyPage() {
                         return filtered.map((e) => {
                           const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
                           return (
-                            <button key={e.entity_id} type="button" onClick={() => { if (!addTileSelectedType) return; const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "power_usage_card" ? (name || "Stroomverbruik") : addTileSelectedType === "device_consumption_card" ? (name || "Verbruik per apparaat") : addTileSelectedType === "stat_pill_card" ? (name || "Stat") : undefined; const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride); if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card" || addTileSelectedType === "device_consumption_card") && newId) setEditingWidgetId(newId); setAddTileOpen(false); setAddTileStep("type"); setAddTileSelectedType(null); setAddTileEntitySearch(""); }} className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate" title={e.entity_id}>{name}</button>
+                            <button key={e.entity_id} type="button" onClick={() => { if (!addTileSelectedType) return; const titleOverride = addTileSelectedType === "nuts_card" ? (name || t("cardType.nuts_card.gasFallback")) : addTileSelectedType === "energy_monitor_card" ? (name || t("cardType.energy_monitor_card")) : addTileSelectedType === "power_usage_card" ? (name || t("cardType.power_usage_card")) : addTileSelectedType === "device_consumption_card" ? (name || t("cardType.device_consumption_card")) : addTileSelectedType === "stat_pill_card" ? (name || t("cardType.stat_pill_card")) : undefined; const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride); if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card" || addTileSelectedType === "device_consumption_card") && newId) setEditingWidgetId(newId); setAddTileOpen(false); setAddTileStep("type"); setAddTileSelectedType(null); setAddTileEntitySearch(""); }} className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate" title={e.entity_id}>{name}</button>
                           );
                         });
                       })()}

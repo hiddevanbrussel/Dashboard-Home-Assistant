@@ -5,6 +5,7 @@ import { MoreVertical, Zap, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useEnergyStore } from "@/stores/energy-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 function formatKwh(val: number): string {
   if (val >= 1000) return `${(val / 1000).toFixed(1)}MWh`;
@@ -24,7 +25,7 @@ function stateToKwh(state: string | undefined, unit: string | undefined): number
 }
 
 export function PowerUsageCardWidget({
-  title = "Stroomverbruik",
+  title,
   entity_id,
   cost_per_kwh,
   className,
@@ -36,6 +37,7 @@ export function PowerUsageCardWidget({
   className?: string;
   onMoreClick?: () => void;
 }) {
+  const { t } = useTranslation();
   const allEntityIds = [entity_id].filter(Boolean);
   const entityState = useEntityStateStore((s) => (entity_id ? s.getState(entity_id) : undefined));
   const currentStateKwh = entity_id ? stateToKwh(entityState?.state, entityState?.attributes?.unit_of_measurement as string) : null;
@@ -95,13 +97,13 @@ export function PowerUsageCardWidget({
       {/* Kaart 1: Stroomverbruik (bar chart) */}
       <div className={cn("flex flex-col", cardBase)}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-          <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
+          <p className="font-semibold text-gray-900 dark:text-white">{title || t("cardType.power_usage_card")}</p>
           {onMoreClick && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
               className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
-              aria-label="Opties"
+              aria-label={t("common.options")}
             >
               <MoreVertical className="h-5 w-5" />
             </button>
@@ -109,18 +111,19 @@ export function PowerUsageCardWidget({
         </div>
         {allEntityIds.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6 px-4">
-            Configureer een totaal-verbruik entity in de bewerkmodus.
+            {t("powerUsage.configurePrompt")}
           </p>
         ) : (
           <div className="p-4">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Dagelijks verbruik</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t("powerUsage.dailyUsage")}</p>
             {isLoading ? (
-              <div className="h-24 flex items-center justify-center text-gray-400">Laden…</div>
+              <div className="h-24 flex items-center justify-center text-gray-400">{t("editPanel.loading")}</div>
             ) : (
               <div className="flex items-end justify-between gap-1 h-24">
                 {mainData.map((d, i) => {
                   const date = new Date(d.date);
-                  const dayName = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"][date.getDay()];
+                  const dayKeys = ["sun","mon","tue","wed","thu","fri","sat"] as const;
+                  const dayName = t(`powerUsage.dayShort.${dayKeys[date.getDay()]}`);
                   const isLast = i === mainData.length - 1;
                   const frac = maxVal > 0 ? d.consumption / maxVal : 0;
                   return (
@@ -147,7 +150,7 @@ export function PowerUsageCardWidget({
         )}
       </div>
 
-      {/* Kaart 2 & 3: Verbruik vandaag en Kosten vandaag (zelfde hoogte als zonnepanelen-kaarten) */}
+      {/* Kaart 2 & 3: {t("powerUsage.usageToday")} en {t("powerUsage.costToday")} (zelfde hoogte als zonnepanelen-kaarten) */}
       {allEntityIds.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
           <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
@@ -158,7 +161,7 @@ export function PowerUsageCardWidget({
               <p className="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-400">
                 {formatKwh(selectedDayConsumption)}
               </p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Verbruik vandaag</p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80">{t("powerUsage.usageToday")}</p>
             </div>
           </div>
           <div className={cn("relative p-4 min-h-[88px] flex flex-col justify-center", cardBase)}>
@@ -169,7 +172,7 @@ export function PowerUsageCardWidget({
               <p className="text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                 {expense != null ? `€${expense.toFixed(2)}` : "—"}
               </p>
-              <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Kosten vandaag</p>
+              <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80">{t("powerUsage.costToday")}</p>
             </div>
           </div>
         </div>
