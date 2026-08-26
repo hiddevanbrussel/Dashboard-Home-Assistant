@@ -41,11 +41,13 @@ function savePosition(scope: string | undefined, widgetId: string, p: Position) 
   }
 }
 
-function defaultPosition(_widgetIndex: number): Position {
+function defaultPosition(widgetIndex: number): Position {
   if (typeof window === "undefined") return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET };
   const maxLeft = window.innerWidth - CARD_WIDTH;
   const maxBottom = window.innerHeight - CARD_HEIGHT;
-  return { left: maxLeft / 2, bottom: maxBottom / 2 };
+  const gap = 16;
+  const left = Math.min(maxLeft, DEFAULT_OFFSET + widgetIndex * (CARD_WIDTH + gap));
+  return { left, bottom: Math.max(DEFAULT_OFFSET, maxBottom / 2) };
 }
 
 export type LightCardWidgetItem = {
@@ -94,7 +96,6 @@ export function FloatingLightCard({
       const target = e.target as HTMLElement;
       if (target?.closest?.("[data-no-drag]")) return;
       clearLongPress();
-      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       longPressTimerRef.current = setTimeout(() => {
         longPressTimerRef.current = null;
         onEnterEditMode?.();
@@ -105,8 +106,7 @@ export function FloatingLightCard({
   );
 
   const endLongPress = useCallback(
-    (e: React.PointerEvent) => {
-      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    (_e: React.PointerEvent) => {
       clearLongPress();
     },
     [clearLongPress]
@@ -199,7 +199,7 @@ export function FloatingLightCard({
   return (
     <div
       className={cn(
-        "fixed z-30 rounded-card transition-transform duration-200",
+        "fixed z-30 rounded-[28px] transition-transform duration-200",
         !editMode && "origin-center active:scale-[0.97]",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"

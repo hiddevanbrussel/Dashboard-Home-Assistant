@@ -326,7 +326,7 @@ export function LightCardWidget({
     <div
       className={cn(
         "flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200",
-        isOn ? "text-white" : "bg-white/25 text-white/70 shadow-inner dark:bg-white/[0.14] dark:text-white/55"
+        isOn ? "text-white" : "bg-black/10 text-gray-500 shadow-inner dark:bg-white/15 dark:text-white/50"
       )}
       style={badgeGlow}
       aria-hidden
@@ -348,7 +348,7 @@ export function LightCardWidget({
       <p
         className={cn(
           "mt-0.5 truncate text-[12px] font-medium leading-none",
-          isOn ? "text-gray-500" : "text-white/55"
+          isOn ? "text-gray-500" : "text-gray-500 dark:text-white/50"
         )}
       >
         {statusText}
@@ -359,13 +359,13 @@ export function LightCardWidget({
   return (
     <div
       className={cn(
-        "relative flex aspect-square w-full flex-col justify-between overflow-hidden rounded-card p-3.5 transition-[background-color,border-color,box-shadow,color,transform] duration-200",
+        "relative flex aspect-square w-full flex-col justify-between overflow-hidden rounded-[28px] p-3.5 transition-[background-color,border-color,box-shadow,color,transform] duration-200",
         size === "sm" && "min-h-[8.25rem]",
         size === "md" && "min-h-[10rem]",
         size === "lg" && "min-h-[11.75rem]",
         isOn
-          ? "border border-white/70 bg-white/95 text-gray-900 shadow-[0_8px_28px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] dark:border-white/40 dark:bg-[#f3f3f5] dark:text-gray-900"
-          : "border border-white/20 bg-white/[0.12] text-white/90 shadow-[0_8px_28px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-black/45 dark:text-white/90",
+          ? "border border-white/80 bg-white text-gray-900 shadow-[0_8px_28px_rgba(0,0,0,0.10),inset_0_1px_0_rgba(255,255,255,0.9)] dark:border-white/50 dark:bg-[#f3f3f5] dark:text-gray-900"
+          : "border border-black/5 bg-black/[0.07] text-gray-800 shadow-[0_8px_24px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl dark:border-white/10 dark:bg-white/10 dark:text-white/90 dark:shadow-[0_8px_28px_rgba(0,0,0,0.28)]",
         !editMode && "select-none",
         className
       )}
@@ -395,7 +395,7 @@ export function LightCardWidget({
             }}
             className={cn(
               "shrink-0 rounded-full p-1 opacity-70 transition-colors",
-              isOn ? "text-gray-600 hover:bg-black/5 hover:opacity-100" : "text-white/80 hover:bg-white/10 hover:opacity-100"
+              isOn ? "text-gray-600 hover:bg-black/5 hover:opacity-100" : "text-gray-500 hover:bg-black/5 hover:opacity-100 dark:text-white/80 dark:hover:bg-white/10"
             )}
             aria-label={t("lightCard.options")}
           >
@@ -405,12 +405,12 @@ export function LightCardWidget({
       </div>
 
       {editMode ? (
-        <div className="min-w-0">{titleBlock}</div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-end">{titleBlock}</div>
       ) : (
         <button
           type="button"
           onClick={openModal}
-          className="min-w-0 rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
+          className="flex min-h-0 min-w-0 flex-1 flex-col justify-end rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
           aria-label={t("lightCard.control")}
         >
           {titleBlock}
