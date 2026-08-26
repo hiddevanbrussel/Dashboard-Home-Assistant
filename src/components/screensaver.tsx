@@ -27,7 +27,17 @@ const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
 
 const ACTIVITY_EVENTS = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "click"] as const;
 const PHOTO_ROTATION_SECONDS = 10;
-const FADE_DURATION_MS = 1500;
+const FADE_DURATION_MS = 1200;
+
+function preloadImage(url: string): Promise<void> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.decoding = "async";
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = url;
+  });
+}
 
 function useIdleScreensaver() {
   const [active, setActive] = useState(false);
@@ -408,21 +418,22 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       headers: { "X-Pexels-Api-Key": pexelsApiKey },
     })
       .then((r) => r.json())
-      .then((data) => {
-        if (data?.imageUrl) {
-          const attr = data.pexelsUrl && data.photographer ? { url: data.pexelsUrl, photographer: data.photographer } : null;
-          setCurrentImage((prev) => {
-            if (prev) {
-              setNextImage(data.imageUrl);
-              setNextAttribution(attr);
-              return prev;
-            }
-            setCurrentAttribution(attr);
-            return data.imageUrl;
-          });
-        } else {
+      .then(async (data) => {
+        if (!data?.imageUrl) {
           setPexelsError(true);
+          return;
         }
+        const attr = data.pexelsUrl && data.photographer ? { url: data.pexelsUrl, photographer: data.photographer } : null;
+        await preloadImage(data.imageUrl);
+        setCurrentImage((prev) => {
+          if (prev) {
+            setNextImage(data.imageUrl);
+            setNextAttribution(attr);
+            return prev;
+          }
+          setCurrentAttribution(attr);
+          return data.imageUrl;
+        });
       })
       .catch(() => setPexelsError(true));
   }, [pexelsApiKey, pexelsQuery]);
@@ -440,8 +451,14 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
 
   useEffect(() => {
     if (!nextImage) return;
-    const start = requestAnimationFrame(() => setIsFading(true));
-    return () => cancelAnimationFrame(start);
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setIsFading(true));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
   }, [nextImage]);
 
   useEffect(() => {
@@ -493,11 +510,11 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
     return () => { if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current); };
   }, [isVideoMode, fetchPexelsVideo]);
 
-  // Fade in next video when available
+  // Fade in next video only after it can play, so we never fade in a blank frame.
   useEffect(() => {
     if (!nextVideoUrl) return;
-    const start = requestAnimationFrame(() => setVideoFading(true));
-    return () => cancelAnimationFrame(start);
+    const fallback = setTimeout(() => setVideoFading(true), 1500);
+    return () => clearTimeout(fallback);
   }, [nextVideoUrl]);
 
   useEffect(() => {
@@ -517,11 +534,8 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
     videoRotateTimer.current = setTimeout(fetchPexelsVideo, VIDEO_MAX_SECONDS * 1000);
   }, [fetchPexelsVideo]);
 
-  const usePexelsRotation = pexelsEnabled && !customBg && pexelsApiKey && pexelsType === "photo";
   const backgroundImage = customBg || currentImage || DEFAULT_SCREENSAVER_IMAGE;
   const useGradient = !isVideoMode && (imageFailed || (pexelsEnabled && !customBg && (pexelsError && !currentImage || !pexelsApiKey)));
-
-  const singleImage = !usePexelsRotation || (!nextImage && !isFading);
   const fadeStyle = { transition: `opacity ${FADE_DURATION_MS}ms ease-in-out` as const };
 
   useEffect(() => {
@@ -543,7 +557,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       tabIndex={0}
       aria-label={t("screensaver.dismiss")}
       className={cn(
-        "fixed inset-0 z-[9999] flex flex-col justify-end p-8 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
+        "fixed inset-0 z-[9999] flex flex-col justify-end overflow-hidden bg-black p-8 cursor-pointer transition-opacity duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
         dismissing && "opacity-0 pointer-events-auto"
       )}
       style={
@@ -569,7 +583,6 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
                   muted
                   playsInline
                   className="absolute inset-0 w-full h-full object-cover"
-                  style={{ opacity: videoFading ? 0 : 1, transition: `opacity ${FADE_DURATION_MS}ms ease-in-out` }}
                   onCanPlay={scheduleVideoRotation}
                   onEnded={fetchPexelsVideo}
                   aria-hidden
@@ -584,39 +597,20 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
                   muted
                   playsInline
                   className="absolute inset-0 w-full h-full object-cover"
-                  style={{ opacity: videoFading ? 1 : 0, transition: `opacity ${FADE_DURATION_MS}ms ease-in-out` }}
+                  style={{
+                    ...fadeStyle,
+                    opacity: videoFading ? 1 : 0,
+                  }}
+                  onCanPlay={() => setVideoFading(true)}
                   aria-hidden
                 />
               )}
-            </>
-          ) : singleImage ? (
-            <>
-              <div
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${backgroundImage})` }}
-                aria-hidden
-              />
-              <div className="absolute inset-0 pointer-events-none" aria-hidden>
-                <Image
-                  src={backgroundImage}
-                  alt=""
-                  fill
-                  sizes="100vw"
-                  className="sr-only"
-                  onError={() => setImageFailed(true)}
-                  unoptimized
-                />
-              </div>
             </>
           ) : (
             <>
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{
-                  ...fadeStyle,
-                  backgroundImage: `url(${currentImage})`,
-                  opacity: isFading ? 0 : 1,
-                }}
+                style={{ backgroundImage: `url(${backgroundImage})` }}
                 aria-hidden
               />
               {nextImage && (
@@ -630,6 +624,17 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
                   aria-hidden
                 />
               )}
+              <div className="absolute inset-0 pointer-events-none" aria-hidden>
+                <Image
+                  src={backgroundImage}
+                  alt=""
+                  fill
+                  sizes="100vw"
+                  className="sr-only"
+                  onError={() => setImageFailed(true)}
+                  unoptimized
+                />
+              </div>
             </>
           )}
           <div className="absolute inset-0 bg-black/50" aria-hidden />
