@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { EnergyMonitorCardWidget } from "./energy-monitor-card-widget";
 import type { ImageCondition } from "./widget-types";
+import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY = "dashboard.floatingEnergyMonitorCardPosition";
 const DEFAULT_OFFSET = 24;
@@ -80,6 +81,7 @@ export function FloatingEnergyMonitorCard({
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
+  const { t } = useTranslation();
   const [dimensions, setDimensions] = useState<{ width: number; height: number }>({
     width: DEFAULT_WIDTH,
     height: DEFAULT_HEIGHT,
@@ -249,7 +251,7 @@ export function FloatingEnergyMonitorCard({
             onEdit();
           }}
           className="absolute right-2 bottom-2 z-50 p-1.5 rounded-lg shrink-0 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-          aria-label="Opties"
+          aria-label={t("common.options")}
         >
           <MoreVertical className="h-5 w-5" aria-hidden />
         </button>

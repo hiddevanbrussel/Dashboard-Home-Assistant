@@ -18,6 +18,7 @@ import type { WeatherCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useThemeStore } from "@/stores/theme-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 function WeatherIcon({ state, className }: { state: string; className?: string }) {
   const s = state?.toLowerCase() ?? "";
@@ -117,6 +118,7 @@ export function WeatherCardWidget({
   className,
   onMoreClick,
 }: WeatherCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const { resolved: theme } = useThemeStore();
   const condition = (entity?.state as string) ?? "";
@@ -194,7 +196,7 @@ export function WeatherCardWidget({
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
               className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 drop-shadow-sm transition-colors"
-              aria-label="Opties"
+              aria-label={t("common.options")}
             >
               <MoreVertical className="h-5 w-5" aria-hidden />
             </button>

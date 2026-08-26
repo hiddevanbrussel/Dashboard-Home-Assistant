@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ListTodo, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChoreCompletionsResponse, ChildWithChores } from "@/lib/chores-types";
+import { useTranslation } from "@/hooks/use-translation";
 
 function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
@@ -103,6 +104,7 @@ export type ChoreCardWidgetProps = {
 };
 
 export function ChoreCardWidget({ childId, showPoints = true, title, onMoreClick }: ChoreCardWidgetProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const todayDate = getTodayDate();
 
@@ -142,7 +144,7 @@ export function ChoreCardWidget({ childId, showPoints = true, title, onMoreClick
       {/* header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-black/5 dark:border-white/10">
         <ListTodo className="h-4 w-4 text-indigo-500" />
-        <span className="flex-1 text-sm font-semibold text-gray-800 dark:text-white">{title || "Taken"}</span>
+        <span className="flex-1 text-sm font-semibold text-gray-800 dark:text-white">{title || t("cardType.chore_card")}</span>
         {onMoreClick && (
           <button onClick={onMoreClick} className="rounded-lg p-1 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10">
             <MoreVertical className="h-4 w-4" />
@@ -158,7 +160,7 @@ export function ChoreCardWidget({ childId, showPoints = true, title, onMoreClick
           </div>
         )}
         {!isLoading && children.length === 0 && (
-          <p className="py-3 text-center text-xs text-gray-400 dark:text-gray-500">Geen kinderen gevonden.</p>
+          <p className="py-3 text-center text-xs text-gray-400 dark:text-gray-500">{t("choreCard.noChildren")}</p>
         )}
         {children.map((child) => (
           <ChildSection

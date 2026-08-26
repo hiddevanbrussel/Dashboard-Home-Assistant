@@ -6,6 +6,7 @@ import { RefreshCw, MoreVertical, Video } from "lucide-react";
 import type { CameraCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function CameraCardWidget({
   title = "Camera",
@@ -16,6 +17,7 @@ export function CameraCardWidget({
   className,
   onMoreClick,
 }: CameraCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const friendlyName = (entity?.attributes?.friendly_name as string) ?? entity_id;
   const [refreshKey, setRefreshKey] = useState(0);
@@ -57,7 +59,7 @@ export function CameraCardWidget({
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-white/50">
             <Video className="h-12 w-12" aria-hidden />
-            <span className="sr-only">Geen camera</span>
+            <span className="sr-only">{t("cameraCard.noCamera")}</span>
           </div>
         )}
         <div className="absolute top-2 right-2 flex items-center gap-2">
@@ -65,7 +67,7 @@ export function CameraCardWidget({
             type="button"
             onClick={handleRefresh}
             className="p-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white/90 transition-colors"
-            aria-label="Ververs"
+            aria-label={t("cameraCard.refresh")}
           >
             <RefreshCw className="h-4 w-4" aria-hidden />
           </button>
@@ -77,7 +79,7 @@ export function CameraCardWidget({
                 onMoreClick();
               }}
               className="p-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white/90 transition-colors"
-              aria-label="Opties"
+              aria-label={t("common.options")}
             >
               <MoreVertical className="h-4 w-4" aria-hidden />
             </button>

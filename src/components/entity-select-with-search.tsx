@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslation } from "@/hooks/use-translation";
 
 export type HaEntity = {
   entity_id: string;
@@ -26,11 +27,14 @@ export function EntitySelectWithSearch({
   onChange,
   filter,
   label,
-  placeholder = "Zoek op naam of entity_id…",
-  emptyOption = "Geen",
+  placeholder,
+  emptyOption,
   className = "",
   inputClassName = "",
 }: EntitySelectWithSearchProps) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("editPanel.searchEntity");
+  const resolvedEmptyOption = emptyOption ?? t("editPanel.none");
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -64,7 +68,7 @@ export function EntitySelectWithSearch({
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         className={`mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500 ${inputClassName}`}
       />
       <select
@@ -72,7 +76,7 @@ export function EntitySelectWithSearch({
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
       >
-        <option value="">{emptyOption}</option>
+        <option value="">{resolvedEmptyOption}</option>
         {filtered.map((e) => (
           <option key={e.entity_id} value={e.entity_id}>
             {displayName(e)}

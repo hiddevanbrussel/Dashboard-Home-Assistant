@@ -14,6 +14,7 @@ import {
 import type { MediaCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 function formatTime(seconds: number | undefined): string {
   if (seconds == null || Number.isNaN(seconds)) return "0:00";
@@ -34,6 +35,7 @@ export function MediaCardWidget({
   mediaTitleOverride,
   mediaArtistOverride,
 }: MediaCardProps & { className?: string; onMoreClick?: () => void; onExpandedChange?: (expanded: boolean) => void }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   const setExpandedWithCallback = (value: boolean) => {
@@ -156,7 +158,7 @@ export function MediaCardWidget({
                 type="button"
                 onClick={() => setExpandedWithCallback(false)}
                 className="block relative w-full aspect-square max-h-48 mx-auto rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/50"
-                aria-label="Inklappen"
+                aria-label={t("mediaCard.collapse")}
               >
                 <Image
                   src={mediaImageSrc}
@@ -195,7 +197,7 @@ export function MediaCardWidget({
             type="button"
             onClick={() => setExpandedWithCallback(false)}
             className="flex items-center justify-center gap-1 py-1 text-gray-500 hover:text-gray-700 dark:text-white/50 dark:hover:text-white/80 transition-colors"
-            aria-label="Inklappen"
+            aria-label={t("mediaCard.collapse")}
           >
             <ChevronDown className="h-4 w-4" />
           </button>
@@ -235,7 +237,7 @@ export function MediaCardWidget({
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
               className="p-1.5 rounded-lg shrink-0 text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors"
-              aria-label="Opties"
+              aria-label={t("common.options")}
             >
               <MoreVertical className="h-5 w-5" aria-hidden />
             </button>
@@ -247,7 +249,7 @@ export function MediaCardWidget({
               type="button"
               onClick={() => setExpandedWithCallback(true)}
               className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/20 hover:border-gray-300 dark:hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/50"
-              aria-label="Uitklappen"
+              aria-label={t("mediaCard.expand")}
             >
               <Image
                 src={mediaImageSrc}
@@ -275,7 +277,7 @@ export function MediaCardWidget({
             type="button"
             onClick={() => setExpandedWithCallback(true)}
             className="h-10 w-10 shrink-0 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/20 flex items-center justify-center hover:border-gray-300 dark:hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/50"
-            aria-label="Uitklappen"
+            aria-label={t("mediaCard.expand")}
           >
             <Disc3 className="h-5 w-5 text-gray-400 dark:text-white/30" strokeWidth={1.5} />
           </button>

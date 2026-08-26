@@ -23,7 +23,7 @@ function useEntityValue(entityId: string) {
 }
 
 export function SolarCardWidget({
-  title = "Zonnepanelen",
+  title,
   entity_id,
   yield_entity_id_today,
   yield_entity_id_month,
@@ -115,7 +115,7 @@ export function SolarCardWidget({
       {/* Kaart 1: Zonnepanelen (zelfde opmaak als Stroomverbruik: titel, border, grafiek) */}
       <div className={cn("flex flex-col", cardBase)}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-          <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
+          <p className="font-semibold text-gray-900 dark:text-white">{title || t("cardType.solar_card")}</p>
           {onMoreClick && (
             <button
               type="button"

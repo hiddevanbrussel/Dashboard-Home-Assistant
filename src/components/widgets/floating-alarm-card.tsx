@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { AlarmCardWidget } from "./alarm-card-widget";
+import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingAlarmCardPosition.";
 const DEFAULT_OFFSET = 24;
@@ -73,6 +74,7 @@ export function FloatingAlarmCard({
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
+  const { t } = useTranslation();
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? defaultPosition(widgetIndex));
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
@@ -213,7 +215,7 @@ export function FloatingAlarmCard({
           type="button"
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
           className="absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600"
-          aria-label="Verwijderen"
+          aria-label={t("editPanel.remove")}
         >
           ×
         </button>

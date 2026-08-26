@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
+import { useTranslation } from "@/hooks/use-translation";
 
 export default function HomePage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +29,7 @@ export default function HomePage() {
     return (
       <AppShell activeTab="/dashboards">
         <div className="flex min-h-[40vh] items-center justify-center">
-          <p className="text-sm text-gray-500">Laden…</p>
+          <p className="text-sm text-gray-500">{t("appShell.loading")}</p>
         </div>
       </AppShell>
     );

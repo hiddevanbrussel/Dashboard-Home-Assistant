@@ -6,21 +6,22 @@ import type { VacuumCardProps } from "./widget-types";
 import { cn, capitalizeFirst } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { CARD_ICONS } from "./card-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 export { CARD_ICON_OPTIONS as VACUUM_ICON_OPTIONS } from "./card-icons";
 
 const STATE_LABELS: Record<string, string> = {
-  idle: "Inactief",
-  cleaning: "Bezig met stofzuigen",
-  docked: "In basis",
-  returning: "Keert terug",
-  paused: "Gepauzeerd",
-  error: "Fout",
+  idle: "Idle",
+  cleaning: "Cleaning",
+  docked: "Docked",
+  returning: "Returning",
+  paused: "Paused",
+  error: "Error",
   unknown: "—",
 };
 
 export function VacuumCardWidget({
-  title = "Stofzuiger",
+  title,
   entity_id,
   script_ids = [],
   script_names = {},
@@ -30,6 +31,7 @@ export function VacuumCardWidget({
   className,
   onMoreClick,
 }: VacuumCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const cleanedAreaEntity = useEntityStateStore((s) =>
     cleaned_area_entity_id ? s.getState(cleaned_area_entity_id) : null
@@ -41,7 +43,7 @@ export function VacuumCardWidget({
 
   const state = (entity?.state as string) ?? "unknown";
   const friendlyName = (entity?.attributes?.friendly_name as string) ?? entity_id;
-  const statusLabel = STATE_LABELS[state] ?? capitalizeFirst(state);
+  const statusLabel = t(`vacuum.state.${state}`) !== `vacuum.state.${state}` ? t(`vacuum.state.${state}`) : (STATE_LABELS[state] ?? capitalizeFirst(state));
 
   const cleanedAreaValue = cleanedAreaEntity?.state;
   const cleanedAreaUnit = (cleanedAreaEntity?.attributes as { unit_of_measurement?: string })?.unit_of_measurement ?? "";
@@ -101,7 +103,7 @@ export function VacuumCardWidget({
             <IconComponent className="h-5 w-5" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-medium truncate text-gray-900 dark:text-white/90">{title}</p>
+            <p className="font-medium truncate text-gray-900 dark:text-white/90">{title || t("cardType.vacuum_card")}</p>
             <p className="text-xs text-gray-600 dark:text-white/60 truncate">{friendlyName}</p>
           </div>
         </div>
@@ -111,7 +113,7 @@ export function VacuumCardWidget({
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
               className="p-1.5 rounded-lg shrink-0 text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors"
-              aria-label="Opties"
+              aria-label={t("common.options")}
             >
               <MoreVertical className="h-5 w-5" aria-hidden />
             </button>

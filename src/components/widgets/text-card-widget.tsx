@@ -5,6 +5,7 @@ import { Lightbulb, MoreVertical, Power } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CARD_ICONS } from "./card-icons";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 export type TextCardProps = {
   text: string;
@@ -30,6 +31,7 @@ export function TextCardWidget({
   className,
   onMoreClick,
 }: TextCardProps) {
+  const { t } = useTranslation();
   const IconComponent = show_icon && icon ? CARD_ICONS[icon] : null;
   const entity = useEntityStateStore((s) => (entity_id ? s.getState(entity_id) : undefined));
   const setStates = useEntityStateStore((s) => s.setStates);
@@ -113,7 +115,7 @@ export function TextCardWidget({
               ? "bg-[#FFD41D] shadow-sm dark:bg-[#FFD41D] dark:shadow-sm text-white"
               : "bg-white/30 dark:bg-white/10 shadow-inner text-gray-500 dark:text-gray-400"
           )}
-          aria-label={isOn ? "Uitzetten" : "Aanzetten"}
+          aria-label={isOn ? t("lightCard.turnOff") : t("lightCard.turnOn")}
         >
           <ToggleIcon className="h-5 w-5" strokeWidth={1.5} fill={isOn ? "currentColor" : "none"} aria-hidden />
         </button>
@@ -136,7 +138,7 @@ export function TextCardWidget({
             "absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-900/5 dark:hover:bg-white/10 transition-colors z-20",
             entity_id && "right-12"
           )}
-          aria-label="Opties"
+          aria-label={t("common.options")}
         >
           <MoreVertical className="h-4 w-4" aria-hidden />
         </button>

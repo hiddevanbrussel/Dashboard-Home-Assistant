@@ -511,7 +511,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                       className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                       value={childForm.name}
                       onChange={(e) => setChildForm((f) => ({ ...f, name: e.target.value }))}
-                      placeholder="bijv. Emma"
+                      placeholder={t("family.childNamePlaceholder")}
                     />
                   </div>
                   <div>
@@ -520,7 +520,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                       className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                       value={childForm.emoji}
                       onChange={(e) => setChildForm((f) => ({ ...f, emoji: e.target.value }))}
-                      placeholder="bijv. 🦁"
+                      placeholder={t("family.childEmojiPlaceholder")}
                       maxLength={4}
                     />
                   </div>
@@ -595,7 +595,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                       className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                       value={choreForm.title}
                       onChange={(e) => setChoreForm((f) => ({ ...f, title: e.target.value }))}
-                      placeholder="bijv. Tanden poetsen"
+                      placeholder={t("family.choreTitlePlaceholder")}
                     />
                   </div>
                   <div>
@@ -777,7 +777,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                       className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                       value={rewardForm.title}
                       onChange={(e) => setRewardForm((f) => ({ ...f, title: e.target.value }))}
-                      placeholder="bijv. Extra schermtijd"
+                      placeholder={t("family.rewardPlaceholder")}
                     />
                   </div>
                   <div>
@@ -1175,7 +1175,7 @@ export default function FamilyPage() {
                       ? "text-gray-500 dark:text-gray-400"
                       : "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
                   )}
-                  title={showCompleted ? "Verberg afgeronde taken" : "Toon afgeronde taken"}
+                  title={showCompleted ? t("family.hideCompletedChores") : t("family.showCompletedChores")}
                 >
                   {showCompleted ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                 </button>
@@ -1337,19 +1337,19 @@ export default function FamilyPage() {
               {/* manual penalty — always visible for parents in rewards view */}
               {activeChild && (
                 <div className="mt-2 rounded-2xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/10 p-4 flex flex-col gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-red-500 dark:text-red-400">Straf geven</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-red-500 dark:text-red-400">{t("family.givePenalty")}</p>
                   <div className="flex gap-2">
                     <div className="flex flex-col gap-1 flex-1">
-                      <label className="text-xs text-gray-500 dark:text-gray-400">Reden (optioneel)</label>
+                      <label className="text-xs text-gray-500 dark:text-gray-400">{t("family.reasonOptional")}</label>
                       <input
                         className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm dark:text-white"
-                        placeholder="bijv. wc niet doorgespoeld"
+                        placeholder={t("family.penaltyReasonPlaceholder")}
                         value={penaltyReason}
                         onChange={(e) => setPenaltyReason(e.target.value)}
                       />
                     </div>
                     <div className="flex flex-col gap-1 w-20">
-                      <label className="text-xs text-gray-500 dark:text-gray-400">Punten</label>
+                      <label className="text-xs text-gray-500 dark:text-gray-400">{t("family.chorePoints")}</label>
                       <input
                         type="number"
                         min={1}
@@ -1369,7 +1369,7 @@ export default function FamilyPage() {
                         : "bg-red-500 text-white hover:bg-red-600"
                     )}
                   >
-                    {penaltySuccess ? "Straf opgeslagen!" : `−${penaltyPoints} pt opleggen`}
+                    {penaltySuccess ? t("family.penaltySaved") : t("family.applyPenalty").replace("{n}", String(penaltyPoints))}
                   </button>
                 </div>
               )}

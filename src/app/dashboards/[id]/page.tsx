@@ -1190,23 +1190,23 @@ export default function DashboardEditPage() {
                               return;
                             }
                             if (type === "card_group") {
-                              handleAddTile("card_group", "", "Kaartgroep");
+                              handleAddTile("card_group", "", t("cardType.card_group"));
                               setAddTileOpen(false);
                               return;
                             }
                             if (type === "room_card") {
-                              const newId = handleAddTile("room_card", "", "Kamer");
+                              const newId = handleAddTile("room_card", "", t("cardType.room_card"));
                               if (newId) setEditingWidgetId(newId);
                               return;
                             }
                             if (type === "energy_monitor_card") {
-                              const newId = handleAddTile("energy_monitor_card", "", "Afbeeldingskaart");
+                              const newId = handleAddTile("energy_monitor_card", "", t("cardType.energy_monitor_card"));
                               if (newId) setEditingWidgetId(newId);
                               setAddTileOpen(false);
                               return;
                             }
                             if (type === "power_usage_card") {
-                              const newId = handleAddTile("power_usage_card", "", "Stroomverbruik");
+                              const newId = handleAddTile("power_usage_card", "", t("cardType.power_usage_card"));
                               if (newId) setEditingWidgetId(newId);
                               setAddTileOpen(false);
                               return;
@@ -1234,7 +1234,7 @@ export default function DashboardEditPage() {
                         }}
                         className="mb-3 self-start px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg"
                       >
-                        ← Terug
+                        ← {t("editPanel.back")}
                       </button>
                       <input
                         type="text"
@@ -1274,7 +1274,7 @@ export default function DashboardEditPage() {
                                 onClick={() => {
                                   if (addTileSelectedType) {
                                     const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                                    const titleOverride = addTileSelectedType === "nuts_card" ? (name || "Gas") : addTileSelectedType === "energy_monitor_card" ? (name || "Afbeeldingskaart") : addTileSelectedType === "power_usage_card" ? (name || "Stroomverbruik") : (name || undefined);
+                                    const titleOverride = addTileSelectedType === "nuts_card" ? (name || t("cardType.nuts_card")) : addTileSelectedType === "energy_monitor_card" ? (name || t("cardType.energy_monitor_card")) : addTileSelectedType === "power_usage_card" ? (name || t("cardType.power_usage_card")) : (name || undefined);
                                     const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride);
                                     if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card") && newId) setEditingWidgetId(newId);
                                   }
@@ -1635,7 +1635,7 @@ export default function DashboardEditPage() {
           const firstSolar = widgets.find((w) => w.type === "solar_card");
           return firstSolar ? (
             <FloatingSolarCard
-              title={firstSolar.title ?? "Zonnepanelen"}
+              title={firstSolar.title ?? t("cardType.solar_card")}
               entity_id={firstSolar.entity_id}
               yield_entity_id_today={(firstSolar as { yield_entity_id_today?: string }).yield_entity_id_today}
               yield_entity_id_month={(firstSolar as { yield_entity_id_month?: string }).yield_entity_id_month}
@@ -1660,7 +1660,7 @@ export default function DashboardEditPage() {
           const firstEnergyMonitor = widgets.find((w) => w.type === "energy_monitor_card");
           return firstEnergyMonitor ? (
             <FloatingEnergyMonitorCard
-              title={firstEnergyMonitor.title ?? "Afbeeldingskaart"}
+              title={firstEnergyMonitor.title ?? t("cardType.energy_monitor_card")}
               entity_id={firstEnergyMonitor.entity_id}
               background_image={firstEnergyMonitor.background_image}
               background_image_dark={firstEnergyMonitor.background_image_dark}
@@ -1688,7 +1688,7 @@ export default function DashboardEditPage() {
           const firstPowerUsage = widgets.find((w) => w.type === "power_usage_card");
           return firstPowerUsage ? (
             <FloatingPowerUsageCard
-              title={firstPowerUsage.title ?? "Stroomverbruik"}
+              title={firstPowerUsage.title ?? t("cardType.power_usage_card")}
               entity_id={firstPowerUsage.entity_id}
               cost_per_kwh={firstPowerUsage.cost_per_kwh}
               width={firstPowerUsage.width}
@@ -1718,7 +1718,7 @@ export default function DashboardEditPage() {
               .map((w) => (
                 <FloatingDeviceConsumptionCard
                   key={w.id}
-                  title={w.title ?? "Verbruik per apparaat"}
+                  title={w.title ?? t("cardType.device_consumption_card")}
                   device_entity_ids={w.device_entity_ids}
                   device_names={w.device_names}
                   width={w.width}
@@ -1843,7 +1843,7 @@ export default function DashboardEditPage() {
           const firstVacuum = widgets.find((w) => w.type === "vacuum_card");
           return firstVacuum ? (
             <FloatingVacuumCard
-              title={firstVacuum.title ?? "Stofzuiger"}
+              title={firstVacuum.title ?? t("cardType.vacuum_card")}
               entity_id={firstVacuum.entity_id}
               script_ids={firstVacuum.script_ids}
               script_names={firstVacuum.script_names}
@@ -1896,7 +1896,7 @@ export default function DashboardEditPage() {
               key={w.id}
               widget={{
                 id: w.id,
-                title: w.title ?? "Kamer",
+                title: w.title ?? t("cardType.room_card"),
                 entity_id: w.entity_id,
                 icon: w.icon,
                 light_entity_id: w.light_entity_id,
@@ -1923,7 +1923,7 @@ export default function DashboardEditPage() {
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onCardClick={
                 !editMode
-                  ? () => setClickedCardForDefinition({ widgetId: w.id, title: w.title ?? "Kamer" })
+                  ? () => setClickedCardForDefinition({ widgetId: w.id, title: w.title ?? t("cardType.room_card") })
                   : undefined
               }
             />
@@ -2047,7 +2047,7 @@ export default function DashboardEditPage() {
                       : editingWidget.type === "power_usage_card"
                         ? t("editPanel.editPowerUsage")
                         : editingWidget.type === "device_consumption_card"
-                          ? "Verbruik per apparaat bewerken"
+                          ? t("editPanel.editDeviceConsumption")
                           : t("editPanel.editTile")}
               </h3>
               <button
@@ -2288,7 +2288,7 @@ export default function DashboardEditPage() {
                             >
                               {SENSOR_CONDITION_OPERATORS.map((op) => (
                                 <option key={op} value={op}>
-                                  {SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op}
+                                  {op === "contains" ? t("editPanel.operatorContains") : (SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op)}
                                 </option>
                               ))}
                             </select>
@@ -3084,7 +3084,7 @@ export default function DashboardEditPage() {
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Achtergrondafbeelding light mode
+                        {t("editPanel.backgroundLight")}
                       </label>
                       {editForm.background_image && (
                         <div
@@ -3137,13 +3137,13 @@ export default function DashboardEditPage() {
                             background_image: e.target.value || undefined,
                           }))
                         }
-                        placeholder="Of plak een URL (na upload staat die hier)"
+                        placeholder={t("editPanel.orPasteUrlAfterUpload")}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Achtergrondafbeelding dark mode (optioneel)
+                        {t("editPanel.backgroundDark")}
                       </label>
                       {editForm.background_image_dark && (
                         <div
@@ -3196,7 +3196,7 @@ export default function DashboardEditPage() {
                             background_image_dark: e.target.value || undefined,
                           }))
                         }
-                        placeholder="Upload hierboven, of plak URL. Leeg =zelfde als light."
+                        placeholder={t("editPanel.darkSameAsLight")}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                     </div>
@@ -3215,12 +3215,12 @@ export default function DashboardEditPage() {
                         className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                       />
                       <label htmlFor="energy-minimal" className="text-sm text-gray-700 dark:text-gray-300">
-                        Minimalistisch (alleen afbeelding, geen titel of rand)
+                        {t("editPanel.minimal")}
                       </label>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Schaalfactor ({(editForm.scale ?? 1).toFixed(1)}×)
+                        {t("editPanel.scaleFactor")} ({(editForm.scale ?? 1).toFixed(1)}×)
                       </label>
                       <input
                         type="range"
@@ -3242,10 +3242,10 @@ export default function DashboardEditPage() {
                     {editTab === "voorwaarden" && (
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Voorwaarden (afbeelding bij waarde)
+                        {t("editPanel.imageConditions")}
                       </label>
                       <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                        Eerste voorwaarde die klopt bepaalt de afbeelding. Bijv. sunny → zon.jpg, rainy → regen.jpg. Entity hierboven moet zijn ingesteld.
+                        {t("editPanel.imageConditionsExample")}
                       </p>
                       {(editForm.image_conditions ?? []).map((cond, idx) => (
                         <div key={idx} className="flex flex-wrap items-start gap-2 rounded-lg border border-gray-200 dark:border-white/10 p-2 mb-2">
@@ -3262,7 +3262,7 @@ export default function DashboardEditPage() {
                             className="rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                           >
                             {SENSOR_CONDITION_OPERATORS.map((op) => (
-                              <option key={op} value={op}>{SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op}</option>
+                              <option key={op} value={op}>{op === "contains" ? t("editPanel.operatorContains") : (SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op)}</option>
                             ))}
                           </select>
                           <input
@@ -3276,7 +3276,7 @@ export default function DashboardEditPage() {
                                 ),
                               }))
                             }
-                            placeholder="Waarde (bijv. sunny)"
+                            placeholder={t("editPanel.valueExampleSunny")}
                             className="flex-1 min-w-[80px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                           />
                           <div className="flex flex-wrap items-center gap-1 min-w-0 flex-1">
@@ -3328,7 +3328,7 @@ export default function DashboardEditPage() {
                                   ),
                                 }))
                               }
-                              placeholder="Of plak URL"
+                              placeholder={t("editPanel.orPasteUrl")}
                               className="flex-1 min-w-[80px] rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                             />
                           </div>
@@ -3381,7 +3381,7 @@ export default function DashboardEditPage() {
                                   ),
                                 }))
                               }
-                              placeholder="Dark: upload of URL (opt.)"
+                              placeholder={t("editPanel.darkUploadOptional")}
                               className="flex-1 min-w-0 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                             />
                           </div>
@@ -3409,7 +3409,7 @@ export default function DashboardEditPage() {
                         }
                         className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 px-3 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 w-full"
                       >
-                        + Voorwaarde toevoegen
+                        {"+ " + t("editPanel.addConditionShort")}
                       </button>
                     </div>
                     )}
@@ -3417,15 +3417,15 @@ export default function DashboardEditPage() {
                 )}
                 {editingWidget.type === "power_usage_card" && (
                   <>
-                    <EntitySelectWithSearch entities={entities} value={editForm.entity_id} onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))} filter={(e) => e.entity_id.startsWith("sensor.")} label="Totaal verbruik" placeholder={t("editPanel.searchEntity")} emptyOption={t("editPanel.none")} />
+                    <EntitySelectWithSearch entities={entities} value={editForm.entity_id} onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))} filter={(e) => e.entity_id.startsWith("sensor.")} label={t("editPanel.totalUsage")} placeholder={t("editPanel.searchEntity")} emptyOption={t("editPanel.none")} />
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Kosten per kWh (€)</label>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.costPerKwh")}</label>
                       <input type="number" min={0} step={0.001} value={editForm.cost_per_kwh ?? ""} onChange={(e) => { const v = e.target.value === "" ? undefined : parseFloat(e.target.value); setEditForm((prev) => ({ ...prev, cost_per_kwh: v != null && !Number.isNaN(v) ? v : undefined })); }} placeholder="0.25" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                          Breedte (px)
+                          {t("editPanel.widthPx")}
                         </label>
                         <input
                           type="number"
@@ -3442,7 +3442,7 @@ export default function DashboardEditPage() {
                       </div>
                       <div>
                         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                          Hoogte (px)
+                          {t("editPanel.heightPx")}
                         </label>
                         <input
                           type="number"
@@ -3463,9 +3463,9 @@ export default function DashboardEditPage() {
                 {editingWidget.type === "device_consumption_card" && (
                   <>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Apparaten</label>
-                      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">Zoek op naam of entity_id.</p>
-                      <input type="text" value={powerUsageDeviceSearch} onChange={(e) => setPowerUsageDeviceSearch(e.target.value)} placeholder="Zoek op naam of entity_id…" className="mb-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:text-gray-200 dark:placeholder-gray-500" />
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.devices")}</label>
+                      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.searchNameOrEntityIdHint")}</p>
+                      <input type="text" value={powerUsageDeviceSearch} onChange={(e) => setPowerUsageDeviceSearch(e.target.value)} placeholder={t("editPanel.searchEntity")} className="mb-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:text-gray-200 dark:placeholder-gray-500" />
                       <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 p-2 space-y-1">
                         {entities.filter((e) => {
                           const name = ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase();
@@ -3480,12 +3480,12 @@ export default function DashboardEditPage() {
                             <span className="text-sm truncate" title={e.entity_id}>{name}</span>
                           </label>
                         ); })}
-                        {entities.filter((e) => { const name = ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase(); const eid = e.entity_id.toLowerCase(); const q = powerUsageDeviceSearch.trim().toLowerCase(); const matchesSearch = !q || name.includes(q) || eid.includes(q); const isEnergyRelated = e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("switch.") || e.entity_id.startsWith("light.") || e.entity_id.includes("energy") || e.entity_id.includes("power"); return matchesSearch && (isEnergyRelated || !!q); }).length === 0 && <p className="text-xs text-gray-500 py-2">{powerUsageDeviceSearch.trim() ? "Geen resultaten." : "Geen sensoren gevonden."}</p>}
+                        {entities.filter((e) => { const name = ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase(); const eid = e.entity_id.toLowerCase(); const q = powerUsageDeviceSearch.trim().toLowerCase(); const matchesSearch = !q || name.includes(q) || eid.includes(q); const isEnergyRelated = e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("switch.") || e.entity_id.startsWith("light.") || e.entity_id.includes("energy") || e.entity_id.includes("power"); return matchesSearch && (isEnergyRelated || !!q); }).length === 0 && <p className="text-xs text-gray-500 py-2">{powerUsageDeviceSearch.trim() ? t("editPanel.noResultsShort") : t("editPanel.noSensorsFound")}</p>}
                       </div>
                     </div>
                     {(editForm.device_entity_ids ?? []).length > 0 && (
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Weergavenamen apparaten</label>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.deviceDisplayNames")}</label>
                         <div className="space-y-2 max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 p-2">
                           {(editForm.device_entity_ids ?? []).map((eid) => {
                             const defaultName = (entities.find((x) => x.entity_id === eid)?.attributes as { friendly_name?: string })?.friendly_name ?? eid;
@@ -3535,7 +3535,7 @@ export default function DashboardEditPage() {
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Label (onder de waarde)
+                        {t("editPanel.labelUnderValue")}
                       </label>
                       <input
                         type="text"
@@ -3543,13 +3543,13 @@ export default function DashboardEditPage() {
                         onChange={(e) =>
                           setEditForm((prev) => ({ ...prev, label: e.target.value || undefined }))
                         }
-                        placeholder="Opbrengst, Verbruik, ..."
+                        placeholder={t("editPanel.labelPlaceholder")}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Icoon
+                        {t("editPanel.icon")}
                       </label>
                       <select
                         value={editForm.icon ?? "Sun"}
@@ -3567,7 +3567,7 @@ export default function DashboardEditPage() {
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Kleur (standaard)
+                        {t("editPanel.colorDefault")}
                       </label>
                       <select
                         value={editForm.color ?? "amber"}
@@ -3579,10 +3579,10 @@ export default function DashboardEditPage() {
                         }
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                       >
-                        <option value="amber">Amber (geel)</option>
-                        <option value="purple">Paars</option>
-                        <option value="emerald">Smaragd (groen)</option>
-                        <option value="red">Rood</option>
+                        <option value="amber">{t("editPanel.colorAmber")}</option>
+                        <option value="purple">{t("editPanel.colorPurple")}</option>
+                        <option value="emerald">{t("editPanel.colorEmerald")}</option>
+                        <option value="red">{t("editPanel.colorRed")}</option>
                       </select>
                     </div>
                     </>
@@ -3590,10 +3590,10 @@ export default function DashboardEditPage() {
                     {editTab === "voorwaarden" && (
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Voorwaarden (kleur aanpassen bij waarde)
+                        {t("editPanel.conditionsColorHint")}
                       </label>
                       <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                        Eerste voorwaarde die klopt bepaalt de kleur. Bijv. plastic = groen, papier = blauw.
+                        {t("editPanel.conditionsColorExamplePlastic")}
                       </p>
                       {(editForm.conditions ?? []).map((cond, idx) => (
                         <div
@@ -3614,7 +3614,7 @@ export default function DashboardEditPage() {
                           >
                             {SENSOR_CONDITION_OPERATORS.map((op) => (
                               <option key={op} value={op}>
-                                {SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op}
+                                {op === "contains" ? t("editPanel.operatorContains") : (SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op)}
                               </option>
                             ))}
                           </select>
@@ -3629,7 +3629,7 @@ export default function DashboardEditPage() {
                                 ),
                               }))
                             }
-                            placeholder="Waarde (bijv. plastic)"
+                            placeholder={t("editPanel.valueExamplePlastic")}
                             className="w-24 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                           />
                           <select
@@ -3703,7 +3703,7 @@ aria-label={t("editPanel.removeCondition")}
                     {editTab === "algemeen" && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      Vacuum Room (scripts)
+                      {t("editPanel.vacuumScripts")}
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                       {t("editPanel.vacuumScriptsHint")}
@@ -3743,12 +3743,12 @@ aria-label={t("editPanel.removeCondition")}
                           );
                         })}
                       {entities.filter((e) => e.entity_id.startsWith("script.")).length === 0 && (
-                        <p className="text-xs text-gray-500 py-2">Geen scripts gevonden. Sla eerst een verbinding op.</p>
+                        <p className="text-xs text-gray-500 py-2">{t("editPanel.noScriptsFound")}</p>
                       )}
                     </div>
                     {(editForm.script_ids ?? []).length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Naam per script (optioneel)</p>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.namePerScript")}</p>
                         {(editForm.script_ids ?? []).map((scriptId) => {
                           const e = entities.find((x) => x.entity_id === scriptId);
                           const defaultName = (e?.attributes as { friendly_name?: string })?.friendly_name ?? scriptId;
@@ -3786,9 +3786,9 @@ aria-label={t("editPanel.removeCondition")}
                           }))
                         }
                         filter={(e) => e.entity_id.startsWith("sensor.")}
-                        label="Sensor onder status (bijv. cleaned area)"
-                        placeholder="Zoek sensor…"
-                        emptyOption="Geen"
+                        label={t("editPanel.sensorUnderStatus")}
+                        placeholder={t("editPanel.searchSensor")}
+                        emptyOption={t("editPanel.none")}
                       />
                     </div>
                   </div>
@@ -3796,14 +3796,14 @@ aria-label={t("editPanel.removeCondition")}
                     {editTab === "weergave" && (
                   <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Icoon
+                        {t("editPanel.icon")}
                       </label>
                       <input
                         type="text"
                         value={vacuumIconSearch}
                         onChange={(e) => setVacuumIconSearch(e.target.value)}
                         onFocus={() => setVacuumIconSearch(vacuumIconSearch || (editForm.icon ?? ""))}
-                        placeholder="Zoek icoon (bijv. home, bot, sparkles…)"
+                        placeholder={t("editPanel.iconSearchExample")}
                         className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                       <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
@@ -3820,7 +3820,7 @@ aria-label={t("editPanel.removeCondition")}
                               : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                           )}
                         >
-                          Geen (Sparkles)
+                          {t("editPanel.noneSparkles")}
                         </button>
                         {VACUUM_ICON_OPTIONS.filter((name) =>
                           name.toLowerCase().includes((vacuumIconSearch || "").toLowerCase())
@@ -3869,14 +3869,14 @@ aria-label={t("editPanel.removeCondition")}
                     {editTab === "algemeen" && (
                       <>
                         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                          Icoon
+                          {t("editPanel.icon")}
                         </label>
                         <input
                           type="text"
                           value={sensorIconSearch}
                           onChange={(e) => setSensorIconSearch(e.target.value)}
                           onFocus={() => setSensorIconSearch(sensorIconSearch || (editForm.icon ?? ""))}
-                          placeholder="Zoek icoon (bijv. gauge, thermometer…)"
+                          placeholder={t("editPanel.iconSearchGauge")}
                           className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                         />
                         <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
@@ -3918,7 +3918,7 @@ aria-label={t("editPanel.removeCondition")}
                         </div>
                         <div className="mt-3">
                           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                            Grootte
+                            {t("editPanel.size")}
                           </label>
                           <select
                             value={editForm.size ?? "md"}
@@ -3927,9 +3927,9 @@ aria-label={t("editPanel.removeCondition")}
                             }
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                           >
-                            <option value="sm">Klein</option>
-                            <option value="md">Normaal</option>
-                            <option value="lg">Groot</option>
+                            <option value="sm">{t("editPanel.sizeSm")}</option>
+                            <option value="md">{t("editPanel.sizeMd")}</option>
+                            <option value="lg">{t("editPanel.sizeLg")}</option>
                           </select>
                         </div>
                         <div className="mt-3 flex items-center gap-2">
@@ -3943,7 +3943,7 @@ aria-label={t("editPanel.removeCondition")}
                             className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                           />
                           <label htmlFor="sensor-show-icon" className="text-sm text-gray-700 dark:text-gray-300">
-                            Icoon tonen
+                            {t("editPanel.showIcon")}
                           </label>
                         </div>
                       </>
@@ -3951,7 +3951,7 @@ aria-label={t("editPanel.removeCondition")}
                     {editTab === "voorwaarden" && (
                       <div className="space-y-2">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Eerste voorwaarde die klopt bepaalt de kaartkleur. Getallen en tekst worden ondersteund.
+                          {t("editPanel.cardColorConditionsHint")}
                         </p>
                         {(editForm.conditions ?? []).map((cond, idx) => (
                           <div
@@ -3972,7 +3972,7 @@ aria-label={t("editPanel.removeCondition")}
                             >
                               {SENSOR_CONDITION_OPERATORS.map((op) => (
                                 <option key={op} value={op}>
-                                  {SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op}
+                                  {op === "contains" ? t("editPanel.operatorContains") : (SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op)}
                                 </option>
                               ))}
                             </select>
@@ -4062,7 +4062,7 @@ aria-label={t("editPanel.removeCondition")}
                   <div className="space-y-3">
                     <label className="flex items-center justify-between gap-3 cursor-pointer">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Toon entiteitstatus
+                        {t("editPanel.showEntityState")}
                       </span>
                       <button
                         type="button"
@@ -4087,18 +4087,18 @@ aria-label={t("editPanel.removeCondition")}
                       </button>
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
-                      Toon of verberg de waarde (Aan/Uit of sensorwaarde) op de pill.
+                      {t("editPanel.showStateHint")}
                     </p>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Icoon
+                        {t("editPanel.icon")}
                       </label>
                       <input
                         type="text"
                         value={pillIconSearch}
                         onChange={(e) => setPillIconSearch(e.target.value)}
                         onFocus={() => setPillIconSearch(pillIconSearch || (editForm.icon ?? ""))}
-                        placeholder="Zoek icoon (bijv. CircleDot, Sun…)"
+                        placeholder={t("editPanel.iconSearchPlaceholder")}
                         className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                       <div className="max-h-32 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 flex flex-wrap gap-1.5 p-1.5">
@@ -4144,10 +4144,10 @@ aria-label={t("editPanel.removeCondition")}
                     {editTab === "voorwaarden" && (
                     <div>
                       <p className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Voorwaardelijke kleur (eerste match)
+                        {t("editPanel.conditionalColor")}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                        Bepaal de pill-kleur op basis van de entity state.
+                        {t("editPanel.pillColorHint")}
                       </p>
                       {(editForm.conditions ?? []).map((cond, idx) => (
                         <div
@@ -4168,7 +4168,7 @@ aria-label={t("editPanel.removeCondition")}
                           >
                             {SENSOR_CONDITION_OPERATORS.map((op) => (
                               <option key={op} value={op}>
-                                {SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op}
+                                {op === "contains" ? t("editPanel.operatorContains") : (SENSOR_CONDITION_OPERATOR_LABELS[op] ?? op)}
                               </option>
                             ))}
                           </select>
@@ -4183,7 +4183,7 @@ aria-label={t("editPanel.removeCondition")}
                                 ),
                               }))
                             }
-                            placeholder="Waarde"
+                            placeholder={t("editPanel.value")}
                             className="w-20 rounded border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 dark:text-gray-200 px-2 py-1 text-xs"
                           />
                           <select
@@ -4258,7 +4258,7 @@ aria-label={t("editPanel.removeCondition")}
                     <>
                     <div className="flex items-center justify-between gap-3">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Toon titel
+                        {t("editPanel.showTitle")}
                       </label>
                       <button
                         type="button"
@@ -4284,7 +4284,7 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Vernieuw interval (seconden)
+                        {t("editPanel.refreshIntervalSeconds")}
                       </label>
                       <input
                         type="number"
@@ -4512,7 +4512,7 @@ aria-label={t("editPanel.removeCondition")}
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Icoon
+                        {t("editPanel.icon")}
                       </label>
                       <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto">
                         {(["Fuel", "Droplets", "Zap", "Gauge", "Thermometer"].filter((n) => CARD_ICON_OPTIONS.includes(n)) as string[]).map((name) => (
@@ -4536,7 +4536,7 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Kleur icoon
+                        {t("editPanel.iconColor")}
                       </label>
                       <div className="flex items-center gap-2">
                         <input
@@ -4569,9 +4569,9 @@ aria-label={t("editPanel.removeCondition")}
                       value={editForm.entity_id ?? ""}
                       onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
                       filter={(e) => e.entity_id.startsWith("sensor.")}
-                      label="Entity dagverbruik (totaal per dag)"
-                      placeholder="Zoek sensor…"
-                      emptyOption="Kies entity…"
+                      label={t("editPanel.nutsDailyEntity")}
+                      placeholder={t("editPanel.searchSensor")}
+                      emptyOption={t("editPanel.chooseEntityEllipsis")}
                     />
                     <EntitySelectWithSearch
                       entities={entities}
@@ -4580,13 +4580,13 @@ aria-label={t("editPanel.removeCondition")}
                         setEditForm((prev) => ({ ...prev, current_entity_id: v || undefined }))
                       }
                       filter={(e) => e.entity_id.startsWith("sensor.")}
-                      label="Entity huidig verbruik (optioneel)"
-                      placeholder="Zoek sensor…"
-                      emptyOption="Geen (toont 0 voor huidig)"
+                      label={t("editPanel.nutsCurrentEntity")}
+                      placeholder={t("editPanel.searchSensor")}
+                      emptyOption={t("editPanel.noneShowsZero")}
                     />
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Max waarde voor bar (optioneel)
+                        {t("editPanel.maxBarValue")}
                       </label>
                       <input
                         type="number"
@@ -4603,14 +4603,14 @@ aria-label={t("editPanel.removeCondition")}
                         placeholder="10"
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Schaal voor verticale verbruiksbalk</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.barScaleHint")}</p>
                     </div>
                     </>
                     )}
                     {editTab === "weergave" && (
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Breedte × hoogte (px)
+                        {t("editPanel.widthHeightPx")}
                       </label>
                       <div className="flex gap-2">
                         <div className="flex-1">
@@ -4662,7 +4662,7 @@ aria-label={t("editPanel.removeCondition")}
                         onClick={() => setEditingGroupChildId(null)}
                         className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300"
                       >
-                        Terug
+                        {t("editPanel.back")}
                       </button>
                       <div className="flex gap-2">
                         <button
@@ -4675,9 +4675,9 @@ aria-label={t("editPanel.removeCondition")}
                             saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                           }}
                           className="rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          aria-label="Kaart uit groep verwijderen"
+                          aria-label={t("editPanel.removeCardFromGroup")}
                         >
-                          Verwijderen
+                          {t("editPanel.remove")}
                         </button>
                         <button
                           type="button"
@@ -4693,9 +4693,9 @@ aria-label={t("editPanel.removeCondition")}
                             }
                           }}
                           className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
-                          aria-label="Kaart in groep dupliceren"
+                          aria-label={t("editPanel.duplicateCardInGroup")}
                         >
-                          Dupliceren
+                          {t("editPanel.duplicate")}
                         </button>
                         <button
                           type="button"

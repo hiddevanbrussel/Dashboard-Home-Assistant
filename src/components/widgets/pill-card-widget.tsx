@@ -5,6 +5,7 @@ import type { PillCardProps, SensorCondition } from "./widget-types";
 import { cn, capitalizeFirst } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { CARD_ICONS } from "./card-icons";
+import { useTranslation } from "@/hooks/use-translation";
 
 const CONDITION_COLORS: Record<string, string> = {
   red: "border-red-400/50 dark:border-red-400/40 bg-red-500/25 dark:bg-red-900/30",
@@ -91,6 +92,7 @@ export function PillCardWidget({
   className,
   onMoreClick,
 }: PillCardProps & { className?: string; onMoreClick?: () => void }) {
+  const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const setStates = useEntityStateStore((s) => s.setStates);
   const state = entity?.state as string | undefined;
@@ -100,7 +102,7 @@ export function PillCardWidget({
   const isOn = state === "on";
 
   const IconComponent = (iconName && CARD_ICONS[iconName]) ? CARD_ICONS[iconName] : CARD_ICONS.CircleDot;
-  const displayValue = canToggle ? (isOn ? "Aan" : "Uit") : formatValue(state);
+  const displayValue = canToggle ? (isOn ? t("lightCard.on") : t("lightCard.off")) : formatValue(state);
   const matchedColor = matchCondition(state, conditions);
   const conditionClass = matchedColor && CONDITION_COLORS[matchedColor]
     ? CONDITION_COLORS[matchedColor]
@@ -177,7 +179,7 @@ export function PillCardWidget({
             "rounded-full shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors",
             iconOnly ? "absolute -right-0.5 -top-0.5 p-0.5" : "p-1"
           )}
-          aria-label="Opties"
+          aria-label={t("common.options")}
         >
           <MoreVertical className="h-4 w-4" aria-hidden />
         </button>

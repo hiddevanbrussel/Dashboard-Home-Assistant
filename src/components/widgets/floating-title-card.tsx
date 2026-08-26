@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
+import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingWelcomeCardPosition.";
 const DEFAULT_OFFSET = 24;
@@ -72,6 +73,7 @@ export function FloatingTitleCard({
   onEdit?: (widgetId: string) => void;
   onEnterEditMode?: () => void;
 }) {
+  const { t } = useTranslation();
   const [position, setPosition] = useState<Position>(() => loadPosition(widgetId) ?? { left: 0, bottom: DEFAULT_OFFSET });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
@@ -234,7 +236,7 @@ export function FloatingTitleCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); onEdit(widgetId); }}
               className="shrink-0 p-1.5 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10 dark:text-gray-400"
-              aria-label="Opties"
+              aria-label={t("common.options")}
             >
               <MoreVertical className="h-4 w-4" />
             </button>
