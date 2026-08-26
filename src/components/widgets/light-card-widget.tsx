@@ -134,7 +134,7 @@ function ColorWheelPicker({
 
 // ─── Main widget ────────────────────────────────────────────────────────────
 
-/** HomeKit-style: horizontale kaart met icoon links, titel + status rechts. Duidelijke aan/uit-weergave. */
+/** HomeKit accessory tile: square card, icon top-left, name + status at the bottom. */
 export function LightCardWidget({
   title,
   entity_id,
@@ -296,8 +296,14 @@ export function LightCardWidget({
     : t("lightCard.off");
 
   const showColorDot = isOn && rgbColor && (colorMode === "xy" || colorMode === "hs");
-  const colorDotStyle = showColorDot
-    ? { backgroundColor: `rgb(${rgbColor![0]},${rgbColor![1]},${rgbColor![2]})` }
+  const accentRgb = showColorDot && rgbColor ? rgbColor : ([255, 212, 29] as const);
+  const accentCss = `rgb(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]})`;
+  const colorDotStyle = showColorDot ? { backgroundColor: accentCss } : undefined;
+  const badgeGlow = isOn
+    ? {
+        backgroundColor: accentCss,
+        boxShadow: `0 4px 16px rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, 0.42), inset 0 1px 0 rgba(255,255,255,0.45)`,
+      }
     : undefined;
 
   // ── Tab configuration ──────────────────────────────────────────────────────
@@ -319,72 +325,62 @@ export function LightCardWidget({
   const iconBadge = (
     <div
       className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200",
-        isOn ? "bg-[#FFD41D] shadow-sm dark:bg-[#FFD41D] dark:shadow-sm" : "bg-white/30 dark:bg-white/10 shadow-inner"
+        "flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200",
+        isOn ? "text-white" : "bg-black/10 text-gray-500 shadow-inner dark:bg-white/15 dark:text-white/50"
       )}
+      style={badgeGlow}
       aria-hidden
     >
       <IconComponent
-        className={cn(
-          "h-5 w-5 shrink-0 transition-colors",
-          isOn ? "text-white drop-shadow dark:text-white dark:drop-shadow" : "text-gray-500 dark:text-gray-400"
-        )}
-        strokeWidth={1.5}
-        fill={isOn ? "currentColor" : "none"}
+        className="h-[22px] w-[22px] shrink-0"
+        strokeWidth={isOn ? 1.75 : 1.6}
+        fill="currentColor"
         aria-hidden
       />
     </div>
   );
 
   const titleBlock = (
-    <div className="flex min-w-0 flex-1 flex-col justify-center">
-      <p className="truncate text-xs font-medium text-inherit">{displayName}</p>
-      <div className="flex items-center gap-1.5">
-        {showColorDot && (
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10" style={colorDotStyle} aria-hidden />
+    <div className="flex min-w-0 flex-col items-start text-left">
+      <p className="line-clamp-2 text-[13px] font-semibold leading-tight tracking-[-0.01em] text-inherit">
+        {displayName}
+      </p>
+      <p
+        className={cn(
+          "mt-0.5 truncate text-[12px] font-medium leading-none",
+          isOn ? "text-gray-500" : "text-gray-500 dark:text-white/50"
         )}
-        <p className={cn("truncate text-xs", isOn ? "text-gray-600 dark:text-gray-600" : "text-gray-500 dark:text-gray-400")}>
-          {statusText}
-        </p>
-      </div>
+      >
+        {statusText}
+      </p>
     </div>
   );
 
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl transition-colors duration-200",
-        size === "sm" && "text-sm",
-        size === "md" && "text-base",
-        size === "lg" && "text-lg",
-        isOn ? "text-gray-900 dark:text-gray-900" : "text-gray-800 dark:text-gray-200 opacity-95",
+        "relative flex aspect-square w-full flex-col justify-between overflow-hidden rounded-[28px] p-3.5 transition-[background-color,border-color,box-shadow,color,transform] duration-200",
+        size === "sm" && "min-h-[8.25rem]",
+        size === "md" && "min-h-[10rem]",
+        size === "lg" && "min-h-[11.75rem]",
+        isOn
+          ? "border border-white/80 bg-white text-gray-900 shadow-[0_8px_28px_rgba(0,0,0,0.10),inset_0_1px_0_rgba(255,255,255,0.9)] dark:border-white/50 dark:bg-[#f3f3f5] dark:text-gray-900"
+          : "border border-black/5 bg-black/[0.07] text-gray-800 shadow-[0_8px_24px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl dark:border-white/10 dark:bg-white/10 dark:text-white/90 dark:shadow-[0_8px_28px_rgba(0,0,0,0.28)]",
+        !editMode && "select-none",
         className
       )}
     >
-      <div className="flex items-center gap-4 px-4 py-3">
+      <div className="flex items-start justify-between gap-2">
         {editMode ? (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center">{iconBadge}</div>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center">{iconBadge}</div>
         ) : (
           <button
             type="button"
             onClick={handleToggle}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 disabled:opacity-70"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95"
             aria-label={isOn ? t("lightCard.turnOff") : t("lightCard.turnOn")}
           >
             {iconBadge}
-          </button>
-        )}
-
-        {editMode ? (
-          <div className="flex min-w-0 flex-1 items-center gap-2 text-left">{titleBlock}</div>
-        ) : (
-          <button
-            type="button"
-            onClick={openModal}
-            className="-mx-1 flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-xl px-1 py-0.5 text-left transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 active:bg-black/10 dark:hover:bg-white/5 dark:active:bg-white/10"
-            aria-label={t("lightCard.control")}
-          >
-            {titleBlock}
           </button>
         )}
 
@@ -397,13 +393,29 @@ export function LightCardWidget({
               e.stopPropagation();
               onMoreClick();
             }}
-            className="shrink-0 rounded-lg p-1.5 text-inherit opacity-70 transition-colors hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/5"
+            className={cn(
+              "shrink-0 rounded-full p-1 opacity-70 transition-colors",
+              isOn ? "text-gray-600 hover:bg-black/5 hover:opacity-100" : "text-gray-500 hover:bg-black/5 hover:opacity-100 dark:text-white/80 dark:hover:bg-white/10"
+            )}
             aria-label={t("lightCard.options")}
           >
-            <MoreVertical className="h-5 w-5" aria-hidden />
+            <MoreVertical className="h-4 w-4" aria-hidden />
           </button>
         )}
       </div>
+
+      {editMode ? (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-end">{titleBlock}</div>
+      ) : (
+        <button
+          type="button"
+          onClick={openModal}
+          className="flex min-h-0 min-w-0 flex-1 flex-col justify-end rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
+          aria-label={t("lightCard.control")}
+        >
+          {titleBlock}
+        </button>
+      )}
 
       {modalOpen &&
         typeof document !== "undefined" &&
@@ -416,13 +428,13 @@ export function LightCardWidget({
               onClick={() => setModalOpen(false)}
             />
             <div
-              className="relative z-[101] w-full max-w-sm p-5 flex flex-col items-center text-center gap-4"
+              className="relative z-[101] w-full max-w-sm p-5 flex flex-col items-center text-center gap-5"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Title + status */}
               <div>
-                <h3 className="text-xl font-semibold text-white">{displayName}</h3>
-                <p className="text-sm text-gray-300 mt-0.5 flex items-center justify-center gap-1.5">
+                <h3 className="text-[22px] font-semibold tracking-tight text-white">{displayName}</h3>
+                <p className="text-sm text-white/60 mt-1 flex items-center justify-center gap-1.5">
                   {showColorDot && (
                     <span className="w-2.5 h-2.5 rounded-full inline-block border border-white/20" style={colorDotStyle} aria-hidden />
                   )}
@@ -432,14 +444,14 @@ export function LightCardWidget({
 
               {/* Tab bar (only when multiple capabilities) */}
               {tabs.length > 1 && (
-                <div className="flex items-center gap-0.5 rounded-xl bg-white/10 p-0.5">
+                <div className="flex items-center gap-0.5 rounded-full bg-white/10 p-0.5">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
                       className={cn(
-                        "px-3 py-1 rounded-lg text-xs font-medium transition-colors",
+                        "px-3.5 py-1 rounded-full text-xs font-medium transition-colors",
                         activeTab === tab.id
                           ? "bg-white text-gray-900 shadow-sm"
                           : "text-white/70 hover:text-white"
@@ -454,11 +466,14 @@ export function LightCardWidget({
               {/* ── Brightness tab ── */}
               {activeTab === "brightness" && supportsBrightness && (
                 <div className="flex flex-col items-center gap-4">
-                  <div className="relative flex flex-col items-center w-36 h-64">
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-64 rounded-[38px] bg-gray-700/80 dark:bg-gray-800/80 flex flex-col justify-end overflow-hidden">
+                  <div className="relative flex flex-col items-center w-36 h-72">
+                    <div
+                      className="absolute top-0 left-1/2 -translate-x-1/2 flex w-24 h-72 flex-col justify-end overflow-hidden rounded-[48px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12),0_12px_40px_rgba(0,0,0,0.35)]"
+                      style={{ background: "rgba(40,40,44,0.82)" }}
+                    >
                       <div
-                        className="w-full rounded-b-[38px] bg-[#FFD41D] min-h-0 transition-[height] duration-150 ease-out"
-                        style={{ height: `${sliderBrightness}%` }}
+                        className="w-full min-h-0 rounded-b-[48px] transition-[height] duration-150 ease-out"
+                        style={{ height: `${sliderBrightness}%`, backgroundColor: accentCss }}
                       />
                     </div>
                     <input
@@ -470,12 +485,12 @@ export function LightCardWidget({
                       onInput={(e) => handleBrightnessChange(Number((e.target as HTMLInputElement).value))}
                       onPointerUp={flushBrightness}
                       onPointerLeave={flushBrightness}
-                      className="absolute top-1/2 left-1/2 w-64 h-28 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize opacity-0 [&::-webkit-slider-thumb]:cursor-ns-resize"
+                      className="absolute top-1/2 left-1/2 w-72 h-24 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize opacity-0 [&::-webkit-slider-thumb]:cursor-ns-resize"
                       style={{ transform: "translate(-50%, -50%) rotate(-90deg)" }}
                       aria-label={t("lightCard.brightness")}
                     />
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none flex items-center justify-center w-10 h-10 rounded-full bg-amber-400/40">
-                      <IconComponent className="h-5 w-5 text-white drop-shadow" strokeWidth={1.5} fill="currentColor" aria-hidden />
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none flex items-center justify-center">
+                      <IconComponent className="h-6 w-6 text-white drop-shadow" strokeWidth={1.6} fill="currentColor" aria-hidden />
                     </div>
                   </div>
                 </div>
@@ -556,16 +571,14 @@ export function LightCardWidget({
               {/* ── Color temperature tab ── */}
               {activeTab === "colortemp" && supportsColorTemp && (
                 <div className="flex flex-col items-center gap-4">
-                  <div className="relative flex flex-col items-center w-36 h-64">
+                  <div className="relative flex flex-col items-center w-36 h-72">
                     {/* Gradient bar: warm (bottom) → cool (top) */}
                     <div
-                      className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-64 rounded-[38px] overflow-hidden"
+                      className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-72 overflow-hidden rounded-[48px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12),0_12px_40px_rgba(0,0,0,0.35)]"
                       style={{
                         background: "linear-gradient(to top, #FF8C00, #FFB347, #FFD580, #FFFAE0, #FFFFFF, #D0E8FF, #A8D0FF)",
                       }}
-                    >
-                      {/* Dark overlay from top, shrinks as temp increases (warmer = higher in bar?) */}
-                    </div>
+                    />
                     {/* Indicator dot at current position */}
                     <div
                       className="absolute left-1/2 -translate-x-1/2 w-8 h-8 rounded-full border-4 border-white shadow-xl pointer-events-none transition-[top] duration-150"

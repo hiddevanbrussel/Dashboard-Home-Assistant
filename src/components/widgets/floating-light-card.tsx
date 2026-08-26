@@ -4,11 +4,11 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { LightCardWidget } from "./light-card-widget";
-import { useEntityStateStore } from "@/stores/entity-state-store";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingLightCardPosition.";
 const DEFAULT_OFFSET = 24;
-const CARD_WIDTH = 240;
+const CARD_WIDTH = 160;
+const CARD_HEIGHT = 160;
 
 type Position = { left: number; bottom: number };
 
@@ -24,7 +24,7 @@ function loadPosition(scope: string | undefined, widgetId: string): Position | n
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
     if (typeof p?.left === "number" && typeof p?.top === "number") {
-      return { left: p.left, bottom: window.innerHeight - p.top - 200 };
+      return { left: p.left, bottom: window.innerHeight - p.top - CARD_HEIGHT };
     }
   } catch {
     // ignore
@@ -41,11 +41,13 @@ function savePosition(scope: string | undefined, widgetId: string, p: Position) 
   }
 }
 
-function defaultPosition(_widgetIndex: number): Position {
+function defaultPosition(widgetIndex: number): Position {
   if (typeof window === "undefined") return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET };
   const maxLeft = window.innerWidth - CARD_WIDTH;
-  const maxBottom = window.innerHeight - 120;
-  return { left: maxLeft / 2, bottom: maxBottom / 2 };
+  const maxBottom = window.innerHeight - CARD_HEIGHT;
+  const gap = 16;
+  const left = Math.min(maxLeft, DEFAULT_OFFSET + widgetIndex * (CARD_WIDTH + gap));
+  return { left, bottom: Math.max(DEFAULT_OFFSET, maxBottom / 2) };
 }
 
 export type LightCardWidgetItem = {
@@ -74,9 +76,6 @@ export function FloatingLightCard({
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
-  const entity = useEntityStateStore((s) => s.getState(widget.entity_id));
-  const isSelectedOn = entity?.state === "on";
-
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widget.id) ?? { left: 0, bottom: DEFAULT_OFFSET });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
@@ -97,7 +96,6 @@ export function FloatingLightCard({
       const target = e.target as HTMLElement;
       if (target?.closest?.("[data-no-drag]")) return;
       clearLongPress();
-      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       longPressTimerRef.current = setTimeout(() => {
         longPressTimerRef.current = null;
         onEnterEditMode?.();
@@ -108,8 +106,7 @@ export function FloatingLightCard({
   );
 
   const endLongPress = useCallback(
-    (e: React.PointerEvent) => {
-      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    (_e: React.PointerEvent) => {
       clearLongPress();
     },
     [clearLongPress]
@@ -121,7 +118,7 @@ export function FloatingLightCard({
     if (initialized.current) return;
     initialized.current = true;
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-    const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - CARD_HEIGHT : 400;
     const bounds = { maxLeft, maxBottom };
     const saved = loadPosition(storageScope, widget.id);
     if (saved) {
@@ -167,7 +164,7 @@ export function FloatingLightCard({
       }
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+      const maxBottom = typeof window !== "undefined" ? window.innerHeight - CARD_HEIGHT : 400;
       const raw = {
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
         bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
@@ -185,7 +182,7 @@ export function FloatingLightCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+        const maxBottom = typeof window !== "undefined" ? window.innerHeight - CARD_HEIGHT : 400;
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
           bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
@@ -202,17 +199,16 @@ export function FloatingLightCard({
   return (
     <div
       className={cn(
-      "fixed z-30 shadow-xl rounded-2xl overflow-hidden backdrop-blur-2xl border flex transition-colors duration-200",
-      isSelectedOn
-        ? "bg-white/25 dark:bg-white/20 border-white/30 dark:border-white/25"
-        : "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
-      editMode && "cursor-grab touch-none active:cursor-grabbing",
-      editMode && !isDragging && "animate-edit-wiggle"
-    )}
+        "fixed z-30 rounded-[28px] transition-transform duration-200",
+        !editMode && "origin-center active:scale-[0.97]",
+        editMode && "cursor-grab touch-none active:cursor-grabbing",
+        editMode && !isDragging && "animate-edit-wiggle"
+      )}
       style={{
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
+        height: CARD_HEIGHT,
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -233,18 +229,15 @@ export function FloatingLightCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className="shrink-0 flex flex-col" style={{ width: CARD_WIDTH }}>
-        <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-          <LightCardWidget
-            title={widget.title}
-            entity_id={widget.entity_id}
-            icon={widget.icon}
-            size="md"
-            editMode={editMode}
-            onMoreClick={editMode ? onEdit : undefined}
-          />
-        </div>
-      </div>
+      <LightCardWidget
+        title={widget.title}
+        entity_id={widget.entity_id}
+        icon={widget.icon}
+        size="md"
+        editMode={editMode}
+        className="h-full w-full"
+        onMoreClick={editMode ? onEdit : undefined}
+      />
     </div>
   );
 }
