@@ -34,6 +34,7 @@ import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "
 import { OfflinePill } from "@/components/offline-pill";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
+import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import { EditPanelModal } from "./edit-panel";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -425,6 +426,7 @@ export default function EnergyPage() {
   };
 
   function handleAddTile(type: string, entityId: string, titleOverride?: string): string | undefined {
+    if (isWidgetTypeTemporarilyDisabled(type)) return;
     const newId = generateId();
     const newWidget: WidgetConfig = {
       id: newId,
@@ -998,7 +1000,7 @@ export default function EnergyPage() {
               <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4">
                 {addTileStep === "type" ? (
                   <div className="grid grid-cols-3 gap-2">
-                    {ADDABLE_WIDGET_TILES.map(({ type, label, Icon }) => (
+                    {ADDABLE_WIDGET_TILES.filter(({ type }) => !isWidgetTypeTemporarilyDisabled(type)).map(({ type, label, Icon }) => (
                       <button
                         key={type}
                         type="button"
