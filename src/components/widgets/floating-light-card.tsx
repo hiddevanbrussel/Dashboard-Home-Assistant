@@ -7,8 +7,8 @@ import { LightCardWidget } from "./light-card-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingLightCardPosition.";
 const DEFAULT_OFFSET = 24;
-const CARD_WIDTH = 160;
-const CARD_HEIGHT = 160;
+const CARD_WIDTH = 240;
+const CARD_HEIGHT = 80;
 
 type Position = { left: number; bottom: number };
 
@@ -199,7 +199,7 @@ export function FloatingLightCard({
   return (
     <div
       className={cn(
-        "fixed z-30 rounded-[28px] transition-transform duration-200",
+        "fixed z-30 rounded-[24px] transition-transform duration-200",
         !editMode && "origin-center active:scale-[0.97]",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
@@ -208,7 +208,7 @@ export function FloatingLightCard({
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
-        height: CARD_HEIGHT,
+        height: "auto",
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -235,7 +235,7 @@ export function FloatingLightCard({
         icon={widget.icon}
         size="md"
         editMode={editMode}
-        className="h-full w-full"
+        className="w-full"
         onMoreClick={editMode ? onEdit : undefined}
       />
     </div>

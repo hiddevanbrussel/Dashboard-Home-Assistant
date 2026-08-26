@@ -134,7 +134,7 @@ function ColorWheelPicker({
 
 // ─── Main widget ────────────────────────────────────────────────────────────
 
-/** HomeKit accessory tile: square card, icon top-left, name + status at the bottom. */
+/** HomeKit accessory bar: icon left, name + status right. Rounded, strong on/off contrast. */
 export function LightCardWidget({
   title,
   entity_id,
@@ -341,8 +341,8 @@ export function LightCardWidget({
   );
 
   const titleBlock = (
-    <div className="flex min-w-0 flex-col items-start text-left">
-      <p className="line-clamp-2 text-[13px] font-semibold leading-tight tracking-[-0.01em] text-inherit">
+    <div className="flex min-w-0 flex-col items-start justify-center text-left">
+      <p className="truncate text-[13px] font-semibold leading-tight tracking-[-0.01em] text-inherit">
         {displayName}
       </p>
       <p
@@ -359,10 +359,10 @@ export function LightCardWidget({
   return (
     <div
       className={cn(
-        "relative flex aspect-square w-full flex-col justify-between overflow-hidden rounded-[28px] p-3.5 transition-[background-color,border-color,box-shadow,color,transform] duration-200",
-        size === "sm" && "min-h-[8.25rem]",
-        size === "md" && "min-h-[10rem]",
-        size === "lg" && "min-h-[11.75rem]",
+        "relative flex w-full items-center overflow-hidden rounded-[24px] transition-[background-color,border-color,box-shadow,color] duration-200",
+        size === "sm" && "gap-3 px-3 py-2.5",
+        size === "md" && "gap-3.5 px-3.5 py-3",
+        size === "lg" && "gap-4 px-4 py-3.5",
         isOn
           ? "border border-white/80 bg-white text-gray-900 shadow-[0_8px_28px_rgba(0,0,0,0.10),inset_0_1px_0_rgba(255,255,255,0.9)] dark:border-white/50 dark:bg-[#f3f3f5] dark:text-gray-900"
           : "border border-black/5 bg-black/[0.07] text-gray-800 shadow-[0_8px_24px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-xl dark:border-white/10 dark:bg-white/10 dark:text-white/90 dark:shadow-[0_8px_28px_rgba(0,0,0,0.28)]",
@@ -370,50 +370,48 @@ export function LightCardWidget({
         className
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        {editMode ? (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center">{iconBadge}</div>
-        ) : (
-          <button
-            type="button"
-            onClick={handleToggle}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95"
-            aria-label={isOn ? t("lightCard.turnOff") : t("lightCard.turnOn")}
-          >
-            {iconBadge}
-          </button>
-        )}
-
-        {onMoreClick && (
-          <button
-            type="button"
-            data-no-drag
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              onMoreClick();
-            }}
-            className={cn(
-              "shrink-0 rounded-full p-1 opacity-70 transition-colors",
-              isOn ? "text-gray-600 hover:bg-black/5 hover:opacity-100" : "text-gray-500 hover:bg-black/5 hover:opacity-100 dark:text-white/80 dark:hover:bg-white/10"
-            )}
-            aria-label={t("lightCard.options")}
-          >
-            <MoreVertical className="h-4 w-4" aria-hidden />
-          </button>
-        )}
-      </div>
+      {editMode ? (
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center">{iconBadge}</div>
+      ) : (
+        <button
+          type="button"
+          onClick={handleToggle}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95"
+          aria-label={isOn ? t("lightCard.turnOff") : t("lightCard.turnOn")}
+        >
+          {iconBadge}
+        </button>
+      )}
 
       {editMode ? (
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-end">{titleBlock}</div>
+        <div className="flex min-w-0 flex-1 items-center">{titleBlock}</div>
       ) : (
         <button
           type="button"
           onClick={openModal}
-          className="flex min-h-0 min-w-0 flex-1 flex-col justify-end rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
+          className="-mx-1 flex min-w-0 flex-1 items-center rounded-xl px-1 py-0.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
           aria-label={t("lightCard.control")}
         >
           {titleBlock}
+        </button>
+      )}
+
+      {onMoreClick && (
+        <button
+          type="button"
+          data-no-drag
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onMoreClick();
+          }}
+          className={cn(
+            "shrink-0 rounded-full p-1 opacity-70 transition-colors",
+            isOn ? "text-gray-600 hover:bg-black/5 hover:opacity-100" : "text-gray-500 hover:bg-black/5 hover:opacity-100 dark:text-white/80 dark:hover:bg-white/10"
+          )}
+          aria-label={t("lightCard.options")}
+        >
+          <MoreVertical className="h-4 w-4" aria-hidden />
         </button>
       )}
 
