@@ -53,6 +53,8 @@ export type WidgetConfig = {
   humidity_entity_id?: string;
   icon?: string;
   size?: string;
+  /** Light card: "horizontal" (default bar) or "square" (HomeKit tile). */
+  card_layout?: "horizontal" | "square";
   /** Sensor card: conditionele voorwaarden (operator, value, color). */
   conditions?: { operator: string; value: string; color: string }[];
   /** Pill card: toon entiteitstatus (aan/uit of waarde); default true. */

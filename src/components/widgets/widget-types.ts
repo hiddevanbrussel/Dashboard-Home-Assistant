@@ -21,6 +21,8 @@ export type LightControlProps = WidgetBaseProps & {
   state?: "on" | "off";
   /** Icoon voor light card: lightbulb (default), cone, spotlight, lamp, lamp-ceiling, lamp-desk, lamp-floor, lamp-wall-down, lamp-wall-up */
   icon?: string;
+  /** Light card shape: horizontal bar (default) or square HomeKit tile. */
+  card_layout?: "horizontal" | "square";
 };
 
 export type WifiProps = WidgetBaseProps & {

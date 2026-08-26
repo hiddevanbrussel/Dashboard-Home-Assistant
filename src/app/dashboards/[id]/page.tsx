@@ -584,6 +584,7 @@ export default function DashboardEditPage() {
     height?: number;
     icon?: string;
     size?: string;
+    card_layout?: "horizontal" | "square";
     conditions?: { operator: string; value: string; color: string }[];
     image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
     current_entity_id?: string;
@@ -622,6 +623,7 @@ export default function DashboardEditPage() {
     height: undefined as number | undefined,
     icon: "",
     size: "md",
+    card_layout: "horizontal",
     conditions: [],
     image_conditions: [],
     minimal: false,
@@ -786,6 +788,7 @@ export default function DashboardEditPage() {
         height: editingWidget.height ?? undefined,
         icon: isCategoryCard ? (editingWidget.icon ?? "Type") : (editingWidget.icon ?? ""),
         size: editingWidget.size ?? "md",
+        card_layout: editingWidget.card_layout === "square" ? "square" : "horizontal",
         conditions: editingWidget.conditions ?? [],
         image_conditions: editingWidget.image_conditions ?? [],
         show_state: editingWidget.show_state !== false,
@@ -972,6 +975,7 @@ export default function DashboardEditPage() {
       title: titleOverride ?? (type === "text_card" ? t("editPanel.newText") : type.replace(/_/g, " ")),
       entity_id: entityId,
       ...(type === "text_card" && { textMode: "title" as const, show_icon: false, icon: "Type" }),
+      ...(type === "light_card" && { card_layout: "horizontal" as const }),
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
     };
@@ -1618,6 +1622,7 @@ export default function DashboardEditPage() {
                 title: w.title ?? t("editPanel.iconLabelLamp"),
                 entity_id: w.entity_id,
                 icon: w.icon,
+                card_layout: w.card_layout,
               }}
               widgetIndex={i}
               editMode={editMode}
@@ -2608,48 +2613,89 @@ export default function DashboardEditPage() {
                       </button>
                     </div>
                     {editTab === "algemeen" && (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {t("editPanel.icon")}
-                    </label>
-                    <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5">
-                      {LIGHT_ICON_OPTIONS.map((key) => {
-                        const label =
-                          key === "lightbulb"
-                            ? "Lightbulb"
-                            : key === "cone"
-                              ? "Cone"
-                              : key === "spotlight"
-                                ? "Spotlight"
-                                : key === "lamp"
-                                  ? t("editPanel.iconLabelLamp")
-                                  : key === "lamp-ceiling"
-                                    ? t("editPanel.iconLabelCeiling")
-                                    : key === "lamp-desk"
-                                      ? t("editPanel.iconLabelDesk")
-                                      : key === "lamp-floor"
-                                        ? t("editPanel.iconLabelFloor")
-                                        : key === "lamp-wall-down"
-                                          ? t("editPanel.wallDown")
-                                          : t("editPanel.wallUp");
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() =>
-                              setEditForm((prev) => ({ ...prev, icon: key }))
-                            }
-                            className={cn(
-                              "rounded-md px-2 py-1 text-xs",
-                              (editForm.icon ?? "lightbulb") === key
-                                ? "bg-[#4D2FB2] text-white"
-                                : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
-                            )}
-                          >
-                            {label}
-                          </button>
-                        );
-                      })}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.icon")}
+                      </label>
+                      <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5">
+                        {LIGHT_ICON_OPTIONS.map((key) => {
+                          const label =
+                            key === "lightbulb"
+                              ? "Lightbulb"
+                              : key === "cone"
+                                ? "Cone"
+                                : key === "spotlight"
+                                  ? "Spotlight"
+                                  : key === "lamp"
+                                    ? t("editPanel.iconLabelLamp")
+                                    : key === "lamp-ceiling"
+                                      ? t("editPanel.iconLabelCeiling")
+                                      : key === "lamp-desk"
+                                        ? t("editPanel.iconLabelDesk")
+                                        : key === "lamp-floor"
+                                          ? t("editPanel.iconLabelFloor")
+                                          : key === "lamp-wall-down"
+                                            ? t("editPanel.wallDown")
+                                            : t("editPanel.wallUp");
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() =>
+                                setEditForm((prev) => ({ ...prev, icon: key }))
+                              }
+                              className={cn(
+                                "rounded-md px-2 py-1 text-xs",
+                                (editForm.icon ?? "lightbulb") === key
+                                  ? "bg-[#4D2FB2] text-white"
+                                  : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                              )}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.cardLayout")}
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {([
+                          { value: "horizontal" as const, label: t("editPanel.cardLayoutHorizontal") },
+                          { value: "square" as const, label: t("editPanel.cardLayoutSquare") },
+                        ]).map((option) => {
+                          const selected = (editForm.card_layout ?? "horizontal") === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setEditForm((prev) => ({ ...prev, card_layout: option.value }))}
+                              className={cn(
+                                "flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-xs font-medium transition-colors",
+                                selected
+                                  ? "border-[#4D2FB2] bg-[#4D2FB2]/10 text-gray-900 dark:border-[#8B6CFF] dark:bg-[#8B6CFF]/15 dark:text-white"
+                                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:border-white/20"
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  option.value === "horizontal"
+                                    ? "h-7 w-14 rounded-[10px]"
+                                    : "h-10 w-10 rounded-[12px]",
+                                  selected
+                                    ? "bg-[#4D2FB2]/80 dark:bg-[#8B6CFF]/80"
+                                    : "bg-gray-300 dark:bg-white/25"
+                                )}
+                                aria-hidden
+                              />
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                     )}
@@ -4861,6 +4907,7 @@ aria-label={t("editPanel.removeCondition")}
                         }),
                         ...(editingWidget.type === "light_card" && {
                           icon: editForm.icon || undefined,
+                          card_layout: editForm.card_layout === "square" ? "square" : "horizontal",
                         }),
                         ...(editingWidget.type === "media_card" && {
                           width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
