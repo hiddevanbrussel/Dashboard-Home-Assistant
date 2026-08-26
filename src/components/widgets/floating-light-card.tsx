@@ -7,8 +7,13 @@ import { LightCardWidget } from "./light-card-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingLightCardPosition.";
 const DEFAULT_OFFSET = 24;
-const CARD_WIDTH = 160;
-const CARD_HEIGHT = 160;
+const BAR_WIDTH = 240;
+const BAR_HEIGHT = 80;
+const TILE_SIZE = 160;
+
+function cardSize(layout: "horizontal" | "square" | undefined): { width: number; height: number } {
+  return layout === "square" ? { width: TILE_SIZE, height: TILE_SIZE } : { width: BAR_WIDTH, height: BAR_HEIGHT };
+}
 
 type Position = { left: number; bottom: number };
 
@@ -24,7 +29,7 @@ function loadPosition(scope: string | undefined, widgetId: string): Position | n
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
     if (typeof p?.left === "number" && typeof p?.top === "number") {
-      return { left: p.left, bottom: window.innerHeight - p.top - CARD_HEIGHT };
+      return { left: p.left, bottom: window.innerHeight - p.top - BAR_HEIGHT };
     }
   } catch {
     // ignore
@@ -41,12 +46,12 @@ function savePosition(scope: string | undefined, widgetId: string, p: Position) 
   }
 }
 
-function defaultPosition(widgetIndex: number): Position {
+function defaultPosition(widgetIndex: number, width: number, height: number): Position {
   if (typeof window === "undefined") return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET };
-  const maxLeft = window.innerWidth - CARD_WIDTH;
-  const maxBottom = window.innerHeight - CARD_HEIGHT;
+  const maxLeft = window.innerWidth - width;
+  const maxBottom = window.innerHeight - height;
   const gap = 16;
-  const left = Math.min(maxLeft, DEFAULT_OFFSET + widgetIndex * (CARD_WIDTH + gap));
+  const left = Math.min(maxLeft, DEFAULT_OFFSET + widgetIndex * (width + gap));
   return { left, bottom: Math.max(DEFAULT_OFFSET, maxBottom / 2) };
 }
 
@@ -55,6 +60,7 @@ export type LightCardWidgetItem = {
   title: string;
   entity_id: string;
   icon?: string;
+  card_layout?: "horizontal" | "square";
 };
 
 const LONG_PRESS_MS = 500;
@@ -82,6 +88,10 @@ export function FloatingLightCard({
   const isPointerDownOnCard = useRef(false);
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { width: cardWidth, height: cardHeight } = cardSize(widget.card_layout);
+  const totalWidth = cardWidth;
+  const isSquare = widget.card_layout === "square";
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -112,23 +122,28 @@ export function FloatingLightCard({
     [clearLongPress]
   );
 
-  const totalWidth = CARD_WIDTH;
-
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-    const maxBottom = typeof window !== "undefined" ? window.innerHeight - CARD_HEIGHT : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - cardHeight : 400;
     const bounds = { maxLeft, maxBottom };
     const saved = loadPosition(storageScope, widget.id);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(widgetIndex), bounds);
+    const p = snapToGrid(defaultPosition(widgetIndex, totalWidth, cardHeight), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
-  }, [totalWidth, widget.id, widgetIndex, storageScope]);
+  }, [totalWidth, cardHeight, widget.id, widgetIndex, storageScope]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const maxLeft = window.innerWidth - totalWidth;
+    const maxBottom = window.innerHeight - cardHeight;
+    setPosition((p) => snapToGrid(p, { maxLeft, maxBottom }));
+  }, [totalWidth, cardHeight]);
 
   const DRAG_THRESHOLD_PX = 6;
 
@@ -164,14 +179,14 @@ export function FloatingLightCard({
       }
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxBottom = typeof window !== "undefined" ? window.innerHeight - CARD_HEIGHT : 400;
+      const maxBottom = typeof window !== "undefined" ? window.innerHeight - cardHeight : 400;
       const raw = {
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
         bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging, maxLeft]
+    [isDragging, maxLeft, cardHeight]
   );
 
   const handlePointerUp = useCallback(
@@ -182,7 +197,7 @@ export function FloatingLightCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxBottom = typeof window !== "undefined" ? window.innerHeight - CARD_HEIGHT : 400;
+        const maxBottom = typeof window !== "undefined" ? window.innerHeight - cardHeight : 400;
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
           bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
@@ -193,13 +208,14 @@ export function FloatingLightCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft, widget.id, storageScope]
+    [isDragging, maxLeft, widget.id, storageScope, cardHeight]
   );
 
   return (
     <div
       className={cn(
-        "fixed z-30 rounded-[28px] transition-transform duration-200",
+        "fixed z-30 transition-transform duration-200",
+        isSquare ? "rounded-[28px]" : "rounded-[24px]",
         !editMode && "origin-center active:scale-[0.97]",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
@@ -208,7 +224,7 @@ export function FloatingLightCard({
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
-        height: CARD_HEIGHT,
+        height: isSquare ? cardHeight : "auto",
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -233,6 +249,7 @@ export function FloatingLightCard({
         title={widget.title}
         entity_id={widget.entity_id}
         icon={widget.icon}
+        card_layout={widget.card_layout ?? "horizontal"}
         size="md"
         editMode={editMode}
         className="h-full w-full"
