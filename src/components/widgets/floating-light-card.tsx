@@ -95,7 +95,7 @@ export function FloatingLightCard({
     (e: React.PointerEvent) => {
       if (editMode || !onEnterEditMode) return;
       const target = e.target as HTMLElement;
-      if (target?.closest?.("button") ?? false) return;
+      if (target?.closest?.("[data-no-drag]")) return;
       clearLongPress();
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       longPressTimerRef.current = setTimeout(() => {
@@ -138,8 +138,8 @@ export function FloatingLightCard({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode) return;
-      // Let button clicks through so the ⋮ edit button still works
-      if ((e.target as HTMLElement)?.closest?.("button")) return;
+      // Keep the ⋮ options button clickable; the rest of the card is the drag surface.
+      if ((e.target as HTMLElement)?.closest?.("[data-no-drag]")) return;
       isPointerDownOnCard.current = true;
       dragStart.current = {
         x: e.clientX,
@@ -240,6 +240,7 @@ export function FloatingLightCard({
             entity_id={widget.entity_id}
             icon={widget.icon}
             size="md"
+            editMode={editMode}
             onMoreClick={editMode ? onEdit : undefined}
           />
         </div>
