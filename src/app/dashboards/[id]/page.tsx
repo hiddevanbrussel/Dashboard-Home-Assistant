@@ -4967,8 +4967,8 @@ aria-label={t("editPanel.removeCondition")}
                         }),
                       };
                       handleUpdateTile(editingWidgetId, updates);
-                      const newWidgets = widgets.map((w) =>
-                        w.id === editingWidgetId ? { ...w, ...updates } : w
+                      const newWidgets: WidgetConfig[] = widgets.map((w) =>
+                        w.id === editingWidgetId ? ({ ...w, ...updates } as WidgetConfig) : w
                       );
                       saveMutation.mutate({
                         layout,
