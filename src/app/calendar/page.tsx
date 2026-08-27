@@ -30,6 +30,8 @@ import {
   eventsOnDay,
   formatTime,
   hourHeightForViewport,
+  hoursFromFocus,
+  gridHours,
   isSameDay,
   localeOf,
   looksLikeMeet,
@@ -42,17 +44,19 @@ import {
   toDateKey,
   visibleMonthDays,
   weekDayNames,
+  CALENDAR_FOCUS_HOUR,
 } from "@/lib/calendar-utils";
+import { formatCalendarTitle, subjectCodesFor } from "@/lib/calendar-titles";
 
 type ViewMode = "week" | "month" | "day";
 
-const FOCUS_HOUR = 8;
-
-function scrollTimeGrid(el: HTMLDivElement | null, hour = FOCUS_HOUR, hourH = DEFAULT_HOUR_H, smooth = false) {
+function scrollTimeGrid(el: HTMLDivElement | null, hour = CALENDAR_FOCUS_HOUR, hourH = DEFAULT_HOUR_H, smooth = false) {
   if (!el) return;
   const apply = () => {
     const marker = el.querySelector<HTMLElement>(`[data-hour="${hour}"]`);
-    const top = marker ? marker.offsetTop : hour * hourH;
+    const top = marker
+      ? el.scrollTop + marker.getBoundingClientRect().top - el.getBoundingClientRect().top
+      : hour * hourH;
     if (smooth) el.scrollTo({ top, behavior: "smooth" });
     else el.scrollTop = top;
   };
@@ -61,10 +65,9 @@ function scrollTimeGrid(el: HTMLDivElement | null, hour = FOCUS_HOUR, hourH = DE
   const tick = () => {
     if (!el.isConnected) return;
     apply();
-    const target = hour * hourH;
     const overflowing = el.scrollHeight > el.clientHeight + 8;
-    const aligned = Math.abs(el.scrollTop - target) < 4;
-    if ((overflowing && aligned) || tries++ >= 20) return;
+    const aligned = Math.abs(el.scrollTop - hour * hourH) < 8;
+    if ((overflowing && aligned) || tries++ >= 40) return;
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -72,12 +75,28 @@ function scrollTimeGrid(el: HTMLDivElement | null, hour = FOCUS_HOUR, hourH = DE
 
 function useHourHeight(scrollRef: RefObject<HTMLDivElement | null>) {
   const [hourH, setHourH] = useState(DEFAULT_HOUR_H);
+  const focused = useRef(false);
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const update = () => setHourH(hourHeightForViewport(el.clientHeight));
-    update();
-    const ro = new ResizeObserver(update);
+    focused.current = false;
+    const update = (shouldFocus: boolean) => {
+      const next = hourHeightForViewport(el.clientHeight);
+      setHourH(next);
+      if (shouldFocus && el.clientHeight > 0) {
+        focused.current = true;
+        scrollTimeGrid(el, CALENDAR_FOCUS_HOUR, next);
+      }
+    };
+    update(true);
+    const ro = new ResizeObserver(() => {
+      const next = hourHeightForViewport(el.clientHeight);
+      setHourH(next);
+      if (!focused.current && el.clientHeight > 0) {
+        focused.current = true;
+        scrollTimeGrid(el, CALENDAR_FOCUS_HOUR, next);
+      }
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [scrollRef]);
@@ -110,6 +129,26 @@ const CAL_COLORS: CalColor[] = [
   { bar: "bg-cyan-400", soft: "bg-cyan-400/20 dark:bg-cyan-400/15", check: "#22d3ee", glow: "shadow-[0_0_24px_rgba(34,211,238,0.28)]" },
   { bar: "bg-pink-400", soft: "bg-pink-400/20 dark:bg-pink-400/15", check: "#f472b6", glow: "shadow-[0_0_24px_rgba(244,114,182,0.28)]" },
 ];
+
+function useFormattedEventTitle(summary: string) {
+  const { language } = useTranslation();
+  const custom = useCalendarStore((s) => s.titleCodes);
+  return useMemo(
+    () => formatCalendarTitle(summary, subjectCodesFor(language, custom)),
+    [summary, language, custom]
+  );
+}
+
+function EventTitle({ summary, empty, className }: { summary: string; empty?: string; className?: string }) {
+  const formatted = useFormattedEventTitle(summary);
+  return <span className={className}>{formatted.title || empty || summary}</span>;
+}
+
+function EventTitleDetail({ summary }: { summary: string }) {
+  const formatted = useFormattedEventTitle(summary);
+  if (!formatted.detail) return null;
+  return <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{formatted.detail}</p>;
+}
 
 function useNowMinutes(): number {
   const [mins, setMins] = useState(() => {
@@ -231,7 +270,7 @@ function MonthGrid({
                     >
                       <span className={cn("h-3 w-0.5 shrink-0 rounded-full", color.bar)} />
                       <span className="truncate text-[10px] font-medium leading-tight text-gray-700 dark:text-gray-200">
-                        {ev.summary}
+                        <EventTitle summary={ev.summary} />
                       </span>
                     </button>
                   );
@@ -269,15 +308,22 @@ function WeekGrid({
   onSelectEvent: (ev: CalendarEvent) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
 }) {
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const hours = gridHours();
   const now = new Date();
   const nowMinutes = useNowMinutes();
   const labels = weekDayNames(locale, "short");
   const hourH = useHourHeight(scrollRef);
 
   useLayoutEffect(() => {
-    const id = requestAnimationFrame(() => scrollTimeGrid(scrollRef.current, FOCUS_HOUR, hourH));
-    return () => cancelAnimationFrame(id);
+    const run = () => scrollTimeGrid(scrollRef.current, CALENDAR_FOCUS_HOUR, hourH);
+    const id = requestAnimationFrame(run);
+    const t1 = window.setTimeout(run, 80);
+    const t2 = window.setTimeout(run, 250);
+    return () => {
+      cancelAnimationFrame(id);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
   }, [scrollRef, hourH]);
 
   return (
@@ -314,7 +360,7 @@ function WeekGrid({
               {allDay.slice(0, 2).map((ev, j) => (
                 <span key={j} className="flex w-full min-w-0 items-center gap-1 truncate text-[9px] text-gray-700 dark:text-gray-200">
                   <span className={cn("h-2 w-0.5 shrink-0 rounded-full", (colorMap[ev.entityId] ?? CAL_COLORS[0]).bar)} />
-                  <span className="truncate">{ev.summary}</span>
+                  <span className="truncate"><EventTitle summary={ev.summary} /></span>
                 </span>
               ))}
             </button>
@@ -323,15 +369,13 @@ function WeekGrid({
       </div>
 
       <TimeGridScrollPort scrollRef={scrollRef}>
-        <div className="flex" style={{ minHeight: 24 * hourH }}>
+        <div className="flex" style={{ minHeight: hours.length * hourH }}>
           <div className="relative w-14 shrink-0">
             {hours.map((h) => (
               <div key={h} data-hour={h} className="relative" style={{ height: hourH }}>
-                {h > 0 && (
-                  <span className="absolute -top-2.5 right-2 select-none text-[10px] text-gray-400 dark:text-gray-500">
-                    {String(h).padStart(2, "0")}:00
-                  </span>
-                )}
+                <span className={cn("absolute right-2 select-none text-[10px] text-gray-400 dark:text-gray-500", h === hours[0] ? "top-1" : "-top-2.5")}>
+                  {String(h).padStart(2, "0")}:00
+                </span>
               </div>
             ))}
           </div>
@@ -342,14 +386,14 @@ function WeekGrid({
               <div
                 key={toDateKey(day)}
                 className={cn("relative flex-1 border-l border-white/40 dark:border-white/10", isToday && "bg-accent-purple/5")}
-                style={{ minHeight: 24 * hourH }}
+                style={{ minHeight: hours.length * hourH }}
                 onClick={() => onSelectDay(day)}
               >
                 {hours.map((h) => (
-                  <div key={h} className="absolute w-full border-t border-black/[0.04] dark:border-white/5" style={{ top: h * hourH }} />
+                  <div key={h} className="absolute w-full border-t border-black/[0.04] dark:border-white/5" style={{ top: hoursFromFocus(h) * hourH }} />
                 ))}
-                {isToday && (
-                  <div className="pointer-events-none absolute z-20 flex w-full items-center" style={{ top: (nowMinutes / 60) * hourH }}>
+                {isToday && nowMinutes >= CALENDAR_FOCUS_HOUR * 60 && (
+                  <div className="pointer-events-none absolute z-20 flex w-full items-center" style={{ top: hoursFromFocus(nowMinutes / 60) * hourH }}>
                     <div className="-ml-1 h-2 w-2 shrink-0 rounded-full bg-accent-orange" />
                     <div className="h-px flex-1 bg-accent-orange" />
                   </div>
@@ -357,7 +401,7 @@ function WeekGrid({
                 {dayEvents.map((ev, ei) => {
                   const start = eventStart(ev);
                   const end = eventEnd(ev);
-                  const top = (minutesInDay(start) / 60) * hourH;
+                  const top = hoursFromFocus(minutesInDay(start) / 60) * hourH;
                   const height = Math.max(((end.getTime() - start.getTime()) / 60_000 / 60) * hourH, 22);
                   const color = colorMap[ev.entityId] ?? CAL_COLORS[0];
                   return (
@@ -373,7 +417,9 @@ function WeekGrid({
                     >
                       <span className={cn("absolute inset-y-0 left-0 w-0.5", color.bar)} />
                       <div className="px-1.5 py-0.5 pl-2">
-                        <p className="truncate text-[10px] font-semibold leading-tight text-gray-800 dark:text-gray-100">{ev.summary}</p>
+                        <p className="truncate text-[10px] font-semibold leading-tight text-gray-800 dark:text-gray-100">
+                          <EventTitle summary={ev.summary} />
+                        </p>
                         {height > 30 && <p className="text-[9px] text-gray-500 dark:text-gray-400">{formatTime(start, locale)}</p>}
                       </div>
                     </button>
@@ -405,15 +451,22 @@ function DayGrid({
 }) {
   const now = new Date();
   const nowMinutes = useNowMinutes();
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const hours = gridHours();
   const isToday = isSameDay(date, now);
   const dayEvents = timedOnDay(events, date);
   const allDay = allDayOnDay(events, date);
   const hourH = useHourHeight(scrollRef);
 
   useLayoutEffect(() => {
-    const id = requestAnimationFrame(() => scrollTimeGrid(scrollRef.current, FOCUS_HOUR, hourH));
-    return () => cancelAnimationFrame(id);
+    const run = () => scrollTimeGrid(scrollRef.current, CALENDAR_FOCUS_HOUR, hourH);
+    const id = requestAnimationFrame(run);
+    const t1 = window.setTimeout(run, 80);
+    const t2 = window.setTimeout(run, 250);
+    return () => {
+      cancelAnimationFrame(id);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
   }, [scrollRef, hourH]);
 
   return (
@@ -430,31 +483,29 @@ function DayGrid({
                 className={cn("flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", color.soft)}
               >
                 <span className={cn("h-2 w-2 rounded-full", color.bar)} />
-                {ev.summary}
+                <EventTitle summary={ev.summary} />
               </button>
             );
           })}
         </div>
       )}
       <TimeGridScrollPort scrollRef={scrollRef}>
-        <div className="flex" style={{ minHeight: 24 * hourH }}>
+        <div className="flex" style={{ minHeight: hours.length * hourH }}>
           <div className="w-16 shrink-0">
             {hours.map((h) => (
               <div key={h} data-hour={h} className="relative" style={{ height: hourH }}>
-                {h > 0 && (
-                  <span className="absolute -top-2.5 right-3 select-none text-[11px] text-gray-400 dark:text-gray-500">
-                    {String(h).padStart(2, "0")}:00
-                  </span>
-                )}
+                <span className={cn("absolute right-3 select-none text-[11px] text-gray-400 dark:text-gray-500", h === hours[0] ? "top-1" : "-top-2.5")}>
+                  {String(h).padStart(2, "0")}:00
+                </span>
               </div>
             ))}
           </div>
-          <div className="relative flex-1 border-l border-white/40 dark:border-white/10" style={{ minHeight: 24 * hourH }}>
+          <div className="relative flex-1 border-l border-white/40 dark:border-white/10" style={{ minHeight: hours.length * hourH }}>
             {hours.map((h) => (
-              <div key={h} className="absolute w-full border-t border-black/[0.04] dark:border-white/5" style={{ top: h * hourH }} />
+              <div key={h} className="absolute w-full border-t border-black/[0.04] dark:border-white/5" style={{ top: hoursFromFocus(h) * hourH }} />
             ))}
-            {isToday && (
-              <div className="pointer-events-none absolute z-20 flex w-full items-center" style={{ top: (nowMinutes / 60) * hourH }}>
+            {isToday && nowMinutes >= CALENDAR_FOCUS_HOUR * 60 && (
+              <div className="pointer-events-none absolute z-20 flex w-full items-center" style={{ top: hoursFromFocus(nowMinutes / 60) * hourH }}>
                 <div className="-ml-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent-orange" />
                 <div className="h-px flex-1 bg-accent-orange" />
               </div>
@@ -462,7 +513,7 @@ function DayGrid({
             {dayEvents.map((ev, i) => {
               const start = eventStart(ev);
               const end = eventEnd(ev);
-              const top = (minutesInDay(start) / 60) * hourH;
+              const top = hoursFromFocus(minutesInDay(start) / 60) * hourH;
               const height = Math.max(((end.getTime() - start.getTime()) / 60_000 / 60) * hourH, 28);
               const color = colorMap[ev.entityId] ?? CAL_COLORS[0];
               return (
@@ -475,12 +526,15 @@ function DayGrid({
                 >
                   <span className={cn("absolute inset-y-0 left-0 w-1", color.bar)} />
                   <div className="px-3 py-1.5">
-                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{ev.summary}</p>
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                      <EventTitle summary={ev.summary} />
+                    </p>
                     {height > 36 && (
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {formatTime(start, locale)} – {formatTime(end, locale)}
                       </p>
                     )}
+                    {height > 56 && <EventTitleDetail summary={ev.summary} />}
                     {height > 56 && ev.location && (
                       <p className="mt-0.5 truncate text-xs text-gray-400">{ev.location}</p>
                     )}
@@ -573,8 +627,9 @@ function AgendaSidebar({
                 <div className="space-y-2 p-3.5">
                   <div>
                     <h3 className="text-sm font-semibold leading-snug text-gray-900 dark:text-white">
-                      {ev.summary || t("calendar.emptyTitle")}
+                      <EventTitle summary={ev.summary} empty={t("calendar.emptyTitle")} />
                     </h3>
+                    <EventTitleDetail summary={ev.summary} />
                     {ev.description && (
                       <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{ev.description}</p>
                     )}
@@ -664,9 +719,12 @@ function EventDetail({
         <div className={cn("h-1.5 w-full", color.bar)} />
         <div className="p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
-            <h3 className="text-xl font-semibold leading-snug text-gray-900 dark:text-white">
-              {ev.summary || t("calendar.emptyTitle")}
-            </h3>
+            <div className="min-w-0">
+              <h3 className="text-xl font-semibold leading-snug text-gray-900 dark:text-white">
+                <EventTitle summary={ev.summary} empty={t("calendar.emptyTitle")} />
+              </h3>
+              <EventTitleDetail summary={ev.summary} />
+            </div>
             <button type="button" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10">
               <X className="h-4 w-4 text-gray-500" />
             </button>
@@ -734,7 +792,7 @@ function CreateEventModal({
   onClose: () => void;
   onAdded: () => void;
 }) {
-  const hour = Math.max(defaultDate.getHours(), 8);
+  const hour = Math.max(defaultDate.getHours(), CALENDAR_FOCUS_HOUR);
   const [title, setTitle] = useState("");
   const [calendarId, setCalendarId] = useState(calendarEntityIds[0] ?? "");
   const [typeOpen, setTypeOpen] = useState(false);
@@ -948,7 +1006,7 @@ export default function CalendarPage() {
     const el = timeScrollRef.current;
     const hour = new Date().getHours();
     const hourH = hourHeightForViewport(el?.clientHeight ?? 0);
-    scrollTimeGrid(el, hour < FOCUS_HOUR ? FOCUS_HOUR : hour, hourH, true);
+    scrollTimeGrid(el, hour < CALENDAR_FOCUS_HOUR ? CALENDAR_FOCUS_HOUR : hour, hourH, true);
   }
 
   function selectDay(day: Date) {
@@ -999,13 +1057,17 @@ export default function CalendarPage() {
 
   useLayoutEffect(() => {
     if (viewMode === "month") return;
-    const el = timeScrollRef.current;
-    const hourH = hourHeightForViewport(el?.clientHeight ?? 0);
-    const frame = requestAnimationFrame(() => scrollTimeGrid(el, FOCUS_HOUR, hourH));
-    const timer = window.setTimeout(() => scrollTimeGrid(timeScrollRef.current, FOCUS_HOUR, hourH), 120);
+    const run = () => {
+      const el = timeScrollRef.current;
+      const hourH = hourHeightForViewport(el?.clientHeight ?? 0);
+      scrollTimeGrid(el, CALENDAR_FOCUS_HOUR, hourH);
+    };
+    run();
+    const t1 = window.setTimeout(run, 80);
+    const t2 = window.setTimeout(run, 250);
     return () => {
-      cancelAnimationFrame(frame);
-      window.clearTimeout(timer);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
     };
   }, [viewMode]);
 

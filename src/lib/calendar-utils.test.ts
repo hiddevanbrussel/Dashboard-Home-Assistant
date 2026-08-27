@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addDays,
   DEFAULT_HOUR_H,
+  gridHours,
   hourHeightForViewport,
   isSameDay,
   MIN_HOUR_H,
@@ -52,9 +53,14 @@ describe("calendar-utils", () => {
     expect(stepTime("11:30", 90)).toBe("13:00");
   });
 
+  it("starts the time grid at 06:00", () => {
+    expect(gridHours()[0]).toBe(6);
+    expect(gridHours()).toHaveLength(18);
+  });
+
   it("scales hour rows to fit a workday in the viewport", () => {
     expect(hourHeightForViewport(0)).toBe(DEFAULT_HOUR_H);
-    expect(hourHeightForViewport(700)).toBe(50);
+    expect(hourHeightForViewport(700)).toBe(44);
     expect(hourHeightForViewport(200)).toBe(MIN_HOUR_H);
   });
 });
