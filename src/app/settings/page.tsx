@@ -68,6 +68,70 @@ function getDomain(entityId: string): string {
   return entityId.split(".")[0] ?? "";
 }
 
+function CalendarTitleCodesEditor() {
+  const { t } = useTranslation();
+  const titleCodes = useCalendarStore((s) => s.titleCodes);
+  const setTitleCodes = useCalendarStore((s) => s.setTitleCodes);
+  const [rows, setRows] = useState<{ code: string; label: string }[]>(() =>
+    Object.entries(titleCodes).map(([code, label]) => ({ code, label }))
+  );
+
+  function persist(next: { code: string; label: string }[]) {
+    setRows(next);
+    const map: Record<string, string> = {};
+    for (const row of next) {
+      const code = row.code.trim().toUpperCase();
+      const label = row.label.trim();
+      if (code && label) map[code] = label;
+    }
+    setTitleCodes(map);
+  }
+
+  return (
+    <div className="space-y-2">
+      {rows.map((row, idx) => (
+        <div key={idx} className="flex items-center gap-2">
+          <SettingsInput
+            value={row.code}
+            onChange={(e) => {
+              const next = rows.map((r, i) => (i === idx ? { ...r, code: e.target.value } : r));
+              setRows(next);
+            }}
+            onBlur={(e) => persist(rows.map((r, i) => (i === idx ? { ...r, code: e.target.value } : r)))}
+            placeholder={t("settings.calendar.titleCode")}
+            className="w-24 shrink-0 uppercase"
+            aria-label={t("settings.calendar.titleCode")}
+          />
+          <SettingsInput
+            value={row.label}
+            onChange={(e) => {
+              const next = rows.map((r, i) => (i === idx ? { ...r, label: e.target.value } : r));
+              setRows(next);
+            }}
+            onBlur={(e) => persist(rows.map((r, i) => (i === idx ? { ...r, label: e.target.value } : r)))}
+            placeholder={t("settings.calendar.titleLabel")}
+            aria-label={t("settings.calendar.titleLabel")}
+          />
+          <button
+            type="button"
+            onClick={() => persist(rows.filter((_, i) => i !== idx))}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200"
+            aria-label={t("editPanel.remove")}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ))}
+      <SettingsSecondaryButton
+        onClick={() => setRows([...rows, { code: "", label: "" }])}
+        className="px-3 py-1.5 text-xs"
+      >
+        {t("settings.calendar.titleAdd")}
+      </SettingsSecondaryButton>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { t } = useTranslation();
   const [baseUrl, setBaseUrl] = useState("http://homeassistant.local:8123");
@@ -918,6 +982,9 @@ export default function SettingsPage() {
                     })}
                   </div>
                 )}
+              </SettingsGroup>
+              <SettingsGroup title={t("settings.calendar.titles")} description={t("settings.calendar.titlesHint")}>
+                <CalendarTitleCodesEditor />
               </SettingsGroup>
             </>
           )}

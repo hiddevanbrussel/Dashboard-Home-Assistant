@@ -118,8 +118,10 @@ export function stepTime(value: string, deltaMinutes: number): string {
 export const DEFAULT_HOUR_H = 48;
 /** Floor so timed events stay tappable on small screens. */
 export const MIN_HOUR_H = 36;
-/** Typical workday length shown without scrolling (08:00–22:00). */
-export const VISIBLE_DAY_HOURS = 14;
+/** Hour the week/day time grid starts on (06:00). */
+export const CALENDAR_FOCUS_HOUR = 6;
+/** Typical day length shown without scrolling (06:00–22:00). */
+export const VISIBLE_DAY_HOURS = 16;
 
 /** Scale hour rows so ~14 hours fit in the visible time-grid viewport. */
 export function hourHeightForViewport(clientHeight: number): number {
