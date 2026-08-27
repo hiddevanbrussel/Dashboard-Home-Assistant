@@ -30,6 +30,8 @@ import {
   eventsOnDay,
   formatTime,
   hourHeightForViewport,
+  hoursFromFocus,
+  gridHours,
   isSameDay,
   localeOf,
   looksLikeMeet,
@@ -52,7 +54,9 @@ function scrollTimeGrid(el: HTMLDivElement | null, hour = CALENDAR_FOCUS_HOUR, h
   if (!el) return;
   const apply = () => {
     const marker = el.querySelector<HTMLElement>(`[data-hour="${hour}"]`);
-    const top = marker ? marker.offsetTop : hour * hourH;
+    const top = marker
+      ? el.scrollTop + marker.getBoundingClientRect().top - el.getBoundingClientRect().top
+      : hour * hourH;
     if (smooth) el.scrollTo({ top, behavior: "smooth" });
     else el.scrollTop = top;
   };
@@ -61,10 +65,9 @@ function scrollTimeGrid(el: HTMLDivElement | null, hour = CALENDAR_FOCUS_HOUR, h
   const tick = () => {
     if (!el.isConnected) return;
     apply();
-    const target = hour * hourH;
     const overflowing = el.scrollHeight > el.clientHeight + 8;
-    const aligned = Math.abs(el.scrollTop - target) < 4;
-    if ((overflowing && aligned) || tries++ >= 20) return;
+    const aligned = Math.abs(el.scrollTop - hour * hourH) < 8;
+    if ((overflowing && aligned) || tries++ >= 40) return;
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -72,12 +75,28 @@ function scrollTimeGrid(el: HTMLDivElement | null, hour = CALENDAR_FOCUS_HOUR, h
 
 function useHourHeight(scrollRef: RefObject<HTMLDivElement | null>) {
   const [hourH, setHourH] = useState(DEFAULT_HOUR_H);
+  const focused = useRef(false);
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const update = () => setHourH(hourHeightForViewport(el.clientHeight));
-    update();
-    const ro = new ResizeObserver(update);
+    focused.current = false;
+    const update = (shouldFocus: boolean) => {
+      const next = hourHeightForViewport(el.clientHeight);
+      setHourH(next);
+      if (shouldFocus && el.clientHeight > 0) {
+        focused.current = true;
+        scrollTimeGrid(el, CALENDAR_FOCUS_HOUR, next);
+      }
+    };
+    update(true);
+    const ro = new ResizeObserver(() => {
+      const next = hourHeightForViewport(el.clientHeight);
+      setHourH(next);
+      if (!focused.current && el.clientHeight > 0) {
+        focused.current = true;
+        scrollTimeGrid(el, CALENDAR_FOCUS_HOUR, next);
+      }
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [scrollRef]);
@@ -289,15 +308,22 @@ function WeekGrid({
   onSelectEvent: (ev: CalendarEvent) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
 }) {
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const hours = gridHours();
   const now = new Date();
   const nowMinutes = useNowMinutes();
   const labels = weekDayNames(locale, "short");
   const hourH = useHourHeight(scrollRef);
 
   useLayoutEffect(() => {
-    const id = requestAnimationFrame(() => scrollTimeGrid(scrollRef.current, CALENDAR_FOCUS_HOUR, hourH));
-    return () => cancelAnimationFrame(id);
+    const run = () => scrollTimeGrid(scrollRef.current, CALENDAR_FOCUS_HOUR, hourH);
+    const id = requestAnimationFrame(run);
+    const t1 = window.setTimeout(run, 80);
+    const t2 = window.setTimeout(run, 250);
+    return () => {
+      cancelAnimationFrame(id);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
   }, [scrollRef, hourH]);
 
   return (
@@ -343,15 +369,13 @@ function WeekGrid({
       </div>
 
       <TimeGridScrollPort scrollRef={scrollRef}>
-        <div className="flex" style={{ minHeight: 24 * hourH }}>
+        <div className="flex" style={{ minHeight: hours.length * hourH }}>
           <div className="relative w-14 shrink-0">
             {hours.map((h) => (
               <div key={h} data-hour={h} className="relative" style={{ height: hourH }}>
-                {h > 0 && (
-                  <span className="absolute -top-2.5 right-2 select-none text-[10px] text-gray-400 dark:text-gray-500">
-                    {String(h).padStart(2, "0")}:00
-                  </span>
-                )}
+                <span className={cn("absolute right-2 select-none text-[10px] text-gray-400 dark:text-gray-500", h === hours[0] ? "top-1" : "-top-2.5")}>
+                  {String(h).padStart(2, "0")}:00
+                </span>
               </div>
             ))}
           </div>
@@ -362,14 +386,14 @@ function WeekGrid({
               <div
                 key={toDateKey(day)}
                 className={cn("relative flex-1 border-l border-white/40 dark:border-white/10", isToday && "bg-accent-purple/5")}
-                style={{ minHeight: 24 * hourH }}
+                style={{ minHeight: hours.length * hourH }}
                 onClick={() => onSelectDay(day)}
               >
                 {hours.map((h) => (
-                  <div key={h} className="absolute w-full border-t border-black/[0.04] dark:border-white/5" style={{ top: h * hourH }} />
+                  <div key={h} className="absolute w-full border-t border-black/[0.04] dark:border-white/5" style={{ top: hoursFromFocus(h) * hourH }} />
                 ))}
-                {isToday && (
-                  <div className="pointer-events-none absolute z-20 flex w-full items-center" style={{ top: (nowMinutes / 60) * hourH }}>
+                {isToday && nowMinutes >= CALENDAR_FOCUS_HOUR * 60 && (
+                  <div className="pointer-events-none absolute z-20 flex w-full items-center" style={{ top: hoursFromFocus(nowMinutes / 60) * hourH }}>
                     <div className="-ml-1 h-2 w-2 shrink-0 rounded-full bg-accent-orange" />
                     <div className="h-px flex-1 bg-accent-orange" />
                   </div>
@@ -377,7 +401,7 @@ function WeekGrid({
                 {dayEvents.map((ev, ei) => {
                   const start = eventStart(ev);
                   const end = eventEnd(ev);
-                  const top = (minutesInDay(start) / 60) * hourH;
+                  const top = hoursFromFocus(minutesInDay(start) / 60) * hourH;
                   const height = Math.max(((end.getTime() - start.getTime()) / 60_000 / 60) * hourH, 22);
                   const color = colorMap[ev.entityId] ?? CAL_COLORS[0];
                   return (
@@ -427,15 +451,22 @@ function DayGrid({
 }) {
   const now = new Date();
   const nowMinutes = useNowMinutes();
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const hours = gridHours();
   const isToday = isSameDay(date, now);
   const dayEvents = timedOnDay(events, date);
   const allDay = allDayOnDay(events, date);
   const hourH = useHourHeight(scrollRef);
 
   useLayoutEffect(() => {
-    const id = requestAnimationFrame(() => scrollTimeGrid(scrollRef.current, CALENDAR_FOCUS_HOUR, hourH));
-    return () => cancelAnimationFrame(id);
+    const run = () => scrollTimeGrid(scrollRef.current, CALENDAR_FOCUS_HOUR, hourH);
+    const id = requestAnimationFrame(run);
+    const t1 = window.setTimeout(run, 80);
+    const t2 = window.setTimeout(run, 250);
+    return () => {
+      cancelAnimationFrame(id);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
   }, [scrollRef, hourH]);
 
   return (
@@ -459,24 +490,22 @@ function DayGrid({
         </div>
       )}
       <TimeGridScrollPort scrollRef={scrollRef}>
-        <div className="flex" style={{ minHeight: 24 * hourH }}>
+        <div className="flex" style={{ minHeight: hours.length * hourH }}>
           <div className="w-16 shrink-0">
             {hours.map((h) => (
               <div key={h} data-hour={h} className="relative" style={{ height: hourH }}>
-                {h > 0 && (
-                  <span className="absolute -top-2.5 right-3 select-none text-[11px] text-gray-400 dark:text-gray-500">
-                    {String(h).padStart(2, "0")}:00
-                  </span>
-                )}
+                <span className={cn("absolute right-3 select-none text-[11px] text-gray-400 dark:text-gray-500", h === hours[0] ? "top-1" : "-top-2.5")}>
+                  {String(h).padStart(2, "0")}:00
+                </span>
               </div>
             ))}
           </div>
-          <div className="relative flex-1 border-l border-white/40 dark:border-white/10" style={{ minHeight: 24 * hourH }}>
+          <div className="relative flex-1 border-l border-white/40 dark:border-white/10" style={{ minHeight: hours.length * hourH }}>
             {hours.map((h) => (
-              <div key={h} className="absolute w-full border-t border-black/[0.04] dark:border-white/5" style={{ top: h * hourH }} />
+              <div key={h} className="absolute w-full border-t border-black/[0.04] dark:border-white/5" style={{ top: hoursFromFocus(h) * hourH }} />
             ))}
-            {isToday && (
-              <div className="pointer-events-none absolute z-20 flex w-full items-center" style={{ top: (nowMinutes / 60) * hourH }}>
+            {isToday && nowMinutes >= CALENDAR_FOCUS_HOUR * 60 && (
+              <div className="pointer-events-none absolute z-20 flex w-full items-center" style={{ top: hoursFromFocus(nowMinutes / 60) * hourH }}>
                 <div className="-ml-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent-orange" />
                 <div className="h-px flex-1 bg-accent-orange" />
               </div>
@@ -484,7 +513,7 @@ function DayGrid({
             {dayEvents.map((ev, i) => {
               const start = eventStart(ev);
               const end = eventEnd(ev);
-              const top = (minutesInDay(start) / 60) * hourH;
+              const top = hoursFromFocus(minutesInDay(start) / 60) * hourH;
               const height = Math.max(((end.getTime() - start.getTime()) / 60_000 / 60) * hourH, 28);
               const color = colorMap[ev.entityId] ?? CAL_COLORS[0];
               return (
@@ -1028,13 +1057,17 @@ export default function CalendarPage() {
 
   useLayoutEffect(() => {
     if (viewMode === "month") return;
-    const el = timeScrollRef.current;
-    const hourH = hourHeightForViewport(el?.clientHeight ?? 0);
-    const frame = requestAnimationFrame(() => scrollTimeGrid(el, CALENDAR_FOCUS_HOUR, hourH));
-    const timer = window.setTimeout(() => scrollTimeGrid(timeScrollRef.current, CALENDAR_FOCUS_HOUR, hourH), 120);
+    const run = () => {
+      const el = timeScrollRef.current;
+      const hourH = hourHeightForViewport(el?.clientHeight ?? 0);
+      scrollTimeGrid(el, CALENDAR_FOCUS_HOUR, hourH);
+    };
+    run();
+    const t1 = window.setTimeout(run, 80);
+    const t2 = window.setTimeout(run, 250);
     return () => {
-      cancelAnimationFrame(frame);
-      window.clearTimeout(timer);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
     };
   }, [viewMode]);
 
