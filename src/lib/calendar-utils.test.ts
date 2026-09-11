@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CalendarEvent } from "@/app/api/ha/calendar/route";
 import {
   addDays,
+  currentOrNextActivity,
   DEFAULT_HOUR_H,
   gridHours,
   highlightedEventIndex,
@@ -81,5 +82,22 @@ describe("calendar-utils", () => {
       { entityId: "calendar.a", summary: "Trip", start: "2026-09-12T12:00:00", end: "2026-09-12T13:00:00", allDay: false },
     ];
     expect(highlightedEventIndex(otherEvents, otherDay, day)).toBe(0);
+  });
+
+  it("labels the current versus next activity on today", () => {
+    const now = new Date(2026, 8, 11, 8, 30);
+    const events: CalendarEvent[] = [
+      { entityId: "calendar.a", summary: "Now", start: "2026-09-11T08:00:00", end: "2026-09-11T09:00:00", allDay: false },
+      { entityId: "calendar.a", summary: "Later", start: "2026-09-11T10:00:00", end: "2026-09-11T11:00:00", allDay: false },
+    ];
+    expect(currentOrNextActivity(events, now, now)?.status).toBe("current");
+    expect(currentOrNextActivity(events, now, now)?.event.summary).toBe("Now");
+
+    const morning = new Date(2026, 8, 11, 7, 0);
+    expect(currentOrNextActivity(events, morning, morning)?.status).toBe("next");
+    expect(currentOrNextActivity(events, morning, morning)?.event.summary).toBe("Now");
+
+    const evening = new Date(2026, 8, 11, 18, 0);
+    expect(currentOrNextActivity(events, evening, evening)?.status).toBe("done");
   });
 });

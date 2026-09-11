@@ -70,6 +70,7 @@ import {
   FloatingChoreCard,
   CalendarCardWidget,
   FloatingCalendarCard,
+  CALENDAR_PANEL_WIDTH,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import type { ImageCondition, SensorCondition } from "@/components/widgets";
@@ -1441,6 +1442,7 @@ export default function DashboardEditPage() {
   );
 
   const hasCardGroup = widgets.some((w) => w.type === "card_group");
+  const hasCalendarCard = widgets.some((w) => w.type === "calendar_card");
 
   return (
     <AppShell
@@ -1458,7 +1460,10 @@ export default function DashboardEditPage() {
         } : undefined}
         contentNoScroll={hasCardGroup}
       >
-      <div className="space-y-6 overflow-x-hidden min-h-0">
+      <div
+        className="space-y-6 overflow-x-hidden min-h-0"
+        style={hasCalendarCard ? { paddingRight: CALENDAR_PANEL_WIDTH } : undefined}
+      >
         <div className="flex items-center justify-end">
           <OfflinePill />
         </div>

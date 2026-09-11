@@ -107,6 +107,31 @@ export function highlightedEventIndex(events: CalendarEvent[], day: Date, now = 
   return timed[timed.length - 1].i;
 }
 
+export type ActivityStatus = "current" | "next" | "done";
+
+export type CurrentActivity = {
+  event: CalendarEvent;
+  status: ActivityStatus;
+  index: number;
+};
+
+/** Current, upcoming, or last event on a day — used for the dashboard “now” strip. */
+export function currentOrNextActivity(events: CalendarEvent[], day: Date, now = new Date()): CurrentActivity | null {
+  const dayEvents = eventsOnDay(events, day);
+  const index = highlightedEventIndex(events, day, now);
+  if (index < 0) return null;
+  const event = dayEvents[index];
+  if (!isSameDay(day, now)) return { event, status: "next", index };
+
+  const nowMs = now.getTime();
+  if (event.allDay) return { event, status: "current", index };
+  if (eventStart(event).getTime() <= nowMs && eventEnd(event).getTime() > nowMs) {
+    return { event, status: "current", index };
+  }
+  if (eventStart(event).getTime() > nowMs) return { event, status: "next", index };
+  return { event, status: "done", index };
+}
+
 export function durationMinutes(ev: CalendarEvent): number {
   if (ev.allDay) return 24 * 60;
   return Math.max(0, Math.round((eventEnd(ev).getTime() - eventStart(ev).getTime()) / 60_000));

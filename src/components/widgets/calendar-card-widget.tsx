@@ -9,6 +9,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { formatCalendarTitle, subjectCodesFor } from "@/lib/calendar-titles";
 import {
   addDays,
+  currentOrNextActivity,
   eventsOnDay,
   eventEnd,
   eventStart,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
 import { hydrateCalendarStore, useCalendarStore } from "@/stores/calendar-store";
+import { getScreensaverClock24h } from "@/stores/screensaver-store";
 
 const CAL_COLORS = [
   "bg-accent-purple",
@@ -60,10 +62,15 @@ function timeParts(date: Date, locale: string): { time: string; period?: string 
   return { time: `${hour}:${minute}`, period };
 }
 
-async function fetchWeekEvents(entityIds: string[], weekStart: Date): Promise<CalendarEvent[]> {
-  const start = new Date(weekStart);
-  start.setHours(0, 0, 0, 0);
-  const end = addDays(start, 7);
+function formatClock(now: Date, locale: string, use24h: boolean): string {
+  return now.toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: !use24h,
+  });
+}
+
+async function fetchRangeEvents(entityIds: string[], start: Date, end: Date): Promise<CalendarEvent[]> {
   const res = await fetch(
     `/api/ha/calendar?entityIds=${encodeURIComponent(entityIds.join(","))}&start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`
   );
@@ -88,13 +95,22 @@ export function CalendarCardWidget({
     return d;
   });
   const [now, setNow] = useState(() => new Date());
+  const [use24h, setUse24h] = useState(true);
 
   useEffect(() => {
     hydrateCalendarStore();
   }, []);
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 60_000);
+    const sync = () => setUse24h(getScreensaverClock24h());
+    sync();
+    const onSetting = () => sync();
+    window.addEventListener("screensaver-setting-changed", onSetting);
+    return () => window.removeEventListener("screensaver-setting-changed", onSetting);
+  }, []);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1_000);
     return () => window.clearInterval(id);
   }, []);
 
@@ -107,9 +123,12 @@ export function CalendarCardWidget({
     return d;
   }, [now]);
 
+  const rangeStart = weekStart.getTime() <= startOfWeek(today).getTime() ? weekStart : startOfWeek(today);
+  const rangeEnd = addDays(weekStart.getTime() >= startOfWeek(today).getTime() ? weekStart : startOfWeek(today), 7);
+
   const { data: events = [], isLoading } = useQuery({
-    queryKey: ["dashboard-calendar", calendarEntityIds, toDateKey(weekStart)],
-    queryFn: () => fetchWeekEvents(calendarEntityIds, weekStart),
+    queryKey: ["dashboard-calendar", calendarEntityIds, toDateKey(rangeStart), toDateKey(rangeEnd)],
+    queryFn: () => fetchRangeEvents(calendarEntityIds, rangeStart, rangeEnd),
     enabled: calendarEntityIds.length > 0,
     refetchInterval: 60_000,
   });
@@ -126,6 +145,10 @@ export function CalendarCardWidget({
   const highlightIndex = useMemo(
     () => highlightedEventIndex(events, selectedDate, now),
     [events, selectedDate, now]
+  );
+  const nowActivity = useMemo(
+    () => currentOrNextActivity(events, today, now),
+    [events, today, now]
   );
   const daysWithEvents = useMemo(() => {
     const keys = new Set<string>();
@@ -145,41 +168,76 @@ export function CalendarCardWidget({
     !customTitle || /^(activity|activiteit|calendar|kalender|calendar card)$/i.test(customTitle)
       ? t("calendar.activity")
       : customTitle;
+  const clockLabel = formatClock(now, locale, use24h);
+  const nowStatusLabel =
+    nowActivity?.status === "current"
+      ? t("calendar.now")
+      : nowActivity?.status === "next"
+        ? t("calendar.upNext")
+        : null;
 
   const shiftWeek = useCallback((delta: number) => {
     setSelectedDate((prev) => addDays(prev, delta * 7));
   }, []);
 
   return (
-    <div className="flex max-h-[520px] w-full flex-col overflow-hidden rounded-2xl bg-white/60 shadow-md backdrop-blur-sm dark:bg-white/5">
-      <div className="flex items-start justify-between gap-2 px-4 pb-1 pt-4">
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+      <div className="shrink-0 px-5 pb-1 pt-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-3xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-white" aria-live="polite">
+              {clockLabel}
+            </p>
+            {nowActivity && nowStatusLabel ? (
+              <div className="mt-2 min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  {nowStatusLabel}
+                </p>
+                <p className="truncate text-base font-semibold text-gray-900 dark:text-white">
+                  <EventTitle summary={nowActivity.event.summary} empty={t("calendar.emptyTitle")} />
+                </p>
+                <EventTitleDetail summary={nowActivity.event.summary} />
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  {nowActivity.event.allDay
+                    ? t("calendar.allDay")
+                    : `${formatTime(eventStart(nowActivity.event), locale)} – ${formatTime(eventEnd(nowActivity.event), locale)}`}
+                </p>
+              </div>
+            ) : calendarEntityIds.length > 0 && !isLoading ? (
+              <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">{t("calendar.noCurrentActivity")}</p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-0.5">
+            <Link
+              href="/calendar"
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-black/5 hover:text-gray-600 dark:hover:bg-white/10 dark:hover:text-gray-200"
+              aria-label={t("calendar.openCalendar")}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <CalendarDays className="h-4 w-4" />
+            </Link>
+            {onMoreClick && (
+              <button
+                type="button"
+                onClick={onMoreClick}
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
+                aria-label={t("editPanel.editTile")}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-start justify-between gap-2 px-5 pb-1 pt-5">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{heading}</h2>
           <p className="mt-0.5 text-xs capitalize text-gray-500 dark:text-gray-400">{dateLabel}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-0.5">
-          <Link
-            href="/calendar"
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-black/5 hover:text-gray-600 dark:hover:bg-white/10 dark:hover:text-gray-200"
-            aria-label={t("calendar.openCalendar")}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <CalendarDays className="h-4 w-4" />
-          </Link>
-          {onMoreClick && (
-            <button
-              type="button"
-              onClick={onMoreClick}
-              className="rounded-lg p-1.5 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
-              aria-label={t("editPanel.editTile")}
-            >
-              <MoreVertical className="h-4 w-4" />
-            </button>
-          )}
-        </div>
       </div>
 
-      <div className="flex items-center gap-1 px-2 pb-3 pt-2">
+      <div className="flex items-center gap-1 px-3 pb-3 pt-2">
         <button
           type="button"
           onClick={() => shiftWeek(-1)}
@@ -233,7 +291,7 @@ export function CalendarCardWidget({
       </div>
 
       {!isSameDay(selectedDate, today) && (
-        <div className="px-4 pb-2">
+        <div className="px-5 pb-2">
           <button
             type="button"
             onClick={() => setSelectedDate(today)}
@@ -244,7 +302,7 @@ export function CalendarCardWidget({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 scrollbar-hide">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 scrollbar-hide">
         {calendarEntityIds.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 px-2 py-10 text-center text-gray-400 dark:text-white/30">
             <CalendarDays className="h-8 w-8 opacity-40" />
@@ -269,7 +327,7 @@ export function CalendarCardWidget({
           </div>
         ) : (
           <ol className="relative space-y-3 pt-1">
-            <span className="absolute bottom-2 left-[2.85rem] top-2 w-px bg-gray-200/80 dark:bg-white/10" aria-hidden />
+            <span className="absolute bottom-2 left-[3.1rem] top-2 w-px bg-gray-200/80 dark:bg-white/10" aria-hidden />
             {dayEvents.map((ev, i) => {
               const colorBar = colorMap[ev.entityId] ?? CAL_COLORS[0];
               const start = eventStart(ev);
@@ -278,7 +336,7 @@ export function CalendarCardWidget({
               const parts = ev.allDay ? null : timeParts(start, locale);
               return (
                 <li key={`${ev.entityId}-${ev.start}-${i}`} className="relative flex gap-3">
-                  <div className="w-11 shrink-0 pt-2 text-right">
+                  <div className="w-12 shrink-0 pt-2 text-right">
                     {ev.allDay ? (
                       <p className="text-[10px] font-medium leading-tight text-gray-400">{t("calendar.allDay")}</p>
                     ) : (
@@ -294,16 +352,14 @@ export function CalendarCardWidget({
                   </div>
                   <div className="relative min-w-0 flex-1">
                     {highlighted && (
-                      <span className="absolute -left-[calc(0.75rem+5px)] top-5 z-10 h-2.5 w-2.5 rounded-full bg-gray-800 dark:bg-white" />
+                      <span className="absolute -left-[calc(0.75rem+5px)] top-5 z-10 h-2.5 w-2.5 rounded-full bg-accent-purple" />
                     )}
                     <div
                       className={cn(
                         "overflow-hidden rounded-2xl border text-left shadow-sm",
                         highlighted
-                          ? cn(
-                              "border-accent-purple/30 bg-[repeating-linear-gradient(-45deg,rgba(180,139,255,0.22),rgba(180,139,255,0.22)_10px,rgba(180,139,255,0.08)_10px,rgba(180,139,255,0.08)_20px)] dark:border-accent-purple/25 dark:bg-[repeating-linear-gradient(-45deg,rgba(180,139,255,0.18),rgba(180,139,255,0.18)_10px,rgba(180,139,255,0.06)_10px,rgba(180,139,255,0.06)_20px)]"
-                            )
-                          : "border-white/70 bg-white/80 dark:border-white/10 dark:bg-white/[0.06]"
+                          ? "border-accent-purple/30 bg-[repeating-linear-gradient(-45deg,rgba(180,139,255,0.22),rgba(180,139,255,0.22)_10px,rgba(180,139,255,0.08)_10px,rgba(180,139,255,0.08)_20px)] dark:border-accent-purple/25 dark:bg-[repeating-linear-gradient(-45deg,rgba(180,139,255,0.18),rgba(180,139,255,0.18)_10px,rgba(180,139,255,0.06)_10px,rgba(180,139,255,0.06)_20px)]"
+                          : "border-black/[0.06] bg-white/80 dark:border-white/10 dark:bg-white/[0.06]"
                       )}
                     >
                       <span className={cn("block h-1 w-full", colorBar)} />
