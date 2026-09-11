@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MoreVertical, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, MoreVertical } from "lucide-react";
 import type { CalendarEvent } from "@/app/api/ha/calendar/route";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatCalendarTitle, subjectCodesFor } from "@/lib/calendar-titles";
@@ -23,7 +23,6 @@ import {
 } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
 import { hydrateCalendarStore, useCalendarStore } from "@/stores/calendar-store";
-import { getScreensaverClock24h } from "@/stores/screensaver-store";
 
 const CAL_COLORS = [
   "bg-accent-purple",
@@ -62,14 +61,6 @@ function timeParts(date: Date, locale: string): { time: string; period?: string 
   return { time: `${hour}:${minute}`, period };
 }
 
-function formatClock(now: Date, locale: string, use24h: boolean): string {
-  return now.toLocaleTimeString(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: !use24h,
-  });
-}
-
 async function fetchRangeEvents(entityIds: string[], start: Date, end: Date): Promise<CalendarEvent[]> {
   const res = await fetch(
     `/api/ha/calendar?entityIds=${encodeURIComponent(entityIds.join(","))}&start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`
@@ -82,11 +73,9 @@ async function fetchRangeEvents(entityIds: string[], start: Date, end: Date): Pr
 export function CalendarCardWidget({
   title,
   onMoreClick,
-  onClose,
 }: {
   title?: string;
   onMoreClick?: () => void;
-  onClose?: () => void;
 }) {
   const { t, language } = useTranslation();
   const locale = localeOf(language);
@@ -97,18 +86,9 @@ export function CalendarCardWidget({
     return d;
   });
   const [now, setNow] = useState(() => new Date());
-  const [use24h, setUse24h] = useState(true);
 
   useEffect(() => {
     hydrateCalendarStore();
-  }, []);
-
-  useEffect(() => {
-    const sync = () => setUse24h(getScreensaverClock24h());
-    sync();
-    const onSetting = () => sync();
-    window.addEventListener("screensaver-setting-changed", onSetting);
-    return () => window.removeEventListener("screensaver-setting-changed", onSetting);
   }, []);
 
   useEffect(() => {
@@ -170,13 +150,8 @@ export function CalendarCardWidget({
     !customTitle || /^(activity|activiteit|calendar|kalender|calendar card)$/i.test(customTitle)
       ? t("calendar.activity")
       : customTitle;
-  const clockLabel = formatClock(now, locale, use24h);
-  const nowStatusLabel =
-    nowActivity?.status === "current"
-      ? t("calendar.now")
-      : nowActivity?.status === "next"
-        ? t("calendar.upNext")
-        : null;
+  const currentActivity = nowActivity?.status === "current" ? nowActivity : null;
+  const viewingToday = isSameDay(selectedDate, today);
 
   const shiftWeek = useCallback((delta: number) => {
     setSelectedDate((prev) => addDays(prev, delta * 7));
@@ -184,70 +159,21 @@ export function CalendarCardWidget({
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
-      <div className="shrink-0 px-6 pb-1 pt-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-3xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-white" aria-live="polite">
-              {clockLabel}
-            </p>
-            {nowActivity && nowStatusLabel ? (
-              <div className="mt-2 min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                  {nowStatusLabel}
-                </p>
-                <p className="truncate text-base font-semibold text-gray-900 dark:text-white">
-                  <EventTitle summary={nowActivity.event.summary} empty={t("calendar.emptyTitle")} />
-                </p>
-                <EventTitleDetail summary={nowActivity.event.summary} />
-                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                  {nowActivity.event.allDay
-                    ? t("calendar.allDay")
-                    : `${formatTime(eventStart(nowActivity.event), locale)} – ${formatTime(eventEnd(nowActivity.event), locale)}`}
-                </p>
-              </div>
-            ) : calendarEntityIds.length > 0 && !isLoading ? (
-              <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">{t("calendar.noCurrentActivity")}</p>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 items-center gap-0.5">
-            <Link
-              href="/calendar"
-              className="rounded-lg p-1.5 text-gray-400 hover:bg-black/5 hover:text-gray-600 dark:hover:bg-white/10 dark:hover:text-gray-200"
-              aria-label={t("calendar.openCalendar")}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <CalendarDays className="h-4 w-4" />
-            </Link>
-            {onMoreClick && (
-              <button
-                type="button"
-                onClick={onMoreClick}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
-                aria-label={t("editPanel.editTile")}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            )}
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-black/5 hover:text-gray-600 dark:hover:bg-white/10 dark:hover:text-gray-200"
-                aria-label={t("calendar.hidePanel")}
-                onPointerDown={(e) => e.stopPropagation()}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-start justify-between gap-2 px-5 pb-1 pt-5">
+      <div className="flex items-start justify-between gap-2 px-5 pb-1 pt-6">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{heading}</h2>
           <p className="mt-0.5 text-xs capitalize text-gray-500 dark:text-gray-400">{dateLabel}</p>
         </div>
+        {onMoreClick && (
+          <button
+            type="button"
+            onClick={onMoreClick}
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
+            aria-label={t("editPanel.editTile")}
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-1 px-3 pb-3 pt-2">
@@ -333,12 +259,12 @@ export function CalendarCardWidget({
           <div className="flex items-center justify-center py-10">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-purple border-t-transparent" />
           </div>
-        ) : dayEvents.length === 0 ? (
+        ) : dayEvents.length === 0 && !viewingToday ? (
           <div className="flex flex-col items-center justify-center gap-2 px-2 py-10 text-center text-gray-400 dark:text-white/30">
             <Clock className="h-8 w-8 opacity-40" />
             <p className="text-sm">{t("calendar.noEvents")}</p>
           </div>
-        ) : (
+        ) : dayEvents.length === 0 ? null : (
           <ol className="relative space-y-3 pt-1">
             <span className="absolute bottom-2 left-[3.1rem] top-2 w-px bg-gray-200/80 dark:bg-white/10" aria-hidden />
             {dayEvents.map((ev, i) => {
@@ -398,6 +324,29 @@ export function CalendarCardWidget({
           </ol>
         )}
       </div>
+
+      {viewingToday && !isLoading && (
+        <div className="shrink-0 border-t border-black/[0.06] px-5 py-4 dark:border-white/10">
+          {currentActivity ? (
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                {t("calendar.now")}
+              </p>
+              <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                <EventTitle summary={currentActivity.event.summary} empty={t("calendar.emptyTitle")} />
+              </p>
+              <EventTitleDetail summary={currentActivity.event.summary} />
+              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                {currentActivity.event.allDay
+                  ? t("calendar.allDay")
+                  : `${formatTime(eventStart(currentActivity.event), locale)} – ${formatTime(eventEnd(currentActivity.event), locale)}`}
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("calendar.noMoreActivities")}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

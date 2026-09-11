@@ -101,7 +101,6 @@ export function FloatingCalendarCard({
       <CalendarCardWidget
         title={widget.title}
         onMoreClick={editMode ? onEdit : undefined}
-        onClose={onClose}
       />
     </aside>,
     document.body
