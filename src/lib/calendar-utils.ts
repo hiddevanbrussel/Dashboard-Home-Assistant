@@ -90,6 +90,23 @@ export function eventsOnDay(events: CalendarEvent[], day: Date): CalendarEvent[]
   return [...allDayOnDay(events, day), ...timedOnDay(events, day)];
 }
 
+/** Index of the event to emphasize in a day list: current/next timed event today, otherwise the first. */
+export function highlightedEventIndex(events: CalendarEvent[], day: Date, now = new Date()): number {
+  const dayEvents = eventsOnDay(events, day);
+  if (dayEvents.length === 0) return -1;
+  if (!isSameDay(day, now)) return 0;
+
+  const timed = dayEvents.map((ev, i) => ({ ev, i })).filter(({ ev }) => !ev.allDay);
+  if (timed.length === 0) return 0;
+
+  const nowMs = now.getTime();
+  const current = timed.find(({ ev }) => eventStart(ev).getTime() <= nowMs && eventEnd(ev).getTime() > nowMs);
+  if (current) return current.i;
+  const next = timed.find(({ ev }) => eventStart(ev).getTime() > nowMs);
+  if (next) return next.i;
+  return timed[timed.length - 1].i;
+}
+
 export function durationMinutes(ev: CalendarEvent): number {
   if (ev.allDay) return 24 * 60;
   return Math.max(0, Math.round((eventEnd(ev).getTime() - eventStart(ev).getTime()) / 60_000));

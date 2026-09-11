@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { CalendarEvent } from "@/app/api/ha/calendar/route";
 import {
   addDays,
   DEFAULT_HOUR_H,
   gridHours,
+  highlightedEventIndex,
   hourHeightForViewport,
   isSameDay,
   MIN_HOUR_H,
@@ -62,5 +64,22 @@ describe("calendar-utils", () => {
     expect(hourHeightForViewport(0)).toBe(DEFAULT_HOUR_H);
     expect(hourHeightForViewport(700)).toBe(44);
     expect(hourHeightForViewport(200)).toBe(MIN_HOUR_H);
+  });
+
+  it("highlights the current or next timed event on today", () => {
+    const day = new Date(2026, 8, 11, 8, 30);
+    const events: CalendarEvent[] = [
+      { entityId: "calendar.a", summary: "All day", start: "2026-09-11", end: "2026-09-12", allDay: true },
+      { entityId: "calendar.a", summary: "Morning", start: "2026-09-11T07:00:00", end: "2026-09-11T08:00:00", allDay: false },
+      { entityId: "calendar.a", summary: "Now", start: "2026-09-11T08:00:00", end: "2026-09-11T09:00:00", allDay: false },
+      { entityId: "calendar.a", summary: "Later", start: "2026-09-11T10:00:00", end: "2026-09-11T11:00:00", allDay: false },
+    ];
+    expect(highlightedEventIndex(events, day, day)).toBe(2);
+    expect(highlightedEventIndex(events, addDays(day, 1), day)).toBe(-1);
+    const otherDay = addDays(day, 1);
+    const otherEvents: CalendarEvent[] = [
+      { entityId: "calendar.a", summary: "Trip", start: "2026-09-12T12:00:00", end: "2026-09-12T13:00:00", allDay: false },
+    ];
+    expect(highlightedEventIndex(otherEvents, otherDay, day)).toBe(0);
   });
 });

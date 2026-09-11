@@ -10,7 +10,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Bot, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
+import { Bot, CalendarDays, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
 import { ArrowRightLeft } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -68,6 +68,8 @@ import {
   FloatingAlarmCard,
   ChoreCardWidget,
   FloatingChoreCard,
+  CalendarCardWidget,
+  FloatingCalendarCard,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import type { ImageCondition, SensorCondition } from "@/components/widgets";
@@ -78,7 +80,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card"] as const;
+const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; labelKey: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "text_card", labelKey: "cardType.text_card", Icon: Type },
@@ -100,6 +102,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "nuts_card", labelKey: "cardType.nuts_card", Icon: Fuel },
   { type: "card_group", labelKey: "cardType.card_group", Icon: LayoutGrid },
   { type: "chore_card", labelKey: "cardType.chore_card", Icon: ListTodo },
+  { type: "calendar_card", labelKey: "cardType.calendar_card", Icon: CalendarDays },
 ];
 
 /** Map widget type to HA domain for filtering entities */
@@ -129,6 +132,7 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   room_card: "",
   nuts_card: "sensor",
   card_group: "",
+  calendar_card: "",
 };
 
 const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor", "binary_sensor"];
@@ -136,7 +140,7 @@ const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor", "binary
 const FLOATING_WIDGET_TYPES = new Set([
   "text_card", "media_card", "climate_card", "climate_card_2", "light_card", "solar_card",
   "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card",
-  "vacuum_card", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card",
+  "vacuum_card", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card",
 ]);
 
 type DashboardData = {
@@ -510,6 +514,13 @@ function WidgetByType({
           onMoreClick={onMoreClick}
         />
       );
+    case "calendar_card":
+      return (
+        <CalendarCardWidget
+          title={title}
+          onMoreClick={onMoreClick}
+        />
+      );
     default:
       return (
         <div className="rounded-card border border-dashed p-4 text-sm text-gray-500">
@@ -865,7 +876,9 @@ export default function DashboardEditPage() {
           widget.type !== "pill_card" &&
           widget.type !== "room_card" &&
           widget.type !== "nuts_card" &&
-          widget.type !== "card_group"
+          widget.type !== "card_group" &&
+          widget.type !== "chore_card" &&
+          widget.type !== "calendar_card"
       );
       if (gridWidgets.length > 0) {
         setLayout(
@@ -956,7 +969,7 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "text_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "device_consumption_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "alarm_card" && type !== "camera_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group";
+    return type !== "text_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "device_consumption_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "alarm_card" && type !== "camera_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group" && type !== "chore_card" && type !== "calendar_card";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
@@ -989,7 +1002,7 @@ export default function DashboardEditPage() {
       h: isTextCard ? 1 : 2,
     };
     const newWidgets = [...widgets, newWidget];
-    const isFloatingOnly = type === "text_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "alarm_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group";
+    const isFloatingOnly = type === "text_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "alarm_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group" || type === "chore_card" || type === "calendar_card";
     const newLayout = isFloatingOnly ? layout : [...layout, newLayoutItem];
 
     // Optimistisch query-cache updaten zodat de widget direct beschikbaar is bij remount/refetch
@@ -1212,6 +1225,16 @@ export default function DashboardEditPage() {
                             if (type === "power_usage_card") {
                               const newId = handleAddTile("power_usage_card", "", t("cardType.power_usage_card"));
                               if (newId) setEditingWidgetId(newId);
+                              setAddTileOpen(false);
+                              return;
+                            }
+                            if (type === "calendar_card") {
+                              handleAddTile("calendar_card", "", "");
+                              setAddTileOpen(false);
+                              return;
+                            }
+                            if (type === "chore_card") {
+                              handleAddTile("chore_card", "", t("cardType.chore_card"));
                               setAddTileOpen(false);
                               return;
                             }
@@ -1456,7 +1479,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group" && w.type !== "chore_card")
+            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group" && w.type !== "chore_card" && w.type !== "calendar_card")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -1971,6 +1994,24 @@ export default function DashboardEditPage() {
                 title: w.title,
                 child_id: w.child_id,
                 show_chore_points: w.show_chore_points,
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              storageScope={id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
+
+        {widgets
+          .filter((w) => w.type === "calendar_card")
+          .map((w, i) => (
+            <FloatingCalendarCard
+              key={w.id}
+              widget={{
+                id: w.id,
+                title: w.title,
               }}
               widgetIndex={i}
               editMode={editMode}
@@ -2497,7 +2538,7 @@ export default function DashboardEditPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                   />
                 </div>
-                {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card" || editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") && editingWidget.type !== "text_card" && editingWidget.type !== "title_card" && editingWidget.type !== "title_only_card" && editingWidget.type !== "subtitle_card" && editingWidget.type !== "room_card" && editingWidget.type !== "device_consumption_card" && (
+                {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card" || editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") && editingWidget.type !== "text_card" && editingWidget.type !== "title_card" && editingWidget.type !== "title_only_card" && editingWidget.type !== "subtitle_card" && editingWidget.type !== "room_card" && editingWidget.type !== "device_consumption_card" && editingWidget.type !== "calendar_card" && editingWidget.type !== "chore_card" && (
                   <EntitySelectWithSearch
                     entities={entities}
                     value={editForm.entity_id}

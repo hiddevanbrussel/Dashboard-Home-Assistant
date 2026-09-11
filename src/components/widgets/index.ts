@@ -45,3 +45,5 @@ export { CARD_ICON_OPTIONS } from "./card-icons";
 export * from "./widget-types";
 export { ChoreCardWidget } from "./chore-card-widget";
 export { FloatingChoreCard } from "./floating-chore-card";
+export { CalendarCardWidget } from "./calendar-card-widget";
+export { FloatingCalendarCard } from "./floating-calendar-card";
