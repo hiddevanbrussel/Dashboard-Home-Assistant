@@ -49,6 +49,8 @@ type AppShellProps = {
   welcomeBarAction?: React.ReactNode;
   /** Rendered in the header next to the theme switcher (e.g. add/edit icon). */
   headerEndAction?: React.ReactNode;
+  /** Rendered in the header after the clock/temperature (e.g. calendar toggle). */
+  headerStartAction?: React.ReactNode;
   /** Welcome heading (above main content). */
   welcomeTitle?: string;
   /** Welcome subtitle. */
@@ -213,6 +215,7 @@ export function AppShell({
   showFloatingToolbar = false,
   welcomeBarAction,
   headerEndAction,
+  headerStartAction,
   welcomeTitle: welcomeTitleProp,
   welcomeSubtitle: welcomeSubtitleProp,
   hideWelcome = false,
@@ -315,7 +318,7 @@ export function AppShell({
       >
         <div
           className={cn(
-            "z-40 flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
+            "relative z-50 flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
             headerFixed && "absolute inset-x-0 top-0",
             headerContentLight ? "text-white" : "text-gray-700 dark:text-gray-300"
           )}
@@ -359,6 +362,7 @@ export function AppShell({
                 <Newspaper className="h-5 w-5" />
               </button>
             )}
+            {headerStartAction}
             {headerEndAction}
             <HeaderMediaPlaying contentLight={headerContentLight} />
           </div>

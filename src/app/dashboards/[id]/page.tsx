@@ -70,7 +70,6 @@ import {
   FloatingChoreCard,
   CalendarCardWidget,
   FloatingCalendarCard,
-  CALENDAR_PANEL_WIDTH,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import type { ImageCondition, SensorCondition } from "@/components/widgets";
@@ -666,6 +665,7 @@ export default function DashboardEditPage() {
   const [definitionModalEntities, setDefinitionModalEntities] = useState<HaEntity[]>([]);
   const [roomBackgroundOpen, setRoomBackgroundOpen] = useState(false);
   const [uploadingRoomBackground, setUploadingRoomBackground] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(true);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roomBackgroundInputRef = useRef<HTMLInputElement>(null);
   const LONG_PRESS_MS = 500;
@@ -740,6 +740,27 @@ export default function DashboardEditPage() {
   useEffect(() => {
     if (!editingWidgetId) setEditingGroupChildId(null);
   }, [editingWidgetId]);
+
+  useEffect(() => {
+    try {
+      setCalendarOpen(localStorage.getItem("dashboard.calendarPanelOpen") !== "0");
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const persistCalendarOpen = (open: boolean) => {
+    setCalendarOpen(open);
+    try {
+      localStorage.setItem("dashboard.calendarPanelOpen", open ? "1" : "0");
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    if (editMode && widgets.some((w) => w.type === "calendar_card")) persistCalendarOpen(true);
+  }, [editMode]);
 
   useEffect(() => {
     if (editingWidget?.type === "card_group" && editingGroupChildId) {
@@ -1231,6 +1252,7 @@ export default function DashboardEditPage() {
                             }
                             if (type === "calendar_card") {
                               handleAddTile("calendar_card", "", "");
+                              persistCalendarOpen(true);
                               setAddTileOpen(false);
                               return;
                             }
@@ -1459,8 +1481,26 @@ export default function DashboardEditPage() {
           setWelcomeSubtitle(subtitle);
         } : undefined}
         contentNoScroll={hasCardGroup}
-        contentRightInset={hasCalendarCard ? CALENDAR_PANEL_WIDTH : undefined}
-        hideHeaderClock={hasCalendarCard}
+        hideHeaderClock={hasCalendarCard && calendarOpen}
+        headerStartAction={
+          hasCalendarCard ? (
+            <button
+              type="button"
+              onClick={() => persistCalendarOpen(!calendarOpen)}
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                calendarOpen
+                  ? "bg-black/5 text-gray-900 dark:bg-white/15 dark:text-white"
+                  : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+              )}
+              aria-label={calendarOpen ? t("calendar.hidePanel") : t("calendar.showPanel")}
+              aria-pressed={calendarOpen}
+              title={calendarOpen ? t("calendar.hidePanel") : t("calendar.showPanel")}
+            >
+              <CalendarDays className="h-5 w-5" />
+            </button>
+          ) : null
+        }
       >
       <div className="space-y-6 overflow-x-hidden min-h-0">
         <div className="flex items-center justify-end">
@@ -2019,7 +2059,9 @@ export default function DashboardEditPage() {
               }}
               widgetIndex={i}
               editMode={editMode}
+              open={calendarOpen}
               storageScope={id}
+              onClose={() => persistCalendarOpen(false)}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
