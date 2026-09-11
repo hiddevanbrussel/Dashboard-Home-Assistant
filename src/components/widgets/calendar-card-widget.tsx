@@ -140,7 +140,11 @@ export function CalendarCardWidget({
     month: "long",
     year: "numeric",
   });
-  const heading = title?.trim() || t("calendar.activity");
+  const customTitle = title?.trim() ?? "";
+  const heading =
+    !customTitle || /^(activity|activiteit|calendar|kalender|calendar card)$/i.test(customTitle)
+      ? t("calendar.activity")
+      : customTitle;
 
   const shiftWeek = useCallback((delta: number) => {
     setSelectedDate((prev) => addDays(prev, delta * 7));

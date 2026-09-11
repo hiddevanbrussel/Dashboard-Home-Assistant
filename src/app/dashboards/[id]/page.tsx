@@ -1229,7 +1229,7 @@ export default function DashboardEditPage() {
                               return;
                             }
                             if (type === "calendar_card") {
-                              handleAddTile("calendar_card", "", t("calendar.activity"));
+                              handleAddTile("calendar_card", "", "");
                               setAddTileOpen(false);
                               return;
                             }
