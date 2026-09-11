@@ -81,7 +81,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex w-14 flex-col items-center gap-1 rounded-full bg-gray-900/90 py-3 shadow-lg dark:bg-black/50",
+        "flex w-14 flex-col items-center gap-1 rounded-full bg-gray-900/90 py-3 shadow-lg ring-1 ring-black/10 dark:bg-white/10 dark:ring-white/15",
         className
       )}
       aria-label={t("nav.sidebar")}
