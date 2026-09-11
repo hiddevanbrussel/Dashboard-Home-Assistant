@@ -325,7 +325,7 @@ export function CalendarCardWidget({
         )}
       </div>
 
-      {viewingToday && calendarEntityIds.length > 0 && !isLoading && (
+      {viewingToday && !isLoading && (
         <div className="shrink-0 border-t border-black/[0.06] px-5 py-4 dark:border-white/10">
           {currentActivity ? (
             <div className="min-w-0">
