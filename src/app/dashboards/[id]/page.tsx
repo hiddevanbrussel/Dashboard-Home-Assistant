@@ -1460,6 +1460,7 @@ export default function DashboardEditPage() {
         } : undefined}
         contentNoScroll={hasCardGroup}
         contentRightInset={hasCalendarCard ? CALENDAR_PANEL_WIDTH : undefined}
+        hideHeaderClock={hasCalendarCard}
       >
       <div className="space-y-6 overflow-x-hidden min-h-0">
         <div className="flex items-center justify-end">

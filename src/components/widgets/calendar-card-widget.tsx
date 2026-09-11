@@ -182,7 +182,7 @@ export function CalendarCardWidget({
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
-      <div className="shrink-0 px-5 pb-1 pt-5">
+      <div className="shrink-0 px-6 pb-1 pt-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-3xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-white" aria-live="polite">

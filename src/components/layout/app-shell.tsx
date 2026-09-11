@@ -75,6 +75,8 @@ type AppShellProps = {
   headerFixed?: boolean;
   /** Extra padding on the right of the chrome/content (e.g. calendar panel width). */
   contentRightInset?: string;
+  /** Hide the header clock (e.g. when the calendar panel already shows the time). */
+  hideHeaderClock?: boolean;
   className?: string;
 };
 
@@ -224,6 +226,7 @@ export function AppShell({
   headerContentLight = false,
   headerFixed = false,
   contentRightInset,
+  hideHeaderClock = false,
   className,
 }: AppShellProps) {
   const { t } = useTranslation();
@@ -317,9 +320,11 @@ export function AppShell({
             headerContentLight ? "text-white" : "text-gray-700 dark:text-gray-300"
           )}
         >
-          <span className={cn("text-sm font-medium tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
-            {headerTime}
-          </span>
+          {!hideHeaderClock && (
+            <span className={cn("text-sm font-medium tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
+              {headerTime}
+            </span>
+          )}
           {effectiveTempEntity != null && (
             <button
               type="button"

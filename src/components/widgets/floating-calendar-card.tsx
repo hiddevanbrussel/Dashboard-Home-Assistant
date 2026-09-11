@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import { CalendarCardWidget } from "./calendar-card-widget";
@@ -27,6 +28,11 @@ export function FloatingCalendarCard({
 }) {
   const { t } = useTranslation();
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -47,10 +53,12 @@ export function FloatingCalendarCard({
     }, LONG_PRESS_MS);
   }, [editMode, onEnterEditMode, onEdit, clearLongPress]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <aside
       className={cn(
-        "fixed inset-y-0 right-0 z-20 flex flex-col overflow-hidden border-l",
+        "fixed inset-y-0 right-0 z-30 flex flex-col overflow-hidden border-l",
         "bg-white/90 dark:bg-gray-950/85 border-black/[0.06] dark:border-white/10 backdrop-blur-2xl",
         editMode && "animate-edit-wiggle"
       )}
@@ -77,6 +85,7 @@ export function FloatingCalendarCard({
         title={widget.title}
         onMoreClick={editMode ? onEdit : undefined}
       />
-    </aside>
+    </aside>,
+    document.body
   );
 }
