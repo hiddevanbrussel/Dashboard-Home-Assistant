@@ -33,6 +33,15 @@ const optionalItems = [
   { href: "/music", icon: Music2, labelKey: "nav.music", flag: "music" },
 ] as const;
 
+function navButtonClass(isActive: boolean) {
+  return cn(
+    "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150",
+    isActive
+      ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+      : "text-gray-600 hover:bg-black/5 hover:text-gray-900 dark:text-white/80 dark:hover:bg-white/15 dark:hover:text-white"
+  );
+}
+
 function ThemeIconButton() {
   const { t } = useTranslation();
   const mode = useThemeStore((s) => s.mode);
@@ -47,7 +56,7 @@ function ThemeIconButton() {
       onClick={() => setMode(isLight ? "dark" : "light")}
       aria-label={isLight ? t("nav.themeDark") : t("nav.themeLight")}
       title={isLight ? t("nav.themeDark") : t("nav.themeLight")}
-      className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all duration-150 hover:bg-white/15 hover:text-white"
+      className={navButtonClass(false)}
     >
       {isLight ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
     </button>
@@ -81,7 +90,9 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex w-14 flex-col items-center gap-1 rounded-full bg-gray-900/90 py-3 shadow-lg dark:bg-black/50",
+        "flex w-14 flex-col items-center gap-1 rounded-full py-3 shadow-lg ring-1 backdrop-blur-md",
+        "bg-white/90 ring-black/10",
+        "dark:bg-gray-900/90 dark:ring-white/15",
         className
       )}
       aria-label={t("nav.sidebar")}
@@ -94,29 +105,19 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
             href={href}
             aria-label={t(labelKey)}
             title={t(labelKey)}
-            className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150",
-              isActive
-                ? "bg-white text-gray-900"
-                : "text-white/80 hover:bg-white/15 hover:text-white"
-            )}
+            className={navButtonClass(isActive)}
           >
             <Icon className="h-5 w-5" />
           </Link>
         );
       })}
-      <span className="my-1 h-px w-6 bg-white/20" aria-hidden />
+      <span className="my-1 h-px w-6 bg-black/10 dark:bg-white/20" aria-hidden />
       <ThemeIconButton />
       <Link
         href="/settings"
         aria-label={t("nav.settings")}
         title={t("nav.settings")}
-        className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150",
-          activeHref === "/settings"
-            ? "bg-white text-gray-900"
-            : "text-white/80 hover:bg-white/15 hover:text-white"
-        )}
+        className={navButtonClass(activeHref === "/settings")}
       >
         <Settings className="h-5 w-5" />
       </Link>

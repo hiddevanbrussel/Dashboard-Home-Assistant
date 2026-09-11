@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MoreVertical } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, MoreVertical, X } from "lucide-react";
 import type { CalendarEvent } from "@/app/api/ha/calendar/route";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatCalendarTitle, subjectCodesFor } from "@/lib/calendar-titles";
@@ -82,9 +82,11 @@ async function fetchRangeEvents(entityIds: string[], start: Date, end: Date): Pr
 export function CalendarCardWidget({
   title,
   onMoreClick,
+  onClose,
 }: {
   title?: string;
   onMoreClick?: () => void;
+  onClose?: () => void;
 }) {
   const { t, language } = useTranslation();
   const locale = localeOf(language);
@@ -224,6 +226,17 @@ export function CalendarCardWidget({
                 aria-label={t("editPanel.editTile")}
               >
                 <MoreVertical className="h-4 w-4" />
+              </button>
+            )}
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-black/5 hover:text-gray-600 dark:hover:bg-white/10 dark:hover:text-gray-200"
+                aria-label={t("calendar.hidePanel")}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>

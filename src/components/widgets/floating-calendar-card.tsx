@@ -14,6 +14,8 @@ const LONG_PRESS_MS = 500;
 export function FloatingCalendarCard({
   widget,
   editMode = false,
+  open = false,
+  onClose,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -21,6 +23,8 @@ export function FloatingCalendarCard({
   widget: { id: string; title?: string };
   widgetIndex?: number;
   editMode?: boolean;
+  open?: boolean;
+  onClose?: () => void;
   storageScope?: string;
   onRemove?: () => void;
   onEdit?: () => void;
@@ -33,6 +37,15 @@ export function FloatingCalendarCard({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!open || !onClose) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -58,12 +71,16 @@ export function FloatingCalendarCard({
   return createPortal(
     <aside
       className={cn(
-        "fixed inset-y-0 right-0 z-30 flex flex-col overflow-hidden border-l",
-        "bg-white/90 dark:bg-gray-950/85 border-black/[0.06] dark:border-white/10 backdrop-blur-2xl",
-        editMode && "animate-edit-wiggle"
+        "fixed z-40 flex flex-col overflow-hidden rounded-3xl border shadow-2xl",
+        "top-20 bottom-4 right-4",
+        "bg-white/90 dark:bg-gray-950/90 border-black/[0.06] dark:border-white/10 backdrop-blur-2xl",
+        "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+        open ? "translate-x-0" : "pointer-events-none translate-x-[calc(100%+1.25rem)]",
+        editMode && open && "animate-edit-wiggle"
       )}
       style={{ width: CALENDAR_PANEL_WIDTH }}
       aria-label={t("calendar.activity")}
+      aria-hidden={!open}
       {...(!editMode && onEnterEditMode && {
         onPointerDown: startLongPress,
         onPointerUp: clearLongPress,
@@ -84,6 +101,7 @@ export function FloatingCalendarCard({
       <CalendarCardWidget
         title={widget.title}
         onMoreClick={editMode ? onEdit : undefined}
+        onClose={onClose}
       />
     </aside>,
     document.body
