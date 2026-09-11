@@ -1481,7 +1481,6 @@ export default function DashboardEditPage() {
           setWelcomeSubtitle(subtitle);
         } : undefined}
         contentNoScroll={hasCardGroup}
-        hideHeaderClock={hasCalendarCard && calendarOpen}
         headerStartAction={
           hasCalendarCard ? (
             <button
