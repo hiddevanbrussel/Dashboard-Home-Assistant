@@ -3,27 +3,24 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
-    ChevronLeft,
-    Cloud,
-    CloudFog,
-    CloudLightning,
-    CloudRain,
-    CloudSnow,
-    Droplets,
-    Menu,
-    Moon,
-    Newspaper,
-    Sun,
-    Thermometer,
-    Wind,
-    X,
-  } from "lucide-react";
+  ChevronLeft,
+  Cloud,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudSnow,
+  Droplets,
+  Newspaper,
+  Moon,
+  Sun,
+  Thermometer,
+  Wind,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TopTabs } from "./top-tabs";
-import { Sidebar } from "./sidebar";
+import { Sidebar, SIDEBAR_INSET } from "./sidebar";
 import { FloatingToolbar } from "./floating-toolbar";
 import Link from "next/link";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { usePageBackground } from "@/components/page-background";
 import { useTranslation } from "@/hooks/use-translation";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -74,8 +71,12 @@ type AppShellProps = {
   backHref?: string;
   /** When true, header content uses light colors (e.g. over dark hero image). */
   headerContentLight?: boolean;
-  /** When true, header stays fixed at top when scrolling. */
+  /** When true, header stays overlayed at top when scrolling (e.g. music hero). */
   headerFixed?: boolean;
+  /** Extra padding on the right of the chrome/content (e.g. calendar panel width). */
+  contentRightInset?: string;
+  /** Hide the header clock (e.g. when the calendar panel already shows the time). */
+  hideHeaderClock?: boolean;
   className?: string;
 };
 
@@ -224,6 +225,8 @@ export function AppShell({
   backHref,
   headerContentLight = false,
   headerFixed = false,
+  contentRightInset,
+  hideHeaderClock = false,
   className,
 }: AppShellProps) {
   const { t } = useTranslation();
@@ -235,7 +238,6 @@ export function AppShell({
   const headerTime = useHeaderClock();
   const [temperatureModalOpen, setTemperatureModalOpen] = useState(false);
   const [chosenTemperatureEntityId, setChosenTemperatureEntityId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newsOpen, setNewsOpen] = useState(false);
   const { enabled: newsEnabled, rssUrls } = useNewsStore();
 
@@ -299,33 +301,30 @@ export function AppShell({
         className
       )}
     >
-      <header
-        className={cn(
-          "z-50 flex shrink-0 items-center border-b px-4 py-3",
-          headerFixed && "fixed top-0 left-0 right-0 backdrop-blur-sm",
-          headerFixed && !headerContentLight && "bg-white/95 dark:bg-black/95",
-          headerFixed && headerContentLight && "bg-black/20",
-          headerContentLight ? "border-white/20" : "border-gray-200/50 dark:border-white/10"
-        )}
+      {showSidebar && (
+        <div className="pointer-events-none fixed inset-y-0 left-0 z-[60] flex items-center justify-center" style={{ width: SIDEBAR_INSET }}>
+          <div className="pointer-events-auto">
+            <Sidebar activeHref={activeTab} />
+          </div>
+        </div>
+      )}
+
+      <div
+        className={cn("relative flex min-h-0 flex-1 flex-col", showSidebar && "pl-[5.5rem]")}
+        style={contentRightInset ? { paddingRight: contentRightInset } : undefined}
       >
-        <div className="flex-1 min-w-0 flex items-center gap-4">
-          {showSidebar && (
-            <button
-              type="button"
-              onClick={() => setSidebarOpen((v) => !v)}
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                sidebarOpen && "text-[#FFAA00]",
-                !sidebarOpen && (headerContentLight ? "text-white/90 hover:bg-white/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10")
-              )}
-              aria-label={sidebarOpen ? t("nav.menuClose") : t("nav.menuOpen")}
-            >
-              <Menu className="h-5 w-5" aria-hidden />
-            </button>
+        <div
+          className={cn(
+            "z-40 flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
+            headerFixed && "absolute inset-x-0 top-0",
+            headerContentLight ? "text-white" : "text-gray-700 dark:text-gray-300"
           )}
-          <span className={cn("text-sm font-medium tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
-            {headerTime}
-          </span>
+        >
+          {!hideHeaderClock && (
+            <span className={cn("text-sm font-medium tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
+              {headerTime}
+            </span>
+          )}
           {effectiveTempEntity != null && (
             <button
               type="button"
@@ -344,141 +343,121 @@ export function AppShell({
               {temperatureDisplay ?? "—"}
             </button>
           )}
-        </div>
-        <div className="flex justify-center px-4">
-          <TopTabs activeHref={activeTab} contentLight={headerContentLight} />
-        </div>
-        <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-          {newsEnabled && rssUrls.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setNewsOpen(true)}
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                headerContentLight
-                  ? "text-white/90 hover:bg-white/10"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-              )}
-              aria-label={t("news.title")}
-            >
-              <Newspaper className="h-5 w-5" />
-            </button>
-          )}
-          {headerEndAction}
-          <HeaderMediaPlaying contentLight={headerContentLight} />
-          <ThemeSwitcher contentLight={headerContentLight} />
-        </div>
-      </header>
-
-      {headerFixed && <div className="h-14 shrink-0" aria-hidden />}
-
-      {temperatureModalOpen &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <TemperatureEntityModal
-            onClose={() => setTemperatureModalOpen(false)}
-            onSelect={saveChosenTemperatureEntity}
-          />,
-          document.body
-        )}
-
-      <NewsOverlay isOpen={newsOpen} onClose={() => setNewsOpen(false)} />
-
-      {(showWelcomeInHeader || backHref) && (
-      <div className="shrink-0 flex items-center justify-between gap-4 pl-10 pr-4 py-4">
-        <div className="min-w-0 flex-1 flex items-center gap-3">
-          {backHref && (
-            <Link
-              href={backHref}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-              aria-label={t("rooms.back")}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Link>
-          )}
-          <div className="min-w-0 flex-1">
-          {showWelcomeInHeader && welcomeEditable && onWelcomeChange ? (
-            <div className="space-y-2 max-w-md">
-              <input
-                type="text"
-                value={welcomeTitle}
-                onChange={(e) =>
-                  onWelcomeChange({
-                    title: e.target.value,
-                    subtitle: welcomeSubtitle,
-                  })
-                }
-                className="block w-full text-2xl md:text-3xl font-bold bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-white/20 rounded-lg px-2 py-1 -mx-2 text-gray-900 dark:text-white tracking-tight focus:outline-none focus:border-accent-purple dark:focus:border-accent-purple"
-                placeholder={t("appShell.welcomeTitlePlaceholder")}
-              />
-              <input
-                type="text"
-                value={welcomeSubtitle}
-                onChange={(e) =>
-                  onWelcomeChange({
-                    title: welcomeTitle,
-                    subtitle: e.target.value,
-                  })
-                }
-                className="block w-full text-base md:text-lg font-normal bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-white/20 rounded-lg px-2 py-1 -mx-2 text-gray-600 dark:text-gray-300 focus:outline-none focus:border-accent-purple dark:focus:border-accent-purple"
-                placeholder={t("appShell.welcomeSubtitlePlaceholder")}
-              />
-            </div>
-          ) : showWelcomeInHeader ? (
-            <>
-              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-                {welcomeTitle}
-              </p>
-              <p className="text-base md:text-lg font-normal text-gray-600 dark:text-gray-300 mt-1.5">
-                {welcomeSubtitle}
-              </p>
-              {showWelcomeEntities && (
-                <p className="flex items-center gap-3 mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-                  {welcomeTempDisplay && (
-                    <span className="flex items-center gap-1.5">
-                      <Thermometer className="h-4 w-4 shrink-0" aria-hidden />
-                      {welcomeTempDisplay}
-                    </span>
-                  )}
-                  {welcomeHumDisplay && (
-                    <span className="flex items-center gap-1.5">
-                      <Droplets className="h-4 w-4 shrink-0" aria-hidden />
-                      {welcomeHumDisplay}
-                    </span>
-                  )}
-                </p>
-              )}
-            </>
-          ) : null}
-          </div>
-        </div>
-        {welcomeBarAction != null ? (
-          <div className="flex items-center gap-2 shrink-0">
-            {welcomeBarAction}
-          </div>
-        ) : null}
-      </div>
-      )}
-
-      <div className={cn("relative flex flex-1 overflow-hidden", contentNoScroll && "min-h-0")}>
-        {showSidebar && (
-          <div
-            className={cn(
-              "fixed left-0 top-[8rem] bottom-0 z-[60] w-[88px] pl-8 flex flex-col items-center justify-center transition-[transform,opacity] duration-200 ease-out",
-              sidebarOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"
+          <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+            {newsEnabled && rssUrls.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setNewsOpen(true)}
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                  headerContentLight
+                    ? "text-white/90 hover:bg-white/10"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                )}
+                aria-label={t("news.title")}
+              >
+                <Newspaper className="h-5 w-5" />
+              </button>
             )}
-          >
-            <Sidebar activeHref={activeTab} />
+            {headerEndAction}
+            <HeaderMediaPlaying contentLight={headerContentLight} />
           </div>
+        </div>
+
+        {temperatureModalOpen &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <TemperatureEntityModal
+              onClose={() => setTemperatureModalOpen(false)}
+              onSelect={saveChosenTemperatureEntity}
+            />,
+            document.body
+          )}
+
+        <NewsOverlay isOpen={newsOpen} onClose={() => setNewsOpen(false)} />
+
+        {(showWelcomeInHeader || backHref) && (
+        <div className="flex shrink-0 items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <div className="min-w-0 flex-1 flex items-center gap-3">
+            {backHref && (
+              <Link
+                href={backHref}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                aria-label={t("rooms.back")}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
+            )}
+            <div className="min-w-0 flex-1">
+            {showWelcomeInHeader && welcomeEditable && onWelcomeChange ? (
+              <div className="space-y-2 max-w-md">
+                <input
+                  type="text"
+                  value={welcomeTitle}
+                  onChange={(e) =>
+                    onWelcomeChange({
+                      title: e.target.value,
+                      subtitle: welcomeSubtitle,
+                    })
+                  }
+                  className="block w-full text-2xl md:text-3xl font-bold bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-white/20 rounded-lg px-2 py-1 -mx-2 text-gray-900 dark:text-white tracking-tight focus:outline-none focus:border-accent-purple dark:focus:border-accent-purple"
+                  placeholder={t("appShell.welcomeTitlePlaceholder")}
+                />
+                <input
+                  type="text"
+                  value={welcomeSubtitle}
+                  onChange={(e) =>
+                    onWelcomeChange({
+                      title: welcomeTitle,
+                      subtitle: e.target.value,
+                    })
+                  }
+                  className="block w-full text-base md:text-lg font-normal bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-white/20 rounded-lg px-2 py-1 -mx-2 text-gray-600 dark:text-gray-300 focus:outline-none focus:border-accent-purple dark:focus:border-accent-purple"
+                  placeholder={t("appShell.welcomeSubtitlePlaceholder")}
+                />
+              </div>
+            ) : showWelcomeInHeader ? (
+              <>
+                <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                  {welcomeTitle}
+                </p>
+                <p className="text-base md:text-lg font-normal text-gray-600 dark:text-gray-300 mt-1.5">
+                  {welcomeSubtitle}
+                </p>
+                {showWelcomeEntities && (
+                  <p className="flex items-center gap-3 mt-1.5 text-sm text-gray-500 dark:text-gray-400">
+                    {welcomeTempDisplay && (
+                      <span className="flex items-center gap-1.5">
+                        <Thermometer className="h-4 w-4 shrink-0" aria-hidden />
+                        {welcomeTempDisplay}
+                      </span>
+                    )}
+                    {welcomeHumDisplay && (
+                      <span className="flex items-center gap-1.5">
+                        <Droplets className="h-4 w-4 shrink-0" aria-hidden />
+                        {welcomeHumDisplay}
+                      </span>
+                    )}
+                  </p>
+                )}
+              </>
+            ) : null}
+            </div>
+          </div>
+          {welcomeBarAction != null ? (
+            <div className="flex items-center gap-2 shrink-0">
+              {welcomeBarAction}
+            </div>
+          ) : null}
+        </div>
         )}
+
         <main
           className={cn(
-            "flex-1 px-4 py-4 min-w-0 transition-[margin] duration-200 sm:px-6",
+            "min-w-0 flex-1 px-4 py-4 sm:px-6",
             contentNoScroll ? "flex min-h-0 flex-col overflow-hidden" : "overflow-auto",
-            !contentNoScroll && contentScrollbarHidden && "scrollbar-hide",
-            showSidebar && sidebarOpen && "ml-[88px]"
+            !contentNoScroll && contentScrollbarHidden && "scrollbar-hide"
           )}
-          style={{ "--sidebar-width": showSidebar && sidebarOpen ? "88px" : "0" } as React.CSSProperties}
         >
           {children}
         </main>

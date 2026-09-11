@@ -1,14 +1,58 @@
 "use client";
 
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Home, Settings } from "lucide-react";
+import {
+  CalendarDays,
+  DoorOpen,
+  Home,
+  ListTodo,
+  Moon,
+  Music2,
+  Settings,
+  Sun,
+} from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
+import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
+import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
+import { useThemeStore } from "@/stores/theme-store";
 
-const mainIcons = [
+/** Space reserved on the left for the floating icon rail. */
+export const SIDEBAR_INSET = "5.5rem";
+
+const coreItems = [
   { href: "/dashboards", icon: Home, labelKey: "nav.home" },
-  { href: "/settings", icon: Settings, labelKey: "nav.settings" },
+  { href: "/rooms", icon: DoorOpen, labelKey: "nav.rooms" },
 ] as const;
+
+const optionalItems = [
+  { href: "/calendar", icon: CalendarDays, labelKey: "nav.calendar", flag: "calendar" },
+  { href: "/family", icon: ListTodo, labelKey: "nav.family", flag: "family" },
+  { href: "/music", icon: Music2, labelKey: "nav.music", flag: "music" },
+] as const;
+
+function ThemeIconButton() {
+  const { t } = useTranslation();
+  const mode = useThemeStore((s) => s.mode);
+  const resolved = useThemeStore((s) => s.resolved);
+  const setMode = useThemeStore((s) => s.setMode);
+  const effective = mode === "auto" ? resolved : mode;
+  const isLight = effective === "light";
+
+  return (
+    <button
+      type="button"
+      onClick={() => setMode(isLight ? "dark" : "light")}
+      aria-label={isLight ? t("nav.themeDark") : t("nav.themeLight")}
+      title={isLight ? t("nav.themeDark") : t("nav.themeLight")}
+      className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all duration-150 hover:bg-white/15 hover:text-white"
+    >
+      {isLight ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+    </button>
+  );
+}
 
 type SidebarProps = {
   activeHref?: string;
@@ -17,21 +61,39 @@ type SidebarProps = {
 
 export function Sidebar({ activeHref, className }: SidebarProps) {
   const { t } = useTranslation();
+  const musicAssistantEnabled = useMusicAssistantStore((s) => s.enabled);
+  const calendarEnabled = useCalendarStore((s) => s.enabled);
+  const choresEnabled = useChoresStore((s) => s.enabled);
+
+  useEffect(() => {
+    hydrateMusicAssistantStore();
+    hydrateCalendarStore();
+    hydrateChoresStore();
+  }, []);
+
+  const extra = optionalItems.filter((item) => {
+    if (item.flag === "calendar") return calendarEnabled;
+    if (item.flag === "family") return choresEnabled;
+    if (item.flag === "music") return musicAssistantEnabled;
+    return false;
+  });
+
   return (
     <aside
       className={cn(
-        "flex w-14 flex-col items-center gap-2 rounded-full bg-gray-900/90 py-3 dark:bg-black/40",
+        "flex w-14 flex-col items-center gap-1 rounded-full bg-gray-900/90 py-3 shadow-lg dark:bg-black/50",
         className
       )}
-      aria-label="Sidebar"
+      aria-label={t("nav.sidebar")}
     >
-      {mainIcons.map(({ href, icon: Icon, labelKey }) => {
+      {[...coreItems, ...extra].map(({ href, icon: Icon, labelKey }) => {
         const isActive = activeHref === href;
         return (
           <Link
             key={href}
             href={href}
             aria-label={t(labelKey)}
+            title={t(labelKey)}
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150",
               isActive
@@ -43,6 +105,21 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
           </Link>
         );
       })}
+      <span className="my-1 h-px w-6 bg-white/20" aria-hidden />
+      <ThemeIconButton />
+      <Link
+        href="/settings"
+        aria-label={t("nav.settings")}
+        title={t("nav.settings")}
+        className={cn(
+          "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150",
+          activeHref === "/settings"
+            ? "bg-white text-gray-900"
+            : "text-white/80 hover:bg-white/15 hover:text-white"
+        )}
+      >
+        <Settings className="h-5 w-5" />
+      </Link>
     </aside>
   );
 }
