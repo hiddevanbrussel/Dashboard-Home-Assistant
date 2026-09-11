@@ -1459,11 +1459,9 @@ export default function DashboardEditPage() {
           setWelcomeSubtitle(subtitle);
         } : undefined}
         contentNoScroll={hasCardGroup}
+        contentRightInset={hasCalendarCard ? CALENDAR_PANEL_WIDTH : undefined}
       >
-      <div
-        className="space-y-6 overflow-x-hidden min-h-0"
-        style={hasCalendarCard ? { paddingRight: CALENDAR_PANEL_WIDTH } : undefined}
-      >
+      <div className="space-y-6 overflow-x-hidden min-h-0">
         <div className="flex items-center justify-end">
           <OfflinePill />
         </div>

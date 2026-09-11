@@ -50,9 +50,8 @@ export function FloatingCalendarCard({
   return (
     <aside
       className={cn(
-        "fixed bottom-0 right-0 top-14 z-20 flex flex-col overflow-hidden border-l",
+        "fixed inset-y-0 right-0 z-20 flex flex-col overflow-hidden border-l",
         "bg-white/90 dark:bg-gray-950/85 border-black/[0.06] dark:border-white/10 backdrop-blur-2xl",
-        "rounded-tl-3xl",
         editMode && "animate-edit-wiggle"
       )}
       style={{ width: CALENDAR_PANEL_WIDTH }}
