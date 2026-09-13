@@ -299,7 +299,7 @@ export default function RoomsPage() {
                 className={cn(
                   "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
                   selectedFloor === null
-                    ? "bg-[#4D2FB2] text-white"
+                    ? "bg-[#4700B5] text-white"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
                 )}
               >
@@ -313,7 +313,7 @@ export default function RoomsPage() {
                   className={cn(
                     "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
                     selectedFloor === floor
-                      ? "bg-[#4D2FB2] text-white"
+                      ? "bg-[#4700B5] text-white"
                       : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
                   )}
                 >
@@ -351,7 +351,7 @@ export default function RoomsPage() {
             <button
               type="button"
               onClick={openAddModal}
-              className="mt-6 flex items-center gap-2 rounded-xl bg-[#4D2FB2] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 dark:bg-[#4D2FB2]"
+              className="mt-6 flex items-center gap-2 rounded-xl bg-[#4700B5] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 dark:bg-[#4700B5]"
             >
               <Plus className="h-4 w-4" />
               {t("rooms.addRoom")}
@@ -444,7 +444,7 @@ export default function RoomsPage() {
                         onClick={() => setNewIcon(iconKey)}
                         className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-colors ${
                           newIcon === iconKey
-                            ? "border-[#4D2FB2] bg-[#4D2FB2]/10 text-[#4D2FB2]"
+                            ? "border-[#4700B5] bg-[#4700B5]/10 text-[#4700B5]"
                             : "border-gray-200 dark:border-white/20 text-gray-500 hover:border-gray-300 dark:hover:border-white/30"
                         }`}
                         title={iconKey}
@@ -539,7 +539,7 @@ export default function RoomsPage() {
                   ) : (
                     <label
                       htmlFor="room-bg-create"
-                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-[#4D2FB2] hover:text-[#4D2FB2]"
+                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-[#4700B5] hover:text-[#4700B5]"
                     >
                       <ImageIcon className="h-6 w-6" aria-hidden />
                     </label>
@@ -576,7 +576,7 @@ export default function RoomsPage() {
                 <button
                   type="submit"
                   disabled={creating || !newName.trim()}
-                  className="rounded-lg bg-[#4D2FB2] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                  className="rounded-lg bg-[#4700B5] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                 >
                   {creating ? "…" : t("rooms.create")}
                 </button>
@@ -637,7 +637,7 @@ export default function RoomsPage() {
                         onClick={() => setEditIcon(iconKey)}
                         className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-colors ${
                           editIcon === iconKey
-                            ? "border-[#4D2FB2] bg-[#4D2FB2]/10 text-[#4D2FB2]"
+                            ? "border-[#4700B5] bg-[#4700B5]/10 text-[#4700B5]"
                             : "border-gray-200 dark:border-white/20 text-gray-500 hover:border-gray-300 dark:hover:border-white/30"
                         }`}
                         title={iconKey}
@@ -758,7 +758,7 @@ export default function RoomsPage() {
                   ) : (
                     <label
                       htmlFor="room-bg-edit"
-                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-[#4D2FB2] hover:text-[#4D2FB2]"
+                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-[#4700B5] hover:text-[#4700B5]"
                     >
                       <ImageIcon className="h-6 w-6" aria-hidden />
                     </label>
@@ -780,7 +780,7 @@ export default function RoomsPage() {
                 <button
                   type="submit"
                   disabled={updating || !editName.trim()}
-                  className="rounded-lg bg-[#4D2FB2] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                  className="rounded-lg bg-[#4700B5] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                 >
                   {updating ? "…" : t("rooms.save")}
                 </button>

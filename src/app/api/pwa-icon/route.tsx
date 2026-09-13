@@ -20,7 +20,7 @@ export function GET(request: NextRequest) {
         style={{
           width: size,
           height: size,
-          background: "linear-gradient(145deg, #3b22a0 0%, #5d38d4 60%, #7c55e8 100%)",
+          background: "linear-gradient(145deg, #3A0094 0%, #4700B5 55%, #8357BE 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -60,7 +60,7 @@ export function GET(request: NextRequest) {
             style={{
               width: iconSize * 0.22,
               height: iconSize * 0.32,
-              background: "#4D2FB2",
+              background: "#4700B5",
               borderRadius: `${Math.round(size * 0.03)}px ${Math.round(size * 0.03)}px 0 0`,
               marginTop: "auto",
             }}

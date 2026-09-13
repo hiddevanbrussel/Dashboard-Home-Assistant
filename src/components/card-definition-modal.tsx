@@ -167,7 +167,7 @@ export function CardDefinitionModal({
             <button
               type="button"
               onClick={() => setShowAdd(true)}
-              className="p-2 rounded-xl text-gray-500 hover:bg-white/50 dark:hover:bg-white/10 dark:text-gray-400 hover:text-[#4D2FB2] dark:hover:text-[#4D2FB2] transition-colors"
+              className="p-2 rounded-xl text-gray-500 hover:bg-white/50 dark:hover:bg-white/10 dark:text-gray-400 hover:text-[#4700B5] dark:hover:text-[#4700B5] transition-colors"
               aria-label={t("editPanel.addLight")}
             >
               <Plus className="h-5 w-5" />

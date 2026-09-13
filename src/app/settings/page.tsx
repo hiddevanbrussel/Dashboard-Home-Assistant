@@ -513,7 +513,7 @@ export default function SettingsPage() {
                             className={cn(
                               "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
                               section === id
-                                ? "bg-accent-purple text-gray-900 shadow-sm"
+                                ? "bg-brand text-white shadow-sm"
                                 : "text-gray-700 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-white/10"
                             )}
                           >
@@ -647,7 +647,7 @@ export default function SettingsPage() {
                 description={
                   <>
                     {t("settings.screensaver.pexelsHint")}{" "}
-                    <a href="https://www.pexels.com/api" target="_blank" rel="noopener noreferrer" className="text-accent-purple hover:underline">
+                    <a href="https://www.pexels.com/api" target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
                       pexels.com/api
                     </a>
                     .
@@ -913,7 +913,7 @@ export default function SettingsPage() {
                   </SettingsField>
                   <a
                     href="/family"
-                    className="inline-flex items-center gap-2 self-start rounded-full bg-accent-purple px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:opacity-90"
+                    className="inline-flex items-center gap-2 self-start rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90"
                   >
                     <ListTodo className="h-4 w-4" />
                     {t("settings.tasks.manage")}
@@ -1013,7 +1013,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={loadEntities}
-                      className="shrink-0 text-sm font-medium text-accent-purple hover:underline"
+                      className="shrink-0 text-sm font-medium text-brand hover:underline"
                     >
                       {t("settings.entities.refresh")}
                     </button>

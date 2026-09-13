@@ -1,25 +1,26 @@
 /**
- * Design tokens for Home Assistant Dashboard Builder.
- * Matches reference images: light (warm off-white, yellow/purple/orange) and dark (blue-green, neon green/orange).
+ * Design tokens aligned with omnidocs.com color usage:
+ * electric purple surfaces, cool lavender page, near-black CTAs.
  */
 
 export const tokens = {
   colors: {
     light: {
-      pageBg: "#F7F4EA",
-      heroOverlay: "rgba(100, 120, 140, 0.35)",
+      pageBg: "#F2F0FE",
+      heroOverlay: "rgba(71, 0, 181, 0.28)",
+      brand: "#4700B5",
       accentYellow: "#F6D25C",
-      accentPurple: "#B48BFF",
+      accentPurple: "#B59ED8",
       accentOrange: "#F2A654",
       glassBorder: "rgba(255, 255, 255, 0.6)",
     },
     dark: {
-      pageBg: "#1F2F3A",
-      cardBg: "rgba(43, 63, 75, 0.85)",
-      cardSolid: "#2B3F4B",
+      pageBg: "#0A0014",
+      cardBg: "rgba(71, 0, 181, 0.28)",
+      cardSolid: "#1C0A3A",
       accentGreen: "#6BE46B",
       accentOrange: "#F2A654",
-      glassBorder: "rgba(255, 255, 255, 0.08)",
+      glassBorder: "rgba(255, 255, 255, 0.10)",
     },
   },
   radius: {
@@ -32,8 +33,8 @@ export const tokens = {
     glass: 12,
   },
   shadow: {
-    glass: "0 8px 32px rgba(0, 0, 0, 0.08)",
-    glassDark: "0 8px 32px rgba(0, 0, 0, 0.25)",
+    glass: "0 8px 32px rgba(71, 0, 181, 0.08)",
+    glassDark: "0 8px 32px rgba(0, 0, 0, 0.35)",
   },
   typography: {
     heroTitle: { fontSize: "44px", fontWeight: 700 },

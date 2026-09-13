@@ -1179,7 +1179,7 @@ export default function DashboardEditPage() {
               type="button"
               onClick={() => setAddTileOpen(true)}
               className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
-              style={{ backgroundColor: "#4D2FB2" }}
+              style={{ backgroundColor: "#4700B5" }}
               aria-label={t("editPanel.addTile")}
             >
               <Plus className="h-4 w-4" />
@@ -1264,7 +1264,7 @@ export default function DashboardEditPage() {
                             setAddTileSelectedType(type);
                             setAddTileStep("entity");
                           }}
-                          className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4D2FB2]/40 hover:bg-[#4D2FB2]/5 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4D2FB2]/50 dark:hover:bg-[#4D2FB2]/10"
+                          className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4700B5]/40 hover:bg-[#4700B5]/5 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4700B5]/50 dark:hover:bg-[#4700B5]/10"
                         >
                           <Icon className="h-7 w-7 text-gray-600 dark:text-gray-400" />
                           <span className="text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight">
@@ -1376,7 +1376,7 @@ export default function DashboardEditPage() {
               }
             }}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
-            style={{ backgroundColor: "#4D2FB2" }}
+            style={{ backgroundColor: "#4700B5" }}
             aria-label={t("editPanel.editDashboard")}
           >
             <Pencil className="h-4 w-4" />
@@ -1449,7 +1449,7 @@ export default function DashboardEditPage() {
                       }
                     }}
                     className="rounded-lg px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
-                    style={{ backgroundColor: "#4D2FB2" }}
+                    style={{ backgroundColor: "#4700B5" }}
                   >
                     {t("settings.dashboard.unlock")}
                   </button>
@@ -2306,8 +2306,8 @@ export default function DashboardEditPage() {
                           aria-checked={editForm.show_state !== false}
                           onClick={() => setEditForm((prev) => ({ ...prev, show_state: prev.show_state === false }))}
                           className={cn(
-                            "relative inline-flex h-6 w-11 shrink-0 rounded-full border border-gray-200 dark:border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2 dark:focus:ring-offset-gray-900",
-                            editForm.show_state !== false ? "bg-[#4D2FB2] border-transparent" : "bg-gray-200 dark:bg-gray-600"
+                            "relative inline-flex h-6 w-11 shrink-0 rounded-full border border-gray-200 dark:border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4700B5] focus:ring-offset-2 dark:focus:ring-offset-gray-900",
+                            editForm.show_state !== false ? "bg-[#4700B5] border-transparent" : "bg-gray-200 dark:bg-gray-600"
                           )}
                         >
                           <span
@@ -2337,7 +2337,7 @@ export default function DashboardEditPage() {
                             }}
                             className={cn(
                               "rounded-md px-2 py-1 text-xs",
-                              !editForm.icon ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                              !editForm.icon ? "bg-[#4700B5] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                             )}
                           >
                             {t("editPanel.defaultCircleDot")}
@@ -2352,7 +2352,7 @@ export default function DashboardEditPage() {
                               }}
                               className={cn(
                                 "rounded-md px-2 py-1 text-xs",
-                                (editForm.icon ?? "CircleDot") === name ? "bg-[#4D2FB2] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
+                                (editForm.icon ?? "CircleDot") === name ? "bg-[#4700B5] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                               )}
                             >
                               {name}
@@ -2476,7 +2476,7 @@ export default function DashboardEditPage() {
                           className={cn(
                             "rounded-md px-2 py-1 text-xs",
                             (editingWidget.alignment ?? "start") === align
-                              ? "bg-[#4D2FB2] text-white"
+                              ? "bg-[#4700B5] text-white"
                               : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                           )}
                         >
@@ -2734,7 +2734,7 @@ export default function DashboardEditPage() {
                               className={cn(
                                 "rounded-md px-2 py-1 text-xs",
                                 (editForm.icon ?? "lightbulb") === key
-                                  ? "bg-[#4D2FB2] text-white"
+                                  ? "bg-[#4700B5] text-white"
                                   : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                               )}
                             >
@@ -2762,7 +2762,7 @@ export default function DashboardEditPage() {
                               className={cn(
                                 "flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-xs font-medium transition-colors",
                                 selected
-                                  ? "border-[#4D2FB2] bg-[#4D2FB2]/10 text-gray-900 dark:border-[#8B6CFF] dark:bg-[#8B6CFF]/15 dark:text-white"
+                                  ? "border-[#4700B5] bg-[#4700B5]/10 text-gray-900 dark:border-[#8357BE] dark:bg-[#8357BE]/15 dark:text-white"
                                   : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:border-white/20"
                               )}
                             >
@@ -2772,7 +2772,7 @@ export default function DashboardEditPage() {
                                     ? "h-7 w-14 rounded-[10px]"
                                     : "h-10 w-10 rounded-[12px]",
                                   selected
-                                    ? "bg-[#4D2FB2]/80 dark:bg-[#8B6CFF]/80"
+                                    ? "bg-[#4700B5]/80 dark:bg-[#8357BE]/80"
                                     : "bg-gray-300 dark:bg-white/25"
                                 )}
                                 aria-hidden
@@ -2879,7 +2879,7 @@ export default function DashboardEditPage() {
                                 className={cn(
                                   "rounded-md px-2 py-1 text-xs",
                                   (editForm.icon ?? "Home") === name
-                                    ? "bg-[#4D2FB2] text-white"
+                                    ? "bg-[#4700B5] text-white"
                                     : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                                 )}
                               >
@@ -3608,7 +3608,7 @@ export default function DashboardEditPage() {
                           return matchesSearch && (isEnergyRelated || !!q);
                         }).map((e) => { const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id; const checked = (editForm.device_entity_ids ?? []).includes(e.entity_id); return (
                           <label key={e.entity_id} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer">
-                            <input type="checkbox" checked={checked} onChange={() => { const ids = editForm.device_entity_ids ?? []; setEditForm((prev) => ({ ...prev, device_entity_ids: checked ? ids.filter((id) => id !== e.entity_id) : [...ids, e.entity_id] })); }} className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-[#4D2FB2] focus:ring-[#4D2FB2]" />
+                            <input type="checkbox" checked={checked} onChange={() => { const ids = editForm.device_entity_ids ?? []; setEditForm((prev) => ({ ...prev, device_entity_ids: checked ? ids.filter((id) => id !== e.entity_id) : [...ids, e.entity_id] })); }} className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-[#4700B5] focus:ring-[#4700B5]" />
                             <span className="text-sm truncate" title={e.entity_id}>{name}</span>
                           </label>
                         ); })}
@@ -3868,7 +3868,7 @@ aria-label={t("editPanel.removeCondition")}
                                     script_names: names,
                                   }));
                                 }}
-                                className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-[#4D2FB2] focus:ring-[#4D2FB2]"
+                                className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-[#4700B5] focus:ring-[#4700B5]"
                               />
                               <span className="text-sm truncate shrink-0 max-w-[140px]" title={e.entity_id}>{defaultName}</span>
                             </label>
@@ -3948,7 +3948,7 @@ aria-label={t("editPanel.removeCondition")}
                           className={cn(
                             "rounded-md px-2 py-1 text-xs",
                             !editForm.icon
-                              ? "bg-[#4D2FB2] text-white"
+                              ? "bg-[#4700B5] text-white"
                               : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                           )}
                         >
@@ -3967,7 +3967,7 @@ aria-label={t("editPanel.removeCondition")}
                             className={cn(
                               "rounded-md px-2 py-1 text-xs",
                               (editForm.icon ?? "Sparkles") === name
-                                ? "bg-[#4D2FB2] text-white"
+                                ? "bg-[#4700B5] text-white"
                                 : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                             )}
                           >
@@ -4021,7 +4021,7 @@ aria-label={t("editPanel.removeCondition")}
                             className={cn(
                               "rounded-md px-2 py-1 text-xs",
                               !editForm.icon
-                                ? "bg-[#4D2FB2] text-white"
+                                ? "bg-[#4700B5] text-white"
                                 : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                             )}
                           >
@@ -4040,7 +4040,7 @@ aria-label={t("editPanel.removeCondition")}
                               className={cn(
                                 "rounded-md px-2 py-1 text-xs",
                                 (editForm.icon ?? "Gauge") === name
-                                  ? "bg-[#4D2FB2] text-white"
+                                  ? "bg-[#4700B5] text-white"
                                   : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                               )}
                             >
@@ -4204,9 +4204,9 @@ aria-label={t("editPanel.removeCondition")}
                           setEditForm((prev) => ({ ...prev, show_state: prev.show_state === false }))
                         }
                         className={cn(
-                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border border-gray-200 dark:border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2 dark:focus:ring-offset-gray-900",
+                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border border-gray-200 dark:border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4700B5] focus:ring-offset-2 dark:focus:ring-offset-gray-900",
                           editForm.show_state !== false
-                            ? "bg-[#4D2FB2] border-transparent"
+                            ? "bg-[#4700B5] border-transparent"
                             : "bg-gray-200 dark:bg-gray-600"
                         )}
                       >
@@ -4243,7 +4243,7 @@ aria-label={t("editPanel.removeCondition")}
                           className={cn(
                             "rounded-md px-2 py-1 text-xs",
                             !editForm.icon
-                              ? "bg-[#4D2FB2] text-white"
+                              ? "bg-[#4700B5] text-white"
                               : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                           )}
                         >
@@ -4262,7 +4262,7 @@ aria-label={t("editPanel.removeCondition")}
                             className={cn(
                               "rounded-md px-2 py-1 text-xs",
                               (editForm.icon ?? "CircleDot") === name
-                                ? "bg-[#4D2FB2] text-white"
+                                ? "bg-[#4700B5] text-white"
                                 : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                             )}
                           >
@@ -4400,9 +4400,9 @@ aria-label={t("editPanel.removeCondition")}
                           setEditForm((prev) => ({ ...prev, show_title: !(prev.show_title !== false) }))
                         }
                         className={cn(
-                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2",
+                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4700B5] focus:ring-offset-2",
                           editForm.show_title !== false
-                            ? "bg-[#4D2FB2]"
+                            ? "bg-[#4700B5]"
                             : "bg-gray-200 dark:bg-gray-600"
                         )}
                       >
@@ -4520,9 +4520,9 @@ aria-label={t("editPanel.removeCondition")}
                           setEditForm((prev) => ({ ...prev, show_icon: !(prev.show_icon !== false) }))
                         }
                         className={cn(
-                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2",
+                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4700B5] focus:ring-offset-2",
                           editForm.show_icon !== false
-                            ? "bg-[#4D2FB2]"
+                            ? "bg-[#4700B5]"
                             : "bg-gray-200 dark:bg-gray-600"
                         )}
                       >
@@ -4612,8 +4612,8 @@ aria-label={t("editPanel.removeCondition")}
                         aria-checked={editForm.show_chore_points !== false}
                         onClick={() => setEditForm((prev) => ({ ...prev, show_chore_points: !(prev.show_chore_points !== false) }))}
                         className={cn(
-                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4D2FB2] focus:ring-offset-2",
-                          editForm.show_chore_points !== false ? "bg-[#4D2FB2]" : "bg-gray-200 dark:bg-gray-600"
+                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4700B5] focus:ring-offset-2",
+                          editForm.show_chore_points !== false ? "bg-[#4700B5]" : "bg-gray-200 dark:bg-gray-600"
                         )}
                       >
                         <span className={cn("pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition", editForm.show_chore_points !== false ? "translate-x-5" : "translate-x-1")} />
@@ -4657,7 +4657,7 @@ aria-label={t("editPanel.removeCondition")}
                             className={cn(
                               "rounded-md px-2 py-1 text-xs",
                               (editForm.icon ?? "Fuel") === name
-                                ? "bg-[#4D2FB2] text-white"
+                                ? "bg-[#4700B5] text-white"
                                 : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                             )}
                           >
@@ -4847,7 +4847,7 @@ aria-label={t("editPanel.removeCondition")}
                             setEditingGroupChildId(null);
                             saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                           }}
-                          className="rounded-lg bg-[#4D2FB2] px-3 py-1.5 text-sm text-white hover:opacity-90"
+                          className="rounded-lg bg-[#4700B5] px-3 py-1.5 text-sm text-white hover:opacity-90"
                         >
                           {t("editPanel.save")}
                         </button>
@@ -5064,7 +5064,7 @@ aria-label={t("editPanel.removeCondition")}
                       });
                       setEditingWidgetId(null);
                     }}
-                    className="rounded-lg bg-[#4D2FB2] px-3 py-1.5 text-sm text-white hover:opacity-90"
+                    className="rounded-lg bg-[#4700B5] px-3 py-1.5 text-sm text-white hover:opacity-90"
                   >
                     {t("editPanel.save")}
                   </button>

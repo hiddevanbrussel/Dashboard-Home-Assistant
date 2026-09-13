@@ -136,8 +136,8 @@ export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } 
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-        "flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4D2FB2]",
-        contentLight ? "text-white/90 hover:bg-white/10" : "text-accent-purple dark:text-accent-purple hover:bg-gray-100 dark:hover:bg-white/10"
+        "flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4700B5]",
+        contentLight ? "text-white/90 hover:bg-white/10" : "text-brand dark:text-accent-purple hover:bg-gray-100 dark:hover:bg-white/10"
       )}
         aria-label={t("roomCard.mediaPlaying")}
         aria-expanded={open}

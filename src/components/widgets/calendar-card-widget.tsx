@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { hydrateCalendarStore, useCalendarStore } from "@/stores/calendar-store";
 
 const CAL_COLORS = [
-  "bg-accent-purple",
+  "bg-brand",
   "bg-accent-orange",
   "bg-accent-green",
   "bg-accent-yellow",
@@ -249,7 +249,7 @@ export function CalendarCardWidget({
             <p className="text-xs">{t("calendar.noCalendarsHint")}</p>
             <Link
               href="/settings"
-              className="mt-1 text-xs font-medium text-accent-purple hover:underline"
+              className="mt-1 text-xs font-medium text-brand hover:underline"
               onPointerDown={(e) => e.stopPropagation()}
             >
               {t("nav.settings")}
@@ -257,7 +257,7 @@ export function CalendarCardWidget({
           </div>
         ) : isLoading ? (
           <div className="flex items-center justify-center py-10">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-purple border-t-transparent" />
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand border-t-transparent" />
           </div>
         ) : dayEvents.length === 0 && !viewingToday ? (
           <div className="flex flex-col items-center justify-center gap-2 px-2 py-10 text-center text-gray-400 dark:text-white/30">
@@ -291,13 +291,13 @@ export function CalendarCardWidget({
                   </div>
                   <div className="relative min-w-0 flex-1">
                     {highlighted && (
-                      <span className="absolute -left-[calc(0.75rem+5px)] top-5 z-10 h-2.5 w-2.5 rounded-full bg-accent-purple" />
+                      <span className="absolute -left-[calc(0.75rem+5px)] top-5 z-10 h-2.5 w-2.5 rounded-full bg-brand" />
                     )}
                     <div
                       className={cn(
                         "overflow-hidden rounded-2xl border text-left shadow-sm",
                         highlighted
-                          ? "border-accent-purple/30 bg-[repeating-linear-gradient(-45deg,rgba(180,139,255,0.22),rgba(180,139,255,0.22)_10px,rgba(180,139,255,0.08)_10px,rgba(180,139,255,0.08)_20px)] dark:border-accent-purple/25 dark:bg-[repeating-linear-gradient(-45deg,rgba(180,139,255,0.18),rgba(180,139,255,0.18)_10px,rgba(180,139,255,0.06)_10px,rgba(180,139,255,0.06)_20px)]"
+                          ? "border-brand/30 bg-[repeating-linear-gradient(-45deg,rgba(71,0,181,0.18),rgba(71,0,181,0.18)_10px,rgba(71,0,181,0.06)_10px,rgba(71,0,181,0.06)_20px)] dark:border-brand/40 dark:bg-[repeating-linear-gradient(-45deg,rgba(71,0,181,0.28),rgba(71,0,181,0.28)_10px,rgba(71,0,181,0.10)_10px,rgba(71,0,181,0.10)_20px)]"
                           : "border-black/[0.06] bg-white/80 dark:border-white/10 dark:bg-white/[0.06]"
                       )}
                     >

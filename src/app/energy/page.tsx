@@ -619,7 +619,7 @@ export default function EnergyPage() {
             type="button"
             onClick={() => setAddTileOpen(true)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
-            style={{ backgroundColor: "#4D2FB2" }}
+            style={{ backgroundColor: "#4700B5" }}
             aria-label={t("editPanel.addTile")}
           >
             <Plus className="h-4 w-4" />
@@ -649,7 +649,7 @@ export default function EnergyPage() {
               }
             }}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
-            style={{ backgroundColor: "#4D2FB2" }}
+            style={{ backgroundColor: "#4700B5" }}
             aria-label={t("editPanel.editDashboard")}
           >
             <Pencil className="h-4 w-4" />
@@ -682,7 +682,7 @@ export default function EnergyPage() {
                 {editPasscodeError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{editPasscodeError}</p>}
                 <div className="mt-4 flex justify-end gap-2">
                   <button type="button" onClick={() => { setEditPasscodeModalOpen(false); setEditPasscodeError(null); setEditPasscodeInput(""); }} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10">{t("editPanel.close")}</button>
-                  <button type="button" onClick={() => { if (checkEditModePasscode(editPasscodeInput)) { setEditMode(true); setEditPasscodeModalOpen(false); setEditPasscodeInput(""); setEditPasscodeError(null); } else setEditPasscodeError(t("settings.dashboard.wrongPasscode")); }} className="rounded-lg px-3 py-1.5 text-sm font-medium text-white hover:opacity-90" style={{ backgroundColor: "#4D2FB2" }}>{t("settings.dashboard.unlock")}</button>
+                  <button type="button" onClick={() => { if (checkEditModePasscode(editPasscodeInput)) { setEditMode(true); setEditPasscodeModalOpen(false); setEditPasscodeInput(""); setEditPasscodeError(null); } else setEditPasscodeError(t("settings.dashboard.wrongPasscode")); }} className="rounded-lg px-3 py-1.5 text-sm font-medium text-white hover:opacity-90" style={{ backgroundColor: "#4700B5" }}>{t("settings.dashboard.unlock")}</button>
                 </div>
               </div>
             </div>,
@@ -704,7 +704,7 @@ export default function EnergyPage() {
             <button
               type="button"
               onClick={() => queryClient.invalidateQueries({ queryKey: ["energy-dashboard"] })}
-              className="rounded-lg bg-[#4D2FB2] px-4 py-2 text-sm text-white hover:opacity-90"
+              className="rounded-lg bg-[#4700B5] px-4 py-2 text-sm text-white hover:opacity-90"
             >
               {t("editPanel.retry")}
             </button>
@@ -1010,7 +1010,7 @@ export default function EnergyPage() {
                           setAddTileSelectedType(type);
                           setAddTileStep("entity");
                         }}
-                        className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4D2FB2]/40 hover:bg-[#4D2FB2]/5 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4D2FB2]/50 dark:hover:bg-[#4D2FB2]/10"
+                        className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4700B5]/40 hover:bg-[#4700B5]/5 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4700B5]/50 dark:hover:bg-[#4700B5]/10"
                       >
                         <Icon className="h-7 w-7 text-gray-600 dark:text-gray-400" />
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight">{t(`cardType.${type}`)}</span>
