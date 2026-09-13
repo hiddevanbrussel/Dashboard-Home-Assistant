@@ -1,0 +1,142 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export function SettingsChoiceCards<T extends string>({
+  label,
+  hint,
+  value,
+  onChange,
+  options,
+  columns = 3,
+}: {
+  label: string;
+  hint?: string;
+  value: T;
+  onChange: (id: T) => void;
+  options: {
+    id: T;
+    label: string;
+    description?: string;
+    preview?: ReactNode;
+  }[];
+  columns?: 2 | 3;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className={cn(
+          "grid gap-3",
+          columns === 2 ? "max-w-lg grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-3"
+        )}
+      >
+        {options.map((option) => {
+          const selected = value === option.id;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(option.id)}
+              className={cn(
+                "flex flex-col rounded-2xl p-2.5 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
+                selected
+                  ? "bg-brand/10 ring-2 ring-brand dark:bg-brand/25"
+                  : "bg-black/[0.04] ring-1 ring-black/[0.06] hover:bg-black/[0.07] dark:bg-white/5 dark:ring-white/10 dark:hover:bg-white/10"
+              )}
+            >
+              {option.preview ? (
+                <div className="overflow-hidden rounded-xl">{option.preview}</div>
+              ) : null}
+              <span className="mt-2.5 flex items-start justify-between gap-2 px-0.5">
+                <span className="min-h-[2.5rem] min-w-0">
+                  <span className="block text-sm font-semibold text-gray-900 dark:text-white">
+                    {option.label}
+                  </span>
+                  {option.description ? (
+                    <span className="mt-0.5 block text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+                      {option.description}
+                    </span>
+                  ) : null}
+                </span>
+                <span
+                  className={cn(
+                    "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors",
+                    selected
+                      ? "border-brand bg-brand text-white"
+                      : "border-gray-300 bg-white/70 dark:border-white/25 dark:bg-white/5"
+                  )}
+                  aria-hidden
+                >
+                  {selected ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {hint ? <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{hint}</p> : null}
+    </div>
+  );
+}
+
+function ThemeMiniWindow({ scheme }: { scheme: "light" | "dark" }) {
+  const isLight = scheme === "light";
+  return (
+    <div className={cn("h-[4.75rem]", isLight ? "bg-[#F2F0FE]" : "bg-[#0A0014]")}>
+      <div className="flex h-full">
+        <div
+          className={cn(
+            "flex w-[1.15rem] flex-col items-center gap-1 py-2",
+            isLight ? "bg-white" : "bg-[#1C0A3A]"
+          )}
+        >
+          <span className={cn("h-1.5 w-1.5 rounded-full", isLight ? "bg-[#4700B5]" : "bg-white")} />
+          <span className={cn("h-1.5 w-1.5 rounded-full", isLight ? "bg-black/15" : "bg-white/25")} />
+          <span className={cn("h-1.5 w-1.5 rounded-full", isLight ? "bg-black/15" : "bg-white/25")} />
+        </div>
+        <div className="flex flex-1 flex-col gap-1 p-1.5">
+          <div className={cn("h-2.5 rounded-md", isLight ? "bg-white" : "bg-white/10")} />
+          <div className="grid flex-1 grid-cols-2 gap-1">
+            <div className={cn("rounded-md", isLight ? "bg-white" : "bg-white/10")} />
+            <div className={cn("rounded-md", isLight ? "bg-[#4700B5]/25" : "bg-[#4700B5]/55")} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ThemePreview({ variant }: { variant: "light" | "dark" | "auto" }) {
+  if (variant === "auto") {
+    return (
+      <div className="relative overflow-hidden rounded-xl ring-1 ring-black/10 dark:ring-white/10">
+        <ThemeMiniWindow scheme="light" />
+        <div className="absolute inset-0 [clip-path:inset(0_0_0_50%)]">
+          <ThemeMiniWindow scheme="dark" />
+        </div>
+        <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-px bg-white/90 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl ring-1 ring-black/10 dark:ring-white/10">
+      <ThemeMiniWindow scheme={variant} />
+    </div>
+  );
+}
+
+export function LanguagePreview({ code }: { code: string }) {
+  return (
+    <div className="flex h-[4.75rem] items-center justify-center bg-gradient-to-br from-white to-[#F2F0FE] dark:from-[#1C0A3A] dark:to-[#0A0014]">
+      <span className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-white">{code}</span>
+    </div>
+  );
+}

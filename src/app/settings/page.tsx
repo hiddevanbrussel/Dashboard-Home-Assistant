@@ -18,7 +18,12 @@ import {
   SettingsUploadButton,
 } from "@/components/settings/settings-panel";
 import { MusicAssistantSettings } from "@/components/settings/music-assistant-settings";
-import { useThemeStore } from "@/stores/theme-store";
+import {
+  LanguagePreview,
+  SettingsChoiceCards,
+  ThemePreview,
+} from "@/components/settings/settings-choice-cards";
+import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
@@ -443,7 +448,7 @@ export default function SettingsPage() {
     }
   }
 
-  const { mode, setMode, resolved } = useThemeStore();
+  const { mode, setMode } = useThemeStore();
   const { language, setLanguage } = useLanguageStore();
 
   const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: LucideIcon }[] }[] = [
@@ -538,24 +543,50 @@ export default function SettingsPage() {
             description={t(currentMeta.descriptionKey)}
           >
           {section === "appearance" && (
-            <SettingsToggle
-              checked={mode === "auto"}
-              onChange={(value) => setMode(value ? "auto" : resolved)}
-              label={t("settings.theme.auto")}
+            <SettingsChoiceCards
+              label={t("settings.theme.interface")}
+              value={mode}
+              onChange={(id) => setMode(id)}
+              options={[
+                {
+                  id: "light" satisfies ThemeMode,
+                  label: t("settings.theme.light"),
+                  preview: <ThemePreview variant="light" />,
+                },
+                {
+                  id: "dark" satisfies ThemeMode,
+                  label: t("settings.theme.dark"),
+                  preview: <ThemePreview variant="dark" />,
+                },
+                {
+                  id: "auto" satisfies ThemeMode,
+                  label: t("settings.theme.system"),
+                  description: t("settings.theme.systemHint"),
+                  preview: <ThemePreview variant="auto" />,
+                },
+              ]}
             />
           )}
 
           {section === "language" && (
-            <SettingsField label={t("settings.language.setting")}>
-              <SettingsPillTabs
-                items={[
-                  { id: "en", label: t("settings.language.en") },
-                  { id: "nl", label: t("settings.language.nl") },
-                ]}
-                value={language}
-                onChange={(id) => setLanguage(id)}
-              />
-            </SettingsField>
+            <SettingsChoiceCards
+              label={t("settings.language.setting")}
+              columns={2}
+              value={language}
+              onChange={(id) => setLanguage(id)}
+              options={[
+                {
+                  id: "en",
+                  label: t("settings.language.en"),
+                  preview: <LanguagePreview code="EN" />,
+                },
+                {
+                  id: "nl",
+                  label: t("settings.language.nl"),
+                  preview: <LanguagePreview code="NL" />,
+                },
+              ]}
+            />
           )}
 
           {section === "screensaver" && (
