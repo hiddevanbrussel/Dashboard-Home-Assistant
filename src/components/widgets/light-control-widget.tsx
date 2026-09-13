@@ -96,7 +96,7 @@ export function LightControlWidget({
         onClick={handleCardClick}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleCardClick(); } }}
         className={cn(
-          "flex w-full items-start gap-3 rounded-2xl text-left transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4D2FB2] cursor-pointer",
+          "flex w-full items-start gap-3 rounded-2xl text-left transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4700B5] cursor-pointer",
           isOn
             ? "bg-white shadow-sm dark:bg-white"
             : "bg-white/60 dark:bg-white/10 backdrop-blur-md",
@@ -112,7 +112,7 @@ export function LightControlWidget({
           onClick={handleIconClick}
           disabled={loading}
           className={cn(
-            "flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4D2FB2] disabled:opacity-70",
+            "flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4700B5] disabled:opacity-70",
             isOn
               ? ""
               : "bg-white/50 dark:bg-white/10 backdrop-blur-md",

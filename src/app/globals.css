@@ -4,10 +4,11 @@
 
 @layer base {
   :root {
-    --page-bg: #f7f4ea;
-    --hero-overlay: rgba(100, 120, 140, 0.35);
+    --page-bg: #f2f0fe;
+    --hero-overlay: rgba(71, 0, 181, 0.28);
+    --brand: #4700b5;
     --accent-yellow: #f6d25c;
-    --accent-purple: #b48bff;
+    --accent-purple: #b59ed8;
     --accent-orange: #f2a654;
     --card-radius: 24px;
     --glass-blur: 12px;
@@ -16,9 +17,9 @@
   }
 
   .dark {
-    --page-bg: #000000;
-    --card-bg: rgba(43, 63, 75, 0.85);
-    --glass-border-light: rgba(255, 255, 255, 0.08);
+    --page-bg: #0a0014;
+    --card-bg: rgba(71, 0, 181, 0.28);
+    --glass-border-light: rgba(255, 255, 255, 0.10);
     --glass-border-dark: rgba(255, 255, 255, 0.12);
   }
 

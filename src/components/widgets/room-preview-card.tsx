@@ -38,7 +38,7 @@ export function RoomPreviewCard({
   return (
     <Link
       href={`/rooms/${encodeURIComponent(areaId)}`}
-      className="group relative block w-[240px] h-[200px] overflow-hidden rounded-xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/50 shadow-lg backdrop-blur-2xl transition-all hover:ring-2 hover:ring-[#4D2FB2]/30"
+      className="group relative block w-[240px] h-[200px] overflow-hidden rounded-xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/50 shadow-lg backdrop-blur-2xl transition-all hover:ring-2 hover:ring-[#4700B5]/30"
     >
       {background && (
         <>
@@ -73,7 +73,7 @@ export function RoomPreviewCard({
                 e.stopPropagation();
                 onEdit(e);
               }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 dark:bg-black/50 text-gray-600 hover:text-[#4D2FB2] dark:text-gray-300 dark:hover:text-[#4D2FB2] shadow"
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 dark:bg-black/50 text-gray-600 hover:text-[#4700B5] dark:text-gray-300 dark:hover:text-[#4700B5] shadow"
               aria-label={t("editPanel.edit")}
             >
               <Pencil className="h-4 w-4" />

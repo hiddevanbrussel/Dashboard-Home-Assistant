@@ -122,7 +122,7 @@ function TimeGridScrollPort({
 type CalColor = { bar: string; soft: string; check: string; glow: string };
 
 const CAL_COLORS: CalColor[] = [
-  { bar: "bg-accent-purple", soft: "bg-accent-purple/20 dark:bg-accent-purple/15", check: "#B48BFF", glow: "shadow-[0_0_24px_rgba(180,139,255,0.35)]" },
+  { bar: "bg-brand", soft: "bg-brand/15 dark:bg-brand/20", check: "#4700B5", glow: "shadow-[0_0_24px_rgba(71,0,181,0.35)]" },
   { bar: "bg-accent-orange", soft: "bg-accent-orange/20 dark:bg-accent-orange/15", check: "#F2A654", glow: "shadow-[0_0_24px_rgba(242,166,84,0.3)]" },
   { bar: "bg-accent-green", soft: "bg-accent-green/20 dark:bg-accent-green/15", check: "#6BE46B", glow: "shadow-[0_0_24px_rgba(107,228,107,0.28)]" },
   { bar: "bg-accent-yellow", soft: "bg-accent-yellow/25 dark:bg-accent-yellow/15", check: "#F6D25C", glow: "shadow-[0_0_24px_rgba(246,210,92,0.28)]" },
@@ -240,16 +240,16 @@ function MonthGrid({
                 "flex min-h-0 cursor-pointer flex-col overflow-hidden rounded-xl border p-1 text-left transition-all duration-200",
                 "bg-white/50 backdrop-blur-xl dark:bg-white/[0.05]",
                 isSelected
-                  ? "border-dashed border-accent-purple shadow-[0_0_0_1px_rgba(180,139,255,0.45)]"
-                  : "border-white/70 hover:border-accent-purple/40 dark:border-white/10",
-                isToday && cn("bg-accent-purple/10 dark:bg-accent-purple/15", CAL_COLORS[0].glow),
+                  ? "border-dashed border-brand shadow-[0_0_0_1px_rgba(71,0,181,0.45)]"
+                  : "border-white/70 hover:border-brand/40 dark:border-white/10",
+                isToday && cn("bg-brand/10 dark:bg-brand/15", CAL_COLORS[0].glow),
                 !inMonth && "opacity-40"
               )}
             >
               <span
                 className={cn(
                   "mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
-                  isToday ? "bg-accent-purple text-gray-900" : "text-gray-700 dark:text-gray-200"
+                  isToday ? "bg-brand text-white" : "text-gray-700 dark:text-gray-200"
                 )}
               >
                 {day.getDate()}
@@ -341,7 +341,7 @@ function WeekGrid({
               onClick={() => onSelectDay(day)}
               className={cn(
                 "flex flex-1 flex-col items-center gap-1 border-l border-white/40 px-1 py-2 dark:border-white/10",
-                isSelected && "bg-accent-purple/10"
+                isSelected && "bg-brand/10"
               )}
             >
               <span className="text-[10px] font-medium uppercase text-gray-400 dark:text-gray-500">{labels[i]}</span>
@@ -349,7 +349,7 @@ function WeekGrid({
                 className={cn(
                   "flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold",
                   isToday
-                    ? "bg-accent-purple text-gray-900"
+                    ? "bg-brand text-white"
                     : isSelected
                       ? "bg-black/10 text-gray-900 dark:bg-white/15 dark:text-white"
                       : "text-gray-900 dark:text-white"
@@ -385,7 +385,7 @@ function WeekGrid({
             return (
               <div
                 key={toDateKey(day)}
-                className={cn("relative flex-1 border-l border-white/40 dark:border-white/10", isToday && "bg-accent-purple/5")}
+                className={cn("relative flex-1 border-l border-white/40 dark:border-white/10", isToday && "bg-brand/5")}
                 style={{ minHeight: hours.length * hourH }}
                 onClick={() => onSelectDay(day)}
               >
@@ -588,7 +588,7 @@ function AgendaSidebar({
           type="button"
           onClick={onAdd}
           disabled={calendarEntityIds.length === 0}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-purple text-gray-900 shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
           aria-label={t("calendar.addEvent")}
         >
           <Plus className="h-4 w-4" />
@@ -749,7 +749,7 @@ function EventDetail({
                   href={href}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-accent-purple px-3 py-1.5 text-xs font-medium text-gray-900"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-1.5 text-xs font-medium text-white"
                 >
                   <Video className="h-3.5 w-3.5" />
                   {t("calendar.meetLink")}
@@ -915,7 +915,7 @@ function CreateEventModal({
                 type="checkbox"
                 checked={allDay}
                 onChange={(e) => setAllDay(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-gray-300 accent-[#B48BFF]"
+                className="h-3.5 w-3.5 rounded border-gray-300 accent-[#4700B5]"
               />
               {t("calendar.allDay")}
             </label>
@@ -936,7 +936,7 @@ function CreateEventModal({
             onChange={(e) => setNote(e.target.value)}
             placeholder={t("calendar.notePlaceholder")}
             rows={3}
-            className="w-full resize-none rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-purple/50 dark:bg-white/5 dark:text-white"
+            className="w-full resize-none rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
           />
         </label>
 
@@ -945,7 +945,7 @@ function CreateEventModal({
         <button
           type="submit"
           disabled={saving || !title.trim() || !calendarId}
-          className="w-full rounded-2xl bg-accent-purple py-3 text-sm font-semibold text-gray-900 shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="w-full rounded-2xl bg-brand py-3 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           {saving ? t("calendar.saving") : t("calendar.save")}
         </button>
@@ -1154,7 +1154,7 @@ export default function CalendarPage() {
               </div>
 
               {loading && (
-                <div className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-gray-300 border-t-accent-purple dark:border-white/20" />
+                <div className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-gray-300 border-t-brand dark:border-white/20" />
               )}
             </div>
 
@@ -1165,7 +1165,7 @@ export default function CalendarPage() {
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
                   showingToday
-                    ? "border-accent-purple bg-accent-purple text-gray-900"
+                    ? "border-brand bg-brand text-white"
                     : "border-white/60 bg-white/40 text-gray-700 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                 )}
               >
@@ -1201,7 +1201,7 @@ export default function CalendarPage() {
                 type="button"
                 onClick={() => setCreateOpen(true)}
                 disabled={calendarEntityIds.length === 0}
-                className="flex items-center gap-1.5 rounded-full bg-accent-purple px-3.5 py-1.5 text-xs font-semibold text-gray-900 shadow-sm hover:opacity-90 disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-40"
               >
                 <Plus className="h-3.5 w-3.5" />
                 {t("calendar.add")}

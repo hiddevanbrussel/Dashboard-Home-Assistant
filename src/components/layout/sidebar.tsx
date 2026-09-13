@@ -37,8 +37,8 @@ function navButtonClass(isActive: boolean) {
   return cn(
     "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150",
     isActive
-      ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-      : "text-gray-600 hover:bg-black/5 hover:text-gray-900 dark:text-white/80 dark:hover:bg-white/15 dark:hover:text-white"
+      ? "bg-brand text-white dark:bg-white dark:text-brand"
+      : "text-gray-600 hover:bg-brand/10 hover:text-brand dark:text-white/80 dark:hover:bg-white/15 dark:hover:text-white"
   );
 }
 
@@ -91,8 +91,8 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
     <aside
       className={cn(
         "flex w-14 flex-col items-center gap-1 rounded-full py-3 shadow-lg ring-1 backdrop-blur-md",
-        "bg-white/90 ring-black/10",
-        "dark:bg-gray-900/90 dark:ring-white/15",
+        "bg-white/90 ring-black/5",
+        "dark:bg-brand dark:ring-white/10",
         className
       )}
       aria-label={t("nav.sidebar")}

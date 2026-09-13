@@ -10,25 +10,28 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Light theme
         page: {
-          DEFAULT: "#F7F4EA",
-          light: "#F7F4EA",
+          DEFAULT: "#F2F0FE",
+          light: "#F2F0FE",
         },
         hero: {
-          overlay: "rgba(100, 120, 140, 0.35)",
+          overlay: "rgba(71, 0, 181, 0.28)",
+        },
+        brand: {
+          DEFAULT: "#4700B5",
+          muted: "#8357BE",
+          faint: "#F2F0FE",
         },
         accent: {
           yellow: "#F6D25C",
-          purple: "#B48BFF",
+          purple: "#B59ED8",
           orange: "#F2A654",
           green: "#6BE46B",
         },
-        // Dark theme (used via dark:)
         dark: {
-          page: "#000000",
-          card: "rgba(43, 63, 75, 0.85)",
-          cardSolid: "#2B3F4B",
+          page: "#0A0014",
+          card: "rgba(71, 0, 181, 0.28)",
+          cardSolid: "#1C0A3A",
         },
       },
       borderRadius: {
@@ -36,8 +39,8 @@ const config: Config = {
         pill: "9999px",
       },
       boxShadow: {
-        glass: "0 8px 32px rgba(0, 0, 0, 0.08)",
-        "glass-dark": "0 8px 32px rgba(0, 0, 0, 0.25)",
+        glass: "0 8px 32px rgba(71, 0, 181, 0.08)",
+        "glass-dark": "0 8px 32px rgba(0, 0, 0, 0.35)",
       },
       backdropBlur: {
         glass: "12px",

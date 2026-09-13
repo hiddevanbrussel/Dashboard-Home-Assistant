@@ -6,10 +6,10 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const settingsInputClass =
-  "w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-purple/50 dark:bg-white/5 dark:text-white";
+  "w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white";
 
 export const settingsSelectClass =
-  "settings-select w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent-purple/50 dark:bg-white/5 dark:text-white";
+  "settings-select w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white";
 
 export function SettingsToggle({
   checked,
@@ -39,7 +39,7 @@ export function SettingsToggle({
       <span
         className={cn(
           "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-          checked ? "bg-accent-purple" : "bg-gray-300 dark:bg-white/20"
+          checked ? "bg-brand" : "bg-gray-300 dark:bg-white/20"
         )}
       >
         <span
@@ -71,7 +71,7 @@ export function SettingsCheckRow({
       className={cn(
         "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors",
         checked
-          ? "bg-accent-purple/15 dark:bg-accent-purple/20"
+          ? "bg-brand/10 dark:bg-brand/25"
           : "bg-black/[0.03] hover:bg-black/[0.06] dark:bg-white/5 dark:hover:bg-white/10"
       )}
     >
@@ -79,7 +79,7 @@ export function SettingsCheckRow({
         className={cn(
           "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
           checked
-            ? "border-accent-purple bg-accent-purple text-gray-900"
+            ? "border-brand bg-brand text-white"
             : "border-gray-300 bg-white/60 dark:border-white/20 dark:bg-white/5"
         )}
       >
@@ -153,7 +153,7 @@ export function SettingsPrimaryButton({
       type="button"
       {...props}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-full bg-accent-purple px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40",
+        "inline-flex items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40",
         className
       )}
     >
@@ -278,7 +278,7 @@ export function SettingsPanel({
     <div className="settings-panel-enter glass-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border border-white/70 p-0 dark:border-white/10">
       <div className="flex items-start justify-between gap-3 border-b border-white/50 px-5 py-5 dark:border-white/10">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent-purple/25 text-gray-900 dark:bg-accent-purple/30 dark:text-white">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand/10 text-brand dark:bg-brand/30 dark:text-white">
             <Icon className="h-5 w-5" aria-hidden />
           </div>
           <div className="min-w-0">

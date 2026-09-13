@@ -117,7 +117,7 @@ export function RoomCardWidget({
           ? "bg-transparent"
           : "bg-white/10 dark:bg-black/50 shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
         !embedded && !isConfigured && "border-2 border-dashed border-gray-300 dark:border-white/20",
-        onCardClick && "cursor-pointer hover:ring-2 hover:ring-[#4D2FB2]/30 transition-shadow",
+        onCardClick && "cursor-pointer hover:ring-2 hover:ring-[#4700B5]/30 transition-shadow",
         className
       )}
       style={height != null ? { minHeight: height } : undefined}
@@ -201,8 +201,8 @@ export function RoomCardWidget({
                   "flex items-center justify-center rounded-full h-9 w-9 transition-all duration-200",
                   isMediaPlaying
                     ? embedded
-                      ? "bg-[#4D2FB2] text-white"
-                      : "bg-[#4D2FB2] text-white shadow-sm"
+                      ? "bg-[#4700B5] text-white"
+                      : "bg-[#4700B5] text-white shadow-sm"
                     : embedded
                       ? "bg-gray-300 text-gray-600 dark:bg-white/20 dark:text-white/60"
                       : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400"

@@ -382,7 +382,7 @@ function CodeModal({
             type="button"
             disabled={busy || !code}
             onClick={onConfirm}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4D2FB2] px-3 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4700B5] px-3 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
           >
             <Check className="h-4 w-4" /> {t("alarm.confirm")}
           </button>

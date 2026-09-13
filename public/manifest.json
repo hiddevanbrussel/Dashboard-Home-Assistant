@@ -4,8 +4,8 @@
   "description": "Dashboard met live Home Assistant data",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#111827",
-  "theme_color": "#4D2FB2",
+  "background_color": "#0A0014",
+  "theme_color": "#4700B5",
   "orientation": "any",
   "scope": "/",
   "icons": [
