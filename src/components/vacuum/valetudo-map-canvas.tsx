@@ -81,11 +81,6 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
     };
 
     for (const layer of layers) {
-      if (layer.type !== "floor") continue;
-      forEachLayerPixel(layer, (x, y) => put(x, y, 226, 222, 236, 255));
-    }
-
-    for (const layer of layers) {
       if (layer.type !== "segment") continue;
       const id = normalizeSegmentId(layer.metaData?.segmentId);
       if (!id) continue;
