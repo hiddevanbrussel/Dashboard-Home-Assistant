@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { getEntities } from "@/lib/ha/rest";
+import { mediaImageServerCacheKey } from "@/lib/media-image";
 
 const MEDIA_IMAGE_CACHE_MAX = 100;
 const mediaImageCache = new Map<string, { body: ArrayBuffer; contentType: string }>();
 
 /**
- * GET /api/ha/media-image?entity_id=media_player.xxx
+ * GET /api/ha/media-image?entity_id=media_player.xxx&t=cache-key
  * Returns the entity_picture image for the entity (proxied from HA if relative path).
- * Cached in memory and with long-lived browser Cache-Control for faster repeat loads.
+ * Cached per player + track so a new song does not keep showing the previous cover.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -16,12 +17,14 @@ export async function GET(request: Request) {
   if (!entityId) {
     return NextResponse.json({ error: "entity_id required" }, { status: 400 });
   }
-  const cached = mediaImageCache.get(entityId);
+  const trackKey = searchParams.get("t") ?? "";
+  const cacheKey = mediaImageServerCacheKey(entityId, trackKey);
+  const cached = mediaImageCache.get(cacheKey);
   if (cached) {
     return new NextResponse(cached.body, {
       headers: {
         "Content-Type": cached.contentType,
-        "Cache-Control": "private, max-age=3600, stale-while-revalidate=600",
+        "Cache-Control": "private, max-age=300, stale-while-revalidate=60",
       },
     });
   }
@@ -32,7 +35,9 @@ export async function GET(request: Request) {
   try {
     const entities = await getEntities(config);
     const entity = entities.find((e) => e.entity_id === entityId);
-    const picture = entity?.attributes?.entity_picture as string | undefined;
+    const picture =
+      (entity?.attributes?.entity_picture as string | undefined) ??
+      (entity?.attributes?.entity_picture_local as string | undefined);
     if (!picture) {
       return new NextResponse(null, { status: 404 });
     }
@@ -42,6 +47,7 @@ export async function GET(request: Request) {
 
     const res = await fetch(imageUrl, {
       headers: { Authorization: `Bearer ${config.token}` },
+      cache: "no-store",
     });
     if (!res.ok) {
       return new NextResponse(null, { status: res.status });
@@ -52,11 +58,11 @@ export async function GET(request: Request) {
       const firstKey = mediaImageCache.keys().next().value;
       if (firstKey !== undefined) mediaImageCache.delete(firstKey);
     }
-    mediaImageCache.set(entityId, { body: arrayBuffer, contentType });
+    mediaImageCache.set(cacheKey, { body: arrayBuffer, contentType });
     return new NextResponse(arrayBuffer, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "private, max-age=3600, stale-while-revalidate=600",
+        "Cache-Control": "private, max-age=300, stale-while-revalidate=60",
       },
     });
   } catch {

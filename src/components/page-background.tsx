@@ -65,6 +65,7 @@ export function PageBackgroundProvider({
   const roomMatch = pathname?.match(/^\/rooms\/([^/]+)$/);
   const areaId = roomMatch?.[1];
   const isEnergyPage = pathname === "/energy";
+  const isMusicPage = pathname === "/music";
 
   useEffect(() => {
     async function load() {
@@ -96,10 +97,11 @@ export function PageBackgroundProvider({
     return () => window.removeEventListener("page-background-changed", onUpdate);
   }, [areaId, isEnergyPage]);
 
-  const url =
-    (resolved === "dark" ? data.backgroundDark : data.backgroundLight) ??
-    data.background ??
-    null;
+  const url = isMusicPage
+    ? null
+    : ((resolved === "dark" ? data.backgroundDark : data.backgroundLight) ??
+      data.background ??
+      null);
 
   return (
     <PageBackgroundContext.Provider value={url}>

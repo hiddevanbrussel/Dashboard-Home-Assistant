@@ -1746,7 +1746,7 @@ export default function MusicPage() {
         <div className="flex flex-wrap items-center justify-end gap-4 pb-2">
           <OfflinePill />
         </div>
-        {isMusicHome && <div className="h-14 shrink-0" aria-hidden />}
+        {(!selectedAlbum && !selectedArtist) && <div className="h-14 shrink-0" aria-hidden />}
         {error && (
           <div
             className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-200"
@@ -1787,7 +1787,7 @@ export default function MusicPage() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
                     </div>
-                    <div className="absolute top-4 left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-10">
+                    <div className="absolute top-[4.5rem] left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-30">
                       <button
                         type="button"
                         onClick={() => {
@@ -1948,7 +1948,7 @@ export default function MusicPage() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
                     </div>
-                    <div className="absolute top-4 left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-10">
+                    <div className="absolute top-[4.5rem] left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-30">
                       <button
                         type="button"
                         onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); setSelectedMenu("artists"); setSelectedCategory(null); }}
@@ -2437,7 +2437,7 @@ export default function MusicPage() {
                         </button>
                       </div>
                     </div>
-                    <div className="absolute top-4 left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-10">
+                    <div className="absolute top-[4.5rem] left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-30">
                       <button
                         type="button"
                         onClick={() => {
@@ -2555,7 +2555,7 @@ export default function MusicPage() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
                     </div>
-                    <div className="absolute top-4 left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-10">
+                    <div className="absolute top-[4.5rem] left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-30">
                       <button
                         type="button"
                         onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); setSelectedMenu("artists"); setSelectedCategory(null); }}
