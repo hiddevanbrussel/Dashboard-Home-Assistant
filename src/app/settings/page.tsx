@@ -10,25 +10,27 @@ import {
   SettingsInput,
   SettingsPanel,
   SettingsPillTabs,
-  SettingsPreview,
   SettingsPrimaryButton,
   SettingsSecondaryButton,
   SettingsSelect,
   SettingsToggle,
-  SettingsUploadButton,
 } from "@/components/settings/settings-panel";
 import { MusicAssistantSettings } from "@/components/settings/music-assistant-settings";
 import {
+  ClockFormatPreview,
   LanguagePreview,
   SettingsAccentDots,
+  SettingsChipSelect,
   SettingsChoiceCards,
+  SettingsClockPositionPicker,
   SettingsImagePick,
   ThemePreview,
 } from "@/components/settings/settings-choice-cards";
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import type { ThemeAccentId } from "@/lib/theme-accents";
 import { useLanguageStore } from "@/stores/language-store";
-import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverClockPosition, setScreensaverClockPosition } from "@/stores/screensaver-store";
+import { SCREENSAVER_CLOCK_POSITIONS, type ScreensaverClockPosition } from "@/lib/screensaver-clock-position";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
 import { hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
@@ -165,6 +167,7 @@ export default function SettingsPage() {
   const [screensaverDelaySeconds, setScreensaverDelaySecondsState] = useState(0);
   const [screensaverBackground, setScreensaverBackgroundState] = useState("");
   const [screensaverClock24h, setScreensaverClock24hState] = useState(true);
+  const [screensaverClockPosition, setScreensaverClockPositionState] = useState<ScreensaverClockPosition>("bottom-right");
   const [screensaverWeatherEntityId, setScreensaverWeatherEntityIdState] = useState<string | null>(null);
   const [screensaverFootballEntityId, setScreensaverFootballEntityIdState] = useState<string | null>(null);
   const [screensaverPexelsEnabled, setScreensaverPexelsEnabledState] = useState(false);
@@ -201,6 +204,7 @@ export default function SettingsPage() {
     setScreensaverDelaySecondsState(getScreensaverDelaySeconds());
     setScreensaverBackgroundState(getScreensaverBackgroundImage());
     setScreensaverClock24hState(getScreensaverClock24h());
+    setScreensaverClockPositionState(getScreensaverClockPosition());
     setScreensaverWeatherEntityIdState(getScreensaverWeatherEntityId());
     setScreensaverFootballEntityIdState(getScreensaverFootballEntityId());
     setScreensaverPexelsEnabledState(getScreensaverPexelsEnabled());
@@ -654,41 +658,71 @@ export default function SettingsPage() {
 
           {section === "screensaver" && (
             <>
-              <SettingsField label={t("settings.screensaver.delay")}>
-                <SettingsSelect
-                  value={screensaverDelaySeconds}
-                  onChange={(e) => {
-                    const v = parseInt(e.target.value, 10);
-                    setScreensaverDelaySecondsState(v);
-                    setScreensaverDelaySeconds(v);
-                  }}
-                >
-                  <option value={0}>{t("settings.screensaver.off")}</option>
-                  <option value={10}>{t("settings.screensaver.10s")}</option>
-                  <option value={30}>{t("settings.screensaver.30s")}</option>
-                  <option value={60}>{t("settings.screensaver.1m")}</option>
-                  <option value={120}>{t("settings.screensaver.2m")}</option>
-                  <option value={300}>{t("settings.screensaver.5m")}</option>
-                  <option value={600}>{t("settings.screensaver.10m")}</option>
-                  <option value={900}>{t("settings.screensaver.15m")}</option>
-                  <option value={1800}>{t("settings.screensaver.30m")}</option>
-                </SettingsSelect>
-              </SettingsField>
+              <SettingsChipSelect
+                label={t("settings.screensaver.delay")}
+                value={String(screensaverDelaySeconds)}
+                onChange={(id) => {
+                  const v = parseInt(id, 10);
+                  setScreensaverDelaySecondsState(v);
+                  setScreensaverDelaySeconds(v);
+                }}
+                items={[
+                  { id: "0", label: t("settings.screensaver.off") },
+                  { id: "10", label: t("settings.screensaver.10s") },
+                  { id: "30", label: t("settings.screensaver.30s") },
+                  { id: "60", label: t("settings.screensaver.1m") },
+                  { id: "120", label: t("settings.screensaver.2m") },
+                  { id: "300", label: t("settings.screensaver.5m") },
+                  { id: "600", label: t("settings.screensaver.10m") },
+                  { id: "900", label: t("settings.screensaver.15m") },
+                  { id: "1800", label: t("settings.screensaver.30m") },
+                ]}
+              />
 
-              <SettingsField label={t("settings.screensaver.clockFormat")}>
-                <SettingsPillTabs
-                  items={[
-                    { id: "24", label: t("settings.screensaver.24h") },
-                    { id: "12", label: t("settings.screensaver.12h") },
-                  ]}
-                  value={screensaverClock24h ? "24" : "12"}
-                  onChange={(id) => {
-                    const v = id === "24";
-                    setScreensaverClock24hState(v);
-                    setScreensaverClock24h(v);
-                  }}
-                />
-              </SettingsField>
+              <SettingsChoiceCards
+                label={t("settings.screensaver.clockFormat")}
+                columns={2}
+                value={screensaverClock24h ? "24" : "12"}
+                onChange={(id) => {
+                  const v = id === "24";
+                  setScreensaverClock24hState(v);
+                  setScreensaverClock24h(v);
+                }}
+                options={[
+                  {
+                    id: "24",
+                    label: t("settings.screensaver.24h"),
+                    preview: <ClockFormatPreview variant="24" />,
+                  },
+                  {
+                    id: "12",
+                    label: t("settings.screensaver.12h"),
+                    preview: <ClockFormatPreview variant="12" />,
+                  },
+                ]}
+              />
+
+              <SettingsClockPositionPicker
+                label={t("settings.screensaver.clockPosition")}
+                hint={t("settings.screensaver.clockPositionHint")}
+                value={screensaverClockPosition}
+                onChange={(position) => {
+                  setScreensaverClockPositionState(position);
+                  setScreensaverClockPosition(position);
+                }}
+                names={Object.fromEntries(
+                  SCREENSAVER_CLOCK_POSITIONS.map((position) => [
+                    position,
+                    t(`settings.screensaver.clockPosition.${position}`),
+                  ])
+                ) as Record<ScreensaverClockPosition, string>}
+              />
+
+              <SettingsPrimaryButton
+                onClick={() => window.dispatchEvent(new Event("screensaver-activate"))}
+              >
+                {t("settings.screensaver.preview")}
+              </SettingsPrimaryButton>
 
               <SettingsField label={t("settings.screensaver.weather")} hint={t("settings.screensaver.weatherHint")}>
                 <SettingsSelect
@@ -779,7 +813,8 @@ export default function SettingsPage() {
                       }}
                       placeholder={t("settings.screensaver.pexelsQuery")}
                     />
-                    <SettingsPillTabs
+                    <SettingsChipSelect
+                      label={t("settings.screensaver.pexelsType")}
                       items={[
                         { id: "photo", label: t("settings.screensaver.pexelsTypePhoto") },
                         { id: "video", label: t("settings.screensaver.pexelsTypeVideo") },
@@ -794,13 +829,16 @@ export default function SettingsPage() {
                 )}
               </SettingsGroup>
 
-              <SettingsGroup title={t("settings.screensaver.bgImage")}>
-                {screensaverBackground ? <SettingsPreview url={screensaverBackground} /> : null}
-                <div className="flex flex-wrap items-center gap-2">
-                  <SettingsUploadButton
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    disabled={uploadingScreensaverBg}
-                    onChange={async (e) => {
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {t("settings.screensaver.bgImage")}
+                </p>
+                <div className="max-w-sm">
+                  <SettingsImagePick
+                    label={t("settings.screensaver.bgImage")}
+                    url={screensaverBackground || null}
+                    uploading={uploadingScreensaverBg}
+                    onUpload={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       setUploadingScreensaverBg(true);
@@ -817,32 +855,26 @@ export default function SettingsPage() {
                         setUploadingScreensaverBg(false);
                       }
                     }}
-                  >
-                    {uploadingScreensaverBg ? t("settings.screensaver.uploading") : t("settings.screensaver.uploadImage")}
-                  </SettingsUploadButton>
-                  <SettingsInput
-                    type="url"
-                    value={screensaverBackground}
-                    onChange={(e) => {
-                      const v = e.target.value.trim();
-                      setScreensaverBackgroundState(v);
-                      setScreensaverBackgroundImage(v);
+                    onRemove={() => {
+                      setScreensaverBackgroundState("");
+                      setScreensaverBackgroundImage("");
                     }}
-                    placeholder={t("settings.screensaver.bgUrlPlaceholder")}
-                    className="min-w-[200px] flex-1"
+                    addLabel={t("settings.screensaver.uploadImage")}
+                    uploadingLabel={t("settings.screensaver.uploading")}
+                    removeLabel={t("settings.screensaver.remove")}
                   />
-                  {screensaverBackground ? (
-                    <SettingsSecondaryButton
-                      onClick={() => {
-                        setScreensaverBackgroundState("");
-                        setScreensaverBackgroundImage("");
-                      }}
-                    >
-                      {t("settings.screensaver.remove")}
-                    </SettingsSecondaryButton>
-                  ) : null}
                 </div>
-              </SettingsGroup>
+                <SettingsInput
+                  type="url"
+                  value={screensaverBackground}
+                  onChange={(e) => {
+                    const v = e.target.value.trim();
+                    setScreensaverBackgroundState(v);
+                    setScreensaverBackgroundImage(v);
+                  }}
+                  placeholder={t("settings.screensaver.bgUrlPlaceholder")}
+                />
+              </div>
             </>
           )}
 
