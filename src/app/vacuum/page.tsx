@@ -4,15 +4,34 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Home, Pause, Play, Square } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
+import { VacuumSidePanel } from "@/components/vacuum/vacuum-side-panel";
 import { useTranslation } from "@/hooks/use-translation";
 import { useValetudoStore, hydrateValetudoStore } from "@/stores/valetudo-store";
 import { valetudoRequest } from "@/lib/valetudo-client";
 import { segmentLayers, type ValetudoRawMap } from "@/lib/valetudo-map";
 import { ValetudoMapCanvas, segmentNameFromLayers } from "@/components/vacuum/valetudo-map-canvas";
+import {
+  consumableKey,
+  consumablePath,
+  fanSpeedFromAttributes,
+  parseConsumableProperties,
+  parseConsumables,
+  parseFanPresets,
+  sortConsumables,
+  type ConsumableMeta,
+  type ConsumableState,
+  type FanPreset,
+} from "@/lib/valetudo-robot";
 import { cn } from "@/lib/utils";
+
+const FAN_PRESETS_PATH = "/api/v2/robot/capabilities/FanSpeedControlCapability/presets";
+const FAN_PRESET_PATH = "/api/v2/robot/capabilities/FanSpeedControlCapability/preset";
+const CONSUMABLES_PATH = "/api/v2/robot/capabilities/ConsumableMonitoringCapability";
+const CONSUMABLE_PROPERTIES_PATH = "/api/v2/robot/capabilities/ConsumableMonitoringCapability/properties";
 
 type RobotAttribute = {
   __class?: string;
+  type?: string;
   value?: string | number;
   level?: number;
   flag?: string;
@@ -39,6 +58,11 @@ export default function VacuumPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [fanPresets, setFanPresets] = useState<FanPreset[]>([]);
+  const [consumables, setConsumables] = useState<ConsumableState[]>([]);
+  const [consumableMeta, setConsumableMeta] = useState<ConsumableMeta[]>([]);
+  const [fanBusy, setFanBusy] = useState(false);
+  const [resettingKey, setResettingKey] = useState<string | null>(null);
 
   useEffect(() => {
     hydrateValetudoStore();
@@ -64,7 +88,29 @@ export default function VacuumPage() {
     } finally {
       setLoaded(true);
     }
+    try {
+      const data = await valetudoRequest<unknown>({ ...conn, path: CONSUMABLES_PATH });
+      setConsumables(parseConsumables(data));
+    } catch {
+      setConsumables([]);
+    }
   }, [conn, t]);
+
+  const loadCapabilities = useCallback(async () => {
+    if (!conn.baseUrl) return;
+    try {
+      const presets = await valetudoRequest<unknown>({ ...conn, path: FAN_PRESETS_PATH });
+      setFanPresets(parseFanPresets(presets));
+    } catch {
+      setFanPresets([]);
+    }
+    try {
+      const props = await valetudoRequest<unknown>({ ...conn, path: CONSUMABLE_PROPERTIES_PATH });
+      setConsumableMeta(parseConsumableProperties(props));
+    } catch {
+      setConsumableMeta([]);
+    }
+  }, [conn]);
 
   useEffect(() => {
     if (!enabled || !baseUrl) {
@@ -72,9 +118,10 @@ export default function VacuumPage() {
       return;
     }
     void refresh();
+    void loadCapabilities();
     const id = setInterval(() => void refresh(), 4000);
     return () => clearInterval(id);
-  }, [enabled, baseUrl, refresh]);
+  }, [enabled, baseUrl, refresh, loadCapabilities]);
 
   function toggleSegment(id: string) {
     setSelectedIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -94,6 +141,41 @@ export default function VacuumPage() {
       setError(e instanceof Error ? e.message : t("vacuum.commandError"));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function setFanPreset(preset: FanPreset) {
+    setFanBusy(true);
+    try {
+      await valetudoRequest({
+        ...conn,
+        method: "PUT",
+        path: FAN_PRESET_PATH,
+        payload: { name: preset },
+      });
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("vacuum.commandError"));
+    } finally {
+      setFanBusy(false);
+    }
+  }
+
+  async function resetConsumable(item: ConsumableState) {
+    const key = consumableKey(item);
+    setResettingKey(key);
+    try {
+      await valetudoRequest({
+        ...conn,
+        method: "PUT",
+        path: consumablePath(item),
+        payload: { action: "reset" },
+      });
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("vacuum.commandError"));
+    } finally {
+      setResettingKey(null);
     }
   }
 
@@ -123,6 +205,11 @@ export default function VacuumPage() {
 
   const status = attr(attributes, "StatusStateAttribute")?.value;
   const battery = attr(attributes, "BatteryStateAttribute")?.level;
+  const fanSpeed = fanSpeedFromAttributes(attributes);
+  const sortedConsumables = useMemo(
+    () => sortConsumables(consumables, consumableMeta),
+    [consumables, consumableMeta]
+  );
   const statusKey =
     typeof status === "string" && status ? `vacuum.status.${status}` : "vacuum.status.unknown";
   const rooms = map ? segmentLayers(map) : [];
@@ -194,14 +281,23 @@ export default function VacuumPage() {
           </div>
         ) : map ? (
           <>
-            <div
-              className="relative min-h-0 flex-1 overflow-hidden rounded-card border border-white/60 bg-[#efeaf8] dark:border-white/10 dark:bg-[#12081f]"
-              style={{ minHeight: "50vh" }}
-            >
-              <ValetudoMapCanvas
-                map={map}
-                selectedIds={selectedIds}
-                onToggleSegment={toggleSegment}
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden lg:flex-row">
+              <div className="relative min-h-[40vh] flex-1 overflow-hidden rounded-card border border-white/60 bg-[#efeaf8] dark:border-white/10 dark:bg-[#12081f] lg:min-h-0">
+                <ValetudoMapCanvas
+                  map={map}
+                  selectedIds={selectedIds}
+                  onToggleSegment={toggleSegment}
+                />
+              </div>
+              <VacuumSidePanel
+                fanPresets={fanPresets}
+                fanSpeed={fanSpeed}
+                fanBusy={fanBusy}
+                onFanPreset={(preset) => void setFanPreset(preset)}
+                consumables={sortedConsumables}
+                consumableMeta={consumableMeta}
+                resettingKey={resettingKey}
+                onResetConsumable={(item) => void resetConsumable(item)}
               />
             </div>
             {error ? <p className="text-sm text-red-600 dark:text-red-300">{error}</p> : null}
