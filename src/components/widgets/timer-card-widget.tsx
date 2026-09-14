@@ -1,31 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { MoreVertical, Pause, Play, Timer, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TIMER_PRESETS, formatTimerMs, timerRemainingMs } from "@/lib/timer";
+import { TIMER_PRESETS, formatTimerMs } from "@/lib/timer";
 import { useTimerStore } from "@/stores/timer-store";
+import { useLiveTimerRemaining } from "@/hooks/use-live-timer";
 import { useTranslation } from "@/hooks/use-translation";
 import { unlockTimerAudio } from "@/components/timer-sound";
-
-function useLiveRemaining() {
-  const status = useTimerStore((s) => s.status);
-  const endsAt = useTimerStore((s) => s.endsAt);
-  const remainingMs = useTimerStore((s) => s.remainingMs);
-  const finish = useTimerStore((s) => s.finish);
-  const [, setTick] = useState(0);
-
-  useEffect(() => {
-    if (status !== "running") return;
-    const id = setInterval(() => {
-      setTick((n) => n + 1);
-      if (endsAt != null && Date.now() >= endsAt) finish();
-    }, 200);
-    return () => clearInterval(id);
-  }, [status, endsAt, finish]);
-
-  return timerRemainingMs(status, endsAt, remainingMs);
-}
 
 export function TimerCardWidget({
   title,
@@ -35,13 +16,12 @@ export function TimerCardWidget({
   onMoreClick?: () => void;
 }) {
   const { t } = useTranslation();
-  const status = useTimerStore((s) => s.status);
   const start = useTimerStore((s) => s.start);
   const pause = useTimerStore((s) => s.pause);
   const resume = useTimerStore((s) => s.resume);
   const cancel = useTimerStore((s) => s.cancel);
   const dismiss = useTimerStore((s) => s.dismiss);
-  const remaining = useLiveRemaining();
+  const { status, remaining } = useLiveTimerRemaining();
   const active = status !== "idle";
 
   return (
