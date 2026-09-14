@@ -20,10 +20,12 @@ import {
 import { MusicAssistantSettings } from "@/components/settings/music-assistant-settings";
 import {
   LanguagePreview,
+  SettingsAccentDots,
   SettingsChoiceCards,
   ThemePreview,
 } from "@/components/settings/settings-choice-cards";
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
+import type { ThemeAccentId } from "@/lib/theme-accents";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
@@ -448,7 +450,7 @@ export default function SettingsPage() {
     }
   }
 
-  const { mode, setMode } = useThemeStore();
+  const { mode, setMode, accent, setAccent } = useThemeStore();
   const { language, setLanguage } = useLanguageStore();
 
   const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: LucideIcon }[] }[] = [
@@ -543,6 +545,7 @@ export default function SettingsPage() {
             description={t(currentMeta.descriptionKey)}
           >
           {section === "appearance" && (
+            <>
             <SettingsChoiceCards
               label={t("settings.theme.interface")}
               value={mode}
@@ -566,6 +569,23 @@ export default function SettingsPage() {
                 },
               ]}
             />
+            <SettingsAccentDots
+              label={t("settings.theme.color")}
+              hint={t("settings.theme.colorHint")}
+              value={accent}
+              onChange={(id) => setAccent(id)}
+              names={{
+                purple: t("settings.theme.color.purple"),
+                indigo: t("settings.theme.color.indigo"),
+                blue: t("settings.theme.color.blue"),
+                teal: t("settings.theme.color.teal"),
+                green: t("settings.theme.color.green"),
+                orange: t("settings.theme.color.orange"),
+                rose: t("settings.theme.color.rose"),
+                fuchsia: t("settings.theme.color.fuchsia"),
+              } satisfies Record<ThemeAccentId, string>}
+            />
+            </>
           )}
 
           {section === "language" && (
