@@ -5,9 +5,15 @@ import { createPortal } from "react-dom";
 import { AppShell } from "@/components/layout/app-shell";
 import { GlassCard } from "@/components/layout/glass-card";
 import { MediaCardWidget } from "@/components/widgets";
+import {
+  MusicHomeDiscovery,
+  type MusicHomeShelf,
+  type MusicHomeSpotlight,
+  type MusicHomeTile,
+} from "@/components/music/music-home-discovery";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, ChevronRight, ChevronDown, ListMusic, Home, ListPlus } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, ChevronDown, ListMusic, Home, ListPlus } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useTranslation } from "@/hooks/use-translation";
@@ -98,12 +104,42 @@ function getArtistParams(item: MASearchItem): { item_id: string; provider_instan
   return getItemParams(item);
 }
 
+function itemUri(item: MASearchItem): string {
+  const raw = item.uri ?? (item as { item_uri?: string }).item_uri ?? "";
+  return typeof raw === "string" ? raw : "";
+}
+
+function itemMediaTypeHint(item: MASearchItem): string {
+  return String((item as { media_type?: string }).media_type ?? (item as { type?: string }).type ?? "");
+}
+
 /** True if this item is an album (so album_tracks is valid). Recently played can contain tracks; only open album view for albums. */
 function isAlbumItem(item: MASearchItem): boolean {
-  const raw = item.uri ?? (item as { item_uri?: string }).item_uri ?? "";
-  if (typeof raw === "string" && raw.includes("/album/")) return true;
-  const mt = (item as { media_type?: string }).media_type ?? (item as { type?: string }).type;
-  return mt === "album";
+  if (itemUri(item).includes("/album/")) return true;
+  return itemMediaTypeHint(item) === "album";
+}
+
+function isArtistItem(item: MASearchItem): boolean {
+  if (itemUri(item).includes("/artist/")) return true;
+  return itemMediaTypeHint(item) === "artist";
+}
+
+function isPlaylistItem(item: MASearchItem): boolean {
+  if (itemUri(item).includes("/playlist/")) return true;
+  return itemMediaTypeHint(item) === "playlist";
+}
+
+function isRadioItem(item: MASearchItem): boolean {
+  if (itemUri(item).includes("/radio/")) return true;
+  return itemMediaTypeHint(item) === "radio";
+}
+
+function detectPlayableType(item: MASearchItem): "track" | "album" | "artist" | "radio" | "playlist" {
+  if (isAlbumItem(item)) return "album";
+  if (isArtistItem(item)) return "artist";
+  if (isPlaylistItem(item)) return "playlist";
+  if (isRadioItem(item)) return "radio";
+  return "track";
 }
 
 /** Normalize MA URI: "provider--instance://type/id" -> "provider://type/id" for play_media (avoids 500 on some MA versions). */
@@ -211,38 +247,6 @@ function getArtistsString(item: MASearchItem): string {
   const albumArtists = (item.album as { artists?: { name?: string }[] })?.artists;
   if (Array.isArray(albumArtists) && albumArtists.length > 0) return albumArtists.map((a) => a?.name).filter(Boolean).slice(0, 3).join(", ");
   return "";
-}
-
-/** Extract hero display info from track or album. */
-function getHeroDisplayInfo(item: MASearchItem): { title: string; subtitle: string; trackCount?: number } {
-  const artistsStr = getArtistsString(item);
-  const albumName = (item.album as { name?: string })?.name;
-  const mediaType = (item.media_type ?? (item as { type?: string }).type) as string | undefined;
-  const uri = (item.uri ?? (item as { item_uri?: string }).item_uri) ?? "";
-  const isAlbum = mediaType === "album" || uri.includes("/album/");
-  const isTrack = mediaType === "track" || uri.includes("/track/") || (item.album != null && !isAlbum);
-  const isPlaylist = mediaType === "playlist" || uri.includes("/playlist/");
-
-  if (isPlaylist) {
-    const title = (item.name as string) ?? "";
-    const trackCount =
-      Array.isArray((item as { tracks?: unknown[] }).tracks)
-        ? (item as { tracks: unknown[] }).tracks.length
-        : (item as { total_tracks?: number }).total_tracks;
-    return { title, subtitle: "", trackCount };
-  }
-  if (isTrack) {
-    const title = (item.name as string) ?? "";
-    const parts = [albumName, artistsStr].filter(Boolean);
-    const subtitle = parts.join(" · ");
-    return { title, subtitle };
-  }
-  const title = (item.name as string) ?? "";
-  const trackCount =
-    Array.isArray((item as { tracks?: unknown[] }).tracks)
-      ? (item as { tracks: unknown[] }).tracks.length
-      : (item as { total_tracks?: number }).total_tracks;
-  return { title, subtitle: artistsStr, trackCount };
 }
 
 /** Build src for MA images: proxy relative/MA URLs so auth works and CORS is avoided. */
@@ -386,11 +390,8 @@ export default function MusicPage() {
       },
     };
   }
-  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const [heroHourSeed, setHeroHourSeed] = useState(() => new Date().getHours());
-  const [homeScrollTop, setHomeScrollTop] = useState(0);
   const musicScrollRef = useRef<HTMLDivElement>(null);
-  const scrollRafRef = useRef<number | null>(null);
   const [recentItems, setRecentItems] = useState<MASearchItem[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<MASearchItem | null>(null);
@@ -545,93 +546,6 @@ export default function MusicPage() {
     tick();
     const id = setInterval(tick, 60_000);
     return () => clearInterval(id);
-  }, []);
-
-  const allFeaturedTracks = useMemo(
-    () => featuredPlaylistData.flatMap((d) => d.tracks),
-    [featuredPlaylistData]
-  );
-
-  const heroItems = useMemo(() => {
-    const sources = musicAssistant.heroSliderSources;
-    const parts: MASearchItem[][] = [];
-    if (sources.includes("featuredPlaylist")) parts.push(allFeaturedTracks);
-    if (sources.includes("recentlyPlayed")) parts.push(recentItems);
-    if (sources.includes("libraryAlbums")) parts.push(libraryAlbums);
-    const combined = parts.flat();
-    const seen = new Set<string>();
-    const deduped = combined.filter((item) => {
-      const uri = item.uri ?? (item as { item_uri?: string }).item_uri;
-      const key = typeof uri === "string" ? uri : item.item_id ?? item.name;
-      if (key && seen.has(String(key))) return false;
-      if (key) seen.add(String(key));
-      return true;
-    });
-    if (deduped.length === 0) return [];
-    const n = deduped.length;
-    const startIndex = (heroHourSeed * 7) % n;
-    const result: MASearchItem[] = [];
-    for (let i = 0; i < Math.min(6, n); i++) {
-      result.push(deduped[(startIndex + i) % n]!);
-    }
-    return result;
-  }, [allFeaturedTracks, recentItems, libraryAlbums, heroHourSeed, musicAssistant.heroSliderSources]);
-
-  const heroItemCount = heroItems.length;
-  useEffect(() => {
-    if (heroItemCount > 0) setHeroSlideIndex(heroHourSeed % heroItemCount);
-  }, [heroHourSeed, heroItemCount]);
-
-  const heroIntervalMs = musicAssistant.heroSliderIntervalMs;
-  useEffect(() => {
-    if (heroItemCount <= 1) return;
-    const id = setInterval(() => {
-      setHeroSlideIndex((i) => (i + 1) % heroItemCount);
-    }, heroIntervalMs);
-    return () => clearInterval(id);
-  }, [heroItemCount, heroIntervalMs]);
-
-  useEffect(() => {
-    if (!musicAssistant.baseUrl || heroItems.length === 0) return;
-    const links: HTMLLinkElement[] = [];
-    for (const item of heroItems) {
-      const rawUrl = getItemImageUrl(item);
-      const src = getImageSrc(rawUrl, musicAssistant.baseUrl, musicAssistant.token);
-      if (src && typeof src === "string") {
-        const link = document.createElement("link");
-        link.rel = "preload";
-        link.as = "image";
-        link.href = src;
-        document.head.appendChild(link);
-        links.push(link);
-      }
-    }
-    return () => links.forEach((l) => l.remove());
-  }, [heroItems, musicAssistant.baseUrl, musicAssistant.token]);
-
-  useEffect(() => {
-    const el = musicScrollRef.current;
-    if (!el) return;
-    const syncScroll = () => {
-      setHomeScrollTop(el.scrollTop);
-    };
-    const handleScroll = () => {
-      if (scrollRafRef.current != null) cancelAnimationFrame(scrollRafRef.current);
-      scrollRafRef.current = requestAnimationFrame(() => {
-        syncScroll();
-        scrollRafRef.current = null;
-      });
-    };
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    el.addEventListener("touchmove", handleScroll, { passive: true });
-    const poll = setInterval(syncScroll, 150);
-    return () => {
-      el.removeEventListener("scroll", handleScroll);
-      el.removeEventListener("touchmove", handleScroll);
-      clearInterval(poll);
-      if (scrollRafRef.current != null) cancelAnimationFrame(scrollRafRef.current);
-    };
   }, []);
 
   const allowedIds = musicAssistant.allowedSpeakerIds;
@@ -1470,7 +1384,209 @@ export default function MusicPage() {
 
   const allowSpeakerSelection = musicAssistant.allowSpeakerSelection;
   const isMusicHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum;
-  const headerOverHero = (isMusicHome && heroItems.length > 0) || !!selectedAlbum || !!selectedArtist;
+  const headerOverHero = !!selectedAlbum || !!selectedArtist;
+
+  const homeGreeting =
+    heroHourSeed < 12
+      ? t("music.greetingMorning")
+      : heroHourSeed < 18
+        ? t("music.greetingAfternoon")
+        : t("music.greetingEvening");
+
+  const homeDiscovery = useMemo(() => {
+    if (!useMA) return null;
+    const canPlay = !!selectedQueueId;
+    const imageSrcFor = (item: MASearchItem) =>
+      getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
+    const unknown = t("music.unknown");
+
+    const toTile = (
+      item: MASearchItem,
+      index: number,
+      prefix: string,
+      kind?: ReturnType<typeof detectPlayableType>
+    ): MusicHomeTile => {
+      const mediaType = kind ?? detectPlayableType(item);
+      const albumParams = mediaType === "album" ? getAlbumParams(item) : null;
+      const artistParams = mediaType === "artist" ? getArtistParams(item) : null;
+      const uri = getPlayableUri(item, mediaType);
+      const subtitle =
+        mediaType === "playlist"
+          ? t("music.playlist")
+          : mediaType === "radio"
+            ? t("music.filterRadio")
+            : getArtistsString(item) || undefined;
+      return {
+        key: String(item.uri ?? item.item_id ?? `${prefix}-${index}`),
+        title: item.name ?? unknown,
+        subtitle,
+        imageSrc: imageSrcFor(item),
+        disabled: albumParams || artistParams ? false : !canPlay || !uri,
+        onClick: () => {
+          if (albumParams) {
+            setSelectedAlbum(item);
+            setSelectedMenu(null);
+            setSelectedCategory(null);
+            return;
+          }
+          if (artistParams) {
+            setSelectedArtist(item);
+            setSelectedMenu("artists");
+            setSelectedCategory(null);
+            return;
+          }
+          if (canPlay && uri) playOnPlayer(normalizePlayMediaUri(uri));
+        },
+      };
+    };
+
+    const jumpBackIn = musicAssistant.sectionRecentlyPlayedEnabled
+      ? recentItems.slice(0, 6).map((item, i) => toTile(item, i, "jump"))
+      : [];
+
+    const featuredPlaylists = featuredPlaylistData
+      .map((d) => d.playlist)
+      .filter((p): p is MASearchItem => !!p);
+
+    const spotlightSource = musicAssistant.sectionFeaturedPlaylistEnabled
+      ? (featuredPlaylists[0] ?? libraryAlbums[0] ?? recentItems[0] ?? null)
+      : (libraryAlbums[0] ?? recentItems[0] ?? null);
+
+    const spotlight: MusicHomeSpotlight | null = spotlightSource
+      ? {
+          kicker: featuredPlaylists[0] && spotlightSource === featuredPlaylists[0]
+            ? t("music.featured")
+            : t("music.listenNow"),
+          title: spotlightSource.name ?? unknown,
+          subtitle: getArtistsString(spotlightSource) || undefined,
+          imageSrc: imageSrcFor(spotlightSource),
+          disabled: !canPlay,
+          onPlay: () => {
+            const kind = detectPlayableType(spotlightSource);
+            if (kind === "album" && getAlbumParams(spotlightSource)) {
+              setSelectedAlbum(spotlightSource);
+              return;
+            }
+            const uri = getPlayableUri(spotlightSource, kind);
+            if (uri) playOnPlayer(normalizePlayMediaUri(uri));
+          },
+        }
+      : null;
+
+    const featuredIds = new Set(
+      featuredPlaylists.map((p) => String(p.uri ?? p.item_id ?? "")).filter(Boolean)
+    );
+
+    const shelves: MusicHomeShelf[] = [];
+
+    if (musicAssistant.sectionFeaturedPlaylistEnabled) {
+      shelves.push({
+        id: "featured",
+        title: t("music.featured"),
+        variant: "square",
+        loading: featuredPlaylistLoading,
+        items: featuredPlaylists.map((p, i) => toTile(p, i, "featured", "playlist")),
+        onSeeAll: () => {
+          setSelectedMenu("playlists");
+          setSelectedCategory(null);
+        },
+      });
+      for (const { id, playlist, tracks } of featuredPlaylistData) {
+        if (!playlist || tracks.length === 0) continue;
+        shelves.push({
+          id: `featured-tracks-${id}`,
+          title: playlist.name ?? t("music.playlist"),
+          variant: "square",
+          items: tracks.slice(0, 16).map((item, i) => toTile(item, i, `ft-${id}`)),
+        });
+      }
+    }
+
+    shelves.push({
+      id: "albums",
+      title: t("music.yourAlbums"),
+      variant: "square",
+      loading: libraryAlbumsLoading,
+      items: libraryAlbums.slice(0, 16).map((item, i) => toTile(item, i, "album", "album")),
+      onSeeAll: () => {
+        setSelectedMenu("albums");
+        setSelectedCategory(null);
+      },
+    });
+
+    shelves.push({
+      id: "artists",
+      title: t("music.yourArtists"),
+      variant: "circle",
+      loading: libraryArtistsLoading,
+      items: libraryArtists.slice(0, 16).map((item, i) => toTile(item, i, "artist", "artist")),
+      onSeeAll: () => {
+        setSelectedMenu("artists");
+        setSelectedCategory(null);
+      },
+    });
+
+    if (musicAssistant.sectionRadioEnabled) {
+      shelves.push({
+        id: "radio",
+        title: t("music.radioStations"),
+        variant: "station",
+        loading: radioStationsLoading,
+        items: radioStations.slice(0, 16).map((item, i) => toTile(item, i, "radio", "radio")),
+        onSeeAll: () => setSelectedCategory("radio"),
+      });
+    }
+
+    const libraryPlaylistTiles = libraryPlaylists
+      .filter((p) => !featuredIds.has(String(p.uri ?? p.item_id ?? "")))
+      .slice(0, 16)
+      .map((item, i) => toTile(item, i, "playlist", "playlist"));
+
+    shelves.push({
+      id: "playlists",
+      title: t("music.yourPlaylists"),
+      variant: "square",
+      loading: libraryPlaylistsLoading,
+      items: libraryPlaylistTiles,
+      onSeeAll: () => {
+        setSelectedMenu("playlists");
+        setSelectedCategory(null);
+      },
+    });
+
+    const loading =
+      (musicAssistant.sectionRecentlyPlayedEnabled && recentLoading) ||
+      featuredPlaylistLoading ||
+      libraryAlbumsLoading ||
+      libraryArtistsLoading ||
+      libraryPlaylistsLoading ||
+      (musicAssistant.sectionRadioEnabled && radioStationsLoading);
+
+    return { jumpBackIn, spotlight, shelves, loading };
+  }, [
+    useMA,
+    selectedQueueId,
+    musicAssistant.baseUrl,
+    musicAssistant.token,
+    musicAssistant.sectionRecentlyPlayedEnabled,
+    musicAssistant.sectionFeaturedPlaylistEnabled,
+    musicAssistant.sectionRadioEnabled,
+    recentItems,
+    recentLoading,
+    featuredPlaylistData,
+    featuredPlaylistLoading,
+    libraryAlbums,
+    libraryAlbumsLoading,
+    libraryArtists,
+    libraryArtistsLoading,
+    libraryPlaylists,
+    libraryPlaylistsLoading,
+    radioStations,
+    radioStationsLoading,
+    playOnPlayer,
+    t,
+  ]);
+
   return (
     <AppShell
       activeTab="/music"
@@ -1478,7 +1594,7 @@ export default function MusicPage() {
       headerFixed
       headerContentLight={headerOverHero}
       headerEndAction={
-        useMA && maPlayers.length > 0 ? (
+        useMA ? (
           <button
             type="button"
             onClick={() => setSearchOverlayOpen(true)}
@@ -1619,103 +1735,18 @@ export default function MusicPage() {
         document.body
       )}
       <div className={cn("music-page-content w-full max-w-full flex flex-col h-full min-h-0 relative", !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum ? "bg-page-light dark:bg-black" : "bg-page-light dark:bg-dark-page", showPlayerBar && playerBarExpanded && "pb-24")}>
-        {!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && heroItems.length > 0 && (() => {
-          const heroItem = heroItems[heroSlideIndex] ?? heroItems[0];
-          const heroImageSrc = heroItem ? getImageSrc(getItemImageUrl(heroItem), musicAssistant.baseUrl, musicAssistant.token) : null;
-          const heroDisplay = heroItem ? getHeroDisplayInfo(heroItem) : { title: "", subtitle: "", trackCount: undefined };
-          const heroUri = heroItem
-            ? (getPlayableUri(heroItem, "track") || getPlayableUri(heroItem, "album") || getPlayableUri(heroItem, "playlist"))
-            : null;
-          const heroBlur = Math.min(24, Math.max(0, homeScrollTop * 0.12));
-          const heroOverlay = Math.min(0.6, homeScrollTop * 0.003);
-          return (
-            <div
-              className="fixed inset-x-0 top-0 z-20 h-[min(72vh,600px)] w-screen transition-[filter,opacity] duration-300 will-change-[filter]"
-              style={{
-                maskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
-                WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 70%, transparent 100%)",
-                filter: heroBlur > 0 ? `blur(${heroBlur}px)` : "none",
-              }}
-            >
-              <div className="absolute inset-0 bg-gray-900">
-                {heroImageSrc ? (
-                  <Image src={heroImageSrc} alt="" fill className="object-cover object-center scale-105" sizes="100vw" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized priority />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                    <Disc3 className="h-24 w-24 text-white/30" aria-hidden />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
-                {heroOverlay > 0 && (
-                  <div
-                    className="absolute inset-0 bg-black/60 transition-opacity duration-300"
-                    style={{ opacity: heroOverlay }}
-                    aria-hidden
-                  />
-                )}
-              </div>
-              <div className="absolute bottom-[10%] left-0 right-0 pl-[calc(5.5rem+1rem)] sm:pl-[calc(5.5rem+1.5rem)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
-                <div className="min-w-0 flex-1 pointer-events-auto">
-                  <h2 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg truncate max-w-full">
-                    {heroDisplay.title || t("music.unknown")}
-                  </h2>
-                  {heroDisplay.subtitle ? (
-                    <p className="mt-1 text-base sm:text-lg text-white/90 truncate max-w-full">{heroDisplay.subtitle}</p>
-                  ) : null}
-                  {heroDisplay.trackCount != null && heroDisplay.trackCount > 0 ? (
-                    <p className="mt-0.5 text-sm text-white/70">
-                      {heroDisplay.trackCount} {heroDisplay.trackCount === 1 ? t("music.trackCountOne") : t("music.trackCountMany")}
-                    </p>
-                  ) : null}
-                  {heroItems.length > 1 && (
-                    <div className="flex items-center gap-1.5 mt-3" role="tablist" aria-label={t("music.slides")}>
-                      {heroItems.map((_, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          role="tab"
-                          aria-selected={i === heroSlideIndex}
-                          onClick={() => setHeroSlideIndex(i)}
-                          className={cn(
-                            "rounded-full transition-all duration-200",
-                            i === heroSlideIndex ? "w-6 h-2 bg-white" : "w-2 h-2 bg-white/50 hover:bg-white/70"
-                          )}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0 pointer-events-auto mr-5">
-                  <span className="text-sm font-medium text-white/90 uppercase tracking-wider hidden sm:inline">{t("music.play")}</span>
-                  <button
-                    type="button"
-                    onClick={() => heroUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(heroUri))}
-                    disabled={!heroUri || !selectedQueueId}
-                    className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg hover:scale-105 disabled:opacity-50 transition-transform"
-                    aria-label={t("music.play")}
-                  >
-                    <Play className="h-6 w-6 fill-current ml-0.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
         <div className="flex flex-1 min-h-0 min-w-0">
           <div
             ref={musicScrollRef}
             className={cn(
               "flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto music-content-area",
-              !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum ? "overflow-x-visible text-gray-900 dark:text-white" : "overflow-x-hidden text-gray-900 dark:text-white",
-              !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && heroItems.length > 0 && "relative z-10"
+              isMusicHome ? "overflow-x-visible text-gray-900 dark:text-white" : "overflow-x-hidden text-gray-900 dark:text-white"
             )}
           >
         <div className="flex flex-wrap items-center justify-end gap-4 pb-2">
           <OfflinePill />
         </div>
-        {!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && heroItems.length > 0 && (
-          <div className="h-[min(58vh,460px)] shrink-0" aria-hidden />
-        )}
+        {isMusicHome && <div className="h-14 shrink-0" aria-hidden />}
         {error && (
           <div
             className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-200"
@@ -2673,7 +2704,7 @@ export default function MusicPage() {
           </div>
         ) : (
           <div className="contents">
-        {playersLoading && (
+        {!useMA && playersLoading && (
           <div className="flex justify-center py-12">
             <div
               className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent"
@@ -2689,18 +2720,6 @@ export default function MusicPage() {
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("music.noMediaPlayers")}</p>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
                 {t("music.noMediaPlayersHint")}
-              </p>
-            </div>
-          </GlassCard>
-        )}
-
-        {!playersLoading && useMA && maPlayers.length === 0 && (
-          <GlassCard>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Music2 className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("music.noPlayers")}</p>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-                {t("music.noPlayersHint")}
               </p>
             </div>
           </GlassCard>
@@ -2722,239 +2741,24 @@ export default function MusicPage() {
           </div>
         )}
 
-        {!playersLoading && useMA && maPlayers.length > 0 && !selectedArtist && !selectedAlbum && (
-          <>
-            {musicAssistant.sectionOrder.map((sectionId) => {
-            if (sectionId === "radio" && !musicAssistant.sectionRadioEnabled) return null;
-            if (sectionId === "recentlyPlayed" && !musicAssistant.sectionRecentlyPlayedEnabled) return null;
-            if (sectionId === "featuredPlaylist" && !musicAssistant.sectionFeaturedPlaylistEnabled) return null;
-            if (sectionId === "featuredPlaylist") {
-              const show =
-                featuredPlaylistData.length > 0 ||
-                featuredPlaylistLoading ||
-                featuredPlaylistData.some((d) => d.tracks.length > 0);
-              if (!show) return null;
-              return (
-                <div key="featuredPlaylist" className="relative z-30 mt-2 pl-[8px] space-y-8">
-                  {featuredPlaylistLoading && featuredPlaylistData.length === 0 ? (
-                    <section>
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">{t("music.recentlyAdded")}</h2>
-                      <div className="flex justify-center py-8">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
-                      </div>
-                    </section>
-                  ) : (
-                  featuredPlaylistData.map(({ id, playlist, tracks }) => (
-                    <section key={id}>
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                          {playlist?.name ?? t("music.playlist")}
-                        </h2>
-                        {playlist && selectedQueueId && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const playlistUri = getPlayableUri(playlist, "playlist");
-                              if (playlistUri) playOnPlayer(normalizePlayMediaUri(playlistUri));
-                            }}
-                            className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-yellow/20 dark:bg-accent-green/20 text-accent-yellow dark:text-accent-green hover:bg-accent-yellow/30 dark:hover:bg-accent-green/30 shrink-0 transition-colors"
-                            aria-label={t("music.play")}
-                          >
-                            <Play className="h-4 w-4 fill-current ml-0.5" />
-                          </button>
-                        )}
-                      </div>
-                      {featuredPlaylistLoading ? (
-                        <div className="flex justify-center py-8">
-                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
-                        </div>
-                      ) : tracks.length === 0 ? (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noTracks")}</p>
-                      ) : (
-                        <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
-                          {tracks.map((item, index) => {
-                        const uri = getPlayableUri(item, "track");
-                        const albumUri = getPlayableUri(item, "album");
-                        const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
-                        const canPlay = !!(uri || albumUri) && !!selectedQueueId;
-                        const isAlbum = isAlbumItem(item);
-                        const albumParams = isAlbum ? getAlbumParams(item) : null;
-                        const artistNames = item.artists
-                          ? Array.isArray(item.artists)
-                            ? (item.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
-                            : (item.artists as { name?: string })?.name ?? ""
-                          : "";
-                        const lp = createTrackLongPressHandlers(item);
-                        const handleClick = lp.wrapClick(() => {
-                          if (albumParams) setSelectedAlbum(item);
-                          else if (canPlay && uri) playOnPlayer(normalizePlayMediaUri(uri));
-                          else if (canPlay && albumUri) playOnPlayer(normalizePlayMediaUri(albumUri));
-                        });
-                        return (
-                          <button
-                            key={uri || albumUri || `featured-track-${index}`}
-                            type="button"
-                            onClick={handleClick}
-                            onPointerDown={lp.onPointerDown}
-                            onPointerUp={lp.onPointerUp}
-                            onPointerLeave={lp.onPointerLeave}
-                            disabled={!albumParams && !canPlay}
-                            className="shrink-0 w-28 sm:w-32 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always] text-left"
-                            title={albumParams ? t("music.viewAlbum") : (item.name as string)}
-                          >
-                            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700">
-                              {imageSrc ? (
-                                <Image
-                                  src={imageSrc}
-                                  alt=""
-                                  fill
-                                  className="object-cover"
-                                  sizes="128px"
-                                  placeholder="blur"
-                                  blurDataURL={MUSIC_IMAGE_BLUR}
-                                  unoptimized
-                                />
-                              ) : (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <Disc3 className="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden />
-                                </div>
-                              )}
-                            </div>
-                            <p className="mt-1.5 truncate text-sm font-medium text-gray-900 dark:text-white">
-                              {item.name ?? t("music.unknown")}
-                            </p>
-                            {artistNames ? (
-                              <p className="truncate text-xs text-gray-500 dark:text-gray-400">{artistNames}</p>
-                            ) : null}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                    </section>
-                  ))
-                )}
-                </div>
-              );
+        {useMA && homeDiscovery && (
+          <MusicHomeDiscovery
+            greeting={homeGreeting}
+            listenNow={t("music.listenNow")}
+            playLabel={t("music.play")}
+            seeAllLabel={t("music.seeAll")}
+            jumpBackTitle={t("music.jumpBackIn")}
+            jumpBackIn={homeDiscovery.jumpBackIn}
+            onJumpBackSeeAll={
+              musicAssistant.sectionRecentlyPlayedEnabled
+                ? () => setSelectedCategory("recentlyPlayed")
+                : undefined
             }
-            if (sectionId === "radio") {
-              return (
-                <section key="radio" className="relative z-30 mt-6 pl-[8px]">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCategory("radio")}
-                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-900 dark:text-white mb-3 hover:text-gray-800 dark:hover:text-white/90 transition-colors"
-                  >
-                    {t("music.radioStations")}
-                    <ChevronRight className="h-5 w-5 shrink-0 opacity-70" />
-                  </button>
-                  {radioStationsLoading ? (
-                    <div className="flex justify-center py-8">
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
-                    </div>
-                  ) : radioStations.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noRadioStations")}</p>
-                  ) : (
-                    <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
-                        {radioStations.map((item, index) => {
-                          const radioUri = getPlayableUri(item, "radio");
-                          const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
-                          const isPlayPending = radioUri && playPending === radioUri;
-                          const canPlay = !!radioUri && !!selectedQueueId;
-                          const handleClick = () => {
-                            if (canPlay && radioUri) playOnPlayer(normalizePlayMediaUri(radioUri));
-                          };
-                          return (
-                            <button
-                              key={radioUri || `radio-${index}`}
-                              type="button"
-                              onClick={handleClick}
-                              disabled={!canPlay}
-                              className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always]"
-                              title={item.name as string}
-                            >
-                              {imageSrc ? (
-                                <span className="relative block w-full h-full">
-                                  <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
-                                </span>
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                                  <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
-                                </div>
-                              )}
-                            </button>
-                          );
-                        })}
-                    </div>
-                  )}
-                </section>
-              );
-            }
-            if (sectionId === "recentlyPlayed") {
-              return (
-                <section key="recentlyPlayed" className="relative z-30 mt-6 pl-[10px]">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCategory("recentlyPlayed")}
-                    className="flex items-center gap-2 w-full text-left text-lg font-bold text-gray-900 dark:text-white mb-3 hover:text-gray-800 dark:hover:text-white/90 transition-colors"
-                  >
-                    {t("music.recentlyPlayed")}
-                    <ChevronRight className="h-5 w-5 shrink-0 opacity-70" />
-                  </button>
-                  {recentLoading ? (
-                    <div className="flex justify-center py-8">
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
-                    </div>
-                  ) : recentItems.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noHistory")}</p>
-                  ) : (
-                    <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
-                        {recentItems.map((item, index) => {
-                          const uri = getPlayableUri(item, "track");
-                          const albumUri = getPlayableUri(item, "album");
-                          const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
-                          const isPlayPending = (uri && playPending === uri) || (albumUri && playPending === albumUri);
-                          const canPlay = !!(uri || albumUri) && !!selectedQueueId;
-                          const isAlbum = isAlbumItem(item);
-                          const albumParams = isAlbum ? getAlbumParams(item) : null;
-                          const lp = createTrackLongPressHandlers(item);
-                          const handleClick = lp.wrapClick(() => {
-                            if (albumParams) setSelectedAlbum(item);
-                            else if (canPlay && uri) playOnPlayer(uri);
-                            else if (canPlay && albumUri) playOnPlayer(albumUri);
-                          });
-                          return (
-                            <button
-                              key={uri || albumUri || `recent-${index}`}
-                              onPointerDown={lp.onPointerDown}
-                              onPointerUp={lp.onPointerUp}
-                              onPointerLeave={lp.onPointerLeave}
-                              type="button"
-                              onClick={handleClick}
-                              disabled={!albumParams && !canPlay}
-                              className="shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 snap-start [scroll-snap-stop:always]"
-                              title={albumParams ? t("music.viewAlbum") : (item.name as string)}
-                            >
-                              {imageSrc ? (
-                                <span className="relative block w-full h-full">
-                                  <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
-                                </span>
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                                  <Disc3 className="h-8 w-8 text-gray-500 dark:text-gray-400" aria-hidden />
-                                </div>
-                              )}
-                            </button>
-                          );
-                        })}
-                    </div>
-                  )}
-                </section>
-              );
-            }
-            return null;
-          })}
-          </>
+            spotlight={homeDiscovery.spotlight}
+            shelves={homeDiscovery.shelves}
+            banner={!playersLoading && maPlayers.length === 0 ? t("music.connectPlayerToPlay") : null}
+            emptyLabel={!homeDiscovery.loading ? t("music.homeEmpty") : null}
+          />
         )}
         </div>
         )}
