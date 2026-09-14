@@ -29,8 +29,9 @@ import {
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import type { ThemeAccentId } from "@/lib/theme-accents";
 import { useLanguageStore } from "@/stores/language-store";
-import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverClockPosition, setScreensaverClockPosition } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize } from "@/stores/screensaver-store";
 import { SCREENSAVER_CLOCK_POSITIONS, type ScreensaverClockPosition } from "@/lib/screensaver-clock-position";
+import { SCREENSAVER_CLOCK_SIZES, type ScreensaverClockSize } from "@/lib/screensaver-clock-size";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
 import { hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
@@ -168,6 +169,7 @@ export default function SettingsPage() {
   const [screensaverBackground, setScreensaverBackgroundState] = useState("");
   const [screensaverClock24h, setScreensaverClock24hState] = useState(true);
   const [screensaverClockPosition, setScreensaverClockPositionState] = useState<ScreensaverClockPosition>("bottom-right");
+  const [screensaverClockSize, setScreensaverClockSizeState] = useState<ScreensaverClockSize>("md");
   const [screensaverWeatherEntityId, setScreensaverWeatherEntityIdState] = useState<string | null>(null);
   const [screensaverFootballEntityId, setScreensaverFootballEntityIdState] = useState<string | null>(null);
   const [screensaverPexelsEnabled, setScreensaverPexelsEnabledState] = useState(false);
@@ -205,6 +207,7 @@ export default function SettingsPage() {
     setScreensaverBackgroundState(getScreensaverBackgroundImage());
     setScreensaverClock24hState(getScreensaverClock24h());
     setScreensaverClockPositionState(getScreensaverClockPosition());
+    setScreensaverClockSizeState(getScreensaverClockSize());
     setScreensaverWeatherEntityIdState(getScreensaverWeatherEntityId());
     setScreensaverFootballEntityIdState(getScreensaverFootballEntityId());
     setScreensaverPexelsEnabledState(getScreensaverPexelsEnabled());
@@ -698,6 +701,19 @@ export default function SettingsPage() {
                     preview: <ClockFormatPreview variant="12" />,
                   },
                 ]}
+              />
+
+              <SettingsChipSelect
+                label={t("settings.screensaver.clockSize")}
+                value={screensaverClockSize}
+                onChange={(size) => {
+                  setScreensaverClockSizeState(size);
+                  setScreensaverClockSize(size);
+                }}
+                items={SCREENSAVER_CLOCK_SIZES.map((size) => ({
+                  id: size,
+                  label: t(`settings.screensaver.clockSize.${size}`),
+                }))}
               />
 
               <SettingsClockPositionPicker
