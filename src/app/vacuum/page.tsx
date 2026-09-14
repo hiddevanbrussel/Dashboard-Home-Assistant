@@ -282,7 +282,6 @@ export default function VacuumPage() {
         ) : map ? (
           <>
             <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden lg:flex-row">
-              <div className="relative min-h-[40vh] flex-1 overflow-hidden lg:min-h-0">
                 <ValetudoMapCanvas
                   map={map}
                   selectedIds={selectedIds}

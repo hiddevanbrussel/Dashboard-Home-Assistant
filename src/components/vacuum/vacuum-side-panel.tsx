@@ -67,7 +67,7 @@ export function VacuumSidePanel({
   if (!showFan && !showConsumables) return null;
 
   return (
-    <aside className="flex max-h-[42vh] w-full shrink-0 flex-col gap-3 overflow-y-auto lg:max-h-none lg:w-[300px] lg:self-stretch lg:overflow-hidden">
+    <aside className="flex max-h-[46vh] w-full shrink-0 flex-col gap-3 overflow-y-auto lg:h-auto lg:max-h-none lg:min-h-0 lg:w-[300px] lg:self-stretch lg:overflow-hidden">
       {showFan ? (
         <section className="flex flex-col gap-3 rounded-card border border-white/70 bg-white/45 p-4 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.05]">
           <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ export function VacuumSidePanel({
               <p className="text-[11px] text-gray-500 dark:text-gray-400">{t("vacuum.fanHint")}</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="grid grid-cols-3 gap-1.5">
             {fanPresets.map((preset) => {
               const selected = fanSpeed === preset;
               return (
@@ -88,7 +88,7 @@ export function VacuumSidePanel({
                   type="button"
                   disabled={fanBusy}
                   onClick={() => onFanPreset(preset)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`w-full rounded-full px-2 py-1.5 text-xs font-semibold transition ${
                     selected
                       ? "bg-brand text-white shadow-sm"
                       : "bg-white/70 text-gray-800 hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
@@ -103,7 +103,7 @@ export function VacuumSidePanel({
       ) : null}
 
       {showConsumables ? (
-        <section className="flex min-h-0 flex-1 flex-col gap-3 rounded-card border border-white/70 bg-white/45 p-4 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.05]">
+        <section className="flex flex-col gap-3 rounded-card border border-white/70 bg-white/45 p-4 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.05] lg:min-h-0 lg:flex-1">
           <div>
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t("vacuum.maintenance")}</h2>
             <p className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
@@ -118,7 +118,7 @@ export function VacuumSidePanel({
               {t("vacuum.consumableAllGood")}
             </div>
           ) : null}
-          <ul className="flex min-h-0 flex-col gap-2 overflow-y-auto">
+          <ul className="flex flex-col gap-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
             {consumables.map((item) => {
               const key = consumableKey(item);
               const meta = metaForConsumable(item, consumableMeta);
