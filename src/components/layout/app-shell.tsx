@@ -320,6 +320,12 @@ export function AppShell({
         )}
         style={contentRightInset ? { paddingRight: contentRightInset } : undefined}
       >
+        {pageBackground && showSidebar ? (
+          <div
+            className="pointer-events-none absolute inset-y-0 left-0 z-0 w-8 -translate-x-full bg-gradient-to-l from-white/85 to-transparent dark:from-black/50"
+            aria-hidden
+          />
+        ) : null}
         <div
           className={cn(
             "relative z-50 flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",

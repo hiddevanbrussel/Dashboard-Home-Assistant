@@ -167,15 +167,20 @@
 
   /* Floating nav rail — iOS-style liquid glass */
   .sidebar-glass {
-    background: color-mix(in srgb, white 42%, transparent);
-    -webkit-backdrop-filter: blur(36px) saturate(180%);
-    backdrop-filter: blur(36px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.58);
+    background: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.52) 0%,
+      rgba(255, 255, 255, 0.26) 48%,
+      rgba(255, 255, 255, 0.18) 100%
+    );
+    -webkit-backdrop-filter: blur(40px) saturate(190%);
+    backdrop-filter: blur(40px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.62);
     box-shadow:
-      0 12px 40px -12px rgba(15, 10, 40, 0.32),
-      0 2px 8px rgba(15, 10, 40, 0.08),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.82),
-      inset 0 -1px 0 0 rgba(255, 255, 255, 0.16);
+      0 14px 44px -12px rgba(15, 10, 40, 0.38),
+      0 2px 10px rgba(15, 10, 40, 0.1),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.2);
   }
 
   .sidebar-glass::after {
