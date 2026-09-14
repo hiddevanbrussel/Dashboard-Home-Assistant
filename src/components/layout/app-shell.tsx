@@ -52,6 +52,8 @@ type AppShellProps = {
   headerEndAction?: React.ReactNode;
   /** Rendered in the header after the clock/temperature (e.g. calendar toggle). */
   headerStartAction?: React.ReactNode;
+  /** Centered in the header (e.g. Music Assistant section menu). */
+  headerCenterAction?: React.ReactNode;
   /** Welcome heading (above main content). */
   welcomeTitle?: string;
   /** Welcome subtitle. */
@@ -217,6 +219,7 @@ export function AppShell({
   welcomeBarAction,
   headerEndAction,
   headerStartAction,
+  headerCenterAction,
   welcomeTitle: welcomeTitleProp,
   welcomeSubtitle: welcomeSubtitleProp,
   hideWelcome = false,
@@ -347,7 +350,11 @@ export function AppShell({
               {temperatureDisplay ?? "—"}
             </button>
           )}
-          <HeaderTimer contentLight={headerContentLight} />
+          {headerCenterAction ? (
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center">
+              <div className="pointer-events-auto">{headerCenterAction}</div>
+            </div>
+          ) : null}
           <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
             {newsEnabled && rssUrls.length > 0 && (
               <button
@@ -366,6 +373,7 @@ export function AppShell({
             )}
             {headerStartAction}
             {headerEndAction}
+            <HeaderTimer contentLight={headerContentLight} />
             <HeaderMediaPlaying contentLight={headerContentLight} />
           </div>
         </div>

@@ -34,17 +34,18 @@ import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverB
 import { SCREENSAVER_CLOCK_POSITIONS, type ScreensaverClockPosition } from "@/lib/screensaver-clock-position";
 import { SCREENSAVER_CLOCK_SIZES, type ScreensaverClockSize } from "@/lib/screensaver-clock-size";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
-import { hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { hydrateMusicAssistantStore, useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
-import { hydrateValetudoStore } from "@/stores/valetudo-store";
+import { hydrateValetudoStore, useValetudoStore } from "@/stores/valetudo-store";
 import { useNewsStore } from "@/stores/news-store";
-import { Bot, CalendarDays, Globe, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
+import { Bot, CalendarDays, Globe, LayoutGrid, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "tasks" | "music-assistant" | "valetudo" | "news" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "tasks" | "apps" | "entities";
+type SettingsAppId = "news" | "music-assistant" | "valetudo";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -54,10 +55,14 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   connection: "settings.connection",
   calendar: "settings.calendar",
   tasks: "settings.tasks",
-  "music-assistant": "settings.musicAssistant",
-  valetudo: "settings.valetudo",
-  news: "news.settings.title",
+  apps: "settings.apps",
   entities: "settings.entities",
+};
+
+const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
+  news: { labelKey: "news.settings.title", descriptionKey: "news.settings.description", icon: Newspaper },
+  "music-assistant": { labelKey: "settings.musicAssistant", descriptionKey: "settings.musicAssistant.description", icon: Music2 },
+  valetudo: { labelKey: "settings.valetudo", descriptionKey: "settings.valetudo.description", icon: Bot },
 };
 
 type HaEntity = {
@@ -165,6 +170,7 @@ export default function SettingsPage() {
   const [uploadingBgLight, setUploadingBgLight] = useState(false);
   const [uploadingBgDark, setUploadingBgDark] = useState(false);
   const [section, setSection] = useState<SettingsSection>("appearance");
+  const [selectedApp, setSelectedApp] = useState<SettingsAppId | null>(null);
   const [editModeAllowed, setEditModeAllowedState] = useState(true);
   const [editModePasscode, setEditModePasscodeState] = useState("");
   const [eveningHour, setEveningHourState] = useState(13);
@@ -184,6 +190,8 @@ export default function SettingsPage() {
   const calendarStore = useCalendarStore();
   const choresStore = useChoresStore();
   const newsStore = useNewsStore();
+  const musicAssistant = useMusicAssistantStore();
+  const valetudo = useValetudoStore();
   const [newsFeedDraft, setNewsFeedDraft] = useState<string[]>([]);
   const [newsFeedInput, setNewsFeedInput] = useState("");
   const [calendarEntities, setCalendarEntities] = useState<HaEntity[]>([]);
@@ -197,8 +205,8 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    if (section === "news") setNewsFeedDraft(newsStore.rssUrls);
-  }, [section]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (selectedApp === "news") setNewsFeedDraft(newsStore.rssUrls);
+  }, [selectedApp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setEditModeAllowedState(getEditModeAllowed());
@@ -479,10 +487,8 @@ export default function SettingsPage() {
       { id: "calendar",  labelKey: SECTION_KEYS.calendar,  icon: CalendarDays },
       { id: "tasks",     labelKey: SECTION_KEYS.tasks,     icon: ListTodo     },
     ]},
-    { groupKey: "settings.groups.integrations", sections: [
-      { id: "news", labelKey: SECTION_KEYS.news, icon: Newspaper },
-      { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
-      { id: "valetudo", labelKey: SECTION_KEYS.valetudo, icon: Bot },
+    { groupKey: "settings.groups.apps", sections: [
+      { id: "apps", labelKey: SECTION_KEYS.apps, icon: LayoutGrid },
     ]},
   ];
 
@@ -494,12 +500,18 @@ export default function SettingsPage() {
     connection: { descriptionKey: "settings.connection.description", icon: Link2 },
     calendar: { descriptionKey: "settings.calendar.description", icon: CalendarDays },
     tasks: { descriptionKey: "settings.tasks.description", icon: ListTodo },
-    news: { descriptionKey: "news.settings.description", icon: Newspaper },
-    "music-assistant": { descriptionKey: "settings.musicAssistant.description", icon: Music2 },
-    valetudo: { descriptionKey: "settings.valetudo.description", icon: Bot },
+    apps: { descriptionKey: "settings.apps.description", icon: LayoutGrid },
     entities: { descriptionKey: "settings.entities.description", icon: List },
   };
-  const currentMeta = SECTION_META[section];
+  const currentApp = selectedApp ? APP_KEYS[selectedApp] : null;
+  const panelMeta = currentApp ?? SECTION_META[section];
+  const panelTitle = currentApp ? t(currentApp.labelKey) : t(SECTION_KEYS[section]);
+  const panelDescription = t(panelMeta.descriptionKey);
+  const appEnabled: Record<SettingsAppId, boolean> = {
+    news: newsStore.enabled,
+    "music-assistant": musicAssistant.enabled,
+    valetudo: valetudo.enabled,
+  };
 
   return (
     <AppShell activeTab="/settings" contentNoScroll>
@@ -526,7 +538,10 @@ export default function SettingsPage() {
                       <li key={id}>
                         <button
                           type="button"
-                          onClick={() => setSection(id)}
+                          onClick={() => {
+                            setSection(id);
+                            setSelectedApp(null);
+                          }}
                           className={cn(
                             "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
                             section === id
@@ -548,10 +563,12 @@ export default function SettingsPage() {
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <SettingsPanel
-            key={section}
-            icon={currentMeta.icon}
-            title={t(SECTION_KEYS[section])}
-            description={t(currentMeta.descriptionKey)}
+            key={selectedApp ?? section}
+            icon={panelMeta.icon}
+            title={panelTitle}
+            description={panelDescription}
+            onBack={selectedApp ? () => setSelectedApp(null) : undefined}
+            backLabel={t("settings.apps.back")}
           >
           {section === "appearance" && (
             <>
@@ -1075,9 +1092,51 @@ export default function SettingsPage() {
             </>
           )}
 
-          {section === "music-assistant" && <MusicAssistantSettings />}
+          {section === "apps" && !selectedApp && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {(Object.keys(APP_KEYS) as SettingsAppId[]).map((id) => {
+                const app = APP_KEYS[id];
+                const Icon = app.icon;
+                const enabled = appEnabled[id];
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setSelectedApp(id)}
+                    className="flex flex-col items-start gap-3 rounded-2xl bg-black/[0.04] p-4 text-left ring-1 ring-black/[0.06] transition-colors hover:bg-black/[0.07] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 dark:bg-white/5 dark:ring-white/10 dark:hover:bg-white/10"
+                  >
+                    <div className="flex w-full items-start justify-between gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/10 text-brand dark:bg-brand/30 dark:text-white">
+                        <Icon className="h-5 w-5" aria-hidden />
+                      </div>
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                          enabled
+                            ? "bg-brand/15 text-brand dark:bg-brand/30 dark:text-white"
+                            : "bg-black/[0.06] text-gray-500 dark:bg-white/10 dark:text-gray-400"
+                        )}
+                      >
+                        {enabled ? t("settings.apps.enabled") : t("settings.apps.disabled")}
+                      </span>
+                    </div>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-gray-900 dark:text-white">
+                        {t(app.labelKey)}
+                      </span>
+                      <span className="mt-1 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                        {t(app.descriptionKey)}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-          {section === "valetudo" && <ValetudoSettings />}
+          {selectedApp === "music-assistant" && <MusicAssistantSettings />}
+
+          {selectedApp === "valetudo" && <ValetudoSettings />}
 
           {section === "entities" && (
             <>
@@ -1127,7 +1186,7 @@ export default function SettingsPage() {
             </>
           )}
 
-          {section === "news" && (
+          {selectedApp === "news" && (
             <>
               <SettingsToggle
                 checked={newsStore.enabled}

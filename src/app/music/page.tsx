@@ -1469,12 +1469,14 @@ export default function MusicPage() {
   );
 
   const allowSpeakerSelection = musicAssistant.allowSpeakerSelection;
+  const isMusicHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum;
+  const headerOverHero = (isMusicHome && heroItems.length > 0) || !!selectedAlbum || !!selectedArtist;
   return (
     <AppShell
       activeTab="/music"
       contentNoScroll
       headerFixed
-      headerContentLight={(!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || !!selectedAlbum}
+      headerContentLight={headerOverHero}
       headerEndAction={
         useMA && maPlayers.length > 0 ? (
           <button
@@ -1482,7 +1484,7 @@ export default function MusicPage() {
             onClick={() => setSearchOverlayOpen(true)}
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-              (!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || selectedAlbum || selectedArtist
+              headerOverHero
                 ? "text-white/90 hover:bg-white/10"
                 : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
             )}
@@ -1491,6 +1493,63 @@ export default function MusicPage() {
             <Search className="h-5 w-5" />
           </button>
         ) : undefined
+      }
+      headerCenterAction={
+        <div
+          className={cn(
+            "flex items-center gap-0.5 rounded-full p-0.5 backdrop-blur-md",
+            headerOverHero ? "bg-white/15" : "bg-black/5 dark:bg-white/10"
+          )}
+          role="navigation"
+          aria-label={t("music.title")}
+        >
+          {(
+            [
+              { id: "home" as const, label: t("music.menuHome"), icon: Home },
+              { id: "artists" as const, label: t("music.menuArtists"), icon: User },
+              { id: "albums" as const, label: t("music.menuAlbums"), icon: Disc3 },
+              { id: "playlists" as const, label: t("music.menuPlaylists"), icon: ListMusic },
+            ] as const
+          ).map(({ id, label, icon: Icon }) => {
+            const active = id === "home" ? !selectedMenu && !selectedCategory : selectedMenu === id;
+            const light = headerOverHero;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  if (id === "home") {
+                    setSelectedMenu(null);
+                    setSelectedCategory(null);
+                    setSelectedArtist(null);
+                    setSelectedAlbum(null);
+                  } else {
+                    setSelectedMenu(id);
+                    setSelectedCategory(null);
+                    if (id === "artists") setSelectedArtist(null);
+                    if (id === "albums") setSelectedAlbum(null);
+                  }
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3",
+                  light
+                    ? active
+                      ? "bg-white/25 text-white"
+                      : "text-white/80 hover:bg-white/10 hover:text-white"
+                    : active
+                      ? "bg-white text-gray-900 shadow-sm dark:bg-white/15 dark:text-white"
+                      : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                )}
+                aria-label={label}
+                aria-current={active ? "page" : undefined}
+                title={label}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            );
+          })}
+        </div>
       }
     >
       {searchOverlay}
@@ -1595,7 +1654,7 @@ export default function MusicPage() {
                   />
                 )}
               </div>
-              <div className="absolute bottom-[10%] left-0 right-0 pl-[calc(3.5rem+30px)] sm:pl-[calc(4rem+30px)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
+              <div className="absolute bottom-[10%] left-0 right-0 pl-[calc(5.5rem+1rem)] sm:pl-[calc(5.5rem+1.5rem)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
                 <div className="min-w-0 flex-1 pointer-events-auto">
                   <h2 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg truncate max-w-full">
                     {heroDisplay.title || t("music.unknown")}
@@ -1643,59 +1702,10 @@ export default function MusicPage() {
           );
         })()}
         <div className="flex flex-1 min-h-0 min-w-0">
-          <nav className="fixed left-[10px] top-[8rem] bottom-0 w-14 py-2 pr-2 flex flex-col items-center gap-1 z-30">
-              {(
-                [
-                  { id: "home" as const, label: t("music.menuHome"), icon: Home },
-                  { id: "artists" as const, label: t("music.menuArtists"), icon: User },
-                  { id: "albums" as const, label: t("music.menuAlbums"), icon: Disc3 },
-                  { id: "playlists" as const, label: t("music.menuPlaylists"), icon: ListMusic },
-                ] as const
-              ).map(({ id, label, icon: Icon }) => {
-                const active = id === "home"
-                  ? !selectedMenu && !selectedCategory
-                  : selectedMenu === id;
-                const isHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum;
-                const hasDarkHeader = isHome || selectedAlbum || selectedArtist;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => {
-                      if (id === "home") {
-                        setSelectedMenu(null);
-                        setSelectedCategory(null);
-                        setSelectedArtist(null);
-                        setSelectedAlbum(null);
-                      } else {
-                        setSelectedMenu(id);
-                        setSelectedCategory(null);
-                        if (id === "artists") setSelectedArtist(null);
-                        if (id === "albums") setSelectedAlbum(null);
-                      }
-                    }}
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
-                      hasDarkHeader
-                        ? active
-                          ? "bg-white/20 text-white"
-                          : "text-white/80 hover:bg-white/10 hover:text-white"
-                        : active
-                          ? "bg-accent-yellow/20 dark:bg-accent-green/20 text-gray-900 dark:text-white"
-                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
-                    )}
-                    aria-label={label}
-                    title={label}
-                  >
-                    <Icon className="h-5 w-5 flex-shrink-0" />
-                  </button>
-                );
-              })}
-            </nav>
           <div
             ref={musicScrollRef}
             className={cn(
-              "flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto music-content-area pl-[calc(3.5rem+0.75rem)]",
+              "flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto music-content-area",
               !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum ? "overflow-x-visible text-gray-900 dark:text-white" : "overflow-x-hidden text-gray-900 dark:text-white",
               !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && heroItems.length > 0 && "relative z-10"
             )}
@@ -1746,7 +1756,7 @@ export default function MusicPage() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
                     </div>
-                    <div className="absolute top-4 left-[calc(3.5rem+0.5rem)] sm:left-[calc(4rem+0.75rem)] flex items-center gap-2 z-10">
+                    <div className="absolute top-4 left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-10">
                       <button
                         type="button"
                         onClick={() => {
@@ -1764,7 +1774,7 @@ export default function MusicPage() {
                         <span className="text-sm font-medium hidden sm:inline">{t("music.back")}</span>
                       </button>
                     </div>
-                    <div className="absolute bottom-[12%] left-0 right-0 pl-[calc(3.5rem+30px)] sm:pl-[calc(4rem+30px)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
+                    <div className="absolute bottom-[12%] left-0 right-0 pl-[calc(5.5rem+1rem)] sm:pl-[calc(5.5rem+1.5rem)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
                       <div className="min-w-0 flex-1 pointer-events-auto">
                         <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg truncate max-w-full">
                           {album.name ?? t("music.unknown")}
@@ -1907,7 +1917,7 @@ export default function MusicPage() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
                     </div>
-                    <div className="absolute top-4 left-[calc(3.5rem+0.5rem)] sm:left-[calc(4rem+0.75rem)] flex items-center gap-2 z-10">
+                    <div className="absolute top-4 left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-10">
                       <button
                         type="button"
                         onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); setSelectedMenu("artists"); setSelectedCategory(null); }}
@@ -1918,7 +1928,7 @@ export default function MusicPage() {
                         <span className="text-sm font-medium hidden sm:inline">{t("music.back")}</span>
                       </button>
                     </div>
-                    <div className="absolute bottom-[12%] left-0 right-0 pl-[calc(3.5rem+30px)] sm:pl-[calc(4rem+30px)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
+                    <div className="absolute bottom-[12%] left-0 right-0 pl-[calc(5.5rem+1rem)] sm:pl-[calc(5.5rem+1.5rem)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
                       <div className="min-w-0 flex-1 pointer-events-auto">
                         <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg truncate max-w-full">
                           {(selectedArtist as MASearchItem).name ?? t("music.unknown")}
@@ -2346,7 +2356,7 @@ export default function MusicPage() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" aria-hidden />
                     </div>
-                    <div className="absolute inset-0 flex items-center pl-[calc(3.5rem+1rem)] sm:pl-[calc(4rem+1.5rem)] pr-4 sm:pr-6">
+                    <div className="absolute inset-0 flex items-center pl-[calc(5.5rem+1rem)] sm:pl-[calc(5.5rem+1.5rem)] pr-4 sm:pr-6">
                       <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-xl overflow-hidden bg-gray-700 shrink-0 shadow-xl">
                         {albumImageSrc ? (
                           <Image src={albumImageSrc} alt="" fill className="object-cover" sizes="176px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
@@ -2396,7 +2406,7 @@ export default function MusicPage() {
                         </button>
                       </div>
                     </div>
-                    <div className="absolute top-4 left-[calc(3.5rem+0.5rem)] sm:left-[calc(4rem+0.75rem)] flex items-center gap-2 z-10">
+                    <div className="absolute top-4 left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-10">
                       <button
                         type="button"
                         onClick={() => {
@@ -2514,7 +2524,7 @@ export default function MusicPage() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" aria-hidden />
                     </div>
-                    <div className="absolute top-4 left-[calc(3.5rem+0.5rem)] sm:left-[calc(4rem+0.75rem)] flex items-center gap-2 z-10">
+                    <div className="absolute top-4 left-[calc(5.5rem+1rem)] sm:left-[calc(5.5rem+1.5rem)] flex items-center gap-2 z-10">
                       <button
                         type="button"
                         onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); setSelectedMenu("artists"); setSelectedCategory(null); }}
@@ -2525,7 +2535,7 @@ export default function MusicPage() {
                         <span className="text-sm font-medium hidden sm:inline">{t("music.back")}</span>
                       </button>
                     </div>
-                    <div className="absolute bottom-[12%] left-0 right-0 pl-[calc(3.5rem+30px)] sm:pl-[calc(4rem+30px)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
+                    <div className="absolute bottom-[12%] left-0 right-0 pl-[calc(5.5rem+1rem)] sm:pl-[calc(5.5rem+1.5rem)] pr-4 sm:pr-6 py-5 sm:py-6 flex flex-row items-end justify-between gap-4 pointer-events-none">
                       <div className="min-w-0 flex-1 pointer-events-auto">
                         <h2 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg truncate max-w-full">
                           {(selectedArtist as MASearchItem).name ?? t("music.unknown")}
