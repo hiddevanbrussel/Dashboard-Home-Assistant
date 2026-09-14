@@ -2,7 +2,7 @@
 
 import type { ButtonHTMLAttributes, ChangeEvent, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const settingsInputClass =
@@ -266,21 +266,37 @@ export function SettingsPanel({
   title,
   description,
   badge,
+  onBack,
+  backLabel,
   children,
 }: {
   icon: LucideIcon;
   title: string;
   description?: string;
   badge?: ReactNode;
+  onBack?: () => void;
+  backLabel?: string;
   children: ReactNode;
 }) {
   return (
     <div className="settings-panel-enter glass-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border border-white/70 p-0 dark:border-white/10">
       <div className="flex items-start justify-between gap-3 border-b border-white/50 px-5 py-5 dark:border-white/10">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand/10 text-brand dark:bg-brand/30 dark:text-white">
-            <Icon className="h-5 w-5" aria-hidden />
-          </div>
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black/[0.04] text-gray-700 transition-colors hover:bg-black/[0.08] dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+              aria-label={backLabel}
+              title={backLabel}
+            >
+              <ChevronLeft className="h-5 w-5" aria-hidden />
+            </button>
+          ) : (
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand/10 text-brand dark:bg-brand/30 dark:text-white">
+              <Icon className="h-5 w-5" aria-hidden />
+            </div>
+          )}
           <div className="min-w-0">
             <h2 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-white">{title}</h2>
             {description ? (
