@@ -44,6 +44,7 @@ export async function POST(request: Request) {
       method,
       headers,
       body: method === "PUT" ? JSON.stringify(body.payload ?? {}) : undefined,
+      signal: AbortSignal.timeout(8000),
     });
     const rawText = await res.text();
     const data = (() => {
@@ -68,7 +69,12 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(data === undefined ? {} : data);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to reach Valetudo";
+    const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+    const message = timedOut
+      ? `Could not reach Valetudo at ${baseUrl}`
+      : err instanceof Error
+        ? err.message
+        : "Failed to reach Valetudo";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }
