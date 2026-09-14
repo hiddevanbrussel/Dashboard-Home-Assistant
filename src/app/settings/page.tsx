@@ -16,6 +16,7 @@ import {
   SettingsToggle,
 } from "@/components/settings/settings-panel";
 import { MusicAssistantSettings } from "@/components/settings/music-assistant-settings";
+import { ValetudoSettings } from "@/components/settings/valetudo-settings";
 import {
   ClockFormatPreview,
   LanguagePreview,
@@ -36,13 +37,14 @@ import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditMod
 import { hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
+import { hydrateValetudoStore } from "@/stores/valetudo-store";
 import { useNewsStore } from "@/stores/news-store";
-import { CalendarDays, Globe, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
+import { Bot, CalendarDays, Globe, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "tasks" | "music-assistant" | "news" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "tasks" | "music-assistant" | "valetudo" | "news" | "entities";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -53,6 +55,7 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   calendar: "settings.calendar",
   tasks: "settings.tasks",
   "music-assistant": "settings.musicAssistant",
+  valetudo: "settings.valetudo",
   news: "news.settings.title",
   entities: "settings.entities",
 };
@@ -190,6 +193,7 @@ export default function SettingsPage() {
     hydrateMusicAssistantStore();
     hydrateCalendarStore();
     hydrateChoresStore();
+    hydrateValetudoStore();
   }, []);
 
   useEffect(() => {
@@ -478,6 +482,7 @@ export default function SettingsPage() {
     { groupKey: "settings.groups.integrations", sections: [
       { id: "news", labelKey: SECTION_KEYS.news, icon: Newspaper },
       { id: "music-assistant", labelKey: SECTION_KEYS["music-assistant"], icon: Music2 },
+      { id: "valetudo", labelKey: SECTION_KEYS.valetudo, icon: Bot },
     ]},
   ];
 
@@ -491,6 +496,7 @@ export default function SettingsPage() {
     tasks: { descriptionKey: "settings.tasks.description", icon: ListTodo },
     news: { descriptionKey: "news.settings.description", icon: Newspaper },
     "music-assistant": { descriptionKey: "settings.musicAssistant.description", icon: Music2 },
+    valetudo: { descriptionKey: "settings.valetudo.description", icon: Bot },
     entities: { descriptionKey: "settings.entities.description", icon: List },
   };
   const currentMeta = SECTION_META[section];
@@ -1070,6 +1076,8 @@ export default function SettingsPage() {
           )}
 
           {section === "music-assistant" && <MusicAssistantSettings />}
+
+          {section === "valetudo" && <ValetudoSettings />}
 
           {section === "entities" && (
             <>
