@@ -493,53 +493,51 @@ export default function SettingsPage() {
   const currentMeta = SECTION_META[section];
 
   return (
-    <AppShell activeTab="/settings">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 lg:flex-row lg:gap-8">
-        <aside className="shrink-0 lg:w-64">
-          <div className="lg:sticky lg:top-4">
-            <h1 className="mb-4 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
-              {t("settings.title")}
-            </h1>
-            <nav
-              className="rounded-3xl border border-white/60 bg-white/40 p-2 dark:border-white/10 dark:bg-white/5"
-              aria-label={t("settings.title")}
-            >
-              <div className="flex gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-                {SECTION_GROUPS.map(({ groupKey, sections }, groupIndex) => (
-                  <div
-                    key={groupKey}
-                    className={cn(groupIndex > 0 && "lg:mt-1 lg:border-t lg:border-white/50 lg:pt-2 dark:lg:border-white/10")}
-                  >
-                    <p className="mb-1 hidden px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 lg:block">
-                      {t(groupKey)}
-                    </p>
-                    <ul className="flex gap-0.5 lg:flex-col">
-                      {sections.map(({ id, labelKey, icon: Icon }) => (
-                        <li key={id}>
-                          <button
-                            type="button"
-                            onClick={() => setSection(id)}
-                            className={cn(
-                              "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
-                              section === id
-                                ? "bg-brand text-white shadow-sm"
-                                : "text-gray-700 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-white/10"
-                            )}
-                          >
-                            <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                            {t(labelKey)}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </nav>
-          </div>
+    <AppShell activeTab="/settings" contentNoScroll>
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
+        <aside className="shrink-0 lg:flex lg:h-full lg:w-64 lg:flex-col">
+          <h1 className="mb-4 shrink-0 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+            {t("settings.title")}
+          </h1>
+          <nav
+            className="rounded-3xl border border-white/60 bg-white/40 p-2 dark:border-white/10 dark:bg-white/5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
+            aria-label={t("settings.title")}
+          >
+            <div className="flex gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+              {SECTION_GROUPS.map(({ groupKey, sections }, groupIndex) => (
+                <div
+                  key={groupKey}
+                  className={cn(groupIndex > 0 && "lg:mt-1 lg:border-t lg:border-white/50 lg:pt-2 dark:lg:border-white/10")}
+                >
+                  <p className="mb-1 hidden px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 lg:block">
+                    {t(groupKey)}
+                  </p>
+                  <ul className="flex gap-0.5 lg:flex-col">
+                    {sections.map(({ id, labelKey, icon: Icon }) => (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          onClick={() => setSection(id)}
+                          className={cn(
+                            "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
+                            section === id
+                              ? "bg-brand text-white shadow-sm"
+                              : "text-gray-700 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-white/10"
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                          {t(labelKey)}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </nav>
         </aside>
 
-        <div className="min-w-0 flex-1">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <SettingsPanel
             key={section}
             icon={currentMeta.icon}
