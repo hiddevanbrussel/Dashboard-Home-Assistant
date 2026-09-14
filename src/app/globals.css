@@ -164,6 +164,62 @@
     border-color: var(--glass-border-dark);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   }
+
+  /* Floating nav rail — iOS-style liquid glass */
+  .sidebar-glass {
+    background: color-mix(in srgb, white 42%, transparent);
+    -webkit-backdrop-filter: blur(36px) saturate(180%);
+    backdrop-filter: blur(36px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.58);
+    box-shadow:
+      0 12px 40px -12px rgba(15, 10, 40, 0.32),
+      0 2px 8px rgba(15, 10, 40, 0.08),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.82),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.16);
+  }
+
+  .sidebar-glass::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      155deg,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.12) 34%,
+      transparent 56%
+    );
+  }
+
+  .dark .sidebar-glass {
+    background: color-mix(in srgb, rgb(var(--brand) / 0.38) 55%, rgba(8, 0, 18, 0.48));
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow:
+      0 14px 44px -12px rgba(0, 0, 0, 0.58),
+      0 2px 8px rgba(0, 0, 0, 0.28),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .dark .sidebar-glass::after {
+    background: linear-gradient(
+      155deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.04) 36%,
+      transparent 58%
+    );
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .sidebar-glass {
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .dark .sidebar-glass {
+      background: rgb(var(--brand) / 0.92);
+    }
+  }
 }
 
 /* Vacuum card: icoon “stofzuigen” wanneer actief */
