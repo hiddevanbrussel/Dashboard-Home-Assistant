@@ -1,10 +1,11 @@
 "use client";
 
+import { applyThemeAccent } from "@/lib/theme-accents";
 import { useThemeStore } from "@/stores/theme-store";
 import { useCallback, useEffect } from "react";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const { mode, resolved, setResolved } = useThemeStore();
+  const { mode, resolved, setResolved, accent } = useThemeStore();
 
   const applyTheme = useCallback(() => {
     const root = document.documentElement;
@@ -23,7 +24,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.classList.remove("light", "dark");
     root.classList.add(next);
     setResolved(next);
-  }, [mode, resolved, setResolved]);
+    applyThemeAccent(accent);
+  }, [mode, resolved, setResolved, accent]);
 
   useEffect(() => {
     applyTheme();

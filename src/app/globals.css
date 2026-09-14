@@ -5,8 +5,9 @@
 @layer base {
   :root {
     --page-bg: #f2f0fe;
-    --hero-overlay: rgba(71, 0, 181, 0.28);
-    --brand: #4700b5;
+    --brand: 71 0 181;
+    --brand-muted: 131 87 190;
+    --hero-overlay: rgb(var(--brand) / 0.28);
     --accent-yellow: #f6d25c;
     --accent-purple: #b59ed8;
     --accent-orange: #f2a654;
@@ -18,7 +19,7 @@
 
   .dark {
     --page-bg: #0a0014;
-    --card-bg: rgba(71, 0, 181, 0.28);
+    --card-bg: rgb(var(--brand) / 0.28);
     --glass-border-light: rgba(255, 255, 255, 0.10);
     --glass-border-dark: rgba(255, 255, 255, 0.12);
   }

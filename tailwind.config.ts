@@ -15,11 +15,11 @@ const config: Config = {
           light: "#F2F0FE",
         },
         hero: {
-          overlay: "rgba(71, 0, 181, 0.28)",
+          overlay: "rgb(var(--brand) / 0.28)",
         },
         brand: {
-          DEFAULT: "#4700B5",
-          muted: "#8357BE",
+          DEFAULT: "rgb(var(--brand) / <alpha-value>)",
+          muted: "rgb(var(--brand-muted) / <alpha-value>)",
           faint: "#F2F0FE",
         },
         accent: {
@@ -30,7 +30,7 @@ const config: Config = {
         },
         dark: {
           page: "#0A0014",
-          card: "rgba(71, 0, 181, 0.28)",
+          card: "rgb(var(--brand) / 0.28)",
           cardSolid: "#1C0A3A",
         },
       },

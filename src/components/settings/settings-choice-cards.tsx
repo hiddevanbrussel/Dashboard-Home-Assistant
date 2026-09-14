@@ -1,8 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { Check } from "lucide-react";
+import type { ChangeEvent, ReactNode } from "react";
+import { Check, ImagePlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  THEME_ACCENTS,
+  accentRgbCss,
+  type ThemeAccentId,
+} from "@/lib/theme-accents";
 
 export function SettingsChoiceCards<T extends string>({
   label,
@@ -97,7 +102,7 @@ function ThemeMiniWindow({ scheme }: { scheme: "light" | "dark" }) {
             isLight ? "bg-white" : "bg-[#1C0A3A]"
           )}
         >
-          <span className={cn("h-1.5 w-1.5 rounded-full", isLight ? "bg-[#4700B5]" : "bg-white")} />
+          <span className={cn("h-1.5 w-1.5 rounded-full", isLight ? "bg-brand" : "bg-white")} />
           <span className={cn("h-1.5 w-1.5 rounded-full", isLight ? "bg-black/15" : "bg-white/25")} />
           <span className={cn("h-1.5 w-1.5 rounded-full", isLight ? "bg-black/15" : "bg-white/25")} />
         </div>
@@ -105,7 +110,7 @@ function ThemeMiniWindow({ scheme }: { scheme: "light" | "dark" }) {
           <div className={cn("h-2.5 rounded-md", isLight ? "bg-white" : "bg-white/10")} />
           <div className="grid flex-1 grid-cols-2 gap-1">
             <div className={cn("rounded-md", isLight ? "bg-white" : "bg-white/10")} />
-            <div className={cn("rounded-md", isLight ? "bg-[#4700B5]/25" : "bg-[#4700B5]/55")} />
+            <div className={cn("rounded-md", isLight ? "bg-brand/25" : "bg-brand/55")} />
           </div>
         </div>
       </div>
@@ -137,6 +142,139 @@ export function LanguagePreview({ code }: { code: string }) {
   return (
     <div className="flex h-[4.75rem] items-center justify-center bg-gradient-to-br from-white to-[#F2F0FE] dark:from-[#1C0A3A] dark:to-[#0A0014]">
       <span className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-white">{code}</span>
+    </div>
+  );
+}
+
+export function SettingsAccentDots({
+  label,
+  hint,
+  value,
+  onChange,
+  names,
+}: {
+  label: string;
+  hint?: string;
+  value: ThemeAccentId;
+  onChange: (id: ThemeAccentId) => void;
+  names: Record<ThemeAccentId, string>;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
+      <div role="radiogroup" aria-label={label} className="flex flex-wrap items-center gap-3">
+        {THEME_ACCENTS.map((accent) => {
+          const selected = value === accent.id;
+          return (
+            <button
+              key={accent.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              aria-label={names[accent.id]}
+              title={names[accent.id]}
+              onClick={() => onChange(accent.id)}
+              className={cn(
+                "relative flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-900 dark:focus-visible:ring-white",
+                selected
+                  ? "scale-110 ring-2 ring-gray-900 ring-offset-2 ring-offset-white dark:ring-white dark:ring-offset-[#1C0A3A]"
+                  : "hover:scale-105"
+              )}
+              style={{ backgroundColor: accentRgbCss(accent.rgb) }}
+            >
+              {selected ? <Check className="h-4 w-4 text-white" strokeWidth={3} aria-hidden /> : null}
+            </button>
+          );
+        })}
+      </div>
+      {hint ? <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{hint}</p> : null}
+    </div>
+  );
+}
+
+export function SettingsImagePick({
+  label,
+  description,
+  url,
+  uploading,
+  onUpload,
+  onRemove,
+  addLabel,
+  uploadingLabel,
+  removeLabel,
+}: {
+  label: string;
+  description?: string;
+  url: string | null;
+  uploading?: boolean;
+  onUpload: (e: ChangeEvent<HTMLInputElement>) => void;
+  onRemove: () => void;
+  addLabel: string;
+  uploadingLabel: string;
+  removeLabel: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col rounded-2xl p-2.5 text-left transition-all",
+        url
+          ? "bg-brand/10 ring-2 ring-brand dark:bg-brand/25"
+          : "bg-black/[0.04] ring-1 ring-black/[0.06] dark:bg-white/5 dark:ring-white/10"
+      )}
+    >
+      <label
+        className={cn(
+          "relative block cursor-pointer overflow-hidden rounded-xl focus-within:ring-2 focus-within:ring-brand/40",
+          uploading && "pointer-events-none opacity-60"
+        )}
+      >
+        {url ? (
+          <span
+            className="block h-[4.75rem] bg-cover bg-center"
+            style={{ backgroundImage: `url(${url})` }}
+          />
+        ) : (
+          <span className="flex h-[4.75rem] flex-col items-center justify-center gap-1.5 bg-white/70 dark:bg-white/5">
+            <ImagePlus className="h-5 w-5 text-brand" aria-hidden />
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+              {uploading ? uploadingLabel : addLabel}
+            </span>
+          </span>
+        )}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="sr-only"
+          onChange={onUpload}
+          disabled={uploading}
+        />
+      </label>
+      <span className="mt-2.5 flex items-start justify-between gap-2 px-0.5">
+        <span className="min-h-[2.5rem] min-w-0">
+          <span className="block text-sm font-semibold text-gray-900 dark:text-white">{label}</span>
+          {description ? (
+            <span className="mt-0.5 block text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+              {description}
+            </span>
+          ) : null}
+        </span>
+        {url ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-gray-300 text-gray-500 transition-colors hover:border-red-400 hover:bg-red-500 hover:text-white dark:border-white/25 dark:text-gray-400"
+            aria-label={removeLabel}
+            title={removeLabel}
+          >
+            <X className="h-3 w-3" strokeWidth={3} aria-hidden />
+          </button>
+        ) : (
+          <span
+            className="mt-0.5 h-5 w-5 shrink-0 rounded-full border border-gray-300 bg-white/70 dark:border-white/25 dark:bg-white/5"
+            aria-hidden
+          />
+        )}
+      </span>
     </div>
   );
 }

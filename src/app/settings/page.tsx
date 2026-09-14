@@ -20,10 +20,13 @@ import {
 import { MusicAssistantSettings } from "@/components/settings/music-assistant-settings";
 import {
   LanguagePreview,
+  SettingsAccentDots,
   SettingsChoiceCards,
+  SettingsImagePick,
   ThemePreview,
 } from "@/components/settings/settings-choice-cards";
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
+import type { ThemeAccentId } from "@/lib/theme-accents";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId } from "@/stores/screensaver-store";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
@@ -31,17 +34,16 @@ import { hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { useNewsStore } from "@/stores/news-store";
-import { CalendarDays, Globe, Image, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
+import { CalendarDays, Globe, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "page-background" | "language" | "dashboard" | "connection" | "calendar" | "tasks" | "music-assistant" | "news" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "tasks" | "music-assistant" | "news" | "entities";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
   screensaver: "settings.screensaver",
-  "page-background": "settings.pageBackground",
   language: "settings.language",
   dashboard: "settings.dashboard",
   connection: "settings.connection",
@@ -448,13 +450,12 @@ export default function SettingsPage() {
     }
   }
 
-  const { mode, setMode } = useThemeStore();
+  const { mode, setMode, accent, setAccent } = useThemeStore();
   const { language, setLanguage } = useLanguageStore();
 
   const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: LucideIcon }[] }[] = [
     { groupKey: "settings.groups.display", sections: [
       { id: "appearance", labelKey: SECTION_KEYS.appearance, icon: Palette },
-      { id: "page-background", labelKey: SECTION_KEYS["page-background"], icon: Image },
       { id: "language", labelKey: SECTION_KEYS.language, icon: Globe },
       { id: "screensaver", labelKey: SECTION_KEYS.screensaver, icon: Monitor },
     ]},
@@ -476,7 +477,6 @@ export default function SettingsPage() {
   const SECTION_META: Record<SettingsSection, { descriptionKey: string; icon: LucideIcon }> = {
     appearance: { descriptionKey: "settings.theme.description", icon: Palette },
     screensaver: { descriptionKey: "settings.screensaver.description", icon: Monitor },
-    "page-background": { descriptionKey: "settings.pageBackground.description", icon: Image },
     language: { descriptionKey: "settings.language.intro", icon: Globe },
     dashboard: { descriptionKey: "settings.dashboard.intro", icon: LayoutDashboard },
     connection: { descriptionKey: "settings.connection.description", icon: Link2 },
@@ -543,6 +543,7 @@ export default function SettingsPage() {
             description={t(currentMeta.descriptionKey)}
           >
           {section === "appearance" && (
+            <>
             <SettingsChoiceCards
               label={t("settings.theme.interface")}
               value={mode}
@@ -566,6 +567,68 @@ export default function SettingsPage() {
                 },
               ]}
             />
+            <SettingsAccentDots
+              label={t("settings.theme.color")}
+              hint={t("settings.theme.colorHint")}
+              value={accent}
+              onChange={(id) => setAccent(id)}
+              names={{
+                purple: t("settings.theme.color.purple"),
+                indigo: t("settings.theme.color.indigo"),
+                blue: t("settings.theme.color.blue"),
+                teal: t("settings.theme.color.teal"),
+                green: t("settings.theme.color.green"),
+                orange: t("settings.theme.color.orange"),
+                rose: t("settings.theme.color.rose"),
+                fuchsia: t("settings.theme.color.fuchsia"),
+              } satisfies Record<ThemeAccentId, string>}
+            />
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {t("settings.pageBackground")}
+              </p>
+              {dashboardId ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <SettingsImagePick
+                    label={t("settings.theme.light")}
+                    url={pageBackgroundLight}
+                    uploading={uploadingBgLight}
+                    onUpload={handlePageBackgroundLightUpload}
+                    onRemove={handlePageBackgroundLightRemove}
+                    addLabel={t("settings.pageBackground.add")}
+                    uploadingLabel={t("settings.screensaver.uploading")}
+                    removeLabel={t("settings.pageBackground.remove")}
+                  />
+                  <SettingsImagePick
+                    label={t("settings.theme.dark")}
+                    url={pageBackgroundDark}
+                    uploading={uploadingBgDark}
+                    onUpload={handlePageBackgroundDarkUpload}
+                    onRemove={handlePageBackgroundDarkRemove}
+                    addLabel={t("settings.pageBackground.add")}
+                    uploadingLabel={t("settings.screensaver.uploading")}
+                    removeLabel={t("settings.pageBackground.remove")}
+                  />
+                  <SettingsImagePick
+                    label={t("settings.pageBackground.fallback")}
+                    description={t("settings.pageBackground.fallbackDesc")}
+                    url={pageBackground}
+                    uploading={uploadingBg}
+                    onUpload={handlePageBackgroundUpload}
+                    onRemove={handlePageBackgroundRemove}
+                    addLabel={t("settings.pageBackground.add")}
+                    uploadingLabel={t("settings.screensaver.uploading")}
+                    removeLabel={t("settings.pageBackground.remove")}
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t("settings.pageBackground.needDashboard")}</p>
+              )}
+              <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                {t("settings.pageBackground.description")}
+              </p>
+            </div>
+            </>
           )}
 
           {section === "language" && (
@@ -781,66 +844,6 @@ export default function SettingsPage() {
                 </div>
               </SettingsGroup>
             </>
-          )}
-
-          {section === "page-background" && (
-            dashboardId ? (
-              <div className="space-y-4">
-                <SettingsGroup title={t("settings.pageBackground.light")}>
-                  {pageBackgroundLight ? <SettingsPreview url={pageBackgroundLight} /> : null}
-                  <div className="flex flex-wrap gap-2">
-                    <SettingsUploadButton
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      disabled={uploadingBgLight}
-                      onChange={handlePageBackgroundLightUpload}
-                    >
-                      {uploadingBgLight ? t("settings.screensaver.uploading") : t("settings.pageBackground.upload")}
-                    </SettingsUploadButton>
-                    {pageBackgroundLight ? (
-                      <SettingsSecondaryButton onClick={handlePageBackgroundLightRemove}>
-                        {t("settings.pageBackground.remove")}
-                      </SettingsSecondaryButton>
-                    ) : null}
-                  </div>
-                </SettingsGroup>
-                <SettingsGroup title={t("settings.pageBackground.dark")}>
-                  {pageBackgroundDark ? <SettingsPreview url={pageBackgroundDark} /> : null}
-                  <div className="flex flex-wrap gap-2">
-                    <SettingsUploadButton
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      disabled={uploadingBgDark}
-                      onChange={handlePageBackgroundDarkUpload}
-                    >
-                      {uploadingBgDark ? t("settings.screensaver.uploading") : t("settings.pageBackground.upload")}
-                    </SettingsUploadButton>
-                    {pageBackgroundDark ? (
-                      <SettingsSecondaryButton onClick={handlePageBackgroundDarkRemove}>
-                        {t("settings.pageBackground.remove")}
-                      </SettingsSecondaryButton>
-                    ) : null}
-                  </div>
-                </SettingsGroup>
-                <SettingsGroup title={t("settings.pageBackground.fallback")} description={t("settings.pageBackground.fallbackDesc")}>
-                  {pageBackground ? <SettingsPreview url={pageBackground} /> : null}
-                  <div className="flex flex-wrap gap-2">
-                    <SettingsUploadButton
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      disabled={uploadingBg}
-                      onChange={handlePageBackgroundUpload}
-                    >
-                      {uploadingBg ? t("settings.screensaver.uploading") : t("settings.pageBackground.upload")}
-                    </SettingsUploadButton>
-                    {pageBackground ? (
-                      <SettingsSecondaryButton onClick={handlePageBackgroundRemove}>
-                        {t("settings.pageBackground.remove")}
-                      </SettingsSecondaryButton>
-                    ) : null}
-                  </div>
-                </SettingsGroup>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("settings.pageBackground.needDashboard")}</p>
-            )
           )}
 
           {section === "dashboard" && (
