@@ -26,6 +26,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getScreensaverClock24h } from "@/stores/screensaver-store";
 import { HeaderMediaPlaying } from "./header-media-playing";
+import { HeaderTimer } from "./header-timer";
 import { useNewsStore } from "@/stores/news-store";
 import { NewsOverlay } from "@/components/news-overlay";
 
@@ -356,6 +357,7 @@ export function AppShell({
               {temperatureDisplay ?? "—"}
             </button>
           )}
+          <HeaderTimer contentLight={headerContentLight} />
           <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
             {newsEnabled && rssUrls.length > 0 && (
               <button

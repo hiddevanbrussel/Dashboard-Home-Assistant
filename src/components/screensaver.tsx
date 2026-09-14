@@ -18,7 +18,6 @@ import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensav
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
-import { useTimerStore } from "@/stores/timer-store";
 import { getItemImageUrl, getImageSrc } from "@/lib/music-item-image";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
@@ -30,7 +29,9 @@ import {
 import {
   type ScreensaverClockSize,
 } from "@/lib/screensaver-clock-size";
-import { formatTimerMs, timerRemainingMs } from "@/lib/timer";
+import { formatTimerMs } from "@/lib/timer";
+import { useLiveTimerRemaining } from "@/hooks/use-live-timer";
+import { useTimerStore } from "@/stores/timer-store";
 
 const CLOCK_TIME_CLASS: Record<ScreensaverClockSize, string> = {
   sm: "text-4xl sm:text-5xl",
@@ -432,25 +433,10 @@ function ScreensaverClock({
 
 function ScreensaverTimer({ align }: { align: "left" | "center" | "right" }) {
   const { t } = useTranslation();
-  const status = useTimerStore((s) => s.status);
-  const endsAt = useTimerStore((s) => s.endsAt);
-  const remainingMs = useTimerStore((s) => s.remainingMs);
-  const finish = useTimerStore((s) => s.finish);
   const dismiss = useTimerStore((s) => s.dismiss);
-  const [, setTick] = useState(0);
-
-  useEffect(() => {
-    if (status !== "running") return;
-    const id = setInterval(() => {
-      setTick((n) => n + 1);
-      if (endsAt != null && Date.now() >= endsAt) finish();
-    }, 200);
-    return () => clearInterval(id);
-  }, [status, endsAt, finish]);
+  const { status, remaining } = useLiveTimerRemaining();
 
   if (status === "idle") return null;
-
-  const remaining = timerRemainingMs(status, endsAt, remainingMs);
 
   return (
     <div

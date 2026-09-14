@@ -10,7 +10,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Bot, CalendarDays, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Timer, Type, Video, X, Zap } from "lucide-react";
+import { Bot, CalendarDays, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
 import { ArrowRightLeft } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -71,7 +71,6 @@ import {
   CalendarCardWidget,
   FloatingCalendarCard,
   TimerCardWidget,
-  FloatingTimerCard,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import type { ImageCondition, SensorCondition } from "@/components/widgets";
@@ -82,7 +81,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card", "timer_card"] as const;
+const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; labelKey: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "text_card", labelKey: "cardType.text_card", Icon: Type },
@@ -105,7 +104,6 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "card_group", labelKey: "cardType.card_group", Icon: LayoutGrid },
   { type: "chore_card", labelKey: "cardType.chore_card", Icon: ListTodo },
   { type: "calendar_card", labelKey: "cardType.calendar_card", Icon: CalendarDays },
-  { type: "timer_card", labelKey: "cardType.timer_card", Icon: Timer },
 ];
 
 /** Map widget type to HA domain for filtering entities */
@@ -1273,11 +1271,6 @@ export default function DashboardEditPage() {
                               setAddTileOpen(false);
                               return;
                             }
-                            if (type === "timer_card") {
-                              handleAddTile("timer_card", "", t("cardType.timer_card"));
-                              setAddTileOpen(false);
-                              return;
-                            }
                             setAddTileSelectedType(type);
                             setAddTileStep("entity");
                           }}
@@ -2054,24 +2047,6 @@ export default function DashboardEditPage() {
                 title: w.title,
                 child_id: w.child_id,
                 show_chore_points: w.show_chore_points,
-              }}
-              widgetIndex={i}
-              editMode={editMode}
-              storageScope={id}
-              onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-            />
-          ))}
-
-        {widgets
-          .filter((w) => w.type === "timer_card")
-          .map((w, i) => (
-            <FloatingTimerCard
-              key={w.id}
-              widget={{
-                id: w.id,
-                title: w.title,
               }}
               widgetIndex={i}
               editMode={editMode}
