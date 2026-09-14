@@ -56,16 +56,17 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
+    const panel = el.parentElement ?? el;
     const update = () => {
-      const rect = el.getBoundingClientRect();
+      const rect = panel.getBoundingClientRect();
       setViewport({
-        w: Math.max(0, Math.floor(rect.width)),
-        h: Math.max(0, Math.floor(rect.height)),
+        w: Math.max(0, Math.floor(rect.width) - 24),
+        h: Math.max(0, Math.floor(rect.height) - 24),
       });
     };
     update();
     const observer = new ResizeObserver(update);
-    observer.observe(el);
+    observer.observe(panel);
     return () => observer.disconnect();
   }, []);
 

@@ -130,7 +130,7 @@ export default function VacuumPage() {
 
   return (
     <AppShell activeTab="/vacuum" contentNoScroll>
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
