@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { Check } from "lucide-react";
+import type { ChangeEvent, ReactNode } from "react";
+import { Check, ImagePlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   THEME_ACCENTS,
@@ -188,6 +188,93 @@ export function SettingsAccentDots({
         })}
       </div>
       {hint ? <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{hint}</p> : null}
+    </div>
+  );
+}
+
+export function SettingsImagePick({
+  label,
+  description,
+  url,
+  uploading,
+  onUpload,
+  onRemove,
+  addLabel,
+  uploadingLabel,
+  removeLabel,
+}: {
+  label: string;
+  description?: string;
+  url: string | null;
+  uploading?: boolean;
+  onUpload: (e: ChangeEvent<HTMLInputElement>) => void;
+  onRemove: () => void;
+  addLabel: string;
+  uploadingLabel: string;
+  removeLabel: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col rounded-2xl p-2.5 text-left transition-all",
+        url
+          ? "bg-brand/10 ring-2 ring-brand dark:bg-brand/25"
+          : "bg-black/[0.04] ring-1 ring-black/[0.06] dark:bg-white/5 dark:ring-white/10"
+      )}
+    >
+      <label
+        className={cn(
+          "relative block cursor-pointer overflow-hidden rounded-xl focus-within:ring-2 focus-within:ring-brand/40",
+          uploading && "pointer-events-none opacity-60"
+        )}
+      >
+        {url ? (
+          <span
+            className="block h-[4.75rem] bg-cover bg-center"
+            style={{ backgroundImage: `url(${url})` }}
+          />
+        ) : (
+          <span className="flex h-[4.75rem] flex-col items-center justify-center gap-1.5 bg-white/70 dark:bg-white/5">
+            <ImagePlus className="h-5 w-5 text-brand" aria-hidden />
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+              {uploading ? uploadingLabel : addLabel}
+            </span>
+          </span>
+        )}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="sr-only"
+          onChange={onUpload}
+          disabled={uploading}
+        />
+      </label>
+      <span className="mt-2.5 flex items-start justify-between gap-2 px-0.5">
+        <span className="min-h-[2.5rem] min-w-0">
+          <span className="block text-sm font-semibold text-gray-900 dark:text-white">{label}</span>
+          {description ? (
+            <span className="mt-0.5 block text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+              {description}
+            </span>
+          ) : null}
+        </span>
+        {url ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-gray-300 text-gray-500 transition-colors hover:border-red-400 hover:bg-red-500 hover:text-white dark:border-white/25 dark:text-gray-400"
+            aria-label={removeLabel}
+            title={removeLabel}
+          >
+            <X className="h-3 w-3" strokeWidth={3} aria-hidden />
+          </button>
+        ) : (
+          <span
+            className="mt-0.5 h-5 w-5 shrink-0 rounded-full border border-gray-300 bg-white/70 dark:border-white/25 dark:bg-white/5"
+            aria-hidden
+          />
+        )}
+      </span>
     </div>
   );
 }
