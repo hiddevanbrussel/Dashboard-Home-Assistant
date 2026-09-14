@@ -194,12 +194,11 @@ export default function VacuumPage() {
           </div>
         ) : map ? (
           <>
-            <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-card border border-white/60 bg-[#efeaf8] p-3 dark:border-white/10 dark:bg-[#12081f]">
+            <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-card border border-white/60 bg-[#efeaf8] p-4 dark:border-white/10 dark:bg-[#12081f]">
               <ValetudoMapCanvas
                 map={map}
                 selectedIds={selectedIds}
                 onToggleSegment={toggleSegment}
-                className="max-h-full max-w-full"
               />
             </div>
             {error ? <p className="text-sm text-red-600 dark:text-red-300">{error}</p> : null}

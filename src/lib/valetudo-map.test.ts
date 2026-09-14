@@ -3,6 +3,8 @@ import {
   entityPointToPixel,
   forEachLayerPixel,
   layerPixelBounds,
+  normalizeSegmentId,
+  segmentCentroid,
   segmentLabel,
 } from "./valetudo-map";
 
@@ -48,5 +50,18 @@ describe("valetudo-map", () => {
       "Kitchen"
     );
     expect(segmentLabel({ type: "segment", metaData: { segmentId: "16" } }, "16")).toBe("16");
+  });
+
+  it("normalizes numeric segment ids", () => {
+    expect(normalizeSegmentId(16)).toBe("16");
+    expect(normalizeSegmentId(" 1 ")).toBe("1");
+    expect(normalizeSegmentId("")).toBeNull();
+  });
+
+  it("computes a segment centroid", () => {
+    expect(segmentCentroid({ type: "segment", compressedPixels: [0, 0, 4, 0, 1, 4] })).toEqual({
+      x: 1.5,
+      y: 0.5,
+    });
   });
 });

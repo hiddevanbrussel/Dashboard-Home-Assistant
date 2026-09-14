@@ -94,6 +94,7 @@ export function ValetudoSettings() {
             id="valetudo-host"
             value={host}
             onChange={(e) => setHost(e.target.value)}
+            onBlur={applyConnectionFields}
             placeholder={t("settings.valetudo.hostPlaceholder")}
             autoComplete="off"
           />
@@ -103,13 +104,18 @@ export function ValetudoSettings() {
             id="valetudo-port"
             value={port}
             onChange={(e) => setPort(e.target.value)}
+            onBlur={applyConnectionFields}
             inputMode="numeric"
             autoComplete="off"
           />
         </SettingsField>
         <SettingsCheckRow
           checked={https}
-          onChange={setHttps}
+          onChange={(next) => {
+            setHttps(next);
+            const url = buildValetudoBaseUrl(host, port, next ? "https" : "http");
+            if (url) store.setBaseUrl(url);
+          }}
           label={t("settings.valetudo.https")}
         />
         <SettingsField
@@ -121,6 +127,7 @@ export function ValetudoSettings() {
             id="valetudo-user"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            onBlur={applyConnectionFields}
             autoComplete="off"
           />
         </SettingsField>
@@ -130,6 +137,7 @@ export function ValetudoSettings() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onBlur={applyConnectionFields}
             autoComplete="off"
           />
         </SettingsField>

@@ -1,11 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   entityPointToPixel,
   forEachLayerPixel,
   layerPixelBounds,
+  normalizeSegmentId,
+  segmentCentroid,
+  segmentLabel,
   type ValetudoMapLayer,
   type ValetudoRawMap,
 } from "@/lib/valetudo-map";
@@ -37,16 +40,34 @@ type Props = {
   className?: string;
 };
 
+type Lookup = {
+  data: Uint16Array;
+  width: number;
+  height: number;
+  ids: string[];
+};
+
 export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className }: Props) {
+  const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const lookupRef = useRef<{
-    data: Uint16Array;
-    width: number;
-    height: number;
-    ids: string[];
-    minX: number;
-    minY: number;
-  } | null>(null);
+  const lookupRef = useRef<Lookup | null>(null);
+  const [viewport, setViewport] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      setViewport({
+        w: Math.max(0, Math.floor(rect.width)),
+        h: Math.max(0, Math.floor(rect.height)),
+      });
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -56,29 +77,24 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
     if (!bounds) return;
 
     const pad = 4;
-    const width = bounds.width + pad * 2;
-    const height = bounds.height + pad * 2;
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const image = ctx.createImageData(width, height);
+    const mapW = bounds.width + pad * 2;
+    const mapH = bounds.height + pad * 2;
+    const image = new ImageData(mapW, mapH);
     const pixels = image.data;
     const ids = [""];
-    const lookup = new Uint16Array(width * height);
+    const lookup = new Uint16Array(mapW * mapH);
     const selected = new Set(selectedIds);
 
     const put = (px: number, py: number, r: number, g: number, b: number, a: number, segmentIndex = 0) => {
       const x = px - bounds.minX + pad;
       const y = py - bounds.minY + pad;
-      if (x < 0 || y < 0 || x >= width || y >= height) return;
-      const i = (y * width + x) * 4;
+      if (x < 0 || y < 0 || x >= mapW || y >= mapH) return;
+      const i = (y * mapW + x) * 4;
       pixels[i] = r;
       pixels[i + 1] = g;
       pixels[i + 2] = b;
       pixels[i + 3] = a;
-      if (segmentIndex > 0) lookup[y * width + x] = segmentIndex;
+      if (segmentIndex > 0) lookup[y * mapW + x] = segmentIndex;
     };
 
     for (const layer of layers) {
@@ -88,7 +104,7 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
 
     for (const layer of layers) {
       if (layer.type !== "segment") continue;
-      const id = layer.metaData?.segmentId;
+      const id = normalizeSegmentId(layer.metaData?.segmentId);
       if (!id) continue;
       let index = ids.indexOf(id);
       if (index < 0) {
@@ -105,45 +121,84 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
       forEachLayerPixel(layer, (x, y) => put(x, y, 42, 32, 58, 255));
     }
 
-    ctx.putImageData(image, 0, 0);
+    const off = document.createElement("canvas");
+    off.width = mapW;
+    off.height = mapH;
+    const offCtx = off.getContext("2d");
+    if (!offCtx) return;
+    offCtx.putImageData(image, 0, 0);
+
+    const availW = viewport.w || mapW;
+    const availH = viewport.h || mapH;
+    const scale = Math.max(1, Math.min(availW / mapW, availH / mapH));
+    const displayW = Math.max(1, Math.floor(mapW * scale));
+    const displayH = Math.max(1, Math.floor(mapH * scale));
+    const dpr = typeof window !== "undefined" ? Math.min(3, window.devicePixelRatio || 1) : 1;
+
+    canvas.style.width = `${displayW}px`;
+    canvas.style.height = `${displayH}px`;
+    canvas.width = Math.round(displayW * dpr);
+    canvas.height = Math.round(displayH * dpr);
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, displayW, displayH);
+    ctx.drawImage(off, 0, 0, displayW, displayH);
+
+    const toDisplay = (pt: { x: number; y: number }) => ({
+      x: (pt.x - bounds.minX + pad) * (displayW / mapW),
+      y: (pt.y - bounds.minY + pad) * (displayH / mapH),
+    });
 
     const pixelSize = map.pixelSize && map.pixelSize > 0 ? map.pixelSize : 5;
-    const toCanvas = (pt: { x: number; y: number }) => ({
-      x: pt.x - bounds.minX + pad,
-      y: pt.y - bounds.minY + pad,
-    });
+    const markerR = Math.max(5, Math.min(11, scale * 0.7));
 
     for (const entity of map.entities ?? []) {
       const pt = entityPointToPixel(entity.points ?? [], pixelSize);
       if (!pt) continue;
-      const { x, y } = toCanvas(pt);
+      const { x, y } = toDisplay(pt);
       ctx.beginPath();
       if (entity.type === "robot_position") {
         ctx.fillStyle = "#4700B5";
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.arc(x, y, markerR, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.stroke();
       } else if (entity.type === "charger_location") {
         ctx.fillStyle = "#16a34a";
-        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+        ctx.arc(x, y, markerR * 0.85, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.stroke();
       }
     }
 
-    lookupRef.current = {
-      data: lookup,
-      width,
-      height,
-      ids,
-      minX: bounds.minX,
-      minY: bounds.minY,
-    };
-  }, [map, selectedIds]);
+    if (scale >= 3) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `600 ${Math.max(12, Math.min(18, Math.round(scale * 1.1)))}px ui-sans-serif, system-ui, sans-serif`;
+      for (const layer of layers) {
+        if (layer.type !== "segment") continue;
+        const id = normalizeSegmentId(layer.metaData?.segmentId);
+        if (!id) continue;
+        const center = segmentCentroid(layer);
+        if (!center) continue;
+        const { x, y } = toDisplay(center);
+        const label = segmentLabel(layer, id);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = selected.has(id) ? "rgba(71,0,181,0.9)" : "rgba(255,255,255,0.92)";
+        ctx.fillStyle = selected.has(id) ? "#ffffff" : "#2a203a";
+        ctx.strokeText(label, x, y);
+        ctx.fillText(label, x, y);
+      }
+    }
+
+    lookupRef.current = { data: lookup, width: mapW, height: mapH, ids };
+  }, [map, selectedIds, viewport]);
 
   useEffect(() => {
     draw();
@@ -154,10 +209,8 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
     const lookup = lookupRef.current;
     if (!canvas || !lookup) return;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = Math.floor((e.clientX - rect.left) * scaleX);
-    const y = Math.floor((e.clientY - rect.top) * scaleY);
+    const x = Math.floor((e.clientX - rect.left) * (lookup.width / rect.width));
+    const y = Math.floor((e.clientY - rect.top) * (lookup.height / rect.height));
     if (x < 0 || y < 0 || x >= lookup.width || y >= lookup.height) return;
     const index = lookup.data[y * lookup.width + x];
     const id = lookup.ids[index];
@@ -165,17 +218,20 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
   }
 
   return (
-    <canvas
-      ref={canvasRef}
-      onPointerUp={handlePointer}
-      className={cn("max-h-full max-w-full cursor-pointer touch-manipulation", className)}
-      style={{ imageRendering: "pixelated" }}
-    />
+    <div ref={wrapRef} className={cn("flex h-full min-h-0 w-full items-center justify-center", className)}>
+      <canvas
+        ref={canvasRef}
+        onPointerUp={handlePointer}
+        className="cursor-pointer touch-manipulation"
+        style={{ imageRendering: "pixelated" }}
+      />
+    </div>
   );
 }
 
 export function segmentNameFromLayers(layers: ValetudoMapLayer[], id: string): string {
-  const layer = layers.find((l) => l.type === "segment" && l.metaData?.segmentId === id);
-  const name = layer?.metaData?.name?.trim();
-  return name || id;
+  const layer = layers.find(
+    (item) => item.type === "segment" && normalizeSegmentId(item.metaData?.segmentId) === id
+  );
+  return layer ? segmentLabel(layer, id) : id;
 }

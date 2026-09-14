@@ -5,7 +5,7 @@ export type ValetudoMapLayer = {
   pixels?: number[];
   compressedPixels?: number[];
   metaData?: {
-    segmentId?: string;
+    segmentId?: string | number;
     name?: string;
     active?: boolean;
     area?: number;
@@ -85,8 +85,27 @@ export function layerPixelBounds(layers: ValetudoMapLayer[]): MapBounds | null {
   };
 }
 
+export function normalizeSegmentId(id: unknown): string | null {
+  if (id == null) return null;
+  const value = String(id).trim();
+  return value ? value : null;
+}
+
 export function segmentLayers(map: ValetudoRawMap): ValetudoMapLayer[] {
-  return (map.layers ?? []).filter((layer) => layer.type === "segment" && layer.metaData?.segmentId);
+  return (map.layers ?? []).filter((layer) => layer.type === "segment" && normalizeSegmentId(layer.metaData?.segmentId));
+}
+
+export function segmentCentroid(layer: ValetudoMapLayer): { x: number; y: number } | null {
+  let sx = 0;
+  let sy = 0;
+  let n = 0;
+  forEachLayerPixel(layer, (x, y) => {
+    sx += x;
+    sy += y;
+    n += 1;
+  });
+  if (n === 0) return null;
+  return { x: sx / n, y: sy / n };
 }
 
 export function mapPixelSize(map: ValetudoRawMap): number {
