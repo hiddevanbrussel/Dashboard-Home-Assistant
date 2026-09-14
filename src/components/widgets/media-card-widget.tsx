@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 import { Pause, Play, SkipBack, SkipForward, Disc3, MoreVertical } from "lucide-react";
 import type { MediaCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
@@ -115,7 +114,7 @@ export function MediaCardWidget({
   return (
     <div
       className={cn(
-        "relative flex w-full flex-col overflow-hidden rounded-2xl text-white shadow-xl",
+        "relative flex w-full flex-col overflow-hidden rounded-2xl border border-white/10 text-white shadow-xl",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
@@ -128,20 +127,19 @@ export function MediaCardWidget({
     >
       <div
         className={cn(
-          "relative flex min-h-[148px] flex-col overflow-hidden",
+          "relative flex min-h-[168px] flex-col overflow-hidden",
           hasFixedHeight && "min-h-0 flex-1"
         )}
       >
         <div className="absolute inset-0 bg-[#1a120c]" aria-hidden>
           {mediaImageSrc ? (
-            <Image
+            // Dynamic HA/cover URLs; next/image would require a remotePatterns allowlist.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               key={trackKey}
               src={mediaImageSrc}
               alt=""
-              fill
-              sizes="320px"
-              className="object-cover scale-110"
-              unoptimized
+              className="absolute inset-0 h-full w-full scale-110 object-cover"
             />
           ) : (
             <div className="flex h-full items-center justify-center">
