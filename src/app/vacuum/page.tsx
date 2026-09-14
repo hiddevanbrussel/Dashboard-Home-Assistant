@@ -130,7 +130,7 @@ export default function VacuumPage() {
 
   return (
     <AppShell activeTab="/vacuum" contentNoScroll>
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
@@ -194,7 +194,7 @@ export default function VacuumPage() {
           </div>
         ) : map ? (
           <>
-            <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-card border border-white/60 bg-[#efeaf8] p-4 dark:border-white/10 dark:bg-[#12081f]">
+            <div className="relative min-h-[40vh] flex-1 overflow-hidden rounded-card border border-white/60 bg-[#efeaf8] dark:border-white/10 dark:bg-[#12081f]">
               <ValetudoMapCanvas
                 map={map}
                 selectedIds={selectedIds}
