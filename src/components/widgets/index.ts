@@ -47,3 +47,5 @@ export { ChoreCardWidget } from "./chore-card-widget";
 export { FloatingChoreCard } from "./floating-chore-card";
 export { CalendarCardWidget } from "./calendar-card-widget";
 export { FloatingCalendarCard, CALENDAR_PANEL_WIDTH } from "./floating-calendar-card";
+export { TimerCardWidget } from "./timer-card-widget";
+export { FloatingTimerCard } from "./floating-timer-card";

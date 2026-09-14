@@ -3,8 +3,13 @@ import {
   getScreensaverClockPositionOrDefault,
   type ScreensaverClockPosition,
 } from "@/lib/screensaver-clock-position";
+import {
+  DEFAULT_SCREENSAVER_CLOCK_SIZE,
+  getScreensaverClockSizeOrDefault,
+  type ScreensaverClockSize,
+} from "@/lib/screensaver-clock-size";
 
-export type { ScreensaverClockPosition };
+export type { ScreensaverClockPosition, ScreensaverClockSize };
 
 const STORAGE_KEY_DELAY = "dashboard.screensaverDelaySeconds";
 const STORAGE_KEY_LEGACY_MINUTES = "dashboard.screensaverMinutes";
@@ -211,6 +216,26 @@ export function getScreensaverFootballEntityId(): string | null {
 export function setScreensaverFootballEntityId(entityId: string | null): void {
   try {
     localStorage.setItem(STORAGE_KEY_FOOTBALL_ENTITY, entityId ?? "");
+    window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
+  } catch {
+    // ignore
+  }
+}
+
+const STORAGE_KEY_CLOCK_SIZE = "dashboard.screensaverClockSize";
+
+export function getScreensaverClockSize(): ScreensaverClockSize {
+  if (typeof window === "undefined") return DEFAULT_SCREENSAVER_CLOCK_SIZE;
+  try {
+    return getScreensaverClockSizeOrDefault(localStorage.getItem(STORAGE_KEY_CLOCK_SIZE));
+  } catch {
+    return DEFAULT_SCREENSAVER_CLOCK_SIZE;
+  }
+}
+
+export function setScreensaverClockSize(size: ScreensaverClockSize): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_CLOCK_SIZE, size);
     window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
   } catch {
     // ignore

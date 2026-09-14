@@ -14,10 +14,11 @@ import {
   Wind,
   Disc3,
 } from "lucide-react";
-import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverClockPosition } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverClockPosition, getScreensaverClockSize } from "@/stores/screensaver-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useTimerStore } from "@/stores/timer-store";
 import { getItemImageUrl, getImageSrc } from "@/lib/music-item-image";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
@@ -26,6 +27,13 @@ import {
   clockPositionOverlayClass,
   screensaverMediaSide,
 } from "@/lib/screensaver-clock-position";
+import {
+  clockSizeAmpmClass,
+  clockSizeDateClass,
+  clockSizeTimeClass,
+  type ScreensaverClockSize,
+} from "@/lib/screensaver-clock-size";
+import { formatTimerMs, timerRemainingMs } from "@/lib/timer";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
@@ -355,7 +363,13 @@ function ScreensaverMusic() {
   );
 }
 
-function ScreensaverClock({ align }: { align: "left" | "center" | "right" }) {
+function ScreensaverClock({
+  align,
+  size,
+}: {
+  align: "left" | "center" | "right";
+  size: ScreensaverClockSize;
+}) {
   const [time, setTime] = useState(() => new Date());
   const use24h = getScreensaverClock24h();
 
@@ -384,16 +398,70 @@ function ScreensaverClock({ align }: { align: "left" | "center" | "right" }) {
     >
       <time
         dateTime={time.toISOString()}
-        className="text-5xl sm:text-6xl font-light tabular-nums text-white/90 drop-shadow-md"
+        className={cn("font-light tabular-nums text-white/90 drop-shadow-md", clockSizeTimeClass(size))}
       >
         {timeStr}
         {ampm != null && (
-          <span className="ml-1.5 text-lg sm:text-xl font-normal text-white/70">
+          <span className={cn("ml-1.5 font-normal text-white/70", clockSizeAmpmClass(size))}>
             {ampm}
           </span>
         )}
       </time>
-      <span className="text-sm text-white/50 tabular-nums">{dateStr}</span>
+      <span className={cn("text-white/50 tabular-nums", clockSizeDateClass(size))}>{dateStr}</span>
+    </div>
+  );
+}
+
+function ScreensaverTimer({ align }: { align: "left" | "center" | "right" }) {
+  const { t } = useTranslation();
+  const status = useTimerStore((s) => s.status);
+  const endsAt = useTimerStore((s) => s.endsAt);
+  const remainingMs = useTimerStore((s) => s.remainingMs);
+  const finish = useTimerStore((s) => s.finish);
+  const dismiss = useTimerStore((s) => s.dismiss);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    if (status !== "running") return;
+    const id = setInterval(() => {
+      setTick((n) => n + 1);
+      if (endsAt != null && Date.now() >= endsAt) finish();
+    }, 200);
+    return () => clearInterval(id);
+  }, [status, endsAt, finish]);
+
+  if (status === "idle") return null;
+
+  const remaining = timerRemainingMs(status, endsAt, remainingMs);
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-2",
+        align === "left" ? "items-start" : align === "right" ? "items-end" : "items-center"
+      )}
+    >
+      <p className="text-xs font-medium uppercase tracking-wider text-white/60">{t("timer.title")}</p>
+      <p
+        className={cn(
+          "font-light tabular-nums text-white drop-shadow-md",
+          status === "ringing" ? "animate-pulse text-5xl" : "text-4xl sm:text-5xl"
+        )}
+      >
+        {status === "ringing" ? t("timer.done") : formatTimerMs(remaining)}
+      </p>
+      {status === "ringing" ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            dismiss();
+          }}
+          className="pointer-events-auto rounded-full bg-white/20 px-4 py-1.5 text-sm font-semibold text-white hover:bg-white/30"
+        >
+          {t("timer.stop")}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -408,9 +476,17 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const pexelsApiKey = getScreensaverPexelsApiKey();
   const pexelsType = getScreensaverPexelsType();
   const clockPosition = getScreensaverClockPosition();
+  const clockSize = getScreensaverClockSize();
   const clockAlign = clockPositionAxis(clockPosition).x;
   const clockY = clockPositionAxis(clockPosition).y;
   const mediaSide = screensaverMediaSide(clockPosition);
+  const [, setSettingsTick] = useState(0);
+
+  useEffect(() => {
+    const onChange = () => setSettingsTick((n) => n + 1);
+    window.addEventListener("screensaver-setting-changed", onChange);
+    return () => window.removeEventListener("screensaver-setting-changed", onChange);
+  }, []);
 
   const showMusicOnScreensaver = useMusicPlayerStore((s) => {
     const q = s.queueState;
@@ -676,7 +752,8 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
           )}
         >
           <ScreensaverWeather />
-          <ScreensaverClock align={clockAlign} />
+          <ScreensaverClock align={clockAlign} size={clockSize} />
+          <ScreensaverTimer align={clockAlign} />
         </div>
       </div>
       <div
