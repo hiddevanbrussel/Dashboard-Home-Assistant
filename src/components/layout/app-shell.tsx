@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import {
   ChevronLeft,
   Cloud,
@@ -22,6 +23,7 @@ import { Sidebar, SIDEBAR_INSET } from "./sidebar";
 import { FloatingToolbar } from "./floating-toolbar";
 import Link from "next/link";
 import { usePageBackground } from "@/components/page-background";
+import { hidesDashboardWallpaper } from "@/lib/page-background-path";
 import { useTranslation } from "@/hooks/use-translation";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getScreensaverClock24h } from "@/stores/screensaver-store";
@@ -237,11 +239,14 @@ export function AppShell({
   className,
 }: AppShellProps) {
   const { t } = useTranslation();
+  const pathname = usePathname();
   const welcomeTitle = welcomeTitleProp ?? "";
   const welcomeSubtitle = welcomeSubtitleProp ?? "";
   const hasWelcomeText = Boolean(welcomeTitle || welcomeSubtitle);
   const showWelcomeInHeader = hasWelcomeText && !hideWelcome;
   const pageBackground = usePageBackground();
+  const hideWallpaper = hidesDashboardWallpaper(pathname) || activeTab === "/music";
+  const showPhotoWash = Boolean(pageBackground) && !hideWallpaper;
   const headerTime = useHeaderClock();
   const [temperatureModalOpen, setTemperatureModalOpen] = useState(false);
   const [chosenTemperatureEntityId, setChosenTemperatureEntityId] = useState<string | null>(null);
@@ -302,7 +307,7 @@ export function AppShell({
       className={cn(
         "flex flex-col",
         contentNoScroll ? "h-dvh max-h-dvh overflow-hidden" : "min-h-screen",
-        pageBackground
+        showPhotoWash
           ? "bg-white/85 dark:bg-black/50"
           : "bg-page-light dark:bg-dark-page",
         className
