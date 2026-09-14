@@ -182,7 +182,7 @@ function MediaPanel({
   return (
     <div
       ref={panelRef}
-      className="fixed z-[200] w-[336px] p-2 rounded-xl border border-gray-200 bg-white/95 dark:bg-black/80 shadow-xl dark:border-white/10 dark:backdrop-blur-xl"
+      className="fixed z-[200] w-[320px] overflow-hidden rounded-2xl shadow-xl"
       style={{ top: pos.top, right: pos.right }}
     >
       <MediaCardWidget
