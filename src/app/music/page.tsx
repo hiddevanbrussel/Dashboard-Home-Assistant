@@ -1469,12 +1469,14 @@ export default function MusicPage() {
   );
 
   const allowSpeakerSelection = musicAssistant.allowSpeakerSelection;
+  const isMusicHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum;
+  const headerOverHero = (isMusicHome && heroItems.length > 0) || !!selectedAlbum || !!selectedArtist;
   return (
     <AppShell
       activeTab="/music"
       contentNoScroll
       headerFixed
-      headerContentLight={(!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || !!selectedAlbum}
+      headerContentLight={headerOverHero}
       headerEndAction={
         useMA && maPlayers.length > 0 ? (
           <button
@@ -1482,7 +1484,7 @@ export default function MusicPage() {
             onClick={() => setSearchOverlayOpen(true)}
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-              (!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || selectedAlbum || selectedArtist
+              headerOverHero
                 ? "text-white/90 hover:bg-white/10"
                 : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
             )}
@@ -1496,9 +1498,7 @@ export default function MusicPage() {
         <div
           className={cn(
             "flex items-center gap-0.5 rounded-full p-0.5 backdrop-blur-md",
-            (!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) || !!selectedAlbum || !!selectedArtist
-              ? "bg-white/15"
-              : "bg-black/5 dark:bg-white/10"
+            headerOverHero ? "bg-white/15" : "bg-black/5 dark:bg-white/10"
           )}
           role="navigation"
           aria-label={t("music.title")}
@@ -1512,10 +1512,7 @@ export default function MusicPage() {
             ] as const
           ).map(({ id, label, icon: Icon }) => {
             const active = id === "home" ? !selectedMenu && !selectedCategory : selectedMenu === id;
-            const light =
-              (!selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum) ||
-              !!selectedAlbum ||
-              !!selectedArtist;
+            const light = headerOverHero;
             return (
               <button
                 key={id}
