@@ -14,13 +14,18 @@ import {
   Wind,
   Disc3,
 } from "lucide-react";
-import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverClockPosition } from "@/stores/screensaver-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { getItemImageUrl, getImageSrc } from "@/lib/music-item-image";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
+import {
+  clockPositionAxis,
+  clockPositionOverlayClass,
+  screensaverMediaSide,
+} from "@/lib/screensaver-clock-position";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
@@ -42,12 +47,16 @@ function preloadImage(url: string): Promise<void> {
 function useIdleScreensaver() {
   const [active, setActive] = useState(false);
   const [timeoutSeconds, setTimeoutSeconds] = useState(0);
+  const ignoreUntilRef = useRef(0);
 
   useEffect(() => {
     const sec = getScreensaverDelaySeconds();
     setTimeoutSeconds(sec);
     const onSettingChange = () => setTimeoutSeconds(getScreensaverDelaySeconds());
-    const onActivate = () => setActive(true);
+    const onActivate = () => {
+      ignoreUntilRef.current = Date.now() + 500;
+      setActive(true);
+    };
     window.addEventListener("screensaver-setting-changed", onSettingChange);
     window.addEventListener("screensaver-activate", onActivate);
     return () => {
@@ -58,7 +67,6 @@ function useIdleScreensaver() {
 
   useEffect(() => {
     if (timeoutSeconds <= 0) {
-      setActive(false);
       return;
     }
     const delayMs = timeoutSeconds * 1000;
@@ -67,12 +75,18 @@ function useIdleScreensaver() {
     const resetTimer = () => {
       setActive(false);
       if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => setActive(true), delayMs);
+      timeoutId = setTimeout(() => {
+        ignoreUntilRef.current = Date.now() + 400;
+        setActive(true);
+      }, delayMs);
     };
 
     resetTimer();
 
-    const onActivity = () => resetTimer();
+    const onActivity = () => {
+      if (Date.now() < ignoreUntilRef.current) return;
+      resetTimer();
+    };
     for (const ev of ACTIVITY_EVENTS) {
       window.addEventListener(ev, onActivity, { passive: true });
     }
@@ -341,7 +355,7 @@ function ScreensaverMusic() {
   );
 }
 
-function ScreensaverClock() {
+function ScreensaverClock({ align }: { align: "left" | "center" | "right" }) {
   const [time, setTime] = useState(() => new Date());
   const use24h = getScreensaverClock24h();
 
@@ -362,7 +376,12 @@ function ScreensaverClock() {
   });
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div
+      className={cn(
+        "flex flex-col gap-1",
+        align === "left" ? "items-start" : align === "right" ? "items-end" : "items-center"
+      )}
+    >
       <time
         dateTime={time.toISOString()}
         className="text-5xl sm:text-6xl font-light tabular-nums text-white/90 drop-shadow-md"
@@ -388,6 +407,10 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const pexelsQuery = getScreensaverPexelsQuery();
   const pexelsApiKey = getScreensaverPexelsApiKey();
   const pexelsType = getScreensaverPexelsType();
+  const clockPosition = getScreensaverClockPosition();
+  const clockAlign = clockPositionAxis(clockPosition).x;
+  const clockY = clockPositionAxis(clockPosition).y;
+  const mediaSide = screensaverMediaSide(clockPosition);
 
   const showMusicOnScreensaver = useMusicPlayerStore((s) => {
     const q = s.queueState;
@@ -557,7 +580,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       tabIndex={0}
       aria-label={t("screensaver.dismiss")}
       className={cn(
-        "fixed inset-0 z-[9999] flex flex-col justify-end overflow-hidden bg-black p-8 cursor-pointer transition-opacity duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
+        "fixed inset-0 z-[9999] overflow-hidden bg-black cursor-pointer transition-opacity duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
         dismissing && "opacity-0 pointer-events-auto"
       )}
       style={
@@ -640,37 +663,60 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
           <div className="absolute inset-0 bg-black/50" aria-hidden />
         </>
       )}
-      <div className="relative z-10 flex justify-between items-end w-full gap-4 max-w-full">
-        <div className="flex flex-col items-start">
-          {showMusicOnScreensaver ? <ScreensaverMusic /> : <ScreensaverFootball />}
-        </div>
-        <div className="flex flex-col items-end gap-4">
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 z-10 flex p-8",
+          clockPositionOverlayClass(clockPosition)
+        )}
+      >
+        <div
+          className={cn(
+            "pointer-events-auto flex flex-col gap-4",
+            clockAlign === "left" ? "items-start" : clockAlign === "right" ? "items-end" : "items-center"
+          )}
+        >
           <ScreensaverWeather />
-          <ScreensaverClock />
-        {currentAttribution && (
-          <a
-            href={currentAttribution.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-white/50 hover:text-white/70 transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            Photo by {currentAttribution.photographer} on Pexels
-          </a>
-        )}
-        {pexelsEnabled && !currentAttribution && !pexelsError && (
-          <a
-            href="https://www.pexels.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-white/50 hover:text-white/70 transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            Photos provided by Pexels
-          </a>
-        )}
+          <ScreensaverClock align={clockAlign} />
         </div>
       </div>
+      <div
+        className={cn(
+          "pointer-events-none absolute bottom-8 z-10",
+          mediaSide === "left" ? "left-8" : "right-8"
+        )}
+      >
+        <div className="pointer-events-auto flex flex-col items-start">
+          {showMusicOnScreensaver ? <ScreensaverMusic /> : <ScreensaverFootball />}
+        </div>
+      </div>
+      {(currentAttribution || (pexelsEnabled && !currentAttribution && !pexelsError)) && (
+        <div className={cn(
+          "pointer-events-none absolute inset-x-0 z-10 flex justify-center px-8",
+          clockY === "bottom" ? "top-3" : "bottom-3"
+        )}>
+          {currentAttribution ? (
+            <a
+              href={currentAttribution.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pointer-events-auto text-xs text-white/50 hover:text-white/70 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Photo by {currentAttribution.photographer} on Pexels
+            </a>
+          ) : (
+            <a
+              href="https://www.pexels.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pointer-events-auto text-xs text-white/50 hover:text-white/70 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Photos provided by Pexels
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -4,6 +4,10 @@ import type { ChangeEvent, ReactNode } from "react";
 import { Check, ImagePlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  SCREENSAVER_CLOCK_POSITIONS,
+  type ScreensaverClockPosition,
+} from "@/lib/screensaver-clock-position";
+import {
   THEME_ACCENTS,
   accentRgbCss,
   type ThemeAccentId,
@@ -91,6 +95,104 @@ export function SettingsChoiceCards<T extends string>({
   );
 }
 
+export function SettingsChipSelect<T extends string>({
+  label,
+  hint,
+  items,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  items: { id: T; label: string }[];
+  value: T;
+  onChange: (id: T) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
+      <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+        {items.map((item) => {
+          const selected = value === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(item.id)}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
+                selected
+                  ? "bg-brand text-white shadow-sm"
+                  : "bg-black/[0.04] text-gray-600 hover:bg-black/[0.07] dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
+              )}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+      {hint ? <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{hint}</p> : null}
+    </div>
+  );
+}
+
+export function SettingsClockPositionPicker({
+  label,
+  hint,
+  value,
+  onChange,
+  names,
+}: {
+  label: string;
+  hint?: string;
+  value: ScreensaverClockPosition;
+  onChange: (position: ScreensaverClockPosition) => void;
+  names: Record<ScreensaverClockPosition, string>;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className="grid aspect-video max-w-sm grid-cols-3 grid-rows-3 gap-1.5 rounded-2xl bg-[#0A0014] p-3"
+      >
+        {SCREENSAVER_CLOCK_POSITIONS.map((position) => {
+          const selected = value === position;
+          return (
+            <button
+              key={position}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              aria-label={names[position]}
+              title={names[position]}
+              onClick={() => onChange(position)}
+              className={cn(
+                "flex items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70",
+                selected
+                  ? "bg-brand text-white shadow-sm"
+                  : "bg-white/10 text-white/50 hover:bg-white/20 hover:text-white/80"
+              )}
+            >
+              <span
+                className={cn("h-1.5 rounded-full", selected ? "w-5 bg-white" : "w-3 bg-white/40")}
+                aria-hidden
+              />
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+        {names[value]}
+        {hint ? ` — ${hint}` : null}
+      </p>
+    </div>
+  );
+}
+
 function ThemeMiniWindow({ scheme }: { scheme: "light" | "dark" }) {
   const isLight = scheme === "light";
   return (
@@ -142,6 +244,15 @@ export function LanguagePreview({ code }: { code: string }) {
   return (
     <div className="flex h-[4.75rem] items-center justify-center bg-gradient-to-br from-white to-[#F2F0FE] dark:from-[#1C0A3A] dark:to-[#0A0014]">
       <span className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-white">{code}</span>
+    </div>
+  );
+}
+
+export function ClockFormatPreview({ variant }: { variant: "24" | "12" }) {
+  return (
+    <div className="flex h-[4.75rem] flex-col items-center justify-center gap-0.5 bg-[#0A0014] text-white">
+      <span className="text-2xl font-light tabular-nums">{variant === "24" ? "14:32" : "2:32"}</span>
+      <span className="text-[11px] text-white/55">{variant === "24" ? "24:00" : "pm"}</span>
     </div>
   );
 }
