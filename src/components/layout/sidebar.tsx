@@ -35,10 +35,10 @@ const optionalItems = [
 
 function navButtonClass(isActive: boolean) {
   return cn(
-    "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150",
+    "relative z-[1] flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150",
     isActive
-      ? "bg-brand text-white dark:bg-white dark:text-brand"
-      : "text-gray-600 hover:bg-brand/10 hover:text-brand dark:text-white/80 dark:hover:bg-white/15 dark:hover:text-white"
+      ? "bg-brand text-white shadow-sm dark:bg-white dark:text-brand"
+      : "text-gray-700 hover:bg-white/55 hover:text-gray-900 dark:text-white/85 dark:hover:bg-white/15 dark:hover:text-white"
   );
 }
 
@@ -90,9 +90,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex w-14 flex-col items-center gap-1 rounded-full py-3 shadow-lg ring-1 backdrop-blur-md",
-        "bg-white/90 ring-black/5",
-        "dark:bg-brand dark:ring-white/10",
+        "sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-3",
         className
       )}
       aria-label={t("nav.sidebar")}
@@ -111,7 +109,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
           </Link>
         );
       })}
-      <span className="my-1 h-px w-6 bg-black/10 dark:bg-white/20" aria-hidden />
+      <span className="relative z-[1] my-1 h-px w-6 bg-black/10 dark:bg-white/25" aria-hidden />
       <ThemeIconButton />
       <Link
         href="/settings"
