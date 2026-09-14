@@ -1,16 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
-import {
-  ChevronDown,
-  Pause,
-  Play,
-  SkipBack,
-  SkipForward,
-  Disc3,
-  MoreVertical,
-} from "lucide-react";
+import { Pause, Play, SkipBack, SkipForward, Disc3, MoreVertical } from "lucide-react";
 import type { MediaCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -31,17 +22,10 @@ export function MediaCardWidget({
   height,
   className,
   onMoreClick,
-  onExpandedChange,
   mediaTitleOverride,
   mediaArtistOverride,
 }: MediaCardProps & { className?: string; onMoreClick?: () => void; onExpandedChange?: (expanded: boolean) => void }) {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
-
-  const setExpandedWithCallback = (value: boolean) => {
-    setExpanded(value);
-    onExpandedChange?.(value);
-  };
   const [loading, setLoading] = useState(false);
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const setStates = useEntityStateStore((s) => s.setStates);
@@ -95,7 +79,6 @@ export function MediaCardWidget({
     callMedia("media_next_track");
   }
 
-  // Baseline voor interpolatie: alleen bijwerken bij echte HA-updates, niet bij elke re-render
   const baselineRef = useRef({ position: 0, at: 0 });
   useEffect(() => {
     if (updatedAt != null && position >= 0) {
@@ -103,11 +86,10 @@ export function MediaCardWidget({
     }
   }, [position, updatedAt]);
 
-  // Elke seconde re-renderen om tijd/progress te updaten; baseline staat in ref dus herstart niet
   const [, setTick] = useState(0);
   useEffect(() => {
     if (!isPlaying || duration <= 0) return;
-    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    const interval = setInterval(() => setTick((tick) => tick + 1), 1000);
     return () => clearInterval(interval);
   }, [isPlaying, duration]);
 
@@ -119,7 +101,6 @@ export function MediaCardWidget({
   const progressPct =
     duration > 0 ? Math.min(100, (displayPosition / duration) * 100) : 0;
 
-  // Unieke URL per nummer zodat de afbeelding ververst bij trackwissel (geen oude cache)
   const mediaImageSrc =
     entityPicture?.startsWith("http")
       ? entityPicture
@@ -127,15 +108,13 @@ export function MediaCardWidget({
         ? `/api/ha/media-image?entity_id=${encodeURIComponent(entity_id)}&v=${encodeURIComponent(entityPicture)}`
         : null;
 
-  // Key per nummer: oude afbeelding verdwijnt direct bij trackwissel, nieuwe laadt in
   const trackKey = [mediaTitle, entityPicture].filter(Boolean).join("|") || "none";
-
   const hasFixedHeight = height != null && height > 0;
 
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/90 dark:bg-black/50 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-gray-200/80 dark:border-white/10",
+        "relative flex w-full flex-col overflow-hidden rounded-2xl border border-white/10 text-white shadow-xl",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
@@ -146,166 +125,89 @@ export function MediaCardWidget({
         ...(hasFixedHeight && { height, minHeight: height }),
       }}
     >
-      {/* Bovenste deel: rekt mee bij grotere hoogte, onderaan blijft de controls-balk */}
-      <div className={cn("flex flex-col min-w-0", hasFixedHeight && "min-h-0 flex-1")}>
-      {/* Expanded: album art + progress boven de header (uitklapt naar boven); chevron alleen hier */}
-      {expanded && (
-        <>
-          <div className="px-4 pt-4 pb-2">
-            {mediaImageSrc ? (
-              <button
-                key={trackKey}
-                type="button"
-                onClick={() => setExpandedWithCallback(false)}
-                className="block relative w-full aspect-square max-h-48 mx-auto rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/50"
-                aria-label={t("mediaCard.collapse")}
-              >
-                <Image
-                  src={mediaImageSrc}
-                  alt=""
-                  fill
-                  sizes="(max-width: 192px) 192px, 192px"
-                  className="object-cover pointer-events-none"
-                  unoptimized
-                />
-              </button>
-            ) : (
-              <div className="w-full aspect-square max-h-48 mx-auto rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center">
-                <Disc3 className="h-16 w-16 text-gray-300 dark:text-white/20" />
-              </div>
-            )}
-            <div className="mt-2 space-y-1">
-              <div
-                className="h-1 rounded-full bg-gray-200 dark:bg-white/20 overflow-hidden"
-                role="progressbar"
-                aria-valuenow={displayPosition}
-                aria-valuemin={0}
-                aria-valuemax={duration}
-              >
-                <div
-                  className="h-full rounded-full bg-gray-700 dark:bg-white transition-all duration-300"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-xs text-gray-600 dark:text-white/60">
-                <span>{formatTime(displayPosition)}</span>
-                <span>{formatTime(duration)}</span>
-              </div>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setExpandedWithCallback(false)}
-            className="flex items-center justify-center gap-1 py-1 text-gray-500 hover:text-gray-700 dark:text-white/50 dark:hover:text-white/80 transition-colors"
-            aria-label={t("mediaCard.collapse")}
-          >
-            <ChevronDown className="h-4 w-4" />
-          </button>
-        </>
-      )}
-
-      {/* Header: entity_picture als achtergrond, rekt mee bij vaste hoogte */}
-      <div className={cn("relative overflow-hidden min-w-0", hasFixedHeight && "flex-1 min-h-0")}>
-        {mediaImageSrc && (
-          <div className="absolute inset-0" aria-hidden>
-            <Image
+      <div
+        className={cn(
+          "relative flex min-h-[168px] flex-col overflow-hidden",
+          hasFixedHeight && "min-h-0 flex-1"
+        )}
+      >
+        <div className="absolute inset-0 bg-[#1a120c]" aria-hidden>
+          {mediaImageSrc ? (
+            // Dynamic HA/cover URLs; next/image would require a remotePatterns allowlist.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={trackKey}
               src={mediaImageSrc}
               alt=""
-              fill
-              sizes="100vw"
-              className="object-cover scale-105 blur-md opacity-70"
-              unoptimized
+              className="absolute inset-0 h-full w-full scale-110 object-cover"
             />
-            <div className="absolute inset-0 bg-white/70 dark:bg-black/50" />
-          </div>
-        )}
-        <div className="relative flex items-center gap-3 px-4 py-3">
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <Disc3 className="h-24 w-24 text-white/15" strokeWidth={1} aria-hidden />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/20 to-black/70" />
+        </div>
+
+        <div className="relative flex items-center gap-3 px-4 pt-3 pb-2">
           <div
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-300/80 dark:border-white/20 bg-gray-100/80 dark:bg-white/5",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10",
               isPlaying && "animate-spin"
             )}
           >
-            <Disc3 className="h-5 w-5 text-gray-700 dark:text-white/80" strokeWidth={1.5} />
+            <Disc3 className="h-4 w-4 text-white/90" strokeWidth={1.5} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-medium truncate text-gray-900 dark:text-white/90">{title}</p>
-            <p className="text-xs text-gray-600 dark:text-white/60 truncate">{deviceName}</p>
+            <p className="truncate font-medium leading-tight text-white">{title}</p>
+            <p className="truncate text-xs text-white/65">{deviceName}</p>
           </div>
           {onMoreClick && (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-              className="p-1.5 rounded-lg shrink-0 text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoreClick();
+              }}
+              className="shrink-0 rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
               aria-label={t("common.options")}
             >
               <MoreVertical className="h-5 w-5" aria-hidden />
             </button>
           )}
-          {mediaImageSrc ? (
-          !expanded ? (
-            <button
-              key={trackKey}
-              type="button"
-              onClick={() => setExpandedWithCallback(true)}
-              className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/20 hover:border-gray-300 dark:hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/50"
-              aria-label={t("mediaCard.expand")}
-            >
-              <Image
-                src={mediaImageSrc}
-                alt=""
-                fill
-                sizes="40px"
-                className="object-cover"
-                unoptimized
-              />
-            </button>
-          ) : (
-            <div key={trackKey} className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/20">
-              <Image
-                src={mediaImageSrc}
-                alt=""
-                fill
-                sizes="40px"
-                className="object-cover"
-                unoptimized
-              />
-            </div>
-          )
-        ) : !expanded ? (
-          <button
-            type="button"
-            onClick={() => setExpandedWithCallback(true)}
-            className="h-10 w-10 shrink-0 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/20 flex items-center justify-center hover:border-gray-300 dark:hover:border-white/40 hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/50"
-            aria-label={t("mediaCard.expand")}
-          >
-            <Disc3 className="h-5 w-5 text-gray-400 dark:text-white/30" strokeWidth={1.5} />
-          </button>
-        ) : (
-          <div className="h-10 w-10 shrink-0 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/20 flex items-center justify-center">
-            <Disc3 className="h-5 w-5 text-gray-400 dark:text-white/30" strokeWidth={1.5} />
-          </div>
-        )}
         </div>
-      </div>
+
+        <div className="relative mt-auto space-y-1.5 px-4 pb-3 pt-8">
+          <div
+            className="h-0.5 overflow-hidden rounded-full bg-white/25"
+            role="progressbar"
+            aria-valuenow={displayPosition}
+            aria-valuemin={0}
+            aria-valuemax={duration}
+          >
+            <div
+              className="h-full rounded-full bg-white/90 transition-all duration-300"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-[11px] tabular-nums text-white/80">
+            <span>{formatTime(displayPosition)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Onderste balk: track + controls — altijd onderaan */}
-      <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-3 bg-gray-100/80 dark:bg-black/30 backdrop-blur-md rounded-b-2xl">
+      <div className="relative flex shrink-0 items-center justify-between gap-2 bg-black/75 px-4 py-3 backdrop-blur-md">
         <div className="min-w-0 flex-1">
-          <p className="font-medium truncate text-sm text-gray-900 dark:text-white">
-            {mediaTitle || "—"}
-          </p>
-          <p className="text-xs text-gray-600 dark:text-white/60 truncate">
-            {mediaArtist || "—"}
-          </p>
+          <p className="truncate text-sm font-medium text-white">{mediaTitle || "—"}</p>
+          <p className="truncate text-xs text-white/60">{mediaArtist || "—"}</p>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             onClick={handlePrevious}
             disabled={loading || !isOn}
-            className="p-2 rounded-full text-gray-700 hover:bg-gray-200/80 dark:text-white/80 dark:hover:bg-white/10 disabled:opacity-40"
+            className="rounded-full p-2 text-white/85 hover:bg-white/10 disabled:opacity-40"
             aria-label="Previous"
           >
             <SkipBack className="h-4 w-4" />
@@ -314,20 +216,16 @@ export function MediaCardWidget({
             type="button"
             onClick={handlePlayPause}
             disabled={loading || !isOn}
-            className="p-2 rounded-full bg-gray-300 text-gray-900 hover:bg-gray-400 dark:bg-white/20 dark:text-white dark:hover:bg-white/30 disabled:opacity-40"
+            className="rounded-xl bg-white/15 p-2 text-white hover:bg-white/25 disabled:opacity-40"
             aria-label={isPlaying ? "Pause" : "Play"}
           >
-            {isPlaying ? (
-              <Pause className="h-4 w-4" />
-            ) : (
-              <Play className="h-4 w-4 ml-0.5" />
-            )}
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
           </button>
           <button
             type="button"
             onClick={handleNext}
             disabled={loading || !isOn}
-            className="p-2 rounded-full text-gray-700 hover:bg-gray-200/80 dark:text-white/80 dark:hover:bg-white/10 disabled:opacity-40"
+            className="rounded-full p-2 text-white/85 hover:bg-white/10 disabled:opacity-40"
             aria-label="Next"
           >
             <SkipForward className="h-4 w-4" />

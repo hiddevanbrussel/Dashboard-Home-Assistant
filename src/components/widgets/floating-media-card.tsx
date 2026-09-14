@@ -77,7 +77,6 @@ export function FloatingMediaCard({
   const totalWidth = cardWidth != null && cardWidth > 0 ? cardWidth : DEFAULT_CARD_WIDTH;
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -183,8 +182,7 @@ export function FloatingMediaCard({
   return (
     <div
       className={cn(
-        "fixed shadow-xl rounded-2xl overflow-hidden bg-white/90 dark:bg-black/50 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10",
-        isExpanded ? "z-50" : "z-40",
+        "fixed z-40 overflow-hidden rounded-2xl shadow-xl",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -220,7 +218,6 @@ export function FloatingMediaCard({
           width={cardWidth}
           height={cardHeight}
           onMoreClick={editMode ? onEdit : undefined}
-          onExpandedChange={setIsExpanded}
         />
       </div>
     </div>
