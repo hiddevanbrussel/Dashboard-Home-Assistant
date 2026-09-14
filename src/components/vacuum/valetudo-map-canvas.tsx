@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import {
   entityPointToPixel,
@@ -25,7 +25,6 @@ const SEGMENT_COLORS = [
 ] as const;
 
 const SELECTED = [71, 0, 181] as const;
-/** Extra pixels per map cell so CSS scaling stays sharp enough for labels. */
 const DRAW_SCALE = 4;
 
 function colorForSegment(id: string, selected: boolean): readonly [number, number, number] {
@@ -50,12 +49,12 @@ type Lookup = {
 };
 
 export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const lookupRef = useRef<Lookup | null>(null);
 
   const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const img = imgRef.current;
+    if (!img) return;
     const layers = map.layers ?? [];
     const bounds = layerPixelBounds(layers);
     if (!bounds) return;
@@ -107,6 +106,7 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
 
     const drawW = mapW * DRAW_SCALE;
     const drawH = mapH * DRAW_SCALE;
+    const canvas = document.createElement("canvas");
     canvas.width = drawW;
     canvas.height = drawH;
     const ctx = canvas.getContext("2d");
@@ -150,53 +150,45 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
       }
     }
 
-    const fontSize = Math.max(12, Math.round(3.2 * DRAW_SCALE));
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `600 ${fontSize}px ui-sans-serif, system-ui, sans-serif`;
-    for (const layer of layers) {
-      if (layer.type !== "segment") continue;
-      const id = normalizeSegmentId(layer.metaData?.segmentId);
-      if (!id) continue;
-      const center = segmentCentroid(layer);
-      if (!center) continue;
-      const { x, y } = toDraw(center);
-      const label = segmentLabel(layer, id);
-      const width = ctx.measureText(label).width;
-      const padX = 8;
-      const padY = 5;
-      const boxW = width + padX * 2;
-      const boxH = fontSize + padY * 2;
-      ctx.beginPath();
-      if (typeof ctx.roundRect === "function") {
-        ctx.roundRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 999);
-      } else {
-        ctx.rect(x - boxW / 2, y - boxH / 2, boxW, boxH);
-      }
-      ctx.fillStyle = selected.has(id) ? "rgba(71,0,181,0.92)" : "rgba(255,255,255,0.9)";
-      ctx.fill();
-      ctx.fillStyle = selected.has(id) ? "#ffffff" : "#2a203a";
-      ctx.fillText(label, x, y);
-    }
-
     lookupRef.current = { data: lookup, width: mapW, height: mapH, ids };
+    img.src = canvas.toDataURL("image/png");
   }, [map, selectedIds]);
 
   useEffect(() => {
     draw();
   }, [draw]);
 
-  function handlePointer(e: React.PointerEvent<HTMLCanvasElement>) {
-    const canvas = canvasRef.current;
+  const bounds = layerPixelBounds(map.layers ?? []);
+  const mapW = bounds ? bounds.width + 8 : 1;
+  const mapH = bounds ? bounds.height + 8 : 1;
+  const roomLabels = useMemo(() => {
+    const next = layerPixelBounds(map.layers ?? []);
+    if (!next) return [];
+    const width = next.width + 8;
+    const height = next.height + 8;
+    const items: { id: string; name: string; x: number; y: number }[] = [];
+    for (const layer of map.layers ?? []) {
+      if (layer.type !== "segment") continue;
+      const id = normalizeSegmentId(layer.metaData?.segmentId);
+      const center = segmentCentroid(layer);
+      if (!id || !center) continue;
+      items.push({
+        id,
+        name: segmentLabel(layer, id),
+        x: ((center.x - next.minX + 4) / width) * 100,
+        y: ((center.y - next.minY + 4) / height) * 100,
+      });
+    }
+    return items;
+  }, [map]);
+
+  function handlePointer(e: React.PointerEvent<HTMLImageElement>) {
+    const target = e.currentTarget;
     const lookup = lookupRef.current;
-    if (!canvas || !lookup) return;
-    const rect = canvas.getBoundingClientRect();
-    const scale = Math.min(rect.width / lookup.width, rect.height / lookup.height);
-    if (scale <= 0) return;
-    const contentW = lookup.width * scale;
-    const contentH = lookup.height * scale;
-    const x = Math.floor((e.clientX - rect.left - (rect.width - contentW) / 2) / scale);
-    const y = Math.floor((e.clientY - rect.top - (rect.height - contentH) / 2) / scale);
+    if (!lookup) return;
+    const rect = target.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) * (lookup.width / rect.width));
+    const y = Math.floor((e.clientY - rect.top) * (lookup.height / rect.height));
     if (x < 0 || y < 0 || x >= lookup.width || y >= lookup.height) return;
     const index = lookup.data[y * lookup.width + x];
     const id = lookup.ids[index];
@@ -204,13 +196,51 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
   }
 
   return (
-    <div className={cn("absolute inset-3 sm:inset-4", className)}>
-      <canvas
-        ref={canvasRef}
-        onPointerUp={handlePointer}
-        className="h-full w-full cursor-pointer touch-manipulation"
-        style={{ imageRendering: "pixelated", objectFit: "contain" }}
-      />
+    <div
+      className={cn(className)}
+      style={{ position: "absolute", inset: 12, containerType: "size" }}
+    >
+      <div
+        className="relative mx-auto"
+        style={{
+          width: `min(100cqw, calc(100cqh * ${mapW} / ${mapH}))`,
+          height: `min(100cqh, calc(100cqw * ${mapH} / ${mapW}))`,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          ref={imgRef}
+          alt=""
+          onPointerUp={handlePointer}
+          className="cursor-pointer touch-manipulation"
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "block",
+            imageRendering: "pixelated",
+          }}
+        />
+        {roomLabels.map((room) => {
+          const selected = selectedIds.includes(room.id);
+          return (
+            <button
+              key={room.id}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSegment(room.id);
+              }}
+              className={cn(
+                "absolute -translate-x-1/2 -translate-y-1/2 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm",
+                selected ? "bg-brand text-white" : "bg-white/90 text-gray-800"
+              )}
+              style={{ left: `${room.x}%`, top: `${room.y}%` }}
+            >
+              {room.name}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
