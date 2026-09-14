@@ -39,7 +39,7 @@ import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store"
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { hydrateValetudoStore, useValetudoStore } from "@/stores/valetudo-store";
 import { useNewsStore } from "@/stores/news-store";
-import { Bot, CalendarDays, Globe, LayoutGrid, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
+import { RobotVacuum, CalendarDays, Globe, LayoutGrid, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
@@ -62,7 +62,7 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
 const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
   news: { labelKey: "news.settings.title", descriptionKey: "news.settings.description", icon: Newspaper },
   "music-assistant": { labelKey: "settings.musicAssistant", descriptionKey: "settings.musicAssistant.description", icon: Music2 },
-  valetudo: { labelKey: "settings.valetudo", descriptionKey: "settings.valetudo.description", icon: Bot },
+  valetudo: { labelKey: "settings.valetudo", descriptionKey: "settings.valetudo.description", icon: RobotVacuum },
 };
 
 type HaEntity = {

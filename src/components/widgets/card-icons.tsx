@@ -12,6 +12,7 @@ import {
   Car,
   Circle,
   CircleDot,
+  CircleGauge,
   DoorOpen,
   Drill,
   Droplets,
@@ -21,12 +22,12 @@ import {
   Fuel,
   Gamepad2,
   Gauge,
-  GaugeCircle,
   Home,
   Lamp,
   Library,
   Lightbulb,
   Popcorn,
+  RobotVacuum,
   Rocket,
   Shirt,
   Sofa,
@@ -68,12 +69,13 @@ export const CARD_ICONS: Record<string, CardIconComponent> = {
   Fuel,
   Gamepad2,
   Gauge,
-  GaugeCircle,
+  GaugeCircle: CircleGauge,
   Home,
   Lamp,
   Library,
   Lightbulb,
   Popcorn,
+  RobotVacuum,
   Rocket,
   Shirt,
   Sofa,
@@ -105,5 +107,6 @@ export const CARD_ICONS: Record<string, CardIconComponent> = {
 (CARD_ICONS as Record<string, CardIconComponent>).drill = Drill;
 (CARD_ICONS as Record<string, CardIconComponent>)["shelving-unit"] = Library;
 (CARD_ICONS as Record<string, CardIconComponent>)["tool-case"] = Briefcase;
+(CARD_ICONS as Record<string, CardIconComponent>)["robot-vacuum"] = RobotVacuum;
 
 export const CARD_ICON_OPTIONS = Object.keys(CARD_ICONS).sort();

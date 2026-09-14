@@ -10,7 +10,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Bot, CalendarDays, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
+import { RobotVacuum, CalendarDays, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
 import { ArrowRightLeft } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -96,7 +96,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "stat_pill_card", labelKey: "cardType.stat_pill_card", Icon: CircleDot },
   { type: "sensor_card", labelKey: "cardType.sensor_card", Icon: Gauge },
   { type: "weather_card", labelKey: "cardType.weather_card", Icon: CloudSun },
-  { type: "vacuum_card", labelKey: "cardType.vacuum_card", Icon: Bot },
+  { type: "vacuum_card", labelKey: "cardType.vacuum_card", Icon: RobotVacuum },
   { type: "alarm_card", labelKey: "cardType.alarm_card", Icon: ShieldCheck },
   { type: "camera_card", labelKey: "cardType.camera_card", Icon: Video },
   { type: "pill_card", labelKey: "cardType.pill_card", Icon: CircleDot },
