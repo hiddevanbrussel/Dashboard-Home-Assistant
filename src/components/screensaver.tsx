@@ -28,12 +28,30 @@ import {
   screensaverMediaSide,
 } from "@/lib/screensaver-clock-position";
 import {
-  clockSizeAmpmClass,
-  clockSizeDateClass,
-  clockSizeTimeClass,
   type ScreensaverClockSize,
 } from "@/lib/screensaver-clock-size";
 import { formatTimerMs, timerRemainingMs } from "@/lib/timer";
+
+const CLOCK_TIME_CLASS: Record<ScreensaverClockSize, string> = {
+  sm: "text-4xl sm:text-5xl",
+  md: "text-5xl sm:text-6xl",
+  lg: "text-7xl sm:text-8xl",
+  xl: "text-8xl sm:text-9xl",
+};
+
+const CLOCK_AMPM_CLASS: Record<ScreensaverClockSize, string> = {
+  sm: "text-base sm:text-lg",
+  md: "text-lg sm:text-xl",
+  lg: "text-2xl sm:text-3xl",
+  xl: "text-3xl sm:text-4xl",
+};
+
+const CLOCK_DATE_CLASS: Record<ScreensaverClockSize, string> = {
+  sm: "text-xs",
+  md: "text-sm",
+  lg: "text-base",
+  xl: "text-lg",
+};
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
@@ -398,16 +416,16 @@ function ScreensaverClock({
     >
       <time
         dateTime={time.toISOString()}
-        className={cn("font-light tabular-nums text-white/90 drop-shadow-md", clockSizeTimeClass(size))}
+        className={cn("font-light tabular-nums text-white/90 drop-shadow-md", CLOCK_TIME_CLASS[size])}
       >
         {timeStr}
         {ampm != null && (
-          <span className={cn("ml-1.5 font-normal text-white/70", clockSizeAmpmClass(size))}>
+          <span className={cn("ml-1.5 font-normal text-white/70", CLOCK_AMPM_CLASS[size])}>
             {ampm}
           </span>
         )}
       </time>
-      <span className={cn("text-white/50 tabular-nums", clockSizeDateClass(size))}>{dateStr}</span>
+      <span className={cn("text-white/50 tabular-nums", CLOCK_DATE_CLASS[size])}>{dateStr}</span>
     </div>
   );
 }
