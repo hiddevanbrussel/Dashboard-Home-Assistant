@@ -128,9 +128,12 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
     if (!offCtx) return;
     offCtx.putImageData(image, 0, 0);
 
-    const availW = viewport.w || mapW;
-    const availH = viewport.h || mapH;
-    const scale = Math.max(1, Math.min(availW / mapW, availH / mapH));
+    if (viewport.w < 8 || viewport.h < 8) {
+      lookupRef.current = { data: lookup, width: mapW, height: mapH, ids };
+      return;
+    }
+
+    const scale = Math.max(1, Math.min(viewport.w / mapW, viewport.h / mapH));
     const displayW = Math.max(1, Math.floor(mapW * scale));
     const displayH = Math.max(1, Math.floor(mapH * scale));
     const dpr = typeof window !== "undefined" ? Math.min(3, window.devicePixelRatio || 1) : 1;
@@ -178,9 +181,10 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
     }
 
     if (scale >= 3) {
+      const fontSize = Math.max(12, Math.min(18, Math.round(scale * 1.1)));
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = `600 ${Math.max(12, Math.min(18, Math.round(scale * 1.1)))}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.font = `600 ${fontSize}px ui-sans-serif, system-ui, sans-serif`;
       for (const layer of layers) {
         if (layer.type !== "segment") continue;
         const id = normalizeSegmentId(layer.metaData?.segmentId);
@@ -189,10 +193,20 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
         if (!center) continue;
         const { x, y } = toDisplay(center);
         const label = segmentLabel(layer, id);
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = selected.has(id) ? "rgba(71,0,181,0.9)" : "rgba(255,255,255,0.92)";
+        const width = ctx.measureText(label).width;
+        const padX = 8;
+        const padY = 5;
+        const boxW = width + padX * 2;
+        const boxH = fontSize + padY * 2;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 999);
+        } else {
+          ctx.rect(x - boxW / 2, y - boxH / 2, boxW, boxH);
+        }
+        ctx.fillStyle = selected.has(id) ? "rgba(71,0,181,0.92)" : "rgba(255,255,255,0.9)";
+        ctx.fill();
         ctx.fillStyle = selected.has(id) ? "#ffffff" : "#2a203a";
-        ctx.strokeText(label, x, y);
         ctx.fillText(label, x, y);
       }
     }
@@ -218,7 +232,10 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
   }
 
   return (
-    <div ref={wrapRef} className={cn("flex h-full min-h-0 w-full items-center justify-center", className)}>
+    <div
+      ref={wrapRef}
+      className={cn("absolute inset-3 flex items-center justify-center sm:inset-4", className)}
+    >
       <canvas
         ref={canvasRef}
         onPointerUp={handlePointer}
