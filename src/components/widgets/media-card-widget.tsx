@@ -6,6 +6,7 @@ import type { MediaCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
+import { mediaArtworkCacheKey, mediaImageRequestUrl } from "@/lib/media-image";
 
 function formatTime(seconds: number | undefined): string {
   if (seconds == null || Number.isNaN(seconds)) return "0:00";
@@ -40,7 +41,10 @@ export function MediaCardWidget({
   const entityArtist = (entity?.attributes?.media_artist as string) ?? "";
   const mediaTitle = (mediaTitleOverride?.trim() || entityTitle) || "";
   const mediaArtist = (mediaArtistOverride?.trim() || entityArtist) || "";
-  const entityPicture = entity?.attributes?.entity_picture as string | undefined;
+  const entityPicture =
+    (entity?.attributes?.entity_picture as string | undefined) ??
+    (entity?.attributes?.entity_picture_local as string | undefined);
+  const mediaContentId = (entity?.attributes?.media_content_id as string | undefined) ?? "";
   const duration = Number(entity?.attributes?.media_duration) || 0;
   const position = Number(entity?.attributes?.media_position) || 0;
   const deviceName =
@@ -101,14 +105,14 @@ export function MediaCardWidget({
   const progressPct =
     duration > 0 ? Math.min(100, (displayPosition / duration) * 100) : 0;
 
-  const mediaImageSrc =
-    entityPicture?.startsWith("http")
-      ? entityPicture
-      : entityPicture
-        ? `/api/ha/media-image?entity_id=${encodeURIComponent(entity_id)}&v=${encodeURIComponent(entityPicture)}`
-        : null;
-
-  const trackKey = [mediaTitle, entityPicture].filter(Boolean).join("|") || "none";
+  const artworkKey = mediaArtworkCacheKey({
+    entityPicture,
+    mediaTitle,
+    mediaArtist,
+    mediaContentId,
+  });
+  const mediaImageSrc = entityPicture ? mediaImageRequestUrl(entity_id, artworkKey) : null;
+  const trackKey = artworkKey || "none";
   const hasFixedHeight = height != null && height > 0;
 
   return (
