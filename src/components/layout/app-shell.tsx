@@ -300,7 +300,7 @@ export function AppShell({
         "flex flex-col",
         contentNoScroll ? "h-dvh max-h-dvh overflow-hidden" : "min-h-screen",
         pageBackground
-          ? "bg-transparent"
+          ? "bg-white/85 dark:bg-black/50"
           : "bg-page-light dark:bg-dark-page",
         className
       )}
@@ -314,19 +314,9 @@ export function AppShell({
       )}
 
       <div
-        className={cn(
-          "relative flex min-h-0 flex-1 flex-col",
-          showSidebar && (pageBackground ? "ml-[5.5rem]" : "pl-[5.5rem]"),
-          pageBackground && "bg-white/85 dark:bg-black/50"
-        )}
+        className={cn("relative flex min-h-0 flex-1 flex-col", showSidebar && "pl-[5.5rem]")}
         style={contentRightInset ? { paddingRight: contentRightInset } : undefined}
       >
-        {pageBackground && showSidebar ? (
-          <div
-            className="pointer-events-none absolute inset-y-0 left-0 z-0 w-8 -translate-x-full bg-gradient-to-l from-white/85 to-transparent dark:from-black/50"
-            aria-hidden
-          />
-        ) : null}
         <div
           className={cn(
             "relative z-50 flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",

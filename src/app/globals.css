@@ -165,22 +165,20 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   }
 
-  /* Floating nav rail — iOS-style liquid glass */
+  /* Floating nav rail — frosted glass that stays readable over page photos */
   .sidebar-glass {
     background: linear-gradient(
       165deg,
-      rgba(255, 255, 255, 0.52) 0%,
-      rgba(255, 255, 255, 0.26) 48%,
-      rgba(255, 255, 255, 0.18) 100%
+      rgba(255, 255, 255, 0.82) 0%,
+      rgba(255, 255, 255, 0.7) 100%
     );
-    -webkit-backdrop-filter: blur(40px) saturate(190%);
-    backdrop-filter: blur(40px) saturate(190%);
-    border: 1px solid rgba(255, 255, 255, 0.62);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.75);
     box-shadow:
-      0 14px 44px -12px rgba(15, 10, 40, 0.38),
-      0 2px 10px rgba(15, 10, 40, 0.1),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
-      inset 0 -1px 0 0 rgba(255, 255, 255, 0.2);
+      0 10px 28px -10px rgba(15, 10, 40, 0.22),
+      0 2px 8px rgba(15, 10, 40, 0.08),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
   }
 
   .sidebar-glass::after {
@@ -191,38 +189,35 @@
     border-radius: inherit;
     background: linear-gradient(
       155deg,
-      rgba(255, 255, 255, 0.55) 0%,
-      rgba(255, 255, 255, 0.12) 34%,
-      transparent 56%
+      rgba(255, 255, 255, 0.45) 0%,
+      transparent 42%
     );
   }
 
   .dark .sidebar-glass {
-    background: color-mix(in srgb, rgb(var(--brand) / 0.38) 55%, rgba(8, 0, 18, 0.48));
-    border-color: rgba(255, 255, 255, 0.22);
+    background: color-mix(in srgb, rgb(var(--brand) / 0.72) 65%, rgba(10, 0, 22, 0.78));
+    border-color: rgba(255, 255, 255, 0.16);
     box-shadow:
-      0 14px 44px -12px rgba(0, 0, 0, 0.58),
-      0 2px 8px rgba(0, 0, 0, 0.28),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
-      inset 0 -1px 0 0 rgba(255, 255, 255, 0.05);
+      0 12px 32px -10px rgba(0, 0, 0, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.24),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
   }
 
   .dark .sidebar-glass::after {
     background: linear-gradient(
       155deg,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0.04) 36%,
-      transparent 58%
+      rgba(255, 255, 255, 0.14) 0%,
+      transparent 40%
     );
   }
 
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .sidebar-glass {
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.94);
     }
 
     .dark .sidebar-glass {
-      background: rgb(var(--brand) / 0.92);
+      background: rgb(var(--brand) / 0.94);
     }
   }
 }
