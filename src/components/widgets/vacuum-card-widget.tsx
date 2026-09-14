@@ -49,7 +49,7 @@ export function VacuumCardWidget({
   const cleanedAreaUnit = (cleanedAreaEntity?.attributes as { unit_of_measurement?: string })?.unit_of_measurement ?? "";
   const showCleanedArea = cleaned_area_entity_id && cleanedAreaValue != null && cleanedAreaValue !== "";
 
-  const IconComponent = (iconName && CARD_ICONS[iconName]) ? CARD_ICONS[iconName] : CARD_ICONS.Bot;
+  const IconComponent = (iconName && CARD_ICONS[iconName]) ? CARD_ICONS[iconName] : CARD_ICONS.RobotVacuum;
   const isActive = state === "cleaning" || activeScriptId != null;
 
   useEffect(() => {

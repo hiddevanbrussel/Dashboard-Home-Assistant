@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
-  Bot,
+  RobotVacuum,
   CalendarDays,
   DoorOpen,
   Home,
@@ -33,7 +33,7 @@ const optionalItems = [
   { href: "/calendar", icon: CalendarDays, labelKey: "nav.calendar", flag: "calendar" },
   { href: "/family", icon: ListTodo, labelKey: "nav.family", flag: "family" },
   { href: "/music", icon: Music2, labelKey: "nav.music", flag: "music" },
-  { href: "/vacuum", icon: Bot, labelKey: "nav.vacuum", flag: "vacuum" },
+  { href: "/vacuum", icon: RobotVacuum, labelKey: "nav.vacuum", flag: "vacuum" },
 ] as const;
 
 function navButtonClass(isActive: boolean) {
