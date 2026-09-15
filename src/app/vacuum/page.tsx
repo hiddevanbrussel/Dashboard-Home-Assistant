@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Home, Pause, Play, Square } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
@@ -72,9 +72,11 @@ export default function VacuumPage() {
     () => ({ baseUrl, username, password }),
     [baseUrl, username, password]
   );
+  const refreshInFlight = useRef(false);
 
   const refresh = useCallback(async () => {
-    if (!conn.baseUrl) return;
+    if (!conn.baseUrl || refreshInFlight.current) return;
+    refreshInFlight.current = true;
     try {
       const state = await valetudoRequest<RobotState>({
         ...conn,
@@ -93,6 +95,8 @@ export default function VacuumPage() {
       setConsumables(parseConsumables(data));
     } catch {
       setConsumables([]);
+    } finally {
+      refreshInFlight.current = false;
     }
   }, [conn, t]);
 
