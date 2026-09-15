@@ -7,7 +7,7 @@ import { VacuumCard2Widget } from "./vacuum-card-2-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingVacuumHeroCardPosition.v2.";
 const DEFAULT_OFFSET = 24;
-const SIDEBAR_GUTTER = 72;
+const SIDEBAR_GUTTER = 88;
 const CARD_WIDTH = 300;
 const CARD_HEIGHT = 330;
 
