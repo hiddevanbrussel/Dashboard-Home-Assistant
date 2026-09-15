@@ -775,52 +775,6 @@ export default function SettingsPage() {
                 {t("settings.screensaver.preview")}
               </SettingsPrimaryButton>
 
-              <SettingsField label={t("settings.screensaver.weather")} hint={t("settings.screensaver.weatherHint")}>
-                <SettingsSelect
-                  value={screensaverWeatherEntityId ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value || null;
-                    setScreensaverWeatherEntityIdState(v);
-                    setScreensaverWeatherEntityId(v);
-                  }}
-                >
-                  <option value="">{t("settings.screensaver.weatherDefault")}</option>
-                  {entities
-                    .filter((e) => e.entity_id.startsWith("weather.") || (e.entity_id.startsWith("sensor.") && /temp|weather|graden/i.test(e.entity_id)))
-                    .map((e) => {
-                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
-                      return (
-                        <option key={e.entity_id} value={e.entity_id}>
-                          {name}
-                        </option>
-                      );
-                    })}
-                </SettingsSelect>
-              </SettingsField>
-
-              <SettingsField label={t("settings.screensaver.football")} hint={t("settings.screensaver.footballHint")}>
-                <SettingsSelect
-                  value={screensaverFootballEntityId ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value || null;
-                    setScreensaverFootballEntityIdState(v);
-                    setScreensaverFootballEntityId(v);
-                  }}
-                >
-                  <option value="">{t("settings.screensaver.footballOff")}</option>
-                  {entities
-                    .filter((e) => e.entity_id.startsWith("sensor.team"))
-                    .map((e) => {
-                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
-                      return (
-                        <option key={e.entity_id} value={e.entity_id}>
-                          {name}
-                        </option>
-                      );
-                    })}
-                </SettingsSelect>
-              </SettingsField>
-
               <SettingsChoiceCards
                 label={t("settings.screensaver.mediaSource")}
                 hint={t("settings.screensaver.mediaSourceHint")}
@@ -848,32 +802,32 @@ export default function SettingsPage() {
                   },
                 ]}
               />
-                {screensaverMediaSource === "pexels" && !pexelsReady ? (
-                  <div className="space-y-2">
-                    <SettingsAlert tone="error">{t("settings.screensaver.mediaSource.pexelsNotReady")}</SettingsAlert>
-                    <SettingsSecondaryButton
-                      onClick={() => {
-                        setSection("apps");
-                        setSelectedApp("pexels");
-                      }}
-                    >
-                      {t("settings.screensaver.openPexelsApp")}
-                    </SettingsSecondaryButton>
-                  </div>
-                ) : null}
-                {screensaverMediaSource === "immich" && !immichReady ? (
-                  <div className="space-y-2">
-                    <SettingsAlert tone="error">{t("settings.screensaver.mediaSource.immichNotReady")}</SettingsAlert>
-                    <SettingsSecondaryButton
-                      onClick={() => {
-                        setSection("apps");
-                        setSelectedApp("immich");
-                      }}
-                    >
-                      {t("settings.screensaver.openImmichApp")}
-                    </SettingsSecondaryButton>
-                  </div>
-                ) : null}
+              {screensaverMediaSource === "pexels" && !pexelsReady ? (
+                <div className="space-y-2">
+                  <SettingsAlert tone="error">{t("settings.screensaver.mediaSource.pexelsNotReady")}</SettingsAlert>
+                  <SettingsSecondaryButton
+                    onClick={() => {
+                      setSection("apps");
+                      setSelectedApp("pexels");
+                    }}
+                  >
+                    {t("settings.screensaver.openPexelsApp")}
+                  </SettingsSecondaryButton>
+                </div>
+              ) : null}
+              {screensaverMediaSource === "immich" && !immichReady ? (
+                <div className="space-y-2">
+                  <SettingsAlert tone="error">{t("settings.screensaver.mediaSource.immichNotReady")}</SettingsAlert>
+                  <SettingsSecondaryButton
+                    onClick={() => {
+                      setSection("apps");
+                      setSelectedApp("immich");
+                    }}
+                  >
+                    {t("settings.screensaver.openImmichApp")}
+                  </SettingsSecondaryButton>
+                </div>
+              ) : null}
 
               {screensaverMediaSource === "custom" ? (
               <div className="space-y-2">
@@ -923,6 +877,52 @@ export default function SettingsPage() {
                 />
               </div>
               ) : null}
+
+              <SettingsField label={t("settings.screensaver.weather")} hint={t("settings.screensaver.weatherHint")}>
+                <SettingsSelect
+                  value={screensaverWeatherEntityId ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value || null;
+                    setScreensaverWeatherEntityIdState(v);
+                    setScreensaverWeatherEntityId(v);
+                  }}
+                >
+                  <option value="">{t("settings.screensaver.weatherDefault")}</option>
+                  {entities
+                    .filter((e) => e.entity_id.startsWith("weather.") || (e.entity_id.startsWith("sensor.") && /temp|weather|graden/i.test(e.entity_id)))
+                    .map((e) => {
+                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
+                      return (
+                        <option key={e.entity_id} value={e.entity_id}>
+                          {name}
+                        </option>
+                      );
+                    })}
+                </SettingsSelect>
+              </SettingsField>
+
+              <SettingsField label={t("settings.screensaver.football")} hint={t("settings.screensaver.footballHint")}>
+                <SettingsSelect
+                  value={screensaverFootballEntityId ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value || null;
+                    setScreensaverFootballEntityIdState(v);
+                    setScreensaverFootballEntityId(v);
+                  }}
+                >
+                  <option value="">{t("settings.screensaver.footballOff")}</option>
+                  {entities
+                    .filter((e) => e.entity_id.startsWith("sensor.team"))
+                    .map((e) => {
+                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
+                      return (
+                        <option key={e.entity_id} value={e.entity_id}>
+                          {name}
+                        </option>
+                      );
+                    })}
+                </SettingsSelect>
+              </SettingsField>
             </>
           )}
 
