@@ -40,6 +40,10 @@ export type ClimateProps = WidgetBaseProps & {
   state?: string;
   /** Optioneel: sensor entity voor luchtvochtigheid (bijv. sensor.x_humidity). */
   humidity_entity_id?: string;
+  /** Breedte kaart in px (standaard 300). */
+  width?: number;
+  /** Hoogte kaart in px (standaard 340). */
+  height?: number;
 };
 
 export type LightingBrightnessProps = WidgetBaseProps & {

@@ -85,6 +85,16 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
+  clampClimateCardHeight,
+  clampClimateCardWidth,
+  CLIMATE_CARD_DEFAULT_HEIGHT,
+  CLIMATE_CARD_DEFAULT_WIDTH,
+  CLIMATE_CARD_MAX_HEIGHT,
+  CLIMATE_CARD_MAX_WIDTH,
+  CLIMATE_CARD_MIN_HEIGHT,
+  CLIMATE_CARD_MIN_WIDTH,
+} from "@/lib/climate-card";
+import {
   clampVacuumCard2Height,
   clampVacuumCard2Width,
   VACUUM_CARD_2_DEFAULT_HEIGHT,
@@ -1059,6 +1069,7 @@ export default function DashboardEditPage() {
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
+      ...((type === "climate_card" || type === "climate_card_2") && { width: CLIMATE_CARD_DEFAULT_WIDTH, height: CLIMATE_CARD_DEFAULT_HEIGHT }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
     const isTextCard = type === "text_card";
@@ -3184,10 +3195,10 @@ export default function DashboardEditPage() {
                       </label>
                       <input
                         type="number"
-                        min={200}
-                        max={500}
+                        min={CLIMATE_CARD_MIN_WIDTH}
+                        max={CLIMATE_CARD_MAX_WIDTH}
                         step={10}
-                        value={editForm.width ?? 320}
+                        value={editForm.width ?? CLIMATE_CARD_DEFAULT_WIDTH}
                         onChange={(e) => {
                           const v = e.target.value === "" ? undefined : Number(e.target.value);
                           setEditForm((prev) => ({
@@ -3195,10 +3206,10 @@ export default function DashboardEditPage() {
                             width: v != null && !Number.isNaN(v) ? v : undefined,
                           }));
                         }}
-                        placeholder="320"
+                        placeholder={String(CLIMATE_CARD_DEFAULT_WIDTH)}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange320")}</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange300")}</p>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -3206,10 +3217,10 @@ export default function DashboardEditPage() {
                       </label>
                       <input
                         type="number"
-                        min={100}
-                        max={400}
+                        min={CLIMATE_CARD_MIN_HEIGHT}
+                        max={CLIMATE_CARD_MAX_HEIGHT}
                         step={10}
-                        value={editForm.height ?? 180}
+                        value={editForm.height ?? CLIMATE_CARD_DEFAULT_HEIGHT}
                         onChange={(e) => {
                           const v = e.target.value === "" ? undefined : Number(e.target.value);
                           setEditForm((prev) => ({
@@ -3217,10 +3228,10 @@ export default function DashboardEditPage() {
                             height: v != null && !Number.isNaN(v) ? v : undefined,
                           }));
                         }}
-                        placeholder="180"
+                        placeholder={String(CLIMATE_CARD_DEFAULT_HEIGHT)}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange180")}</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange340")}</p>
                     </div>
                     </>
                     )}
@@ -5182,8 +5193,8 @@ aria-label={t("editPanel.removeCondition")}
                         ...((editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && {
                           humidity_entity_id: editForm.humidity_entity_id || undefined,
                           icon: editForm.icon || undefined,
-                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
-                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
+                          width: editForm.width != null && editForm.width > 0 ? clampClimateCardWidth(editForm.width) : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? clampClimateCardHeight(editForm.height) : undefined,
                         }),
                         ...(editingWidget.type === "light_card" && {
                           icon: editForm.icon || undefined,
