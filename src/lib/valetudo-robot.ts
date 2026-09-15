@@ -156,6 +156,30 @@ export function parseConsumables(data: unknown): ConsumableState[] {
   });
 }
 
+export const DEFAULT_SEGMENT_ITERATION_MAX = 3;
+export const MAX_SEGMENT_ITERATION_CAP = 10;
+
+export function parseSegmentIterationMax(data: unknown): number {
+  const count =
+    data && typeof data === "object"
+      ? (data as { iterationCount?: { max?: unknown } }).iterationCount
+      : undefined;
+  const max = Number(count?.max);
+  if (!Number.isFinite(max) || max < 1) return DEFAULT_SEGMENT_ITERATION_MAX;
+  return Math.min(MAX_SEGMENT_ITERATION_CAP, Math.round(max));
+}
+
+export function segmentIterationOptions(max: number): number[] {
+  const n = Math.max(1, Math.min(Math.round(max) || DEFAULT_SEGMENT_ITERATION_MAX, MAX_SEGMENT_ITERATION_CAP));
+  return Array.from({ length: n }, (_, i) => i + 1);
+}
+
+export function clampSegmentIterations(value: number, max: number): number {
+  const hi = Math.max(1, Math.round(max) || DEFAULT_SEGMENT_ITERATION_MAX);
+  const n = Number.isFinite(value) ? Math.round(value) : 1;
+  return Math.min(hi, Math.max(1, n));
+}
+
 export function parseConsumableProperties(data: unknown): ConsumableMeta[] {
   if (!data || typeof data !== "object") return [];
   const list = (data as { availableConsumables?: unknown }).availableConsumables;
