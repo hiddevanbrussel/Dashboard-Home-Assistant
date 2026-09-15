@@ -4,31 +4,14 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { ClimateCard2Widget } from "./climate-card-2-widget";
+import { clampClimateCardHeight, clampClimateCardWidth } from "@/lib/climate-card";
 
 /** Voor backwards compatibility. Icon picker gebruikt CARD_ICON_OPTIONS. */
 export const CLIMATE_ICON_OPTIONS: readonly string[] = [];
 
 const STORAGE_KEY = "dashboard.floatingClimateCardPosition";
 const DEFAULT_OFFSET = 24;
-const DEFAULT_CARD_WIDTH = 320;
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 500;
-const DEFAULT_CARD_HEIGHT = 180;
-const MIN_HEIGHT = 100;
-const MAX_HEIGHT = 400;
 const SWIPE_THRESHOLD_PX = 50;
-
-function clampWidth(w: unknown): number {
-  const n = Number(w);
-  if (!Number.isFinite(n)) return DEFAULT_CARD_WIDTH;
-  return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n)));
-}
-
-function clampHeight(w: unknown): number {
-  const n = Number(w);
-  if (!Number.isFinite(n)) return DEFAULT_CARD_HEIGHT;
-  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.round(n)));
-}
 const SLIDE_DURATION_MS = 280;
 
 type Position = { left: number; bottom: number };
@@ -104,8 +87,8 @@ export function FloatingClimateCard({
   onEnterEditMode?: () => void;
 }) {
   const widgets = widgetsProp ?? (titleProp != null && entityIdProp != null ? [{ id: "", title: titleProp, entity_id: entityIdProp, type: "climate_card_2" as const }] : []);
-  const totalWidth = clampWidth(widgets[0]?.width);
-  const totalHeight = clampHeight(widgets[0]?.height);
+  const totalWidth = clampClimateCardWidth(widgets[0]?.width);
+  const totalHeight = clampClimateCardHeight(widgets[0]?.height);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [flipDeg, setFlipDeg] = useState(0);
   const [nextIndex, setNextIndex] = useState<number | null>(null);
@@ -252,7 +235,7 @@ export function FloatingClimateCard({
   return (
     <div
       className={cn(
-        "fixed z-30 flex shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl",
+        "fixed z-30",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -283,7 +266,7 @@ export function FloatingClimateCard({
       <div className="flex flex-col min-w-0 flex-1 w-full h-full">
         <div
           data-climate-swipe-area
-          className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none [&_.rounded-2xl]:rounded-b-none", "relative overflow-hidden", hasMultiple && "touch-none")}
+          className={cn("relative h-full overflow-hidden", hasMultiple && "touch-none")}
           style={{ touchAction: hasMultiple ? "none" : undefined, perspective: "1000px", minHeight: totalHeight }}
           onPointerDown={hasMultiple ? (e) => {
             if (!editMode) {
@@ -346,7 +329,7 @@ export function FloatingClimateCard({
           } : undefined}
         >
           <div
-            className="relative w-full overflow-hidden"
+            className="relative h-full w-full overflow-hidden"
             style={{ minHeight: totalHeight }}
           >
             <div
@@ -368,6 +351,8 @@ export function FloatingClimateCard({
                     entity_id={w.entity_id}
                     humidity_entity_id={w.humidity_entity_id}
                     icon={w.icon}
+                    width={totalWidth}
+                    height={totalHeight}
                     size="md"
                     onMoreClick={editMode ? () => w.id && onEdit?.(w.id) : undefined}
                   />
@@ -382,7 +367,7 @@ export function FloatingClimateCard({
                   key={i}
                   className={cn(
                     "h-1.5 w-1.5 rounded-full transition-colors duration-300",
-                    i === selectedIndex ? "bg-white" : "bg-white/40"
+                    i === selectedIndex ? "bg-gray-400" : "bg-gray-300/70"
                   )}
                   aria-hidden
                 />
