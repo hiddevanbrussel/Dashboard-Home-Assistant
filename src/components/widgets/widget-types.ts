@@ -99,6 +99,14 @@ export type VacuumCardProps = WidgetBaseProps & {
   cleaned_area_entity_id?: string;
 };
 
+/** Vacuum card 2: product-style card with power, fan modes and robot illustration. */
+export type VacuumCard2Props = WidgetBaseProps & {
+  /** Optionele sensor entity_id voor schoonmaakvoortgang (percentage). */
+  progress_entity_id?: string;
+  /** Optionele productfoto; zonder deze waarde toont de kaart de standaardillustratie. */
+  background_image?: string;
+};
+
 /** Alarm card: bedient een alarm_control_panel-entity (aan/uit) met code-invoer. */
 export type AlarmCardProps = WidgetBaseProps & {
   /** Optioneel icoon (Lucide-naam uit card-icons); default afhankelijk van status. */

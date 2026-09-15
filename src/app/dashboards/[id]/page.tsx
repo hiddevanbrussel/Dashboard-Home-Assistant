@@ -35,6 +35,8 @@ import {
   WeatherCardWidget,
   VacuumCardWidget,
   FloatingVacuumCard,
+  VacuumCard2Widget,
+  FloatingVacuumCard2,
   SensorCardWidget,
   FloatingSensorCard,
   TextCardWidget,
@@ -82,7 +84,7 @@ import { cn, generateId } from "@/lib/utils";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card"] as const;
+const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; labelKey: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "text_card", labelKey: "cardType.text_card", Icon: Type },
@@ -97,6 +99,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "sensor_card", labelKey: "cardType.sensor_card", Icon: Gauge },
   { type: "weather_card", labelKey: "cardType.weather_card", Icon: CloudSun },
   { type: "vacuum_card", labelKey: "cardType.vacuum_card", Icon: RobotVacuum },
+  { type: "vacuum_card_2", labelKey: "cardType.vacuum_card_2", Icon: RobotVacuum },
   { type: "alarm_card", labelKey: "cardType.alarm_card", Icon: ShieldCheck },
   { type: "camera_card", labelKey: "cardType.camera_card", Icon: Video },
   { type: "pill_card", labelKey: "cardType.pill_card", Icon: CircleDot },
@@ -128,6 +131,7 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   sensor_card: "sensor",
   weather_card: "weather",
   vacuum_card: "vacuum",
+  vacuum_card_2: "vacuum",
   alarm_card: "alarm_control_panel",
   camera_card: "camera",
   pill_card: "switch",
@@ -143,7 +147,7 @@ const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor", "binary
 const FLOATING_WIDGET_TYPES = new Set([
   "text_card", "media_card", "climate_card", "climate_card_2", "light_card", "solar_card",
   "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card",
-  "vacuum_card", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card", "timer_card",
+  "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card", "timer_card",
 ]);
 
 type DashboardData = {
@@ -269,6 +273,7 @@ function WidgetByType({
   script_ids,
   script_names,
   cleaned_area_entity_id,
+  progress_entity_id,
   light_entity_id,
   media_player_entity_id,
   climate_entity_id,
@@ -302,6 +307,7 @@ function WidgetByType({
   script_ids?: string[];
   script_names?: Record<string, string>;
   cleaned_area_entity_id?: string;
+  progress_entity_id?: string;
   light_entity_id?: string;
   media_player_entity_id?: string;
   climate_entity_id?: string;
@@ -468,6 +474,16 @@ function WidgetByType({
           size={sizeProp}
         />
       );
+    case "vacuum_card_2":
+      return (
+        <VacuumCard2Widget
+          title={title}
+          entity_id={entity_id}
+          progress_entity_id={progress_entity_id}
+          background_image={background_image}
+          size={sizeProp}
+        />
+      );
     case "alarm_card":
       return (
         <AlarmCardWidget
@@ -594,6 +610,7 @@ export default function DashboardEditPage() {
     script_ids?: string[];
     script_names?: Record<string, string>;
     cleaned_area_entity_id?: string;
+    progress_entity_id?: string;
     light_entity_id?: string;
     modal_light_entity_ids?: string[];
     media_player_entity_id?: string;
@@ -632,6 +649,7 @@ export default function DashboardEditPage() {
     script_ids: [],
     script_names: {},
     cleaned_area_entity_id: "",
+    progress_entity_id: "",
     current_entity_id: "",
     light_entity_id: "",
     modal_light_entity_ids: [],
@@ -821,6 +839,7 @@ export default function DashboardEditPage() {
         script_ids: editingWidget.script_ids ?? [],
         script_names: editingWidget.script_names ?? {},
         cleaned_area_entity_id: editingWidget.cleaned_area_entity_id ?? "",
+        progress_entity_id: editingWidget.progress_entity_id ?? "",
         light_entity_id: editingWidget.light_entity_id ?? "",
         media_player_entity_id: editingWidget.media_player_entity_id ?? "",
         climate_entity_id: editingWidget.climate_entity_id ?? "",
@@ -855,7 +874,7 @@ export default function DashboardEditPage() {
       setPillIconSearch(editingWidget.type === "pill_card" ? (editingWidget.icon ?? "") : "");
       setGroupAddEntitySearch("");
       setPowerUsageDeviceSearch("");
-      if (editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") {
+      if (editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "vacuum_card_2" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") {
         setEditTab(editingWidget.type === "room_card" ? "entiteiten" : editingWidget.type === "media_card" ? "weergave" : "algemeen");
       }
       if (editingWidget.type === "energy_monitor_card") {
@@ -903,6 +922,7 @@ export default function DashboardEditPage() {
           widget.type !== "sensor_card" &&
           widget.type !== "weather_card" &&
           widget.type !== "vacuum_card" &&
+          widget.type !== "vacuum_card_2" &&
           widget.type !== "alarm_card" &&
           widget.type !== "camera_card" &&
           widget.type !== "pill_card" &&
@@ -1002,7 +1022,7 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "text_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "device_consumption_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "alarm_card" && type !== "camera_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group" && type !== "chore_card" && type !== "calendar_card" && type !== "timer_card";
+    return type !== "text_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "device_consumption_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "vacuum_card_2" && type !== "alarm_card" && type !== "camera_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group" && type !== "chore_card" && type !== "calendar_card" && type !== "timer_card";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
@@ -1036,7 +1056,7 @@ export default function DashboardEditPage() {
       h: isTextCard ? 1 : 2,
     };
     const newWidgets = [...widgets, newWidget];
-    const isFloatingOnly = type === "text_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "alarm_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card";
+    const isFloatingOnly = type === "text_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "vacuum_card_2" || type === "alarm_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card";
     const newLayout = isFloatingOnly ? layout : [...layout, newLayoutItem];
 
     // Optimistisch query-cache updaten zodat de widget direct beschikbaar is bij remount/refetch
@@ -1109,7 +1129,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean }
+    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -1534,7 +1554,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group" && w.type !== "chore_card" && w.type !== "calendar_card" && w.type !== "timer_card")
+            .filter((w) => w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "vacuum_card_2" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group" && w.type !== "chore_card" && w.type !== "calendar_card" && w.type !== "timer_card")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -1585,6 +1605,7 @@ export default function DashboardEditPage() {
                       script_ids={w.script_ids}
                       script_names={w.script_names}
                       cleaned_area_entity_id={w.cleaned_area_entity_id}
+                      progress_entity_id={w.progress_entity_id}
                       light_entity_id={w.light_entity_id}
                       media_player_entity_id={w.media_player_entity_id}
                       climate_entity_id={w.climate_entity_id}
@@ -1948,6 +1969,27 @@ export default function DashboardEditPage() {
             />
           ) : null;
         })()}
+
+        {widgets
+          .filter((w) => w.type === "vacuum_card_2")
+          .map((w, i) => (
+            <FloatingVacuumCard2
+              key={w.id}
+              widget={{
+                id: w.id,
+                title: w.title ?? t("cardType.vacuum_card_2"),
+                entity_id: w.entity_id,
+                progress_entity_id: w.progress_entity_id,
+                background_image: w.background_image,
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              storageScope={id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
 
         {typeof document !== "undefined" &&
           widgets.some((w) => w.type === "alarm_card") &&
@@ -3991,6 +4033,74 @@ aria-label={t("editPanel.removeCondition")}
                     )}
                   </>
                 )}
+                {editingWidget.type === "vacuum_card_2" && (
+                  <div className="space-y-3">
+                    <EntitySelectWithSearch
+                      entities={entities}
+                      value={editForm.progress_entity_id ?? ""}
+                      onChange={(v) =>
+                        setEditForm((prev) => ({
+                          ...prev,
+                          progress_entity_id: v || undefined,
+                        }))
+                      }
+                      filter={(e) => e.entity_id.startsWith("sensor.")}
+                      label={t("editPanel.cleaningProgressSensor")}
+                      placeholder={t("editPanel.searchSensor")}
+                      emptyOption={t("editPanel.none")}
+                    />
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.vacuumImage")}
+                      </label>
+                      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                        {t("editPanel.vacuumImageHint")}
+                      </p>
+                      {editForm.background_image ? (
+                        <div
+                          className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
+                          style={{ backgroundImage: `url(${editForm.background_image})` }}
+                        />
+                      ) : null}
+                      <div className="mb-2 flex gap-2">
+                        <label className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10">
+                          {uploadingEnergyBg ? t("editPanel.uploading") : t("editPanel.uploadImage")}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            className="sr-only"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              e.target.value = "";
+                              setUploadingEnergyBg(true);
+                              try {
+                                const formData = new FormData();
+                                formData.set("file", file);
+                                const res = await fetch("/api/upload", { method: "POST", body: formData });
+                                const json = await res.json();
+                                if (!res.ok) throw new Error(json.error || "Upload failed");
+                                setEditForm((prev) => ({ ...prev, background_image: json.url }));
+                              } finally {
+                                setUploadingEnergyBg(false);
+                              }
+                            }}
+                            disabled={uploadingEnergyBg}
+                          />
+                        </label>
+                        {editForm.background_image ? (
+                          <button
+                            type="button"
+                            onClick={() => setEditForm((prev) => ({ ...prev, background_image: undefined }))}
+                            className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-white/10 dark:text-gray-200 dark:hover:bg-white/10"
+                          >
+                            {t("editPanel.remove")}
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {editingWidget.type === "sensor_card" && (
                   <div>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
@@ -5027,6 +5137,10 @@ aria-label={t("editPanel.removeCondition")}
                           script_names: editForm.script_names ?? {},
                           cleaned_area_entity_id: editForm.cleaned_area_entity_id || undefined,
                           icon: editForm.icon || undefined,
+                        }),
+                        ...(editingWidget.type === "vacuum_card_2" && {
+                          progress_entity_id: editForm.progress_entity_id || undefined,
+                          background_image: editForm.background_image || undefined,
                         }),
                         ...(editingWidget.type === "sensor_card" && {
                           icon: editForm.icon || undefined,
