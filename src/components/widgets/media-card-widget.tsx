@@ -139,7 +139,7 @@ export function MediaCardWidget({
   return (
     <div
       className={cn(
-        "relative flex w-full flex-col overflow-hidden rounded-[2.25rem] bg-[#141414] text-white shadow-[0_18px_50px_rgba(15,23,42,0.28)]",
+        "relative flex w-full flex-col overflow-hidden rounded-2xl bg-[#141414] text-white shadow-[0_18px_50px_rgba(15,23,42,0.28)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         className

@@ -156,7 +156,7 @@ export function VacuumCard2Widget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-[2.25rem] bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:bg-zinc-900 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:bg-zinc-900 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         className
