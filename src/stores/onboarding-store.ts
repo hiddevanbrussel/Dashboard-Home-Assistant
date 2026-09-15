@@ -49,6 +49,8 @@ export type WidgetConfig = {
   script_names?: Record<string, string>;
   /** Vacuum card: optionele sensor entity_id om onder status te tonen (bijv. cleaned area). */
   cleaned_area_entity_id?: string;
+  /** Vacuum card 2: optionele sensor entity_id voor schoonmaakvoortgang (percentage). */
+  progress_entity_id?: string;
   /** Climate card 2: optionele sensor entity_id voor luchtvochtigheid. */
   humidity_entity_id?: string;
   icon?: string;
