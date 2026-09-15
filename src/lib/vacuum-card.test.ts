@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   batteryFromAttributes,
+  clampVacuumCard2Height,
+  clampVacuumCard2Width,
   currentFanSpeedFromAttributes,
   fanModeFromSpeed,
   fanSpeedListFromAttributes,
@@ -8,6 +10,8 @@ import {
   parsePercent,
   progressFromAttributes,
   resolveFanSpeedForMode,
+  VACUUM_CARD_2_DEFAULT_HEIGHT,
+  VACUUM_CARD_2_DEFAULT_WIDTH,
   vacuumHeadlineKind,
 } from "./vacuum-card";
 
@@ -73,5 +77,17 @@ describe("vacuum-card helpers", () => {
     expect(vacuumHeadlineKind("docked", 92)).toBe("docked");
     expect(vacuumHeadlineKind("returning", null)).toBe("returning");
     expect(vacuumHeadlineKind("unavailable", null)).toBe("unavailable");
+  });
+
+  it("clamps vacuum card 2 width and height", () => {
+    expect(clampVacuumCard2Width(undefined)).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
+    expect(clampVacuumCard2Width("not-a-number")).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
+    expect(clampVacuumCard2Width(100)).toBe(240);
+    expect(clampVacuumCard2Width(800)).toBe(500);
+    expect(clampVacuumCard2Width(360)).toBe(360);
+    expect(clampVacuumCard2Height(undefined)).toBe(VACUUM_CARD_2_DEFAULT_HEIGHT);
+    expect(clampVacuumCard2Height(200)).toBe(260);
+    expect(clampVacuumCard2Height(900)).toBe(520);
+    expect(clampVacuumCard2Height(400)).toBe(400);
   });
 });

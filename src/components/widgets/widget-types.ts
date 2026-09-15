@@ -105,6 +105,10 @@ export type VacuumCard2Props = WidgetBaseProps & {
   progress_entity_id?: string;
   /** Optionele productfoto; zonder deze waarde toont de kaart de standaardillustratie. */
   background_image?: string;
+  /** Breedte kaart in px (standaard 300). */
+  width?: number;
+  /** Hoogte kaart in px (standaard 330). */
+  height?: number;
 };
 
 /** Alarm card: bedient een alarm_control_panel-entity (aan/uit) met code-invoer. */

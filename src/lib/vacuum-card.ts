@@ -1,3 +1,22 @@
+export const VACUUM_CARD_2_DEFAULT_WIDTH = 300;
+export const VACUUM_CARD_2_DEFAULT_HEIGHT = 330;
+export const VACUUM_CARD_2_MIN_WIDTH = 240;
+export const VACUUM_CARD_2_MAX_WIDTH = 500;
+export const VACUUM_CARD_2_MIN_HEIGHT = 260;
+export const VACUUM_CARD_2_MAX_HEIGHT = 520;
+
+export function clampVacuumCard2Width(n: unknown): number {
+  const v = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(v)) return VACUUM_CARD_2_DEFAULT_WIDTH;
+  return Math.min(VACUUM_CARD_2_MAX_WIDTH, Math.max(VACUUM_CARD_2_MIN_WIDTH, Math.round(v)));
+}
+
+export function clampVacuumCard2Height(n: unknown): number {
+  const v = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(v)) return VACUUM_CARD_2_DEFAULT_HEIGHT;
+  return Math.min(VACUUM_CARD_2_MAX_HEIGHT, Math.max(VACUUM_CARD_2_MIN_HEIGHT, Math.round(v)));
+}
+
 export type VacuumFanMode = "eco" | "standard" | "turbo";
 
 export const VACUUM_FAN_MODES: VacuumFanMode[] = ["eco", "standard", "turbo"];
