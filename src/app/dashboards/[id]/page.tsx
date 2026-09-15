@@ -84,6 +84,16 @@ import { OfflinePill } from "@/components/offline-pill";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
+import {
+  clampVacuumCard2Height,
+  clampVacuumCard2Width,
+  VACUUM_CARD_2_DEFAULT_HEIGHT,
+  VACUUM_CARD_2_DEFAULT_WIDTH,
+  VACUUM_CARD_2_MAX_HEIGHT,
+  VACUUM_CARD_2_MAX_WIDTH,
+  VACUUM_CARD_2_MIN_HEIGHT,
+  VACUUM_CARD_2_MIN_WIDTH,
+} from "@/lib/vacuum-card";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
 const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card"] as const;
@@ -1048,6 +1058,7 @@ export default function DashboardEditPage() {
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
+      ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
     const isTextCard = type === "text_card";
@@ -1984,6 +1995,8 @@ export default function DashboardEditPage() {
                 entity_id: w.entity_id,
                 progress_entity_id: w.progress_entity_id,
                 background_image: w.background_image,
+                width: w.width,
+                height: w.height,
               }}
               widgetIndex={i}
               editMode={editMode}
@@ -4102,6 +4115,50 @@ aria-label={t("editPanel.removeCondition")}
                         ) : null}
                       </div>
                     </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.cardWidthPx")}
+                      </label>
+                      <input
+                        type="number"
+                        min={VACUUM_CARD_2_MIN_WIDTH}
+                        max={VACUUM_CARD_2_MAX_WIDTH}
+                        step={10}
+                        value={editForm.width ?? VACUUM_CARD_2_DEFAULT_WIDTH}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            width: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        placeholder={String(VACUUM_CARD_2_DEFAULT_WIDTH)}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange300")}</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.cardHeightPx")}
+                      </label>
+                      <input
+                        type="number"
+                        min={VACUUM_CARD_2_MIN_HEIGHT}
+                        max={VACUUM_CARD_2_MAX_HEIGHT}
+                        step={10}
+                        value={editForm.height ?? VACUUM_CARD_2_DEFAULT_HEIGHT}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            height: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        placeholder={String(VACUUM_CARD_2_DEFAULT_HEIGHT)}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange330")}</p>
+                    </div>
                   </div>
                 )}
                 {editingWidget.type === "sensor_card" && (
@@ -5144,6 +5201,8 @@ aria-label={t("editPanel.removeCondition")}
                         ...(editingWidget.type === "vacuum_card_2" && {
                           progress_entity_id: editForm.progress_entity_id || undefined,
                           background_image: editForm.background_image || undefined,
+                          width: editForm.width != null && editForm.width > 0 ? clampVacuumCard2Width(editForm.width) : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? clampVacuumCard2Height(editForm.height) : undefined,
                         }),
                         ...(editingWidget.type === "sensor_card" && {
                           icon: editForm.icon || undefined,

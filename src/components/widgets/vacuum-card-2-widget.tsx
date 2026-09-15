@@ -18,6 +18,8 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   batteryFromAttributes,
+  clampVacuumCard2Height,
+  clampVacuumCard2Width,
   currentFanSpeedFromAttributes,
   fanModeFromSpeed,
   fanSpeedListFromAttributes,
@@ -71,6 +73,8 @@ export function VacuumCard2Widget({
   progress_entity_id,
   background_image,
   size = "md",
+  width,
+  height,
   className,
   onMoreClick,
 }: VacuumCard2Props & { className?: string; onMoreClick?: () => void }) {
@@ -100,6 +104,8 @@ export function VacuumCard2Widget({
       : headlineKind === "unknown"
         ? title || t("cardType.vacuum_card_2")
         : t(`vacuumCard.${headlineKind}`);
+  const cardWidth = clampVacuumCard2Width(width);
+  const cardHeight = clampVacuumCard2Height(height);
 
   async function callVacuum(service: string, serviceData?: Record<string, unknown>) {
     const res = await fetch("/api/ha/call-service", {
@@ -150,13 +156,14 @@ export function VacuumCard2Widget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-[2.25rem] bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:bg-zinc-900 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:bg-zinc-900 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         className
       )}
+      style={{ width: cardWidth, height: cardHeight, minHeight: cardHeight }}
     >
-      <div className="px-5 pt-5">
+      <div className="shrink-0 px-5 pt-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             {battery != null ? (
@@ -230,7 +237,7 @@ export function VacuumCard2Widget({
         </div>
       </div>
 
-      <div className="relative mt-2 h-[9.75rem] overflow-hidden">
+      <div className="relative mt-2 min-h-0 flex-1 overflow-hidden">
         {background_image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
