@@ -233,6 +233,11 @@
   animation: vacuum-move 1.4s ease-in-out infinite;
 }
 
+@keyframes media-wave {
+  from { transform: scaleY(0.4); }
+  to { transform: scaleY(1); }
+}
+
 /* Floating cards in edit mode: subtle wiggle to show they're draggable */
 @keyframes edit-wiggle {
   0%, 100% { transform: translateX(0) rotate(0deg); }
