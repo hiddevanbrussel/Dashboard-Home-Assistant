@@ -23,6 +23,8 @@ import {
   ClimateWidget,
   LightingBrightnessWidget,
   MediaCardWidget,
+  MEDIA_CARD_DEFAULT_WIDTH,
+  MEDIA_CARD_DEFAULT_HEIGHT,
   FloatingMediaCard,
   LightCardWidget,
   FloatingLightCard,
@@ -1045,6 +1047,7 @@ export default function DashboardEditPage() {
       ...(type === "light_card" && { card_layout: "horizontal" as const }),
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
+      ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
     const isTextCard = type === "text_card";
@@ -1056,7 +1059,7 @@ export default function DashboardEditPage() {
       h: isTextCard ? 1 : 2,
     };
     const newWidgets = [...widgets, newWidget];
-    const isFloatingOnly = type === "text_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "vacuum_card_2" || type === "alarm_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card";
+    const isFloatingOnly = type === "text_card" || type === "media_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "vacuum_card_2" || type === "alarm_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card";
     const newLayout = isFloatingOnly ? layout : [...layout, newLayoutItem];
 
     // Optimistisch query-cache updaten zodat de widget direct beschikbaar is bij remount/refetch
@@ -2705,12 +2708,12 @@ export default function DashboardEditPage() {
                             min={240}
                             max={500}
                             step={10}
-                            value={editForm.width ?? 320}
+                            value={editForm.width ?? MEDIA_CARD_DEFAULT_WIDTH}
                             onChange={(e) => {
                               const v = e.target.value === "" ? undefined : Number(e.target.value);
                               setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
                             }}
-                            placeholder="320"
+                            placeholder={String(MEDIA_CARD_DEFAULT_WIDTH)}
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                           />
                           <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange240")}</p>
@@ -2722,12 +2725,12 @@ export default function DashboardEditPage() {
                             min={120}
                             max={400}
                             step={10}
-                            value={editForm.height ?? ""}
+                            value={editForm.height ?? MEDIA_CARD_DEFAULT_HEIGHT}
                             onChange={(e) => {
                               const v = e.target.value === "" ? undefined : Number(e.target.value);
                               setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
                             }}
-                            placeholder="Auto"
+                            placeholder={String(MEDIA_CARD_DEFAULT_HEIGHT)}
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                           />
                           <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.optionalMinHeight")}</p>

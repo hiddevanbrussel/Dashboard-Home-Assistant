@@ -3,11 +3,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
-import { MediaCardWidget } from "./media-card-widget";
+import { MEDIA_CARD_DEFAULT_HEIGHT, MEDIA_CARD_DEFAULT_WIDTH, MediaCardWidget } from "./media-card-widget";
 
 const STORAGE_KEY = "dashboard.floatingMediaCardPosition";
 const DEFAULT_OFFSET = 24;
-const DEFAULT_CARD_WIDTH = 320;
+const DEFAULT_CARD_WIDTH = MEDIA_CARD_DEFAULT_WIDTH;
+const DEFAULT_CARD_HEIGHT = MEDIA_CARD_DEFAULT_HEIGHT;
 
 type Position = { left: number; bottom: number };
 
@@ -41,11 +42,11 @@ function savePosition(scope: string | undefined, p: Position, widgetId?: string)
   }
 }
 
-function defaultPosition(cardWidth: number): Position {
+function defaultPosition(cardWidth: number, cardHeight: number): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
   const maxLeft = window.innerWidth - cardWidth;
-  const maxBottom = window.innerHeight - 120;
-  return { left: maxLeft / 2, bottom: maxBottom / 2 };
+  const maxBottom = window.innerHeight - cardHeight;
+  return { left: Math.max(0, maxLeft / 2), bottom: Math.max(DEFAULT_OFFSET, maxBottom / 2) };
 }
 
 const LONG_PRESS_MS = 500;
@@ -75,6 +76,7 @@ export function FloatingMediaCard({
   onEnterEditMode?: () => void;
 }) {
   const totalWidth = cardWidth != null && cardWidth > 0 ? cardWidth : DEFAULT_CARD_WIDTH;
+  const totalHeight = cardHeight != null && cardHeight > 0 ? cardHeight : DEFAULT_CARD_HEIGHT;
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
@@ -113,17 +115,17 @@ export function FloatingMediaCard({
     if (initialized.current) return;
     initialized.current = true;
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-    const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
     const bounds = { maxLeft, maxBottom };
     const saved = loadPosition(storageScope, widgetId);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(totalWidth), bounds);
+    const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
     setPosition(p);
     savePosition(storageScope, p, widgetId);
-  }, [totalWidth, storageScope, widgetId]);
+  }, [totalWidth, totalHeight, storageScope, widgetId]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -148,14 +150,14 @@ export function FloatingMediaCard({
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
       const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-      const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+      const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
       const raw = {
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
         bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging, totalWidth]
+    [isDragging, totalWidth, totalHeight]
   );
 
   const handlePointerUp = useCallback(
@@ -165,7 +167,7 @@ export function FloatingMediaCard({
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
         const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-        const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+        const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
           bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
@@ -176,13 +178,13 @@ export function FloatingMediaCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, totalWidth, storageScope, widgetId]
+    [isDragging, totalWidth, totalHeight, storageScope, widgetId]
   );
 
   return (
     <div
       className={cn(
-        "fixed z-40 overflow-hidden rounded-2xl shadow-xl",
+        "fixed z-40 overflow-hidden rounded-[2.25rem] shadow-xl",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -190,7 +192,7 @@ export function FloatingMediaCard({
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
-        ...(cardHeight != null && cardHeight > 0 && { minHeight: cardHeight }),
+        height: totalHeight,
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -210,13 +212,13 @@ export function FloatingMediaCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")} style={{ width: totalWidth }}>
+      <div className={cn(editMode && "[&>div]:shadow-none")} style={{ width: totalWidth, height: totalHeight }}>
         <MediaCardWidget
           title={title}
           entity_id={entity_id}
           size="md"
-          width={cardWidth}
-          height={cardHeight}
+          width={totalWidth}
+          height={totalHeight}
           onMoreClick={editMode ? onEdit : undefined}
         />
       </div>
