@@ -4,7 +4,7 @@ export { WifiWidget } from "./wifi-widget";
 export { SolarChargeWidget } from "./solar-charge-widget";
 export { ClimateWidget } from "./climate-widget";
 export { LightingBrightnessWidget } from "./lighting-brightness-widget";
-export { MediaCardWidget } from "./media-card-widget";
+export { MediaCardWidget, MEDIA_CARD_DEFAULT_WIDTH, MEDIA_CARD_DEFAULT_HEIGHT } from "./media-card-widget";
 export { FloatingMediaCard } from "./floating-media-card";
 export { LightCardWidget, LIGHT_ICON_OPTIONS } from "./light-card-widget";
 export { FloatingLightCard } from "./floating-light-card";

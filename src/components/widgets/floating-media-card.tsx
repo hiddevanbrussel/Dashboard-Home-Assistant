@@ -3,12 +3,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
-import { MediaCardWidget } from "./media-card-widget";
+import { MEDIA_CARD_DEFAULT_HEIGHT, MEDIA_CARD_DEFAULT_WIDTH, MediaCardWidget } from "./media-card-widget";
 
 const STORAGE_KEY = "dashboard.floatingMediaCardPosition";
 const DEFAULT_OFFSET = 24;
-const DEFAULT_CARD_WIDTH = 280;
-const DEFAULT_CARD_HEIGHT = 340;
+const DEFAULT_CARD_WIDTH = MEDIA_CARD_DEFAULT_WIDTH;
+const DEFAULT_CARD_HEIGHT = MEDIA_CARD_DEFAULT_HEIGHT;
 
 type Position = { left: number; bottom: number };
 

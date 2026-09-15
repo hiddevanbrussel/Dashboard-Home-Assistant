@@ -10,19 +10,22 @@ import { useTranslation } from "@/hooks/use-translation";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { mediaArtworkCacheKey, mediaImageRequestUrl } from "@/lib/media-image";
 
-const WAVEFORM_BARS = [7, 14, 9, 18, 11, 16, 8, 13];
+export const MEDIA_CARD_DEFAULT_WIDTH = 280;
+export const MEDIA_CARD_DEFAULT_HEIGHT = 340;
+
+const WAVEFORM_BARS = [6, 11, 8, 16, 10, 18, 7, 14, 9, 17, 8, 12];
 
 function Waveform({ playing }: { playing: boolean }) {
   return (
-    <div className="flex h-[18px] items-end gap-[3px]" aria-hidden>
+    <div className="flex h-[22px] items-end gap-[2.5px]" aria-hidden>
       {WAVEFORM_BARS.map((height, index) => (
         <span
           key={index}
-          className="w-[3px] rounded-full bg-white/95"
+          className="w-[2.5px] rounded-full bg-white/95"
           style={{
             height: `${height}px`,
             transformOrigin: "bottom",
-            animation: playing ? `media-wave 0.85s ease-in-out ${index * 0.07}s infinite alternate` : undefined,
+            animation: playing ? `media-wave 0.85s ease-in-out ${index * 0.06}s infinite alternate` : undefined,
           }}
         />
       ))}
@@ -76,8 +79,8 @@ export function MediaCardWidget({
   });
   const mediaImageSrc = entityPicture ? mediaImageRequestUrl(entity_id, artworkKey) : null;
   const trackKey = artworkKey || "none";
-  const cardWidth = width != null && width > 0 ? width : 280;
-  const cardHeight = height != null && height > 0 ? height : 340;
+  const cardWidth = width != null && width > 0 ? width : MEDIA_CARD_DEFAULT_WIDTH;
+  const cardHeight = height != null && height > 0 ? height : MEDIA_CARD_DEFAULT_HEIGHT;
   const canFavorite = Boolean(musicAssistant.enabled && musicAssistant.baseUrl && mediaContentId);
 
   async function callMedia(service: string) {
@@ -154,8 +157,8 @@ export function MediaCardWidget({
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-b from-zinc-800 to-zinc-950">
-            <Disc3 className="h-24 w-24 text-white/15" strokeWidth={1} />
+          <div className="flex h-full items-start justify-center bg-gradient-to-b from-zinc-800 to-zinc-950 pt-[22%]">
+            <Disc3 className="h-20 w-20 text-white/15" strokeWidth={1} />
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 to-black/80" />
