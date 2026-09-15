@@ -44,31 +44,23 @@ function BatteryIcon({ level, className }: { level: number; className?: string }
 
 function VacuumRobotArt({ active }: { active: boolean }) {
   return (
-    <svg viewBox="0 0 320 156" className="h-full w-full" aria-hidden>
-      <ellipse cx="160" cy="178" rx="168" ry="168" className="fill-[#eef1f4] dark:fill-zinc-700" />
-      <ellipse cx="118" cy="86" rx="86" ry="52" className="fill-white/70 dark:fill-white/10" />
-      <ellipse
-        cx="160"
-        cy="178"
-        rx="164"
-        ry="164"
-        fill="none"
-        className="stroke-black/[0.06] dark:stroke-white/10"
-        strokeWidth="2"
-      />
+    <svg viewBox="0 0 320 168" className="h-full w-full" aria-hidden>
+      <ellipse cx="160" cy="186" rx="176" ry="176" className="fill-[#e8ebef] dark:fill-zinc-600" />
+      <ellipse cx="160" cy="186" rx="168" ry="168" className="fill-[#f4f6f8] dark:fill-zinc-500" />
+      <ellipse cx="108" cy="78" rx="92" ry="58" className="fill-white/80 dark:fill-white/15" />
       <circle
         cx="160"
-        cy="42"
-        r="5"
-        className={active ? "fill-emerald-400" : "fill-gray-300 dark:fill-white/25"}
+        cy="48"
+        r="6"
+        className={active ? "fill-emerald-400" : "fill-gray-300 dark:fill-white/30"}
       >
         {active ? (
-          <animate attributeName="opacity" values="1;0.45;1" dur="1.6s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="1;0.4;1" dur="1.6s" repeatCount="indefinite" />
         ) : null}
       </circle>
-      <circle cx="160" cy="108" r="46" className="fill-gray-200/90 dark:fill-white/10" />
-      <circle cx="160" cy="108" r="36" className="fill-white dark:fill-white/20" />
-      <circle cx="160" cy="108" r="36" fill="none" className="stroke-black/5 dark:stroke-white/15" strokeWidth="1.5" />
+      <circle cx="160" cy="118" r="50" className="fill-gray-200 dark:fill-white/10" />
+      <circle cx="160" cy="118" r="38" className="fill-white dark:fill-white/25" />
+      <circle cx="160" cy="118" r="38" fill="none" className="stroke-black/[0.06] dark:stroke-white/20" strokeWidth="1.5" />
     </svg>
   );
 }
@@ -172,11 +164,7 @@ export function VacuumCard2Widget({
                 <span className="tabular-nums">{battery}%</span>
                 <BatteryIcon level={battery} className="h-4 w-4 text-teal-500" />
               </div>
-            ) : (
-              <p className="mb-1 truncate text-[13px] font-medium text-gray-400 dark:text-white/40">
-                {title || t("cardType.vacuum_card_2")}
-              </p>
-            )}
+            ) : null}
             <h2 className="truncate text-[1.35rem] font-semibold leading-tight tracking-tight text-gray-950 dark:text-white">
               {headline}
             </h2>

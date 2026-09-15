@@ -5,8 +5,9 @@ import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { VacuumCard2Widget } from "./vacuum-card-2-widget";
 
-const STORAGE_KEY_PREFIX = "dashboard.floatingVacuumCard2Position.";
+const STORAGE_KEY_PREFIX = "dashboard.floatingVacuumHeroCardPosition.v2.";
 const DEFAULT_OFFSET = 24;
+const SIDEBAR_GUTTER = 72;
 const CARD_WIDTH = 300;
 const CARD_HEIGHT = 330;
 
@@ -42,12 +43,13 @@ function savePosition(scope: string | undefined, widgetId: string, p: Position) 
 }
 
 function defaultPosition(widgetIndex: number): Position {
-  if (typeof window === "undefined") return { left: DEFAULT_OFFSET, bottom: DEFAULT_OFFSET };
+  if (typeof window === "undefined") return { left: SIDEBAR_GUTTER, bottom: DEFAULT_OFFSET };
   const maxLeft = window.innerWidth - CARD_WIDTH;
   const maxBottom = window.innerHeight - CARD_HEIGHT;
-  const gap = 16;
-  const left = Math.min(maxLeft, DEFAULT_OFFSET + widgetIndex * (CARD_WIDTH + gap));
-  return { left, bottom: Math.max(DEFAULT_OFFSET, maxBottom / 2) };
+  const left = Math.min(Math.max(0, maxLeft), SIDEBAR_GUTTER + widgetIndex * (CARD_WIDTH + 24));
+  // Keep the card in the lower third so it does not spawn under the centered media card.
+  const bottom = Math.min(Math.max(0, maxBottom), 72);
+  return { left, bottom };
 }
 
 export type VacuumCard2WidgetItem = {
