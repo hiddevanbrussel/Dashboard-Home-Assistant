@@ -1062,6 +1062,11 @@ export default function DashboardEditPage() {
         isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id],
         (old: unknown) => (old && updated ? { ...(old as object), ...(updated as object) } : old ?? updated)
       );
+      if (updated && typeof updated === "object") {
+        const row = updated as { layout?: string | null; widgets?: string | null };
+        const nextWidgets = row.widgets != null ? parseWidgets(row.widgets) : widgets;
+        setPageCount(parseStoredPageCount(row.layout ?? null, nextWidgets));
+      }
     },
   });
 
@@ -1085,7 +1090,7 @@ export default function DashboardEditPage() {
     setEditingWidgetId(null);
     setEditingGroupChildId(null);
     setEditMode(false);
-    saveMutation.mutate({ layout, widgets, welcomeTitle, welcomeSubtitle });
+    saveMutation.mutate({ layout, widgets, welcomeTitle, welcomeSubtitle, pageCount });
   };
 
   function handleAddTile(type: string, entityId: string, titleOverride?: string): string | undefined {

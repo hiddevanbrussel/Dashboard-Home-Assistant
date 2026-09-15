@@ -50,12 +50,14 @@ export function DashboardPager({
   const [mounted, setMounted] = useState(false);
   const [dragPx, setDragPx] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const [pageWidth, setPageWidth] = useState(1200);
+  const [fromPage, setFromPage] = useState(page);
+  const [settling, setSettling] = useState(false);
   const dragPxRef = useRef(0);
   const draggingRef = useRef(false);
   const pageRef = useRef(page);
   const pageCountRef = useRef(pageCount);
   const wheelLockRef = useRef(false);
+  const settleTimerRef = useRef<number | null>(null);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -64,17 +66,24 @@ export function DashboardPager({
   useEffect(() => {
     pageCountRef.current = pageCount;
   }, [pageCount]);
-
-  useEffect(() => {
-    const measure = () => setPageWidth(window.innerWidth || 1200);
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
+  useEffect(
+    () => () => {
+      if (settleTimerRef.current != null) window.clearTimeout(settleTimerRef.current);
+    },
+    []
+  );
 
   const goTo = useCallback(
     (next: number) => {
       const clamped = Math.min(pageCountRef.current - 1, Math.max(0, next));
+      if (clamped === pageRef.current) return;
+      setFromPage(pageRef.current);
+      setSettling(true);
+      if (settleTimerRef.current != null) window.clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = window.setTimeout(() => {
+        setSettling(false);
+        settleTimerRef.current = null;
+      }, SETTLE_MS);
       onPageChange(clamped);
     },
     [onPageChange]
@@ -195,24 +204,28 @@ export function DashboardPager({
   const showChrome = pageCount > 1 || editMode;
 
   return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-20 overflow-hidden">
+    <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
       {Array.from({ length: pageCount }, (_, index) => {
-        const x = (index - page) * pageWidth + dragPx;
-        const visible = Math.abs(index - page) <= 1 || dragging;
+        const active = index === page;
+        const peek =
+          dragging || settling
+            ? Math.abs(index - page) <= 1 || index === fromPage
+            : false;
+        const visible = active || peek;
         return (
           <div
             key={index}
-            className="absolute inset-0"
+            className="absolute inset-0 overflow-hidden"
             style={{
-              transform: `translate3d(${x}px, 0, 0)`,
+              transform: `translate3d(calc(${index - page} * 100vw + ${dragPx}px), 0, 0)`,
               transition: dragging ? "none" : `transform ${SETTLE_MS}ms ${SETTLE_EASING}`,
               pointerEvents: "none",
               visibility: visible ? "visible" : "hidden",
-              willChange: "transform",
+              zIndex: active ? 1 : 0,
             }}
-            aria-hidden={index !== page}
+            aria-hidden={!active}
           >
-            {index === page ? (
+            {active ? (
               <div
                 data-dashboard-page-swipe
                 className="absolute inset-0"
@@ -224,7 +237,7 @@ export function DashboardPager({
                 aria-hidden
               />
             ) : null}
-            {children(index)}
+            {visible ? children(index) : null}
           </div>
         );
       })}
@@ -232,7 +245,7 @@ export function DashboardPager({
       {showChrome ? (
         <div
           data-dashboard-pager-ui
-          className="pointer-events-none absolute bottom-5 z-40 flex justify-center"
+          className="pointer-events-none absolute bottom-5 z-[80] flex justify-center"
           style={{ left: SIDEBAR_INSET, right: 0 }}
         >
           <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-white/80 px-2 py-1.5 shadow-[0_8px_30px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] backdrop-blur-md dark:bg-zinc-900/80 dark:ring-white/10">
