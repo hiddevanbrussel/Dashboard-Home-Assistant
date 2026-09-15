@@ -288,7 +288,6 @@ export function FloatingVacuumCard2({
       className={cn(
         "fixed z-30",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
-        editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}
       style={{
         left: position.left,
@@ -328,13 +327,21 @@ export function FloatingVacuumCard2({
         <button
           type="button"
           aria-label={t("vacuumCard.resize")}
-          className="absolute bottom-1 right-1 z-20 flex h-7 w-7 cursor-nwse-resize touch-none items-end justify-end rounded-md p-1 text-gray-400 hover:text-gray-700 dark:text-white/55 dark:hover:text-white"
+          className="absolute -bottom-1.5 -right-1.5 z-30 flex h-9 w-9 cursor-nwse-resize touch-none items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/25"
           onPointerDown={handleResizePointerDown}
           onPointerMove={handleResizePointerMove}
           onPointerUp={handleResizePointerUp}
           onPointerCancel={handleResizePointerUp}
         >
-          <span className="block h-3 w-3 rounded-br-[3px] border-b-2 border-r-2 border-current" aria-hidden />
+          <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-gray-600 dark:text-white/80" aria-hidden>
+            <path
+              d="M3.5 10.5h7M10.5 3.5v7M6 10.5h4.5M10.5 6v4.5"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="1.6"
+            />
+          </svg>
         </button>
       ) : null}
     </div>
