@@ -326,6 +326,7 @@ export function AppShell({
         style={contentRightInset ? { paddingRight: contentRightInset } : undefined}
       >
         <div
+          data-app-header
           className={cn(
             "relative z-50 flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
             headerFixed && "absolute inset-x-0 top-0",

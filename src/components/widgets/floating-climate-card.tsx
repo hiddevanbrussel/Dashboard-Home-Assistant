@@ -266,6 +266,7 @@ export function FloatingClimateCard({
       <div className="flex flex-col min-w-0 flex-1 w-full h-full">
         <div
           data-climate-swipe-area
+          data-no-page-swipe
           className={cn("relative h-full overflow-hidden", hasMultiple && "touch-none")}
           style={{ touchAction: hasMultiple ? "none" : undefined, perspective: "1000px", minHeight: totalHeight }}
           onPointerDown={hasMultiple ? (e) => {

@@ -113,6 +113,8 @@ export type WidgetConfig = {
   device_entity_ids?: string[];
   /** Device consumption card: aangepaste weergavenamen per entity_id (entity_id -> naam). */
   device_names?: Record<string, string>;
+  /** Home board page index (0-based). Missing means page 0. */
+  page?: number;
 };
 
 export type TemplateId = "overview" | "rooms" | "energy";

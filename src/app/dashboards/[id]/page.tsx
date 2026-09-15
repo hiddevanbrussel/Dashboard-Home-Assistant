@@ -83,6 +83,16 @@ import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "
 import { OfflinePill } from "@/components/offline-pill";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
+import { DashboardPager } from "@/components/dashboard-pager";
+import {
+  clampPageIndex,
+  DASHBOARD_MAX_PAGES,
+  parseDashboardLayout,
+  reindexWidgetsAfterRemovedPage,
+  resolvePageCount,
+  serializeDashboardLayout,
+  widgetPage,
+} from "@/lib/dashboard-pages";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
   clampClimateCardHeight,
@@ -185,13 +195,13 @@ type DashboardData = {
 };
 
 function parseLayout(layout: string | null): Layout {
-  if (!layout) return [];
-  try {
-    const arr = JSON.parse(layout) as LayoutItem[];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
+  const { items } = parseDashboardLayout(layout);
+  return Array.isArray(items) ? (items as Layout) : [];
+}
+
+function parseStoredPageCount(layout: string | null, widgets: WidgetConfig[]): number {
+  const { pageCount } = parseDashboardLayout(layout);
+  return resolvePageCount(pageCount, widgets);
 }
 
 function parseWidgets(widgets: string | null): WidgetConfig[] {
@@ -598,6 +608,8 @@ export default function DashboardEditPage() {
   const [editPasscodeError, setEditPasscodeError] = useState<string | null>(null);
   const [layout, setLayout] = useState<Layout>([]);
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
+  const [pageCount, setPageCount] = useState(1);
+  const [dashboardPage, setDashboardPage] = useState(0);
   const [welcomeTitle, setWelcomeTitle] = useState<string>("");
   const [welcomeSubtitle, setWelcomeSubtitle] = useState<string>("");
   const [roomCardSize, setRoomCardSize] = useState<"normal" | "large">("normal");
@@ -660,6 +672,7 @@ export default function DashboardEditPage() {
     cost_per_kwh?: number;
     child_id?: string | null;
     show_chore_points?: boolean;
+    page?: number;
   }>({
     title: "",
     entity_id: "",
@@ -698,6 +711,7 @@ export default function DashboardEditPage() {
     cost_per_kwh: undefined as number | undefined,
     child_id: null as string | null,
     show_chore_points: true,
+    page: 0,
   });
   const [iconSearch, setIconSearch] = useState("");
   const [vacuumIconSearch, setVacuumIconSearch] = useState("");
@@ -889,6 +903,7 @@ export default function DashboardEditPage() {
         cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
         child_id: editingWidget.child_id ?? null,
         show_chore_points: editingWidget.show_chore_points !== false,
+        page: widgetPage(editingWidget),
       });
       setIconSearch("");
       setVacuumIconSearch(editingWidget.type === "vacuum_card" ? (editingWidget.icon ?? "") : "");
@@ -974,8 +989,25 @@ export default function DashboardEditPage() {
     setWelcomeSubtitle((data as { welcomeSubtitle?: string | null }).welcomeSubtitle ?? "");
     const rcs = (data as { roomCardSize?: string | null }).roomCardSize;
     setRoomCardSize(rcs === "large" ? "large" : "normal");
+    const loadedPageCount = parseStoredPageCount(data.layout, w);
+    setPageCount(loadedPageCount);
+    try {
+      const savedPage = sessionStorage.getItem(`dashboard.page.${id}`);
+      if (savedPage != null) setDashboardPage(clampPageIndex(Number(savedPage), loadedPageCount));
+    } catch {
+      setDashboardPage(0);
+    }
     setInitialized(true);
   }, [data, initialized, isRoomMode, id, areaId]);
+
+  useEffect(() => {
+    if (!initialized || !id) return;
+    try {
+      sessionStorage.setItem(`dashboard.page.${id}`, String(dashboardPage));
+    } catch {
+      // ignore
+    }
+  }, [dashboardPage, id, initialized]);
 
   useEffect(() => {
     if (!editMode) return;
@@ -1010,12 +1042,13 @@ export default function DashboardEditPage() {
       widgets: WidgetConfig[];
       welcomeTitle?: string;
       welcomeSubtitle?: string;
+      pageCount?: number;
     }) => {
       const res = await fetch(apiBase, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          layout: JSON.stringify(payload.layout),
+          layout: serializeDashboardLayout(payload.layout, payload.pageCount ?? pageCount),
           widgets: JSON.stringify(payload.widgets),
           ...(payload.welcomeTitle !== undefined && { welcomeTitle: payload.welcomeTitle || null }),
           ...(payload.welcomeSubtitle !== undefined && { welcomeSubtitle: payload.welcomeSubtitle || null }),
@@ -1070,6 +1103,7 @@ export default function DashboardEditPage() {
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
       ...((type === "climate_card" || type === "climate_card_2") && { width: CLIMATE_CARD_DEFAULT_WIDTH, height: CLIMATE_CARD_DEFAULT_HEIGHT }),
+      page: dashboardPage,
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
     const isTextCard = type === "text_card";
@@ -1154,7 +1188,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean }
+    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; page?: number }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -1171,6 +1205,24 @@ export default function DashboardEditPage() {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
     saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleAddDashboardPage() {
+    if (pageCount >= DASHBOARD_MAX_PAGES) return;
+    const next = pageCount + 1;
+    setPageCount(next);
+    setDashboardPage(next - 1);
+    saveMutation.mutate({ layout, widgets, welcomeTitle, welcomeSubtitle, pageCount: next });
+  }
+
+  function handleRemoveDashboardPage() {
+    if (pageCount <= 1) return;
+    const nextWidgets = reindexWidgetsAfterRemovedPage(widgets, dashboardPage);
+    const nextCount = pageCount - 1;
+    setWidgets(nextWidgets);
+    setPageCount(nextCount);
+    setDashboardPage(clampPageIndex(dashboardPage, nextCount));
+    saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle, pageCount: nextCount });
   }
 
   if (!id || (isRoomMode && !areaId)) {
@@ -1670,8 +1722,18 @@ export default function DashboardEditPage() {
           </ReactGridLayout>
         </div>
 
+        <DashboardPager
+          pageCount={pageCount}
+          page={dashboardPage}
+          onPageChange={setDashboardPage}
+          editMode={editMode}
+          onAddPage={editMode ? handleAddDashboardPage : undefined}
+          onRemovePage={editMode ? handleRemoveDashboardPage : undefined}
+        >
+          {(pageIndex) => (
+            <>
         {widgets
-          .filter((w) => w.type === "media_card")
+          .filter((w) => w.type === "media_card" && widgetPage(w) === pageIndex)
           .map((w) => (
             <FloatingMediaCard
               key={w.id}
@@ -1698,7 +1760,9 @@ export default function DashboardEditPage() {
 
         {(() => {
           const climateCards = widgets.filter(
-            (w) => w.type === "climate_card" || w.type === "climate_card_2"
+            (w) =>
+              (w.type === "climate_card" || w.type === "climate_card_2") &&
+              widgetPage(w) === pageIndex
           );
           return climateCards.length > 0 ? (
             <FloatingClimateCard
@@ -1722,7 +1786,7 @@ export default function DashboardEditPage() {
         })()}
 
         {widgets
-          .filter((w) => w.type === "text_card")
+          .filter((w) => w.type === "text_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingTextCard
               key={w.id}
@@ -1748,7 +1812,7 @@ export default function DashboardEditPage() {
           ))}
 
         {widgets
-          .filter((w) => w.type === "light_card")
+          .filter((w) => w.type === "light_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingLightCard
               key={w.id}
@@ -1772,7 +1836,7 @@ export default function DashboardEditPage() {
           ))}
 
         {(() => {
-          const firstSolar = widgets.find((w) => w.type === "solar_card");
+          const firstSolar = widgets.find((w) => w.type === "solar_card" && widgetPage(w) === pageIndex);
           return firstSolar ? (
             <FloatingSolarCard
               title={firstSolar.title ?? t("cardType.solar_card")}
@@ -1797,7 +1861,7 @@ export default function DashboardEditPage() {
         })()}
 
         {(() => {
-          const firstEnergyMonitor = widgets.find((w) => w.type === "energy_monitor_card");
+          const firstEnergyMonitor = widgets.find((w) => w.type === "energy_monitor_card" && widgetPage(w) === pageIndex);
           return firstEnergyMonitor ? (
             <FloatingEnergyMonitorCard
               title={firstEnergyMonitor.title ?? t("cardType.energy_monitor_card")}
@@ -1825,7 +1889,7 @@ export default function DashboardEditPage() {
         })()}
 
         {(() => {
-          const firstPowerUsage = widgets.find((w) => w.type === "power_usage_card");
+          const firstPowerUsage = widgets.find((w) => w.type === "power_usage_card" && widgetPage(w) === pageIndex);
           return firstPowerUsage ? (
             <FloatingPowerUsageCard
               title={firstPowerUsage.title ?? t("cardType.power_usage_card")}
@@ -1850,84 +1914,69 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {typeof document !== "undefined" &&
-          widgets.some((w) => w.type === "device_consumption_card") &&
-          createPortal(
-            widgets
-              .filter((w) => w.type === "device_consumption_card")
-              .map((w) => (
-                <FloatingDeviceConsumptionCard
-                  key={w.id}
-                  title={w.title ?? t("cardType.device_consumption_card")}
-                  device_entity_ids={w.device_entity_ids}
-                  device_names={w.device_names}
-                  width={w.width}
-                  height={w.height}
-                  editMode={editMode}
-                  storageScope={`${id}-${w.id}`}
-                  onEnterEditMode={() => setEditMode(true)}
-                  onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-                  onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-                />
-              )),
-            document.body
-          )}
+        {widgets
+          .filter((w) => w.type === "device_consumption_card" && widgetPage(w) === pageIndex)
+          .map((w) => (
+            <FloatingDeviceConsumptionCard
+              key={w.id}
+              title={w.title ?? t("cardType.device_consumption_card")}
+              device_entity_ids={w.device_entity_ids}
+              device_names={w.device_names}
+              width={w.width}
+              height={w.height}
+              editMode={editMode}
+              storageScope={`${id}-${w.id}`}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
 
-        {typeof document !== "undefined" &&
-          widgets.some((w) => w.type === "stat_pill_card") &&
-          createPortal(
-            widgets
-              .filter((w) => w.type === "stat_pill_card")
-              .map((w, i) => (
-                <FloatingStatPillCard
-                  key={w.id}
-                  widgetId={w.id}
-                  widgetIndex={i}
-                  title={w.title ?? "Stat"}
-                  entity_id={w.entity_id}
-                  label={w.label}
-                  icon={w.icon}
-                  color={(w.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
-                  conditions={w.conditions as SensorCondition[] | undefined}
-                  size={(w.size as "sm" | "md" | "lg") ?? "md"}
-                  editMode={editMode}
-                  storageScope={id}
-                  onEnterEditMode={() => setEditMode(true)}
-                  onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-                  onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-                />
-              )),
-            document.body
-          )}
+        {widgets
+          .filter((w) => w.type === "stat_pill_card" && widgetPage(w) === pageIndex)
+          .map((w, i) => (
+            <FloatingStatPillCard
+              key={w.id}
+              widgetId={w.id}
+              widgetIndex={i}
+              title={w.title ?? "Stat"}
+              entity_id={w.entity_id}
+              label={w.label}
+              icon={w.icon}
+              color={(w.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
+              conditions={w.conditions as SensorCondition[] | undefined}
+              size={(w.size as "sm" | "md" | "lg") ?? "md"}
+              editMode={editMode}
+              storageScope={id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
 
-        {typeof document !== "undefined" &&
-          widgets.some((w) => w.type === "sensor_card") &&
-          createPortal(
-            widgets
-              .filter((w) => w.type === "sensor_card")
-              .map((w, i) => (
-                <FloatingSensorCard
-                  key={w.id}
-                  widgetId={w.id}
-                  widgetIndex={i}
-                  title={w.title ?? "Sensor"}
-                  entity_id={w.entity_id}
-                  icon={w.icon}
-                  show_icon={w.show_icon !== false}
-                  size={(w.size as "sm" | "md" | "lg") ?? "md"}
-                  conditions={w.conditions as SensorCondition[] | undefined}
-                  editMode={editMode}
-                  storageScope={id}
-                  onEnterEditMode={() => setEditMode(true)}
-                  onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-                  onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-                />
-              )),
-            document.body
-          )}
+        {widgets
+          .filter((w) => w.type === "sensor_card" && widgetPage(w) === pageIndex)
+          .map((w, i) => (
+            <FloatingSensorCard
+              key={w.id}
+              widgetId={w.id}
+              widgetIndex={i}
+              title={w.title ?? "Sensor"}
+              entity_id={w.entity_id}
+              icon={w.icon}
+              show_icon={w.show_icon !== false}
+              size={(w.size as "sm" | "md" | "lg") ?? "md"}
+              conditions={w.conditions as SensorCondition[] | undefined}
+              editMode={editMode}
+              storageScope={id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
 
         {(() => {
-          const firstWeather = widgets.find((w) => w.type === "weather_card");
+          const firstWeather = widgets.find((w) => w.type === "weather_card" && widgetPage(w) === pageIndex);
           return firstWeather ? (
             <FloatingWeatherCard
               title={firstWeather.title ?? "Weather"}
@@ -1953,7 +2002,7 @@ export default function DashboardEditPage() {
         })()}
 
         {(() => {
-          const firstCamera = widgets.find((w) => w.type === "camera_card");
+          const firstCamera = widgets.find((w) => w.type === "camera_card" && widgetPage(w) === pageIndex);
           return firstCamera ? (
             <FloatingCameraCard
               title={firstCamera.title ?? "Camera"}
@@ -1980,7 +2029,7 @@ export default function DashboardEditPage() {
         })()}
 
         {(() => {
-          const firstVacuum = widgets.find((w) => w.type === "vacuum_card");
+          const firstVacuum = widgets.find((w) => w.type === "vacuum_card" && widgetPage(w) === pageIndex);
           return firstVacuum ? (
             <FloatingVacuumCard
               title={firstVacuum.title ?? t("cardType.vacuum_card")}
@@ -2007,7 +2056,7 @@ export default function DashboardEditPage() {
         })()}
 
         {widgets
-          .filter((w) => w.type === "vacuum_card_2")
+          .filter((w) => w.type === "vacuum_card_2" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingVacuumCard2
               key={w.id}
@@ -2030,31 +2079,26 @@ export default function DashboardEditPage() {
             />
           ))}
 
-        {typeof document !== "undefined" &&
-          widgets.some((w) => w.type === "alarm_card") &&
-          createPortal(
-            widgets
-              .filter((w) => w.type === "alarm_card")
-              .map((w, i) => (
-                <FloatingAlarmCard
-                  key={w.id}
-                  widgetId={w.id}
-                  widgetIndex={i}
-                  title={w.title ?? "Alarm"}
-                  entity_id={w.entity_id}
-                  icon={w.icon}
-                  editMode={editMode}
-                  storageScope={id}
-                  onEnterEditMode={() => setEditMode(true)}
-                  onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-                  onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-                />
-              )),
-            document.body
-          )}
+        {widgets
+          .filter((w) => w.type === "alarm_card" && widgetPage(w) === pageIndex)
+          .map((w, i) => (
+            <FloatingAlarmCard
+              key={w.id}
+              widgetId={w.id}
+              widgetIndex={i}
+              title={w.title ?? "Alarm"}
+              entity_id={w.entity_id}
+              icon={w.icon}
+              editMode={editMode}
+              storageScope={id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
 
         {(() => {
-          const roomCards = widgets.filter((w) => w.type === "room_card");
+          const roomCards = widgets.filter((w) => w.type === "room_card" && widgetPage(w) === pageIndex);
           return roomCards.map((w, i) => (
             <FloatingRoomCard
               key={w.id}
@@ -2095,7 +2139,7 @@ export default function DashboardEditPage() {
         })()}
 
         {widgets
-          .filter((w) => w.type === "nuts_card")
+          .filter((w) => w.type === "nuts_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingNutsCard
               key={w.id}
@@ -2121,7 +2165,7 @@ export default function DashboardEditPage() {
 
 
         {widgets
-          .filter((w) => w.type === "chore_card")
+          .filter((w) => w.type === "chore_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingChoreCard
               key={w.id}
@@ -2139,6 +2183,46 @@ export default function DashboardEditPage() {
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
+
+        {widgets
+          .filter((w) => w.type === "pill_card" && widgetPage(w) === pageIndex)
+          .map((w, i) => (
+            <FloatingPillCard
+              key={w.id}
+              widget={{
+                id: w.id,
+                title: w.title ?? "Pill",
+                entity_id: w.entity_id,
+                icon: w.icon,
+                conditions: w.conditions as SensorCondition[] | undefined,
+                show_state: w.show_state,
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              storageScope={id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            />
+          ))}
+
+        {widgets
+          .filter((w) => w.type === "card_group" && widgetPage(w) === pageIndex)
+          .map((g, i) => (
+            <FloatingCardGroup
+              key={g.id}
+              group={g}
+              widgetIndex={i}
+              editMode={editMode}
+              storageScope={id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(g.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(g.id) : undefined}
+            />
+          ))}
+            </>
+          )}
+        </DashboardPager>
 
         {widgets
           .filter((w) => w.type === "calendar_card")
@@ -2160,52 +2244,12 @@ export default function DashboardEditPage() {
             />
           ))}
 
-        {widgets
-          .filter((w) => w.type === "pill_card")
-          .map((w, i) => (
-            <FloatingPillCard
-              key={w.id}
-              widget={{
-                id: w.id,
-                title: w.title ?? "Pill",
-                entity_id: w.entity_id,
-                icon: w.icon,
-                conditions: w.conditions as SensorCondition[] | undefined,
-                show_state: w.show_state,
-              }}
-              widgetIndex={i}
-              editMode={editMode}
-              storageScope={id}
-              onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-            />
-          ))}
-
-        {typeof document !== "undefined" &&
-          createPortal(
-            widgets
-              .filter((w) => w.type === "card_group")
-              .map((g, i) => (
-                <FloatingCardGroup
-                  key={g.id}
-                  group={g}
-                  widgetIndex={i}
-                  editMode={editMode}
-                  storageScope={id}
-                  onEnterEditMode={() => setEditMode(true)}
-                  onEdit={editMode ? () => setEditingWidgetId(g.id) : undefined}
-                  onRemove={editMode ? () => handleRemoveTile(g.id) : undefined}
-                />
-              )),
-            document.body
-          )}
-
         {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
           <>
             <div
               className="fixed inset-0 z-40 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
               aria-hidden
+              data-no-page-swipe
               onClick={() => {
                 if (editingWidget?.type === "card_group" && editingGroupChildId) {
                   setEditingGroupChildId(null);
@@ -2250,6 +2294,26 @@ export default function DashboardEditPage() {
               </button>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-3">
+                {pageCount > 1 && editingWidget.type !== "calendar_card" && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                      {t("editPanel.dashboardPage")}
+                    </label>
+                    <select
+                      value={editForm.page ?? 0}
+                      onChange={(e) =>
+                        setEditForm((prev) => ({ ...prev, page: Number(e.target.value) }))
+                      }
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                    >
+                      {Array.from({ length: pageCount }, (_, index) => (
+                        <option key={index} value={index}>
+                          {t("dashboardPages.pageN").replace("{n}", String(index + 1))}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {(editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card") ? (
                   <>
                     <div>
@@ -5149,12 +5213,14 @@ aria-label={t("editPanel.removeCondition")}
                         textMode: editForm.textMode ?? "title",
                         show_icon: editForm.show_icon ?? false,
                         icon: editForm.icon ?? "Type",
+                        page: clampPageIndex(editForm.page ?? 0, pageCount),
                         ...(editingWidget.type === "text_card" && {
                           width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
                           entity_id: editForm.entity_id || undefined,
                         }),
                       } : {
                         title: editForm.title,
+                        page: clampPageIndex(editForm.page ?? 0, pageCount),
                         ...(editingWidget.entity_id != null && editingWidget.type !== "energy_monitor_card" && editingWidget.type !== "power_usage_card" && {
                           entity_id: editForm.entity_id,
                         }),
@@ -5267,6 +5333,9 @@ aria-label={t("editPanel.removeCondition")}
                       const newWidgets: WidgetConfig[] = widgets.map((w) =>
                         w.id === editingWidgetId ? ({ ...w, ...updates } as WidgetConfig) : w
                       );
+                      if (typeof updates.page === "number") {
+                        setDashboardPage(clampPageIndex(updates.page, pageCount));
+                      }
                       saveMutation.mutate({
                         layout,
                         widgets: newWidgets,
