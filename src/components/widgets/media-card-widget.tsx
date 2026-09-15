@@ -1,19 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Pause, Play, SkipBack, SkipForward, Disc3, MoreVertical } from "lucide-react";
 import type { MediaCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { mediaArtworkCacheKey, mediaImageRequestUrl } from "@/lib/media-image";
-
-function formatTime(seconds: number | undefined): string {
-  if (seconds == null || Number.isNaN(seconds)) return "0:00";
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 export function MediaCardWidget({
   title = "Media",
@@ -30,7 +23,6 @@ export function MediaCardWidget({
   const [loading, setLoading] = useState(false);
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const setStates = useEntityStateStore((s) => s.setStates);
-  const updatedAt = useEntityStateStore((s) => s.updatedAt);
 
   const isOn =
     entity?.state !== "off" &&
@@ -45,8 +37,6 @@ export function MediaCardWidget({
     (entity?.attributes?.entity_picture as string | undefined) ??
     (entity?.attributes?.entity_picture_local as string | undefined);
   const mediaContentId = (entity?.attributes?.media_content_id as string | undefined) ?? "";
-  const duration = Number(entity?.attributes?.media_duration) || 0;
-  const position = Number(entity?.attributes?.media_position) || 0;
   const deviceName =
     (entity?.attributes?.friendly_name as string) || entity_id;
 
@@ -82,28 +72,6 @@ export function MediaCardWidget({
   function handleNext() {
     callMedia("media_next_track");
   }
-
-  const baselineRef = useRef({ position: 0, at: 0 });
-  useEffect(() => {
-    if (updatedAt != null && position >= 0) {
-      baselineRef.current = { position, at: updatedAt };
-    }
-  }, [position, updatedAt]);
-
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (!isPlaying || duration <= 0) return;
-    const interval = setInterval(() => setTick((tick) => tick + 1), 1000);
-    return () => clearInterval(interval);
-  }, [isPlaying, duration]);
-
-  const { position: basePos, at: baseAt } = baselineRef.current;
-  const displayPosition =
-    isPlaying && duration > 0 && position >= 0
-      ? Math.min(duration, basePos + (Date.now() - baseAt) / 1000)
-      : position;
-  const progressPct =
-    duration > 0 ? Math.min(100, (displayPosition / duration) * 100) : 0;
 
   const artworkKey = mediaArtworkCacheKey({
     entityPicture,
@@ -179,25 +147,6 @@ export function MediaCardWidget({
               <MoreVertical className="h-5 w-5" aria-hidden />
             </button>
           )}
-        </div>
-
-        <div className="relative mt-auto space-y-1.5 px-4 pb-3 pt-8">
-          <div
-            className="h-0.5 overflow-hidden rounded-full bg-white/25"
-            role="progressbar"
-            aria-valuenow={displayPosition}
-            aria-valuemin={0}
-            aria-valuemax={duration}
-          >
-            <div
-              className="h-full rounded-full bg-white/90 transition-all duration-300"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-[11px] tabular-nums text-white/80">
-            <span>{formatTime(displayPosition)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
         </div>
       </div>
 
