@@ -8,8 +8,12 @@ import {
   getScreensaverClockSizeOrDefault,
   type ScreensaverClockSize,
 } from "@/lib/screensaver-clock-size";
+import {
+  migrateScreensaverMediaSource,
+  type ScreensaverMediaSource,
+} from "@/lib/screensaver-media-source";
 
-export type { ScreensaverClockPosition, ScreensaverClockSize };
+export type { ScreensaverClockPosition, ScreensaverClockSize, ScreensaverMediaSource };
 
 const STORAGE_KEY_DELAY = "dashboard.screensaverDelaySeconds";
 const STORAGE_KEY_LEGACY_MINUTES = "dashboard.screensaverMinutes";
@@ -194,6 +198,36 @@ export function getScreensaverPexelsType(): "photo" | "video" {
 export function setScreensaverPexelsType(type: "photo" | "video"): void {
   try {
     localStorage.setItem(STORAGE_KEY_PEXELS_TYPE, type);
+    window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
+  } catch {
+    // ignore
+  }
+}
+
+const STORAGE_KEY_MEDIA_SOURCE = "dashboard.screensaverMediaSource";
+
+/** Which media source the screensaver uses: custom upload, Pexels, or Immich. */
+export function getScreensaverMediaSource(): ScreensaverMediaSource {
+  if (typeof window === "undefined") return "custom";
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_MEDIA_SOURCE);
+    const source = migrateScreensaverMediaSource({
+      stored,
+      customUrl: getScreensaverBackgroundImage(),
+      pexelsEnabled: getScreensaverPexelsEnabled(),
+    });
+    if (stored !== source) {
+      localStorage.setItem(STORAGE_KEY_MEDIA_SOURCE, source);
+    }
+    return source;
+  } catch {
+    return "custom";
+  }
+}
+
+export function setScreensaverMediaSource(source: ScreensaverMediaSource): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_MEDIA_SOURCE, source);
     window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
   } catch {
     // ignore

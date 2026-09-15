@@ -14,7 +14,11 @@ import {
   Wind,
   Disc3,
 } from "lucide-react";
-import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverClockPosition, getScreensaverClockSize } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverClockPosition, getScreensaverClockSize, getScreensaverMediaSource } from "@/stores/screensaver-store";
+import { useImmichStore } from "@/stores/immich-store";
+import { resolveScreensaverPlayback } from "@/lib/screensaver-media-source";
+import { buildImmichAssetProxyUrl, pickRandomImmichAsset } from "@/lib/immich-url";
+import { immichRequest } from "@/lib/immich-client";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
@@ -474,11 +478,24 @@ const DISMISS_BLOCK_MS = 400;
 
 function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const { t } = useTranslation();
+  const mediaSource = getScreensaverMediaSource();
   const customBg = getScreensaverBackgroundImage();
   const pexelsEnabled = getScreensaverPexelsEnabled();
   const pexelsQuery = getScreensaverPexelsQuery();
   const pexelsApiKey = getScreensaverPexelsApiKey();
   const pexelsType = getScreensaverPexelsType();
+  const immich = useImmichStore();
+  const playback = resolveScreensaverPlayback({
+    source: mediaSource,
+    customUrl: customBg,
+    pexelsEnabled,
+    pexelsKey: pexelsApiKey,
+    pexelsType,
+    immichEnabled: immich.enabled,
+    immichUrl: immich.baseUrl,
+    immichKey: immich.apiKey,
+    immichType: immich.mediaType,
+  });
   const clockPosition = getScreensaverClockPosition();
   const clockSize = getScreensaverClockSize();
   const clockAlign = clockPositionAxis(clockPosition).x;
@@ -500,11 +517,11 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const [dismissing, setDismissing] = useState(false);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [nextImage, setNextImage] = useState<string | null>(null);
-  const [currentAttribution, setCurrentAttribution] = useState<{ url: string; photographer: string } | null>(null);
-  const [nextAttribution, setNextAttribution] = useState<{ url: string; photographer: string } | null>(null);
+  const [currentAttribution, setCurrentAttribution] = useState<{ url?: string; photographer: string; provider: "pexels" | "immich" } | null>(null);
+  const [nextAttribution, setNextAttribution] = useState<{ url?: string; photographer: string; provider: "pexels" | "immich" } | null>(null);
   const [isFading, setIsFading] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
-  const [pexelsError, setPexelsError] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
 
   // Video state
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
@@ -513,9 +530,49 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   const videoRotateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const VIDEO_MAX_SECONDS = 60;
 
+  const isVideoMode = playback.mode === "pexels-video" || playback.mode === "immich-video";
+  const isRemotePhoto = playback.mode === "pexels-photo" || playback.mode === "immich-photo";
+
+  useEffect(() => {
+    setCurrentImage(null);
+    setNextImage(null);
+    setCurrentVideoUrl(null);
+    setNextVideoUrl(null);
+    setCurrentAttribution(null);
+    setNextAttribution(null);
+    setIsFading(false);
+    setVideoFading(false);
+    setMediaError(false);
+    setImageFailed(false);
+  }, [playback.mode]);
+
+  const applyPhoto = useCallback((imageUrl: string, attr: { url?: string; photographer: string; provider: "pexels" | "immich" } | null) => {
+    setCurrentImage((prev) => {
+      if (prev) {
+        setNextImage(imageUrl);
+        setNextAttribution(attr);
+        return prev;
+      }
+      setCurrentAttribution(attr);
+      return imageUrl;
+    });
+  }, []);
+
+  const applyVideo = useCallback((videoUrl: string, attr: { url?: string; photographer: string; provider: "pexels" | "immich" } | null) => {
+    setCurrentVideoUrl((prev) => {
+      if (prev) {
+        setNextVideoUrl(videoUrl);
+        setNextAttribution(attr);
+        return prev;
+      }
+      setCurrentAttribution(attr);
+      return videoUrl;
+    });
+  }, []);
+
   const fetchPexelsPhoto = useCallback(() => {
     if (!pexelsApiKey) return;
-    setPexelsError(false);
+    setMediaError(false);
     fetch(`/api/pexels/photo?query=${encodeURIComponent(pexelsQuery)}&_t=${Date.now()}`, {
       cache: "no-store",
       headers: { "X-Pexels-Api-Key": pexelsApiKey },
@@ -523,34 +580,65 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       .then((r) => r.json())
       .then(async (data) => {
         if (!data?.imageUrl) {
-          setPexelsError(true);
+          setMediaError(true);
           return;
         }
-        const attr = data.pexelsUrl && data.photographer ? { url: data.pexelsUrl, photographer: data.photographer } : null;
+        const attr = data.pexelsUrl && data.photographer
+          ? { url: data.pexelsUrl as string, photographer: data.photographer as string, provider: "pexels" as const }
+          : { photographer: "Pexels", provider: "pexels" as const };
         await preloadImage(data.imageUrl);
-        setCurrentImage((prev) => {
-          if (prev) {
-            setNextImage(data.imageUrl);
-            setNextAttribution(attr);
-            return prev;
-          }
-          setCurrentAttribution(attr);
-          return data.imageUrl;
-        });
+        applyPhoto(data.imageUrl, attr);
       })
-      .catch(() => setPexelsError(true));
-  }, [pexelsApiKey, pexelsQuery]);
+      .catch(() => setMediaError(true));
+  }, [pexelsApiKey, pexelsQuery, applyPhoto]);
+
+  const fetchImmichPhoto = useCallback(() => {
+    if (!immich.baseUrl || !immich.apiKey) return;
+    setMediaError(false);
+    immichRequest({
+      baseUrl: immich.baseUrl,
+      apiKey: immich.apiKey,
+      method: "POST",
+      path: "/api/search/random",
+      payload: {
+        size: 12,
+        type: "IMAGE",
+        ...(immich.albumId ? { albumIds: [immich.albumId] } : {}),
+      },
+    })
+      .then(async (data) => {
+        const asset = pickRandomImmichAsset(data);
+        if (!asset) {
+          setMediaError(true);
+          return;
+        }
+        const imageUrl = buildImmichAssetProxyUrl({
+          baseUrl: immich.baseUrl,
+          apiKey: immich.apiKey,
+          id: asset.id,
+          kind: "preview",
+        });
+        await preloadImage(imageUrl);
+        applyPhoto(imageUrl, { photographer: "Immich", provider: "immich" });
+      })
+      .catch(() => setMediaError(true));
+  }, [immich.baseUrl, immich.apiKey, immich.albumId, applyPhoto]);
+
+  const fetchRemotePhoto = useCallback(() => {
+    if (playback.mode === "pexels-photo") fetchPexelsPhoto();
+    else if (playback.mode === "immich-photo") fetchImmichPhoto();
+  }, [playback.mode, fetchPexelsPhoto, fetchImmichPhoto]);
 
   useEffect(() => {
-    if (customBg || !pexelsEnabled || !pexelsApiKey) return;
-    fetchPexelsPhoto();
-  }, [customBg, pexelsEnabled, pexelsApiKey, pexelsQuery, fetchPexelsPhoto]);
+    if (!isRemotePhoto) return;
+    fetchRemotePhoto();
+  }, [isRemotePhoto, fetchRemotePhoto]);
 
   useEffect(() => {
-    if (customBg || !pexelsEnabled || !pexelsApiKey || !currentImage || nextImage) return;
-    const interval = setInterval(fetchPexelsPhoto, PHOTO_ROTATION_SECONDS * 1000);
+    if (!isRemotePhoto || !currentImage || nextImage) return;
+    const interval = setInterval(fetchRemotePhoto, PHOTO_ROTATION_SECONDS * 1000);
     return () => clearInterval(interval);
-  }, [customBg, pexelsEnabled, pexelsApiKey, currentImage, nextImage, fetchPexelsPhoto]);
+  }, [isRemotePhoto, currentImage, nextImage, fetchRemotePhoto]);
 
   useEffect(() => {
     if (!nextImage) return;
@@ -577,8 +665,6 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
   }, [isFading, nextImage, nextAttribution]);
 
   // ── Video logic ──────────────────────────────────────────────────────────────
-  const isVideoMode = pexelsEnabled && !customBg && pexelsApiKey && pexelsType === "video";
-
   const fetchPexelsVideo = useCallback(() => {
     if (!pexelsApiKey) return;
     if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current);
@@ -590,28 +676,60 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       .then((data) => {
         if (data?.videoUrl) {
           const attr = data.pexelsUrl && data.photographer
-            ? { url: data.pexelsUrl, photographer: data.photographer }
-            : null;
-          setCurrentVideoUrl((prev) => {
-            if (prev) {
-              setNextVideoUrl(data.videoUrl);
-              setNextAttribution(attr);
-              return prev;
-            }
-            setCurrentAttribution(attr);
-            return data.videoUrl;
-          });
+            ? { url: data.pexelsUrl as string, photographer: data.photographer as string, provider: "pexels" as const }
+            : { photographer: "Pexels", provider: "pexels" as const };
+          applyVideo(data.videoUrl, attr);
+        } else {
+          setMediaError(true);
         }
       })
-      .catch(() => {});
-  }, [pexelsApiKey, pexelsQuery]);
+      .catch(() => setMediaError(true));
+  }, [pexelsApiKey, pexelsQuery, applyVideo]);
+
+  const fetchImmichVideo = useCallback(() => {
+    if (!immich.baseUrl || !immich.apiKey) return;
+    if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current);
+    immichRequest({
+      baseUrl: immich.baseUrl,
+      apiKey: immich.apiKey,
+      method: "POST",
+      path: "/api/search/random",
+      payload: {
+        size: 12,
+        type: "VIDEO",
+        ...(immich.albumId ? { albumIds: [immich.albumId] } : {}),
+      },
+    })
+      .then((data) => {
+        const asset = pickRandomImmichAsset(data);
+        if (!asset) {
+          setMediaError(true);
+          return;
+        }
+        applyVideo(
+          buildImmichAssetProxyUrl({
+            baseUrl: immich.baseUrl,
+            apiKey: immich.apiKey,
+            id: asset.id,
+            kind: "video",
+          }),
+          { photographer: "Immich", provider: "immich" }
+        );
+      })
+      .catch(() => setMediaError(true));
+  }, [immich.baseUrl, immich.apiKey, immich.albumId, applyVideo]);
+
+  const fetchRemoteVideo = useCallback(() => {
+    if (playback.mode === "pexels-video") fetchPexelsVideo();
+    else if (playback.mode === "immich-video") fetchImmichVideo();
+  }, [playback.mode, fetchPexelsVideo, fetchImmichVideo]);
 
   // Initial video load
   useEffect(() => {
     if (!isVideoMode) return;
-    fetchPexelsVideo();
+    fetchRemoteVideo();
     return () => { if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current); };
-  }, [isVideoMode, fetchPexelsVideo]);
+  }, [isVideoMode, fetchRemoteVideo]);
 
   // Fade in next video only after it can play, so we never fade in a blank frame.
   useEffect(() => {
@@ -634,11 +752,17 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
 
   const scheduleVideoRotation = useCallback(() => {
     if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current);
-    videoRotateTimer.current = setTimeout(fetchPexelsVideo, VIDEO_MAX_SECONDS * 1000);
-  }, [fetchPexelsVideo]);
+    videoRotateTimer.current = setTimeout(fetchRemoteVideo, VIDEO_MAX_SECONDS * 1000);
+  }, [fetchRemoteVideo]);
 
-  const backgroundImage = customBg || currentImage || DEFAULT_SCREENSAVER_IMAGE;
-  const useGradient = !isVideoMode && (imageFailed || (pexelsEnabled && !customBg && (pexelsError && !currentImage || !pexelsApiKey)));
+  const backgroundImage =
+    playback.mode === "custom"
+      ? playback.url
+      : currentImage || DEFAULT_SCREENSAVER_IMAGE;
+  const useGradient =
+    !isVideoMode &&
+    (imageFailed ||
+      ((isRemotePhoto || isVideoMode) && mediaError && !currentImage));
   const fadeStyle = { transition: `opacity ${FADE_DURATION_MS}ms ease-in-out` as const };
 
   useEffect(() => {
@@ -687,7 +811,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
                   playsInline
                   className="absolute inset-0 w-full h-full object-cover"
                   onCanPlay={scheduleVideoRotation}
-                  onEnded={fetchPexelsVideo}
+                  onEnded={fetchRemoteVideo}
                   aria-hidden
                 />
               )}
@@ -770,12 +894,14 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
           {showMusicOnScreensaver ? <ScreensaverMusic /> : <ScreensaverFootball />}
         </div>
       </div>
-      {(currentAttribution || (pexelsEnabled && !currentAttribution && !pexelsError)) && (
+      {(currentAttribution || ((playback.mode === "pexels-photo" || playback.mode === "pexels-video") && !mediaError)) && (
         <div className={cn(
           "pointer-events-none absolute inset-x-0 z-10 flex justify-center px-8",
           clockY === "bottom" ? "top-3" : "bottom-3"
         )}>
-          {currentAttribution ? (
+          {currentAttribution?.provider === "immich" ? (
+            <span className="text-xs text-white/50">{t("screensaver.attribution.immich")}</span>
+          ) : currentAttribution?.url ? (
             <a
               href={currentAttribution.url}
               target="_blank"
@@ -783,9 +909,9 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
               className="pointer-events-auto text-xs text-white/50 hover:text-white/70 transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
-              Photo by {currentAttribution.photographer} on Pexels
+              {t("screensaver.attribution.pexelsBy").replace("{name}", currentAttribution.photographer)}
             </a>
-          ) : (
+          ) : playback.mode === "pexels-photo" || playback.mode === "pexels-video" || currentAttribution?.provider === "pexels" ? (
             <a
               href="https://www.pexels.com"
               target="_blank"
@@ -793,9 +919,9 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
               className="pointer-events-auto text-xs text-white/50 hover:text-white/70 transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
-              Photos provided by Pexels
+              {t("screensaver.attribution.pexels")}
             </a>
-          )}
+          ) : null}
         </div>
       )}
     </div>

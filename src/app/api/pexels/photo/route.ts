@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const apiKey = headerKey || envKey;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Geen Pexels API-key. Vul de API-key in bij Instellingen → Screensaver → Pexels, of voeg PEXELS_API_KEY toe aan .env" },
+      { error: "Geen Pexels API-key. Vul de API-key in bij Instellingen → Apps → Pexels, of voeg PEXELS_API_KEY toe aan .env" },
       { status: 503 }
     );
   }
