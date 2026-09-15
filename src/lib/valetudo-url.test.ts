@@ -41,6 +41,7 @@ describe("valetudo-url", () => {
     expect(isSafeValetudoApiPath("/api/v2/robot/capabilities/FanSpeedControlCapability/preset")).toBe(true);
     expect(isSafeValetudoApiPath("/api/v2/robot/capabilities/ConsumableMonitoringCapability")).toBe(true);
     expect(isSafeValetudoApiPath("/api/v2/robot/capabilities/ConsumableMonitoringCapability/properties")).toBe(true);
+    expect(isSafeValetudoApiPath("/api/v2/robot/capabilities/MapSegmentationCapability/properties")).toBe(true);
     expect(isSafeValetudoApiPath("/api/v2/robot/capabilities/ConsumableMonitoringCapability/brush/main")).toBe(true);
     expect(isSafeValetudoApiPath("/api/v1/robot")).toBe(false);
     expect(isSafeValetudoApiPath("/api/v2/../etc/passwd")).toBe(false);

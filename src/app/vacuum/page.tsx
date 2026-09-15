@@ -17,6 +17,9 @@ import {
   parseConsumableProperties,
   parseConsumables,
   parseFanPresets,
+  parseSegmentIterationMax,
+  clampSegmentIterations,
+  segmentIterationOptions,
   sortConsumables,
   type ConsumableMeta,
   type ConsumableState,
@@ -28,6 +31,7 @@ const FAN_PRESETS_PATH = "/api/v2/robot/capabilities/FanSpeedControlCapability/p
 const FAN_PRESET_PATH = "/api/v2/robot/capabilities/FanSpeedControlCapability/preset";
 const CONSUMABLES_PATH = "/api/v2/robot/capabilities/ConsumableMonitoringCapability";
 const CONSUMABLE_PROPERTIES_PATH = "/api/v2/robot/capabilities/ConsumableMonitoringCapability/properties";
+const SEGMENT_PROPERTIES_PATH = "/api/v2/robot/capabilities/MapSegmentationCapability/properties";
 
 type RobotAttribute = {
   __class?: string;
@@ -63,6 +67,8 @@ export default function VacuumPage() {
   const [consumableMeta, setConsumableMeta] = useState<ConsumableMeta[]>([]);
   const [fanBusy, setFanBusy] = useState(false);
   const [resettingKey, setResettingKey] = useState<string | null>(null);
+  const [iterations, setIterations] = useState(1);
+  const [iterationMax, setIterationMax] = useState(3);
 
   useEffect(() => {
     hydrateValetudoStore();
@@ -113,6 +119,15 @@ export default function VacuumPage() {
       setConsumableMeta(parseConsumableProperties(props));
     } catch {
       setConsumableMeta([]);
+    }
+    try {
+      const props = await valetudoRequest<unknown>({ ...conn, path: SEGMENT_PROPERTIES_PATH });
+      const max = parseSegmentIterationMax(props);
+      setIterationMax(max);
+      setIterations((current) => clampSegmentIterations(current, max));
+    } catch {
+      setIterationMax(3);
+      setIterations((current) => clampSegmentIterations(current, 3));
     }
   }, [conn]);
 
@@ -194,7 +209,7 @@ export default function VacuumPage() {
         payload: {
           action: "start_segment_action",
           segment_ids: selectedIds,
-          iterations: 1,
+          iterations: clampSegmentIterations(iterations, iterationMax),
           customOrder: true,
         },
       });
@@ -306,11 +321,42 @@ export default function VacuumPage() {
             </div>
             {error ? <p className="text-sm text-red-600 dark:text-red-300">{error}</p> : null}
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-white/60 bg-white/50 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-              <p className="min-w-0 text-sm text-gray-600 dark:text-gray-300">
-                {selectedNames.length === 0
-                  ? t("vacuum.pickRooms")
-                  : selectedNames.join(", ")}
-              </p>
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {selectedNames.length === 0
+                    ? t("vacuum.pickRooms")
+                    : selectedNames.join(", ")}
+                </p>
+                {iterationMax > 1 ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      {t("vacuum.iterations")}
+                    </span>
+                    <div role="radiogroup" aria-label={t("vacuum.iterations")} className="flex flex-wrap gap-1.5">
+                      {segmentIterationOptions(iterationMax).map((count) => {
+                        const selected = iterations === count;
+                        return (
+                          <button
+                            key={count}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            onClick={() => setIterations(count)}
+                            className={cn(
+                              "rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                              selected
+                                ? "bg-brand text-white shadow-sm"
+                                : "bg-white/70 text-gray-800 hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                            )}
+                          >
+                            {t("vacuum.iterationsCount").replace("{n}", String(count))}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
               <button
                 type="button"
                 onClick={() => void cleanSelected()}

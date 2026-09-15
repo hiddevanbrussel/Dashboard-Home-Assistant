@@ -9,6 +9,9 @@ import {
   parseConsumableProperties,
   parseConsumables,
   parseFanPresets,
+  parseSegmentIterationMax,
+  clampSegmentIterations,
+  segmentIterationOptions,
   sortConsumables,
   sortFanPresets,
 } from "./valetudo-robot";
@@ -77,5 +80,14 @@ describe("valetudo-robot", () => {
         availableConsumables: [{ type: "brush", subType: "main", unit: "minutes", maxValue: 300 }],
       })
     ).toEqual([{ type: "brush", subType: "main", unit: "minutes", maxValue: 300 }]);
+  });
+
+  it("reads segment iteration max from Valetudo properties", () => {
+    expect(parseSegmentIterationMax({ iterationCount: { min: 1, max: 3 } })).toBe(3);
+    expect(parseSegmentIterationMax({ iterationCount: { max: 1 } })).toBe(1);
+    expect(parseSegmentIterationMax({})).toBe(3);
+    expect(segmentIterationOptions(3)).toEqual([1, 2, 3]);
+    expect(clampSegmentIterations(8, 3)).toBe(3);
+    expect(clampSegmentIterations(0, 3)).toBe(1);
   });
 });
