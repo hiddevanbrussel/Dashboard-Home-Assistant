@@ -14,7 +14,6 @@ import {
 } from "@/lib/dashboard-pages";
 
 const SETTLE_MS = 520;
-const SETTLE_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 type DashboardPagerProps = {
   pageCount: number;
@@ -37,6 +36,16 @@ function shouldIgnorePageSwipe(target: EventTarget | null, editMode: boolean): b
   return false;
 }
 
+function easeOutQuart(t: number): number {
+  const x = Math.min(1, Math.max(0, t));
+  return 1 - Math.pow(1 - x, 4);
+}
+
+function viewportWidth(): number {
+  if (typeof window === "undefined") return 1200;
+  return window.innerWidth || 1200;
+}
+
 export function DashboardPager({
   pageCount,
   page,
@@ -50,14 +59,15 @@ export function DashboardPager({
   const [mounted, setMounted] = useState(false);
   const [dragPx, setDragPx] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const [fromPage, setFromPage] = useState(page);
-  const [settling, setSettling] = useState(false);
+  const [animTarget, setAnimTarget] = useState<number | null>(null);
+  const [pageWidth, setPageWidth] = useState(1200);
   const dragPxRef = useRef(0);
   const draggingRef = useRef(false);
   const pageRef = useRef(page);
   const pageCountRef = useRef(pageCount);
   const wheelLockRef = useRef(false);
-  const settleTimerRef = useRef<number | null>(null);
+  const animatingRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -66,27 +76,61 @@ export function DashboardPager({
   useEffect(() => {
     pageCountRef.current = pageCount;
   }, [pageCount]);
+  useEffect(() => {
+    const measure = () => setPageWidth(viewportWidth());
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
   useEffect(
     () => () => {
-      if (settleTimerRef.current != null) window.clearTimeout(settleTimerRef.current);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     },
     []
   );
 
+  const stopAnimation = useCallback(() => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    animatingRef.current = false;
+    setAnimTarget(null);
+  }, []);
+
   const goTo = useCallback(
     (next: number) => {
       const clamped = Math.min(pageCountRef.current - 1, Math.max(0, next));
-      if (clamped === pageRef.current) return;
-      setFromPage(pageRef.current);
-      setSettling(true);
-      if (settleTimerRef.current != null) window.clearTimeout(settleTimerRef.current);
-      settleTimerRef.current = window.setTimeout(() => {
-        setSettling(false);
-        settleTimerRef.current = null;
-      }, SETTLE_MS);
-      onPageChange(clamped);
+      const from = pageRef.current;
+      if (clamped === from) return;
+      stopAnimation();
+      const width = viewportWidth();
+      const startDrag = dragPxRef.current;
+      const endDrag = (from - clamped) * width;
+      animatingRef.current = true;
+      setAnimTarget(clamped);
+      setDragging(false);
+      draggingRef.current = false;
+      const t0 = performance.now();
+      const step = (now: number) => {
+        const t = easeOutQuart((now - t0) / SETTLE_MS);
+        const px = startDrag + (endDrag - startDrag) * t;
+        dragPxRef.current = px;
+        setDragPx(px);
+        if (t < 1) {
+          rafRef.current = requestAnimationFrame(step);
+          return;
+        }
+        rafRef.current = null;
+        dragPxRef.current = 0;
+        setDragPx(0);
+        animatingRef.current = false;
+        setAnimTarget(null);
+        onPageChange(clamped);
+      };
+      rafRef.current = requestAnimationFrame(step);
     },
-    [onPageChange]
+    [onPageChange, stopAnimation]
   );
 
   useEffect(() => {
@@ -95,6 +139,7 @@ export function DashboardPager({
 
     const onPointerDown = (e: PointerEvent) => {
       if (pageCountRef.current < 2) return;
+      if (animatingRef.current) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
       if (shouldIgnorePageSwipe(e.target, editMode)) return;
       start.x = e.clientX;
@@ -127,7 +172,7 @@ export function DashboardPager({
         page: pageRef.current,
         pageCount: pageCountRef.current,
         dragPx: dx,
-        pageWidth: window.innerWidth || 1200,
+        pageWidth: viewportWidth(),
       });
       dragPxRef.current = next;
       setDragPx(next);
@@ -144,13 +189,13 @@ export function DashboardPager({
         pageCount: pageCountRef.current,
         dragPx: dragPxRef.current,
         velocityPxPerMs: velocity,
-        pageWidth: window.innerWidth || 1200,
+        pageWidth: viewportWidth(),
       });
       draggingRef.current = false;
       setDragging(false);
       setDragPx(0);
       dragPxRef.current = 0;
-      goTo(nextPage);
+      onPageChange(nextPage);
     };
 
     window.addEventListener("pointerdown", onPointerDown, { capture: true });
@@ -163,12 +208,12 @@ export function DashboardPager({
       window.removeEventListener("pointerup", finish, true);
       window.removeEventListener("pointercancel", finish, true);
     };
-  }, [editMode, goTo]);
+  }, [editMode, onPageChange]);
 
   useEffect(() => {
     if (pageCount < 2) return;
     const onWheel = (e: WheelEvent) => {
-      if (wheelLockRef.current) return;
+      if (wheelLockRef.current || animatingRef.current) return;
       if (shouldIgnorePageSwipe(e.target, editMode)) return;
       if (Math.abs(e.deltaX) < 28 || Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;
       e.preventDefault();
@@ -185,6 +230,7 @@ export function DashboardPager({
   useEffect(() => {
     if (pageCount < 2) return;
     const onKey = (e: KeyboardEvent) => {
+      if (animatingRef.current) return;
       const target = e.target as HTMLElement | null;
       if (target && target.closest("input, textarea, select, [contenteditable=true]")) return;
       if (e.key === "ArrowRight") {
@@ -207,32 +253,29 @@ export function DashboardPager({
     <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
       {Array.from({ length: pageCount }, (_, index) => {
         const active = index === page;
-        const peek =
-          dragging || settling
-            ? Math.abs(index - page) <= 1 || index === fromPage
-            : false;
-        const visible = active || peek;
+        const visible =
+          active || index === animTarget || ((dragging || Math.abs(dragPx) > 0.5) && Math.abs(index - page) <= 1);
+        const x = (index - page) * pageWidth + dragPx;
         return (
           <div
             key={index}
             className="absolute inset-0 overflow-hidden"
             style={{
-              transform: `translate3d(calc(${index - page} * 100vw + ${dragPx}px), 0, 0)`,
-              transition: dragging ? "none" : `transform ${SETTLE_MS}ms ${SETTLE_EASING}`,
+              transform: `translate3d(${x}px, 0, 0)`,
               pointerEvents: "none",
               visibility: visible ? "visible" : "hidden",
               zIndex: active ? 1 : 0,
             }}
             aria-hidden={!active}
           >
-            {active ? (
+            {visible ? (
               <div
-                data-dashboard-page-swipe
+                data-dashboard-page-swipe={active ? true : undefined}
                 className="absolute inset-0"
                 style={{
                   left: SIDEBAR_INSET,
                   top: "4.5rem",
-                  pointerEvents: editMode ? "auto" : "none",
+                  pointerEvents: editMode && active ? "auto" : "none",
                 }}
                 aria-hidden
               />
@@ -266,12 +309,12 @@ export function DashboardPager({
                   key={index}
                   type="button"
                   role="tab"
-                  aria-selected={index === page}
+                  aria-selected={index === (animTarget ?? page)}
                   aria-label={t("dashboardPages.pageN").replace("{n}", String(index + 1))}
                   onClick={() => goTo(index)}
                   className={cn(
                     "h-2 rounded-full transition-all duration-300",
-                    index === page
+                    index === (animTarget ?? page)
                       ? "w-5 bg-gray-800 dark:bg-white"
                       : "w-2 bg-gray-300 hover:bg-gray-400 dark:bg-white/30 dark:hover:bg-white/50"
                   )}

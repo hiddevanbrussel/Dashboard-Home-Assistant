@@ -610,6 +610,10 @@ export default function DashboardEditPage() {
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
   const [pageCount, setPageCount] = useState(1);
   const [dashboardPage, setDashboardPage] = useState(0);
+  const pageCountRef = useRef(pageCount);
+  const dashboardPageRef = useRef(dashboardPage);
+  pageCountRef.current = pageCount;
+  dashboardPageRef.current = dashboardPage;
   const [welcomeTitle, setWelcomeTitle] = useState<string>("");
   const [welcomeSubtitle, setWelcomeSubtitle] = useState<string>("");
   const [roomCardSize, setRoomCardSize] = useState<"normal" | "large">("normal");
@@ -1048,7 +1052,7 @@ export default function DashboardEditPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          layout: serializeDashboardLayout(payload.layout, payload.pageCount ?? pageCount),
+          layout: serializeDashboardLayout(payload.layout, payload.pageCount ?? pageCountRef.current),
           widgets: JSON.stringify(payload.widgets),
           ...(payload.welcomeTitle !== undefined && { welcomeTitle: payload.welcomeTitle || null }),
           ...(payload.welcomeSubtitle !== undefined && { welcomeSubtitle: payload.welcomeSubtitle || null }),
@@ -1057,16 +1061,12 @@ export default function DashboardEditPage() {
       if (!res.ok) throw new Error("Save failed");
       return res.json();
     },
-    onSuccess: (updated) => {
+    onSuccess: (updated, payload) => {
       queryClient.setQueryData(
         isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id],
         (old: unknown) => (old && updated ? { ...(old as object), ...(updated as object) } : old ?? updated)
       );
-      if (updated && typeof updated === "object") {
-        const row = updated as { layout?: string | null; widgets?: string | null };
-        const nextWidgets = row.widgets != null ? parseWidgets(row.widgets) : widgets;
-        setPageCount(parseStoredPageCount(row.layout ?? null, nextWidgets));
-      }
+      setPageCount(resolvePageCount(payload.pageCount ?? pageCountRef.current, payload.widgets));
     },
   });
 
@@ -1090,7 +1090,7 @@ export default function DashboardEditPage() {
     setEditingWidgetId(null);
     setEditingGroupChildId(null);
     setEditMode(false);
-    saveMutation.mutate({ layout, widgets, welcomeTitle, welcomeSubtitle, pageCount });
+    saveMutation.mutate({ layout, widgets, welcomeTitle, welcomeSubtitle, pageCount: pageCountRef.current });
   };
 
   function handleAddTile(type: string, entityId: string, titleOverride?: string): string | undefined {
@@ -1108,7 +1108,7 @@ export default function DashboardEditPage() {
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
       ...((type === "climate_card" || type === "climate_card_2") && { width: CLIMATE_CARD_DEFAULT_WIDTH, height: CLIMATE_CARD_DEFAULT_HEIGHT }),
-      page: dashboardPage,
+      page: dashboardPageRef.current,
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
     const isTextCard = type === "text_card";
@@ -1130,7 +1130,7 @@ export default function DashboardEditPage() {
       return {
         ...(old as object),
         widgets: JSON.stringify(newWidgets),
-        layout: serializeDashboardLayout(newLayout, pageCount),
+        layout: serializeDashboardLayout(newLayout, pageCountRef.current),
       };
     });
 
@@ -1141,7 +1141,13 @@ export default function DashboardEditPage() {
     setAddTileOpen(false);
     setAddTileStep("type");
     setAddTileSelectedType(null);
-    saveMutation.mutate({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    saveMutation.mutate({
+      layout: newLayout,
+      widgets: newWidgets,
+      welcomeTitle,
+      welcomeSubtitle,
+      pageCount: pageCountRef.current,
+    });
     return type === "room_card" || type === "nuts_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" ? newId : undefined;
   }
 
