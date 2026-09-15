@@ -95,6 +95,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
 
   return (
     <aside
+      data-app-sidebar
       className={cn(
         "sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-3",
         className
