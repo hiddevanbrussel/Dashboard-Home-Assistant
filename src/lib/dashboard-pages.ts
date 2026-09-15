@@ -75,6 +75,28 @@ export function settleDashboardPage(input: {
   return clampPageIndex(next, input.pageCount);
 }
 
+/** Horizontal velocity over the most recent pointer samples (px/ms). */
+export function velocityFromPointerSamples(
+  samples: { x: number; t: number }[],
+  endX: number,
+  endT: number,
+  windowMs = 100
+): number {
+  if (!Number.isFinite(endX) || !Number.isFinite(endT)) return 0;
+  const cutoff = endT - windowMs;
+  let first = samples[0];
+  for (const sample of samples) {
+    if (sample.t >= cutoff) {
+      first = sample;
+      break;
+    }
+  }
+  if (!first) return 0;
+  const dt = endT - first.t;
+  if (dt <= 0) return 0;
+  return (endX - first.x) / dt;
+}
+
 export function parseDashboardLayout(layout: string | null | undefined): {
   items: unknown[];
   pageCount: number;

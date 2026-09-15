@@ -9,6 +9,7 @@ import {
   rubberBandOffset,
   serializeDashboardLayout,
   settleDashboardPage,
+  velocityFromPointerSamples,
   widgetPage,
 } from "./dashboard-pages";
 
@@ -67,6 +68,20 @@ describe("dashboard pages", () => {
       pageCount: 4,
     });
     expect(parseDashboardLayout(null)).toEqual({ items: [], pageCount: 1 });
+  });
+
+  it("measures flick velocity from recent pointer samples", () => {
+    expect(velocityFromPointerSamples([], 0, 100)).toBe(0);
+    expect(
+      velocityFromPointerSamples(
+        [
+          { x: 500, t: 0 },
+          { x: 200, t: 100 },
+        ],
+        200,
+        100
+      )
+    ).toBe(-3);
   });
 
   it("shifts later widgets down when a page is removed", () => {

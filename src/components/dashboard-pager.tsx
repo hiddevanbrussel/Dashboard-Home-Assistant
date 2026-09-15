@@ -10,6 +10,7 @@ import {
   applyDashboardPageDrag,
   DASHBOARD_MAX_PAGES,
   settleDashboardPage,
+  velocityFromPointerSamples,
 } from "@/lib/dashboard-pages";
 
 const SETTLE_MS = 520;
@@ -80,7 +81,8 @@ export function DashboardPager({
   );
 
   useEffect(() => {
-    const start = { x: 0, y: 0, t: 0, lastX: 0, lastT: 0, pointerId: -1 };
+    const start = { x: 0, y: 0, pointerId: -1 };
+    const samples: { x: number; t: number }[] = [];
 
     const onPointerDown = (e: PointerEvent) => {
       if (pageCountRef.current < 2) return;
@@ -88,10 +90,10 @@ export function DashboardPager({
       if (shouldIgnorePageSwipe(e.target, editMode)) return;
       start.x = e.clientX;
       start.y = e.clientY;
-      start.t = performance.now();
-      start.lastX = e.clientX;
-      start.lastT = start.t;
       start.pointerId = e.pointerId;
+      const now = performance.now();
+      samples.length = 0;
+      samples.push({ x: e.clientX, t: now });
       draggingRef.current = false;
     };
 
@@ -109,8 +111,9 @@ export function DashboardPager({
         setDragging(true);
       }
       e.preventDefault();
-      start.lastX = e.clientX;
-      start.lastT = performance.now();
+      const now = performance.now();
+      samples.push({ x: e.clientX, t: now });
+      while (samples.length > 1 && now - samples[0].t > 120) samples.shift();
       const next = applyDashboardPageDrag({
         page: pageRef.current,
         pageCount: pageCountRef.current,
@@ -125,8 +128,8 @@ export function DashboardPager({
       if (start.pointerId !== e.pointerId) return;
       start.pointerId = -1;
       if (!draggingRef.current) return;
-      const elapsed = Math.max(1, performance.now() - start.lastT);
-      const velocity = (e.clientX - start.lastX) / elapsed;
+      const now = performance.now();
+      const velocity = velocityFromPointerSamples(samples, e.clientX, now);
       const nextPage = settleDashboardPage({
         page: pageRef.current,
         pageCount: pageCountRef.current,
@@ -203,7 +206,7 @@ export function DashboardPager({
             style={{
               transform: `translate3d(${x}px, 0, 0)`,
               transition: dragging ? "none" : `transform ${SETTLE_MS}ms ${SETTLE_EASING}`,
-              pointerEvents: index === page ? "auto" : "none",
+              pointerEvents: "none",
               visibility: visible ? "visible" : "hidden",
               willChange: "transform",
             }}
@@ -213,7 +216,11 @@ export function DashboardPager({
               <div
                 data-dashboard-page-swipe
                 className="absolute inset-0"
-                style={{ left: SIDEBAR_INSET, top: "4.5rem" }}
+                style={{
+                  left: SIDEBAR_INSET,
+                  top: "4.5rem",
+                  pointerEvents: editMode ? "auto" : "none",
+                }}
                 aria-hidden
               />
             ) : null}

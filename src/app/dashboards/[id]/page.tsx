@@ -1122,7 +1122,11 @@ export default function DashboardEditPage() {
     const qk = isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id];
     queryClient.setQueryData(qk, (old: unknown) => {
       if (!old || typeof old !== "object") return old;
-      return { ...(old as object), widgets: JSON.stringify(newWidgets), layout: JSON.stringify(newLayout) };
+      return {
+        ...(old as object),
+        widgets: JSON.stringify(newWidgets),
+        layout: serializeDashboardLayout(newLayout, pageCount),
+      };
     });
 
     flushSync(() => {
