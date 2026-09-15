@@ -17,6 +17,32 @@ export function clampVacuumCard2Height(n: unknown): number {
   return Math.min(VACUUM_CARD_2_MAX_HEIGHT, Math.max(VACUUM_CARD_2_MIN_HEIGHT, Math.round(v)));
 }
 
+/** Resize from the bottom-right corner while keeping the top-left of the card fixed. */
+export function resizeVacuumCard2FromBottomRight(input: {
+  startWidth: number;
+  startHeight: number;
+  startLeft: number;
+  startBottom: number;
+  dx: number;
+  dy: number;
+  viewportWidth: number;
+  viewportHeight: number;
+}): { width: number; height: number; left: number; bottom: number } {
+  const top = input.viewportHeight - input.startBottom - input.startHeight;
+  const maxWidth = Math.max(
+    VACUUM_CARD_2_MIN_WIDTH,
+    Math.min(VACUUM_CARD_2_MAX_WIDTH, Math.floor(input.viewportWidth - input.startLeft))
+  );
+  const maxHeight = Math.max(
+    VACUUM_CARD_2_MIN_HEIGHT,
+    Math.min(VACUUM_CARD_2_MAX_HEIGHT, Math.floor(input.viewportHeight - Math.max(0, top)))
+  );
+  const width = Math.min(maxWidth, clampVacuumCard2Width(input.startWidth + input.dx));
+  const height = Math.min(maxHeight, clampVacuumCard2Height(input.startHeight + input.dy));
+  const bottom = Math.max(0, input.viewportHeight - Math.max(0, top) - height);
+  return { width, height, left: input.startLeft, bottom };
+}
+
 export type VacuumFanMode = "eco" | "standard" | "turbo";
 
 export const VACUUM_FAN_MODES: VacuumFanMode[] = ["eco", "standard", "turbo"];

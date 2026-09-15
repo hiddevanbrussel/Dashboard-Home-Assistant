@@ -1151,6 +1151,17 @@ export default function DashboardEditPage() {
     setEditingWidgetId(null);
   }
 
+  function handleVacuumCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampVacuumCard2Width(size.width);
+    const height = clampVacuumCard2Height(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
   if (!id || (isRoomMode && !areaId)) {
     return (
       <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
@@ -2004,6 +2015,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+              onResize={editMode ? (size) => handleVacuumCardResize(w.id, size) : undefined}
             />
           ))}
 
