@@ -9,6 +9,7 @@ import {
   isVacuumOn,
   parsePercent,
   progressFromAttributes,
+  resizeVacuumCard2FromBottomRight,
   resolveFanSpeedForMode,
   VACUUM_CARD_2_DEFAULT_HEIGHT,
   VACUUM_CARD_2_DEFAULT_WIDTH,
@@ -89,5 +90,31 @@ describe("vacuum-card helpers", () => {
     expect(clampVacuumCard2Height(200)).toBe(260);
     expect(clampVacuumCard2Height(900)).toBe(520);
     expect(clampVacuumCard2Height(400)).toBe(400);
+  });
+
+  it("resizes from the bottom-right while keeping the top-left fixed", () => {
+    const start = {
+      startWidth: 300,
+      startHeight: 330,
+      startLeft: 88,
+      startBottom: 72,
+      viewportWidth: 1280,
+      viewportHeight: 800,
+    };
+    const grown = resizeVacuumCard2FromBottomRight({ ...start, dx: 80, dy: 50 });
+    expect(grown).toEqual({ width: 380, height: 380, left: 88, bottom: 22 });
+    const shrunk = resizeVacuumCard2FromBottomRight({ ...start, dx: -80, dy: -80 });
+    expect(shrunk.width).toBe(240);
+    expect(shrunk.height).toBe(260);
+    expect(shrunk.left).toBe(88);
+    expect(shrunk.bottom).toBe(142);
+    const againstViewport = resizeVacuumCard2FromBottomRight({
+      ...start,
+      startBottom: 10,
+      dx: 0,
+      dy: 400,
+    });
+    expect(againstViewport.bottom).toBe(0);
+    expect(againstViewport.height).toBe(340);
   });
 });

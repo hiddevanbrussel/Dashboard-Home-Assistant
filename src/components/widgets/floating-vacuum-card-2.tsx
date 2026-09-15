@@ -4,7 +4,12 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { VacuumCard2Widget } from "./vacuum-card-2-widget";
-import { clampVacuumCard2Height, clampVacuumCard2Width } from "@/lib/vacuum-card";
+import {
+  clampVacuumCard2Height,
+  clampVacuumCard2Width,
+  resizeVacuumCard2FromBottomRight,
+} from "@/lib/vacuum-card";
+import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingVacuumHeroCardPosition.v2.";
 const DEFAULT_OFFSET = 24;
@@ -70,6 +75,7 @@ export function FloatingVacuumCard2({
   storageScope,
   onEdit,
   onEnterEditMode,
+  onResize,
 }: {
   widget: VacuumCard2WidgetItem;
   widgetIndex?: number;
@@ -78,16 +84,30 @@ export function FloatingVacuumCard2({
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
+  onResize?: (size: { width: number; height: number }) => void;
 }) {
+  const { t } = useTranslation();
   const cardWidth = clampVacuumCard2Width(widget.width);
   const cardHeight = clampVacuumCard2Height(widget.height);
   const [position, setPosition] = useState<Position>(
     () => loadPosition(storageScope, widget.id, cardHeight) ?? { left: 0, bottom: 0 }
   );
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
+  const resizeStart = useRef({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    left: 0,
+    bottom: 0,
+  });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const displayWidth = liveSize?.width ?? cardWidth;
+  const displayHeight = liveSize?.height ?? cardHeight;
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -135,9 +155,9 @@ export function FloatingVacuumCard2({
   }, [storageScope, widget.id, widgetIndex, cardWidth, cardHeight]);
 
   useEffect(() => {
-    if (!initialized.current) return;
-    const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardWidth : 400;
-    const maxBottom = typeof window !== "undefined" ? window.innerHeight - cardHeight : 400;
+    if (!initialized.current || isResizing) return;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - displayWidth : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - displayHeight : 400;
     setPosition((prev) =>
       snapToGrid(
         {
@@ -147,18 +167,40 @@ export function FloatingVacuumCard2({
         { maxLeft, maxBottom }
       )
     );
-  }, [cardWidth, cardHeight]);
+  }, [cardWidth, cardHeight, displayWidth, displayHeight, isResizing]);
+
+  useEffect(() => {
+    if (!liveSize || isResizing) return;
+    if (cardWidth === liveSize.width && cardHeight === liveSize.height) setLiveSize(null);
+  }, [cardWidth, cardHeight, liveSize, isResizing]);
+
+  const applyResizeDelta = useCallback((clientX: number, clientY: number) => {
+    const start = resizeStart.current;
+    const next = resizeVacuumCard2FromBottomRight({
+      startWidth: start.width,
+      startHeight: start.height,
+      startLeft: start.left,
+      startBottom: start.bottom,
+      dx: clientX - start.x,
+      dy: clientY - start.y,
+      viewportWidth: typeof window !== "undefined" ? window.innerWidth : 1200,
+      viewportHeight: typeof window !== "undefined" ? window.innerHeight : 800,
+    });
+    setLiveSize({ width: next.width, height: next.height });
+    setPosition({ left: next.left, bottom: next.bottom });
+    return next;
+  }, []);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!editMode) return;
+      if (!editMode || isResizing) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
       setIsDragging(true);
       dragStart.current = { x: e.clientX, y: e.clientY, left: position.left, bottom: position.bottom };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [position, editMode]
+    [position, editMode, isResizing]
   );
 
   const handlePointerMove = useCallback(
@@ -166,15 +208,15 @@ export function FloatingVacuumCard2({
       if (!isDragging) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardWidth : 400;
-      const maxBottom = typeof window !== "undefined" ? window.innerHeight - cardHeight : 400;
+      const maxLeft = typeof window !== "undefined" ? window.innerWidth - displayWidth : 400;
+      const maxBottom = typeof window !== "undefined" ? window.innerHeight - displayHeight : 400;
       const raw = {
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
         bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging, cardWidth, cardHeight]
+    [isDragging, displayWidth, displayHeight]
   );
 
   const handlePointerUp = useCallback(
@@ -183,8 +225,8 @@ export function FloatingVacuumCard2({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxLeft = typeof window !== "undefined" ? window.innerWidth - cardWidth : 400;
-        const maxBottom = typeof window !== "undefined" ? window.innerHeight - cardHeight : 400;
+        const maxLeft = typeof window !== "undefined" ? window.innerWidth - displayWidth : 400;
+        const maxBottom = typeof window !== "undefined" ? window.innerHeight - displayHeight : 400;
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
           bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
@@ -195,21 +237,63 @@ export function FloatingVacuumCard2({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, storageScope, widget.id, cardWidth, cardHeight]
+    [isDragging, storageScope, widget.id, displayWidth, displayHeight]
+  );
+
+  const handleResizePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!editMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      setIsResizing(true);
+      resizeStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        width: displayWidth,
+        height: displayHeight,
+        left: position.left,
+        bottom: position.bottom,
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    [editMode, displayWidth, displayHeight, position]
+  );
+
+  const handleResizePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isResizing) return;
+      applyResizeDelta(e.clientX, e.clientY);
+    },
+    [isResizing, applyResizeDelta]
+  );
+
+  const handleResizePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (isResizing) {
+        const next = applyResizeDelta(e.clientX, e.clientY);
+        setIsResizing(false);
+        setPosition({ left: next.left, bottom: next.bottom });
+        savePosition(storageScope, widget.id, { left: next.left, bottom: next.bottom });
+        onResize?.({ width: next.width, height: next.height });
+        if (!onResize) setLiveSize(null);
+      }
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    },
+    [isResizing, applyResizeDelta, storageScope, widget.id, onResize]
   );
 
   return (
     <div
       className={cn(
         "fixed z-30",
-        editMode && "cursor-grab touch-none active:cursor-grabbing",
-        editMode && !isDragging && "animate-edit-wiggle"
+        editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
       )}
       style={{
         left: position.left,
         bottom: position.bottom,
-        width: cardWidth,
-        height: cardHeight,
+        width: displayWidth,
+        height: displayHeight,
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -234,11 +318,32 @@ export function FloatingVacuumCard2({
         entity_id={widget.entity_id}
         progress_entity_id={widget.progress_entity_id}
         background_image={widget.background_image}
-        width={cardWidth}
-        height={cardHeight}
+        width={displayWidth}
+        height={displayHeight}
         size="md"
         onMoreClick={editMode ? onEdit : undefined}
       />
+      {editMode ? (
+        <button
+          type="button"
+          aria-label={t("vacuumCard.resize")}
+          className="absolute -bottom-1.5 -right-1.5 z-30 flex h-9 w-9 cursor-nwse-resize touch-none items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/25"
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={handleResizePointerMove}
+          onPointerUp={handleResizePointerUp}
+          onPointerCancel={handleResizePointerUp}
+        >
+          <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-gray-600 dark:text-white/80" aria-hidden>
+            <path
+              d="M3.5 10.5h7M10.5 3.5v7M6 10.5h4.5M10.5 6v4.5"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="1.6"
+            />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }
