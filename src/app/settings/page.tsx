@@ -17,6 +17,8 @@ import {
 } from "@/components/settings/settings-panel";
 import { MusicAssistantSettings } from "@/components/settings/music-assistant-settings";
 import { ValetudoSettings } from "@/components/settings/valetudo-settings";
+import { PexelsSettings } from "@/components/settings/pexels-settings";
+import { ImmichSettings } from "@/components/settings/immich-settings";
 import {
   ClockFormatPreview,
   LanguagePreview,
@@ -30,7 +32,8 @@ import {
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import type { ThemeAccentId } from "@/lib/theme-accents";
 import { useLanguageStore } from "@/stores/language-store";
-import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, setScreensaverPexelsEnabled, getScreensaverPexelsQuery, setScreensaverPexelsQuery, getScreensaverPexelsApiKey, setScreensaverPexelsApiKey, getScreensaverPexelsType, setScreensaverPexelsType, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize, getScreensaverMediaSource, setScreensaverMediaSource, type ScreensaverMediaSource } from "@/stores/screensaver-store";
+import { isImmichSourceReady, isPexelsSourceReady } from "@/lib/screensaver-media-source";
 import { SCREENSAVER_CLOCK_POSITIONS, type ScreensaverClockPosition } from "@/lib/screensaver-clock-position";
 import { SCREENSAVER_CLOCK_SIZES, type ScreensaverClockSize } from "@/lib/screensaver-clock-size";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
@@ -38,14 +41,15 @@ import { hydrateMusicAssistantStore, useMusicAssistantStore } from "@/stores/mus
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { hydrateValetudoStore, useValetudoStore } from "@/stores/valetudo-store";
+import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { useNewsStore } from "@/stores/news-store";
-import { RobotVacuum, CalendarDays, Globe, LayoutGrid, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
+import { RobotVacuum, CalendarDays, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
 type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "tasks" | "apps" | "entities";
-type SettingsAppId = "news" | "music-assistant" | "valetudo";
+type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -63,6 +67,8 @@ const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string
   news: { labelKey: "news.settings.title", descriptionKey: "news.settings.description", icon: Newspaper },
   "music-assistant": { labelKey: "settings.musicAssistant", descriptionKey: "settings.musicAssistant.description", icon: Music2 },
   valetudo: { labelKey: "settings.valetudo", descriptionKey: "settings.valetudo.description", icon: RobotVacuum },
+  pexels: { labelKey: "settings.pexels", descriptionKey: "settings.pexels.description", icon: ImageIcon },
+  immich: { labelKey: "settings.immich", descriptionKey: "settings.immich.description", icon: Images },
 };
 
 type HaEntity = {
@@ -181,10 +187,7 @@ export default function SettingsPage() {
   const [screensaverClockSize, setScreensaverClockSizeState] = useState<ScreensaverClockSize>("md");
   const [screensaverWeatherEntityId, setScreensaverWeatherEntityIdState] = useState<string | null>(null);
   const [screensaverFootballEntityId, setScreensaverFootballEntityIdState] = useState<string | null>(null);
-  const [screensaverPexelsEnabled, setScreensaverPexelsEnabledState] = useState(false);
-  const [screensaverPexelsQuery, setScreensaverPexelsQueryState] = useState("nature landscape");
-  const [screensaverPexelsApiKey, setScreensaverPexelsApiKeyState] = useState("");
-  const [screensaverPexelsType, setScreensaverPexelsTypeState] = useState<"photo" | "video">("photo");
+  const [screensaverMediaSource, setScreensaverMediaSourceState] = useState<ScreensaverMediaSource>("custom");
   const [uploadingScreensaverBg, setUploadingScreensaverBg] = useState(false);
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const calendarStore = useCalendarStore();
@@ -192,6 +195,8 @@ export default function SettingsPage() {
   const newsStore = useNewsStore();
   const musicAssistant = useMusicAssistantStore();
   const valetudo = useValetudoStore();
+  const immich = useImmichStore();
+  const [pexelsEnabled, setPexelsEnabled] = useState(false);
   const [newsFeedDraft, setNewsFeedDraft] = useState<string[]>([]);
   const [newsFeedInput, setNewsFeedInput] = useState("");
   const [calendarEntities, setCalendarEntities] = useState<HaEntity[]>([]);
@@ -202,6 +207,7 @@ export default function SettingsPage() {
     hydrateCalendarStore();
     hydrateChoresStore();
     hydrateValetudoStore();
+    hydrateImmichStore();
   }, []);
 
   useEffect(() => {
@@ -222,10 +228,14 @@ export default function SettingsPage() {
     setScreensaverClockSizeState(getScreensaverClockSize());
     setScreensaverWeatherEntityIdState(getScreensaverWeatherEntityId());
     setScreensaverFootballEntityIdState(getScreensaverFootballEntityId());
-    setScreensaverPexelsEnabledState(getScreensaverPexelsEnabled());
-    setScreensaverPexelsQueryState(getScreensaverPexelsQuery());
-    setScreensaverPexelsApiKeyState(getScreensaverPexelsApiKey());
-    setScreensaverPexelsTypeState(getScreensaverPexelsType());
+    setScreensaverMediaSourceState(getScreensaverMediaSource());
+    setPexelsEnabled(getScreensaverPexelsEnabled());
+    const onScreensaverChange = () => {
+      setScreensaverMediaSourceState(getScreensaverMediaSource());
+      setPexelsEnabled(getScreensaverPexelsEnabled());
+    };
+    window.addEventListener("screensaver-setting-changed", onScreensaverChange);
+    return () => window.removeEventListener("screensaver-setting-changed", onScreensaverChange);
   }, []);
 
   useEffect(() => {
@@ -511,7 +521,11 @@ export default function SettingsPage() {
     news: newsStore.enabled,
     "music-assistant": musicAssistant.enabled,
     valetudo: valetudo.enabled,
+    pexels: pexelsEnabled,
+    immich: immich.enabled,
   };
+  const pexelsReady = isPexelsSourceReady(pexelsEnabled, getScreensaverPexelsApiKey());
+  const immichReady = isImmichSourceReady(immich.enabled, immich.baseUrl, immich.apiKey);
 
   return (
     <AppShell activeTab="/settings" contentNoScroll>
@@ -807,65 +821,61 @@ export default function SettingsPage() {
                 </SettingsSelect>
               </SettingsField>
 
-              <SettingsGroup
-                title={t("settings.screensaver.pexels")}
-                description={
-                  <>
-                    {t("settings.screensaver.pexelsHint")}{" "}
-                    <a href="https://www.pexels.com/api" target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
-                      pexels.com/api
-                    </a>
-                    .
-                  </>
-                }
-              >
-                <SettingsToggle
-                  checked={screensaverPexelsEnabled}
-                  onChange={(v) => {
-                    setScreensaverPexelsEnabledState(v);
-                    setScreensaverPexelsEnabled(v);
-                  }}
-                  label={t("settings.screensaver.pexelsUse")}
-                />
-                {screensaverPexelsEnabled && (
-                  <div className="space-y-3">
-                    <SettingsInput
-                      type="password"
-                      value={screensaverPexelsApiKey}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setScreensaverPexelsApiKeyState(v);
-                        setScreensaverPexelsApiKey(v);
+              <SettingsChoiceCards
+                label={t("settings.screensaver.mediaSource")}
+                hint={t("settings.screensaver.mediaSourceHint")}
+                value={screensaverMediaSource}
+                onChange={(source) => {
+                  setScreensaverMediaSourceState(source);
+                  setScreensaverMediaSource(source);
+                }}
+                columns={3}
+                options={[
+                  {
+                    id: "custom",
+                    label: t("settings.screensaver.mediaSource.custom"),
+                    description: t("settings.screensaver.mediaSource.customHint"),
+                  },
+                  {
+                    id: "pexels",
+                    label: t("settings.screensaver.mediaSource.pexels"),
+                    description: t("settings.screensaver.mediaSource.pexelsHint"),
+                  },
+                  {
+                    id: "immich",
+                    label: t("settings.screensaver.mediaSource.immich"),
+                    description: t("settings.screensaver.mediaSource.immichHint"),
+                  },
+                ]}
+              />
+                {screensaverMediaSource === "pexels" && !pexelsReady ? (
+                  <div className="space-y-2">
+                    <SettingsAlert tone="error">{t("settings.screensaver.mediaSource.pexelsNotReady")}</SettingsAlert>
+                    <SettingsSecondaryButton
+                      onClick={() => {
+                        setSection("apps");
+                        setSelectedApp("pexels");
                       }}
-                      placeholder={t("settings.screensaver.pexelsKey")}
-                      autoComplete="off"
-                    />
-                    <SettingsInput
-                      type="text"
-                      value={screensaverPexelsQuery}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setScreensaverPexelsQueryState(v);
-                        setScreensaverPexelsQuery(v);
-                      }}
-                      placeholder={t("settings.screensaver.pexelsQuery")}
-                    />
-                    <SettingsChipSelect
-                      label={t("settings.screensaver.pexelsType")}
-                      items={[
-                        { id: "photo", label: t("settings.screensaver.pexelsTypePhoto") },
-                        { id: "video", label: t("settings.screensaver.pexelsTypeVideo") },
-                      ]}
-                      value={screensaverPexelsType}
-                      onChange={(type) => {
-                        setScreensaverPexelsTypeState(type);
-                        setScreensaverPexelsType(type);
-                      }}
-                    />
+                    >
+                      {t("settings.screensaver.openPexelsApp")}
+                    </SettingsSecondaryButton>
                   </div>
-                )}
-              </SettingsGroup>
+                ) : null}
+                {screensaverMediaSource === "immich" && !immichReady ? (
+                  <div className="space-y-2">
+                    <SettingsAlert tone="error">{t("settings.screensaver.mediaSource.immichNotReady")}</SettingsAlert>
+                    <SettingsSecondaryButton
+                      onClick={() => {
+                        setSection("apps");
+                        setSelectedApp("immich");
+                      }}
+                    >
+                      {t("settings.screensaver.openImmichApp")}
+                    </SettingsSecondaryButton>
+                  </div>
+                ) : null}
 
+              {screensaverMediaSource === "custom" ? (
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                   {t("settings.screensaver.bgImage")}
@@ -912,6 +922,7 @@ export default function SettingsPage() {
                   placeholder={t("settings.screensaver.bgUrlPlaceholder")}
                 />
               </div>
+              ) : null}
             </>
           )}
 
@@ -1137,6 +1148,10 @@ export default function SettingsPage() {
           {selectedApp === "music-assistant" && <MusicAssistantSettings />}
 
           {selectedApp === "valetudo" && <ValetudoSettings />}
+
+          {selectedApp === "pexels" && <PexelsSettings />}
+
+          {selectedApp === "immich" && <ImmichSettings />}
 
           {section === "entities" && (
             <>
