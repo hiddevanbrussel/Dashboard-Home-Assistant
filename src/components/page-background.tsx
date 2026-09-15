@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useThemeStore } from "@/stores/theme-store";
+import { hidesDashboardWallpaper } from "@/lib/page-background-path";
 
 type BackgroundData = {
   background: string | null;
@@ -65,7 +66,7 @@ export function PageBackgroundProvider({
   const roomMatch = pathname?.match(/^\/rooms\/([^/]+)$/);
   const areaId = roomMatch?.[1];
   const isEnergyPage = pathname === "/energy";
-  const isMusicPage = pathname === "/music";
+  const hideWallpaper = hidesDashboardWallpaper(pathname);
 
   useEffect(() => {
     async function load() {
@@ -97,7 +98,7 @@ export function PageBackgroundProvider({
     return () => window.removeEventListener("page-background-changed", onUpdate);
   }, [areaId, isEnergyPage]);
 
-  const url = isMusicPage
+  const url = hideWallpaper
     ? null
     : ((resolved === "dark" ? data.backgroundDark : data.backgroundLight) ??
       data.background ??
