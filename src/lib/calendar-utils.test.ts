@@ -4,6 +4,7 @@ import {
   addDays,
   currentOrNextActivity,
   DEFAULT_HOUR_H,
+  eventsFromNowOnDay,
   gridHours,
   highlightedEventIndex,
   hourHeightForViewport,
@@ -99,5 +100,21 @@ describe("calendar-utils", () => {
 
     const evening = new Date(2026, 8, 11, 18, 0);
     expect(currentOrNextActivity(events, evening, evening)?.status).toBe("done");
+  });
+
+  it("drops past timed events when listing today's remaining agenda", () => {
+    const now = new Date(2026, 8, 16, 18, 20);
+    const events: CalendarEvent[] = [
+      { entityId: "calendar.a", summary: "All day", start: "2026-09-16", end: "2026-09-17", allDay: true },
+      { entityId: "calendar.a", summary: "Morning", start: "2026-09-16T07:00:00", end: "2026-09-16T08:00:00", allDay: false },
+      { entityId: "calendar.a", summary: "Now", start: "2026-09-16T18:00:00", end: "2026-09-16T19:00:00", allDay: false },
+      { entityId: "calendar.a", summary: "Later", start: "2026-09-16T20:00:00", end: "2026-09-16T21:00:00", allDay: false },
+    ];
+    expect(eventsFromNowOnDay(events, now, now).map((ev) => ev.summary)).toEqual(["All day", "Now", "Later"]);
+    const tomorrow = addDays(now, 1);
+    const laterEvents: CalendarEvent[] = [
+      { entityId: "calendar.a", summary: "Trip", start: "2026-09-17T09:00:00", end: "2026-09-17T10:00:00", allDay: false },
+    ];
+    expect(eventsFromNowOnDay(laterEvents, tomorrow, now).map((ev) => ev.summary)).toEqual(["Trip"]);
   });
 });
