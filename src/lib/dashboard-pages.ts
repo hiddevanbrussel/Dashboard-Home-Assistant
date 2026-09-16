@@ -44,8 +44,17 @@ export function pageSwipeClaimPx(pointerType: string | undefined): number {
   return 16;
 }
 
+function asClosestElement(
+  target: EventTarget | null
+): { closest: (selector: string) => unknown } | null {
+  if (target == null) return null;
+  const el = target as { closest?: (selector: string) => unknown };
+  // SVG icons (sidebar Home, Lucide) are SVGElement, not HTMLElement.
+  return typeof el.closest === "function" ? el : null;
+}
+
 export function shouldIgnorePageSwipe(target: EventTarget | null, editMode: boolean): boolean {
-  const el = target instanceof HTMLElement ? target : null;
+  const el = asClosestElement(target);
   if (!el) return true;
   if (el.closest("input, textarea, select, [data-no-page-swipe], [data-dashboard-pager-ui]")) {
     return true;
