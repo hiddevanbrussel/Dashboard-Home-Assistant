@@ -269,18 +269,25 @@ export function DashboardPager({
             aria-hidden={!active}
           >
             {visible ? (
-              <div
-                data-dashboard-page-swipe={active ? true : undefined}
-                className="absolute inset-0"
-                style={{
-                  left: SIDEBAR_INSET,
-                  top: "4.5rem",
-                  pointerEvents: editMode && active ? "auto" : "none",
-                }}
-                aria-hidden
-              />
+              <>
+                <div
+                  data-dashboard-page-swipe={active ? true : undefined}
+                  className="absolute inset-0 z-0"
+                  style={{
+                    left: SIDEBAR_INSET,
+                    top: "4.5rem",
+                    pointerEvents: editMode && active && pageCount > 1 ? "auto" : "none",
+                  }}
+                  aria-hidden
+                />
+                <div
+                  className="relative z-[1]"
+                  style={{ pointerEvents: active ? "auto" : "none" }}
+                >
+                  {children(index)}
+                </div>
+              </>
             ) : null}
-            {visible ? children(index) : null}
           </div>
         );
       })}
