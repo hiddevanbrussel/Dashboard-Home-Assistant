@@ -41,11 +41,7 @@ export function leftBottomInParent(
 function createsContainingBlock(node: HTMLElement): boolean {
   if (node.style.transform) return true;
   const style = window.getComputedStyle(node);
-  if (style.transform && style.transform !== "none") return true;
-  if (style.perspective && style.perspective !== "none") return true;
-  if (style.filter && style.filter !== "none") return true;
-  const willChange = style.willChange ?? "";
-  return willChange.split(",").some((item) => item.trim() === "transform" || item.trim() === "filter");
+  return Boolean(style.transform && style.transform !== "none");
 }
 
 function transformedAncestorRect(el: HTMLElement): DOMRect {

@@ -260,8 +260,10 @@ export function CalendarCardWidget({
             <p className="text-xs">{t("calendar.noCalendarsHint")}</p>
             <Link
               href="/settings"
+              draggable={false}
               className="mt-1 text-xs font-medium text-brand hover:underline"
               onPointerDown={(e) => e.stopPropagation()}
+              onDragStart={(e) => e.preventDefault()}
             >
               {t("nav.settings")}
             </Link>

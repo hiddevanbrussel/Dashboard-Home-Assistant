@@ -192,14 +192,13 @@ export function FloatingCalendarCard({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode || isResizing) return;
-      if ((e.target as HTMLElement).closest?.("button")) return;
+      if ((e.target as HTMLElement).closest?.("button, a")) return;
       e.preventDefault();
       e.stopPropagation();
       const measured = floatingPositionFromElement(e.currentTarget as HTMLElement);
       draggingRef.current = true;
       setIsDragging(true);
       dragStart.current = { x: e.clientX, y: e.clientY, left: measured.left, bottom: measured.bottom };
-      setPosition(measured);
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
     [editMode, isResizing]
@@ -288,8 +287,10 @@ export function FloatingCalendarCard({
   return (
     <div
       data-no-page-swipe={editMode ? true : undefined}
+      draggable={false}
+      onDragStart={(event) => event.preventDefault()}
       className={cn(
-        "fixed z-40",
+        "fixed z-40 [-webkit-user-drag:none]",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing"
       )}
       style={{
@@ -310,9 +311,6 @@ export function FloatingCalendarCard({
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
         onPointerUp: handlePointerUp,
-        onPointerLeave: (e: React.PointerEvent) => {
-          if (draggingRef.current) handlePointerUp(e);
-        },
         onPointerCancel: handlePointerUp,
       })}
     >
