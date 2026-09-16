@@ -97,7 +97,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
     <aside
       data-app-sidebar
       className={cn(
-        "sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-3",
+        "sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-3 [touch-action:none] [-webkit-user-drag:none]",
         className
       )}
       aria-label={t("nav.sidebar")}
@@ -108,9 +108,11 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
           <Link
             key={href}
             href={href}
+            draggable={false}
+            onDragStart={(event) => event.preventDefault()}
             aria-label={t(labelKey)}
             title={t(labelKey)}
-            className={navButtonClass(isActive)}
+            className={cn(navButtonClass(isActive), "[-webkit-user-drag:none]")}
           >
             <Icon className="h-5 w-5" />
           </Link>
@@ -120,9 +122,11 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
       <ThemeIconButton />
       <Link
         href="/settings"
+        draggable={false}
+        onDragStart={(event) => event.preventDefault()}
         aria-label={t("nav.settings")}
         title={t("nav.settings")}
-        className={navButtonClass(activeHref === "/settings")}
+        className={cn(navButtonClass(activeHref === "/settings"), "[-webkit-user-drag:none]")}
       >
         <Settings className="h-5 w-5" />
       </Link>

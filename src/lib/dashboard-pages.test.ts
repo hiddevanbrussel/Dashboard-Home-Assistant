@@ -11,6 +11,7 @@ import {
   rubberBandOffset,
   serializeDashboardLayout,
   settleDashboardPage,
+  shouldIgnorePageSwipe,
   velocityFromPointerSamples,
   widgetPage,
 } from "./dashboard-pages";
@@ -56,7 +57,25 @@ describe("dashboard pages", () => {
     expect(
       settleDashboardPage({ page: 0, pageCount: 3, dragPx: -50, velocityPxPerMs: 0, pageWidth: 1000 })
     ).toBe(0);
+    expect(
+      settleDashboardPage({ page: 1, pageCount: 3, dragPx: 200, velocityPxPerMs: 0, pageWidth: 1000 })
+    ).toBe(0);
+    expect(
+      settleDashboardPage({ page: 1, pageCount: 3, dragPx: 50, velocityPxPerMs: 0, pageWidth: 1000 })
+    ).toBe(1);
     expect(clampPageIndex(8, 2)).toBe(1);
+  });
+
+  it("allows a page swipe that starts on an SVG sidebar icon", () => {
+    const svgIcon = { closest: () => null };
+    expect(shouldIgnorePageSwipe(svgIcon as unknown as EventTarget, false)).toBe(false);
+  });
+
+  it("still ignores swipes that start in the app header", () => {
+    const headerChild = {
+      closest: (selector: string) => (selector.includes("data-app-header") ? {} : null),
+    };
+    expect(shouldIgnorePageSwipe(headerChild as unknown as EventTarget, false)).toBe(true);
   });
 
   it("claims a swipe sooner on touch than on mouse", () => {
