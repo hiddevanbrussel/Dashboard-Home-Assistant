@@ -283,8 +283,7 @@ export function FloatingCalendarCard({
   return (
     <div
       className={cn(
-        "fixed z-40 overflow-hidden rounded-3xl border shadow-2xl",
-        "bg-white/90 dark:bg-gray-950/90 border-black/[0.06] dark:border-white/10 backdrop-blur-2xl",
+        "fixed z-40",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}
@@ -312,12 +311,16 @@ export function FloatingCalendarCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <CalendarCardWidget
-        title={widget.title}
-        width={displayWidth}
-        height={displayHeight}
-        onMoreClick={editMode ? onEdit : undefined}
-      />
+      <div
+        className="h-full w-full overflow-hidden rounded-3xl border shadow-2xl bg-white/90 dark:bg-gray-950/90 border-black/[0.06] dark:border-white/10 backdrop-blur-2xl"
+      >
+        <CalendarCardWidget
+          title={widget.title}
+          width={displayWidth}
+          height={displayHeight}
+          onMoreClick={editMode ? onEdit : undefined}
+        />
+      </div>
       {editMode ? (
         <button
           type="button"
