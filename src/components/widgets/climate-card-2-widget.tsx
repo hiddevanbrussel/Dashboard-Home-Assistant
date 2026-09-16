@@ -17,20 +17,23 @@ import { useTranslation } from "@/hooks/use-translation";
 import {
   clampClimateCardHeight,
   clampClimateCardWidth,
+  climateGaugeColor,
+  climateGaugeProgress,
+  climateGaugeTickFilled,
   climateHvacModesFromAttributes,
-  climateRingTone,
   climateStatusKind,
   climateStatusLabelKey,
   climateTempsDiffer,
   climateTileEnabled,
   climateTileFromHvacMode,
-  CLIMATE_MODE_TILES,
+  CLIMATE_GAUGE_MAX,
+  CLIMATE_GAUGE_MIN,
+  CLIMATE_GAUGE_TICK_COUNT,
   isClimateOn,
   parseClimateTemp,
   preferredClimateOnMode,
   resolveHvacModeForTile,
   type ClimateModeTile,
-  type ClimateRingTone,
 } from "@/lib/climate-card";
 
 const SELECTOR_STEP = 0.5;
@@ -43,28 +46,64 @@ const MODE_UI: { mode: ClimateModeTile; labelKey: string; Icon: typeof Wind }[] 
   { mode: "cool", labelKey: "climateCard.cool", Icon: Snowflake },
 ];
 
-const RING_CLASS: Record<ClimateRingTone, { outer: string; mid: string; inner: string }> = {
-  sky: {
-    outer: "border-sky-200/80 dark:border-sky-400/30",
-    mid: "border-sky-100 dark:border-sky-400/20",
-    inner: "border-sky-50 dark:border-sky-400/10",
-  },
-  amber: {
-    outer: "border-amber-200/80 dark:border-amber-400/30",
-    mid: "border-amber-100 dark:border-amber-400/20",
-    inner: "border-amber-50 dark:border-amber-400/10",
-  },
-  teal: {
-    outer: "border-teal-200/70 dark:border-teal-400/25",
-    mid: "border-teal-100/90 dark:border-teal-400/15",
-    inner: "border-cyan-50 dark:border-white/10",
-  },
-  gray: {
-    outer: "border-gray-200/80 dark:border-white/15",
-    mid: "border-gray-100 dark:border-white/10",
-    inner: "border-gray-50 dark:border-white/5",
-  },
-};
+const GAUGE_START_DEG = 150;
+const GAUGE_SWEEP_DEG = 240;
+
+function ClimateTempGauge({
+  value,
+  active,
+}: {
+  value: number | undefined;
+  active: boolean;
+}) {
+  const progress = active ? climateGaugeProgress(value) : 0;
+  const ticks = Array.from({ length: CLIMATE_GAUGE_TICK_COUNT }, (_, index) => {
+    const t = CLIMATE_GAUGE_TICK_COUNT <= 1 ? 0 : index / (CLIMATE_GAUGE_TICK_COUNT - 1);
+    const rad = ((GAUGE_START_DEG + t * GAUGE_SWEEP_DEG) * Math.PI) / 180;
+    const filled = active && climateGaugeTickFilled(index, CLIMATE_GAUGE_TICK_COUNT, progress);
+    const temp = CLIMATE_GAUGE_MIN + t * (CLIMATE_GAUGE_MAX - CLIMATE_GAUGE_MIN);
+    const inner = filled ? 37.2 : 44;
+    const outer = 47.4;
+    return {
+      key: index,
+      filled,
+      color: filled ? climateGaugeColor(temp) : undefined,
+      x1: 50 + inner * Math.cos(rad),
+      y1: 50 + inner * Math.sin(rad),
+      x2: 50 + outer * Math.cos(rad),
+      y2: 50 + outer * Math.sin(rad),
+      cx: 50 + 45.4 * Math.cos(rad),
+      cy: 50 + 45.4 * Math.sin(rad),
+    };
+  });
+
+  return (
+    <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" aria-hidden>
+      {ticks.map((tick) =>
+        tick.filled ? (
+          <line
+            key={tick.key}
+            x1={tick.x1}
+            y1={tick.y1}
+            x2={tick.x2}
+            y2={tick.y2}
+            stroke={tick.color}
+            strokeWidth="2.35"
+            strokeLinecap="round"
+          />
+        ) : (
+          <circle
+            key={tick.key}
+            cx={tick.cx}
+            cy={tick.cy}
+            r="0.95"
+            className="fill-gray-300 dark:fill-white/25"
+          />
+        )
+      )}
+    </svg>
+  );
+}
 
 function formatTempParts(value: number | undefined): { int: number; dec: string | null; empty?: boolean } {
   if (value == null || Number.isNaN(value)) return { int: 0, dec: null, empty: true };
@@ -94,6 +133,7 @@ export function ClimateCard2Widget({
   const requestRefresh = useEntityStateStore((s) => s.requestRefresh);
   const pendingRef = useRef(false);
   const [busyMode, setBusyMode] = useState<ClimateModeTile | null>(null);
+  const [previewTemp, setPreviewTemp] = useState(21);
 
   const attrs = entity?.attributes ?? {};
   const state = (entity?.state as string | undefined) ?? "";
@@ -101,20 +141,21 @@ export function ClimateCard2Widget({
   const hvacModeFromAttr = typeof attrs.hvac_mode === "string" ? attrs.hvac_mode : undefined;
   const hvacAction = typeof attrs.hvac_action === "string" ? attrs.hvac_action : undefined;
   const resolvedMode = hvacModeFromAttr || state;
-  const isOn = isClimateOn(state, resolvedMode);
+  const previewing = !entity_id;
+  const isOn = previewing || isClimateOn(state, resolvedMode);
   const activeTile = isOn ? climateTileFromHvacMode(resolvedMode) : null;
-  const statusKind = climateStatusKind({ hvacAction, hvacMode: resolvedMode, state });
-  const ringTone = climateRingTone(statusKind);
-  const ringClass = RING_CLASS[ringTone];
+  const statusKind = previewing
+    ? "heat"
+    : climateStatusKind({ hvacAction, hvacMode: resolvedMode, state });
 
   const currentTemperature = parseClimateTemp(attrs.current_temperature);
   const targetTemperature =
     parseClimateTemp(attrs.temperature) ?? parseClimateTemp(attrs.target_temp_high);
   const minTemp = parseClimateTemp(attrs.min_temp) ?? TEMP_MIN;
   const maxTemp = parseClimateTemp(attrs.max_temp) ?? TEMP_MAX;
-  const setpoint = targetTemperature ?? currentTemperature ?? 20;
-  const showTarget = climateTempsDiffer(currentTemperature, targetTemperature);
-  const { int, dec, empty } = formatTempParts(currentTemperature ?? targetTemperature);
+  const setpoint = targetTemperature ?? currentTemperature ?? (previewing ? previewTemp : 21);
+  const showCurrent = climateTempsDiffer(currentTemperature, targetTemperature);
+  const { int, dec, empty } = formatTempParts(isOn ? setpoint : currentTemperature ?? targetTemperature);
 
   const humidityFromAttr = parseClimateTemp(attrs.humidity);
   const humidityFromSensor = parseClimateTemp(humidityEntity?.state);
@@ -190,9 +231,13 @@ export function ClimateCard2Widget({
   }
 
   function handleTemperature(next: number) {
-    if (!entity_id || pendingRef.current || !isOn) return;
     const rounded = Math.round(next * 2) / 2;
     const clamped = Math.min(maxTemp, Math.max(minTemp, rounded));
+    if (previewing) {
+      setPreviewTemp(clamped);
+      return;
+    }
+    if (!entity_id || pendingRef.current || !isOn) return;
     pendingRef.current = true;
     const previous = entity;
     updateEntityState(entity_id, {
@@ -258,69 +303,77 @@ export function ClimateCard2Widget({
       </div>
 
       <div className="relative flex min-h-0 flex-1 items-center justify-center px-4">
-        <div className="relative aspect-square w-[min(78%,12.25rem)]">
-          <div className={cn("absolute inset-0 rounded-full border-[1.5px]", ringClass.outer)} />
-          <div className={cn("absolute inset-[11%] rounded-full border", ringClass.mid)} />
-          <div className={cn("absolute inset-[22%] rounded-full border", ringClass.inner)} />
+        <div
+          className="relative aspect-square w-[min(82%,13rem)]"
+          role="meter"
+          aria-label={t("climateCard.gauge").replace("{n}", String(Math.round((setpoint ?? 0) * 2) / 2))}
+          aria-valuemin={CLIMATE_GAUGE_MIN}
+          aria-valuemax={CLIMATE_GAUGE_MAX}
+          aria-valuenow={Math.round(Math.min(CLIMATE_GAUGE_MAX, Math.max(CLIMATE_GAUGE_MIN, setpoint)) * 2) / 2}
+        >
+          <div className="absolute inset-0 rounded-full bg-gray-50 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.04)] dark:bg-zinc-800/90 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]" />
+          <ClimateTempGauge value={setpoint} active={isOn} />
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleTemperature(setpoint - SELECTOR_STEP);
-            }}
-            disabled={!entity_id || !isOn || setpoint <= minTemp}
-            className="absolute left-0 top-1/2 z-10 flex h-8 w-8 -translate-x-1/4 -translate-y-1/2 items-center justify-center rounded-full text-gray-300 transition-colors hover:text-gray-500 disabled:opacity-30 dark:text-white/30 dark:hover:text-white/60"
-            aria-label={t("climateCard.tempDown")}
-          >
-            <Minus className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleTemperature(setpoint + SELECTOR_STEP);
-            }}
-            disabled={!entity_id || !isOn || setpoint >= maxTemp}
-            className="absolute right-0 top-1/2 z-10 flex h-8 w-8 translate-x-1/4 -translate-y-1/2 items-center justify-center rounded-full text-gray-300 transition-colors hover:text-gray-500 disabled:opacity-30 dark:text-white/30 dark:hover:text-white/60"
-            aria-label={t("climateCard.tempUp")}
-          >
-            <Plus className="h-5 w-5" />
-          </button>
-
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-            <p className="text-[3.15rem] font-semibold leading-none tracking-tight tabular-nums text-gray-950 dark:text-white">
+          <div className="absolute inset-[24%] flex flex-col items-center justify-center overflow-hidden px-2 pb-7 text-center">
+            <p
+              className={cn(
+                "text-[10px] font-semibold uppercase tracking-[0.16em]",
+                statusKind === "off"
+                  ? "text-gray-400 dark:text-white/40"
+                  : statusKind === "heating" || statusKind === "heat"
+                    ? "text-orange-500 dark:text-orange-300"
+                    : statusKind === "cooling" || statusKind === "cool"
+                      ? "text-sky-500 dark:text-sky-300"
+                      : "text-gray-400 dark:text-white/45"
+              )}
+            >
+              {t(climateStatusLabelKey(statusKind))}
+            </p>
+            <p className="mt-0.5 text-[2.45rem] font-semibold leading-none tracking-tight tabular-nums text-gray-950 dark:text-white">
               {empty ? (
                 "—"
               ) : (
                 <>
                   {int}
-                  {dec != null ? <sup className="ml-0.5 text-2xl font-semibold">{dec}</sup> : null}
+                  {dec != null ? <sup className="ml-0.5 text-[1.35rem] font-semibold">{dec}</sup> : null}
+                  <span className="ml-0.5 text-[1.35rem] font-semibold text-gray-400 dark:text-white/40">°</span>
                 </>
               )}
             </p>
             <p className="mt-1.5 text-[11px] font-medium tracking-wide text-gray-400 dark:text-white/45">
-              {showHumidity
-                ? `°C · ${Math.round(humidity)}%`
-                : t("climateCard.unit")}
+              {showCurrent && currentTemperature != null
+                ? t("climateCard.currentNow").replace("{n}", String(Math.round(currentTemperature * 2) / 2))
+                : showHumidity
+                  ? `${Math.round(humidity)}%`
+                  : t("climateCard.unit")}
             </p>
-            {showTarget && targetTemperature != null ? (
-              <p className="mt-0.5 text-[11px] font-medium tabular-nums text-gray-400 dark:text-white/40">
-                {t("climateCard.targetArrow").replace("{n}", String(Math.round(targetTemperature * 2) / 2))}
-              </p>
-            ) : null}
-            <span
-              className={cn(
-                "mt-2.5 inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-medium",
-                statusKind === "off"
-                  ? "bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-white/40"
-                  : statusKind === "heating" || statusKind === "heat"
-                    ? "bg-amber-50 text-amber-600 dark:bg-amber-400/15 dark:text-amber-300"
-                    : "bg-sky-50 text-sky-500 dark:bg-sky-400/15 dark:text-sky-300"
-              )}
+          </div>
+
+          <div className="absolute bottom-[11%] left-0 right-0 z-10 flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTemperature(setpoint - SELECTOR_STEP);
+              }}
+              disabled={(!entity_id && !previewing) || !isOn || setpoint <= minTemp}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#3B9EFF] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-sky-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-sky-400 dark:ring-white/10 dark:hover:bg-zinc-700"
+              aria-label={t("climateCard.tempDown")}
             >
-              {t(climateStatusLabelKey(statusKind))}
-            </span>
+              <Minus className="h-4 w-4" strokeWidth={2.5} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTemperature(setpoint + SELECTOR_STEP);
+              }}
+              disabled={(!entity_id && !previewing) || !isOn || setpoint >= maxTemp}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#F97316] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-orange-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-orange-400 dark:ring-white/10 dark:hover:bg-zinc-700"
+              aria-label={t("climateCard.tempUp")}
+            >
+              <Plus className="h-4 w-4" strokeWidth={2.5} />
+            </button>
           </div>
         </div>
       </div>
