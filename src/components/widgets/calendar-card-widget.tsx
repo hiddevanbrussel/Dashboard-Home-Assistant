@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, MoreVertical } from "lucide-react";
@@ -10,6 +10,7 @@ import { formatCalendarTitle, subjectCodesFor } from "@/lib/calendar-titles";
 import {
   addDays,
   currentOrNextActivity,
+  eventsFromNowOnDay,
   eventsOnDay,
   eventEnd,
   eventStart,
@@ -71,7 +72,6 @@ async function fetchRangeEvents(entityIds: string[], start: Date, end: Date): Pr
 }
 
 export function CalendarCardWidget({
-  title,
   width,
   height,
   onMoreClick,
@@ -127,10 +127,13 @@ export function CalendarCardWidget({
     return map;
   }, [calendarEntityIds]);
 
-  const dayEvents = useMemo(() => eventsOnDay(events, selectedDate), [events, selectedDate]);
-  const highlightIndex = useMemo(
-    () => highlightedEventIndex(events, selectedDate, now),
+  const dayEvents = useMemo(
+    () => eventsFromNowOnDay(events, selectedDate, now),
     [events, selectedDate, now]
+  );
+  const highlightIndex = useMemo(
+    () => highlightedEventIndex(dayEvents, selectedDate, now),
+    [dayEvents, selectedDate, now]
   );
   const nowActivity = useMemo(
     () => currentOrNextActivity(events, today, now),
@@ -144,22 +147,19 @@ export function CalendarCardWidget({
     return keys;
   }, [events, weekDays]);
 
-  const dateLabel = selectedDate.toLocaleDateString(locale, {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  const customTitle = title?.trim() ?? "";
-  const heading =
-    !customTitle || /^(activity|activiteit|calendar|kalender|calendar card)$/i.test(customTitle)
-      ? t("calendar.activity")
-      : customTitle;
-  const currentActivity = nowActivity?.status === "current" ? nowActivity : null;
   const viewingToday = isSameDay(selectedDate, today);
+  const liveActivity =
+    nowActivity && (nowActivity.status === "current" || nowActivity.status === "next") ? nowActivity : null;
+  const highlightRef = useRef<HTMLLIElement | null>(null);
 
   const shiftWeek = useCallback((delta: number) => {
     setSelectedDate((prev) => addDays(prev, delta * 7));
   }, []);
+
+  useEffect(() => {
+    if (highlightIndex < 0) return;
+    highlightRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [highlightIndex, selectedDate]);
 
   return (
     <div
@@ -169,24 +169,7 @@ export function CalendarCardWidget({
         ...(height != null && height > 0 ? { height } : {}),
       }}
     >
-      <div className="flex items-start justify-between gap-2 px-5 pb-1 pt-6">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{heading}</h2>
-          <p className="mt-0.5 text-xs capitalize text-gray-500 dark:text-gray-400">{dateLabel}</p>
-        </div>
-        {onMoreClick && (
-          <button
-            type="button"
-            onClick={onMoreClick}
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
-            aria-label={t("editPanel.editTile")}
-          >
-            <MoreVertical className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
-      <div className="flex items-center gap-1 px-3 pb-3 pt-2">
+      <div className={cn("flex items-center gap-1 px-3 pb-3", onMoreClick ? "pt-3" : "pt-5")}>
         <button
           type="button"
           onClick={() => shiftWeek(-1)}
@@ -237,6 +220,16 @@ export function CalendarCardWidget({
         >
           <ChevronRight className="h-4 w-4" />
         </button>
+        {onMoreClick ? (
+          <button
+            type="button"
+            onClick={onMoreClick}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
+            aria-label={t("editPanel.editTile")}
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+        ) : null}
       </div>
 
       {!isSameDay(selectedDate, today) && (
@@ -284,7 +277,11 @@ export function CalendarCardWidget({
               const highlighted = i === highlightIndex;
               const parts = ev.allDay ? null : timeParts(start, locale);
               return (
-                <li key={`${ev.entityId}-${ev.start}-${i}`} className="relative flex gap-3">
+                <li
+                  key={`${ev.entityId}-${ev.start}-${i}`}
+                  ref={highlighted ? highlightRef : undefined}
+                  className="relative flex gap-3"
+                >
                   <div className="w-12 shrink-0 pt-2 text-right">
                     {ev.allDay ? (
                       <p className="text-[10px] font-medium leading-tight text-gray-400">{t("calendar.allDay")}</p>
@@ -337,23 +334,25 @@ export function CalendarCardWidget({
 
       {viewingToday && !isLoading && (
         <div className="shrink-0 border-t border-black/[0.06] px-5 py-4 dark:border-white/10">
-          {currentActivity ? (
+          {liveActivity ? (
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                {t("calendar.now")}
+                {t(liveActivity.status === "current" ? "calendar.now" : "calendar.upNext")}
               </p>
               <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                <EventTitle summary={currentActivity.event.summary} empty={t("calendar.emptyTitle")} />
+                <EventTitle summary={liveActivity.event.summary} empty={t("calendar.emptyTitle")} />
               </p>
-              <EventTitleDetail summary={currentActivity.event.summary} />
+              <EventTitleDetail summary={liveActivity.event.summary} />
               <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                {currentActivity.event.allDay
+                {liveActivity.event.allDay
                   ? t("calendar.allDay")
-                  : `${formatTime(eventStart(currentActivity.event), locale)} – ${formatTime(eventEnd(currentActivity.event), locale)}`}
+                  : `${formatTime(eventStart(liveActivity.event), locale)} – ${formatTime(eventEnd(liveActivity.event), locale)}`}
               </p>
             </div>
           ) : (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("calendar.noMoreActivities")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">
+              {t(nowActivity?.status === "done" ? "calendar.noMoreActivities" : "calendar.noCurrentActivity")}
+            </p>
           )}
         </div>
       )}

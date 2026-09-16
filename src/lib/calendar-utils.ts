@@ -90,6 +90,14 @@ export function eventsOnDay(events: CalendarEvent[], day: Date): CalendarEvent[]
   return [...allDayOnDay(events, day), ...timedOnDay(events, day)];
 }
 
+/** Today's remaining agenda: all-day plus timed events that have not ended yet. */
+export function eventsFromNowOnDay(events: CalendarEvent[], day: Date, now = new Date()): CalendarEvent[] {
+  const dayEvents = eventsOnDay(events, day);
+  if (!isSameDay(day, now)) return dayEvents;
+  const nowMs = now.getTime();
+  return dayEvents.filter((ev) => ev.allDay || eventEnd(ev).getTime() > nowMs);
+}
+
 /** Index of the event to emphasize in a day list: current/next timed event today, otherwise the first. */
 export function highlightedEventIndex(events: CalendarEvent[], day: Date, now = new Date()): number {
   const dayEvents = eventsOnDay(events, day);
