@@ -3,6 +3,9 @@ import {
   clampClimateCardHeight,
   clampClimateCardWidth,
   climateHvacModesFromAttributes,
+  climateGaugeColor,
+  climateGaugeProgress,
+  climateGaugeTickFilled,
   climateRingTone,
   climateStatusKind,
   climateStatusLabelKey,
@@ -12,6 +15,8 @@ import {
   CLIMATE_CARD_DEFAULT_HEIGHT,
   CLIMATE_CARD_DEFAULT_WIDTH,
   CLIMATE_CARD_MIN_HEIGHT,
+  CLIMATE_GAUGE_MAX,
+  CLIMATE_GAUGE_MIN,
   isClimateOn,
   parseClimateTemp,
   preferredClimateOnMode,
@@ -93,5 +98,23 @@ describe("climate-card helpers", () => {
     expect(climateRingTone("off")).toBe("gray");
     expect(climateStatusLabelKey("heating")).toBe("climateCard.heating");
     expect(climateStatusLabelKey("idle")).toBe("climateCard.idle");
+  });
+
+  it("maps 0–30 °C onto a blue-to-red gauge", () => {
+    expect(climateGaugeProgress(undefined)).toBe(0);
+    expect(climateGaugeProgress(CLIMATE_GAUGE_MIN)).toBe(0);
+    expect(climateGaugeProgress(15)).toBe(0.5);
+    expect(climateGaugeProgress(CLIMATE_GAUGE_MAX)).toBe(1);
+    expect(climateGaugeProgress(40)).toBe(1);
+    expect(climateGaugeTickFilled(0, 40, 0)).toBe(true);
+    expect(climateGaugeTickFilled(1, 40, 0)).toBe(false);
+    expect(climateGaugeTickFilled(20, 41, 0.5)).toBe(true);
+    expect(climateGaugeTickFilled(21, 41, 0.5)).toBe(false);
+    expect(climateGaugeTickFilled(39, 40, 1)).toBe(true);
+    const cold = climateGaugeColor(4);
+    const hot = climateGaugeColor(28);
+    expect(cold.startsWith("#")).toBe(true);
+    expect(parseInt(cold.slice(5, 7), 16)).toBeGreaterThan(parseInt(cold.slice(1, 3), 16));
+    expect(parseInt(hot.slice(1, 3), 16)).toBeGreaterThan(parseInt(hot.slice(5, 7), 16));
   });
 });

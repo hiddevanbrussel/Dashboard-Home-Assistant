@@ -146,3 +146,65 @@ export function climateRingTone(kind: ClimateStatusKind): ClimateRingTone {
   if (kind === "off") return "gray";
   return "teal";
 }
+
+/** Visual thermostat scale: 0 °C (cold / blue) → 30 °C (warm / red). */
+export const CLIMATE_GAUGE_MIN = 0;
+export const CLIMATE_GAUGE_MAX = 30;
+export const CLIMATE_GAUGE_TICK_COUNT = 40;
+
+export function climateGaugeProgress(
+  temp: number | undefined,
+  min: number = CLIMATE_GAUGE_MIN,
+  max: number = CLIMATE_GAUGE_MAX
+): number {
+  if (temp == null || !Number.isFinite(temp)) return 0;
+  const span = max - min;
+  if (!(span > 0)) return 0;
+  return Math.min(1, Math.max(0, (temp - min) / span));
+}
+
+export function climateGaugeTickFilled(index: number, tickCount: number, progress: number): boolean {
+  if (tickCount <= 0) return false;
+  if (tickCount === 1) return progress >= 1;
+  return index / (tickCount - 1) <= progress + 1e-6;
+}
+
+const GAUGE_COLOR_STOPS: { t: number; rgb: [number, number, number] }[] = [
+  { t: 0, rgb: [59, 158, 255] },
+  { t: 0.45, rgb: [56, 189, 248] },
+  { t: 0.62, rgb: [251, 191, 36] },
+  { t: 0.82, rgb: [249, 115, 22] },
+  { t: 1, rgb: [239, 68, 68] },
+];
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const h = (n: number) => Math.round(Math.min(255, Math.max(0, n))).toString(16).padStart(2, "0");
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
+/** Blue at the cold end of the gauge, red at the warm end. */
+export function climateGaugeColor(
+  temp: number,
+  min: number = CLIMATE_GAUGE_MIN,
+  max: number = CLIMATE_GAUGE_MAX
+): string {
+  const p = climateGaugeProgress(temp, min, max);
+  for (let i = 1; i < GAUGE_COLOR_STOPS.length; i++) {
+    const next = GAUGE_COLOR_STOPS[i];
+    if (p <= next.t) {
+      const prev = GAUGE_COLOR_STOPS[i - 1];
+      const u = (p - prev.t) / (next.t - prev.t || 1);
+      return rgbToHex(
+        lerp(prev.rgb[0], next.rgb[0], u),
+        lerp(prev.rgb[1], next.rgb[1], u),
+        lerp(prev.rgb[2], next.rgb[2], u)
+      );
+    }
+  }
+  const last = GAUGE_COLOR_STOPS[GAUGE_COLOR_STOPS.length - 1];
+  return rgbToHex(last.rgb[0], last.rgb[1], last.rgb[2]);
+}
