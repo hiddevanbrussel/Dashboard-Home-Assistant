@@ -114,6 +114,16 @@ import {
   VACUUM_CARD_2_MIN_HEIGHT,
   VACUUM_CARD_2_MIN_WIDTH,
 } from "@/lib/vacuum-card";
+import {
+  clampCalendarCardHeight,
+  clampCalendarCardWidth,
+  CALENDAR_CARD_DEFAULT_HEIGHT,
+  CALENDAR_CARD_DEFAULT_WIDTH,
+  CALENDAR_CARD_MAX_HEIGHT,
+  CALENDAR_CARD_MAX_WIDTH,
+  CALENDAR_CARD_MIN_HEIGHT,
+  CALENDAR_CARD_MIN_WIDTH,
+} from "@/lib/calendar-card";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
 const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card"] as const;
@@ -733,7 +743,6 @@ export default function DashboardEditPage() {
   const [definitionModalEntities, setDefinitionModalEntities] = useState<HaEntity[]>([]);
   const [roomBackgroundOpen, setRoomBackgroundOpen] = useState(false);
   const [uploadingRoomBackground, setUploadingRoomBackground] = useState(false);
-  const [calendarOpen, setCalendarOpen] = useState(true);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roomBackgroundInputRef = useRef<HTMLInputElement>(null);
   const LONG_PRESS_MS = 500;
@@ -808,27 +817,6 @@ export default function DashboardEditPage() {
   useEffect(() => {
     if (!editingWidgetId) setEditingGroupChildId(null);
   }, [editingWidgetId]);
-
-  useEffect(() => {
-    try {
-      setCalendarOpen(localStorage.getItem("dashboard.calendarPanelOpen") !== "0");
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const persistCalendarOpen = (open: boolean) => {
-    setCalendarOpen(open);
-    try {
-      localStorage.setItem("dashboard.calendarPanelOpen", open ? "1" : "0");
-    } catch {
-      // ignore
-    }
-  };
-
-  useEffect(() => {
-    if (editMode && widgets.some((w) => w.type === "calendar_card")) persistCalendarOpen(true);
-  }, [editMode]);
 
   useEffect(() => {
     if (editingWidget?.type === "card_group" && editingGroupChildId) {
@@ -1107,6 +1095,7 @@ export default function DashboardEditPage() {
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
+      ...(type === "calendar_card" && { width: CALENDAR_CARD_DEFAULT_WIDTH, height: CALENDAR_CARD_DEFAULT_HEIGHT }),
       ...((type === "climate_card" || type === "climate_card_2") && { width: CLIMATE_CARD_DEFAULT_WIDTH, height: CLIMATE_CARD_DEFAULT_HEIGHT }),
       page: dashboardPageRef.current,
     };
@@ -1214,6 +1203,17 @@ export default function DashboardEditPage() {
   function handleVacuumCardResize(widgetId: string, size: { width: number; height: number }) {
     const width = clampVacuumCard2Width(size.width);
     const height = clampVacuumCard2Height(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleCalendarCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampCalendarCardWidth(size.width);
+    const height = clampCalendarCardHeight(size.height);
     const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
     setWidgets(newWidgets);
     if (editingWidgetId === widgetId) {
@@ -1387,7 +1387,6 @@ export default function DashboardEditPage() {
                             }
                             if (type === "calendar_card") {
                               handleAddTile("calendar_card", "", "");
-                              persistCalendarOpen(true);
                               setAddTileOpen(false);
                               return;
                             }
@@ -1599,7 +1598,6 @@ export default function DashboardEditPage() {
   );
 
   const hasCardGroup = widgets.some((w) => w.type === "card_group");
-  const hasCalendarCard = widgets.some((w) => w.type === "calendar_card");
 
   return (
     <AppShell
@@ -1616,25 +1614,6 @@ export default function DashboardEditPage() {
           setWelcomeSubtitle(subtitle);
         } : undefined}
         contentNoScroll={hasCardGroup}
-        headerStartAction={
-          hasCalendarCard ? (
-            <button
-              type="button"
-              onClick={() => persistCalendarOpen(!calendarOpen)}
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                calendarOpen
-                  ? "bg-black/5 text-gray-900 dark:bg-white/15 dark:text-white"
-                  : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
-              )}
-              aria-label={calendarOpen ? t("calendar.hidePanel") : t("calendar.showPanel")}
-              aria-pressed={calendarOpen}
-              title={calendarOpen ? t("calendar.hidePanel") : t("calendar.showPanel")}
-            >
-              <CalendarDays className="h-5 w-5" />
-            </button>
-          ) : null
-        }
       >
       <div className="space-y-6 overflow-x-hidden min-h-0">
         <div className="flex items-center justify-end">
@@ -2235,29 +2214,30 @@ export default function DashboardEditPage() {
               onRemove={editMode ? () => handleRemoveTile(g.id) : undefined}
             />
           ))}
-            </>
-          )}
-        </DashboardPager>
 
         {widgets
-          .filter((w) => w.type === "calendar_card")
+          .filter((w) => w.type === "calendar_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingCalendarCard
               key={w.id}
               widget={{
                 id: w.id,
                 title: w.title,
+                width: w.width,
+                height: w.height,
               }}
               widgetIndex={i}
               editMode={editMode}
-              open={calendarOpen}
               storageScope={id}
-              onClose={() => persistCalendarOpen(false)}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+              onResize={editMode ? (size) => handleCalendarCardResize(w.id, size) : undefined}
             />
           ))}
+            </>
+          )}
+        </DashboardPager>
 
         {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
           <>
@@ -2309,7 +2289,7 @@ export default function DashboardEditPage() {
               </button>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-3">
-                {pageCount > 1 && editingWidget.type !== "calendar_card" && (
+                {pageCount > 1 && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       {t("editPanel.dashboardPage")}
@@ -4905,6 +4885,50 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                   </div>
                 )}
+                {editingWidget.type === "calendar_card" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.widthPx")}
+                      </label>
+                      <input
+                        type="number"
+                        min={CALENDAR_CARD_MIN_WIDTH}
+                        max={CALENDAR_CARD_MAX_WIDTH}
+                        step={10}
+                        value={editForm.width ?? CALENDAR_CARD_DEFAULT_WIDTH}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            width: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.heightPx")}
+                      </label>
+                      <input
+                        type="number"
+                        min={CALENDAR_CARD_MIN_HEIGHT}
+                        max={CALENDAR_CARD_MAX_HEIGHT}
+                        step={10}
+                        value={editForm.height ?? CALENDAR_CARD_DEFAULT_HEIGHT}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            height: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      />
+                    </div>
+                  </div>
+                )}
                 {editingWidget.type === "nuts_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
@@ -5338,6 +5362,10 @@ aria-label={t("editPanel.removeCondition")}
                           icon_background_color: editForm.icon_background_color || undefined,
                           width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
                           height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
+                        }),
+                        ...(editingWidget.type === "calendar_card" && {
+                          width: editForm.width != null && editForm.width > 0 ? clampCalendarCardWidth(editForm.width) : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? clampCalendarCardHeight(editForm.height) : undefined,
                         }),
                         ...(editingWidget.type === "chore_card" && {
                           child_id: editForm.child_id ?? null,

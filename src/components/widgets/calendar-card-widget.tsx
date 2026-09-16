@@ -72,9 +72,13 @@ async function fetchRangeEvents(entityIds: string[], start: Date, end: Date): Pr
 
 export function CalendarCardWidget({
   title,
+  width,
+  height,
   onMoreClick,
 }: {
   title?: string;
+  width?: number;
+  height?: number;
   onMoreClick?: () => void;
 }) {
   const { t, language } = useTranslation();
@@ -158,7 +162,13 @@ export function CalendarCardWidget({
   }, []);
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+    <div
+      className="flex h-full min-h-0 w-full flex-col overflow-hidden"
+      style={{
+        ...(width != null && width > 0 ? { width } : {}),
+        ...(height != null && height > 0 ? { height } : {}),
+      }}
+    >
       <div className="flex items-start justify-between gap-2 px-5 pb-1 pt-6">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{heading}</h2>
