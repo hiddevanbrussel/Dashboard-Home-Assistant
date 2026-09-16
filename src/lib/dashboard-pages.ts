@@ -44,6 +44,17 @@ export function pageSwipeClaimPx(pointerType: string | undefined): number {
   return 16;
 }
 
+export function shouldIgnorePageSwipe(target: EventTarget | null, editMode: boolean): boolean {
+  const el = target instanceof HTMLElement ? target : null;
+  if (!el) return true;
+  if (el.closest("input, textarea, select, [data-no-page-swipe], [data-dashboard-pager-ui]")) {
+    return true;
+  }
+  if (el.closest("[data-app-header]")) return true;
+  if (editMode && !el.closest("[data-dashboard-page-swipe]")) return true;
+  return false;
+}
+
 export function dashboardPageSettleDurationMs(distancePx: number): number {
   const distance = Math.abs(distancePx);
   if (!Number.isFinite(distance)) return 280;
