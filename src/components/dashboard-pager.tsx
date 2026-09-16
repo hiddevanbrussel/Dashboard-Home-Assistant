@@ -9,11 +9,13 @@ import { SIDEBAR_INSET } from "@/components/layout/sidebar";
 import {
   applyDashboardPageDrag,
   DASHBOARD_MAX_PAGES,
+  dashboardPageSettleDurationMs,
+  pageSwipeClaimPx,
   settleDashboardPage,
   velocityFromPointerSamples,
 } from "@/lib/dashboard-pages";
 
-const SETTLE_MS = 520;
+const WHEEL_LOCK_MS = 420;
 
 type DashboardPagerProps = {
   pageCount: number;
@@ -36,9 +38,9 @@ function shouldIgnorePageSwipe(target: EventTarget | null, editMode: boolean): b
   return false;
 }
 
-function easeOutQuart(t: number): number {
+function easeOutCubic(t: number): number {
   const x = Math.min(1, Math.max(0, t));
-  return 1 - Math.pow(1 - x, 4);
+  return 1 - Math.pow(1 - x, 3);
 }
 
 function viewportWidth(): number {
@@ -102,18 +104,19 @@ export function DashboardPager({
     (next: number) => {
       const clamped = Math.min(pageCountRef.current - 1, Math.max(0, next));
       const from = pageRef.current;
-      if (clamped === from) return;
-      stopAnimation();
-      const width = viewportWidth();
       const startDrag = dragPxRef.current;
-      const endDrag = (from - clamped) * width;
+      const width = viewportWidth();
+      const endDrag = clamped === from ? 0 : (from - clamped) * width;
+      if (clamped === from && Math.abs(startDrag) < 0.5) return;
+      stopAnimation();
       animatingRef.current = true;
-      setAnimTarget(clamped);
+      setAnimTarget(clamped === from ? null : clamped);
       setDragging(false);
       draggingRef.current = false;
       const t0 = performance.now();
+      const duration = dashboardPageSettleDurationMs(endDrag - startDrag);
       const step = (now: number) => {
-        const t = easeOutQuart((now - t0) / SETTLE_MS);
+        const t = easeOutCubic((now - t0) / duration);
         const px = startDrag + (endDrag - startDrag) * t;
         dragPxRef.current = px;
         setDragPx(px);
@@ -126,7 +129,7 @@ export function DashboardPager({
         setDragPx(0);
         animatingRef.current = false;
         setAnimTarget(null);
-        onPageChange(clamped);
+        if (clamped !== from) onPageChange(clamped);
       };
       rafRef.current = requestAnimationFrame(step);
     },
@@ -134,21 +137,24 @@ export function DashboardPager({
   );
 
   useEffect(() => {
-    const start = { x: 0, y: 0, pointerId: -1 };
+    const start = { x: 0, y: 0, drag: 0, pointerId: -1 };
     const samples: { x: number; t: number }[] = [];
 
     const onPointerDown = (e: PointerEvent) => {
       if (pageCountRef.current < 2) return;
-      if (animatingRef.current) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
       if (shouldIgnorePageSwipe(e.target, editMode)) return;
+      const resume = animatingRef.current;
+      if (resume) stopAnimation();
       start.x = e.clientX;
       start.y = e.clientY;
+      start.drag = dragPxRef.current;
       start.pointerId = e.pointerId;
       const now = performance.now();
       samples.length = 0;
       samples.push({ x: e.clientX, t: now });
-      draggingRef.current = false;
+      draggingRef.current = resume;
+      if (resume) setDragging(true);
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -156,7 +162,8 @@ export function DashboardPager({
       const dx = e.clientX - start.x;
       const dy = e.clientY - start.y;
       if (!draggingRef.current) {
-        if (Math.abs(dx) < 16 && Math.abs(dy) < 16) return;
+        const claimPx = pageSwipeClaimPx(e.pointerType);
+        if (Math.abs(dx) < claimPx && Math.abs(dy) < claimPx) return;
         if (Math.abs(dy) >= Math.abs(dx)) {
           start.pointerId = -1;
           return;
@@ -171,7 +178,7 @@ export function DashboardPager({
       const next = applyDashboardPageDrag({
         page: pageRef.current,
         pageCount: pageCountRef.current,
-        dragPx: dx,
+        dragPx: start.drag + dx,
         pageWidth: viewportWidth(),
       });
       dragPxRef.current = next;
@@ -193,9 +200,7 @@ export function DashboardPager({
       });
       draggingRef.current = false;
       setDragging(false);
-      setDragPx(0);
-      dragPxRef.current = 0;
-      onPageChange(nextPage);
+      goTo(nextPage);
     };
 
     window.addEventListener("pointerdown", onPointerDown, { capture: true });
@@ -208,7 +213,7 @@ export function DashboardPager({
       window.removeEventListener("pointerup", finish, true);
       window.removeEventListener("pointercancel", finish, true);
     };
-  }, [editMode, onPageChange]);
+  }, [editMode, goTo, stopAnimation]);
 
   useEffect(() => {
     if (pageCount < 2) return;
@@ -221,7 +226,7 @@ export function DashboardPager({
       goTo(pageRef.current + (e.deltaX > 0 ? 1 : -1));
       window.setTimeout(() => {
         wheelLockRef.current = false;
-      }, SETTLE_MS);
+      }, WHEEL_LOCK_MS);
     };
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
     return () => window.removeEventListener("wheel", onWheel, true);

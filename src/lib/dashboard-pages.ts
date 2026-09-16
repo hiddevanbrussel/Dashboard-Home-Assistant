@@ -34,6 +34,22 @@ export function resolvePageCount(
   return clampPageCount(Math.max(fromWidgets, clampPageCount(storedPageCount)));
 }
 
+/** Fraction of the page width that commits a swipe on release (without a flick). */
+export const DASHBOARD_PAGE_SETTLE_DISTANCE_RATIO = 0.12;
+/** Horizontal flick speed (px/ms) that commits a page change. */
+export const DASHBOARD_PAGE_SETTLE_VELOCITY = 0.4;
+
+export function pageSwipeClaimPx(pointerType: string | undefined): number {
+  if (pointerType === "touch" || pointerType === "pen") return 8;
+  return 16;
+}
+
+export function dashboardPageSettleDurationMs(distancePx: number): number {
+  const distance = Math.abs(distancePx);
+  if (!Number.isFinite(distance)) return 280;
+  return Math.min(420, Math.max(240, Math.round(distance * 0.42 + 180)));
+}
+
 /** iOS-style resistance when dragging past the first or last page. */
 export function rubberBandOffset(overscrollPx: number, pageWidth: number): number {
   const width = pageWidth > 0 ? pageWidth : 1;
@@ -64,8 +80,8 @@ export function settleDashboardPage(input: {
 }): number {
   const page = clampPageIndex(input.page, input.pageCount);
   const width = input.pageWidth > 0 ? input.pageWidth : 1;
-  const distanceThreshold = width * 0.18;
-  const velocityThreshold = 0.55;
+  const distanceThreshold = width * DASHBOARD_PAGE_SETTLE_DISTANCE_RATIO;
+  const velocityThreshold = DASHBOARD_PAGE_SETTLE_VELOCITY;
   let next = page;
   if (input.dragPx <= -distanceThreshold || input.velocityPxPerMs <= -velocityThreshold) {
     next = page + 1;

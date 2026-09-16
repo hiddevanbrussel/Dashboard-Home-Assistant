@@ -3,6 +3,8 @@ import {
   applyDashboardPageDrag,
   clampPageCount,
   clampPageIndex,
+  dashboardPageSettleDurationMs,
+  pageSwipeClaimPx,
   parseDashboardLayout,
   reindexWidgetsAfterRemovedPage,
   resolvePageCount,
@@ -46,12 +48,27 @@ describe("dashboard pages", () => {
       settleDashboardPage({ page: 0, pageCount: 3, dragPx: -200, velocityPxPerMs: 0, pageWidth: 1000 })
     ).toBe(1);
     expect(
-      settleDashboardPage({ page: 1, pageCount: 3, dragPx: 40, velocityPxPerMs: 0.8, pageWidth: 1000 })
+      settleDashboardPage({ page: 0, pageCount: 3, dragPx: -130, velocityPxPerMs: 0, pageWidth: 1000 })
+    ).toBe(1);
+    expect(
+      settleDashboardPage({ page: 1, pageCount: 3, dragPx: 40, velocityPxPerMs: 0.45, pageWidth: 1000 })
     ).toBe(0);
     expect(
-      settleDashboardPage({ page: 0, pageCount: 3, dragPx: -20, velocityPxPerMs: 0, pageWidth: 1000 })
+      settleDashboardPage({ page: 0, pageCount: 3, dragPx: -50, velocityPxPerMs: 0, pageWidth: 1000 })
     ).toBe(0);
     expect(clampPageIndex(8, 2)).toBe(1);
+  });
+
+  it("claims a swipe sooner on touch than on mouse", () => {
+    expect(pageSwipeClaimPx("touch")).toBe(8);
+    expect(pageSwipeClaimPx("pen")).toBe(8);
+    expect(pageSwipeClaimPx("mouse")).toBe(16);
+    expect(pageSwipeClaimPx(undefined)).toBe(16);
+  });
+
+  it("shortens the settle animation for small remaining distances", () => {
+    expect(dashboardPageSettleDurationMs(80)).toBe(240);
+    expect(dashboardPageSettleDurationMs(1000)).toBe(420);
   });
 
   it("keeps a single-page layout as a plain array for backwards compatibility", () => {
