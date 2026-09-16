@@ -130,7 +130,7 @@ export function DashboardPager({
   );
 
   useEffect(() => {
-    const start = { x: 0, y: 0, drag: 0, pointerId: -1 };
+    const start = { x: 0, y: 0, drag: 0, pointerId: -1, blockNativeDrag: false };
     const samples: { x: number; t: number }[] = [];
     let suppressClick = false;
     let captured = false;
@@ -149,12 +149,14 @@ export function DashboardPager({
       if (pageCountRef.current < 2) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
       if (shouldIgnorePageSwipe(e.target, editMode)) return;
+      const target = e.target instanceof Element ? e.target : null;
       const resume = animatingRef.current;
       if (resume) stopAnimation();
       start.x = e.clientX;
       start.y = e.clientY;
       start.drag = dragPxRef.current;
       start.pointerId = e.pointerId;
+      start.blockNativeDrag = Boolean(target?.closest("a[href], img, [data-app-sidebar]"));
       const now = performance.now();
       samples.length = 0;
       samples.push({ x: e.clientX, t: now });
@@ -162,10 +164,20 @@ export function DashboardPager({
       if (resume) setDragging(true);
     };
 
+    const onDragStart = (e: DragEvent) => {
+      if (pageCountRef.current < 2) return;
+      const target = e.target instanceof Element ? e.target : null;
+      if (target?.closest("a[href], img, [data-app-sidebar]")) {
+        e.preventDefault();
+      }
+    };
+
     const onPointerMove = (e: PointerEvent) => {
       if (start.pointerId !== e.pointerId) return;
       const dx = e.clientX - start.x;
       const dy = e.clientY - start.y;
+      // Cancel native link-drag before Chrome's ~4px threshold; our claim is 8–16px.
+      if (start.blockNativeDrag) e.preventDefault();
       if (!draggingRef.current) {
         const claimPx = pageSwipeClaimPx(e.pointerType);
         if (Math.abs(dx) < claimPx && Math.abs(dy) < claimPx) return;
@@ -228,12 +240,14 @@ export function DashboardPager({
     window.addEventListener("pointermove", onPointerMove, { capture: true, passive: false });
     window.addEventListener("pointerup", finish, { capture: true });
     window.addEventListener("pointercancel", finish, { capture: true });
+    window.addEventListener("dragstart", onDragStart, true);
     window.addEventListener("click", onClick, true);
     return () => {
       window.removeEventListener("pointerdown", onPointerDown, true);
       window.removeEventListener("pointermove", onPointerMove, true);
       window.removeEventListener("pointerup", finish, true);
       window.removeEventListener("pointercancel", finish, true);
+      window.removeEventListener("dragstart", onDragStart, true);
       window.removeEventListener("click", onClick, true);
     };
   }, [editMode, goTo, stopAnimation]);
