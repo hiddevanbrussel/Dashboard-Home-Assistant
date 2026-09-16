@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
@@ -12,6 +12,7 @@ import {
   dashboardPageSettleDurationMs,
   pageSwipeClaimPx,
   settleDashboardPage,
+  shouldIgnorePageSwipe,
   velocityFromPointerSamples,
 } from "@/lib/dashboard-pages";
 
@@ -26,17 +27,6 @@ type DashboardPagerProps = {
   onRemovePage?: () => void;
   children: (pageIndex: number) => React.ReactNode;
 };
-
-function shouldIgnorePageSwipe(target: EventTarget | null, editMode: boolean): boolean {
-  const el = target instanceof HTMLElement ? target : null;
-  if (!el) return true;
-  if (el.closest("button, a, input, textarea, select, [data-no-page-swipe], [data-dashboard-pager-ui]")) {
-    return true;
-  }
-  if (el.closest("[data-app-sidebar], [data-app-header]")) return true;
-  if (editMode && !el.closest("[data-dashboard-page-swipe]")) return true;
-  return false;
-}
 
 function easeOutCubic(t: number): number {
   const x = Math.min(1, Math.max(0, t));
@@ -125,11 +115,14 @@ export function DashboardPager({
           return;
         }
         rafRef.current = null;
-        dragPxRef.current = 0;
-        setDragPx(0);
-        animatingRef.current = false;
-        setAnimTarget(null);
-        if (clamped !== from) onPageChange(clamped);
+        flushSync(() => {
+          pageRef.current = clamped;
+          dragPxRef.current = 0;
+          setDragPx(0);
+          animatingRef.current = false;
+          setAnimTarget(null);
+          if (clamped !== from) onPageChange(clamped);
+        });
       };
       rafRef.current = requestAnimationFrame(step);
     },
@@ -139,6 +132,18 @@ export function DashboardPager({
   useEffect(() => {
     const start = { x: 0, y: 0, drag: 0, pointerId: -1 };
     const samples: { x: number; t: number }[] = [];
+    let suppressClick = false;
+    let captured = false;
+
+    const releaseCapture = (pointerId: number) => {
+      if (!captured) return;
+      captured = false;
+      try {
+        document.documentElement.releasePointerCapture(pointerId);
+      } catch {
+        // ignore
+      }
+    };
 
     const onPointerDown = (e: PointerEvent) => {
       if (pageCountRef.current < 2) return;
@@ -170,6 +175,12 @@ export function DashboardPager({
         }
         draggingRef.current = true;
         setDragging(true);
+        try {
+          document.documentElement.setPointerCapture(e.pointerId);
+          captured = true;
+        } catch {
+          // ignore
+        }
       }
       e.preventDefault();
       const now = performance.now();
@@ -188,7 +199,10 @@ export function DashboardPager({
     const finish = (e: PointerEvent) => {
       if (start.pointerId !== e.pointerId) return;
       start.pointerId = -1;
+      releaseCapture(e.pointerId);
       if (!draggingRef.current) return;
+      suppressClick = true;
+      e.preventDefault();
       const now = performance.now();
       const velocity = velocityFromPointerSamples(samples, e.clientX, now);
       const nextPage = settleDashboardPage({
@@ -203,15 +217,24 @@ export function DashboardPager({
       goTo(nextPage);
     };
 
-    window.addEventListener("pointerdown", onPointerDown, { capture: true });
+    const onClick = (e: MouseEvent) => {
+      if (!suppressClick) return;
+      suppressClick = false;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    window.addEventListener("pointerdown", onPointerDown, { capture: true, passive: false });
     window.addEventListener("pointermove", onPointerMove, { capture: true, passive: false });
     window.addEventListener("pointerup", finish, { capture: true });
     window.addEventListener("pointercancel", finish, { capture: true });
+    window.addEventListener("click", onClick, true);
     return () => {
       window.removeEventListener("pointerdown", onPointerDown, true);
       window.removeEventListener("pointermove", onPointerMove, true);
       window.removeEventListener("pointerup", finish, true);
       window.removeEventListener("pointercancel", finish, true);
+      window.removeEventListener("click", onClick, true);
     };
   }, [editMode, goTo, stopAnimation]);
 
@@ -255,7 +278,7 @@ export function DashboardPager({
   const showChrome = pageCount > 1 || editMode;
 
   return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
+    <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden" style={{ overscrollBehaviorX: "none" }}>
       {Array.from({ length: pageCount }, (_, index) => {
         const active = index === page;
         const visible =

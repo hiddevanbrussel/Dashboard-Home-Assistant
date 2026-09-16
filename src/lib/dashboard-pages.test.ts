@@ -56,6 +56,12 @@ describe("dashboard pages", () => {
     expect(
       settleDashboardPage({ page: 0, pageCount: 3, dragPx: -50, velocityPxPerMs: 0, pageWidth: 1000 })
     ).toBe(0);
+    expect(
+      settleDashboardPage({ page: 1, pageCount: 3, dragPx: 200, velocityPxPerMs: 0, pageWidth: 1000 })
+    ).toBe(0);
+    expect(
+      settleDashboardPage({ page: 1, pageCount: 3, dragPx: 50, velocityPxPerMs: 0, pageWidth: 1000 })
+    ).toBe(1);
     expect(clampPageIndex(8, 2)).toBe(1);
   });
 
