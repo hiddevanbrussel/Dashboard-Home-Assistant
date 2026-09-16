@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { snapToGrid } from "@/lib/floating-card-grid";
+import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { CalendarCardWidget } from "./calendar-card-widget";
 import {
   clampCalendarCardHeight,
@@ -93,6 +93,7 @@ export function FloatingCalendarCard({
   const [isResizing, setIsResizing] = useState(false);
   const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
+  const draggingRef = useRef(false);
   const resizeStart = useRef({
     x: 0,
     y: 0,
@@ -152,7 +153,7 @@ export function FloatingCalendarCard({
   }, [storageScope, widget.id, widgetIndex, cardWidth, cardHeight]);
 
   useEffect(() => {
-    if (!initialized.current || isResizing) return;
+    if (!initialized.current || isResizing || isDragging || draggingRef.current) return;
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - displayWidth : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - displayHeight : 400;
     setPosition((prev) =>
@@ -164,7 +165,7 @@ export function FloatingCalendarCard({
         { maxLeft, maxBottom }
       )
     );
-  }, [cardWidth, cardHeight, displayWidth, displayHeight, isResizing]);
+  }, [cardWidth, cardHeight, displayWidth, displayHeight, isResizing, isDragging]);
 
   useEffect(() => {
     if (!liveSize || isResizing) return;
@@ -191,34 +192,37 @@ export function FloatingCalendarCard({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode || isResizing) return;
-      if ((e.target as HTMLElement).closest?.("button")) return;
+      if ((e.target as HTMLElement).closest?.("button, a")) return;
       e.preventDefault();
+      e.stopPropagation();
+      const measured = floatingPositionFromElement(e.currentTarget as HTMLElement);
+      draggingRef.current = true;
       setIsDragging(true);
-      dragStart.current = { x: e.clientX, y: e.clientY, left: position.left, bottom: position.bottom };
+      dragStart.current = { x: e.clientX, y: e.clientY, left: measured.left, bottom: measured.bottom };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [position, editMode, isResizing]
+    [editMode, isResizing]
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!isDragging) return;
+      if (!draggingRef.current) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
       const maxLeft = typeof window !== "undefined" ? window.innerWidth - displayWidth : 400;
       const maxBottom = typeof window !== "undefined" ? window.innerHeight - displayHeight : 400;
-      const raw = {
+      setPosition({
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
         bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
-      };
-      setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
+      });
     },
-    [isDragging, displayWidth, displayHeight]
+    [displayWidth, displayHeight]
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (isDragging) {
+      if (draggingRef.current) {
+        draggingRef.current = false;
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
@@ -234,7 +238,7 @@ export function FloatingCalendarCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, storageScope, widget.id, displayWidth, displayHeight]
+    [storageScope, widget.id, displayWidth, displayHeight]
   );
 
   const handleResizePointerDown = useCallback(
@@ -282,10 +286,12 @@ export function FloatingCalendarCard({
 
   return (
     <div
+      data-no-page-swipe={editMode ? true : undefined}
+      draggable={false}
+      onDragStart={(event) => event.preventDefault()}
       className={cn(
-        "fixed z-40",
-        editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
-        editMode && !isDragging && !isResizing && "animate-edit-wiggle"
+        "fixed z-40 [-webkit-user-drag:none]",
+        editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing"
       )}
       style={{
         left: position.left,
@@ -305,14 +311,14 @@ export function FloatingCalendarCard({
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
         onPointerUp: handlePointerUp,
-        onPointerLeave: (e: React.PointerEvent) => {
-          if (isDragging) handlePointerUp(e);
-        },
         onPointerCancel: handlePointerUp,
       })}
     >
       <div
-        className="h-full w-full overflow-hidden rounded-3xl border shadow-2xl bg-white/90 dark:bg-gray-950/90 border-black/[0.06] dark:border-white/10 backdrop-blur-2xl"
+        className={cn(
+          "h-full w-full overflow-hidden rounded-3xl border shadow-2xl bg-white/90 dark:bg-gray-950/90 border-black/[0.06] dark:border-white/10 backdrop-blur-2xl",
+          editMode && !isDragging && !isResizing && "animate-edit-wiggle"
+        )}
       >
         <CalendarCardWidget
           title={widget.title}

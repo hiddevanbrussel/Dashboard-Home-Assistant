@@ -960,7 +960,7 @@ export default function CalendarPage() {
   const { calendarEntityIds } = useCalendarStore();
   const entityStates = useEntityStateStore((s) => s.states);
 
-  const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);

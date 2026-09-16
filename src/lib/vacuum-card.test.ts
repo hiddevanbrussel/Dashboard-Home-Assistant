@@ -12,6 +12,7 @@ import {
   resizeVacuumCard2FromBottomRight,
   resolveFanSpeedForMode,
   VACUUM_CARD_2_DEFAULT_HEIGHT,
+  VACUUM_CARD_2_DEFAULT_IMAGE,
   VACUUM_CARD_2_DEFAULT_WIDTH,
   vacuumHeadlineKind,
 } from "./vacuum-card";
@@ -81,6 +82,7 @@ describe("vacuum-card helpers", () => {
   });
 
   it("clamps vacuum card 2 width and height", () => {
+    expect(VACUUM_CARD_2_DEFAULT_IMAGE).toBe("/vacuum-xiaomi-5-top.webp");
     expect(clampVacuumCard2Width(undefined)).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
     expect(clampVacuumCard2Width("not-a-number")).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
     expect(clampVacuumCard2Width(100)).toBe(240);

@@ -62,9 +62,9 @@ describe("calendar-utils", () => {
     expect(gridHours()).toHaveLength(18);
   });
 
-  it("scales hour rows to fit a workday in the viewport", () => {
+  it("keeps hour rows tall enough for readable events", () => {
     expect(hourHeightForViewport(0)).toBe(DEFAULT_HOUR_H);
-    expect(hourHeightForViewport(700)).toBe(44);
+    expect(hourHeightForViewport(700)).toBe(70);
     expect(hourHeightForViewport(200)).toBe(MIN_HOUR_H);
   });
 

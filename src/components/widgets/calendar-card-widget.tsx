@@ -157,8 +157,16 @@ export function CalendarCardWidget({
   }, []);
 
   useEffect(() => {
-    if (highlightIndex < 0) return;
-    highlightRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const item = highlightRef.current;
+    if (!item || highlightIndex < 0) return;
+    const root = item.closest("[data-calendar-card-list]");
+    if (!(root instanceof HTMLElement)) return;
+    const itemTop = item.offsetTop;
+    const itemBottom = itemTop + item.offsetHeight;
+    if (itemTop < root.scrollTop) root.scrollTop = itemTop;
+    else if (itemBottom > root.scrollTop + root.clientHeight) {
+      root.scrollTop = itemBottom - root.clientHeight;
+    }
   }, [highlightIndex, selectedDate]);
 
   return (
@@ -244,7 +252,7 @@ export function CalendarCardWidget({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 scrollbar-hide">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 scrollbar-hide" data-calendar-card-list>
         {calendarEntityIds.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 px-2 py-10 text-center text-gray-400 dark:text-white/30">
             <CalendarDays className="h-8 w-8 opacity-40" />
@@ -252,8 +260,10 @@ export function CalendarCardWidget({
             <p className="text-xs">{t("calendar.noCalendarsHint")}</p>
             <Link
               href="/settings"
+              draggable={false}
               className="mt-1 text-xs font-medium text-brand hover:underline"
               onPointerDown={(e) => e.stopPropagation()}
+              onDragStart={(e) => e.preventDefault()}
             >
               {t("nav.settings")}
             </Link>
