@@ -133,6 +133,7 @@ export function ClimateCard2Widget({
   const requestRefresh = useEntityStateStore((s) => s.requestRefresh);
   const pendingRef = useRef(false);
   const [busyMode, setBusyMode] = useState<ClimateModeTile | null>(null);
+  const [previewTemp, setPreviewTemp] = useState(21);
 
   const attrs = entity?.attributes ?? {};
   const state = (entity?.state as string | undefined) ?? "";
@@ -152,7 +153,7 @@ export function ClimateCard2Widget({
     parseClimateTemp(attrs.temperature) ?? parseClimateTemp(attrs.target_temp_high);
   const minTemp = parseClimateTemp(attrs.min_temp) ?? TEMP_MIN;
   const maxTemp = parseClimateTemp(attrs.max_temp) ?? TEMP_MAX;
-  const setpoint = targetTemperature ?? currentTemperature ?? 21;
+  const setpoint = targetTemperature ?? currentTemperature ?? (previewing ? previewTemp : 21);
   const showCurrent = climateTempsDiffer(currentTemperature, targetTemperature);
   const { int, dec, empty } = formatTempParts(isOn ? setpoint : currentTemperature ?? targetTemperature);
 
@@ -230,9 +231,13 @@ export function ClimateCard2Widget({
   }
 
   function handleTemperature(next: number) {
-    if (!entity_id || pendingRef.current || !isOn) return;
     const rounded = Math.round(next * 2) / 2;
     const clamped = Math.min(maxTemp, Math.max(minTemp, rounded));
+    if (previewing) {
+      setPreviewTemp(clamped);
+      return;
+    }
+    if (!entity_id || pendingRef.current || !isOn) return;
     pendingRef.current = true;
     const previous = entity;
     updateEntityState(entity_id, {
@@ -309,10 +314,10 @@ export function ClimateCard2Widget({
           <div className="absolute inset-0 rounded-full bg-gray-50 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.04)] dark:bg-zinc-800/90 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]" />
           <ClimateTempGauge value={setpoint} active={isOn} />
 
-          <div className="absolute inset-[18%] flex flex-col items-center justify-center px-3 pb-8 text-center">
+          <div className="absolute inset-[24%] flex flex-col items-center justify-center overflow-hidden px-2 pb-7 text-center">
             <p
               className={cn(
-                "text-[11px] font-medium uppercase tracking-[0.14em]",
+                "text-[10px] font-semibold uppercase tracking-[0.16em]",
                 statusKind === "off"
                   ? "text-gray-400 dark:text-white/40"
                   : statusKind === "heating" || statusKind === "heat"
@@ -324,7 +329,7 @@ export function ClimateCard2Widget({
             >
               {t(climateStatusLabelKey(statusKind))}
             </p>
-            <p className="mt-1 text-[2.85rem] font-semibold leading-none tracking-tight tabular-nums text-gray-950 dark:text-white">
+            <p className="mt-0.5 text-[2.45rem] font-semibold leading-none tracking-tight tabular-nums text-gray-950 dark:text-white">
               {empty ? (
                 "—"
               ) : (
@@ -351,8 +356,8 @@ export function ClimateCard2Widget({
                 e.stopPropagation();
                 handleTemperature(setpoint - SELECTOR_STEP);
               }}
-              disabled={!entity_id || !isOn || setpoint <= minTemp}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sky-500 shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-sky-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-sky-400 dark:ring-white/10 dark:hover:bg-zinc-700"
+              disabled={(!entity_id && !previewing) || !isOn || setpoint <= minTemp}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#3B9EFF] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-sky-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-sky-400 dark:ring-white/10 dark:hover:bg-zinc-700"
               aria-label={t("climateCard.tempDown")}
             >
               <Minus className="h-4 w-4" strokeWidth={2.5} />
@@ -363,8 +368,8 @@ export function ClimateCard2Widget({
                 e.stopPropagation();
                 handleTemperature(setpoint + SELECTOR_STEP);
               }}
-              disabled={!entity_id || !isOn || setpoint >= maxTemp}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-orange-500 shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-orange-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-orange-400 dark:ring-white/10 dark:hover:bg-zinc-700"
+              disabled={(!entity_id && !previewing) || !isOn || setpoint >= maxTemp}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#F97316] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-orange-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-orange-400 dark:ring-white/10 dark:hover:bg-zinc-700"
               aria-label={t("climateCard.tempUp")}
             >
               <Plus className="h-4 w-4" strokeWidth={2.5} />
