@@ -1,17 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import {
-  BatteryFull,
-  BatteryLow,
-  BatteryMedium,
-  BatteryWarning,
-  Leaf,
-  MoreVertical,
-  Power,
-  AudioLines,
-  Zap,
-} from "lucide-react";
+import { Leaf, MoreVertical, Power, AudioLines, Zap } from "lucide-react";
 import type { VacuumCard2Props } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -27,6 +17,7 @@ import {
   parsePercent,
   progressFromAttributes,
   resolveFanSpeedForMode,
+  VACUUM_CARD_2_DEFAULT_IMAGE,
   vacuumHeadlineKind,
   type VacuumFanMode,
 } from "@/lib/vacuum-card";
@@ -37,33 +28,47 @@ const MODE_UI: { mode: VacuumFanMode; labelKey: string; Icon: typeof Leaf }[] = 
   { mode: "turbo", labelKey: "vacuumCard.turbo", Icon: Zap },
 ];
 
-function BatteryIcon({ level, className }: { level: number; className?: string }) {
-  if (level >= 80) return <BatteryFull className={className} aria-hidden />;
-  if (level >= 45) return <BatteryMedium className={className} aria-hidden />;
-  if (level >= 20) return <BatteryLow className={className} aria-hidden />;
-  return <BatteryWarning className={className} aria-hidden />;
+function BatteryMeter({ level, label }: { level: number; label: string }) {
+  const low = level < 20;
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-1.5 rounded-full bg-white/90 px-2 py-1 text-gray-800 shadow-sm dark:bg-zinc-900/85 dark:text-white",
+        low && "text-red-500 dark:text-red-400"
+      )}
+      aria-label={label}
+    >
+      <span className="flex items-center" aria-hidden>
+        <span className="h-3.5 w-[22px] rounded-[3px] border-2 border-current p-[1.5px]">
+          <span
+            className={cn("block h-full rounded-[1px]", low ? "bg-red-400" : "bg-emerald-400")}
+            style={{ width: `${Math.max(10, level)}%` }}
+          />
+        </span>
+        <span className="h-1.5 w-[3px] rounded-r-[1px] bg-current" />
+      </span>
+      <span className="tabular-nums text-[11px] font-semibold">{level}%</span>
+    </div>
+  );
 }
 
-function VacuumRobotArt({ active }: { active: boolean }) {
+function VacuumRobotArt({ active, src }: { active: boolean; src: string }) {
   return (
-    <svg viewBox="0 0 320 168" className="h-full w-full" aria-hidden>
-      <ellipse cx="160" cy="186" rx="176" ry="176" className="fill-[#e8ebef] dark:fill-zinc-600" />
-      <ellipse cx="160" cy="186" rx="168" ry="168" className="fill-[#f4f6f8] dark:fill-zinc-500" />
-      <ellipse cx="108" cy="78" rx="92" ry="58" className="fill-white/80 dark:fill-white/15" />
-      <circle
-        cx="160"
-        cy="48"
-        r="6"
-        className={active ? "fill-emerald-400" : "fill-gray-300 dark:fill-white/30"}
-      >
-        {active ? (
-          <animate attributeName="opacity" values="1;0.4;1" dur="1.6s" repeatCount="indefinite" />
-        ) : null}
-      </circle>
-      <circle cx="160" cy="118" r="50" className="fill-gray-200 dark:fill-white/10" />
-      <circle cx="160" cy="118" r="38" className="fill-white dark:fill-white/25" />
-      <circle cx="160" cy="118" r="38" fill="none" className="stroke-black/[0.06] dark:stroke-white/20" strokeWidth="1.5" />
-    </svg>
+    <div className="relative flex h-full w-full items-end justify-center px-2 pb-1">
+      <div className="relative max-h-full max-w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="" className="max-h-full max-w-full object-contain" />
+        <span
+          className={cn(
+            "absolute left-1/2 top-[38%] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full",
+            active ? "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,126,0.95)]" : "bg-gray-300 dark:bg-white/35"
+          )}
+          aria-hidden
+        >
+          {active ? <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/80" /> : null}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -102,8 +107,14 @@ export function VacuumCard2Widget({
     headlineKind === "cleaningProgress"
       ? t("vacuumCard.cleaningProgress").replace("{n}", String(progress ?? 0))
       : headlineKind === "unknown"
-        ? title || t("cardType.vacuum_card_2")
+        ? t("cardType.vacuum_card_2")
         : t(`vacuumCard.${headlineKind}`);
+  const vacuumName =
+    title?.trim() ||
+    (typeof attrs.friendly_name === "string" && attrs.friendly_name.trim()
+      ? attrs.friendly_name
+      : t("cardType.vacuum_card_2"));
+  const artSrc = background_image?.trim() || VACUUM_CARD_2_DEFAULT_IMAGE;
   const cardWidth = clampVacuumCard2Width(width);
   const cardHeight = clampVacuumCard2Height(height);
 
@@ -166,15 +177,10 @@ export function VacuumCard2Widget({
       <div className="shrink-0 px-5 pt-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            {battery != null ? (
-              <div className="mb-1 flex items-center gap-1.5 text-[13px] font-medium text-gray-500 dark:text-white/60">
-                <span className="tabular-nums">{battery}%</span>
-                <BatteryIcon level={battery} className="h-4 w-4 text-teal-500" />
-              </div>
-            ) : null}
             <h2 className="truncate text-[1.35rem] font-semibold leading-tight tracking-tight text-gray-950 dark:text-white">
-              {headline}
+              {vacuumName}
             </h2>
+            <p className="mt-0.5 truncate text-sm font-medium text-gray-500 dark:text-white/60">{headline}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1 pt-0.5">
             <button
@@ -238,16 +244,15 @@ export function VacuumCard2Widget({
       </div>
 
       <div className="relative mt-2 min-h-0 flex-1 overflow-hidden">
-        {background_image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={background_image}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover object-top"
-          />
-        ) : (
-          <VacuumRobotArt active={isOn} />
-        )}
+        <VacuumRobotArt active={isOn} src={artSrc} />
+        {battery != null ? (
+          <div className="absolute right-3 top-3 z-10">
+            <BatteryMeter
+              level={battery}
+              label={t("vacuumCard.battery").replace("{n}", String(battery))}
+            />
+          </div>
+        ) : null}
       </div>
     </div>
   );

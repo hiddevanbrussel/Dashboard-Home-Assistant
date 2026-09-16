@@ -4,6 +4,7 @@ export const VACUUM_CARD_2_MIN_WIDTH = 240;
 export const VACUUM_CARD_2_MAX_WIDTH = 500;
 export const VACUUM_CARD_2_MIN_HEIGHT = 260;
 export const VACUUM_CARD_2_MAX_HEIGHT = 520;
+export const VACUUM_CARD_2_DEFAULT_IMAGE = "/vacuum-xiaomi-5-top.webp";
 
 export function clampVacuumCard2Width(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);

@@ -165,13 +165,13 @@ export function stepTime(value: string, deltaMinutes: number): string {
 }
 
 /** Default hour row height, used before the time grid has been measured. */
-export const DEFAULT_HOUR_H = 48;
-/** Floor so timed events stay tappable on small screens. */
-export const MIN_HOUR_H = 36;
+export const DEFAULT_HOUR_H = 72;
+/** Floor so timed events stay readable instead of packing a full workday into view. */
+export const MIN_HOUR_H = 64;
 /** Hour the week/day time grid starts on (06:00). */
 export const CALENDAR_FOCUS_HOUR = 6;
-/** Typical day length shown without scrolling (06:00–22:00). */
-export const VISIBLE_DAY_HOURS = 16;
+/** Hours shown without scrolling; extra hours remain reachable by scroll. */
+export const VISIBLE_DAY_HOURS = 10;
 
 /** Hours shown in the week/day grid (06:00–24:00). */
 export function gridHours(focusHour = CALENDAR_FOCUS_HOUR): number[] {
