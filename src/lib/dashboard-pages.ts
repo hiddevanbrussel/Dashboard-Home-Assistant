@@ -50,7 +50,8 @@ function asClosestElement(
   if (target == null) return null;
   const el = target as { closest?: (selector: string) => unknown };
   // SVG icons (sidebar Home, Lucide) are SVGElement, not HTMLElement.
-  return typeof el.closest === "function" ? el : null;
+  if (typeof el.closest !== "function") return null;
+  return el as { closest: (selector: string) => unknown };
 }
 
 export function shouldIgnorePageSwipe(target: EventTarget | null, editMode: boolean): boolean {
