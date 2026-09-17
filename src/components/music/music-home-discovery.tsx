@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { ChevronRight, Disc3, Play, Radio, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,12 +16,14 @@ export type MusicHomeTile = {
 };
 
 export type MusicHomeSpotlight = {
+  key: string;
   kicker: string;
   title: string;
   subtitle?: string;
   imageSrc: string | null;
   disabled?: boolean;
   onPlay: () => void;
+  onOpen?: () => void;
 };
 
 export type MusicHomeShelf = {
@@ -40,7 +43,8 @@ type Props = {
   jumpBackTitle: string;
   jumpBackIn: MusicHomeTile[];
   onJumpBackSeeAll?: () => void;
-  spotlight: MusicHomeSpotlight | null;
+  spotlights: MusicHomeSpotlight[];
+  spotlightIntervalMs?: number;
   shelves: MusicHomeShelf[];
   banner?: string | null;
   emptyLabel?: string | null;
@@ -54,13 +58,32 @@ export function MusicHomeDiscovery({
   jumpBackTitle,
   jumpBackIn,
   onJumpBackSeeAll,
-  spotlight,
+  spotlights,
+  spotlightIntervalMs = 8000,
   shelves,
   banner,
   emptyLabel,
 }: Props) {
+  const [spotlightIndex, setSpotlightIndex] = useState(0);
+  const spotlightKeys = spotlights.map((slide) => slide.key).join("|");
+  const spotlightCount = spotlights.length;
+  const spotlight = spotlightCount > 0 ? spotlights[spotlightIndex % spotlightCount] : null;
+
+  useEffect(() => {
+    setSpotlightIndex(0);
+  }, [spotlightKeys]);
+
+  useEffect(() => {
+    if (spotlightCount <= 1) return;
+    const interval = Math.max(3000, spotlightIntervalMs);
+    const id = window.setInterval(() => {
+      setSpotlightIndex((current) => (current + 1) % spotlightCount);
+    }, interval);
+    return () => window.clearInterval(id);
+  }, [spotlightCount, spotlightIntervalMs]);
+
   const hasContent =
-    jumpBackIn.length > 0 || !!spotlight || shelves.some((shelf) => shelf.loading || shelf.items.length > 0);
+    jumpBackIn.length > 0 || spotlightCount > 0 || shelves.some((shelf) => shelf.loading || shelf.items.length > 0);
 
   return (
     <div className="space-y-8 pb-10 pt-2">
@@ -115,25 +138,44 @@ export function MusicHomeDiscovery({
 
       {spotlight ? (
         <section className="relative overflow-hidden rounded-3xl bg-gray-900 min-h-[220px] sm:min-h-[260px]">
-          {spotlight.imageSrc ? (
-            <Image
-              src={spotlight.imageSrc}
-              alt=""
-              fill
-              className="object-cover scale-105"
-              sizes="100vw"
-              placeholder="blur"
-              blurDataURL={MUSIC_IMAGE_BLUR}
-              unoptimized
-              priority
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-brand to-gray-900" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/15" />
-          <div className="relative z-10 flex min-h-[220px] items-end gap-5 p-5 sm:min-h-[260px] sm:p-8">
+          {spotlights.map((slide, index) => {
+            const active = index === spotlightIndex % spotlightCount;
+            return (
+              <div
+                key={slide.key}
+                className={cn(
+                  "absolute inset-0 transition-opacity duration-700 ease-out",
+                  active ? "opacity-100 z-10" : "pointer-events-none opacity-0 z-0"
+                )}
+                aria-hidden={!active}
+              >
+                {slide.imageSrc ? (
+                  <Image
+                    src={slide.imageSrc}
+                    alt=""
+                    fill
+                    className="object-cover scale-105"
+                    sizes="100vw"
+                    placeholder="blur"
+                    blurDataURL={MUSIC_IMAGE_BLUR}
+                    unoptimized
+                    priority={index === 0}
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand to-gray-900" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/15" />
+              </div>
+            );
+          })}
+          <div className="relative z-20 flex min-h-[220px] items-end gap-5 p-5 sm:min-h-[260px] sm:p-8">
             {spotlight.imageSrc ? (
-              <div className="relative hidden h-36 w-36 shrink-0 overflow-hidden rounded-2xl shadow-2xl sm:block">
+              <button
+                type="button"
+                onClick={spotlight.onOpen ?? spotlight.onPlay}
+                className="relative hidden h-36 w-36 shrink-0 overflow-hidden rounded-2xl shadow-2xl sm:block"
+                aria-label={spotlight.title}
+              >
                 <Image
                   src={spotlight.imageSrc}
                   alt=""
@@ -144,7 +186,7 @@ export function MusicHomeDiscovery({
                   blurDataURL={MUSIC_IMAGE_BLUR}
                   unoptimized
                 />
-              </div>
+              </button>
             ) : null}
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">{spotlight.kicker}</p>
@@ -163,6 +205,22 @@ export function MusicHomeDiscovery({
               </button>
             </div>
           </div>
+          {spotlightCount > 1 ? (
+            <div className="absolute bottom-3 right-4 z-20 flex gap-1.5">
+              {spotlights.map((slide, index) => (
+                <button
+                  key={slide.key}
+                  type="button"
+                  onClick={() => setSpotlightIndex(index)}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all",
+                    index === spotlightIndex % spotlightCount ? "w-5 bg-white" : "w-1.5 bg-white/40 hover:bg-white/70"
+                  )}
+                  aria-label={slide.title}
+                />
+              ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
 

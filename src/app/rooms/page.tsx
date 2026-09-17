@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
-import { DoorOpen, Image as ImageIcon, LayoutGrid, Plus, Trash2, X } from "lucide-react";
+import { DoorOpen, Image as ImageIcon, Plus, X } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { CARD_ICONS } from "@/components/widgets/card-icons";
@@ -45,11 +45,6 @@ function groupRoomsByFloor(rooms: RoomItem[]): { floor: string; rooms: RoomItem[
     result.push({ floor, rooms });
   });
   return result;
-}
-
-function RoomIcon({ icon }: { icon?: string | null }) {
-  const Icon = icon && icon in CARD_ICONS ? CARD_ICONS[icon] : LayoutGrid;
-  return <Icon className="h-5 w-5" aria-hidden />;
 }
 
 export default function RoomsPage() {
@@ -274,7 +269,7 @@ export default function RoomsPage() {
         <button
           type="button"
           onClick={openAddModal}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-white shadow-sm transition-opacity hover:opacity-90"
           aria-label={t("rooms.addRoom")}
         >
           <Plus className="h-5 w-5" />
@@ -282,25 +277,26 @@ export default function RoomsPage() {
       }
     >
       <div className="space-y-6 px-6 md:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">{t("rooms.kicker")}</p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
               {t("rooms.title")}
-            </h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            </h1>
+            <p className="mt-1 max-w-xl text-sm text-gray-500 dark:text-gray-400">
               {t("rooms.description")}
             </p>
           </div>
           {rooms.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-0.5 rounded-full bg-black/5 p-0.5 dark:bg-white/5">
               <button
                 type="button"
                 onClick={() => setSelectedFloor(null)}
                 className={cn(
-                  "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   selectedFloor === null
-                    ? "bg-[#4700B5] text-white"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+                    ? "bg-white text-gray-900 shadow-sm dark:bg-white/15 dark:text-white"
+                    : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
                 )}
               >
                 {t("rooms.floorAll")}
@@ -311,10 +307,10 @@ export default function RoomsPage() {
                   type="button"
                   onClick={() => setSelectedFloor(floor)}
                   className={cn(
-                    "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                    "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                     selectedFloor === floor
-                      ? "bg-[#4700B5] text-white"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+                      ? "bg-white text-gray-900 shadow-sm dark:bg-white/15 dark:text-white"
+                      : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
                   )}
                 >
                   {label}
@@ -334,15 +330,17 @@ export default function RoomsPage() {
         )}
 
         {error && !loading && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+          <div className="rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-800 dark:text-red-200">
             {error}
           </div>
         )}
 
         {!loading && !error && rooms.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 dark:border-white/20 bg-gray-50/50 dark:bg-white/5 py-16 px-6 text-center">
-            <DoorOpen className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <div className="flex flex-col items-center justify-center rounded-3xl bg-black/[0.03] py-16 px-6 text-center dark:bg-white/5">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 text-brand dark:bg-brand/30 dark:text-white">
+              <DoorOpen className="h-7 w-7" />
+            </div>
+            <p className="text-base font-semibold tracking-tight text-gray-900 dark:text-white">
               {t("rooms.empty")}
             </p>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
@@ -351,7 +349,7 @@ export default function RoomsPage() {
             <button
               type="button"
               onClick={openAddModal}
-              className="mt-6 flex items-center gap-2 rounded-xl bg-[#4700B5] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 dark:bg-[#4700B5]"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90"
             >
               <Plus className="h-4 w-4" />
               {t("rooms.addRoom")}
@@ -364,11 +362,11 @@ export default function RoomsPage() {
             {(selectedFloor === null ? floorsWithRooms : floorsWithRooms.filter(({ floor }) => (floor || "") === selectedFloor)).map(({ floor, rooms: floorRooms }) => (
               <div key={floor || "_"} className="space-y-3">
                 {selectedFloor === null && (
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
                     {getFloorLabel(floor || "")}
                   </h3>
                 )}
-                <div className="flex flex-wrap gap-6 sm:gap-8">
+                <div className="flex flex-wrap gap-5">
                   {floorRooms.map((r) => (
                     <RoomPreviewCard
                       key={r.areaId}
@@ -400,15 +398,15 @@ export default function RoomsPage() {
             onClick={() => !creating && setAddModalOpen(false)}
           />
           <div
-            className="fixed top-4 right-4 bottom-4 z-[201] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white dark:bg-gray-900 dark:border-white/10 shadow-2xl"
+            className="fixed top-4 right-4 bottom-4 z-[201] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white dark:bg-gray-900 dark:border-white/10 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t("rooms.addRoom")}</h3>
+            <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-white/50 dark:border-white/10">
+              <h3 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{t("rooms.addRoom")}</h3>
               <button
                 type="button"
                 onClick={() => !creating && setAddModalOpen(false)}
-                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
+                className="p-1.5 rounded-full text-gray-500 hover:bg-black/5 dark:hover:bg-white/10 dark:text-gray-400"
                 aria-label={t("rooms.cancel")}
               >
                 <X className="h-5 w-5" />
@@ -426,7 +424,7 @@ export default function RoomsPage() {
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder={t("rooms.roomNamePlaceholder")}
                   required
-                  className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
+                  className="w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
                   autoFocus
                 />
               </div>
@@ -442,9 +440,9 @@ export default function RoomsPage() {
                         key={iconKey}
                         type="button"
                         onClick={() => setNewIcon(iconKey)}
-                        className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-colors ${
+                        className={`flex h-10 w-10 items-center justify-center rounded-2xl border-2 transition-colors ${
                           newIcon === iconKey
-                            ? "border-[#4700B5] bg-[#4700B5]/10 text-[#4700B5]"
+                            ? "border-brand bg-brand/10 text-brand"
                             : "border-gray-200 dark:border-white/20 text-gray-500 hover:border-gray-300 dark:hover:border-white/30"
                         }`}
                         title={iconKey}
@@ -464,14 +462,14 @@ export default function RoomsPage() {
                     type="color"
                     value={newIconBackgroundColor && /^#[0-9A-Fa-f]{6}$/.test(newIconBackgroundColor) ? newIconBackgroundColor : "#3B82F6"}
                     onChange={(e) => setNewIconBackgroundColor(e.target.value)}
-                    className="h-10 w-14 cursor-pointer rounded-lg border border-gray-300 dark:border-white/20"
+                    className="h-10 w-14 cursor-pointer rounded-2xl border border-white/60 dark:border-white/20"
                   />
                   <input
                     type="text"
                     value={newIconBackgroundColor ?? ""}
                     onChange={(e) => setNewIconBackgroundColor(e.target.value)}
                     placeholder="#3B82F6"
-                    className="flex-1 rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500 text-sm"
+                    className="flex-1 rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
                   />
                 </div>
               </div>
@@ -482,7 +480,7 @@ export default function RoomsPage() {
                 <select
                   value={newFloor}
                   onChange={(e) => setNewFloor(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-white"
+                  className="w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
                 >
                   {FLOOR_OPTIONS.map((opt) => (
                     <option key={opt.value || "_"} value={opt.value}>
@@ -496,7 +494,7 @@ export default function RoomsPage() {
                     value={newCustomFloor}
                     onChange={(e) => setNewCustomFloor(e.target.value)}
                     placeholder={t("rooms.floorPlaceholder")}
-                    className="mt-2 w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
+                    className="mt-2 w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
                   />
                 )}
               </div>
@@ -522,7 +520,7 @@ export default function RoomsPage() {
                   {newBackgroundPreview ? (
                     <>
                       <div
-                        className="h-16 w-24 shrink-0 rounded-lg bg-cover bg-center"
+                        className="h-16 w-24 shrink-0 rounded-2xl bg-cover bg-center"
                         style={{ backgroundImage: `url(${newBackgroundPreview})` }}
                       />
                       <button
@@ -539,7 +537,7 @@ export default function RoomsPage() {
                   ) : (
                     <label
                       htmlFor="room-bg-create"
-                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-[#4700B5] hover:text-[#4700B5]"
+                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-brand hover:text-brand"
                     >
                       <ImageIcon className="h-6 w-6" aria-hidden />
                     </label>
@@ -555,7 +553,7 @@ export default function RoomsPage() {
                   value={newId}
                   onChange={(e) => setNewId(e.target.value)}
                   placeholder={t("rooms.roomIdPlaceholder")}
-                  className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
+                  className="w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {t("rooms.roomIdHint")}
@@ -565,18 +563,18 @@ export default function RoomsPage() {
                 <p className="text-sm text-red-600 dark:text-red-400">{createError}</p>
               )}
               </div>
-              <div className="shrink-0 flex justify-end gap-2 p-5 pt-4 border-t border-gray-200 dark:border-white/10">
+              <div className="shrink-0 flex justify-end gap-2 p-5 pt-4 border-t border-white/50 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => !creating && setAddModalOpen(false)}
-                  className="rounded-lg border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5"
+                  className="rounded-full border border-white/60 bg-white/40 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
                 >
                   {t("rooms.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={creating || !newName.trim()}
-                  className="rounded-lg bg-[#4700B5] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                  className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
                 >
                   {creating ? "…" : t("rooms.create")}
                 </button>
@@ -594,15 +592,15 @@ export default function RoomsPage() {
             onClick={() => !updating && setEditModalOpen(false)}
           />
           <div
-            className="fixed top-4 right-4 bottom-4 z-[201] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white dark:bg-gray-900 dark:border-white/10 shadow-2xl"
+            className="fixed top-4 right-4 bottom-4 z-[201] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white dark:bg-gray-900 dark:border-white/10 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t("rooms.editRoom")}</h3>
+            <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-white/50 dark:border-white/10">
+              <h3 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{t("rooms.editRoom")}</h3>
               <button
                 type="button"
                 onClick={() => !updating && setEditModalOpen(false)}
-                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
+                className="p-1.5 rounded-full text-gray-500 hover:bg-black/5 dark:hover:bg-white/10 dark:text-gray-400"
                 aria-label={t("rooms.cancel")}
               >
                 <X className="h-5 w-5" />
@@ -620,7 +618,7 @@ export default function RoomsPage() {
                   onChange={(e) => setEditName(e.target.value)}
                   placeholder={t("rooms.roomNamePlaceholder")}
                   required
-                  className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
+                  className="w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
                 />
               </div>
               <div>
@@ -635,9 +633,9 @@ export default function RoomsPage() {
                         key={iconKey}
                         type="button"
                         onClick={() => setEditIcon(iconKey)}
-                        className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-colors ${
+                        className={`flex h-10 w-10 items-center justify-center rounded-2xl border-2 transition-colors ${
                           editIcon === iconKey
-                            ? "border-[#4700B5] bg-[#4700B5]/10 text-[#4700B5]"
+                            ? "border-brand bg-brand/10 text-brand"
                             : "border-gray-200 dark:border-white/20 text-gray-500 hover:border-gray-300 dark:hover:border-white/30"
                         }`}
                         title={iconKey}
@@ -657,14 +655,14 @@ export default function RoomsPage() {
                     type="color"
                     value={editIconBackgroundColor && /^#[0-9A-Fa-f]{6}$/.test(editIconBackgroundColor) ? editIconBackgroundColor : "#3B82F6"}
                     onChange={(e) => setEditIconBackgroundColor(e.target.value)}
-                    className="h-10 w-14 cursor-pointer rounded-lg border border-gray-300 dark:border-white/20"
+                    className="h-10 w-14 cursor-pointer rounded-2xl border border-white/60 dark:border-white/20"
                   />
                   <input
                     type="text"
                     value={editIconBackgroundColor ?? ""}
                     onChange={(e) => setEditIconBackgroundColor(e.target.value)}
                     placeholder="#3B82F6"
-                    className="flex-1 rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500 text-sm"
+                    className="flex-1 rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
                   />
                 </div>
               </div>
@@ -675,7 +673,7 @@ export default function RoomsPage() {
                 <select
                   value={editFloor}
                   onChange={(e) => setEditFloor(e.target.value)}
-                  className="w-full rounded border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-2 py-1.5 text-xs text-gray-900 dark:text-white"
+                  className="w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
                 >
                   {FLOOR_OPTIONS.map((opt) => (
                     <option key={opt.value || "_"} value={opt.value}>
@@ -689,7 +687,7 @@ export default function RoomsPage() {
                     value={editCustomFloor}
                     onChange={(e) => setEditCustomFloor(e.target.value)}
                     placeholder={t("rooms.floorPlaceholder")}
-                    className="mt-2 w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500"
+                    className="mt-2 w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
                   />
                 )}
               </div>
@@ -741,7 +739,7 @@ export default function RoomsPage() {
                   {editBackgroundPreview ? (
                     <>
                       <div
-                        className="h-16 w-24 shrink-0 rounded-lg bg-cover bg-center"
+                        className="h-16 w-24 shrink-0 rounded-2xl bg-cover bg-center"
                         style={{ backgroundImage: `url(${editBackgroundPreview})` }}
                       />
                       <button
@@ -758,7 +756,7 @@ export default function RoomsPage() {
                   ) : (
                     <label
                       htmlFor="room-bg-edit"
-                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-[#4700B5] hover:text-[#4700B5]"
+                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-brand hover:text-brand"
                     >
                       <ImageIcon className="h-6 w-6" aria-hidden />
                     </label>
@@ -769,18 +767,18 @@ export default function RoomsPage() {
                 <p className="text-sm text-red-600 dark:text-red-400">{updateError}</p>
               )}
               </div>
-              <div className="shrink-0 flex justify-end gap-2 p-5 pt-4 border-t border-gray-200 dark:border-white/10">
+              <div className="shrink-0 flex justify-end gap-2 p-5 pt-4 border-t border-white/50 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => !updating && setEditModalOpen(false)}
-                  className="rounded-lg border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5"
+                  className="rounded-full border border-white/60 bg-white/40 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
                 >
                   {t("rooms.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={updating || !editName.trim()}
-                  className="rounded-lg bg-[#4700B5] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                  className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
                 >
                   {updating ? "…" : t("rooms.save")}
                 </button>
