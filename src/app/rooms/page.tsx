@@ -80,6 +80,13 @@ export default function RoomsPage() {
   const [floorIndex, setFloorIndex] = useState(0);
   const [pendingFloor, setPendingFloor] = useState<string | null>(null);
   const floorScrollerRef = useRef<HTMLDivElement>(null);
+  const floorDragRef = useRef<{
+    id: number;
+    x: number;
+    left: number;
+    claimed: boolean;
+  } | null>(null);
+  const floorDragClaimedRef = useRef(false);
 
   useEffect(() => {
     if (!editModalOpen) return;
@@ -391,7 +398,49 @@ export default function RoomsPage() {
           <div className="flex min-h-0 flex-1 flex-col">
             <div
               ref={floorScrollerRef}
-              className="flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-hide overscroll-x-contain touch-pan-x"
+              className="flex min-h-0 flex-1 cursor-grab snap-x snap-mandatory overflow-x-auto overflow-y-hidden scrollbar-hide overscroll-x-contain touch-pan-x active:cursor-grabbing"
+              onPointerDown={(e) => {
+                if (e.button !== 0) return;
+                const target = e.target as HTMLElement;
+                if (target.closest("button")) return;
+                floorDragClaimedRef.current = false;
+                floorDragRef.current = {
+                  id: e.pointerId,
+                  x: e.clientX,
+                  left: e.currentTarget.scrollLeft,
+                  claimed: false,
+                };
+              }}
+              onPointerMove={(e) => {
+                const drag = floorDragRef.current;
+                const root = e.currentTarget;
+                if (!drag || drag.id !== e.pointerId) return;
+                const dx = e.clientX - drag.x;
+                if (!drag.claimed && Math.abs(dx) < 12) return;
+                if (!drag.claimed) {
+                  drag.claimed = true;
+                  floorDragClaimedRef.current = true;
+                  root.setPointerCapture(e.pointerId);
+                }
+                root.scrollLeft = drag.left - dx;
+              }}
+              onPointerUp={(e) => {
+                const drag = floorDragRef.current;
+                floorDragRef.current = null;
+                if (!drag?.claimed) return;
+                const root = e.currentTarget;
+                if (root.clientWidth <= 0) return;
+                goToFloor(Math.round(root.scrollLeft / root.clientWidth));
+              }}
+              onPointerCancel={() => {
+                floorDragRef.current = null;
+              }}
+              onClickCapture={(e) => {
+                if (!floorDragClaimedRef.current) return;
+                floorDragClaimedRef.current = false;
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               onScroll={(e) => {
                 const root = e.currentTarget;
                 if (root.clientWidth <= 0) return;
