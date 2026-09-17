@@ -193,6 +193,50 @@ export function vacuumBasicActionDisabled(
   return status === "docked" || status === "returning";
 }
 
+export type VacuumCurrentStats = {
+  areaCm2: number | null;
+  timeSec: number | null;
+};
+
+export function parseCurrentStatistics(data: unknown): VacuumCurrentStats {
+  const list = Array.isArray(data)
+    ? data
+    : Array.isArray((data as { dataPoints?: unknown })?.dataPoints)
+      ? ((data as { dataPoints: unknown[] }).dataPoints)
+      : [];
+  let areaCm2: number | null = null;
+  let timeSec: number | null = null;
+  for (const raw of list) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw as { type?: unknown; value?: unknown };
+    const value = Number(item.value);
+    if (!Number.isFinite(value)) continue;
+    if (item.type === "area") areaCm2 = value;
+    if (item.type === "time") timeSec = value;
+  }
+  return { areaCm2, timeSec };
+}
+
+export function formatVacuumAreaM2(areaCm2: number | null | undefined): string | null {
+  if (areaCm2 == null || !Number.isFinite(areaCm2) || areaCm2 < 0) return null;
+  const m2 = areaCm2 / 10000;
+  const rounded = m2 >= 10 ? Math.round(m2) : Math.round(m2 * 10) / 10;
+  return String(rounded);
+}
+
+export function formatVacuumTimeMin(timeSec: number | null | undefined): string | null {
+  if (timeSec == null || !Number.isFinite(timeSec) || timeSec < 0) return null;
+  return String(Math.max(0, Math.round(timeSec / 60)));
+}
+
+export function robotDisplayName(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const model = typeof (data as { modelName?: unknown }).modelName === "string"
+    ? (data as { modelName: string }).modelName.trim()
+    : "";
+  return model || null;
+}
+
 export function parseConsumableProperties(data: unknown): ConsumableMeta[] {
   if (!data || typeof data !== "object") return [];
   const list = (data as { availableConsumables?: unknown }).availableConsumables;

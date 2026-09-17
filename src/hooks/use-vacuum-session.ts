@@ -15,9 +15,12 @@ import {
   parseSegmentIterationMax,
   clampSegmentIterations,
   sortConsumables,
+  parseCurrentStatistics,
+  robotDisplayName,
   type ConsumableMeta,
   type ConsumableState,
   type FanPreset,
+  type VacuumCurrentStats,
 } from "@/lib/valetudo-robot";
 
 const FAN_PRESETS_PATH = "/api/v2/robot/capabilities/FanSpeedControlCapability/presets";
@@ -25,6 +28,8 @@ const FAN_PRESET_PATH = "/api/v2/robot/capabilities/FanSpeedControlCapability/pr
 const CONSUMABLES_PATH = "/api/v2/robot/capabilities/ConsumableMonitoringCapability";
 const CONSUMABLE_PROPERTIES_PATH = "/api/v2/robot/capabilities/ConsumableMonitoringCapability/properties";
 const SEGMENT_PROPERTIES_PATH = "/api/v2/robot/capabilities/MapSegmentationCapability/properties";
+const STATISTICS_PATH = "/api/v2/robot/capabilities/CurrentStatisticsCapability";
+const ROBOT_PATH = "/api/v2/robot";
 
 export type RobotAttribute = {
   __class?: string;
@@ -70,6 +75,8 @@ export function useVacuumSession({
   const [resettingKey, setResettingKey] = useState<string | null>(null);
   const [iterations, setIterations] = useState(1);
   const [iterationMax, setIterationMax] = useState(3);
+  const [stats, setStats] = useState<VacuumCurrentStats>({ areaCm2: null, timeSec: null });
+  const [robotName, setRobotName] = useState<string | null>(null);
 
   useEffect(() => {
     hydrateValetudoStore();
@@ -105,6 +112,12 @@ export function useVacuumSession({
         setConsumables([]);
       }
     }
+    try {
+      const data = await valetudoRequest<unknown>({ ...conn, path: STATISTICS_PATH });
+      setStats(parseCurrentStatistics(data));
+    } catch {
+      setStats({ areaCm2: null, timeSec: null });
+    }
     refreshInFlight.current = false;
   }, [conn, t, includeMaintenance]);
 
@@ -132,6 +145,12 @@ export function useVacuumSession({
     } catch {
       setIterationMax(3);
       setIterations((current) => clampSegmentIterations(current, 3));
+    }
+    try {
+      const robot = await valetudoRequest<unknown>({ ...conn, path: ROBOT_PATH });
+      setRobotName(robotDisplayName(robot));
+    } catch {
+      setRobotName(null);
     }
   }, [conn, includeMaintenance]);
 
@@ -261,6 +280,8 @@ export function useVacuumSession({
     battery,
     statusKey,
     rooms,
+    stats,
+    robotName,
     toggleSegment,
     sendBasic,
     setFanPreset,

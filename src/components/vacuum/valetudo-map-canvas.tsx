@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { mixTowardWhite, sheetSegmentColor } from "@/lib/valetudo-map-style";
 import {
   entityPointToPixel,
   forEachLayerPixel,
@@ -39,6 +40,8 @@ type Props = {
   selectedIds: string[];
   onToggleSegment: (id: string) => void;
   className?: string;
+  appearance?: "default" | "card";
+  showLabels?: boolean;
 };
 
 type Lookup = {
@@ -48,7 +51,14 @@ type Lookup = {
   ids: string[];
 };
 
-export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className }: Props) {
+export function ValetudoMapCanvas({
+  map,
+  selectedIds,
+  onToggleSegment,
+  className,
+  appearance = "default",
+  showLabels = true,
+}: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
   const lookupRef = useRef<Lookup | null>(null);
 
@@ -89,14 +99,47 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
         ids.push(id);
         index = ids.length - 1;
       }
-      const [r, g, b] = colorForSegment(id, selected.has(id));
-      const alpha = selected.has(id) ? 230 : 200;
+      const [r, g, b] = appearance === "card"
+        ? sheetSegmentColor(id, selected.has(id))
+        : colorForSegment(id, selected.has(id));
+      const alpha = appearance === "card" ? 255 : selected.has(id) ? 230 : 200;
       forEachLayerPixel(layer, (x, y) => put(x, y, r, g, b, alpha, index));
     }
 
     for (const layer of layers) {
       if (layer.type !== "wall") continue;
+      if (appearance === "card") continue;
       forEachLayerPixel(layer, (x, y) => put(x, y, 42, 32, 58, 255));
+    }
+
+    if (appearance === "card") {
+      const neighbor = (x: number, y: number) =>
+        x < 0 || y < 0 || x >= mapW || y >= mapH ? 0 : lookup[y * mapW + x];
+      for (let y = 0; y < mapH; y++) {
+        for (let x = 0; x < mapW; x++) {
+          const index = lookup[y * mapW + x];
+          if (index === 0) continue;
+          const i = (y * mapW + x) * 4;
+          const edge =
+            neighbor(x - 1, y) !== index ||
+            neighbor(x + 1, y) !== index ||
+            neighbor(x, y - 1) !== index ||
+            neighbor(x, y + 1) !== index;
+          if (edge) {
+            pixels[i] = 255;
+            pixels[i + 1] = 255;
+            pixels[i + 2] = 255;
+            pixels[i + 3] = 255;
+            continue;
+          }
+          if (x % 4 === 0 || y % 4 === 0) {
+            const [r, g, b] = mixTowardWhite(pixels[i], pixels[i + 1], pixels[i + 2], 0.22);
+            pixels[i] = r;
+            pixels[i + 1] = g;
+            pixels[i + 2] = b;
+          }
+        }
+      }
     }
 
     const drawW = mapW * DRAW_SCALE;
@@ -147,7 +190,7 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
 
     lookupRef.current = { data: lookup, width: mapW, height: mapH, ids };
     img.src = canvas.toDataURL("image/png");
-  }, [map, selectedIds]);
+  }, [map, selectedIds, appearance]);
 
   useEffect(() => {
     draw();
@@ -193,7 +236,11 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
   return (
     <div
       className={cn(className)}
-      style={{ position: "absolute", inset: 12, containerType: "size" }}
+      style={
+        appearance === "card"
+          ? { position: "relative", width: "100%", height: "100%", containerType: "size" }
+          : { position: "absolute", inset: 12, containerType: "size" }
+      }
     >
       <div
         className="relative mx-auto"
@@ -215,26 +262,28 @@ export function ValetudoMapCanvas({ map, selectedIds, onToggleSegment, className
             imageRendering: "pixelated",
           }}
         />
-        {roomLabels.map((room) => {
-          const selected = selectedIds.includes(room.id);
-          return (
-            <button
-              key={room.id}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleSegment(room.id);
-              }}
-              className={cn(
-                "absolute -translate-x-1/2 -translate-y-1/2 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm",
-                selected ? "bg-brand text-white" : "bg-white/90 text-gray-800"
-              )}
-              style={{ left: `${room.x}%`, top: `${room.y}%` }}
-            >
-              {room.name}
-            </button>
-          );
-        })}
+        {showLabels
+          ? roomLabels.map((room) => {
+              const selected = selectedIds.includes(room.id);
+              return (
+                <button
+                  key={room.id}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleSegment(room.id);
+                  }}
+                  className={cn(
+                    "absolute -translate-x-1/2 -translate-y-1/2 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm",
+                    selected ? "bg-brand text-white" : "bg-white/90 text-gray-800"
+                  )}
+                  style={{ left: `${room.x}%`, top: `${room.y}%` }}
+                >
+                  {room.name}
+                </button>
+              );
+            })
+          : null}
       </div>
     </div>
   );

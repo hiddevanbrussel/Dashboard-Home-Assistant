@@ -48,15 +48,19 @@ export function VacuumBottomSheet({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-black/40 backdrop-blur-[2px] dark:bg-black/55"
+        className="absolute inset-0 bg-black/35 backdrop-blur-[2px] dark:bg-black/50"
         aria-label={t("vacuum.close")}
         onClick={closeFromBackdrop}
       />
-      <div className="animate-music-bar-in absolute inset-x-0 bottom-0 flex h-[min(92dvh,920px)] max-h-[92dvh] flex-col overflow-hidden rounded-t-[1.75rem] border border-white/50 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-zinc-950 dark:shadow-[0_-18px_60px_rgba(0,0,0,0.55)]">
-        <div className="flex shrink-0 justify-center pb-1 pt-3">
-          <span className="h-1.5 w-12 rounded-full bg-black/15 dark:bg-white/20" aria-hidden />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-3 sm:p-5">
+        <div className="animate-music-bar-in pointer-events-auto flex w-full max-w-[400px] max-h-[min(88dvh,740px)] flex-col overflow-hidden rounded-[1.75rem] bg-[#F4F6FA] shadow-[0_-18px_60px_rgba(15,23,42,0.28)] dark:bg-zinc-900 dark:shadow-[0_-18px_60px_rgba(0,0,0,0.55)]">
+          <div className="flex shrink-0 justify-center pb-1 pt-3">
+            <span className="h-1.5 w-12 rounded-full bg-black/15 dark:bg-white/20" aria-hidden />
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <VacuumControlView variant="sheet" onClose={onClose} />
+          </div>
         </div>
-        <VacuumControlView variant="sheet" onClose={onClose} />
       </div>
     </div>,
     document.body
