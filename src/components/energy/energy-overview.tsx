@@ -288,7 +288,6 @@ export function EnergyOverview({
     .filter(hasEnergyReading);
   const showHeatmap = shouldShowHeatmap(panelReadings);
   const heatmap: HeatmapTone[] = showHeatmap ? heatmapTones(panelReadings) : [];
-  const heatmapCols = Math.min(12, Math.max(heatmap.length, 1));
   const heatmapRows = Math.max(1, Math.ceil(heatmap.length / 12));
 
   const powerMax = Math.max(8, (powerKw ?? 0) * 1.25, 0.1);
@@ -514,10 +513,7 @@ export function EnergyOverview({
                 ))}
               </div>
               <div className="min-w-0 flex-1">
-                <div
-                  className="grid gap-1.5"
-                  style={{ gridTemplateColumns: `repeat(${heatmapCols}, minmax(0, 1fr))` }}
-                >
+                <div className="grid grid-cols-12 gap-1.5">
                   {heatmap.map((tone, i) => (
                     <span
                       key={i}
@@ -528,11 +524,8 @@ export function EnergyOverview({
                     />
                   ))}
                 </div>
-                <div
-                  className="mt-1 grid text-center text-[10px] text-gray-400"
-                  style={{ gridTemplateColumns: `repeat(${heatmapCols}, minmax(0, 1fr))` }}
-                >
-                  {Array.from({ length: heatmapCols }, (_, i) => (
+                <div className="mt-1 grid grid-cols-12 text-center text-[10px] text-gray-400">
+                  {Array.from({ length: Math.min(12, heatmap.length) }, (_, i) => (
                     <span key={i}>{i + 1}</span>
                   ))}
                 </div>
