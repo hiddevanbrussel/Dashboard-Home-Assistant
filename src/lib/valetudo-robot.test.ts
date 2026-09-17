@@ -15,6 +15,10 @@ import {
   sortConsumables,
   sortFanPresets,
   vacuumBasicActionDisabled,
+  parseCurrentStatistics,
+  formatVacuumAreaM2,
+  formatVacuumTimeMin,
+  robotDisplayName,
 } from "./valetudo-robot";
 
 describe("valetudo-robot", () => {
@@ -100,5 +104,20 @@ describe("valetudo-robot", () => {
     expect(vacuumBasicActionDisabled("home", "cleaning", false)).toBe(false);
     expect(vacuumBasicActionDisabled("home", "returning", false)).toBe(true);
     expect(vacuumBasicActionDisabled("home", "cleaning", true)).toBe(true);
+  });
+
+  it("parses current statistics and robot model name", () => {
+    expect(
+      parseCurrentStatistics([
+        { type: "area", value: 550000 },
+        { type: "time", value: 3600 },
+      ])
+    ).toEqual({ areaCm2: 550000, timeSec: 3600 });
+    expect(formatVacuumAreaM2(550000)).toBe("55");
+    expect(formatVacuumAreaM2(12345)).toBe("1.2");
+    expect(formatVacuumTimeMin(3600)).toBe("60");
+    expect(formatVacuumTimeMin(null)).toBeNull();
+    expect(robotDisplayName({ manufacturer: "Roborock", modelName: "S8+" })).toBe("S8+");
+    expect(robotDisplayName({})).toBeNull();
   });
 });
