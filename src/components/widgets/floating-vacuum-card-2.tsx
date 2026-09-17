@@ -69,7 +69,7 @@ export type VacuumCard2WidgetItem = {
 };
 
 const LONG_PRESS_MS = 500;
-const TAP_MOVE_PX = 12;
+const TAP_MOVE_PX = 16;
 
 export function FloatingVacuumCard2({
   widget,
@@ -156,22 +156,28 @@ export function FloatingVacuumCard2({
 
   const handlePressUp = useCallback(
     (e: React.PointerEvent) => {
-      const timerPending = onEnterEditMode ? longPressTimerRef.current != null : true;
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
       clearLongPress();
+    },
+    [clearLongPress]
+  );
+
+  const handleCardClick = useCallback(
+    (e: React.MouseEvent) => {
       if (editMode || sheetOpen) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
       if (
-        isVacuumCardTap({
-          timerPending,
+        !isVacuumCardTap({
           longPressFired: longPressFiredRef.current,
           moved: movedRef.current,
         })
       ) {
-        setSheetOpen(true);
+        return;
       }
+      e.preventDefault();
+      setSheetOpen(true);
     },
-    [editMode, sheetOpen, onEnterEditMode, clearLongPress]
+    [editMode, sheetOpen]
   );
 
   const cancelPress = useCallback(
@@ -331,8 +337,10 @@ export function FloatingVacuumCard2({
     <div
       className={cn(
         "fixed z-30",
+        !editMode && "cursor-pointer",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
       )}
+      data-no-page-swipe
       aria-haspopup="dialog"
       aria-expanded={sheetOpen}
       style={{
@@ -347,6 +355,7 @@ export function FloatingVacuumCard2({
         onPointerMove: handlePressMove,
         onPointerUp: handlePressUp,
         onPointerCancel: cancelPress,
+        onClick: handleCardClick,
       })}
       {...(editMode && {
         onPointerDown: handlePointerDown,
@@ -367,6 +376,21 @@ export function FloatingVacuumCard2({
         height={displayHeight}
         size="md"
         interactive={!editMode}
+        onCardClick={
+          !editMode
+            ? () => {
+                if (
+                  !isVacuumCardTap({
+                    longPressFired: longPressFiredRef.current,
+                    moved: movedRef.current,
+                  })
+                ) {
+                  return;
+                }
+                setSheetOpen(true);
+              }
+            : undefined
+        }
         onMoreClick={editMode ? onEdit : undefined}
       />
       {editMode ? (
