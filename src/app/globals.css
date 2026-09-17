@@ -89,6 +89,11 @@
   animation: slide-in-from-right 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
+/* Floating cards are `fixed`; pin them to the dashboard page so snap-scroll can move them. */
+[data-dashboard-page] .fixed {
+  position: absolute;
+}
+
 @keyframes card-plot-in {
   from {
     opacity: 0;
