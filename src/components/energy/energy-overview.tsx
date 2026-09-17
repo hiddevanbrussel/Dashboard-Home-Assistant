@@ -12,12 +12,14 @@ import {
   energyImpact,
   formatEnergyValue,
   hasLinkedEnergyEntities,
+  hasEnergyReading,
   heatmapTones,
   mergeHourlySeries,
   parseHaNumber,
+  shouldShowBatteryCard,
+  shouldShowHeatmap,
   toKilowatts,
   toKwh,
-  type HeatmapTone,
 } from "@/lib/energy-dashboard";
 import { cn } from "@/lib/utils";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
@@ -123,6 +125,11 @@ export function EnergyOverview({
     consumptionReading.value != null ? toKilowatts(consumptionReading.value, consumptionReading.unit) : undefined;
   const batteryKw =
     batteryPower.value != null ? toKilowatts(batteryPower.value, batteryPower.unit) : undefined;
+  const showBattery = shouldShowBatteryCard({
+    soc: batterySoc.value,
+    power: batteryKw,
+    temp: batteryTemp.value,
+  });
 
   const impact = energyImpact(yieldKwh);
   const alerts = energyAlerts({ batteryPct: batterySoc.value, batteryTempC: batteryTemp.value });
@@ -154,9 +161,8 @@ export function EnergyOverview({
   const hasChartData = chartData.some((row) => row.generation > 0 || row.consumption > 0 || row.export > 0);
 
   const panelValues = panelTempEntityIds.map((id) => parseHaNumber(panelStates[id]?.state));
-  const heatmap = panelTempEntityIds.length > 0
-    ? heatmapTones(panelValues.length >= 24 ? panelValues : [...panelValues, ...Array.from({ length: 24 - panelValues.length }, () => undefined)])
-    : Array.from({ length: 24 }, (_, i): HeatmapTone => (i === 16 ? "hot" : i % 7 === 3 ? "warm" : "idle"));
+  const showHeatmap = shouldShowHeatmap(panelValues);
+  const heatmap = showHeatmap ? heatmapTones(panelValues.filter(hasEnergyReading)) : [];
 
   const powerMax = Math.max(8, (powerKw ?? 0) * 1.25, 0.1);
   const powerPct = clampPercent(((powerKw ?? 0) / powerMax) * 100);
@@ -248,7 +254,7 @@ export function EnergyOverview({
           ) : (
             <HousePlaceholder />
           )}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={cn("grid gap-4", showBattery ? "grid-cols-2" : "grid-cols-1")}>
             <section className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm dark:bg-white/5">
               <p className="text-xs font-medium text-gray-400">{t("energy.overview.power")}</p>
               <div className="mt-3 flex h-28 items-center justify-center">
@@ -267,37 +273,45 @@ export function EnergyOverview({
                 </div>
               </div>
             </section>
+            {showBattery ? (
             <section className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm dark:bg-white/5">
               <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-gray-400">
                 <BatteryMedium className="h-3.5 w-3.5" />
                 {t("energy.overview.battery")}
               </p>
               <div className="space-y-3">
+                {hasEnergyReading(batterySoc.value) ? (
                 <BatteryRow
                   label={t("energy.overview.energy")}
-                  valueLabel={batterySoc.value != null ? `${formatEnergyValue(batterySoc.value, 0)}%` : "—"}
+                  valueLabel={`${formatEnergyValue(batterySoc.value, 0)}%`}
                   percent={clampPercent(batterySoc.value)}
                   tone="bg-emerald-400"
                 />
+                ) : null}
+                {hasEnergyReading(batteryKw) ? (
                 <BatteryRow
                   label={t("energy.overview.consuming")}
-                  valueLabel={batteryKw != null ? `${formatEnergyValue(Math.abs(batteryKw))} kW` : "—"}
-                  percent={clampPercent(Math.abs(batteryKw ?? 0) * 20)}
+                  valueLabel={`${formatEnergyValue(Math.abs(batteryKw))} kW`}
+                  percent={clampPercent(Math.abs(batteryKw) * 20)}
                   tone="bg-orange-300"
                 />
+                ) : null}
+                {hasEnergyReading(batteryTemp.value) ? (
                 <BatteryRow
                   label={t("energy.overview.temperature")}
-                  valueLabel={batteryTemp.value != null ? `${formatEnergyValue(batteryTemp.value, 0)}°C` : "—"}
+                  valueLabel={`${formatEnergyValue(batteryTemp.value, 0)}°C`}
                   percent={clampPercent(batteryTemp.value, 80) * (100 / 80)}
                   tone="bg-amber-300"
                 />
+                ) : null}
               </div>
             </section>
+            ) : null}
           </div>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
+      <div className={cn("mt-5 grid gap-4", showHeatmap ? "md:grid-cols-3" : "md:grid-cols-2")}>
         <section className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm dark:bg-white/5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-800 dark:text-white">
@@ -348,17 +362,16 @@ export function EnergyOverview({
             </div>
           </dl>
         </section>
+        {showHeatmap ? (
         <section className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm dark:bg-white/5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.heatmap")}</h2>
             <span className="text-[11px] text-gray-400">
-              {panelTempEntityIds.length > 0
-                ? t("energy.overview.heatmapCount").replace("{n}", String(panelTempEntityIds.length))
-                : t("energy.overview.heatmapHint")}
+              {t("energy.overview.heatmapCount").replace("{n}", String(heatmap.length))}
             </span>
           </div>
           <div className="grid grid-cols-12 gap-1">
-            {heatmap.slice(0, 24).map((tone, i) => (
+            {heatmap.map((tone, i) => (
               <span
                 key={i}
                 className={cn(
@@ -369,6 +382,7 @@ export function EnergyOverview({
             ))}
           </div>
         </section>
+        ) : null}
       </div>
     </div>
   );

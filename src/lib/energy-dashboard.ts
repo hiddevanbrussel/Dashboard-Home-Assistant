@@ -209,6 +209,22 @@ export function clampPercent(value: number | undefined, max = 100): number {
   return Math.max(0, Math.min(max, value));
 }
 
+export function hasEnergyReading(value: number | undefined): value is number {
+  return value != null && Number.isFinite(value);
+}
+
+export function shouldShowBatteryCard(readings: {
+  soc?: number;
+  power?: number;
+  temp?: number;
+}): boolean {
+  return hasEnergyReading(readings.soc) || hasEnergyReading(readings.power) || hasEnergyReading(readings.temp);
+}
+
+export function shouldShowHeatmap(values: Array<number | undefined>): boolean {
+  return values.some(hasEnergyReading);
+}
+
 export type HeatmapTone = "hot" | "warm" | "idle";
 
 export function heatmapTones(values: Array<number | undefined>): HeatmapTone[] {
