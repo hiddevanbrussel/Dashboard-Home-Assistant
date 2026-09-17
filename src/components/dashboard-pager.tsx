@@ -184,8 +184,7 @@ export function DashboardPager({
           "flex h-full w-full min-w-0 overflow-y-hidden outline-none scrollbar-hide overscroll-x-contain",
           pageCount > 1 && !editMode &&
             "pointer-events-auto cursor-grab snap-x snap-mandatory overflow-x-auto touch-pan-x active:cursor-grabbing",
-          (pageCount < 2 || editMode) && "overflow-x-hidden",
-          editMode && "pointer-events-none"
+          (pageCount < 2 || editMode) && "overflow-x-hidden"
         )}
         onPointerDown={onScrollerPointerDown}
         onPointerMove={onScrollerPointerMove}
