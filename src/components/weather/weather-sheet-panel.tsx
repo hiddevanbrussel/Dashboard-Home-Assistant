@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, Droplets } from "lucide-react";
+import { WeatherConditionBackdrop } from "@/components/weather/weather-condition-backdrop";
 import { WeatherIcon } from "@/components/widgets/weather-card-widget";
 import { useTranslation } from "@/hooks/use-translation";
 import { useLanguageStore } from "@/stores/language-store";
@@ -76,44 +77,55 @@ export function WeatherSheetPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="relative flex shrink-0 items-center justify-center px-5 pb-2 pt-1">
-        {onClose ? (
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-black/5 dark:text-white/70 dark:hover:bg-white/10"
-            aria-label={t("weatherSheet.close")}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-        ) : null}
-        <h2 className="truncate px-12 text-[17px] font-semibold tracking-tight text-gray-800 dark:text-white">
-          {title}
-        </h2>
+      <div className="relative h-[19.5rem] shrink-0 overflow-hidden">
+        <WeatherConditionBackdrop condition={condition} />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/15 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#F4F6FA] via-[#F4F6FA]/80 to-transparent dark:from-zinc-900 dark:via-zinc-900/80" />
+
+        <div className="relative z-10 flex h-full flex-col px-5">
+          <div className="flex shrink-0 justify-center pb-1 pt-3">
+            <span className="h-1.5 w-12 rounded-full bg-white/55" aria-hidden />
+          </div>
+          <div className="relative flex shrink-0 items-center justify-center">
+            {onClose ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/15"
+                aria-label={t("weatherSheet.close")}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            ) : null}
+            <h2 className="truncate px-12 text-[17px] font-semibold tracking-tight text-white drop-shadow-sm">
+              {title}
+            </h2>
+          </div>
+
+          <div className="flex flex-1 flex-col items-center justify-center pb-10 text-center text-white">
+            <WeatherIcon state={condition} className="h-12 w-12 drop-shadow-sm" />
+            <p className="mt-1 text-[4.25rem] font-semibold leading-none tracking-tight drop-shadow-md">
+              {formatTemp(temperature)}
+            </p>
+            <p className="mt-2 text-sm font-medium text-white/85 drop-shadow-sm">
+              {condition ? conditionLabel(condition, t) : t("weatherSheet.unknown")}
+            </p>
+            <p className="mt-1 text-sm text-white/70 drop-shadow-sm">
+              {t("weatherSheet.highLow")
+                .replace("{high}", formatTemp(today?.temperature ?? temperature))
+                .replace("{low}", formatTemp(today?.templow))}
+            </p>
+            {humidity != null && !Number.isNaN(humidity) ? (
+              <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-white/70 drop-shadow-sm">
+                <Droplets className="h-3.5 w-3.5" />
+                {Math.round(humidity)}%
+              </p>
+            ) : null}
+          </div>
+        </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
-        <div className="flex flex-col items-center pb-5 pt-2 text-center">
-          <WeatherIcon state={condition} className="h-14 w-14 text-sky-500 dark:text-sky-300" />
-          <p className="mt-2 text-[4.25rem] font-semibold leading-none tracking-tight text-gray-900 dark:text-white">
-            {formatTemp(temperature)}
-          </p>
-          <p className="mt-2 text-sm font-medium text-gray-500 dark:text-white/55">
-            {condition ? conditionLabel(condition, t) : t("weatherSheet.unknown")}
-          </p>
-          <p className="mt-1 text-sm text-gray-400 dark:text-white/45">
-            {t("weatherSheet.highLow")
-              .replace("{high}", formatTemp(today?.temperature ?? temperature))
-              .replace("{low}", formatTemp(today?.templow))}
-          </p>
-          {humidity != null && !Number.isNaN(humidity) ? (
-            <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-gray-400 dark:text-white/45">
-              <Droplets className="h-3.5 w-3.5" />
-              {Math.round(humidity)}%
-            </p>
-          ) : null}
-        </div>
-
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-1">
         <section className="rounded-[1.35rem] bg-white px-3 py-3 shadow-sm dark:bg-white/5">
           <h3 className="px-2 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
             {t("weatherSheet.hourly")}

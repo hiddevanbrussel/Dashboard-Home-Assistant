@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   Cloud,
   CloudFog,
@@ -13,11 +12,10 @@ import {
   Droplets,
   MoreVertical,
 } from "lucide-react";
-import { useState, useEffect } from "react";
 import type { WeatherCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
+import { WeatherConditionBackdrop } from "@/components/weather/weather-condition-backdrop";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
 
 export function WeatherIcon({ state, className }: { state: string; className?: string }) {
@@ -39,77 +37,6 @@ function formatTemp(value: number | undefined): string {
   return `${Math.round(value)}°`;
 }
 
-/** Achtergrondgradient per weertoestand (fallback als er geen afbeelding is). */
-function getWeatherBackground(condition: string) {
-  const s = condition?.toLowerCase() ?? "";
-  switch (s) {
-    case "sunny":
-    case "clear":
-    case "zonnig":
-      return "from-amber-300/50 via-yellow-200/30 to-sky-300/40";
-    case "clear-night":
-      return "from-indigo-950/70 via-slate-900/60 to-indigo-950/80";
-    case "cloudy":
-    case "partlycloudy":
-    case "exceptional":
-      return "from-slate-400/40 via-slate-300/30 to-slate-500/40";
-    case "rainy":
-    case "pouring":
-    case "hail":
-      return "from-slate-500/50 via-sky-700/40 to-slate-600/50";
-    case "snowy":
-    case "snowy-rainy":
-      return "from-sky-200/40 via-white/30 to-slate-300/40";
-    case "fog":
-    case "mist":
-      return "from-slate-400/35 to-slate-500/40";
-    case "lightning":
-    case "lightning-rainy":
-      return "from-slate-800/60 via-slate-900/50 to-slate-950/70";
-    case "windy":
-    case "windy-variant":
-      return "from-slate-300/35 via-sky-400/30 to-slate-400/35";
-    default:
-      return "from-sky-400/35 via-sky-500/30 to-sky-600/40";
-  }
-}
-
-/** Basisbestandsnaam voor custom achtergrond per weertoestand (zonder .png, in public/). */
-function getWeatherImageBase(condition: string): string | null {
-  const s = condition?.toLowerCase() ?? "";
-  switch (s) {
-    case "fog":
-    case "mist":
-      return "/weather-fog";
-    case "sunny":
-    case "clear":
-    case "zonnig":
-      return "/weather-sunny";
-    case "clear-night":
-      return "/weather-clear-night";
-    case "rainy":
-    case "pouring":
-    case "hail":
-      return "/weather-rainy";
-    case "cloudy":
-    case "partlycloudy":
-    case "exceptional":
-      return "/weather-partlycloudy";
-    case "snowy":
-    case "snowy-rainy":
-      return "/weather-snowy";
-    case "lightning":
-    case "lightning-rainy":
-      return "/weather-lightning";
-    case "windy":
-    case "windy-variant":
-      return "/weather-windy";
-    default:
-      return null;
-  }
-}
-
-
 export function WeatherCardWidget({
   title = "Weather",
   entity_id,
@@ -120,7 +47,6 @@ export function WeatherCardWidget({
 }: WeatherCardProps & { className?: string; onMoreClick?: () => void }) {
   const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
-  const { resolved: theme } = useThemeStore();
   const condition = (entity?.state as string) ?? "";
   const temperature = entity?.attributes?.temperature != null
     ? Number(entity.attributes.temperature)
@@ -128,18 +54,7 @@ export function WeatherCardWidget({
   const humidity = entity?.attributes?.humidity != null
     ? Number(entity.attributes.humidity)
     : undefined;
-  const isNight = theme === "dark";
-  const bgGradient = getWeatherBackground(condition);
-  const base = getWeatherImageBase(condition);
-  const bgImage = base ? `${base}${isNight ? "-night" : ""}.png` : null;
-  const fallbackImage = base && isNight ? `${base}.png` : null;
-  const [imageError, setImageError] = useState(false);
-  const effectiveBgImage = imageError && fallbackImage ? fallbackImage : bgImage;
   const friendlyName = (entity?.attributes?.friendly_name as string) ?? entity_id;
-
-  useEffect(() => {
-    setImageError(false);
-  }, [bgImage]);
 
   return (
     <div
@@ -151,27 +66,8 @@ export function WeatherCardWidget({
         className
       )}
     >
-      {/* Gradient als fallback / basis */}
-      <div
-        className={cn(
-          "absolute inset-0 bg-gradient-to-b rounded-2xl",
-          bgGradient
-        )}
-      />
-      {/* Custom achtergrondafbeelding: dag- of nacht-variant (bijv. weather-sunny.png / weather-sunny-night.png) */}
-      {effectiveBgImage && (
-        <div className="absolute inset-0 rounded-2xl overflow-hidden">
-          <Image
-            src={effectiveBgImage}
-            alt=""
-            fill
-            sizes="(max-width: 500px) 500px, 500px"
-            className="object-cover object-center"
-            onError={fallbackImage ? () => setImageError(true) : undefined}
-          />
-        </div>
-      )}
-      <div className="absolute inset-0 bg-black/35 rounded-2xl" />
+      <WeatherConditionBackdrop condition={condition} className="rounded-2xl" />
+      <div className="absolute inset-0 rounded-2xl bg-black/35" />
       <div className="relative flex flex-col z-10 h-full min-h-0">
         <div className="flex items-start justify-between gap-3 px-4 py-3 flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0 flex-1">
