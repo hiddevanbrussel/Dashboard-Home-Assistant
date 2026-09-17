@@ -62,14 +62,14 @@ function HouseScene({
   const custom = Boolean(image?.trim());
   const src = image?.trim() || ENERGY_OVERVIEW_HOUSE_IMAGE;
   return (
-    <div className="relative -mt-4 lg:-mt-16">
+    <div className="relative">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt=""
         className={cn(
-          "relative z-0 mx-auto h-auto w-full object-top",
-          custom ? "min-h-[24rem] object-cover" : "max-h-[34rem] object-contain"
+          "relative z-0 mx-auto h-auto w-full",
+          custom ? "min-h-[24rem] object-cover object-top" : "max-h-[34rem] object-contain object-center"
         )}
       />
       {custom ? (
