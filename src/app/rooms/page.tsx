@@ -398,7 +398,8 @@ export default function RoomsPage() {
           <div className="flex min-h-0 flex-1 flex-col">
             <div
               ref={floorScrollerRef}
-              className="flex min-h-0 flex-1 cursor-grab snap-x snap-mandatory overflow-x-auto overflow-y-hidden scrollbar-hide overscroll-x-contain touch-pan-x active:cursor-grabbing"
+              className="flex min-h-0 min-w-0 w-full flex-1 cursor-grab snap-x snap-mandatory overflow-x-auto overflow-y-hidden outline-none scrollbar-hide overscroll-x-contain touch-pan-x active:cursor-grabbing"
+              tabIndex={0}
               onPointerDown={(e) => {
                 if (e.button !== 0) return;
                 const target = e.target as HTMLElement;
@@ -435,6 +436,15 @@ export default function RoomsPage() {
               onPointerCancel={() => {
                 floorDragRef.current = null;
               }}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowRight") {
+                  e.preventDefault();
+                  goToFloor(activeFloorIndex + 1);
+                } else if (e.key === "ArrowLeft") {
+                  e.preventDefault();
+                  goToFloor(activeFloorIndex - 1);
+                }
+              }}
               onClickCapture={(e) => {
                 if (!floorDragClaimedRef.current) return;
                 floorDragClaimedRef.current = false;
@@ -451,7 +461,7 @@ export default function RoomsPage() {
               {floorsWithRooms.map(({ floor, rooms: floorRooms }, index) => (
                 <section
                   key={floor || "_"}
-                  className="flex h-full w-full min-w-full shrink-0 snap-start flex-col overflow-y-auto pb-4"
+                  className="box-border flex h-full w-full min-w-full shrink-0 basis-full snap-start flex-col overflow-y-auto pb-4"
                   aria-hidden={activeFloorIndex !== index}
                 >
                   <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
