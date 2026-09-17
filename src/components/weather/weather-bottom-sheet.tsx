@@ -49,7 +49,7 @@ export function WeatherBottomSheet({
         onClick={onClose}
       />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-3 sm:px-5">
-        <div className="animate-music-bar-in pointer-events-auto flex w-full max-w-[400px] max-h-[min(92dvh,760px)] flex-col overflow-hidden rounded-[1.75rem] bg-[#F4F6FA] shadow-[0_-18px_60px_rgba(15,23,42,0.28)] dark:bg-zinc-900 dark:shadow-[0_-18px_60px_rgba(0,0,0,0.55)]">
+        <div className="animate-music-bar-in pointer-events-auto flex w-full max-w-[400px] max-h-[min(92dvh,760px)] flex-col overflow-hidden rounded-[1.75rem] bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.28)] dark:bg-black dark:shadow-[0_-18px_60px_rgba(0,0,0,0.55)]">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <WeatherSheetPanel entityId={entityId} onClose={onClose} />
           </div>
