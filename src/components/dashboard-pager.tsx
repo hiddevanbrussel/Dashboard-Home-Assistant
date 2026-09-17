@@ -44,13 +44,11 @@ export function DashboardPager({
   const dragRef = useRef<{
     id: number;
     x: number;
-    y: number;
     left: number;
     fromPage: number;
     claimed: boolean;
-    target: EventTarget | null;
   } | null>(null);
-  const suppressClickRef = useRef(false);
+  const claimedRef = useRef(false);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -130,107 +128,47 @@ export function DashboardPager({
     return () => window.removeEventListener("keydown", onKey);
   }, [goTo, pageCount]);
 
-  useEffect(() => {
+  const onScrollerPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (pageCount < 2) return;
-    let captured = false;
-    let ignoreOwnCancel = false;
-
-    const release = (pointerId: number) => {
-      if (!captured) return;
-      captured = false;
-      try {
-        document.documentElement.releasePointerCapture(pointerId);
-      } catch {
-        // ignore
-      }
+    if (e.button !== 0) return;
+    if (shouldIgnorePageSwipe(e.target, editMode)) return;
+    claimedRef.current = false;
+    dragRef.current = {
+      id: e.pointerId,
+      x: e.clientX,
+      left: e.currentTarget.scrollLeft,
+      fromPage: pageRef.current,
+      claimed: false,
     };
+  };
 
-    const onPointerDown = (e: PointerEvent) => {
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      if (shouldIgnorePageSwipe(e.target, editMode)) return;
-      const root = scrollerRef.current;
-      if (!root) return;
-      dragRef.current = {
-        id: e.pointerId,
-        x: e.clientX,
-        y: e.clientY,
-        left: root.scrollLeft,
-        fromPage: pageRef.current,
-        claimed: false,
-        target: e.target,
-      };
-    };
+  const onScrollerPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    const root = e.currentTarget;
+    if (!drag || drag.id !== e.pointerId) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.claimed && Math.abs(dx) < CLAIM_PX) return;
+    if (!drag.claimed) {
+      drag.claimed = true;
+      claimedRef.current = true;
+      root.setPointerCapture(e.pointerId);
+    }
+    root.scrollLeft = drag.left - dx;
+  };
 
-    const onPointerMove = (e: PointerEvent) => {
-      const drag = dragRef.current;
-      const root = scrollerRef.current;
-      if (!drag || drag.id !== e.pointerId || !root) return;
-      const dx = e.clientX - drag.x;
-      // Same claim as Rooms: wait for horizontal travel, never drop the gesture on a diagonal start.
-      if (!drag.claimed) {
-        if (Math.abs(dx) < CLAIM_PX) return;
-        drag.claimed = true;
-        suppressClickRef.current = true;
-        try {
-          document.documentElement.setPointerCapture(e.pointerId);
-          captured = true;
-        } catch {
-          // ignore
-        }
-        if (drag.target instanceof Element) {
-          ignoreOwnCancel = true;
-          drag.target.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true }));
-          ignoreOwnCancel = false;
-        }
-      }
-      e.preventDefault();
-      root.scrollLeft = drag.left - dx;
-    };
+  const onScrollerPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag?.claimed) return;
+    const root = e.currentTarget;
+    if (root.clientWidth <= 0) return;
+    pageRef.current = drag.fromPage;
+    goTo(Math.round(root.scrollLeft / root.clientWidth));
+  };
 
-    const finish = (e: PointerEvent) => {
-      if (e.type === "pointercancel" && ignoreOwnCancel) return;
-      const drag = dragRef.current;
-      if (!drag || drag.id !== e.pointerId) return;
-      dragRef.current = null;
-      release(e.pointerId);
-      if (!drag.claimed) return;
-      const root = scrollerRef.current;
-      if (!root || root.clientWidth <= 0) return;
-      pageRef.current = drag.fromPage;
-      goTo(Math.round(root.scrollLeft / root.clientWidth));
-    };
-
-    const onClick = (e: MouseEvent) => {
-      if (!suppressClickRef.current) return;
-      suppressClickRef.current = false;
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    const onWheel = (e: WheelEvent) => {
-      if (shouldIgnorePageSwipe(e.target, editMode)) return;
-      if (Math.abs(e.deltaX) < 2 || Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;
-      const root = scrollerRef.current;
-      if (!root) return;
-      e.preventDefault();
-      root.scrollLeft += e.deltaX;
-    };
-
-    window.addEventListener("pointerdown", onPointerDown, { capture: true });
-    window.addEventListener("pointermove", onPointerMove, { capture: true, passive: false });
-    window.addEventListener("pointerup", finish, { capture: true });
-    window.addEventListener("pointercancel", finish, { capture: true });
-    window.addEventListener("click", onClick, true);
-    window.addEventListener("wheel", onWheel, { capture: true, passive: false });
-    return () => {
-      window.removeEventListener("pointerdown", onPointerDown, true);
-      window.removeEventListener("pointermove", onPointerMove, true);
-      window.removeEventListener("pointerup", finish, true);
-      window.removeEventListener("pointercancel", finish, true);
-      window.removeEventListener("click", onClick, true);
-      window.removeEventListener("wheel", onWheel, true);
-    };
-  }, [editMode, goTo, pageCount]);
+  const onScrollerPointerCancel = () => {
+    dragRef.current = null;
+  };
 
   if (!mounted || typeof document === "undefined") return null;
 
@@ -241,10 +179,22 @@ export function DashboardPager({
       <div
         ref={scrollerRef}
         data-dashboard-pager
+        tabIndex={pageCount > 1 ? 0 : undefined}
         className={cn(
           "flex h-full w-full min-w-0 overflow-y-hidden outline-none scrollbar-hide overscroll-x-contain",
-          pageCount > 1 && "snap-x snap-mandatory overflow-x-auto touch-pan-x"
+          pageCount > 1 &&
+            "pointer-events-auto cursor-grab snap-x snap-mandatory overflow-x-auto touch-pan-x active:cursor-grabbing"
         )}
+        onPointerDown={onScrollerPointerDown}
+        onPointerMove={onScrollerPointerMove}
+        onPointerUp={onScrollerPointerUp}
+        onPointerCancel={onScrollerPointerCancel}
+        onClickCapture={(e) => {
+          if (!claimedRef.current) return;
+          claimedRef.current = false;
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         onScroll={(e) => {
           const root = e.currentTarget;
           if (root.clientWidth <= 0) return;
