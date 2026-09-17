@@ -38,7 +38,7 @@ export function RoomPreviewCard({
   return (
     <Link
       href={`/rooms/${encodeURIComponent(areaId)}`}
-      className="group relative block w-[240px] h-[200px] overflow-hidden rounded-xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/50 shadow-lg backdrop-blur-2xl transition-all hover:ring-2 hover:ring-[#4700B5]/30"
+      className="group relative block w-[240px] h-[200px] overflow-hidden rounded-3xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/50 shadow-lg backdrop-blur-2xl transition-all hover:ring-2 hover:ring-brand/40"
     >
       {background && (
         <>
@@ -73,7 +73,7 @@ export function RoomPreviewCard({
                 e.stopPropagation();
                 onEdit(e);
               }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 dark:bg-black/50 text-gray-600 hover:text-[#4700B5] dark:text-gray-300 dark:hover:text-[#4700B5] shadow"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 dark:bg-black/50 text-gray-600 hover:text-brand dark:text-gray-300 dark:hover:text-brand shadow"
               aria-label={t("editPanel.edit")}
             >
               <Pencil className="h-4 w-4" />
@@ -87,7 +87,7 @@ export function RoomPreviewCard({
                 e.stopPropagation();
                 onDelete(e);
               }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 dark:bg-black/50 text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 shadow"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 dark:bg-black/50 text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 shadow"
               aria-label={t("editPanel.remove")}
             >
               <Trash2 className="h-4 w-4" />
@@ -96,7 +96,7 @@ export function RoomPreviewCard({
         </div>
         <p
           className={cn(
-            "text-base font-medium truncate w-full text-right drop-shadow-sm",
+            "text-base font-semibold tracking-tight truncate w-full text-right drop-shadow-sm",
             background ? "text-white" : "text-gray-900 dark:text-white"
           )}
         >
