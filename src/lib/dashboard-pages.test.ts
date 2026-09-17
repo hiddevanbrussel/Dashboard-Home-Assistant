@@ -80,6 +80,13 @@ describe("dashboard pages", () => {
     expect(shouldIgnorePageSwipe(headerChild as unknown as EventTarget, false)).toBe(true);
   });
 
+  it("ignores page swipes that start on the vacuum card", () => {
+    const vacuumCard = {
+      closest: (selector: string) => (selector.includes("data-no-page-swipe") ? {} : null),
+    };
+    expect(shouldIgnorePageSwipe(vacuumCard as unknown as EventTarget, false)).toBe(true);
+  });
+
   it("claims a swipe sooner on touch than on mouse", () => {
     expect(pageSwipeClaimPx("touch")).toBe(8);
     expect(pageSwipeClaimPx("pen")).toBe(8);

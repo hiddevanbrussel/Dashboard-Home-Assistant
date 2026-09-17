@@ -15,6 +15,7 @@ import {
   VACUUM_CARD_2_DEFAULT_IMAGE,
   VACUUM_CARD_2_DEFAULT_WIDTH,
   isVacuumCardTap,
+  shouldIgnoreVacuumSheetBackdropClose,
   vacuumHeadlineKind,
 } from "./vacuum-card";
 
@@ -122,9 +123,13 @@ describe("vacuum-card helpers", () => {
   });
 
   it("opens the vacuum sheet only on a short unmoved tap", () => {
-    expect(isVacuumCardTap({ timerPending: true, longPressFired: false, moved: false })).toBe(true);
-    expect(isVacuumCardTap({ timerPending: false, longPressFired: false, moved: false })).toBe(false);
-    expect(isVacuumCardTap({ timerPending: true, longPressFired: true, moved: false })).toBe(false);
-    expect(isVacuumCardTap({ timerPending: true, longPressFired: false, moved: true })).toBe(false);
+    expect(isVacuumCardTap({ longPressFired: false, moved: false })).toBe(true);
+    expect(isVacuumCardTap({ longPressFired: true, moved: false })).toBe(false);
+    expect(isVacuumCardTap({ longPressFired: false, moved: true })).toBe(false);
+  });
+
+  it("ignores a backdrop click from the same tap that opened the sheet", () => {
+    expect(shouldIgnoreVacuumSheetBackdropClose(1000, 1100)).toBe(true);
+    expect(shouldIgnoreVacuumSheetBackdropClose(1000, 1600)).toBe(false);
   });
 });
