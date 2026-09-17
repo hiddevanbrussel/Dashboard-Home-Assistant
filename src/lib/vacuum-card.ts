@@ -154,3 +154,12 @@ export function vacuumHeadlineKind(
   }
   return "unknown";
 }
+
+/** True when a pointer-up on the vacuum card should open the control sheet. */
+export function isVacuumCardTap(input: {
+  timerPending: boolean;
+  longPressFired: boolean;
+  moved: boolean;
+}): boolean {
+  return input.timerPending && !input.longPressFired && !input.moved;
+}

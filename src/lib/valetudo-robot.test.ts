@@ -14,6 +14,7 @@ import {
   segmentIterationOptions,
   sortConsumables,
   sortFanPresets,
+  vacuumBasicActionDisabled,
 } from "./valetudo-robot";
 
 describe("valetudo-robot", () => {
@@ -89,5 +90,15 @@ describe("valetudo-robot", () => {
     expect(segmentIterationOptions(3)).toEqual([1, 2, 3]);
     expect(clampSegmentIterations(8, 3)).toBe(3);
     expect(clampSegmentIterations(0, 3)).toBe(1);
+  });
+
+  it("disables pause, stop and dock based on robot status", () => {
+    expect(vacuumBasicActionDisabled("pause", "cleaning", false)).toBe(false);
+    expect(vacuumBasicActionDisabled("pause", "docked", false)).toBe(true);
+    expect(vacuumBasicActionDisabled("stop", "cleaning", false)).toBe(false);
+    expect(vacuumBasicActionDisabled("stop", "idle", false)).toBe(true);
+    expect(vacuumBasicActionDisabled("home", "cleaning", false)).toBe(false);
+    expect(vacuumBasicActionDisabled("home", "returning", false)).toBe(true);
+    expect(vacuumBasicActionDisabled("home", "cleaning", true)).toBe(true);
   });
 });

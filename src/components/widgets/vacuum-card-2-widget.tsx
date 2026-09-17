@@ -82,7 +82,8 @@ export function VacuumCard2Widget({
   height,
   className,
   onMoreClick,
-}: VacuumCard2Props & { className?: string; onMoreClick?: () => void }) {
+  interactive = false,
+}: VacuumCard2Props & { className?: string; onMoreClick?: () => void; interactive?: boolean }) {
   const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const progressEntity = useEntityStateStore((s) =>
@@ -170,6 +171,7 @@ export function VacuumCard2Widget({
         "flex w-full flex-col overflow-hidden rounded-2xl bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:bg-zinc-900 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
+        interactive && "cursor-pointer",
         className
       )}
       style={{ width: cardWidth, height: cardHeight, minHeight: cardHeight }}

@@ -14,6 +14,7 @@ import {
   VACUUM_CARD_2_DEFAULT_HEIGHT,
   VACUUM_CARD_2_DEFAULT_IMAGE,
   VACUUM_CARD_2_DEFAULT_WIDTH,
+  isVacuumCardTap,
   vacuumHeadlineKind,
 } from "./vacuum-card";
 
@@ -118,5 +119,12 @@ describe("vacuum-card helpers", () => {
     });
     expect(againstViewport.bottom).toBe(0);
     expect(againstViewport.height).toBe(340);
+  });
+
+  it("opens the vacuum sheet only on a short unmoved tap", () => {
+    expect(isVacuumCardTap({ timerPending: true, longPressFired: false, moved: false })).toBe(true);
+    expect(isVacuumCardTap({ timerPending: false, longPressFired: false, moved: false })).toBe(false);
+    expect(isVacuumCardTap({ timerPending: true, longPressFired: true, moved: false })).toBe(false);
+    expect(isVacuumCardTap({ timerPending: true, longPressFired: false, moved: true })).toBe(false);
   });
 });
