@@ -124,12 +124,7 @@ export function CardPlotController() {
     observeNew();
     onEditFlag();
     const mo = new MutationObserver(observeNew);
-    mo.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["class"],
-    });
+    mo.observe(document.body, { childList: true, subtree: true });
     const attrMo = new MutationObserver(onEditFlag);
     attrMo.observe(document.documentElement, {
       attributes: true,
