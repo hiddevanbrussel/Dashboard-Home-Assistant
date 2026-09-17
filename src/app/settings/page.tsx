@@ -43,6 +43,7 @@ import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { hydrateValetudoStore, useValetudoStore } from "@/stores/valetudo-store";
 import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
+import { EnergyEntitySettings } from "@/components/settings/energy-entity-settings";
 import { useNewsStore } from "@/stores/news-store";
 import { RobotVacuum, CalendarDays, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -212,6 +213,8 @@ export default function SettingsPage() {
     hydrateChoresStore();
     hydrateValetudoStore();
     hydrateImmichStore();
+    const next = new URLSearchParams(window.location.search).get("section");
+    if (next && next in SECTION_KEYS) setSection(next as SettingsSection);
   }, []);
 
   useEffect(() => {
@@ -561,6 +564,9 @@ export default function SettingsPage() {
                           onClick={() => {
                             setSection(id);
                             setSelectedApp(null);
+                            const url = new URL(window.location.href);
+                            url.searchParams.set("section", id);
+                            window.history.replaceState({}, "", `${url.pathname}${url.search}`);
                           }}
                           className={cn(
                             "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
@@ -1118,6 +1124,7 @@ export default function SettingsPage() {
               />
               {energyStore.enabled ? (
                 <>
+                  <EnergyEntitySettings entities={entities} />
                   <SettingsGroup title={t("settings.energy.contract")}>
                     <SettingsField label={t("settings.energy.costPerKwh")} hint={t("settings.energy.costPerKwhHint")}>
                       <SettingsInput

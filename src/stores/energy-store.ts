@@ -1,6 +1,13 @@
 "use client";
 
 import { create } from "zustand";
+import {
+  EMPTY_ENERGY_ENTITIES,
+  parseEnergyEntities,
+  parseEntityIdList,
+  type EnergyEntities,
+  type EnergyEntityKey,
+} from "@/lib/energy-dashboard";
 
 const STORAGE_KEY_ENABLED = "dashboard.energy.enabled";
 const STORAGE_KEY_COST_PER_KWH = "dashboard.energy.costPerKwh";
@@ -9,6 +16,8 @@ const STORAGE_KEY_VASTE_LEVERING = "dashboard.energy.vasteLeveringskostenPerMaan
 const STORAGE_KEY_GAS_COST_PER_M3 = "dashboard.energy.gasCostPerM3";
 const STORAGE_KEY_GAS_NETBEHEER = "dashboard.energy.gasNetbeheerkostenPerDag";
 const STORAGE_KEY_GAS_VASTE_LEVERING = "dashboard.energy.gasVasteLeveringskostenPerMaand";
+const STORAGE_KEY_ENTITIES = "dashboard.energy.entities";
+const STORAGE_KEY_PANEL_TEMPS = "dashboard.energy.panelTempEntityIds";
 
 function getStored<T>(key: string, fallback: T, parse: (s: string) => T): T {
   if (typeof window === "undefined") return fallback;
@@ -40,6 +49,29 @@ function setStoredNum(key: string, value: number | undefined): void {
   }
 }
 
+function setStoredJson(key: string, value: unknown): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+function readEntities(): EnergyEntities {
+  return getStored(STORAGE_KEY_ENTITIES, EMPTY_ENERGY_ENTITIES, (v) => {
+    try {
+      return parseEnergyEntities(JSON.parse(v));
+    } catch {
+      return EMPTY_ENERGY_ENTITIES;
+    }
+  });
+}
+
+function readPanelTempEntityIds(): string[] {
+  return getStored(STORAGE_KEY_PANEL_TEMPS, [], (v) => parseEntityIdList(v));
+}
+
 type EnergyStore = {
   enabled: boolean;
   setEnabled: (v: boolean) => void;
@@ -61,6 +93,10 @@ type EnergyStore = {
   /** Gas: vaste leveringskosten per maand (€). */
   gasVasteLeveringskostenPerMaand: number | undefined;
   setGasVasteLeveringskostenPerMaand: (v: number | undefined) => void;
+  entities: EnergyEntities;
+  setEntity: (key: EnergyEntityKey, value: string) => void;
+  panelTempEntityIds: string[];
+  setPanelTempEntityIds: (ids: string[]) => void;
 };
 
 export const useEnergyStore = create<EnergyStore>((set) => ({
@@ -117,6 +153,20 @@ export const useEnergyStore = create<EnergyStore>((set) => ({
     setStoredNum(STORAGE_KEY_GAS_VASTE_LEVERING, v);
     set({ gasVasteLeveringskostenPerMaand: v });
   },
+  entities: readEntities(),
+  setEntity: (key, value) => {
+    set((state) => {
+      const entities = parseEnergyEntities({ ...state.entities, [key]: value });
+      setStoredJson(STORAGE_KEY_ENTITIES, entities);
+      return { entities };
+    });
+  },
+  panelTempEntityIds: readPanelTempEntityIds(),
+  setPanelTempEntityIds: (ids) => {
+    const panelTempEntityIds = parseEntityIdList(ids);
+    setStoredJson(STORAGE_KEY_PANEL_TEMPS, panelTempEntityIds);
+    set({ panelTempEntityIds });
+  },
 }));
 
 export function hydrateEnergyStore() {
@@ -147,5 +197,7 @@ export function hydrateEnergyStore() {
       const n = parseFloat(v);
       return Number.isNaN(n) ? undefined : n;
     }),
+    entities: readEntities(),
+    panelTempEntityIds: readPanelTempEntityIds(),
   });
 }
