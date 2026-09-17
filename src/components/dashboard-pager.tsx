@@ -133,6 +133,7 @@ export function DashboardPager({
   useEffect(() => {
     if (pageCount < 2) return;
     let captured = false;
+    let ignoreOwnCancel = false;
 
     const release = (pointerId: number) => {
       if (!captured) return;
@@ -165,13 +166,9 @@ export function DashboardPager({
       const root = scrollerRef.current;
       if (!drag || drag.id !== e.pointerId || !root) return;
       const dx = e.clientX - drag.x;
-      const dy = e.clientY - drag.y;
+      // Same claim as Rooms: wait for horizontal travel, never drop the gesture on a diagonal start.
       if (!drag.claimed) {
-        if (Math.abs(dx) < CLAIM_PX && Math.abs(dy) < CLAIM_PX) return;
-        if (Math.abs(dy) >= Math.abs(dx)) {
-          dragRef.current = null;
-          return;
-        }
+        if (Math.abs(dx) < CLAIM_PX) return;
         drag.claimed = true;
         suppressClickRef.current = true;
         try {
@@ -181,7 +178,9 @@ export function DashboardPager({
           // ignore
         }
         if (drag.target instanceof Element) {
+          ignoreOwnCancel = true;
           drag.target.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true }));
+          ignoreOwnCancel = false;
         }
       }
       e.preventDefault();
@@ -189,6 +188,7 @@ export function DashboardPager({
     };
 
     const finish = (e: PointerEvent) => {
+      if (e.type === "pointercancel" && ignoreOwnCancel) return;
       const drag = dragRef.current;
       if (!drag || drag.id !== e.pointerId) return;
       dragRef.current = null;

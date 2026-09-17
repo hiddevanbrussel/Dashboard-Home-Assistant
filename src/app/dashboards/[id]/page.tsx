@@ -82,6 +82,7 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
 import { OfflinePill } from "@/components/offline-pill";
 import { useTranslation } from "@/hooks/use-translation";
+import { useDashboardEditFlag } from "@/hooks/use-dashboard-edit-flag";
 import { cn, generateId } from "@/lib/utils";
 import { DashboardPager } from "@/components/dashboard-pager";
 import {
@@ -613,6 +614,7 @@ export default function DashboardEditPage() {
     ? `/api/room-dashboards/${encodeURIComponent(areaId)}`
     : `/api/dashboards/${rawId}`;
   const [editMode, setEditMode] = useState(false);
+  useDashboardEditFlag(editMode);
   const [editPasscodeModalOpen, setEditPasscodeModalOpen] = useState(false);
   const [editPasscodeInput, setEditPasscodeInput] = useState("");
   const [editPasscodeError, setEditPasscodeError] = useState<string | null>(null);

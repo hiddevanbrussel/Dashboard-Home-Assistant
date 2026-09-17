@@ -109,9 +109,19 @@
   opacity: 0;
 }
 
-.card-plot-in.card-plot-played {
+html[data-dashboard-edit] .card-plot-in:not(.card-plot-played) {
+  opacity: 1;
+}
+
+.card-plot-in.card-plot-played:not(.card-plot-instant) {
   animation: card-plot-in 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: calc(var(--card-plot-i, 0) * 55ms);
+}
+
+.card-plot-in.card-plot-instant {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

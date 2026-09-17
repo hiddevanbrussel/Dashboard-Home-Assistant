@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { sortCardsForPlot } from "./card-plot";
+import { cardPlotShouldBeInstant, sortCardsForPlot } from "./card-plot";
+
+describe("cardPlotShouldBeInstant", () => {
+  it("skips plot animation while the dashboard is being edited", () => {
+    expect(cardPlotShouldBeInstant(true)).toBe(true);
+    expect(cardPlotShouldBeInstant(false)).toBe(false);
+  });
+});
 
 describe("sortCardsForPlot", () => {
   it("plots top row first, then left to right", () => {
