@@ -39,7 +39,8 @@ export const DASHBOARD_PAGE_SETTLE_DISTANCE_RATIO = 0.12;
 /** Horizontal flick speed (px/ms) that commits a page change. */
 export const DASHBOARD_PAGE_SETTLE_VELOCITY = 0.4;
 
-export function pageSwipeClaimPx(pointerType: string | undefined): number {
+export function pageSwipeClaimPx(pointerType: string | undefined, clientX?: number): number {
+  if (isBrowserBackGestureZone(clientX ?? Number.POSITIVE_INFINITY, pointerType)) return 4;
   if (pointerType === "touch" || pointerType === "pen") return 8;
   return 16;
 }
@@ -63,6 +64,19 @@ export function shouldIgnorePageSwipe(target: EventTarget | null, editMode: bool
   if (el.closest("[data-app-header]")) return true;
   if (editMode && !el.closest("[data-dashboard-page-swipe]")) return true;
   return false;
+}
+
+/** Browser back-swipe starts at the left edge; claim those touches before history navigation. */
+export const DASHBOARD_BACK_GESTURE_ZONE_PX = 28;
+
+export function isBrowserBackGestureZone(clientX: number, pointerType: string | undefined): boolean {
+  if (pointerType === "mouse") return false;
+  return Number.isFinite(clientX) && clientX <= DASHBOARD_BACK_GESTURE_ZONE_PX;
+}
+
+/** Consume a history-back gesture as “previous dashboard page” while not on page 0. */
+export function shouldConsumeHistoryBack(page: number): boolean {
+  return page > 0;
 }
 
 export function dashboardPageSettleDurationMs(distancePx: number): number {

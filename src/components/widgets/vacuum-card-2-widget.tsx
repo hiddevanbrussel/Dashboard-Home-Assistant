@@ -54,10 +54,10 @@ function BatteryMeter({ level, label }: { level: number; label: string }) {
 
 function VacuumRobotArt({ active, src }: { active: boolean; src: string }) {
   return (
-    <div className="relative flex h-full w-full items-end justify-center px-2 pb-1">
-      <div className="relative max-h-full max-w-full">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute left-1/2 top-full w-[118%] -translate-x-1/2 -translate-y-1/2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt="" className="max-h-full max-w-full object-contain" />
+        <img src={src} alt="" className="block w-full h-auto object-contain" />
         <span
           className={cn(
             "absolute left-1/2 top-[38%] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full",
