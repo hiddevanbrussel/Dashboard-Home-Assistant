@@ -89,8 +89,8 @@ export function VacuumSheetPanel({ onClose }: { onClose?: () => void }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="px-5 pb-1 pt-1">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-1 pt-1">
         <div className="relative flex items-center justify-center pb-4 pt-1">
           {onClose ? (
             <button
@@ -150,7 +150,7 @@ export function VacuumSheetPanel({ onClose }: { onClose?: () => void }) {
               />
             </div>
 
-            <div className="relative mx-auto h-[250px] w-full max-w-[300px]">
+            <div className="relative mx-auto h-[220px] w-full max-w-[300px]">
               <ValetudoMapCanvas
                 map={map}
                 selectedIds={cleanMode === "rooms" ? selectedIds : []}
@@ -232,7 +232,7 @@ export function VacuumSheetPanel({ onClose }: { onClose?: () => void }) {
       </div>
 
       {configured && map ? (
-        <div className="mt-auto bg-[#E4ECFB] px-5 pb-5 pt-4 dark:bg-brand/20">
+        <div className="shrink-0 bg-[#E4ECFB] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 dark:bg-brand/20">
           {error ? <p className="mb-2 text-center text-xs text-red-600 dark:text-red-300">{error}</p> : null}
           <div className="grid grid-cols-[1.45fr_1fr] gap-2.5">
             <button

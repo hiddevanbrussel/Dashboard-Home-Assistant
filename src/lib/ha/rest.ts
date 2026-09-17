@@ -149,3 +149,29 @@ export async function callService(
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
+
+/**
+ * Call a Home Assistant service and return the service response (needed for weather.get_forecasts).
+ */
+export async function callServiceWithResponse(
+  config: HaRestConfig,
+  domain: string,
+  service: string,
+  data: Record<string, unknown> = {}
+): Promise<{ ok: true; data: unknown } | { ok: false; error: string }> {
+  try {
+    const res = await haFetch(
+      config.baseUrl,
+      config.token,
+      `/api/services/${domain}/${service}?return_response`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      return { ok: false, error: text || res.statusText };
+    }
+    return { ok: true, data: await res.json() };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}

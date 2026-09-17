@@ -42,13 +42,14 @@ import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store"
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { hydrateValetudoStore, useValetudoStore } from "@/stores/valetudo-store";
 import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
+import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { useNewsStore } from "@/stores/news-store";
-import { RobotVacuum, CalendarDays, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X } from "lucide-react";
+import { RobotVacuum, CalendarDays, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
-type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "tasks" | "apps" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "energy" | "tasks" | "apps" | "entities";
 type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
@@ -58,6 +59,7 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   dashboard: "settings.dashboard",
   connection: "settings.connection",
   calendar: "settings.calendar",
+  energy: "settings.energy",
   tasks: "settings.tasks",
   apps: "settings.apps",
   entities: "settings.entities",
@@ -191,6 +193,7 @@ export default function SettingsPage() {
   const [uploadingScreensaverBg, setUploadingScreensaverBg] = useState(false);
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const calendarStore = useCalendarStore();
+  const energyStore = useEnergyStore();
   const choresStore = useChoresStore();
   const newsStore = useNewsStore();
   const musicAssistant = useMusicAssistantStore();
@@ -205,6 +208,7 @@ export default function SettingsPage() {
   useEffect(() => {
     hydrateMusicAssistantStore();
     hydrateCalendarStore();
+    hydrateEnergyStore();
     hydrateChoresStore();
     hydrateValetudoStore();
     hydrateImmichStore();
@@ -495,6 +499,7 @@ export default function SettingsPage() {
     ]},
     { groupKey: "settings.groups.pages", sections: [
       { id: "calendar",  labelKey: SECTION_KEYS.calendar,  icon: CalendarDays },
+      { id: "energy",    labelKey: SECTION_KEYS.energy,    icon: Zap },
       { id: "tasks",     labelKey: SECTION_KEYS.tasks,     icon: ListTodo     },
     ]},
     { groupKey: "settings.groups.apps", sections: [
@@ -509,6 +514,7 @@ export default function SettingsPage() {
     dashboard: { descriptionKey: "settings.dashboard.intro", icon: LayoutDashboard },
     connection: { descriptionKey: "settings.connection.description", icon: Link2 },
     calendar: { descriptionKey: "settings.calendar.description", icon: CalendarDays },
+    energy: { descriptionKey: "settings.energy.description", icon: Zap },
     tasks: { descriptionKey: "settings.tasks.description", icon: ListTodo },
     apps: { descriptionKey: "settings.apps.description", icon: LayoutGrid },
     entities: { descriptionKey: "settings.entities.description", icon: List },
@@ -1100,6 +1106,62 @@ export default function SettingsPage() {
               <SettingsGroup title={t("settings.calendar.titles")} description={t("settings.calendar.titlesHint")}>
                 <CalendarTitleCodesEditor />
               </SettingsGroup>
+            </>
+          )}
+
+          {section === "energy" && (
+            <>
+              <SettingsToggle
+                checked={energyStore.enabled}
+                onChange={energyStore.setEnabled}
+                label={t("settings.energy.enabled")}
+              />
+              {energyStore.enabled ? (
+                <>
+                  <SettingsGroup title={t("settings.energy.contract")}>
+                    <SettingsField label={t("settings.energy.costPerKwh")} hint={t("settings.energy.costPerKwhHint")}>
+                      <SettingsInput
+                        type="number"
+                        step="0.01"
+                        value={energyStore.costPerKwh ?? ""}
+                        onChange={(e) => {
+                          const n = parseFloat(e.target.value);
+                          energyStore.setCostPerKwh(Number.isFinite(n) ? n : undefined);
+                        }}
+                      />
+                    </SettingsField>
+                    <SettingsField label={t("settings.energy.netbeheerkostenPerDag")} hint={t("settings.energy.netbeheerkostenPerDagHint")}>
+                      <SettingsInput
+                        type="number"
+                        step="0.01"
+                        value={energyStore.netbeheerkostenPerDag ?? ""}
+                        onChange={(e) => {
+                          const n = parseFloat(e.target.value);
+                          energyStore.setNetbeheerkostenPerDag(Number.isFinite(n) ? n : undefined);
+                        }}
+                      />
+                    </SettingsField>
+                    <SettingsField label={t("settings.energy.vasteLeveringskostenPerMaand")} hint={t("settings.energy.vasteLeveringskostenPerMaandHint")}>
+                      <SettingsInput
+                        type="number"
+                        step="0.01"
+                        value={energyStore.vasteLeveringskostenPerMaand ?? ""}
+                        onChange={(e) => {
+                          const n = parseFloat(e.target.value);
+                          energyStore.setVasteLeveringskostenPerMaand(Number.isFinite(n) ? n : undefined);
+                        }}
+                      />
+                    </SettingsField>
+                  </SettingsGroup>
+                  <a
+                    href="/energy"
+                    className="inline-flex items-center gap-2 self-start rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90"
+                  >
+                    <Zap className="h-4 w-4" />
+                    {t("nav.energy")}
+                  </a>
+                </>
+              ) : null}
             </>
           )}
 

@@ -17,6 +17,32 @@ export function clampClimateCardHeight(n: unknown): number {
   return Math.min(CLIMATE_CARD_MAX_HEIGHT, Math.max(CLIMATE_CARD_MIN_HEIGHT, Math.round(v)));
 }
 
+/** Resize from the bottom-right corner while keeping the top-left of the card fixed. */
+export function resizeClimateCardFromBottomRight(input: {
+  startWidth: number;
+  startHeight: number;
+  startLeft: number;
+  startBottom: number;
+  dx: number;
+  dy: number;
+  viewportWidth: number;
+  viewportHeight: number;
+}): { width: number; height: number; left: number; bottom: number } {
+  const top = input.viewportHeight - input.startBottom - input.startHeight;
+  const maxWidth = Math.max(
+    CLIMATE_CARD_MIN_WIDTH,
+    Math.min(CLIMATE_CARD_MAX_WIDTH, Math.floor(input.viewportWidth - input.startLeft))
+  );
+  const maxHeight = Math.max(
+    CLIMATE_CARD_MIN_HEIGHT,
+    Math.min(CLIMATE_CARD_MAX_HEIGHT, Math.floor(input.viewportHeight - Math.max(0, top)))
+  );
+  const width = Math.min(maxWidth, clampClimateCardWidth(input.startWidth + input.dx));
+  const height = Math.min(maxHeight, clampClimateCardHeight(input.startHeight + input.dy));
+  const bottom = Math.max(0, input.viewportHeight - Math.max(0, top) - height);
+  return { width, height, left: input.startLeft, bottom };
+}
+
 export type ClimateModeTile = "auto" | "heat" | "cool";
 
 export const CLIMATE_MODE_TILES: ClimateModeTile[] = ["auto", "heat", "cool"];

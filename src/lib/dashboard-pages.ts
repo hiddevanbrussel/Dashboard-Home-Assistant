@@ -79,6 +79,21 @@ export function shouldConsumeHistoryBack(page: number): boolean {
   return page > 0;
 }
 
+/** Keep Android/Chrome edge-back in sync with pager motion. */
+export function dashboardPagerHistoryStep(
+  fromPage: number,
+  toPage: number
+): "push" | "back" | "none" {
+  if (toPage === fromPage) return "none";
+  return toPage > fromPage ? "push" : "back";
+}
+
+export function historyHasDashboardPager(
+  state: { dashboardPager?: unknown } | null | undefined
+): boolean {
+  return state != null && typeof state.dashboardPager === "number";
+}
+
 export function dashboardPageSettleDurationMs(distancePx: number): number {
   const distance = Math.abs(distancePx);
   if (!Number.isFinite(distance)) return 280;

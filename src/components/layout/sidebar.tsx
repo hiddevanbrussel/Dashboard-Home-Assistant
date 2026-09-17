@@ -11,12 +11,14 @@ import {
   Music2,
   Settings,
   Sun,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
 import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
+import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
 import { useThemeStore } from "@/stores/theme-store";
 
 /** Space reserved on the left for the floating icon rail. */
@@ -29,6 +31,7 @@ const coreItems = [
 
 const optionalItems = [
   { href: "/calendar", icon: CalendarDays, labelKey: "nav.calendar", flag: "calendar" },
+  { href: "/energy", icon: Zap, labelKey: "nav.energy", flag: "energy" },
   { href: "/family", icon: ListTodo, labelKey: "nav.family", flag: "family" },
   { href: "/music", icon: Music2, labelKey: "nav.music", flag: "music" },
 ] as const;
@@ -73,15 +76,18 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
   const musicAssistantEnabled = useMusicAssistantStore((s) => s.enabled);
   const calendarEnabled = useCalendarStore((s) => s.enabled);
   const choresEnabled = useChoresStore((s) => s.enabled);
+  const energyEnabled = useEnergyStore((s) => s.enabled);
 
   useEffect(() => {
     hydrateMusicAssistantStore();
     hydrateCalendarStore();
     hydrateChoresStore();
+    hydrateEnergyStore();
   }, []);
 
   const extra = optionalItems.filter((item) => {
     if (item.flag === "calendar") return calendarEnabled;
+    if (item.flag === "energy") return energyEnabled;
     if (item.flag === "family") return choresEnabled;
     if (item.flag === "music") return musicAssistantEnabled;
     return false;

@@ -340,7 +340,7 @@ export function FloatingVacuumCard2({
         !editMode && "cursor-pointer",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
       )}
-      data-no-page-swipe
+      data-no-page-swipe={editMode || sheetOpen ? true : undefined}
       aria-haspopup="dialog"
       aria-expanded={sheetOpen}
       style={{
@@ -348,7 +348,7 @@ export function FloatingVacuumCard2({
         bottom: position.bottom,
         width: displayWidth,
         height: displayHeight,
-        ...(!editMode ? { touchAction: "none" } : {}),
+        ...(!editMode && !sheetOpen ? { touchAction: "pan-y" } : {}),
       }}
       {...(!editMode && {
         onPointerDown: startLongPress,

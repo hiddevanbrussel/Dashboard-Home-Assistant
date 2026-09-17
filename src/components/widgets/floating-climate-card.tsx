@@ -4,7 +4,12 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { ClimateCard2Widget } from "./climate-card-2-widget";
-import { clampClimateCardHeight, clampClimateCardWidth } from "@/lib/climate-card";
+import {
+  clampClimateCardHeight,
+  clampClimateCardWidth,
+  resizeClimateCardFromBottomRight,
+} from "@/lib/climate-card";
+import { useTranslation } from "@/hooks/use-translation";
 
 /** Voor backwards compatibility. Icon picker gebruikt CARD_ICON_OPTIONS. */
 export const CLIMATE_ICON_OPTIONS: readonly string[] = [];
@@ -75,6 +80,7 @@ export function FloatingClimateCard({
   onRemove,
   onEdit,
   onEnterEditMode,
+  onResize,
 }: {
   /** Meerdere climate widgets: swipe om te wisselen. Bij één widget mag je title + entity_id gebruiken. */
   widgets?: ClimateCardWidgetItem[];
@@ -85,10 +91,16 @@ export function FloatingClimateCard({
   onRemove?: (widgetId: string) => void;
   onEdit?: (widgetId: string) => void;
   onEnterEditMode?: () => void;
+  onResize?: (size: { width: number; height: number }) => void;
 }) {
+  const { t } = useTranslation();
   const widgets = widgetsProp ?? (titleProp != null && entityIdProp != null ? [{ id: "", title: titleProp, entity_id: entityIdProp, type: "climate_card_2" as const }] : []);
-  const totalWidth = clampClimateCardWidth(widgets[0]?.width);
-  const totalHeight = clampClimateCardHeight(widgets[0]?.height);
+  const cardWidth = clampClimateCardWidth(widgets[0]?.width);
+  const cardHeight = clampClimateCardHeight(widgets[0]?.height);
+  const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const totalWidth = liveSize?.width ?? cardWidth;
+  const totalHeight = liveSize?.height ?? cardHeight;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [flipDeg, setFlipDeg] = useState(0);
   const [nextIndex, setNextIndex] = useState<number | null>(null);
@@ -142,6 +154,7 @@ export function FloatingClimateCard({
   );
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
+  const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -175,7 +188,7 @@ export function FloatingClimateCard({
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!editMode) return;
+      if (!editMode || isResizing) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
       setIsDragging(true);
@@ -187,7 +200,7 @@ export function FloatingClimateCard({
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [position, editMode]
+    [position, editMode, isResizing]
   );
 
   const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
@@ -232,19 +245,84 @@ export function FloatingClimateCard({
     [isDragging, maxLeft, maxBottom, storageScope]
   );
 
+  const applyResizeDelta = useCallback((clientX: number, clientY: number) => {
+    const start = resizeStart.current;
+    const next = resizeClimateCardFromBottomRight({
+      startWidth: start.width,
+      startHeight: start.height,
+      startLeft: start.left,
+      startBottom: start.bottom,
+      dx: clientX - start.x,
+      dy: clientY - start.y,
+      viewportWidth: typeof window !== "undefined" ? window.innerWidth : 1200,
+      viewportHeight: typeof window !== "undefined" ? window.innerHeight : 800,
+    });
+    setLiveSize({ width: next.width, height: next.height });
+    setPosition({ left: next.left, bottom: next.bottom });
+    return next;
+  }, []);
+
+  const handleResizePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!editMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      setIsResizing(true);
+      resizeStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        width: totalWidth,
+        height: totalHeight,
+        left: position.left,
+        bottom: position.bottom,
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    [editMode, totalWidth, totalHeight, position.left, position.bottom]
+  );
+
+  const handleResizePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isResizing) return;
+      applyResizeDelta(e.clientX, e.clientY);
+    },
+    [isResizing, applyResizeDelta]
+  );
+
+  const handleResizePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (isResizing) {
+        const next = applyResizeDelta(e.clientX, e.clientY);
+        setIsResizing(false);
+        setPosition({ left: next.left, bottom: next.bottom });
+        savePosition(storageScope, { left: next.left, bottom: next.bottom });
+        onResize?.({ width: next.width, height: next.height });
+        if (!onResize) setLiveSize(null);
+      }
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    },
+    [isResizing, applyResizeDelta, storageScope, onResize]
+  );
+
+  useEffect(() => {
+    if (!liveSize || isResizing) return;
+    if (cardWidth === liveSize.width && cardHeight === liveSize.height) setLiveSize(null);
+  }, [cardWidth, cardHeight, liveSize, isResizing]);
+
   return (
     <div
       className={cn(
-        "fixed z-30 overflow-hidden rounded-2xl bg-transparent shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
-        editMode && "cursor-grab touch-none active:cursor-grabbing",
-        editMode && !isDragging && "animate-edit-wiggle"
+        "fixed z-30 rounded-2xl bg-transparent shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
+        editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
+        editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}
       style={{
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
         height: totalHeight,
-        ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
+        ...(!editMode && onEnterEditMode ? { touchAction: "pan-y" } : {}),
       }}
       {...(!editMode &&
         onEnterEditMode && {
@@ -377,6 +455,27 @@ export function FloatingClimateCard({
           )}
         </div>
       </div>
+      {editMode ? (
+        <button
+          type="button"
+          aria-label={t("climateCard.resize")}
+          className="absolute -bottom-1.5 -right-1.5 z-30 flex h-9 w-9 cursor-nwse-resize touch-none items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/25"
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={handleResizePointerMove}
+          onPointerUp={handleResizePointerUp}
+          onPointerCancel={handleResizePointerUp}
+        >
+          <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-gray-600 dark:text-white/80" aria-hidden>
+            <path
+              d="M3.5 10.5h7M10.5 3.5v7M6 10.5h4.5M10.5 6v4.5"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="1.6"
+            />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }

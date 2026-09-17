@@ -35,6 +35,7 @@ import { OfflinePill } from "@/components/offline-pill";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn, generateId } from "@/lib/utils";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
+import { EnergyOverview } from "@/components/energy/energy-overview";
 import { EditPanelModal } from "./edit-panel";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -722,7 +723,7 @@ export default function EnergyPage() {
       headerEndAction={headerEndAction}
       welcomeTitle={welcomeTitle || undefined}
       welcomeSubtitle={welcomeSubtitle || undefined}
-      hideWelcome={false}
+      hideWelcome={!editMode}
       welcomeEditable={editMode}
       onWelcomeChange={editMode ? ({ title, subtitle }) => { setWelcomeTitle(title); setWelcomeSubtitle(subtitle); } : undefined}
     >
@@ -740,6 +741,18 @@ export default function EnergyPage() {
           <OfflinePill />
         </div>
 
+        {!editMode ? (
+          <EnergyOverview
+            title={welcomeTitle}
+            subtitle={welcomeSubtitle}
+            houseImage={
+              widgets.find((w) => w.type === "energy_monitor_card")?.background_image ??
+              widgets.find((w) => w.type === "energy_monitor_card")?.background_image_dark ??
+              null
+            }
+          />
+        ) : (
+        <>
         <div className={cn("rounded-card overflow-hidden", editMode && "grid-edit-touch")}>
           <ReactGridLayout
             className="layout"
@@ -957,6 +970,8 @@ export default function EnergyPage() {
             onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
           />
         ))}
+        </>
+        )}
 
         {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
           <EditPanelModal

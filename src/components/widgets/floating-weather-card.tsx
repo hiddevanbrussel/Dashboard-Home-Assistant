@@ -4,6 +4,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { WeatherCardWidget } from "./weather-card-widget";
+import { WeatherBottomSheet } from "@/components/weather/weather-bottom-sheet";
+import { isVacuumCardTap } from "@/lib/vacuum-card";
 
 const STORAGE_KEY = "dashboard.floatingWeatherCardPosition";
 const DEFAULT_OFFSET = 24;
@@ -65,6 +67,7 @@ function defaultPosition(cardWidth: number, cardHeight: number): Position {
 }
 
 const LONG_PRESS_MS = 500;
+const TAP_MOVE_PX = 16;
 
 export function FloatingWeatherCard({
   title,
@@ -96,6 +99,10 @@ export function FloatingWeatherCard({
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
+  const movedRef = useRef(false);
+  const pressStart = useRef({ x: 0, y: 0 });
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -106,15 +113,33 @@ export function FloatingWeatherCard({
 
   const startLongPress = useCallback(
     (e: React.PointerEvent) => {
-      if (editMode || !onEnterEditMode) return;
+      if (editMode || sheetOpen) return;
+      if ((e.target as HTMLElement).closest?.("button")) return;
+      longPressFiredRef.current = false;
+      movedRef.current = false;
+      pressStart.current = { x: e.clientX, y: e.clientY };
       clearLongPress();
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      if (!onEnterEditMode) return;
       longPressTimerRef.current = setTimeout(() => {
         longPressTimerRef.current = null;
+        longPressFiredRef.current = true;
         onEnterEditMode();
       }, LONG_PRESS_MS);
     },
-    [editMode, onEnterEditMode, clearLongPress]
+    [editMode, sheetOpen, onEnterEditMode, clearLongPress]
+  );
+
+  const handlePressMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (editMode || sheetOpen) return;
+      const dx = e.clientX - pressStart.current.x;
+      const dy = e.clientY - pressStart.current.y;
+      if (dx * dx + dy * dy <= TAP_MOVE_PX * TAP_MOVE_PX) return;
+      movedRef.current = true;
+      clearLongPress();
+    },
+    [editMode, sheetOpen, clearLongPress]
   );
 
   const endLongPress = useCallback(
@@ -124,6 +149,12 @@ export function FloatingWeatherCard({
     },
     [clearLongPress]
   );
+
+  function handleCardClick() {
+    if (editMode || sheetOpen) return;
+    if (!isVacuumCardTap({ longPressFired: longPressFiredRef.current, moved: movedRef.current })) return;
+    setSheetOpen(true);
+  }
 
   useEffect(() => {
     if (initialized.current) return;
@@ -198,23 +229,27 @@ export function FloatingWeatherCard({
     <div
       className={cn(
         "fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl",
+        !editMode && "cursor-pointer",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
+      data-no-page-swipe={editMode || sheetOpen ? true : undefined}
+      aria-haspopup="dialog"
+      aria-expanded={sheetOpen}
       style={{
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
         height: totalHeight,
-        ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
+        ...(!editMode && !sheetOpen ? { touchAction: "pan-y" } : {}),
       }}
-      {...(!editMode &&
-        onEnterEditMode && {
-          onPointerDown: startLongPress,
-          onPointerUp: endLongPress,
-          onPointerLeave: endLongPress,
-          onPointerCancel: endLongPress,
-        })}
+      {...(!editMode && {
+        onPointerDown: startLongPress,
+        onPointerMove: handlePressMove,
+        onPointerUp: endLongPress,
+        onPointerCancel: endLongPress,
+        onClick: handleCardClick,
+      })}
       {...(editMode && {
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
@@ -235,6 +270,7 @@ export function FloatingWeatherCard({
           className="flex-1 min-h-0"
         />
       </div>
+      <WeatherBottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} entityId={entity_id} />
     </div>
   );
 }

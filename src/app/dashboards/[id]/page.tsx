@@ -1222,6 +1222,18 @@ export default function DashboardEditPage() {
     saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
+  function handleClimateCardResize(pageIndex: number, size: { width: number; height: number }) {
+    const width = clampClimateCardWidth(size.width);
+    const height = clampClimateCardHeight(size.height);
+    const newWidgets = widgets.map((w) =>
+      (w.type === "climate_card" || w.type === "climate_card_2") && widgetPage(w) === pageIndex
+        ? { ...w, width, height }
+        : w
+    );
+    setWidgets(newWidgets);
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
   function handleAddDashboardPage() {
     if (pageCount >= DASHBOARD_MAX_PAGES) return;
     const next = pageCount + 1;
@@ -1775,6 +1787,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? (id) => setEditingWidgetId(id) : undefined}
               onRemove={editMode ? (id) => handleRemoveTile(id) : undefined}
+              onResize={editMode ? (size) => handleClimateCardResize(pageIndex, size) : undefined}
             />
           ) : null;
         })()}
