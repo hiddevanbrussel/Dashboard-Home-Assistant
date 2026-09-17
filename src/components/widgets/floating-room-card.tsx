@@ -328,7 +328,7 @@ export function FloatingRoomCard({
     return (
       <div
         className={cn(
-          "z-30 shadow-xl rounded-2xl overflow-hidden backdrop-blur-2xl border flex transition-colors duration-200 shrink-0",
+          "card-plot-in z-30 shadow-xl rounded-2xl overflow-hidden backdrop-blur-2xl border flex transition-colors duration-200 shrink-0",
           "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
           editMode && "animate-edit-wiggle"
         )}
@@ -353,7 +353,7 @@ export function FloatingRoomCard({
   return (
     <div
       className={cn(
-        "fixed z-30 shadow-xl rounded-2xl overflow-hidden backdrop-blur-2xl border flex transition-colors duration-200",
+        "card-plot-in fixed z-30 shadow-xl rounded-2xl overflow-hidden backdrop-blur-2xl border flex transition-colors duration-200",
         "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"

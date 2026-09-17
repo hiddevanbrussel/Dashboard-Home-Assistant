@@ -200,7 +200,7 @@ export function FloatingCameraCard({
   return (
     <div
       className={cn(
-        "fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-black/90 backdrop-blur-2xl",
+        "card-plot-in fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-black/90 backdrop-blur-2xl",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

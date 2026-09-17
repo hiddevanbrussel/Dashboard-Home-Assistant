@@ -211,7 +211,7 @@ export function FloatingEnergyMonitorCard({
   return (
     <div
       className={cn(
-        "fixed z-20 rounded-2xl",
+        "card-plot-in fixed z-20 rounded-2xl",
         minimal
           ? "bg-transparent overflow-visible"
           : "overflow-hidden shadow-xl bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",

@@ -177,7 +177,7 @@ export function FloatingSolarCard({
   return (
     <div
       className={cn(
-        "fixed z-30 w-[320px]",
+        "card-plot-in fixed z-30 w-[320px]",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

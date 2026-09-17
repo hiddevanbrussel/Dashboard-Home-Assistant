@@ -313,7 +313,7 @@ export function FloatingClimateCard({
   return (
     <div
       className={cn(
-        "fixed z-30 rounded-2xl bg-transparent shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
+        "card-plot-in fixed z-30 rounded-2xl bg-transparent shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}

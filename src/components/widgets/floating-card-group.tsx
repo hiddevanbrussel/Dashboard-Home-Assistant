@@ -211,7 +211,7 @@ export function FloatingCardGroup({
   return (
     <div
       className={cn(
-        "fixed z-30 w-max max-w-[90vw] shadow-xl rounded-2xl overflow-hidden relative",
+        "card-plot-in fixed z-30 w-max max-w-[90vw] shadow-xl rounded-2xl overflow-hidden relative",
         editMode && "bg-white/10 dark:bg-black/50 backdrop-blur-xl border border-white/20 dark:border-white/10 cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ThemeProvider } from "./theme-provider";
 import { ScreensaverProvider } from "./screensaver";
 import { TimerSound } from "./timer-sound";
+import { CardPlotController } from "./card-plot-controller";
 import { useEntityStatePolling } from "@/hooks/use-entity-state";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <EntityStatePoller />
+        <CardPlotController />
         <TimerSound />
         <ScreensaverProvider>{children}</ScreensaverProvider>
       </ThemeProvider>

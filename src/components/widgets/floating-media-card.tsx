@@ -184,7 +184,7 @@ export function FloatingMediaCard({
   return (
     <div
       className={cn(
-        "fixed z-40 overflow-hidden rounded-2xl shadow-xl",
+        "card-plot-in fixed z-40 overflow-hidden rounded-2xl shadow-xl",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

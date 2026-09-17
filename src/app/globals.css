@@ -89,6 +89,35 @@
   animation: slide-in-from-right 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
+@keyframes card-plot-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.card-plot-in:not(.card-plot-played) {
+  opacity: 0;
+}
+
+.card-plot-in.card-plot-played {
+  animation: card-plot-in 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--card-plot-i, 0) * 55ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-plot-in,
+  .card-plot-in.card-plot-played {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes settings-panel-in {
   from {
     opacity: 0;

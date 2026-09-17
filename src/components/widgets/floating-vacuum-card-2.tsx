@@ -336,7 +336,7 @@ export function FloatingVacuumCard2({
   return (
     <div
       className={cn(
-        "fixed z-30",
+        "card-plot-in fixed z-30",
         !editMode && "cursor-pointer",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
       )}
