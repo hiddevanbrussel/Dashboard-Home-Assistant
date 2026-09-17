@@ -180,6 +180,19 @@ export function clampSegmentIterations(value: number, max: number): number {
   return Math.min(hi, Math.max(1, n));
 }
 
+export type VacuumBasicAction = "pause" | "stop" | "home";
+
+export function vacuumBasicActionDisabled(
+  action: VacuumBasicAction,
+  status: string | number | undefined,
+  busy: boolean
+): boolean {
+  if (busy) return true;
+  if (action === "pause") return status !== "cleaning";
+  if (action === "stop") return status === "docked" || status === "idle";
+  return status === "docked" || status === "returning";
+}
+
 export function parseConsumableProperties(data: unknown): ConsumableMeta[] {
   if (!data || typeof data !== "object") return [];
   const list = (data as { availableConsumables?: unknown }).availableConsumables;
