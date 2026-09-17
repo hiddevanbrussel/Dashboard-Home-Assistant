@@ -64,20 +64,20 @@ function HouseScene({
   const custom = Boolean(image?.trim());
   const src = image?.trim() || ENERGY_OVERVIEW_HOUSE_IMAGE;
   return (
-    <div className="relative min-h-[20rem] overflow-hidden">
+    <div className="relative">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt=""
         className={cn(
-          "absolute inset-0 h-full w-full",
-          custom ? "object-cover object-top" : "object-contain object-bottom"
+          "relative z-0 mx-auto h-auto w-full",
+          custom ? "min-h-[20rem] object-cover object-top" : "max-h-[26rem] object-contain"
         )}
       />
       {custom ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent dark:from-black" />
       ) : null}
-      <div className="absolute bottom-3 right-3 flex items-center gap-2">{toolbar}</div>
+      <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">{toolbar}</div>
     </div>
   );
 }
