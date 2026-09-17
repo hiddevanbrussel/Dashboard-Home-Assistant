@@ -177,7 +177,7 @@ export function FloatingPowerUsageCard({
   return (
     <div
       className={cn(
-        "fixed z-30",
+        "card-plot-in fixed z-30",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

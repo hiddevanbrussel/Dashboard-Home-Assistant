@@ -214,7 +214,7 @@ export function FloatingLightCard({
   return (
     <div
       className={cn(
-        "fixed z-30 transition-transform duration-200",
+        "card-plot-in fixed z-30 transition-transform duration-200",
         isSquare ? "rounded-[28px]" : "rounded-[24px]",
         !editMode && "origin-center active:scale-[0.97]",
         editMode && "cursor-grab touch-none active:cursor-grabbing",

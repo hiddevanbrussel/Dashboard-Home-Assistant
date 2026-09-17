@@ -158,7 +158,7 @@ export function FloatingTimerCard({
   return (
     <div
       className={cn(
-        "fixed z-30 overflow-hidden rounded-2xl border shadow-xl transition-colors duration-200",
+        "card-plot-in fixed z-30 overflow-hidden rounded-2xl border shadow-xl transition-colors duration-200",
         "border-white/30 bg-white/80 backdrop-blur-2xl dark:border-white/10 dark:bg-gray-900/80",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"

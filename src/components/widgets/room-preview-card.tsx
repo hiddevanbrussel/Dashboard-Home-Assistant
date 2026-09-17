@@ -38,7 +38,7 @@ export function RoomPreviewCard({
   return (
     <Link
       href={`/rooms/${encodeURIComponent(areaId)}`}
-      className="group relative block w-[240px] h-[200px] overflow-hidden rounded-3xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/50 shadow-lg backdrop-blur-2xl transition-all hover:ring-2 hover:ring-brand/40"
+      className="card-plot-in group relative block w-[240px] h-[200px] overflow-hidden rounded-3xl border border-white/20 dark:border-white/10 bg-white/10 dark:bg-black/50 shadow-lg backdrop-blur-2xl transition-all hover:ring-2 hover:ring-brand/40"
     >
       {background && (
         <>

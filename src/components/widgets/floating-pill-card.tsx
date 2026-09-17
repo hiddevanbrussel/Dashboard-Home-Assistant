@@ -190,7 +190,7 @@ export function FloatingPillCard({
   return (
     <div
       className={cn(
-        "fixed z-30 w-max max-w-[280px] shadow-xl rounded-2xl overflow-hidden bg-transparent",
+        "card-plot-in fixed z-30 w-max max-w-[280px] shadow-xl rounded-2xl overflow-hidden bg-transparent",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

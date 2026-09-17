@@ -290,7 +290,7 @@ export function FloatingCalendarCard({
       draggable={false}
       onDragStart={(event) => event.preventDefault()}
       className={cn(
-        "fixed z-40 [-webkit-user-drag:none]",
+        "card-plot-in fixed z-40 [-webkit-user-drag:none]",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing"
       )}
       style={{

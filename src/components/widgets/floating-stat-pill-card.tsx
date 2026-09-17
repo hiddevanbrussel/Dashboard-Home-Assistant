@@ -191,7 +191,7 @@ export function FloatingStatPillCard({
   return (
     <div
       className={cn(
-        "fixed z-30 w-[260px] overflow-visible bg-transparent",
+        "card-plot-in fixed z-30 w-[260px] overflow-visible bg-transparent",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

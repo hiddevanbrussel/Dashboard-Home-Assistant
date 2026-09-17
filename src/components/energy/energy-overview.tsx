@@ -300,7 +300,7 @@ export function EnergyOverview({
   return (
     <div className="mx-auto w-full max-w-[88rem] pb-8">
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,1.1fr)]">
-        <div>
+        <div className="card-plot-in">
           {title?.trim() ? (
             <h1 className="max-w-xl text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-white">
               {title}
@@ -326,11 +326,13 @@ export function EnergyOverview({
             <Stat label={t("energy.overview.gridExport")} value={formatEnergyValue(exportValue)} unit={exportUnit} />
           </div>
         </div>
-        <HouseScene image={houseImage} toolbar={toolbar} />
+        <div className="card-plot-in">
+          <HouseScene image={houseImage} toolbar={toolbar} />
+        </div>
       </div>
 
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,1.1fr)]">
-        <section>
+        <section className="card-plot-in">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.chart")}</h2>
             <div className="flex items-center gap-3 text-[11px] text-gray-400">
@@ -359,7 +361,7 @@ export function EnergyOverview({
           </div>
         </section>
 
-        <div className={cn("grid gap-6", showBattery ? "grid-cols-2" : "grid-cols-1")}>
+        <div className={cn("card-plot-in grid gap-6", showBattery ? "grid-cols-2" : "grid-cols-1")}>
           <PowerGauge
             valueLabel={formatEnergyValue(powerKw ?? consumptionKw)}
             percent={powerPct}
@@ -417,7 +419,7 @@ export function EnergyOverview({
       </div>
 
       {showHeatmap ? (
-        <section className="mt-8 border-t border-gray-100 pt-6 dark:border-white/10">
+        <section className="card-plot-in mt-8 border-t border-gray-100 pt-6 dark:border-white/10">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.heatmap")}</h2>
             <span className="text-[11px] text-gray-400">
