@@ -27,6 +27,7 @@
   html {
     @apply antialiased;
     overscroll-behavior-x: none;
+    touch-action: pan-y;
   }
 
   body {
@@ -37,6 +38,7 @@
     user-select: none;
     -webkit-touch-callout: none;
     overscroll-behavior-x: none;
+    touch-action: pan-y;
   }
 
   body input,

@@ -235,7 +235,7 @@ export function FloatingClimateCard({
   return (
     <div
       className={cn(
-        "fixed z-30",
+        "fixed z-30 overflow-hidden rounded-2xl bg-transparent shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -266,8 +266,8 @@ export function FloatingClimateCard({
       <div className="flex flex-col min-w-0 flex-1 w-full h-full">
         <div
           data-climate-swipe-area
-          data-no-page-swipe
-          className={cn("relative h-full overflow-hidden", hasMultiple && "touch-none")}
+          data-no-page-swipe={hasMultiple ? true : undefined}
+          className={cn("relative h-full overflow-hidden rounded-2xl bg-transparent", hasMultiple && "touch-none")}
           style={{ touchAction: hasMultiple ? "none" : undefined, perspective: "1000px", minHeight: totalHeight }}
           onPointerDown={hasMultiple ? (e) => {
             if (!editMode) {
@@ -330,7 +330,7 @@ export function FloatingClimateCard({
           } : undefined}
         >
           <div
-            className="relative h-full w-full overflow-hidden"
+            className="relative h-full w-full overflow-hidden rounded-2xl bg-transparent"
             style={{ minHeight: totalHeight }}
           >
             <div

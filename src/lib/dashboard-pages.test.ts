@@ -4,6 +4,7 @@ import {
   clampPageCount,
   clampPageIndex,
   dashboardPageSettleDurationMs,
+  isBrowserBackGestureZone,
   pageSwipeClaimPx,
   parseDashboardLayout,
   reindexWidgetsAfterRemovedPage,
@@ -11,6 +12,7 @@ import {
   rubberBandOffset,
   serializeDashboardLayout,
   settleDashboardPage,
+  shouldConsumeHistoryBack,
   shouldIgnorePageSwipe,
   velocityFromPointerSamples,
   widgetPage,
@@ -83,6 +85,16 @@ describe("dashboard pages", () => {
     expect(pageSwipeClaimPx("pen")).toBe(8);
     expect(pageSwipeClaimPx("mouse")).toBe(16);
     expect(pageSwipeClaimPx(undefined)).toBe(16);
+    expect(pageSwipeClaimPx("touch", 12)).toBe(4);
+    expect(pageSwipeClaimPx("mouse", 8)).toBe(16);
+  });
+
+  it("treats the left edge as a browser-back gesture zone on touch", () => {
+    expect(isBrowserBackGestureZone(8, "touch")).toBe(true);
+    expect(isBrowserBackGestureZone(40, "touch")).toBe(false);
+    expect(isBrowserBackGestureZone(8, "mouse")).toBe(false);
+    expect(shouldConsumeHistoryBack(0)).toBe(false);
+    expect(shouldConsumeHistoryBack(1)).toBe(true);
   });
 
   it("shortens the settle animation for small remaining distances", () => {

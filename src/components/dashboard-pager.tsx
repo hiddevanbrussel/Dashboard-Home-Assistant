@@ -10,8 +10,10 @@ import {
   applyDashboardPageDrag,
   DASHBOARD_MAX_PAGES,
   dashboardPageSettleDurationMs,
+  isBrowserBackGestureZone,
   pageSwipeClaimPx,
   settleDashboardPage,
+  shouldConsumeHistoryBack,
   shouldIgnorePageSwipe,
   velocityFromPointerSamples,
 } from "@/lib/dashboard-pages";
@@ -177,9 +179,9 @@ export function DashboardPager({
       const dx = e.clientX - start.x;
       const dy = e.clientY - start.y;
       // Cancel native link-drag before Chrome's ~4px threshold; our claim is 8–16px.
-      if (start.blockNativeDrag) e.preventDefault();
+      if (start.blockNativeDrag || isBrowserBackGestureZone(start.x, e.pointerType)) e.preventDefault();
       if (!draggingRef.current) {
-        const claimPx = pageSwipeClaimPx(e.pointerType);
+        const claimPx = pageSwipeClaimPx(e.pointerType, start.x);
         if (Math.abs(dx) < claimPx && Math.abs(dy) < claimPx) return;
         if (Math.abs(dy) >= Math.abs(dx)) {
           start.pointerId = -1;
@@ -251,6 +253,25 @@ export function DashboardPager({
       window.removeEventListener("click", onClick, true);
     };
   }, [editMode, goTo, stopAnimation]);
+
+  useEffect(() => {
+    if (pageCount < 2) return;
+    const onPopState = () => {
+      if (!shouldConsumeHistoryBack(pageRef.current)) return;
+      const next = pageRef.current - 1;
+      if (next > 0) history.pushState({ dashboardPager: next }, "");
+      goTo(next);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [pageCount, goTo]);
+
+  useEffect(() => {
+    if (pageCount < 2 || page <= 0) return;
+    const state = history.state as { dashboardPager?: number } | null;
+    if (state?.dashboardPager != null) return;
+    history.pushState({ dashboardPager: page }, "");
+  }, [page, pageCount]);
 
   useEffect(() => {
     if (pageCount < 2) return;
@@ -340,7 +361,7 @@ export function DashboardPager({
           className="pointer-events-none absolute bottom-5 z-[80] flex justify-center"
           style={{ left: SIDEBAR_INSET, right: 0 }}
         >
-          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-white/80 px-2 py-1.5 shadow-[0_8px_30px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] backdrop-blur-md dark:bg-zinc-900/80 dark:ring-white/10">
+          <div className="pointer-events-auto flex items-center gap-2">
             {editMode && onRemovePage ? (
               <button
                 type="button"
@@ -364,8 +385,8 @@ export function DashboardPager({
                   className={cn(
                     "h-2 rounded-full transition-all duration-300",
                     index === (animTarget ?? page)
-                      ? "w-5 bg-gray-800 dark:bg-white"
-                      : "w-2 bg-gray-300 hover:bg-gray-400 dark:bg-white/30 dark:hover:bg-white/50"
+                      ? "w-5 bg-brand"
+                      : "w-2 bg-black/25 hover:bg-black/40 dark:bg-white/35 dark:hover:bg-white/55"
                   )}
                 />
               ))}
