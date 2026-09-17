@@ -100,7 +100,7 @@ export function ValetudoMapCanvas({
         index = ids.length - 1;
       }
       const [r, g, b] = appearance === "card"
-        ? sheetSegmentColor(id, selected.has(id))
+        ? sheetSegmentColor(id, selected.has(id), index - 1)
         : colorForSegment(id, selected.has(id));
       const alpha = appearance === "card" ? 255 : selected.has(id) ? 230 : 200;
       forEachLayerPixel(layer, (x, y) => put(x, y, r, g, b, alpha, index));
@@ -115,25 +115,41 @@ export function ValetudoMapCanvas({
     if (appearance === "card") {
       const neighbor = (x: number, y: number) =>
         x < 0 || y < 0 || x >= mapW || y >= mapH ? 0 : lookup[y * mapW + x];
+      const edge = new Uint8Array(mapW * mapH);
+      for (let y = 0; y < mapH; y++) {
+        for (let x = 0; x < mapW; x++) {
+          const index = lookup[y * mapW + x];
+          if (index === 0) continue;
+          if (
+            neighbor(x - 1, y) !== index ||
+            neighbor(x + 1, y) !== index ||
+            neighbor(x, y - 1) !== index ||
+            neighbor(x, y + 1) !== index
+          ) {
+            edge[y * mapW + x] = 1;
+          }
+        }
+      }
       for (let y = 0; y < mapH; y++) {
         for (let x = 0; x < mapW; x++) {
           const index = lookup[y * mapW + x];
           if (index === 0) continue;
           const i = (y * mapW + x) * 4;
-          const edge =
-            neighbor(x - 1, y) !== index ||
-            neighbor(x + 1, y) !== index ||
-            neighbor(x, y - 1) !== index ||
-            neighbor(x, y + 1) !== index;
-          if (edge) {
+          const thick =
+            edge[y * mapW + x] === 1 ||
+            (x > 0 && edge[y * mapW + x - 1] === 1) ||
+            (x + 1 < mapW && edge[y * mapW + x + 1] === 1) ||
+            (y > 0 && edge[(y - 1) * mapW + x] === 1) ||
+            (y + 1 < mapH && edge[(y + 1) * mapW + x] === 1);
+          if (thick) {
             pixels[i] = 255;
             pixels[i + 1] = 255;
             pixels[i + 2] = 255;
             pixels[i + 3] = 255;
             continue;
           }
-          if (x % 4 === 0 || y % 4 === 0) {
-            const [r, g, b] = mixTowardWhite(pixels[i], pixels[i + 1], pixels[i + 2], 0.22);
+          if (x % 5 === 0 || y % 5 === 0) {
+            const [r, g, b] = mixTowardWhite(pixels[i], pixels[i + 1], pixels[i + 2], 0.28);
             pixels[i] = r;
             pixels[i + 1] = g;
             pixels[i + 2] = b;

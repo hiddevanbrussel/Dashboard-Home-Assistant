@@ -7,12 +7,20 @@ export const SHEET_SEGMENT_PALETTE = [
   [125, 184, 116],
 ] as const;
 
-export function sheetSegmentColor(id: string, selected: boolean): readonly [number, number, number] {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  const [r, g, b] = SHEET_SEGMENT_PALETTE[Math.abs(hash) % SHEET_SEGMENT_PALETTE.length];
+export function sheetSegmentColor(
+  id: string,
+  selected: boolean,
+  orderIndex?: number
+): readonly [number, number, number] {
+  let index = orderIndex;
+  if (index == null || !Number.isFinite(index) || index < 0) {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+    index = Math.abs(hash);
+  }
+  const [r, g, b] = SHEET_SEGMENT_PALETTE[index % SHEET_SEGMENT_PALETTE.length];
   if (!selected) return [r, g, b];
-  return [Math.round(r * 0.78), Math.round(g * 0.78), Math.round(b * 0.78)];
+  return [Math.round(r * 0.88), Math.round(g * 0.88), Math.round(b * 0.88)];
 }
 
 export function mixTowardWhite(r: number, g: number, b: number, amount: number): [number, number, number] {
