@@ -9,8 +9,6 @@ import {
   ENERGY_OVERVIEW_HOUSE_IMAGE,
   clampPercent,
   displayUnitForEnergy,
-  energyAlerts,
-  energyImpact,
   formatEnergyValue,
   formatHourTick,
   hasEnergyReading,
@@ -64,14 +62,14 @@ function HouseScene({
   const custom = Boolean(image?.trim());
   const src = image?.trim() || ENERGY_OVERVIEW_HOUSE_IMAGE;
   return (
-    <div className="relative">
+    <div className="relative -mt-4 lg:-mt-16">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt=""
         className={cn(
-          "relative z-0 mx-auto h-auto w-full",
-          custom ? "min-h-[20rem] object-cover object-top" : "max-h-[26rem] object-contain"
+          "relative z-0 mx-auto h-auto w-full object-top",
+          custom ? "min-h-[24rem] object-cover" : "max-h-[34rem] object-contain"
         )}
       />
       {custom ? (
@@ -223,9 +221,6 @@ export function EnergyOverview({
     temp: batteryTemp.value,
   });
 
-  const impact = energyImpact(yieldKwh);
-  const alerts = energyAlerts({ batteryPct: batterySoc.value, batteryTempC: batteryTemp.value });
-
   const historyIds = [entities.solarYieldTodayEntityId, entities.consumptionEntityId, entities.gridExportEntityId]
     .filter(Boolean)
     .join(",");
@@ -304,7 +299,7 @@ export function EnergyOverview({
 
   return (
     <div className="mx-auto w-full max-w-[88rem] pb-8">
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.95fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,1.1fr)]">
         <div>
           {title?.trim() ? (
             <h1 className="max-w-xl text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-white">
@@ -334,7 +329,7 @@ export function EnergyOverview({
         <HouseScene image={houseImage} toolbar={toolbar} />
       </div>
 
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.95fr)]">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,1.1fr)]">
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.chart")}</h2>
@@ -421,96 +416,41 @@ export function EnergyOverview({
         </div>
       </div>
 
-      <div className={cn("mt-8 grid gap-6 border-t border-gray-100 pt-6 dark:border-white/10", showHeatmap ? "md:grid-cols-[0.9fr_0.9fr_1.2fr]" : "md:grid-cols-2")}>
-        <section>
+      {showHeatmap ? (
+        <section className="mt-8 border-t border-gray-100 pt-6 dark:border-white/10">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.alerts")}</h2>
-            <span className="text-xs text-gray-400">
-              {alerts.length > 0 ? t("energy.overview.alertCount").replace("{n}", String(alerts.length)) : t("energy.overview.noAlerts")}
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.heatmap")}</h2>
+            <span className="text-[11px] text-gray-400">
+              {t("energy.overview.heatmapCount").replace("{n}", String(heatmap.length))}
             </span>
           </div>
-          {alerts.length > 0 ? (
-            <ul className="space-y-1.5 text-sm text-gray-600 dark:text-white/70">
-              {alerts.map((alert) => (
-                <li key={alert.key}>{t(alert.key)}</li>
-              ))}
-            </ul>
-          ) : (
-            <div className="flex items-end gap-4">
-              {[
-                { key: "energy.overview.alertVoltage", height: "32%", tone: "bg-orange-400" },
-                { key: "energy.overview.alertInverter", height: "48%", tone: "bg-amber-200" },
-                { key: "energy.overview.alertSystem", height: "72%", tone: "bg-[repeating-linear-gradient(-45deg,#d1d5db,#d1d5db_4px,#f3f4f6_4px,#f3f4f6_8px)]" },
-              ].map((bar) => (
-                <div key={bar.key} className="flex w-12 flex-col items-center gap-2">
-                  <div className="flex h-16 w-8 items-end overflow-hidden rounded-t-md bg-gray-100 dark:bg-white/10">
-                    <span className={cn("w-full rounded-t-md", bar.tone)} style={{ height: bar.height }} />
-                  </div>
-                  <span className="text-[10px] text-gray-400">{t(bar.key)}</span>
-                </div>
+          <div className="flex gap-2">
+            <div className="flex flex-col justify-around py-0.5 text-[10px] font-medium text-gray-400">
+              {Array.from({ length: heatmapRows }, (_, row) => (
+                <span key={row}>{String.fromCharCode(65 + row)}</span>
               ))}
             </div>
-          )}
-        </section>
-        <section>
-          <h2 className="mb-3 text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.impact")}</h2>
-          <dl className="space-y-2.5 text-sm">
-            <div className="flex justify-between text-gray-400">
-              <dt>{t("energy.overview.carbon")}</dt>
-              <dd className="font-medium text-gray-800 dark:text-white">
-                {impact.carbonKg != null ? `${formatEnergyValue(impact.carbonKg)} kg` : "—"}
-              </dd>
-            </div>
-            <div className="flex justify-between text-gray-400">
-              <dt>{t("energy.overview.trees")}</dt>
-              <dd className="font-medium text-gray-800 dark:text-white">
-                {impact.trees != null ? formatEnergyValue(impact.trees) : "—"}
-              </dd>
-            </div>
-            <div className="flex justify-between text-gray-400">
-              <dt>{t("energy.overview.homes")}</dt>
-              <dd className="font-medium text-gray-800 dark:text-white">
-                {impact.homes != null ? formatEnergyValue(impact.homes) : "—"}
-              </dd>
-            </div>
-          </dl>
-        </section>
-        {showHeatmap ? (
-          <section>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.heatmap")}</h2>
-              <span className="text-[11px] text-gray-400">
-                {t("energy.overview.heatmapCount").replace("{n}", String(heatmap.length))}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <div className="flex flex-col justify-around py-0.5 text-[10px] font-medium text-gray-400">
-                {Array.from({ length: heatmapRows }, (_, row) => (
-                  <span key={row}>{String.fromCharCode(65 + row)}</span>
+            <div className="min-w-0 flex-1">
+              <div className="grid grid-cols-12 gap-1.5">
+                {heatmap.map((tone, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      "aspect-square rounded-md",
+                      tone === "hot" ? "bg-orange-500" : tone === "warm" ? "bg-amber-300" : "bg-amber-100 dark:bg-amber-200/35"
+                    )}
+                  />
                 ))}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="grid grid-cols-12 gap-1.5">
-                  {heatmap.map((tone, i) => (
-                    <span
-                      key={i}
-                      className={cn(
-                        "aspect-square rounded-md",
-                        tone === "hot" ? "bg-orange-500" : tone === "warm" ? "bg-amber-300" : "bg-amber-100 dark:bg-amber-200/35"
-                      )}
-                    />
-                  ))}
-                </div>
-                <div className="mt-1 grid grid-cols-12 text-center text-[10px] text-gray-400">
-                  {Array.from({ length: Math.min(12, heatmap.length) }, (_, i) => (
-                    <span key={i}>{i + 1}</span>
-                  ))}
-                </div>
+              <div className="mt-1 grid grid-cols-12 text-center text-[10px] text-gray-400">
+                {Array.from({ length: Math.min(12, heatmap.length) }, (_, i) => (
+                  <span key={i}>{i + 1}</span>
+                ))}
               </div>
             </div>
-          </section>
-        ) : null}
-      </div>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

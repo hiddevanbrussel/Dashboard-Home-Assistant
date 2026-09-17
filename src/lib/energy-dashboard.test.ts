@@ -100,8 +100,36 @@ describe("energy dashboard entities", () => {
       },
     ];
     expect(matchesEnergySensorKind(entities[1], "energy")).toBe(true);
+    expect(
+      matchesEnergySensorKind(
+        { entity_id: "sensor.zonnepanelen_solis_energy_today", attributes: {} },
+        "energy"
+      )
+    ).toBe(true);
     expect(filterEnergySensors(entities, "power").map((e) => e.entity_id)).toEqual(["sensor.pv_power"]);
     expect(filterEnergySensors(entities, "energy", "light.kitchen")[0].entity_id).toBe("light.kitchen");
+    expect(
+      filterEnergySensors(
+        [...entities, { entity_id: "sensor.zonnepanelen_solis_energy_today", attributes: {} }],
+        "energy"
+      ).map((e) => e.entity_id)
+    ).toContain("sensor.zonnepanelen_solis_energy_today");
+    expect(
+      filterEnergySensors(
+        [...entities, { entity_id: "sensor.zonnepanelen_solis_energy_today", attributes: {} }],
+        "energy",
+        "",
+        "solis"
+      ).map((e) => e.entity_id)
+    ).toContain("sensor.zonnepanelen_solis_energy_today");
+    expect(
+      filterEnergySensors(
+        [...entities, { entity_id: "sensor.zonnepanelen_solis_energy_today", attributes: {} }],
+        "energy",
+        "",
+        "zonnepanelen_solis_energy_today"
+      ).map((e) => e.entity_id)
+    ).toEqual(["sensor.zonnepanelen_solis_energy_today"]);
     expect(entityLabel(entities[1])).toBe("PV today");
   });
 

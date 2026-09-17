@@ -23,12 +23,18 @@ type HaEntity = {
   attributes?: Record<string, unknown>;
 };
 
+function optionLabel(entity: HaEntity): string {
+  const name = entityLabel(entity);
+  return name === entity.entity_id ? name : `${name} · ${entity.entity_id}`;
+}
+
 function EntitySelect({
   id,
   value,
   kind,
   entities,
   noneLabel,
+  searchPlaceholder,
   onChange,
 }: {
   id: string;
@@ -36,22 +42,32 @@ function EntitySelect({
   kind: EnergySensorKind;
   entities: HaEntity[];
   noneLabel: string;
+  searchPlaceholder: string;
   onChange: (value: string) => void;
 }) {
+  const [query, setQuery] = useState("");
   const options = useMemo(
-    () => filterEnergySensors(entities, kind, value),
-    [entities, kind, value]
+    () => filterEnergySensors(entities, kind, value, query),
+    [entities, kind, value, query]
   );
 
   return (
-    <SettingsSelect id={id} value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">{noneLabel}</option>
-      {options.map((entity) => (
-        <option key={entity.entity_id} value={entity.entity_id}>
-          {entityLabel(entity)}
-        </option>
-      ))}
-    </SettingsSelect>
+    <div className="space-y-2">
+      <SettingsInput
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={searchPlaceholder}
+        aria-label={searchPlaceholder}
+      />
+      <SettingsSelect id={id} value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{noneLabel}</option>
+        {options.map((entity) => (
+          <option key={entity.entity_id} value={entity.entity_id}>
+            {optionLabel(entity)}
+          </option>
+        ))}
+      </SettingsSelect>
+    </div>
   );
 }
 
@@ -69,16 +85,10 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
     { id: "battery" as const, titleKey: "settings.energy.batteryEntities", descriptionKey: "settings.energy.batteryEntitiesHint" },
   ];
 
-  const panelOptions = useMemo(() => {
-    const q = panelSearch.trim().toLowerCase();
-    return filterEnergySensors(entities, "temperature").filter((entity) => {
-      if (!q) return true;
-      return (
-        entity.entity_id.toLowerCase().includes(q) ||
-        entityLabel(entity).toLowerCase().includes(q)
-      );
-    });
-  }, [entities, panelSearch]);
+  const panelOptions = useMemo(
+    () => filterEnergySensors(entities, "temperature", "", panelSearch),
+    [entities, panelSearch]
+  );
 
   return (
     <>
@@ -97,6 +107,7 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
                 kind={field.kind}
                 entities={entities}
                 noneLabel={t("settings.energy.entityNone")}
+                searchPlaceholder={t("settings.energy.entitySearch")}
                 onChange={(value) => setEntity(field.key, value)}
               />
             </SettingsField>
