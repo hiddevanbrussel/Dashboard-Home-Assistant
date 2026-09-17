@@ -15,6 +15,8 @@ import {
   parseEnergyEntities,
   parseEntityIdList,
   parseHaNumber,
+  shouldShowBatteryCard,
+  shouldShowHeatmap,
   toKilowatts,
   toKwh,
 } from "./energy-dashboard";
@@ -109,5 +111,15 @@ describe("energy dashboard entities", () => {
   it("maps panel temperatures onto heatmap tones", () => {
     expect(heatmapTones([22, 35, 55])).toEqual(["idle", "warm", "hot"]);
     expect(heatmapTones([undefined, undefined])).toEqual(["idle", "idle"]);
+  });
+
+  it("hides battery and heatmap when there is no reading", () => {
+    expect(shouldShowBatteryCard({})).toBe(false);
+    expect(shouldShowBatteryCard({ soc: undefined, power: Number.NaN })).toBe(false);
+    expect(shouldShowBatteryCard({ soc: 68 })).toBe(true);
+    expect(shouldShowBatteryCard({ temp: 21 })).toBe(true);
+    expect(shouldShowHeatmap([])).toBe(false);
+    expect(shouldShowHeatmap([undefined, undefined])).toBe(false);
+    expect(shouldShowHeatmap([undefined, 42])).toBe(true);
   });
 });
