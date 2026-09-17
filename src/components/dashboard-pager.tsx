@@ -182,8 +182,9 @@ export function DashboardPager({
         tabIndex={pageCount > 1 ? 0 : undefined}
         className={cn(
           "flex h-full w-full min-w-0 overflow-y-hidden outline-none scrollbar-hide overscroll-x-contain",
+          pageCount > 1 && "pointer-events-auto",
           pageCount > 1 && !editMode &&
-            "pointer-events-auto cursor-grab snap-x snap-mandatory overflow-x-auto touch-pan-x active:cursor-grabbing",
+            "cursor-grab snap-x snap-mandatory overflow-x-auto touch-pan-x active:cursor-grabbing",
           (pageCount < 2 || editMode) && "overflow-x-hidden"
         )}
         onPointerDown={onScrollerPointerDown}
