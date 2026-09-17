@@ -38,16 +38,21 @@ export function leftBottomInParent(
   };
 }
 
-function createsContainingBlock(node: HTMLElement): boolean {
-  if (node.style.transform) return true;
-  const style = window.getComputedStyle(node);
-  return Boolean(style.transform && style.transform !== "none");
+export function createsContainingBlock(style: {
+  position?: string;
+  transform?: string;
+}): boolean {
+  if (style.transform && style.transform !== "none") return true;
+  const position = style.position ?? "static";
+  return position === "relative" || position === "absolute" || position === "fixed" || position === "sticky";
 }
 
-function transformedAncestorRect(el: HTMLElement): DOMRect {
+function containingBlockRect(el: HTMLElement): DOMRect {
   let node: HTMLElement | null = el.parentElement;
   while (node) {
-    if (createsContainingBlock(node)) return node.getBoundingClientRect();
+    if (node.style.transform || createsContainingBlock(window.getComputedStyle(node))) {
+      return node.getBoundingClientRect();
+    }
     node = node.parentElement;
   }
   return new DOMRect(0, 0, window.innerWidth, window.innerHeight);
@@ -56,6 +61,6 @@ function transformedAncestorRect(el: HTMLElement): DOMRect {
 /** Read a floating card's left/bottom from its on-screen box, not from possibly stale state. */
 export function floatingPositionFromElement(el: HTMLElement): Position {
   const rect = el.getBoundingClientRect();
-  const parent = transformedAncestorRect(el);
+  const parent = containingBlockRect(el);
   return leftBottomInParent(rect, parent);
 }
