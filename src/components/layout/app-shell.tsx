@@ -23,7 +23,7 @@ import { Sidebar, SIDEBAR_INSET } from "./sidebar";
 import { FloatingToolbar } from "./floating-toolbar";
 import Link from "next/link";
 import { usePageBackground } from "@/components/page-background";
-import { hidesDashboardWallpaper } from "@/lib/page-background-path";
+import { hidesDashboardWallpaper, usesNeutralPageFill } from "@/lib/page-background-path";
 import { useTranslation } from "@/hooks/use-translation";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getScreensaverClock24h } from "@/stores/screensaver-store";
@@ -245,8 +245,10 @@ export function AppShell({
   const hasWelcomeText = Boolean(welcomeTitle || welcomeSubtitle);
   const showWelcomeInHeader = hasWelcomeText && !hideWelcome;
   const pageBackground = usePageBackground();
-  const hideWallpaper = hidesDashboardWallpaper(pathname) || activeTab === "/music";
+  const hideWallpaper =
+    hidesDashboardWallpaper(pathname) || activeTab === "/music" || activeTab === "/energy";
   const showPhotoWash = Boolean(pageBackground) && !hideWallpaper;
+  const useNeutralFill = usesNeutralPageFill(pathname) || activeTab === "/energy";
   const headerTime = useHeaderClock();
   const [temperatureModalOpen, setTemperatureModalOpen] = useState(false);
   const [chosenTemperatureEntityId, setChosenTemperatureEntityId] = useState<string | null>(null);
@@ -309,7 +311,9 @@ export function AppShell({
         contentNoScroll ? "h-dvh max-h-dvh overflow-hidden" : "min-h-screen",
         showPhotoWash
           ? "bg-white/85 dark:bg-black/50"
-          : "bg-page-light dark:bg-dark-page",
+          : useNeutralFill
+            ? "bg-white dark:bg-black"
+            : "bg-page-light dark:bg-dark-page",
         className
       )}
     >

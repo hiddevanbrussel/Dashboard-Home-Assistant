@@ -1,3 +1,5 @@
+export const ENERGY_OVERVIEW_HOUSE_IMAGE = "/energy-overview-house.webp";
+
 export type EnergyEntityKey =
   | "solarYieldTodayEntityId"
   | "solarPowerEntityId"
@@ -267,6 +269,55 @@ export function mergeHourlySeries(
     consumption: consumption.get(hour) ?? 0,
     export: exported.get(hour) ?? 0,
   }));
+}
+
+export type DayPoint = { date: string; consumption: number };
+export type EnergyChartRange = "hourly" | "daily" | "monthly";
+
+export function mergeDatedSeries(
+  series: Record<string, DayPoint[]>,
+  keys: { generation?: string; consumption?: string; export?: string }
+): EnergyHourlyRow[] {
+  const dates = new Set<string>();
+  for (const id of [keys.generation, keys.consumption, keys.export]) {
+    if (!id) continue;
+    for (const point of series[id] ?? []) dates.add(point.date);
+  }
+  const sorted = Array.from(dates).sort();
+  const pick = (id: string | undefined) => {
+    const map = new Map<string, number>();
+    if (!id) return map;
+    for (const point of series[id] ?? []) map.set(point.date, point.consumption);
+    return map;
+  };
+  const generation = pick(keys.generation);
+  const consumption = pick(keys.consumption);
+  const exported = pick(keys.export);
+  return sorted.map((date) => ({
+    hour: date.slice(5),
+    generation: generation.get(date) ?? 0,
+    consumption: consumption.get(date) ?? 0,
+    export: exported.get(date) ?? 0,
+  }));
+}
+
+export function seriesStats(values: number[]): { min: number; max: number; avg: number } | undefined {
+  const nums = values.filter((value) => Number.isFinite(value) && value > 0);
+  if (nums.length === 0) return undefined;
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
+  const avg = nums.reduce((sum, value) => sum + value, 0) / nums.length;
+  return { min, max, avg };
+}
+
+export function formatHourTick(hour: string): string {
+  const match = hour.match(/^(\d{1,2})(?::|$)/);
+  if (!match) return hour;
+  const h = Number(match[1]);
+  if (!Number.isFinite(h) || h < 0 || h > 23) return hour;
+  const suffix = h < 12 ? "am" : "pm";
+  const twelve = h % 12 === 0 ? 12 : h % 12;
+  return `${twelve}${suffix}`;
 }
 
 function entityDomain(entityId: string): string {

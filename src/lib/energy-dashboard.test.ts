@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ENERGY_OVERVIEW_HOUSE_IMAGE,
   displayUnitForEnergy,
   displayUnitForPower,
   energyAlerts,
@@ -11,15 +12,24 @@ import {
   heatmapTones,
   linkedEnergyEntityIds,
   matchesEnergySensorKind,
+  mergeDatedSeries,
   mergeHourlySeries,
   parseEnergyEntities,
   parseEntityIdList,
   parseHaNumber,
+  seriesStats,
   shouldShowBatteryCard,
   shouldShowHeatmap,
   toKilowatts,
   toKwh,
+  formatHourTick,
 } from "./energy-dashboard";
+
+describe("energy overview house", () => {
+  it("uses the bundled house cutout by default", () => {
+    expect(ENERGY_OVERVIEW_HOUSE_IMAGE).toBe("/energy-overview-house.webp");
+  });
+});
 
 describe("energy dashboard entities", () => {
   it("parses stored entity ids and ignores junk", () => {
@@ -106,6 +116,28 @@ describe("energy dashboard entities", () => {
     expect(rows).toHaveLength(24);
     expect(rows[10]).toEqual({ hour: "10:00", generation: 4, consumption: 2, export: 0 });
     expect(rows[11].generation).toBe(5);
+  });
+
+  it("merges daily history and summarizes a series", () => {
+    const rows = mergeDatedSeries(
+      {
+        "sensor.gen": [
+          { date: "2026-03-01", consumption: 10 },
+          { date: "2026-03-02", consumption: 12 },
+        ],
+      },
+      { generation: "sensor.gen" }
+    );
+    expect(rows).toEqual([
+      { hour: "03-01", generation: 10, consumption: 0, export: 0 },
+      { hour: "03-02", generation: 12, consumption: 0, export: 0 },
+    ]);
+    expect(seriesStats([0, 2.5, 7.9, 5.4])?.min).toBe(2.5);
+    expect(seriesStats([0, 2.5, 7.9, 5.4])?.max).toBe(7.9);
+    expect(seriesStats([0, 2.5, 7.9, 5.4])?.avg).toBeCloseTo(5.2667, 3);
+    expect(seriesStats([0, 0])).toBeUndefined();
+    expect(formatHourTick("06:00")).toBe("6am");
+    expect(formatHourTick("13:00")).toBe("1pm");
   });
 
   it("maps panel temperatures onto heatmap tones", () => {

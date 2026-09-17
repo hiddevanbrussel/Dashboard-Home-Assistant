@@ -24,6 +24,14 @@
     --glass-border-dark: rgba(255, 255, 255, 0.12);
   }
 
+  html.energy-page {
+    --page-bg: #ffffff;
+  }
+
+  html.dark.energy-page {
+    --page-bg: #000000;
+  }
+
   html {
     @apply antialiased;
     overscroll-behavior-x: none;
