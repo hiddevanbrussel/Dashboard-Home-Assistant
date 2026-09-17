@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { VacuumControlView } from "@/components/vacuum/vacuum-control-view";
 import { useTranslation } from "@/hooks/use-translation";
+import { shouldIgnoreVacuumSheetBackdropClose } from "@/lib/vacuum-card";
 
 export function VacuumBottomSheet({
   open,
@@ -13,9 +14,11 @@ export function VacuumBottomSheet({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const openedAtRef = useRef(0);
 
   useEffect(() => {
     if (!open) return;
+    openedAtRef.current = Date.now();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
@@ -30,9 +33,14 @@ export function VacuumBottomSheet({
 
   if (!open || typeof document === "undefined") return null;
 
+  function closeFromBackdrop() {
+    if (shouldIgnoreVacuumSheetBackdropClose(openedAtRef.current, Date.now())) return;
+    onClose();
+  }
+
   return createPortal(
     <div
-      className="fixed inset-0 z-[80]"
+      className="pointer-events-auto fixed inset-0 z-[120]"
       role="dialog"
       aria-modal="true"
       aria-label={t("vacuum.title")}
@@ -42,7 +50,7 @@ export function VacuumBottomSheet({
         type="button"
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px] dark:bg-black/55"
         aria-label={t("vacuum.close")}
-        onClick={onClose}
+        onClick={closeFromBackdrop}
       />
       <div className="animate-music-bar-in absolute inset-x-0 bottom-0 flex h-[min(92dvh,920px)] max-h-[92dvh] flex-col overflow-hidden rounded-t-[1.75rem] border border-white/50 bg-white shadow-[0_-18px_60px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-zinc-950 dark:shadow-[0_-18px_60px_rgba(0,0,0,0.55)]">
         <div className="flex shrink-0 justify-center pb-1 pt-3">

@@ -83,7 +83,13 @@ export function VacuumCard2Widget({
   className,
   onMoreClick,
   interactive = false,
-}: VacuumCard2Props & { className?: string; onMoreClick?: () => void; interactive?: boolean }) {
+  onCardClick,
+}: VacuumCard2Props & {
+  className?: string;
+  onMoreClick?: () => void;
+  interactive?: boolean;
+  onCardClick?: () => void;
+}) {
   const { t } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const progressEntity = useEntityStateStore((s) =>
@@ -175,6 +181,14 @@ export function VacuumCard2Widget({
         className
       )}
       style={{ width: cardWidth, height: cardHeight, minHeight: cardHeight }}
+      onClick={
+        onCardClick
+          ? (e) => {
+              if ((e.target as HTMLElement).closest?.("button")) return;
+              onCardClick();
+            }
+          : undefined
+      }
     >
       <div className="shrink-0 px-5 pt-5">
         <div className="flex items-start justify-between gap-3">

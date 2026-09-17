@@ -4,6 +4,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { VacuumCardWidget } from "./vacuum-card-widget";
+import { VacuumBottomSheet } from "@/components/vacuum/vacuum-bottom-sheet";
+import { isVacuumCardTap } from "@/lib/vacuum-card";
 
 const STORAGE_KEY = "dashboard.floatingVacuumCardPosition";
 const DEFAULT_OFFSET = 24;
@@ -48,6 +50,7 @@ function defaultPosition(): Position {
 }
 
 const LONG_PRESS_MS = 500;
+const TAP_MOVE_PX = 16;
 
 export function FloatingVacuumCard({
   title,
@@ -79,6 +82,10 @@ export function FloatingVacuumCard({
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
+  const movedRef = useRef(false);
+  const pressStart = useRef({ x: 0, y: 0 });
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -89,15 +96,33 @@ export function FloatingVacuumCard({
 
   const startLongPress = useCallback(
     (e: React.PointerEvent) => {
-      if (editMode || !onEnterEditMode) return;
+      if (editMode || sheetOpen) return;
+      if ((e.target as HTMLElement).closest?.("button")) return;
+      longPressFiredRef.current = false;
+      movedRef.current = false;
+      pressStart.current = { x: e.clientX, y: e.clientY };
       clearLongPress();
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      if (!onEnterEditMode) return;
       longPressTimerRef.current = setTimeout(() => {
         longPressTimerRef.current = null;
+        longPressFiredRef.current = true;
         onEnterEditMode();
       }, LONG_PRESS_MS);
     },
-    [editMode, onEnterEditMode, clearLongPress]
+    [editMode, sheetOpen, onEnterEditMode, clearLongPress]
+  );
+
+  const handlePressMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (editMode || sheetOpen) return;
+      const dx = e.clientX - pressStart.current.x;
+      const dy = e.clientY - pressStart.current.y;
+      if (dx * dx + dy * dy <= TAP_MOVE_PX * TAP_MOVE_PX) return;
+      movedRef.current = true;
+      clearLongPress();
+    },
+    [editMode, sheetOpen, clearLongPress]
   );
 
   const endLongPress = useCallback(
@@ -106,6 +131,24 @@ export function FloatingVacuumCard({
       clearLongPress();
     },
     [clearLongPress]
+  );
+
+  const handleCardClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (editMode || sheetOpen) return;
+      if ((e.target as HTMLElement).closest?.("button")) return;
+      if (
+        !isVacuumCardTap({
+          longPressFired: longPressFiredRef.current,
+          moved: movedRef.current,
+        })
+      ) {
+        return;
+      }
+      e.preventDefault();
+      setSheetOpen(true);
+    },
+    [editMode, sheetOpen]
   );
 
   useEffect(() => {
@@ -177,21 +220,25 @@ export function FloatingVacuumCard({
     <div
       className={cn(
         "fixed z-30 w-[320px] shadow-xl rounded-2xl overflow-hidden bg-white/90 dark:bg-black/50 backdrop-blur-2xl border border-gray-200/80 dark:border-white/10",
+        !editMode && "cursor-pointer",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
+      data-no-page-swipe
+      aria-haspopup="dialog"
+      aria-expanded={sheetOpen}
       style={{
         left: position.left,
         bottom: position.bottom,
-        ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
+        ...(!editMode ? { touchAction: "none" } : {}),
       }}
-      {...(!editMode &&
-        onEnterEditMode && {
-          onPointerDown: startLongPress,
-          onPointerUp: endLongPress,
-          onPointerLeave: endLongPress,
-          onPointerCancel: endLongPress,
-        })}
+      {...(!editMode && {
+        onPointerDown: startLongPress,
+        onPointerMove: handlePressMove,
+        onPointerUp: endLongPress,
+        onPointerCancel: endLongPress,
+        onClick: handleCardClick,
+      })}
       {...(editMode && {
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
@@ -205,6 +252,7 @@ export function FloatingVacuumCard({
       <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
         <VacuumCardWidget title={title} entity_id={entity_id} script_ids={script_ids} script_names={script_names} cleaned_area_entity_id={cleaned_area_entity_id} icon={icon} size="md" onMoreClick={editMode ? onEdit : undefined} />
       </div>
+      <VacuumBottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </div>
   );
 }

@@ -155,11 +155,21 @@ export function vacuumHeadlineKind(
   return "unknown";
 }
 
-/** True when a pointer-up on the vacuum card should open the control sheet. */
+/** True when a tap on the vacuum card should open the control sheet. */
 export function isVacuumCardTap(input: {
-  timerPending: boolean;
   longPressFired: boolean;
   moved: boolean;
 }): boolean {
-  return input.timerPending && !input.longPressFired && !input.moved;
+  return !input.longPressFired && !input.moved;
+}
+
+export const VACUUM_SHEET_BACKDROP_GUARD_MS = 450;
+
+/** Ignore a click on the dimmed backdrop that is really the same tap that opened the sheet. */
+export function shouldIgnoreVacuumSheetBackdropClose(
+  openedAt: number,
+  now: number,
+  windowMs = VACUUM_SHEET_BACKDROP_GUARD_MS
+): boolean {
+  return now - openedAt < windowMs;
 }
