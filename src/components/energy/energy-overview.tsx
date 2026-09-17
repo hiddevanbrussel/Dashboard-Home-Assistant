@@ -99,7 +99,7 @@ function HouseScene({
           <rect x="148" y="248" width="44" height="40" fill="#e7e1d6" />
         </svg>
       )}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent dark:from-[#111113]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent dark:from-black" />
       <div className="absolute bottom-3 right-3 flex items-center gap-2">{toolbar}</div>
     </div>
   );

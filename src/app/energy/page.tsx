@@ -321,9 +321,6 @@ export default function EnergyPage() {
   const [uploadingEnergyBg, setUploadingEnergyBg] = useState(false);
   const [uploadingEnergyBgDark, setUploadingEnergyBgDark] = useState(false);
   const [uploadingConditionImage, setUploadingConditionImage] = useState<{ idx: number; field: "image" | "image_dark" } | null>(null);
-  const [backgroundMenuOpen, setBackgroundMenuOpen] = useState(false);
-  const [uploadingBackground, setUploadingBackground] = useState(false);
-  const backgroundInputRef = useRef<HTMLInputElement>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const LONG_PRESS_MS = 500;
 
@@ -478,31 +475,6 @@ export default function EnergyPage() {
     setEditingWidgetId(null);
   }
 
-  async function handleBackgroundUpload(e: React.ChangeEvent<HTMLInputElement>, field: "background" | "backgroundLight" | "backgroundDark") {
-    const file = e.target.files?.[0];
-    if (!file || !data?.id) return;
-    e.target.value = "";
-    setUploadingBackground(true);
-    try {
-      const formData = new FormData();
-      formData.set("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Upload failed");
-      const payload: Record<string, string | null> = { [field]: json.url };
-      await fetch(`/api/energy-dashboard/${data.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      queryClient.invalidateQueries({ queryKey: ["energy-dashboard"] });
-      window.dispatchEvent(new Event("page-background-changed"));
-    } finally {
-      setUploadingBackground(false);
-      setBackgroundMenuOpen(false);
-    }
-  }
-
   useEffect(() => {
     if (!editingWidget) return;
     const isCategoryCard = editingWidget.type === "text_card";
@@ -555,67 +527,6 @@ export default function EnergyPage() {
 
   const headerEndAction = (
     <>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setBackgroundMenuOpen((v) => !v)}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-          aria-label={t("editPanel.roomBackground")}
-          title={t("editPanel.roomBackground")}
-        >
-          <ImageIcon className="h-4 w-4" aria-hidden />
-        </button>
-        {backgroundMenuOpen && (
-          <>
-            <div className="fixed inset-0 z-[299]" aria-hidden onClick={() => setBackgroundMenuOpen(false)} />
-            <div className="absolute right-0 top-full z-[300] mt-1 w-52 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-white/10 dark:bg-gray-900">
-              <input
-                ref={backgroundInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleBackgroundUpload(e, "background")}
-              />
-              <button
-                type="button"
-                onClick={() => backgroundInputRef.current?.click()}
-                disabled={uploadingBackground}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 disabled:opacity-50"
-              >
-                {uploadingBackground ? t("editPanel.uploading") : t("editPanel.uploadImage")} (fallback)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.createElement("input");
-                  input.type = "file";
-                  input.accept = "image/*";
-                  input.onchange = (e) => handleBackgroundUpload(e as unknown as React.ChangeEvent<HTMLInputElement>, "backgroundLight");
-                  input.click();
-                }}
-                disabled={uploadingBackground}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 disabled:opacity-50"
-              >
-                {uploadingBackground ? t("editPanel.uploading") : t("editPanel.uploadImage")} (light)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.createElement("input");
-                  input.type = "file";
-                  input.accept = "image/*";
-                  input.onchange = (e) => handleBackgroundUpload(e as unknown as React.ChangeEvent<HTMLInputElement>, "backgroundDark");
-                  input.click();
-                }}
-                disabled={uploadingBackground}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 disabled:opacity-50"
-              >
-                {uploadingBackground ? t("editPanel.uploading") : t("editPanel.uploadImage")} (dark)
-              </button>
-            </div>
-          </>
-        )}
-      </div>
       {editMode ? (
         <>
           <button
