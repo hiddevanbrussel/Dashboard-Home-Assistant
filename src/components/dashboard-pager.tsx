@@ -267,8 +267,6 @@ export function DashboardPager({
           </section>
         ))}
       </div>
-      {/* scroll listener lives on the scroller via the onScroll below — keep pages only here */}
-      </div>
 
       {showChrome ? (
         <div
