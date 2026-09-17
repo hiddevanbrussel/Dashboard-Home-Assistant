@@ -350,7 +350,12 @@ export function matchesEnergySensorKind(entity: NamedEntity, kind: EnergySensorK
 
   switch (kind) {
     case "energy":
-      return deviceClass === "energy" || unit === "kwh" || unit === "wh" || /energy|yield|opbrengst|export|teruglever/.test(hay);
+      return (
+        deviceClass === "energy" ||
+        unit === "kwh" ||
+        unit === "wh" ||
+        /energy|yield|opbrengst|export|teruglever|solis|zonnepaneel|pv/.test(hay)
+      );
     case "power":
       return deviceClass === "power" || unit === "w" || unit === "kw" || /power|vermogen|watt|output/.test(hay);
     case "battery":
@@ -371,11 +376,29 @@ export function entityLabel(entity: NamedEntity): string {
 export function filterEnergySensors(
   entities: NamedEntity[],
   kind: EnergySensorKind,
-  selectedId = ""
+  selectedId = "",
+  query = ""
 ): NamedEntity[] {
-  const matched = entities
+  const q = query.trim().toLowerCase();
+  const matchesQuery = (entity: NamedEntity) =>
+    !q ||
+    entity.entity_id.toLowerCase().includes(q) ||
+    entityLabel(entity).toLowerCase().includes(q);
+
+  let matched = entities
     .filter((entity) => matchesEnergySensorKind(entity, kind))
-    .sort((a, b) => entityLabel(a).localeCompare(entityLabel(b), undefined, { sensitivity: "base" }));
+    .filter(matchesQuery);
+
+  if (q) {
+    const seen = new Set(matched.map((entity) => entity.entity_id));
+    for (const entity of entities) {
+      if (!isEnergyCandidate(entity) || seen.has(entity.entity_id) || !matchesQuery(entity)) continue;
+      matched.push(entity);
+      seen.add(entity.entity_id);
+    }
+  }
+
+  matched.sort((a, b) => entityLabel(a).localeCompare(entityLabel(b), undefined, { sensitivity: "base" }));
 
   if (selectedId && !matched.some((entity) => entity.entity_id === selectedId)) {
     const extra = entities.find((entity) => entity.entity_id === selectedId);
@@ -386,6 +409,7 @@ export function filterEnergySensors(
 
   const fallback = entities
     .filter(isEnergyCandidate)
+    .filter(matchesQuery)
     .sort((a, b) => entityLabel(a).localeCompare(entityLabel(b), undefined, { sensitivity: "base" }));
   if (selectedId && !fallback.some((entity) => entity.entity_id === selectedId)) {
     const extra = entities.find((entity) => entity.entity_id === selectedId);

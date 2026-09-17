@@ -639,7 +639,7 @@ export default function EnergyPage() {
       onWelcomeChange={editMode ? ({ title, subtitle }) => { setWelcomeTitle(title); setWelcomeSubtitle(subtitle); } : undefined}
     >
       <div
-        className="space-y-6 overflow-x-hidden min-h-0"
+        className={cn("overflow-x-hidden min-h-0", editMode ? "space-y-6" : "relative")}
         {...(!editMode && getEditModeAllowed() && {
           onPointerDown: (e: React.PointerEvent) => { if ((e.target as HTMLElement).closest?.("button, a, [role=button]")) return; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); clearLongPressTimer(); longPressTimerRef.current = setTimeout(() => { longPressTimerRef.current = null; setEditMode(true); }, LONG_PRESS_MS); },
           onPointerUp: (e: React.PointerEvent) => { (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId); clearLongPressTimer(); },
@@ -648,8 +648,10 @@ export default function EnergyPage() {
           style: { touchAction: "none" },
         })}
       >
-        <div className="flex items-center justify-end">
-          <OfflinePill />
+        <div className={cn("flex items-center justify-end", !editMode && "pointer-events-none absolute right-0 top-0 z-20")}>
+          <div className={cn(!editMode && "pointer-events-auto")}>
+            <OfflinePill />
+          </div>
         </div>
 
         {!editMode ? (
