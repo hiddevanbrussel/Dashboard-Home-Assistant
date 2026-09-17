@@ -10,6 +10,8 @@ import {
   applyDashboardPageDrag,
   DASHBOARD_MAX_PAGES,
   dashboardPageSettleDurationMs,
+  dashboardPagerHistoryStep,
+  historyHasDashboardPager,
   isBrowserBackGestureZone,
   pageSwipeClaimPx,
   settleDashboardPage,
@@ -62,6 +64,7 @@ export function DashboardPager({
   const wheelLockRef = useRef(false);
   const animatingRef = useRef(false);
   const rafRef = useRef<number | null>(null);
+  const syncingHistoryRef = useRef(false);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -93,7 +96,7 @@ export function DashboardPager({
   }, []);
 
   const goTo = useCallback(
-    (next: number) => {
+    (next: number, options?: { fromHistory?: boolean }) => {
       const clamped = Math.min(pageCountRef.current - 1, Math.max(0, next));
       const from = pageRef.current;
       const startDrag = dragPxRef.current;
@@ -125,6 +128,14 @@ export function DashboardPager({
           setAnimTarget(null);
           if (clamped !== from) onPageChange(clamped);
         });
+        if (options?.fromHistory) return;
+        const historyStep = dashboardPagerHistoryStep(from, clamped);
+        if (historyStep === "push") {
+          history.pushState({ dashboardPager: clamped }, "");
+        } else if (historyStep === "back" && historyHasDashboardPager(history.state)) {
+          syncingHistoryRef.current = true;
+          history.back();
+        }
       };
       rafRef.current = requestAnimationFrame(step);
     },
@@ -257,21 +268,16 @@ export function DashboardPager({
   useEffect(() => {
     if (pageCount < 2) return;
     const onPopState = () => {
+      if (syncingHistoryRef.current) {
+        syncingHistoryRef.current = false;
+        return;
+      }
       if (!shouldConsumeHistoryBack(pageRef.current)) return;
-      const next = pageRef.current - 1;
-      if (next > 0) history.pushState({ dashboardPager: next }, "");
-      goTo(next);
+      goTo(pageRef.current - 1, { fromHistory: true });
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, [pageCount, goTo]);
-
-  useEffect(() => {
-    if (pageCount < 2 || page <= 0) return;
-    const state = history.state as { dashboardPager?: number } | null;
-    if (state?.dashboardPager != null) return;
-    history.pushState({ dashboardPager: page }, "");
-  }, [page, pageCount]);
 
   useEffect(() => {
     if (pageCount < 2) return;

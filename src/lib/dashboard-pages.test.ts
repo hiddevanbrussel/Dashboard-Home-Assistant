@@ -12,6 +12,8 @@ import {
   rubberBandOffset,
   serializeDashboardLayout,
   settleDashboardPage,
+  dashboardPagerHistoryStep,
+  historyHasDashboardPager,
   shouldConsumeHistoryBack,
   shouldIgnorePageSwipe,
   velocityFromPointerSamples,
@@ -80,11 +82,21 @@ describe("dashboard pages", () => {
     expect(shouldIgnorePageSwipe(headerChild as unknown as EventTarget, false)).toBe(true);
   });
 
-  it("ignores page swipes that start on the vacuum card", () => {
-    const vacuumCard = {
+  it("ignores page swipes that start on an open sheet, not on a dashboard card", () => {
+    const sheet = {
       closest: (selector: string) => (selector.includes("data-no-page-swipe") ? {} : null),
     };
-    expect(shouldIgnorePageSwipe(vacuumCard as unknown as EventTarget, false)).toBe(true);
+    expect(shouldIgnorePageSwipe(sheet as unknown as EventTarget, false)).toBe(true);
+    const card = { closest: () => null };
+    expect(shouldIgnorePageSwipe(card as unknown as EventTarget, false)).toBe(false);
+  });
+
+  it("pushes history when paging forward and pops when paging back", () => {
+    expect(dashboardPagerHistoryStep(0, 1)).toBe("push");
+    expect(dashboardPagerHistoryStep(1, 0)).toBe("back");
+    expect(dashboardPagerHistoryStep(1, 1)).toBe("none");
+    expect(historyHasDashboardPager({ dashboardPager: 1 })).toBe(true);
+    expect(historyHasDashboardPager({})).toBe(false);
   });
 
   it("claims a swipe sooner on touch than on mouse", () => {

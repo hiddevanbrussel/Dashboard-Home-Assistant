@@ -224,13 +224,13 @@ export function FloatingVacuumCard({
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
-      data-no-page-swipe
+      data-no-page-swipe={editMode || sheetOpen ? true : undefined}
       aria-haspopup="dialog"
       aria-expanded={sheetOpen}
       style={{
         left: position.left,
         bottom: position.bottom,
-        ...(!editMode ? { touchAction: "none" } : {}),
+        ...(!editMode && !sheetOpen ? { touchAction: "pan-y" } : {}),
       }}
       {...(!editMode && {
         onPointerDown: startLongPress,

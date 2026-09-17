@@ -261,7 +261,7 @@ export function ClimateCard2Widget({
       )}
       style={{ width: cardWidth, height: cardHeight, minHeight: cardHeight }}
     >
-      <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-5">
+      <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-4">
         <div className="min-w-0">
           <p className="truncate text-[13px] font-medium text-gray-400 dark:text-white/50">{subtitle}</p>
           <h2 className="truncate text-[1.35rem] font-semibold leading-tight tracking-tight text-gray-950 dark:text-white">
@@ -302,9 +302,10 @@ export function ClimateCard2Widget({
         </div>
       </div>
 
-      <div className="relative flex min-h-0 flex-1 items-center justify-center px-4">
+      <div className="relative flex min-h-0 flex-1 items-center justify-center px-3" style={{ containerType: "size" }}>
         <div
-          className="relative aspect-square w-[min(82%,13rem)]"
+          className="relative aspect-square"
+          style={{ width: "min(86cqw, 90cqh, 14rem)" }}
           role="meter"
           aria-label={t("climateCard.gauge").replace("{n}", String(Math.round((setpoint ?? 0) * 2) / 2))}
           aria-valuemin={CLIMATE_GAUGE_MIN}
@@ -314,7 +315,7 @@ export function ClimateCard2Widget({
           <div className="absolute inset-0 rounded-full bg-gray-50 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.04)] dark:bg-zinc-800/90 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]" />
           <ClimateTempGauge value={setpoint} active={isOn} />
 
-          <div className="absolute inset-[24%] flex flex-col items-center justify-center overflow-hidden px-2 pb-7 text-center">
+          <div className="absolute inset-[22%] bottom-[30%] flex flex-col items-center justify-center overflow-hidden px-2 text-center">
             <p
               className={cn(
                 "text-[10px] font-semibold uppercase tracking-[0.16em]",
@@ -349,7 +350,7 @@ export function ClimateCard2Widget({
             </p>
           </div>
 
-          <div className="absolute bottom-[11%] left-0 right-0 z-10 flex items-center justify-center gap-4">
+          <div className="absolute bottom-[10%] left-0 right-0 z-10 flex items-center justify-center gap-4">
             <button
               type="button"
               onClick={(e) => {
@@ -378,7 +379,7 @@ export function ClimateCard2Widget({
         </div>
       </div>
 
-      <div className="grid shrink-0 grid-cols-3 gap-2 px-5 pb-5 pt-1">
+      <div className="grid shrink-0 grid-cols-3 gap-2 px-5 pb-4 pt-0">
         {MODE_UI.map(({ mode, labelKey, Icon }) => {
           const selected = activeTile === mode;
           const enabled = climateTileEnabled(mode, hvacModes);

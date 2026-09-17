@@ -20,7 +20,7 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
 
-function WeatherIcon({ state, className }: { state: string; className?: string }) {
+export function WeatherIcon({ state, className }: { state: string; className?: string }) {
   const s = state?.toLowerCase() ?? "";
   const iconClass = cn("shrink-0", className ?? "h-8 w-8");
   if (s === "sunny" || s === "clear" || s === "zonnig") return <Sun className={iconClass} aria-hidden />;

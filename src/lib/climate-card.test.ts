@@ -20,6 +20,7 @@ import {
   isClimateOn,
   parseClimateTemp,
   preferredClimateOnMode,
+  resizeClimateCardFromBottomRight,
   resolveHvacModeForTile,
 } from "./climate-card";
 
@@ -32,6 +33,23 @@ describe("climate-card helpers", () => {
     expect(clampClimateCardHeight(180)).toBe(CLIMATE_CARD_MIN_HEIGHT);
     expect(clampClimateCardHeight(undefined)).toBe(CLIMATE_CARD_DEFAULT_HEIGHT);
     expect(clampClimateCardHeight(900)).toBe(480);
+  });
+
+  it("resizes from the bottom-right while keeping the top-left fixed", () => {
+    const next = resizeClimateCardFromBottomRight({
+      startWidth: 300,
+      startHeight: 340,
+      startLeft: 80,
+      startBottom: 40,
+      dx: 40,
+      dy: 30,
+      viewportWidth: 1200,
+      viewportHeight: 800,
+    });
+    expect(next.width).toBe(340);
+    expect(next.height).toBe(370);
+    expect(next.left).toBe(80);
+    expect(next.bottom).toBe(10);
   });
 
   it("parses temperatures and ignores unavailable values", () => {
