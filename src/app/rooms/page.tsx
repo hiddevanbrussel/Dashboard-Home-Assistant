@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { DoorOpen, Image as ImageIcon, Plus, X } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
@@ -77,7 +77,9 @@ export default function RoomsPage() {
   const [editEntities, setEditEntities] = useState<{ entity_id: string; attributes?: Record<string, unknown> }[]>([]);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  const [selectedFloor, setSelectedFloor] = useState<string | null>(null);
+  const [floorIndex, setFloorIndex] = useState(0);
+  const [pendingFloor, setPendingFloor] = useState<string | null>(null);
+  const floorScrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!editModalOpen) return;
@@ -139,6 +141,9 @@ export default function RoomsPage() {
         setCreateError(data?.error ?? "Failed to create room");
         return;
       }
+      const createdFloor = newFloor.trim()
+        ? newFloor.trim()
+        : newCustomFloor.trim() || "";
       setAddModalOpen(false);
       setNewName("");
       setNewId("");
@@ -148,6 +153,7 @@ export default function RoomsPage() {
       setNewCustomFloor("");
       setNewBackgroundFile(null);
       setNewBackgroundPreview(null);
+      setPendingFloor(createdFloor);
       loadRooms();
     } catch {
       setCreateError(t("rooms.genericError"));
@@ -214,6 +220,7 @@ export default function RoomsPage() {
       setEditingRoom(null);
       setEditBackgroundFile(null);
       setEditBackgroundPreview(null);
+      setPendingFloor(floorValue ?? "");
       loadRooms();
     } catch {
       setUpdateError(t("rooms.genericError"));
@@ -247,6 +254,38 @@ export default function RoomsPage() {
     label: getFloorLabel(floor || ""),
     floor: floor || "",
   }));
+  const activeFloorIndex = Math.max(0, Math.min(floorIndex, Math.max(0, floorsWithRooms.length - 1)));
+  const activeFloor = floorsWithRooms[activeFloorIndex]?.floor ?? "";
+
+  const goToFloor = useCallback((index: number, behavior: ScrollBehavior = "smooth") => {
+    const max = Math.max(0, floorsWithRooms.length - 1);
+    const clamped = Math.max(0, Math.min(max, index));
+    setFloorIndex(clamped);
+    const root = floorScrollerRef.current;
+    if (!root) return;
+    root.scrollTo({ left: clamped * root.clientWidth, behavior });
+  }, [floorsWithRooms.length]);
+
+  useEffect(() => {
+    if (floorIndex !== activeFloorIndex) setFloorIndex(activeFloorIndex);
+  }, [activeFloorIndex, floorIndex]);
+
+  useEffect(() => {
+    if (pendingFloor == null || floorsWithRooms.length === 0) return;
+    const i = floorsWithRooms.findIndex(({ floor }) => (floor || "") === pendingFloor);
+    if (i >= 0) goToFloor(i, "auto");
+    setPendingFloor(null);
+  }, [floorsWithRooms, goToFloor, pendingFloor]);
+
+  useEffect(() => {
+    const root = floorScrollerRef.current;
+    if (!root) return;
+    const onResize = () => {
+      root.scrollTo({ left: activeFloorIndex * root.clientWidth, behavior: "auto" });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [activeFloorIndex]);
 
   const openAddModal = () => {
     setAddModalOpen(true);
@@ -255,8 +294,9 @@ export default function RoomsPage() {
     setNewId("");
     setNewIcon(ROOM_ICON_OPTIONS[0]);
     setNewIconBackgroundColor("#3B82F6");
-    setNewFloor("");
-    setNewCustomFloor("");
+    const isPreset = FLOOR_ORDER.includes(activeFloor);
+    setNewFloor(isPreset ? activeFloor : "");
+    setNewCustomFloor(isPreset ? "" : activeFloor);
     setNewBackgroundFile(null);
     setNewBackgroundPreview(null);
   };
@@ -264,7 +304,7 @@ export default function RoomsPage() {
   return (
     <AppShell
       activeTab="/rooms"
-      contentScrollbarHidden
+      contentNoScroll
       headerEndAction={
         <button
           type="button"
@@ -276,8 +316,8 @@ export default function RoomsPage() {
         </button>
       }
     >
-      <div className="space-y-6 px-6 md:px-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 px-2 md:px-4">
+        <div className="flex shrink-0 flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">{t("rooms.kicker")}</p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
@@ -287,28 +327,18 @@ export default function RoomsPage() {
               {t("rooms.description")}
             </p>
           </div>
-          {rooms.length > 0 && (
-            <div className="flex flex-wrap gap-0.5 rounded-full bg-black/5 p-0.5 dark:bg-white/5">
-              <button
-                type="button"
-                onClick={() => setSelectedFloor(null)}
-                className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                  selectedFloor === null
-                    ? "bg-white text-gray-900 shadow-sm dark:bg-white/15 dark:text-white"
-                    : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
-                )}
-              >
-                {t("rooms.floorAll")}
-              </button>
-              {floorTabs.map(({ key, label, floor }) => (
+          {floorTabs.length > 1 && (
+            <div className="flex flex-wrap gap-0.5 rounded-full bg-black/5 p-0.5 dark:bg-white/5" role="tablist" aria-label={t("rooms.floors")}>
+              {floorTabs.map(({ key, label }, index) => (
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setSelectedFloor(floor)}
+                  role="tab"
+                  aria-selected={activeFloorIndex === index}
+                  onClick={() => goToFloor(index)}
                   className={cn(
                     "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                    selectedFloor === floor
+                    activeFloorIndex === index
                       ? "bg-white text-gray-900 shadow-sm dark:bg-white/15 dark:text-white"
                       : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
                   )}
@@ -358,34 +388,72 @@ export default function RoomsPage() {
         )}
 
         {!loading && !error && rooms.length > 0 && (
-          <div className="space-y-6">
-            {(selectedFloor === null ? floorsWithRooms : floorsWithRooms.filter(({ floor }) => (floor || "") === selectedFloor)).map(({ floor, rooms: floorRooms }) => (
-              <div key={floor || "_"} className="space-y-3">
-                {selectedFloor === null && (
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div
+              ref={floorScrollerRef}
+              className="flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-hide overscroll-x-contain touch-pan-x"
+              onScroll={(e) => {
+                const root = e.currentTarget;
+                if (root.clientWidth <= 0) return;
+                const next = Math.round(root.scrollLeft / root.clientWidth);
+                if (next !== floorIndex) setFloorIndex(next);
+              }}
+            >
+              {floorsWithRooms.map(({ floor, rooms: floorRooms }, index) => (
+                <section
+                  key={floor || "_"}
+                  className="flex h-full w-full min-w-full shrink-0 snap-start flex-col overflow-y-auto pb-4"
+                  aria-hidden={activeFloorIndex !== index}
+                >
+                  <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
                     {getFloorLabel(floor || "")}
                   </h3>
-                )}
-                <div className="flex flex-wrap gap-5">
-                  {floorRooms.map((r) => (
-                    <RoomPreviewCard
-                      key={r.areaId}
-                      areaId={r.areaId}
-                      name={r.name}
-                      icon={r.icon}
-                      iconBackgroundColor={r.iconBackgroundColor}
-                      background={r.background}
-                      onEdit={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openEditModal(r);
-                      }}
-                      onDelete={(e) => handleDelete(r.areaId, e)}
+                  <div className="flex flex-wrap gap-5">
+                    {floorRooms.map((r) => (
+                      <RoomPreviewCard
+                        key={r.areaId}
+                        areaId={r.areaId}
+                        name={r.name}
+                        icon={r.icon}
+                        iconBackgroundColor={r.iconBackgroundColor}
+                        background={r.background}
+                        onEdit={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openEditModal(r);
+                        }}
+                        onDelete={(e) => handleDelete(r.areaId, e)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+            {floorsWithRooms.length > 1 ? (
+              <div className="flex shrink-0 justify-center pb-1 pt-3">
+                <div className="flex items-center gap-1.5" role="tablist" aria-label={t("rooms.floors")}>
+                  {floorTabs.map(({ key, label }, index) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeFloorIndex === index}
+                      aria-label={t("rooms.floorN")
+                        .replace("{floor}", label)
+                        .replace("{n}", String(index + 1))
+                        .replace("{total}", String(floorTabs.length))}
+                      onClick={() => goToFloor(index)}
+                      className={cn(
+                        "h-2 rounded-full transition-all duration-300",
+                        activeFloorIndex === index
+                          ? "w-5 bg-brand"
+                          : "w-2 bg-black/25 hover:bg-black/40 dark:bg-white/35 dark:hover:bg-white/55"
+                      )}
                     />
                   ))}
                 </div>
               </div>
-            ))}
+            ) : null}
           </div>
         )}
       </div>
