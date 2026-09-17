@@ -317,7 +317,7 @@ export function EnergyOverview({
             </h1>
           )}
           <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-white/40">
-            // {resolvedSubtitle}
+            {resolvedSubtitle}
           </p>
 
           <div className="mt-8 grid grid-cols-3 gap-6 border-b border-gray-100 pb-6 dark:border-white/10">
