@@ -1475,20 +1475,19 @@ export default function MusicPage() {
     };
 
     const sources = musicAssistant.heroSliderSources;
-    const useSource = (id: (typeof sources)[number]) => sources.length === 0 || sources.includes(id);
+    const sourceEnabled = (id: (typeof sources)[number]) => sources.length === 0 || sources.includes(id);
 
-    if (useSource("libraryAlbums")) {
+    if (sourceEnabled("libraryAlbums")) {
       libraryAlbums.forEach((item, i) => addSpotlight(item, t("music.yourAlbums"), "album", i));
     }
-    if (useSource("recentlyPlayed") && musicAssistant.sectionRecentlyPlayedEnabled) {
+    if (sourceEnabled("recentlyPlayed") && musicAssistant.sectionRecentlyPlayedEnabled) {
       recentItems.forEach((item, i) => {
-        const kind = detectPlayableType(item);
-        if (kind === "album" || getAlbumParams(item)) {
+        if (detectPlayableType(item) === "album") {
           addSpotlight(item, t("music.recentlyPlayed"), "recent", i);
         }
       });
     }
-    if (useSource("featuredPlaylist") && musicAssistant.sectionFeaturedPlaylistEnabled) {
+    if (sourceEnabled("featuredPlaylist") && musicAssistant.sectionFeaturedPlaylistEnabled) {
       featuredPlaylists.forEach((item, i) => addSpotlight(item, t("music.featured"), "featured", i));
     }
 
@@ -1500,8 +1499,6 @@ export default function MusicPage() {
     const spotlights: MusicHomeSpotlight[] = shuffleSeeded(spotlightPool, spotlightSeedRef.current)
       .slice(0, 32)
       .map(({ item, kicker, key }) => {
-      const albumParams = getAlbumParams(item);
-      const artistParams = getArtistParams(item);
       const kind = detectPlayableType(item);
       return {
         key,
@@ -1514,19 +1511,20 @@ export default function MusicPage() {
           const uri = getPlayableUri(item, kind === "playlist" ? "playlist" : kind === "album" ? "album" : kind);
           if (uri) playOnPlayer(normalizePlayMediaUri(uri));
         },
-        onOpen: albumParams
-          ? () => {
-              setSelectedAlbum(item);
-              setSelectedMenu(null);
-              setSelectedCategory(null);
-            }
-          : artistParams
+        onOpen:
+          kind === "album"
             ? () => {
-                setSelectedArtist(item);
-                setSelectedMenu("artists");
+                setSelectedAlbum(item);
+                setSelectedMenu(null);
                 setSelectedCategory(null);
               }
-            : undefined,
+            : kind === "artist"
+              ? () => {
+                  setSelectedArtist(item);
+                  setSelectedMenu("artists");
+                  setSelectedCategory(null);
+                }
+              : undefined,
       };
     });
 
