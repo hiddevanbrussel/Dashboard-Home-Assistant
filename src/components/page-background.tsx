@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useThemeStore } from "@/stores/theme-store";
-import { hidesDashboardWallpaper, usesNeutralPageFill } from "@/lib/page-background-path";
+import { hidesDashboardWallpaper } from "@/lib/page-background-path";
 
 type BackgroundData = {
   background: string | null;
@@ -55,13 +55,6 @@ export function PageBackgroundProvider({
   const roomMatch = pathname?.match(/^\/rooms\/([^/]+)$/);
   const areaId = roomMatch?.[1];
   const hideWallpaper = hidesDashboardWallpaper(pathname);
-  const useNeutralFill = usesNeutralPageFill(pathname);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle("energy-page", useNeutralFill);
-    return () => root.classList.remove("energy-page");
-  }, [useNeutralFill]);
 
   useEffect(() => {
     async function load() {
