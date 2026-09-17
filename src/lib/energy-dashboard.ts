@@ -1,3 +1,5 @@
+export const ENERGY_OVERVIEW_HOUSE_IMAGE = "/energy-overview-house.webp";
+
 export type EnergyEntityKey =
   | "solarYieldTodayEntityId"
   | "solarPowerEntityId"

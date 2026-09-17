@@ -6,6 +6,7 @@ import { Settings2 } from "lucide-react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { useTranslation } from "@/hooks/use-translation";
 import {
+  ENERGY_OVERVIEW_HOUSE_IMAGE,
   clampPercent,
   displayUnitForEnergy,
   energyAlerts,
@@ -60,46 +61,22 @@ function HouseScene({
   image?: string | null;
   toolbar: ReactNode;
 }) {
+  const custom = Boolean(image?.trim());
+  const src = image?.trim() || ENERGY_OVERVIEW_HOUSE_IMAGE;
   return (
-    <div className="relative min-h-[16.5rem] overflow-hidden">
-      {image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
-      ) : (
-        <svg viewBox="0 0 560 300" className="absolute inset-0 h-full w-full" aria-hidden>
-          <defs>
-            <linearGradient id="energy-sky" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f4f1ea" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <rect width="560" height="300" fill="url(#energy-sky)" />
-          <path d="M70 138 L280 28 L490 138" fill="#1f1f1f" />
-          <rect x="92" y="86" width="376" height="78" rx="4" fill="#151515" />
-          <g fill="#2a3f55">
-            {Array.from({ length: 2 }, (_, row) =>
-              Array.from({ length: 8 }, (_, col) => (
-                <rect
-                  key={`${row}-${col}`}
-                  x={108 + col * 44}
-                  y={96 + row * 30}
-                  width="38"
-                  height="24"
-                  rx="2"
-                />
-              ))
-            )}
-          </g>
-          <rect x="108" y="138" width="344" height="150" fill="#f3efe8" />
-          <rect x="128" y="168" width="54" height="72" rx="2" fill="#d7e4ee" stroke="#c5d0d8" />
-          <rect x="198" y="168" width="54" height="72" rx="2" fill="#d7e4ee" stroke="#c5d0d8" />
-          <rect x="318" y="160" width="112" height="88" rx="3" fill="#ead9c4" />
-          <rect x="332" y="176" width="36" height="48" rx="2" fill="#d7e4ee" />
-          <rect x="376" y="176" width="36" height="48" rx="2" fill="#d7e4ee" />
-          <rect x="148" y="248" width="44" height="40" fill="#e7e1d6" />
-        </svg>
-      )}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent dark:from-black" />
+    <div className="relative min-h-[20rem] overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt=""
+        className={cn(
+          "absolute inset-0 h-full w-full",
+          custom ? "object-cover object-top" : "object-contain object-bottom"
+        )}
+      />
+      {custom ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent dark:from-black" />
+      ) : null}
       <div className="absolute bottom-3 right-3 flex items-center gap-2">{toolbar}</div>
     </div>
   );

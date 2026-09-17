@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ENERGY_OVERVIEW_HOUSE_IMAGE,
   displayUnitForEnergy,
   displayUnitForPower,
   energyAlerts,
@@ -23,6 +24,12 @@ import {
   toKwh,
   formatHourTick,
 } from "./energy-dashboard";
+
+describe("energy overview house", () => {
+  it("uses the bundled house cutout by default", () => {
+    expect(ENERGY_OVERVIEW_HOUSE_IMAGE).toBe("/energy-overview-house.webp");
+  });
+});
 
 describe("energy dashboard entities", () => {
   it("parses stored entity ids and ignores junk", () => {
