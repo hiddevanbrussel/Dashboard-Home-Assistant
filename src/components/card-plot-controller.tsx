@@ -9,6 +9,7 @@ import {
   CARD_PLOT_PLAYED_CLASS,
   DASHBOARD_EDIT_ATTR,
   isDashboardEditFlagSet,
+  markCardsPlotInstant,
   sortCardsForPlot,
 } from "@/lib/card-plot";
 
@@ -16,24 +17,23 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function markPlayed(el: Element, index: number, instant = false) {
+function markPlayed(el: Element, index: number, instant = false, seen?: WeakSet<Element>) {
+  seen?.add(el);
   if (instant) el.classList.add(CARD_PLOT_INSTANT_CLASS);
   if (el.classList.contains(CARD_PLOT_PLAYED_CLASS)) return;
   (el as HTMLElement).style.setProperty("--card-plot-i", String(index));
   el.classList.add(CARD_PLOT_PLAYED_CLASS);
 }
 
-function markAllInstant() {
-  document.querySelectorAll(`.${CARD_PLOT_CLASS}`).forEach((el) => markPlayed(el, 0, true));
-}
-
 export function CardPlotController() {
   const pathname = usePathname();
 
   useEffect(() => {
+    const seen = new WeakSet<Element>();
+
     const revealVisible = () => {
       if (isDashboardEditFlagSet()) {
-        markAllInstant();
+        markCardsPlotInstant();
         return;
       }
       document.querySelectorAll(`.${CARD_PLOT_CLASS}:not(.${CARD_PLOT_PLAYED_CLASS})`).forEach((el) => {
@@ -45,13 +45,13 @@ export function CardPlotController() {
           rect.right > 0 &&
           rect.top < window.innerHeight &&
           rect.left < window.innerWidth;
-        if (visible) markPlayed(el, 0);
+        if (visible) markPlayed(el, 0, false, seen);
       });
     };
 
     if (prefersReducedMotion()) {
       const reveal = () => {
-        document.querySelectorAll(`.${CARD_PLOT_CLASS}`).forEach((el) => markPlayed(el, 0, true));
+        document.querySelectorAll(`.${CARD_PLOT_CLASS}`).forEach((el) => markPlayed(el, 0, true, seen));
       };
       reveal();
       const mo = new MutationObserver(reveal);
@@ -67,7 +67,7 @@ export function CardPlotController() {
       frame = 0;
       if (isDashboardEditFlagSet()) {
         pending.clear();
-        markAllInstant();
+        markCardsPlotInstant();
         return;
       }
       const batch = sortCardsForPlot(Array.from(pending), (el) => {
@@ -76,20 +76,28 @@ export function CardPlotController() {
       });
       pending.clear();
       for (const el of batch) {
-        markPlayed(el, nextIndex);
+        markPlayed(el, nextIndex, false, seen);
         nextIndex += 1;
       }
+    };
+
+    const restoreOrObserve = (el: Element) => {
+      if (seen.has(el) || el.classList.contains(CARD_PLOT_PLAYED_CLASS)) {
+        markPlayed(el, 0, true, seen);
+        return;
+      }
+      io.observe(el);
     };
 
     const io = new IntersectionObserver(
       (entries) => {
         if (isDashboardEditFlagSet()) {
-          markAllInstant();
+          markCardsPlotInstant();
           return;
         }
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
-          if (entry.target.classList.contains(CARD_PLOT_PLAYED_CLASS)) continue;
+          if (entry.target.classList.contains(CARD_PLOT_PLAYED_CLASS) || seen.has(entry.target)) continue;
           pending.add(entry.target);
           io.unobserve(entry.target);
         }
@@ -102,23 +110,26 @@ export function CardPlotController() {
 
     const observeNew = () => {
       if (isDashboardEditFlagSet()) {
-        markAllInstant();
+        markCardsPlotInstant();
         return;
       }
-      document.querySelectorAll(`.${CARD_PLOT_CLASS}:not(.${CARD_PLOT_PLAYED_CLASS})`).forEach((el) => {
-        io.observe(el);
-      });
+      document.querySelectorAll(`.${CARD_PLOT_CLASS}`).forEach((el) => restoreOrObserve(el));
     };
 
     const onEditFlag = () => {
       if (!isDashboardEditFlagSet()) return;
-      markAllInstant();
+      markCardsPlotInstant();
     };
 
     observeNew();
     onEditFlag();
     const mo = new MutationObserver(observeNew);
-    mo.observe(document.body, { childList: true, subtree: true });
+    mo.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class"],
+    });
     const attrMo = new MutationObserver(onEditFlag);
     attrMo.observe(document.documentElement, {
       attributes: true,

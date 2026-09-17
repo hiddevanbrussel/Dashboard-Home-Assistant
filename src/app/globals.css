@@ -109,8 +109,11 @@
   opacity: 0;
 }
 
-html[data-dashboard-edit] .card-plot-in:not(.card-plot-played) {
+html[data-dashboard-edit] .card-plot-in,
+html[data-dashboard-edit] .card-plot-in.card-plot-played {
+  animation: none !important;
   opacity: 1;
+  transform: none;
 }
 
 .card-plot-in.card-plot-played:not(.card-plot-instant) {

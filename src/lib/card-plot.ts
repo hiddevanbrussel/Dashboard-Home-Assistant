@@ -16,6 +16,13 @@ export function setDashboardEditFlag(editMode: boolean): void {
   else document.documentElement.removeAttribute(DASHBOARD_EDIT_ATTR);
 }
 
+/** Skip the plot animation on every card currently in the tree. */
+export function markCardsPlotInstant(root: ParentNode = document): void {
+  root.querySelectorAll(`.${CARD_PLOT_CLASS}`).forEach((el) => {
+    el.classList.add(CARD_PLOT_INSTANT_CLASS, CARD_PLOT_PLAYED_CLASS);
+  });
+}
+
 export function isDashboardEditFlagSet(): boolean {
   return typeof document !== "undefined" && document.documentElement.hasAttribute(DASHBOARD_EDIT_ATTR);
 }

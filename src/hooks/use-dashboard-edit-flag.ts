@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { setDashboardEditFlag } from "@/lib/card-plot";
+import { useLayoutEffect } from "react";
+import { markCardsPlotInstant, setDashboardEditFlag } from "@/lib/card-plot";
 
-/** Lets the plot controller skip first-open animations while a dashboard is being edited. */
+/** Skip first-open plot animations before the browser paints edit mode. */
 export function useDashboardEditFlag(editMode: boolean) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     setDashboardEditFlag(editMode);
+    if (editMode) markCardsPlotInstant();
     return () => setDashboardEditFlag(false);
   }, [editMode]);
 }
