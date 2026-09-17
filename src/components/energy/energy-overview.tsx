@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, BatteryMedium, Leaf, Settings2, SunMedium } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { useTranslation } from "@/hooks/use-translation";
 import {
@@ -11,15 +11,20 @@ import {
   energyAlerts,
   energyImpact,
   formatEnergyValue,
-  hasLinkedEnergyEntities,
+  formatHourTick,
   hasEnergyReading,
+  hasLinkedEnergyEntities,
   heatmapTones,
+  mergeDatedSeries,
   mergeHourlySeries,
   parseHaNumber,
+  seriesStats,
   shouldShowBatteryCard,
   shouldShowHeatmap,
   toKilowatts,
   toKwh,
+  type EnergyChartRange,
+  type HeatmapTone,
 } from "@/lib/energy-dashboard";
 import { cn } from "@/lib/utils";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
@@ -39,7 +44,7 @@ function Stat({
   return (
     <div className="min-w-0">
       <p className="text-xs font-medium text-gray-400 dark:text-white/45">{label}</p>
-      <p className="mt-1 flex items-baseline gap-1 text-[1.65rem] font-semibold tracking-tight text-gray-900 dark:text-white">
+      <p className="mt-1 flex items-baseline gap-1 text-[1.85rem] font-semibold tracking-tight text-gray-900 dark:text-white">
         {value}
         {unit ? <span className="text-sm font-medium text-gray-400 dark:text-white/40">{unit}</span> : null}
       </p>
@@ -48,17 +53,140 @@ function Stat({
   );
 }
 
-function HousePlaceholder() {
+function HouseScene({
+  image,
+  toolbar,
+}: {
+  image?: string | null;
+  toolbar: ReactNode;
+}) {
   return (
-    <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-b from-sky-100 to-amber-50 dark:from-zinc-800 dark:to-zinc-900">
-      <div className="absolute inset-x-8 top-6 h-24 rounded-t-[1.25rem] bg-zinc-800 dark:bg-zinc-950" />
-      <div className="absolute inset-x-10 top-8 grid grid-cols-6 gap-1.5">
-        {Array.from({ length: 12 }, (_, i) => (
-          <span key={i} className="aspect-square rounded-sm bg-zinc-700 ring-1 ring-sky-300/40" />
-        ))}
+    <div className="relative min-h-[16.5rem] overflow-hidden">
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
+      ) : (
+        <svg viewBox="0 0 560 300" className="absolute inset-0 h-full w-full" aria-hidden>
+          <defs>
+            <linearGradient id="energy-sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#f4f1ea" />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <rect width="560" height="300" fill="url(#energy-sky)" />
+          <path d="M70 138 L280 28 L490 138" fill="#1f1f1f" />
+          <rect x="92" y="86" width="376" height="78" rx="4" fill="#151515" />
+          <g fill="#2a3f55">
+            {Array.from({ length: 2 }, (_, row) =>
+              Array.from({ length: 8 }, (_, col) => (
+                <rect
+                  key={`${row}-${col}`}
+                  x={108 + col * 44}
+                  y={96 + row * 30}
+                  width="38"
+                  height="24"
+                  rx="2"
+                />
+              ))
+            )}
+          </g>
+          <rect x="108" y="138" width="344" height="150" fill="#f3efe8" />
+          <rect x="128" y="168" width="54" height="72" rx="2" fill="#d7e4ee" stroke="#c5d0d8" />
+          <rect x="198" y="168" width="54" height="72" rx="2" fill="#d7e4ee" stroke="#c5d0d8" />
+          <rect x="318" y="160" width="112" height="88" rx="3" fill="#ead9c4" />
+          <rect x="332" y="176" width="36" height="48" rx="2" fill="#d7e4ee" />
+          <rect x="376" y="176" width="36" height="48" rx="2" fill="#d7e4ee" />
+          <rect x="148" y="248" width="44" height="40" fill="#e7e1d6" />
+        </svg>
+      )}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent dark:from-[#111113]" />
+      <div className="absolute bottom-3 right-3 flex items-center gap-2">{toolbar}</div>
+    </div>
+  );
+}
+
+function PowerGauge({
+  valueLabel,
+  percent,
+  minLabel,
+  maxLabel,
+  avgLabel,
+  t,
+}: {
+  valueLabel: string;
+  percent: number;
+  minLabel: string;
+  maxLabel: string;
+  avgLabel: string;
+  t: (key: string) => string;
+}) {
+  const ticks = 52;
+  const filled = Math.round((percent / 100) * ticks);
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-800 dark:text-white">{t("energy.overview.power")}</p>
+      <div className="relative mx-auto mt-2 h-40 w-40">
+        {Array.from({ length: ticks }, (_, i) => {
+          const angle = -90 + (i / ticks) * 360;
+          return (
+            <span
+              key={i}
+              className={cn(
+                "absolute left-1/2 top-1/2 h-2.5 w-[2px] -translate-x-1/2 rounded-full",
+                i < filled ? "bg-orange-400" : "bg-orange-200/70 dark:bg-orange-400/20"
+              )}
+              style={{ transform: `rotate(${angle}deg) translateY(-4.55rem)` }}
+            />
+          );
+        })}
+        <div className="absolute inset-[1.85rem] flex flex-col items-center justify-center">
+          <span className="text-[11px] text-gray-400">{t("energy.overview.power")}</span>
+          <span className="text-[1.85rem] font-semibold leading-none text-gray-900 dark:text-white">{valueLabel}</span>
+          <span className="mt-1 text-[11px] text-gray-400">kW</span>
+        </div>
       </div>
-      <div className="mt-36 flex h-40 items-end justify-center bg-gradient-to-t from-white/80 to-transparent pb-4 dark:from-zinc-900/80">
-        <SunMedium className="h-8 w-8 text-amber-400" />
+      <div className="mt-1 grid grid-cols-3 text-center text-[11px] text-gray-400">
+        <div>
+          <p>{t("energy.overview.min")}</p>
+          <p className="font-medium text-gray-700 dark:text-white/80">{minLabel}</p>
+        </div>
+        <div>
+          <p>{t("energy.overview.max")}</p>
+          <p className="font-medium text-gray-700 dark:text-white/80">{maxLabel}</p>
+        </div>
+        <div>
+          <p>{t("energy.overview.avg")}</p>
+          <p className="font-medium text-gray-700 dark:text-white/80">{avgLabel}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BatteryRow({
+  label,
+  valueLabel,
+  percent,
+  tone,
+}: {
+  label: string;
+  valueLabel: string;
+  percent: number;
+  tone: string;
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex justify-between text-[12px] text-gray-400">
+        <span>{label}</span>
+        <span className="font-medium text-gray-700 dark:text-white/75">{valueLabel}</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
+        <div className={cn("h-2 rounded-full", tone)} style={{ width: `${percent}%` }} />
+      </div>
+      <div className="mt-1 flex gap-px">
+        {Array.from({ length: 22 }, (_, i) => (
+          <span key={i} className="h-1.5 flex-1 rounded-[1px] bg-gray-200/90 dark:bg-white/10" />
+        ))}
       </div>
     </div>
   );
@@ -71,20 +199,6 @@ function useEntityReading(entityId: string) {
   return { value, unit, entity };
 }
 
-function BatteryRow({ label, valueLabel, percent, tone }: { label: string; valueLabel: string; percent: number; tone: string }) {
-  return (
-    <div>
-      <div className="mb-1 flex justify-between text-[11px] text-gray-400">
-        <span>{label}</span>
-        <span>{valueLabel}</span>
-      </div>
-      <div className="h-2 rounded-full bg-gray-100 dark:bg-white/10">
-        <div className={cn("h-2 rounded-full", tone)} style={{ width: `${percent}%` }} />
-      </div>
-    </div>
-  );
-}
-
 export function EnergyOverview({
   title,
   subtitle,
@@ -95,6 +209,7 @@ export function EnergyOverview({
   houseImage?: string | null;
 }) {
   const { t } = useTranslation();
+  const [range, setRange] = useState<EnergyChartRange>("hourly");
   useEffect(() => {
     hydrateEnergyStore();
   }, []);
@@ -137,187 +252,203 @@ export function EnergyOverview({
   const historyIds = [entities.solarYieldTodayEntityId, entities.consumptionEntityId, entities.gridExportEntityId]
     .filter(Boolean)
     .join(",");
+  const seriesKeys = {
+    generation: entities.solarYieldTodayEntityId || undefined,
+    consumption: entities.consumptionEntityId || undefined,
+    export: entities.gridExportEntityId || undefined,
+  };
 
-  const { data: hourlySeries } = useQuery({
-    queryKey: ["energy-hourly", historyIds],
+  const { data: historyPayload } = useQuery({
+    queryKey: ["energy-history", historyIds, range],
     enabled: Boolean(historyIds),
     queryFn: async () => {
-      const res = await fetch(`/api/ha/history?entity_ids=${encodeURIComponent(historyIds)}&granularity=hourly`);
-      if (!res.ok) throw new Error("Failed to fetch hourly history");
-      return (await res.json()) as Record<string, { hour: string; value: number }[]>;
+      if (range === "hourly") {
+        const res = await fetch(`/api/ha/history?entity_ids=${encodeURIComponent(historyIds)}&granularity=hourly`);
+        if (!res.ok) throw new Error("Failed to fetch hourly history");
+        return { kind: "hourly" as const, data: (await res.json()) as Record<string, { hour: string; value: number }[]> };
+      }
+      const days = range === "daily" ? 7 : 31;
+      const res = await fetch(`/api/ha/history?entity_ids=${encodeURIComponent(historyIds)}&days=${days}`);
+      if (!res.ok) throw new Error("Failed to fetch daily history");
+      return { kind: "daily" as const, data: (await res.json()) as Record<string, { date: string; consumption: number }[]> };
     },
     staleTime: 60_000,
   });
 
-  const chartData = useMemo(
-    () =>
-      mergeHourlySeries(hourlySeries ?? {}, {
-        generation: entities.solarYieldTodayEntityId || undefined,
-        consumption: entities.consumptionEntityId || undefined,
-        export: entities.gridExportEntityId || undefined,
-      }),
-    [hourlySeries, entities.solarYieldTodayEntityId, entities.consumptionEntityId, entities.gridExportEntityId]
-  );
+  const chartData = useMemo(() => {
+    if (!historyPayload) return mergeHourlySeries({}, seriesKeys);
+    if (historyPayload.kind === "hourly") return mergeHourlySeries(historyPayload.data, seriesKeys);
+    return mergeDatedSeries(historyPayload.data, seriesKeys);
+  }, [historyPayload, entities.solarYieldTodayEntityId, entities.consumptionEntityId, entities.gridExportEntityId]);
   const hasChartData = chartData.some((row) => row.generation > 0 || row.consumption > 0 || row.export > 0);
+  const powerStats = seriesStats(chartData.map((row) => row.generation));
 
-  const panelValues = panelTempEntityIds.map((id) => parseHaNumber(panelStates[id]?.state));
-  const showHeatmap = shouldShowHeatmap(panelValues);
-  const heatmap = showHeatmap ? heatmapTones(panelValues.filter(hasEnergyReading)) : [];
+  const panelReadings = panelTempEntityIds
+    .map((id) => parseHaNumber(panelStates[id]?.state))
+    .filter(hasEnergyReading);
+  const showHeatmap = shouldShowHeatmap(panelReadings);
+  const heatmap: HeatmapTone[] = showHeatmap ? heatmapTones(panelReadings) : [];
+  const heatmapCols = Math.min(12, Math.max(heatmap.length, 1));
+  const heatmapRows = Math.max(1, Math.ceil(heatmap.length / 12));
 
   const powerMax = Math.max(8, (powerKw ?? 0) * 1.25, 0.1);
-  const powerPct = clampPercent(((powerKw ?? 0) / powerMax) * 100);
-  const resolvedSubtitle =
-    subtitle?.trim() ||
-    (linked ? t("energy.overview.liveSubtitle") : t("energy.overview.subtitle"));
+  const powerPct = clampPercent(((powerKw ?? consumptionKw ?? 0) / powerMax) * 100);
+  const resolvedSubtitle = subtitle?.trim() || (linked ? t("energy.overview.liveSubtitle") : t("energy.overview.subtitle"));
+
+  const rangeOptions: EnergyChartRange[] = ["hourly", "daily", "monthly"];
+
+  const toolbar = (
+    <div className="pointer-events-auto flex items-center gap-2">
+      <div className="flex rounded-full bg-white/90 p-0.5 text-[11px] font-medium shadow-sm ring-1 ring-black/5 dark:bg-zinc-900/90 dark:ring-white/10">
+        {rangeOptions.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => setRange(option)}
+            className={cn(
+              "rounded-full px-3 py-1",
+              range === option
+                ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                : "text-gray-500 hover:text-gray-800 dark:text-white/60"
+            )}
+          >
+            {t(`energy.overview.range${option[0].toUpperCase()}${option.slice(1)}`)}
+          </button>
+        ))}
+      </div>
+      <a
+        href="/settings?section=energy"
+        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white/90 px-2.5 text-[11px] font-medium text-gray-600 shadow-sm ring-1 ring-black/5 hover:text-gray-900 dark:bg-zinc-900/90 dark:text-white/70 dark:ring-white/10"
+      >
+        <Settings2 className="h-3.5 w-3.5" />
+        {t("settings.energy.entities")}
+      </a>
+    </div>
+  );
 
   return (
-    <div className="mx-auto w-full max-w-6xl pb-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="mx-auto w-full max-w-[88rem] pb-8">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.95fr)]">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">
-            {title?.trim() || t("energy.overview.title")}
-          </h1>
-          <p className="mt-1 text-sm text-gray-400 dark:text-white/45">{resolvedSubtitle}</p>
-        </div>
-        <a
-          href="/settings?section=energy"
-          className="inline-flex items-center gap-2 rounded-full bg-black/[0.04] px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-black/[0.07] dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/15"
-        >
-          <Settings2 className="h-3.5 w-3.5" />
-          {t("settings.energy.entities")}
-        </a>
-      </div>
+          {title?.trim() ? (
+            <h1 className="max-w-xl text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-white">
+              {title}
+            </h1>
+          ) : (
+            <h1 className="max-w-xl text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-white">
+              <span className="block">{t("energy.overview.titleLine1")}</span>
+              <span className="block">{t("energy.overview.titleLine2")}</span>
+            </h1>
+          )}
+          <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-white/40">
+            // {resolvedSubtitle}
+          </p>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <div className="space-y-5">
-          <div className="grid grid-cols-3 gap-4 rounded-[1.5rem] bg-white/80 p-5 shadow-sm dark:bg-white/5">
-            <Stat
-              label={t("energy.overview.totalGenerated")}
-              value={formatEnergyValue(yieldKwh)}
-              unit="kWh"
-            />
+          <div className="mt-8 grid grid-cols-3 gap-6 border-b border-gray-100 pb-6 dark:border-white/10">
+            <Stat label={t("energy.overview.totalGenerated")} value={formatEnergyValue(yieldKwh)} unit="kWh" />
             <Stat
               label={t("energy.overview.currentOutput")}
               value={formatEnergyValue(powerKw)}
               unit="kW"
               hint={powerKw != null && powerKw > 0.2 ? t("energy.overview.peakActive") : undefined}
             />
-            <Stat
-              label={t("energy.overview.gridExport")}
-              value={formatEnergyValue(exportValue)}
-              unit={exportUnit}
-            />
+            <Stat label={t("energy.overview.gridExport")} value={formatEnergyValue(exportValue)} unit={exportUnit} />
           </div>
-
-          <section className="rounded-[1.5rem] bg-white/80 p-5 shadow-sm dark:bg-white/5">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.chart")}</h2>
-              <div className="flex items-center gap-3 text-[11px] text-gray-400">
-                <span className="inline-flex items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-orange-400" /> {t("energy.overview.generation")}</span>
-                <span className="inline-flex items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-amber-300" /> {t("energy.overview.consumption")}</span>
-                <span className="inline-flex items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {t("energy.overview.export")}</span>
-              </div>
-            </div>
-            {hasChartData ? (
-              <div className="h-40">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                    <XAxis dataKey="hour" tick={{ fontSize: 10 }} interval={3} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={32} />
-                    <Line type="monotone" dataKey="generation" stroke="#fb923c" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="consumption" stroke="#fcd34d" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="export" stroke="#34d399" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="flex h-40 items-end gap-1 rounded-2xl bg-gradient-to-t from-orange-50/80 to-transparent px-2 pb-2 dark:from-orange-400/5">
-                {chartData.map((row) => (
-                  <span
-                    key={row.hour}
-                    className="flex-1 rounded-t-md bg-orange-300/40 dark:bg-orange-400/20"
-                    style={{ height: "18%" }}
-                  />
-                ))}
-              </div>
-            )}
-            <p className="mt-3 text-xs text-gray-400 dark:text-white/40">
-              {linked ? t("energy.overview.chartLiveHint") : t("energy.overview.chartHint")}
-            </p>
-          </section>
         </div>
+        <HouseScene image={houseImage} toolbar={toolbar} />
+      </div>
 
-        <div className="space-y-5">
-          {houseImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={houseImage} alt="" className="h-52 w-full rounded-[1.5rem] object-cover shadow-sm" />
-          ) : (
-            <HousePlaceholder />
-          )}
-          <div className={cn("grid gap-4", showBattery ? "grid-cols-2" : "grid-cols-1")}>
-            <section className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm dark:bg-white/5">
-              <p className="text-xs font-medium text-gray-400">{t("energy.overview.power")}</p>
-              <div className="mt-3 flex h-28 items-center justify-center">
-                <div
-                  className="relative flex h-24 w-24 items-center justify-center rounded-full"
-                  style={{
-                    background: `conic-gradient(#fb923c ${powerPct}%, rgba(251, 146, 60, 0.18) ${powerPct}%)`,
-                  }}
-                >
-                  <span className="flex h-[4.6rem] w-[4.6rem] flex-col items-center justify-center rounded-full bg-white dark:bg-zinc-900">
-                    <span className="text-xl font-semibold text-gray-900 dark:text-white">
-                      {formatEnergyValue(powerKw ?? consumptionKw)}
-                    </span>
-                    <span className="text-[10px] font-medium text-gray-400">kW</span>
-                  </span>
-                </div>
-              </div>
-            </section>
-            {showBattery ? (
-            <section className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm dark:bg-white/5">
-              <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-gray-400">
-                <BatteryMedium className="h-3.5 w-3.5" />
-                {t("energy.overview.battery")}
-              </p>
-              <div className="space-y-3">
-                {hasEnergyReading(batterySoc.value) ? (
-                <BatteryRow
-                  label={t("energy.overview.energy")}
-                  valueLabel={`${formatEnergyValue(batterySoc.value, 0)}%`}
-                  percent={clampPercent(batterySoc.value)}
-                  tone="bg-emerald-400"
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.95fr)]">
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.chart")}</h2>
+            <div className="flex items-center gap-3 text-[11px] text-gray-400">
+              <span className="inline-flex items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-orange-400" /> {t("energy.overview.generation")}</span>
+              <span className="inline-flex items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-amber-300" /> {t("energy.overview.consumption")}</span>
+              <span className="inline-flex items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {t("energy.overview.export")}</span>
+            </div>
+          </div>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
+                <XAxis
+                  dataKey="hour"
+                  tick={{ fontSize: 10, fill: "#9ca3af" }}
+                  interval={range === "hourly" ? 3 : 0}
+                  tickFormatter={(value) => (range === "hourly" ? formatHourTick(String(value)) : String(value))}
+                  tickLine={false}
+                  axisLine={false}
                 />
+                <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} width={36} />
+                <Line type="monotone" dataKey="generation" stroke="#fb923c" strokeWidth={2.2} dot={false} />
+                <Line type="monotone" dataKey="consumption" stroke="#f4d03f" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="export" stroke="#34d399" strokeWidth={2} strokeDasharray={hasChartData ? "0" : "4 4"} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <div className={cn("grid gap-6", showBattery ? "grid-cols-2" : "grid-cols-1")}>
+          <PowerGauge
+            valueLabel={formatEnergyValue(powerKw ?? consumptionKw)}
+            percent={powerPct}
+            minLabel={powerStats ? formatEnergyValue(powerStats.min) : "—"}
+            maxLabel={powerStats ? formatEnergyValue(powerStats.max) : "—"}
+            avgLabel={powerStats ? formatEnergyValue(powerStats.avg) : "—"}
+            t={t}
+          />
+          {showBattery ? (
+            <section>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.battery")}</h2>
+                {hasEnergyReading(batterySoc.value) ? (
+                  <span className="text-sm font-semibold text-gray-800 dark:text-white">
+                    {formatEnergyValue(batterySoc.value, 0)}%
+                  </span>
+                ) : null}
+              </div>
+              <div className="space-y-4">
+                {hasEnergyReading(batterySoc.value) ? (
+                  <BatteryRow
+                    label={t("energy.overview.energy")}
+                    valueLabel={`${formatEnergyValue(batterySoc.value, 0)}%`}
+                    percent={clampPercent(batterySoc.value)}
+                    tone="bg-emerald-300"
+                  />
+                ) : hasEnergyReading(batteryKw) ? (
+                  <BatteryRow
+                    label={t("energy.overview.energy")}
+                    valueLabel={`${formatEnergyValue(Math.abs(batteryKw))} kW`}
+                    percent={clampPercent(Math.abs(batteryKw) * 20)}
+                    tone="bg-emerald-300"
+                  />
                 ) : null}
                 {hasEnergyReading(batteryKw) ? (
-                <BatteryRow
-                  label={t("energy.overview.consuming")}
-                  valueLabel={`${formatEnergyValue(Math.abs(batteryKw))} kW`}
-                  percent={clampPercent(Math.abs(batteryKw) * 20)}
-                  tone="bg-orange-300"
-                />
+                  <BatteryRow
+                    label={t("energy.overview.consuming")}
+                    valueLabel={`${formatEnergyValue(Math.abs(batteryKw))} kW`}
+                    percent={clampPercent(Math.abs(batteryKw) * 20)}
+                    tone="bg-orange-200"
+                  />
                 ) : null}
                 {hasEnergyReading(batteryTemp.value) ? (
-                <BatteryRow
-                  label={t("energy.overview.temperature")}
-                  valueLabel={`${formatEnergyValue(batteryTemp.value, 0)}°C`}
-                  percent={clampPercent(batteryTemp.value, 80) * (100 / 80)}
-                  tone="bg-amber-300"
-                />
+                  <BatteryRow
+                    label={t("energy.overview.temperature")}
+                    valueLabel={`${formatEnergyValue(batteryTemp.value, 0)}° C`}
+                    percent={clampPercent(batteryTemp.value, 80) * (100 / 80)}
+                    tone="bg-amber-200"
+                  />
                 ) : null}
               </div>
             </section>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       </div>
 
-      <div className={cn("mt-5 grid gap-4", showHeatmap ? "md:grid-cols-3" : "md:grid-cols-2")}>
-        <section className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm dark:bg-white/5">
+      <div className={cn("mt-8 grid gap-6 border-t border-gray-100 pt-6 dark:border-white/10", showHeatmap ? "md:grid-cols-[0.9fr_0.9fr_1.2fr]" : "md:grid-cols-2")}>
+        <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-800 dark:text-white">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-              {t("energy.overview.alerts")}
-            </h2>
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.alerts")}</h2>
             <span className="text-xs text-gray-400">
               {alerts.length > 0 ? t("energy.overview.alertCount").replace("{n}", String(alerts.length)) : t("energy.overview.noAlerts")}
             </span>
@@ -329,32 +460,38 @@ export function EnergyOverview({
               ))}
             </ul>
           ) : (
-            <div className="flex h-16 items-end gap-2">
-              <span className="w-8 rounded-t-md bg-orange-400/80" style={{ height: "35%" }} />
-              <span className="w-8 rounded-t-md bg-amber-200" style={{ height: "55%" }} />
-              <span className="w-8 rounded-t-md bg-gray-200 dark:bg-white/15" style={{ height: "80%" }} />
+            <div className="flex items-end gap-4">
+              {[
+                { key: "energy.overview.alertVoltage", height: "32%", tone: "bg-orange-400" },
+                { key: "energy.overview.alertInverter", height: "48%", tone: "bg-amber-200" },
+                { key: "energy.overview.alertSystem", height: "72%", tone: "bg-[repeating-linear-gradient(-45deg,#d1d5db,#d1d5db_4px,#f3f4f6_4px,#f3f4f6_8px)]" },
+              ].map((bar) => (
+                <div key={bar.key} className="flex w-12 flex-col items-center gap-2">
+                  <div className="flex h-16 w-8 items-end overflow-hidden rounded-t-md bg-gray-100 dark:bg-white/10">
+                    <span className={cn("w-full rounded-t-md", bar.tone)} style={{ height: bar.height }} />
+                  </div>
+                  <span className="text-[10px] text-gray-400">{t(bar.key)}</span>
+                </div>
+              ))}
             </div>
           )}
         </section>
-        <section className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm dark:bg-white/5">
-          <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-gray-800 dark:text-white">
-            <Leaf className="h-4 w-4 text-emerald-500" />
-            {t("energy.overview.impact")}
-          </h2>
-          <dl className="space-y-2 text-sm">
-            <div className="flex justify-between text-gray-500 dark:text-white/55">
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.impact")}</h2>
+          <dl className="space-y-2.5 text-sm">
+            <div className="flex justify-between text-gray-400">
               <dt>{t("energy.overview.carbon")}</dt>
               <dd className="font-medium text-gray-800 dark:text-white">
                 {impact.carbonKg != null ? `${formatEnergyValue(impact.carbonKg)} kg` : "—"}
               </dd>
             </div>
-            <div className="flex justify-between text-gray-500 dark:text-white/55">
+            <div className="flex justify-between text-gray-400">
               <dt>{t("energy.overview.trees")}</dt>
               <dd className="font-medium text-gray-800 dark:text-white">
                 {impact.trees != null ? formatEnergyValue(impact.trees) : "—"}
               </dd>
             </div>
-            <div className="flex justify-between text-gray-500 dark:text-white/55">
+            <div className="flex justify-between text-gray-400">
               <dt>{t("energy.overview.homes")}</dt>
               <dd className="font-medium text-gray-800 dark:text-white">
                 {impact.homes != null ? formatEnergyValue(impact.homes) : "—"}
@@ -363,25 +500,45 @@ export function EnergyOverview({
           </dl>
         </section>
         {showHeatmap ? (
-        <section className="rounded-[1.5rem] bg-white/80 p-4 shadow-sm dark:bg-white/5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.heatmap")}</h2>
-            <span className="text-[11px] text-gray-400">
-              {t("energy.overview.heatmapCount").replace("{n}", String(heatmap.length))}
-            </span>
-          </div>
-          <div className="grid grid-cols-12 gap-1">
-            {heatmap.map((tone, i) => (
-              <span
-                key={i}
-                className={cn(
-                  "aspect-square rounded-md",
-                  tone === "hot" ? "bg-orange-500" : tone === "warm" ? "bg-amber-300" : "bg-amber-100 dark:bg-amber-200/30"
-                )}
-              />
-            ))}
-          </div>
-        </section>
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.heatmap")}</h2>
+              <span className="text-[11px] text-gray-400">
+                {t("energy.overview.heatmapCount").replace("{n}", String(heatmap.length))}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex flex-col justify-around py-0.5 text-[10px] font-medium text-gray-400">
+                {Array.from({ length: heatmapRows }, (_, row) => (
+                  <span key={row}>{String.fromCharCode(65 + row)}</span>
+                ))}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div
+                  className="grid gap-1.5"
+                  style={{ gridTemplateColumns: `repeat(${heatmapCols}, minmax(0, 1fr))` }}
+                >
+                  {heatmap.map((tone, i) => (
+                    <span
+                      key={i}
+                      className={cn(
+                        "aspect-square rounded-md",
+                        tone === "hot" ? "bg-orange-500" : tone === "warm" ? "bg-amber-300" : "bg-amber-100 dark:bg-amber-200/35"
+                      )}
+                    />
+                  ))}
+                </div>
+                <div
+                  className="mt-1 grid text-center text-[10px] text-gray-400"
+                  style={{ gridTemplateColumns: `repeat(${heatmapCols}, minmax(0, 1fr))` }}
+                >
+                  {Array.from({ length: heatmapCols }, (_, i) => (
+                    <span key={i}>{i + 1}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
         ) : null}
       </div>
     </div>
