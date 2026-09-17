@@ -1692,16 +1692,13 @@ export default function MusicPage() {
                 key={id}
                 type="button"
                 onClick={() => {
+                  setSelectedArtist(null);
+                  setSelectedAlbum(null);
+                  setSelectedCategory(null);
                   if (id === "home") {
                     setSelectedMenu(null);
-                    setSelectedCategory(null);
-                    setSelectedArtist(null);
-                    setSelectedAlbum(null);
                   } else {
                     setSelectedMenu(id);
-                    setSelectedCategory(null);
-                    if (id === "artists") setSelectedArtist(null);
-                    if (id === "albums") setSelectedAlbum(null);
                   }
                 }}
                 className={cn(
