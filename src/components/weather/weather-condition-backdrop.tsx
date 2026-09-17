@@ -9,9 +9,11 @@ import { useThemeStore } from "@/stores/theme-store";
 export function WeatherConditionBackdrop({
   condition,
   className,
+  fade = false,
 }: {
   condition: string;
   className?: string;
+  fade?: boolean;
 }) {
   const isNight = useThemeStore((s) => s.resolved) === "dark";
   const gradient = weatherBackgroundGradient(condition);
@@ -24,7 +26,15 @@ export function WeatherConditionBackdrop({
   }, [src]);
 
   return (
-    <div className={cn("absolute inset-0 overflow-hidden", className)} aria-hidden>
+    <div
+      className={cn(
+        "absolute inset-0 overflow-hidden",
+        fade &&
+          "[mask-image:linear-gradient(to_bottom,black_38%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_38%,transparent_100%)]",
+        className
+      )}
+      aria-hidden
+    >
       <div className={cn("absolute inset-0 bg-gradient-to-b", gradient)} />
       {effective ? (
         <Image

@@ -78,9 +78,9 @@ export function WeatherSheetPanel({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="relative h-[19.5rem] shrink-0 overflow-hidden">
-        <WeatherConditionBackdrop condition={condition} />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/15 to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#F4F6FA] via-[#F4F6FA]/80 to-transparent dark:from-zinc-900 dark:via-zinc-900/80" />
+        <WeatherConditionBackdrop condition={condition} fade />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-white from-10% via-white/85 to-transparent dark:from-black dark:via-black/85" />
 
         <div className="relative z-10 flex h-full flex-col px-5">
           <div className="flex shrink-0 justify-center pb-1 pt-3">
