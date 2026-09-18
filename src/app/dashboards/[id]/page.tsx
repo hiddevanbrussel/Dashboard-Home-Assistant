@@ -125,6 +125,24 @@ import {
   CALENDAR_CARD_MIN_HEIGHT,
   CALENDAR_CARD_MIN_WIDTH,
 } from "@/lib/calendar-card";
+import {
+  clampMediaCardHeight,
+  clampMediaCardWidth,
+  MEDIA_CARD_MAX_HEIGHT,
+  MEDIA_CARD_MAX_WIDTH,
+  MEDIA_CARD_MIN_HEIGHT,
+  MEDIA_CARD_MIN_WIDTH,
+} from "@/lib/media-card";
+import {
+  clampWeatherCardHeight,
+  clampWeatherCardWidth,
+  WEATHER_CARD_DEFAULT_HEIGHT,
+  WEATHER_CARD_DEFAULT_WIDTH,
+  WEATHER_CARD_MAX_HEIGHT,
+  WEATHER_CARD_MAX_WIDTH,
+  WEATHER_CARD_MIN_HEIGHT,
+  WEATHER_CARD_MIN_WIDTH,
+} from "@/lib/weather-card";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
 const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card"] as const;
@@ -1096,6 +1114,7 @@ export default function DashboardEditPage() {
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
+      ...(type === "weather_card" && { width: WEATHER_CARD_DEFAULT_WIDTH, height: WEATHER_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
       ...(type === "calendar_card" && { width: CALENDAR_CARD_DEFAULT_WIDTH, height: CALENDAR_CARD_DEFAULT_HEIGHT }),
       ...((type === "climate_card" || type === "climate_card_2") && { width: CLIMATE_CARD_DEFAULT_WIDTH, height: CLIMATE_CARD_DEFAULT_HEIGHT }),
@@ -1200,6 +1219,28 @@ export default function DashboardEditPage() {
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
     );
     setEditingWidgetId(null);
+  }
+
+  function handleMediaCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampMediaCardWidth(size.width);
+    const height = clampMediaCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleWeatherCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampWeatherCardWidth(size.width);
+    const height = clampWeatherCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleVacuumCardResize(widgetId: string, size: { width: number; height: number }) {
@@ -1763,6 +1804,7 @@ export default function DashboardEditPage() {
                   ? () => handleRemoveTile(w.id)
                   : undefined
               }
+              onResize={editMode ? (size) => handleMediaCardResize(w.id, size) : undefined}
             />
           ))}
 
@@ -2006,6 +2048,7 @@ export default function DashboardEditPage() {
                   ? () => handleRemoveTile(firstWeather.id)
                   : undefined
               }
+              onResize={editMode ? (size) => handleWeatherCardResize(firstWeather.id, size) : undefined}
             />
           ) : null;
         })()}
@@ -2815,8 +2858,8 @@ export default function DashboardEditPage() {
                           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardWidthPx")}</label>
                           <input
                             type="number"
-                            min={240}
-                            max={500}
+                            min={MEDIA_CARD_MIN_WIDTH}
+                            max={MEDIA_CARD_MAX_WIDTH}
                             step={10}
                             value={editForm.width ?? MEDIA_CARD_DEFAULT_WIDTH}
                             onChange={(e) => {
@@ -2832,8 +2875,8 @@ export default function DashboardEditPage() {
                           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardHeightPx")}</label>
                           <input
                             type="number"
-                            min={120}
-                            max={400}
+                            min={MEDIA_CARD_MIN_HEIGHT}
+                            max={MEDIA_CARD_MAX_HEIGHT}
                             step={10}
                             value={editForm.height ?? MEDIA_CARD_DEFAULT_HEIGHT}
                             onChange={(e) => {
@@ -4822,10 +4865,10 @@ aria-label={t("editPanel.removeCondition")}
                       </label>
                       <input
                         type="number"
-                        min={200}
-                        max={500}
+                        min={WEATHER_CARD_MIN_WIDTH}
+                        max={WEATHER_CARD_MAX_WIDTH}
                         step={10}
-                        value={editForm.width ?? 320}
+                        value={editForm.width ?? WEATHER_CARD_DEFAULT_WIDTH}
                         onChange={(e) => {
                           const v = e.target.value === "" ? undefined : Number(e.target.value);
                           setEditForm((prev) => ({
@@ -4833,7 +4876,7 @@ aria-label={t("editPanel.removeCondition")}
                             width: v != null && !Number.isNaN(v) ? v : undefined,
                           }));
                         }}
-                        placeholder="320"
+                        placeholder={String(WEATHER_CARD_DEFAULT_WIDTH)}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange320")}</p>
@@ -4844,10 +4887,10 @@ aria-label={t("editPanel.removeCondition")}
                       </label>
                       <input
                         type="number"
-                        min={100}
-                        max={400}
+                        min={WEATHER_CARD_MIN_HEIGHT}
+                        max={WEATHER_CARD_MAX_HEIGHT}
                         step={10}
-                        value={editForm.height ?? 180}
+                        value={editForm.height ?? WEATHER_CARD_DEFAULT_HEIGHT}
                         onChange={(e) => {
                           const v = e.target.value === "" ? undefined : Number(e.target.value);
                           setEditForm((prev) => ({
@@ -4855,7 +4898,7 @@ aria-label={t("editPanel.removeCondition")}
                             height: v != null && !Number.isNaN(v) ? v : undefined,
                           }));
                         }}
-                        placeholder="180"
+                        placeholder={String(WEATHER_CARD_DEFAULT_HEIGHT)}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange180")}</p>
@@ -5321,13 +5364,13 @@ aria-label={t("editPanel.removeCondition")}
                           card_layout: editForm.card_layout === "square" ? "square" : "horizontal",
                         }),
                         ...(editingWidget.type === "media_card" && {
-                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
-                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
+                          width: editForm.width != null && editForm.width > 0 ? clampMediaCardWidth(editForm.width) : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? clampMediaCardHeight(editForm.height) : undefined,
                         }),
                         ...(editingWidget.type === "weather_card" && {
                           show_icon: editForm.show_icon !== false,
-                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
-                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
+                          width: editForm.width != null && editForm.width > 0 ? clampWeatherCardWidth(editForm.width) : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? clampWeatherCardHeight(editForm.height) : undefined,
                         }),
                         ...(editingWidget.type === "camera_card" && {
                           refresh: editForm.refresh ?? 10,

@@ -9,9 +9,14 @@ import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { mediaArtworkCacheKey, mediaImageRequestUrl } from "@/lib/media-image";
+import {
+  clampMediaCardHeight,
+  clampMediaCardWidth,
+  MEDIA_CARD_DEFAULT_HEIGHT,
+  MEDIA_CARD_DEFAULT_WIDTH,
+} from "@/lib/media-card";
 
-export const MEDIA_CARD_DEFAULT_WIDTH = 280;
-export const MEDIA_CARD_DEFAULT_HEIGHT = 340;
+export { MEDIA_CARD_DEFAULT_HEIGHT, MEDIA_CARD_DEFAULT_WIDTH };
 
 const WAVEFORM_BARS = [6, 11, 8, 16, 10, 18, 7, 14, 9, 17, 8, 12];
 
@@ -79,8 +84,8 @@ export function MediaCardWidget({
   });
   const mediaImageSrc = entityPicture ? mediaImageRequestUrl(entity_id, artworkKey) : null;
   const trackKey = artworkKey || "none";
-  const cardWidth = width != null && width > 0 ? width : MEDIA_CARD_DEFAULT_WIDTH;
-  const cardHeight = height != null && height > 0 ? height : MEDIA_CARD_DEFAULT_HEIGHT;
+  const cardWidth = clampMediaCardWidth(width);
+  const cardHeight = clampMediaCardHeight(height);
   const canFavorite = Boolean(musicAssistant.enabled && musicAssistant.baseUrl && mediaContentId);
 
   async function callMedia(service: string) {
