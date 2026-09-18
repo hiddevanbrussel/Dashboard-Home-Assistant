@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { snapToGrid, FLOATING_CARD_GRID_STEP } from "@/lib/floating-card-grid";
+import { snapToGrid, FLOATING_CARD_GRID_STEP, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { RoomCardWidget } from "./room-card-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingRoomCardPosition.";
@@ -247,12 +247,15 @@ export function FloatingRoomCard({
     (e: React.PointerEvent) => {
       if (!editMode) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
+      e.preventDefault();
+      e.stopPropagation();
       isPointerDownOnCard.current = true;
+      const measured = floatingPositionFromElement(e.currentTarget as HTMLElement);
       dragStart.current = {
         x: e.clientX,
         y: e.clientY,
-        left: position.left,
-        bottom: position.bottom,
+        left: measured.left,
+        bottom: measured.bottom,
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
@@ -376,10 +379,6 @@ export function FloatingRoomCard({
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
         onPointerUp: handlePointerUp,
-        onPointerLeave: (e: React.PointerEvent) => {
-          isPointerDownOnCard.current = false;
-          if (isDragging) handlePointerUp(e);
-        },
         onPointerCancel: handlePointerUp,
       })}
     >

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { snapToGrid } from "@/lib/floating-card-grid";
+import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { VacuumCard2Widget } from "./vacuum-card-2-widget";
 import { VacuumBottomSheet } from "@/components/vacuum/vacuum-bottom-sheet";
 import {
@@ -246,8 +246,10 @@ export function FloatingVacuumCard2({
       if (!editMode || isResizing) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
+      e.stopPropagation();
       setIsDragging(true);
-      dragStart.current = { x: e.clientX, y: e.clientY, left: position.left, bottom: position.bottom };
+      const measured = floatingPositionFromElement(e.currentTarget as HTMLElement);
+      dragStart.current = { x: e.clientX, y: e.clientY, left: measured.left, bottom: measured.bottom };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
     [position, editMode, isResizing]
@@ -361,9 +363,6 @@ export function FloatingVacuumCard2({
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
         onPointerUp: handlePointerUp,
-        onPointerLeave: (e: React.PointerEvent) => {
-          if (isDragging) handlePointerUp(e);
-        },
         onPointerCancel: handlePointerUp,
       })}
     >

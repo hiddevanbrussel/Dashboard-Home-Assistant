@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { snapToGrid } from "@/lib/floating-card-grid";
+import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { LightCardWidget } from "./light-card-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingLightCardPosition.";
@@ -152,12 +152,15 @@ export function FloatingLightCard({
       if (!editMode) return;
       // Keep the ⋮ options button clickable; the rest of the card is the drag surface.
       if ((e.target as HTMLElement)?.closest?.("[data-no-drag]")) return;
+      e.preventDefault();
+      e.stopPropagation();
       isPointerDownOnCard.current = true;
+      const measured = floatingPositionFromElement(e.currentTarget as HTMLElement);
       dragStart.current = {
         x: e.clientX,
         y: e.clientY,
-        left: position.left,
-        bottom: position.bottom,
+        left: measured.left,
+        bottom: measured.bottom,
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
@@ -238,10 +241,6 @@ export function FloatingLightCard({
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
         onPointerUp: handlePointerUp,
-        onPointerLeave: (e: React.PointerEvent) => {
-          isPointerDownOnCard.current = false;
-          if (isDragging) handlePointerUp(e);
-        },
         onPointerCancel: handlePointerUp,
       })}
     >

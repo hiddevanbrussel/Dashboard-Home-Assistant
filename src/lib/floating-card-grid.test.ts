@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createsContainingBlock, leftBottomInParent, snapToGrid } from "./floating-card-grid";
+import {
+  beginFloatingCardDrag,
+  createsContainingBlock,
+  floatingDragBounds,
+  leftBottomInParent,
+  snapToGrid,
+} from "./floating-card-grid";
 
 describe("floating-card-grid", () => {
   it("snaps to the 16px grid and clamps to bounds", () => {
@@ -23,5 +29,25 @@ describe("floating-card-grid", () => {
     expect(
       leftBottomInParent({ left: 120, bottom: 400 }, { left: 80, bottom: 700 })
     ).toEqual({ left: 40, bottom: 300 });
+  });
+
+  it("starts a drag from the measured box so the card does not jump", () => {
+    expect(
+      beginFloatingCardDrag({ clientX: 410, clientY: 220 }, { left: 80, bottom: 40 }, { left: 120, bottom: 64 })
+    ).toEqual({ x: 410, y: 220, left: 120, bottom: 64 });
+    expect(
+      beginFloatingCardDrag({ clientX: 10, clientY: 20 }, { left: 80, bottom: 40 }, null)
+    ).toEqual({ x: 10, y: 20, left: 80, bottom: 40 });
+  });
+
+  it("clamps drag bounds to the containing block, not the window", () => {
+    expect(floatingDragBounds(200, 100, { width: 800, height: 600 }, 24)).toEqual({
+      maxLeft: 600,
+      maxBottom: 476,
+    });
+    expect(floatingDragBounds(900, 700, { width: 800, height: 600 })).toEqual({
+      maxLeft: 0,
+      maxBottom: 0,
+    });
   });
 });

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { snapToGrid } from "@/lib/floating-card-grid";
+import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { MoreVertical } from "lucide-react";
 import { PillCardWidget } from "./pill-card-widget";
 import type { SensorCondition } from "./widget-types";
@@ -142,12 +142,14 @@ export function FloatingCardGroup({
       if (!editMode) return;
       if ((e.target as HTMLElement).closest?.("[data-group-opts]")) return;
       e.preventDefault();
+      e.stopPropagation();
       const el = e.currentTarget as HTMLElement;
+      const measured = floatingPositionFromElement(el);
       dragStart.current = {
         x: e.clientX,
         y: e.clientY,
-        left: position.left,
-        bottom: position.bottom,
+        left: measured.left,
+        bottom: measured.bottom,
         width: el.offsetWidth,
         height: el.offsetHeight,
       };
@@ -231,9 +233,6 @@ export function FloatingCardGroup({
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
         onPointerUp: handlePointerUp,
-        onPointerLeave: (e: React.PointerEvent) => {
-          if (isDragging) handlePointerUp(e);
-        },
         onPointerCancel: handlePointerUp,
       })}
     >
