@@ -21,7 +21,6 @@ import {
   screensaverMediaSide,
 } from "@/lib/screensaver-clock-position";
 import {
-  clockSizeAmpmClass,
   clockSizeDateClass,
   clockSizeTimeClass,
   type ScreensaverClockSize,
@@ -384,22 +383,20 @@ function ScreensaverLockClock({
 
   return (
     <time dateTime={time.toISOString()} className="flex items-center gap-[0.12em]">
-      <span className="flex flex-col items-end justify-center">
-        <span className={cn(digitClass, LOCK_HOUR_COLOR)}>{hours}</span>
-        {period != null && (
-          <span className={cn("mt-1 font-light uppercase tracking-wider text-white/70", clockSizeAmpmClass(size))}>
-            {period}
-          </span>
-        )}
-      </span>
+      <span className={cn(digitClass, LOCK_HOUR_COLOR)}>{hours}</span>
       <span className="flex flex-col items-start">
-        <span className={cn(metaClass, "mb-[0.35em]")}>
+        <span className={cn(metaClass, "mb-[0.28em]")}>
           <span className="block">{dateNumeric}</span>
           <span className="block">{weekday}</span>
+          {period != null && (
+            <span className="mt-0.5 block text-sm font-light uppercase tracking-[0.2em] text-white/60">
+              {period}
+            </span>
+          )}
         </span>
         <span className={cn(digitClass, LOCK_MINUTE_COLOR)}>{minutes}</span>
         {(weather.tempStr || weather.location || weather.conditionStr) && (
-          <span className={cn(metaClass, "mt-[0.4em]")}>
+          <span className={cn(metaClass, "mt-[0.32em]")}>
             {weather.tempStr && <span className="block tabular-nums">{weather.tempStr}</span>}
             {weather.location && <span className="block">{weather.location}</span>}
             {weather.conditionStr && <span className="block">{weather.conditionStr}</span>}

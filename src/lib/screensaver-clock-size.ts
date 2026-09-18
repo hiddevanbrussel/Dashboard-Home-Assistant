@@ -41,12 +41,12 @@ export function clockSizeAmpmClass(size: ScreensaverClockSize): string {
 export function clockSizeDateClass(size: ScreensaverClockSize): string {
   switch (size) {
     case "sm":
-      return "text-sm";
+      return "text-base";
     case "lg":
-      return "text-xl";
-    case "xl":
       return "text-2xl";
+    case "xl":
+      return "text-3xl";
     default:
-      return "text-lg";
+      return "text-xl";
   }
 }
