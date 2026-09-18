@@ -33,6 +33,7 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
 import { OfflinePill } from "@/components/offline-pill";
 import { useTranslation } from "@/hooks/use-translation";
+import { useDashboardEditFlag } from "@/hooks/use-dashboard-edit-flag";
 import { cn, generateId } from "@/lib/utils";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import { EnergyOverview } from "@/components/energy/energy-overview";
@@ -251,6 +252,7 @@ export default function EnergyPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
+  useDashboardEditFlag(editMode);
   const [editPasscodeModalOpen, setEditPasscodeModalOpen] = useState(false);
   const [editPasscodeInput, setEditPasscodeInput] = useState("");
   const [editPasscodeError, setEditPasscodeError] = useState<string | null>(null);

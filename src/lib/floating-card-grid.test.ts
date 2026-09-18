@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { leftBottomInParent, snapToGrid } from "./floating-card-grid";
+import { createsContainingBlock, leftBottomInParent, snapToGrid } from "./floating-card-grid";
 
 describe("floating-card-grid", () => {
   it("snaps to the 16px grid and clamps to bounds", () => {
@@ -8,6 +8,12 @@ describe("floating-card-grid", () => {
       left: 32,
       bottom: 64,
     });
+  });
+
+  it("treats a positioned page as the containing block for absolute cards", () => {
+    expect(createsContainingBlock({ position: "relative", transform: "none" })).toBe(true);
+    expect(createsContainingBlock({ position: "static", transform: "none" })).toBe(false);
+    expect(createsContainingBlock({ position: "static", transform: "translateX(10px)" })).toBe(true);
   });
 
   it("converts a viewport box into left/bottom inside a transformed parent", () => {

@@ -91,6 +91,14 @@ describe("dashboard pages", () => {
     expect(shouldIgnorePageSwipe(card as unknown as EventTarget, false)).toBe(false);
   });
 
+  it("keeps edit-mode card drags from starting a page swipe", () => {
+    const card = {
+      closest: (selector: string) => (selector.includes("card-plot-in") ? {} : null),
+    };
+    expect(shouldIgnorePageSwipe(card as unknown as EventTarget, true)).toBe(true);
+    expect(shouldIgnorePageSwipe(card as unknown as EventTarget, false)).toBe(false);
+  });
+
   it("pushes history when paging forward and pops when paging back", () => {
     expect(dashboardPagerHistoryStep(0, 1)).toBe("push");
     expect(dashboardPagerHistoryStep(1, 0)).toBe("back");

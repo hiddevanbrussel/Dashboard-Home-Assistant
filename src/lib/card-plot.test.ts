@@ -1,5 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { sortCardsForPlot } from "./card-plot";
+import {
+  CARD_PLOT_INSTANT_CLASS,
+  CARD_PLOT_PLAYED_CLASS,
+  cardPlotShouldBeInstant,
+  markCardsPlotInstant,
+  sortCardsForPlot,
+} from "./card-plot";
+
+describe("cardPlotShouldBeInstant", () => {
+  it("skips plot animation while the dashboard is being edited", () => {
+    expect(cardPlotShouldBeInstant(true)).toBe(true);
+    expect(cardPlotShouldBeInstant(false)).toBe(false);
+  });
+});
+
+describe("markCardsPlotInstant", () => {
+  it("marks every plot card as already shown, without animation", () => {
+    const added: string[] = [];
+    const root = {
+      querySelectorAll: () => [
+        {
+          classList: {
+            add: (...cls: string[]) => {
+              added.push(...cls);
+            },
+          },
+        },
+      ],
+    };
+    markCardsPlotInstant(root as unknown as ParentNode);
+    expect(added).toEqual([CARD_PLOT_INSTANT_CLASS, CARD_PLOT_PLAYED_CLASS]);
+  });
+});
 
 describe("sortCardsForPlot", () => {
   it("plots top row first, then left to right", () => {

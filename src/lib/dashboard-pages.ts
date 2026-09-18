@@ -62,7 +62,9 @@ export function shouldIgnorePageSwipe(target: EventTarget | null, editMode: bool
     return true;
   }
   if (el.closest("[data-app-header]")) return true;
-  if (editMode && !el.closest("[data-dashboard-page-swipe]")) return true;
+  if (el.closest("[data-app-sidebar]")) return true;
+  // In edit mode the cards themselves are dragged; keep page swipes off them.
+  if (editMode && el.closest(".card-plot-in")) return true;
   return false;
 }
 

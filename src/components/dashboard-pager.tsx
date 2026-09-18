@@ -1,26 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal, flushSync } from "react-dom";
+import { createPortal } from "react-dom";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import { SIDEBAR_INSET } from "@/components/layout/sidebar";
 import {
-  applyDashboardPageDrag,
   DASHBOARD_MAX_PAGES,
-  dashboardPageSettleDurationMs,
   dashboardPagerHistoryStep,
   historyHasDashboardPager,
-  isBrowserBackGestureZone,
-  pageSwipeClaimPx,
-  settleDashboardPage,
   shouldConsumeHistoryBack,
   shouldIgnorePageSwipe,
-  velocityFromPointerSamples,
 } from "@/lib/dashboard-pages";
 
-const WHEEL_LOCK_MS = 420;
+const CLAIM_PX = 12;
 
 type DashboardPagerProps = {
   pageCount: number;
@@ -31,16 +25,6 @@ type DashboardPagerProps = {
   onRemovePage?: () => void;
   children: (pageIndex: number) => React.ReactNode;
 };
-
-function easeOutCubic(t: number): number {
-  const x = Math.min(1, Math.max(0, t));
-  return 1 - Math.pow(1 - x, 3);
-}
-
-function viewportWidth(): number {
-  if (typeof window === "undefined") return 1200;
-  return window.innerWidth || 1200;
-}
 
 export function DashboardPager({
   pageCount,
@@ -53,18 +37,18 @@ export function DashboardPager({
 }: DashboardPagerProps) {
   const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
-  const [dragPx, setDragPx] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const [animTarget, setAnimTarget] = useState<number | null>(null);
-  const [pageWidth, setPageWidth] = useState(1200);
-  const dragPxRef = useRef(0);
-  const draggingRef = useRef(false);
+  const scrollerRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef(page);
   const pageCountRef = useRef(pageCount);
-  const wheelLockRef = useRef(false);
-  const animatingRef = useRef(false);
-  const rafRef = useRef<number | null>(null);
   const syncingHistoryRef = useRef(false);
+  const dragRef = useRef<{
+    id: number;
+    x: number;
+    left: number;
+    fromPage: number;
+    claimed: boolean;
+  } | null>(null);
+  const claimedRef = useRef(false);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -73,197 +57,45 @@ export function DashboardPager({
   useEffect(() => {
     pageCountRef.current = pageCount;
   }, [pageCount]);
-  useEffect(() => {
-    const measure = () => setPageWidth(viewportWidth());
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
-  useEffect(
-    () => () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    },
-    []
-  );
-
-  const stopAnimation = useCallback(() => {
-    if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    animatingRef.current = false;
-    setAnimTarget(null);
-  }, []);
 
   const goTo = useCallback(
-    (next: number, options?: { fromHistory?: boolean }) => {
-      const clamped = Math.min(pageCountRef.current - 1, Math.max(0, next));
+    (index: number, behavior: ScrollBehavior = "smooth", options?: { fromHistory?: boolean }) => {
+      const max = Math.max(0, pageCountRef.current - 1);
+      const clamped = Math.max(0, Math.min(max, index));
       const from = pageRef.current;
-      const startDrag = dragPxRef.current;
-      const width = viewportWidth();
-      const endDrag = clamped === from ? 0 : (from - clamped) * width;
-      if (clamped === from && Math.abs(startDrag) < 0.5) return;
-      stopAnimation();
-      animatingRef.current = true;
-      setAnimTarget(clamped === from ? null : clamped);
-      setDragging(false);
-      draggingRef.current = false;
-      const t0 = performance.now();
-      const duration = dashboardPageSettleDurationMs(endDrag - startDrag);
-      const step = (now: number) => {
-        const t = easeOutCubic((now - t0) / duration);
-        const px = startDrag + (endDrag - startDrag) * t;
-        dragPxRef.current = px;
-        setDragPx(px);
-        if (t < 1) {
-          rafRef.current = requestAnimationFrame(step);
-          return;
-        }
-        rafRef.current = null;
-        flushSync(() => {
-          pageRef.current = clamped;
-          dragPxRef.current = 0;
-          setDragPx(0);
-          animatingRef.current = false;
-          setAnimTarget(null);
-          if (clamped !== from) onPageChange(clamped);
-        });
-        if (options?.fromHistory) return;
-        const historyStep = dashboardPagerHistoryStep(from, clamped);
-        if (historyStep === "push") {
-          history.pushState({ dashboardPager: clamped }, "");
-        } else if (historyStep === "back" && historyHasDashboardPager(history.state)) {
-          syncingHistoryRef.current = true;
-          history.back();
-        }
-      };
-      rafRef.current = requestAnimationFrame(step);
+      pageRef.current = clamped;
+      onPageChange(clamped);
+      const root = scrollerRef.current;
+      if (root && root.clientWidth > 0) {
+        root.scrollTo({ left: clamped * root.clientWidth, behavior });
+      }
+      if (options?.fromHistory || clamped === from) return;
+      const historyStep = dashboardPagerHistoryStep(from, clamped);
+      if (historyStep === "push") {
+        history.pushState({ dashboardPager: clamped }, "");
+      } else if (historyStep === "back" && historyHasDashboardPager(history.state)) {
+        syncingHistoryRef.current = true;
+        history.back();
+      }
     },
-    [onPageChange, stopAnimation]
+    [onPageChange]
   );
 
   useEffect(() => {
-    const start = { x: 0, y: 0, drag: 0, pointerId: -1, blockNativeDrag: false };
-    const samples: { x: number; t: number }[] = [];
-    let suppressClick = false;
-    let captured = false;
+    const root = scrollerRef.current;
+    if (!root || !mounted || root.clientWidth <= 0) return;
+    root.scrollTo({ left: pageRef.current * root.clientWidth, behavior: "auto" });
+  }, [mounted, pageCount]);
 
-    const releaseCapture = (pointerId: number) => {
-      if (!captured) return;
-      captured = false;
-      try {
-        document.documentElement.releasePointerCapture(pointerId);
-      } catch {
-        // ignore
-      }
+  useEffect(() => {
+    const root = scrollerRef.current;
+    if (!root) return;
+    const onResize = () => {
+      root.scrollTo({ left: pageRef.current * root.clientWidth, behavior: "auto" });
     };
-
-    const onPointerDown = (e: PointerEvent) => {
-      if (pageCountRef.current < 2) return;
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      if (shouldIgnorePageSwipe(e.target, editMode)) return;
-      const target = e.target instanceof Element ? e.target : null;
-      const resume = animatingRef.current;
-      if (resume) stopAnimation();
-      start.x = e.clientX;
-      start.y = e.clientY;
-      start.drag = dragPxRef.current;
-      start.pointerId = e.pointerId;
-      start.blockNativeDrag = Boolean(target?.closest("a[href], img, [data-app-sidebar]"));
-      const now = performance.now();
-      samples.length = 0;
-      samples.push({ x: e.clientX, t: now });
-      draggingRef.current = resume;
-      if (resume) setDragging(true);
-    };
-
-    const onDragStart = (e: DragEvent) => {
-      if (pageCountRef.current < 2) return;
-      const target = e.target instanceof Element ? e.target : null;
-      if (target?.closest("a[href], img, [data-app-sidebar]")) {
-        e.preventDefault();
-      }
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (start.pointerId !== e.pointerId) return;
-      const dx = e.clientX - start.x;
-      const dy = e.clientY - start.y;
-      // Cancel native link-drag before Chrome's ~4px threshold; our claim is 8–16px.
-      if (start.blockNativeDrag || isBrowserBackGestureZone(start.x, e.pointerType)) e.preventDefault();
-      if (!draggingRef.current) {
-        const claimPx = pageSwipeClaimPx(e.pointerType, start.x);
-        if (Math.abs(dx) < claimPx && Math.abs(dy) < claimPx) return;
-        if (Math.abs(dy) >= Math.abs(dx)) {
-          start.pointerId = -1;
-          return;
-        }
-        draggingRef.current = true;
-        setDragging(true);
-        try {
-          document.documentElement.setPointerCapture(e.pointerId);
-          captured = true;
-        } catch {
-          // ignore
-        }
-      }
-      e.preventDefault();
-      const now = performance.now();
-      samples.push({ x: e.clientX, t: now });
-      while (samples.length > 1 && now - samples[0].t > 120) samples.shift();
-      const next = applyDashboardPageDrag({
-        page: pageRef.current,
-        pageCount: pageCountRef.current,
-        dragPx: start.drag + dx,
-        pageWidth: viewportWidth(),
-      });
-      dragPxRef.current = next;
-      setDragPx(next);
-    };
-
-    const finish = (e: PointerEvent) => {
-      if (start.pointerId !== e.pointerId) return;
-      start.pointerId = -1;
-      releaseCapture(e.pointerId);
-      if (!draggingRef.current) return;
-      suppressClick = true;
-      e.preventDefault();
-      const now = performance.now();
-      const velocity = velocityFromPointerSamples(samples, e.clientX, now);
-      const nextPage = settleDashboardPage({
-        page: pageRef.current,
-        pageCount: pageCountRef.current,
-        dragPx: dragPxRef.current,
-        velocityPxPerMs: velocity,
-        pageWidth: viewportWidth(),
-      });
-      draggingRef.current = false;
-      setDragging(false);
-      goTo(nextPage);
-    };
-
-    const onClick = (e: MouseEvent) => {
-      if (!suppressClick) return;
-      suppressClick = false;
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    window.addEventListener("pointerdown", onPointerDown, { capture: true, passive: false });
-    window.addEventListener("pointermove", onPointerMove, { capture: true, passive: false });
-    window.addEventListener("pointerup", finish, { capture: true });
-    window.addEventListener("pointercancel", finish, { capture: true });
-    window.addEventListener("dragstart", onDragStart, true);
-    window.addEventListener("click", onClick, true);
-    return () => {
-      window.removeEventListener("pointerdown", onPointerDown, true);
-      window.removeEventListener("pointermove", onPointerMove, true);
-      window.removeEventListener("pointerup", finish, true);
-      window.removeEventListener("pointercancel", finish, true);
-      window.removeEventListener("dragstart", onDragStart, true);
-      window.removeEventListener("click", onClick, true);
-    };
-  }, [editMode, goTo, stopAnimation]);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     if (pageCount < 2) return;
@@ -273,7 +105,7 @@ export function DashboardPager({
         return;
       }
       if (!shouldConsumeHistoryBack(pageRef.current)) return;
-      goTo(pageRef.current - 1, { fromHistory: true });
+      goTo(pageRef.current - 1, "smooth", { fromHistory: true });
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -281,25 +113,7 @@ export function DashboardPager({
 
   useEffect(() => {
     if (pageCount < 2) return;
-    const onWheel = (e: WheelEvent) => {
-      if (wheelLockRef.current || animatingRef.current) return;
-      if (shouldIgnorePageSwipe(e.target, editMode)) return;
-      if (Math.abs(e.deltaX) < 28 || Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;
-      e.preventDefault();
-      wheelLockRef.current = true;
-      goTo(pageRef.current + (e.deltaX > 0 ? 1 : -1));
-      window.setTimeout(() => {
-        wheelLockRef.current = false;
-      }, WHEEL_LOCK_MS);
-    };
-    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
-    return () => window.removeEventListener("wheel", onWheel, true);
-  }, [editMode, goTo, pageCount]);
-
-  useEffect(() => {
-    if (pageCount < 2) return;
     const onKey = (e: KeyboardEvent) => {
-      if (animatingRef.current) return;
       const target = e.target as HTMLElement | null;
       if (target && target.closest("input, textarea, select, [contenteditable=true]")) return;
       if (e.key === "ArrowRight") {
@@ -314,52 +128,97 @@ export function DashboardPager({
     return () => window.removeEventListener("keydown", onKey);
   }, [goTo, pageCount]);
 
+  const onScrollerPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (pageCount < 2 || editMode) return;
+    if (e.button !== 0) return;
+    if (shouldIgnorePageSwipe(e.target, editMode)) return;
+    claimedRef.current = false;
+    dragRef.current = {
+      id: e.pointerId,
+      x: e.clientX,
+      left: e.currentTarget.scrollLeft,
+      fromPage: pageRef.current,
+      claimed: false,
+    };
+  };
+
+  const onScrollerPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    const root = e.currentTarget;
+    if (!drag || drag.id !== e.pointerId) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.claimed && Math.abs(dx) < CLAIM_PX) return;
+    if (!drag.claimed) {
+      drag.claimed = true;
+      claimedRef.current = true;
+      root.setPointerCapture(e.pointerId);
+    }
+    root.scrollLeft = drag.left - dx;
+  };
+
+  const onScrollerPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag?.claimed) return;
+    const root = e.currentTarget;
+    if (root.clientWidth <= 0) return;
+    pageRef.current = drag.fromPage;
+    goTo(Math.round(root.scrollLeft / root.clientWidth));
+  };
+
+  const onScrollerPointerCancel = () => {
+    dragRef.current = null;
+  };
+
   if (!mounted || typeof document === "undefined") return null;
 
   const showChrome = pageCount > 1 || editMode;
 
   return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden" style={{ overscrollBehaviorX: "none" }}>
-      {Array.from({ length: pageCount }, (_, index) => {
-        const active = index === page;
-        const visible =
-          active || index === animTarget || ((dragging || Math.abs(dragPx) > 0.5) && Math.abs(index - page) <= 1);
-        const x = (index - page) * pageWidth + dragPx;
-        return (
-          <div
+    <div className="pointer-events-none fixed inset-0 z-30" style={{ overscrollBehaviorX: "none" }}>
+      <div
+        ref={scrollerRef}
+        data-dashboard-pager
+        tabIndex={pageCount > 1 ? 0 : undefined}
+        className={cn(
+          "flex h-full w-full min-w-0 overflow-y-hidden outline-none scrollbar-hide overscroll-x-contain",
+          (pageCount > 1 || editMode) && "pointer-events-auto",
+          pageCount > 1 && !editMode &&
+            "cursor-grab snap-x snap-mandatory overflow-x-auto touch-pan-x active:cursor-grabbing",
+          (pageCount < 2 || editMode) && "overflow-x-hidden"
+        )}
+        onPointerDown={onScrollerPointerDown}
+        onPointerMove={onScrollerPointerMove}
+        onPointerUp={onScrollerPointerUp}
+        onPointerCancel={onScrollerPointerCancel}
+        onClickCapture={(e) => {
+          if (!claimedRef.current) return;
+          claimedRef.current = false;
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onScroll={(e) => {
+          const root = e.currentTarget;
+          if (root.clientWidth <= 0) return;
+          const next = Math.round(root.scrollLeft / root.clientWidth);
+          if (next !== pageRef.current) {
+            pageRef.current = next;
+            onPageChange(next);
+          }
+        }}
+      >
+        {Array.from({ length: pageCount }, (_, index) => (
+          <section
             key={index}
-            className="absolute inset-0 overflow-hidden"
-            style={{
-              transform: `translate3d(${x}px, 0, 0)`,
-              pointerEvents: "none",
-              visibility: visible ? "visible" : "hidden",
-              zIndex: active ? 1 : 0,
-            }}
-            aria-hidden={!active}
+            data-dashboard-page
+            data-dashboard-page-swipe={index === page ? true : undefined}
+            className="relative box-border h-full w-full min-w-full shrink-0 basis-full snap-start"
+            aria-hidden={index !== page}
           >
-            {visible ? (
-              <>
-                <div
-                  data-dashboard-page-swipe={active ? true : undefined}
-                  className="absolute inset-0 z-0"
-                  style={{
-                    left: SIDEBAR_INSET,
-                    top: "4.5rem",
-                    pointerEvents: editMode && active && pageCount > 1 ? "auto" : "none",
-                  }}
-                  aria-hidden
-                />
-                <div
-                  className="relative z-[1]"
-                  style={{ pointerEvents: active ? "auto" : "none" }}
-                >
-                  {children(index)}
-                </div>
-              </>
-            ) : null}
-          </div>
-        );
-      })}
+            {children(index)}
+          </section>
+        ))}
+      </div>
 
       {showChrome ? (
         <div
@@ -385,12 +244,12 @@ export function DashboardPager({
                   key={index}
                   type="button"
                   role="tab"
-                  aria-selected={index === (animTarget ?? page)}
+                  aria-selected={index === page}
                   aria-label={t("dashboardPages.pageN").replace("{n}", String(index + 1))}
                   onClick={() => goTo(index)}
                   className={cn(
                     "h-2 rounded-full transition-all duration-300",
-                    index === (animTarget ?? page)
+                    index === page
                       ? "w-5 bg-brand"
                       : "w-2 bg-black/25 hover:bg-black/40 dark:bg-white/35 dark:hover:bg-white/55"
                   )}
