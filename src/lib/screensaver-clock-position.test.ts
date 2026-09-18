@@ -10,10 +10,10 @@ import {
 } from "./screensaver-clock-position";
 
 describe("screensaver clock position", () => {
-  it("defaults to bottom-right", () => {
-    expect(DEFAULT_SCREENSAVER_CLOCK_POSITION).toBe("bottom-right");
-    expect(getScreensaverClockPositionOrDefault(undefined)).toBe("bottom-right");
-    expect(getScreensaverClockPositionOrDefault("nope")).toBe("bottom-right");
+  it("defaults to center", () => {
+    expect(DEFAULT_SCREENSAVER_CLOCK_POSITION).toBe("center");
+    expect(getScreensaverClockPositionOrDefault(undefined)).toBe("center");
+    expect(getScreensaverClockPositionOrDefault("nope")).toBe("center");
   });
 
   it("accepts the nine screen positions", () => {
