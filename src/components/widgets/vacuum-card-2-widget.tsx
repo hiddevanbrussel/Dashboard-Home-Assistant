@@ -47,21 +47,23 @@ const MODE_UI: { mode: VacuumFanMode; labelKey: string; Icon: typeof Leaf }[] = 
 
 function TargetingFrame() {
   return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden>
-      <span className="absolute left-1 top-1 h-4 w-4 rounded-tl-sm border-l-2 border-t-2 border-sky-400/90" />
-      <span className="absolute right-1 top-1 h-4 w-4 rounded-tr-sm border-r-2 border-t-2 border-sky-400/90" />
-      <span className="absolute bottom-1 left-1 h-4 w-4 rounded-bl-sm border-b-2 border-l-2 border-sky-400/90" />
-      <span className="absolute bottom-1 right-1 h-4 w-4 rounded-br-sm border-b-2 border-r-2 border-sky-400/90" />
+    <div className="pointer-events-none absolute inset-[6%] z-20" aria-hidden>
+      <span className="absolute left-0 top-0 h-5 w-5 border-l-2 border-t-2 border-sky-400" />
+      <span className="absolute right-0 top-0 h-5 w-5 border-r-2 border-t-2 border-sky-400" />
+      <span className="absolute bottom-0 left-0 h-5 w-5 border-b-2 border-l-2 border-sky-400" />
+      <span className="absolute bottom-0 right-0 h-5 w-5 border-b-2 border-r-2 border-sky-400" />
     </div>
   );
 }
 
 function VacuumRobotArt({ src }: { src: string }) {
   return (
-    <div className="relative mx-auto aspect-[4/3] w-[78%] max-h-full">
-      <TargetingFrame />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className="relative z-10 h-full w-full object-contain p-3" />
+    <div className="relative mx-auto flex max-h-full w-[84%] items-center justify-center">
+      <div className="relative max-h-full w-full">
+        <TargetingFrame />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="" className="relative z-10 mx-auto max-h-full w-full object-contain" />
+      </div>
     </div>
   );
 }
@@ -259,7 +261,7 @@ export function VacuumCard2Widget({
                 }}
                 disabled={!entity_id || busyMode != null}
                 className={cn(
-                  "flex min-w-0 flex-col items-center gap-1 rounded-xl px-1.5 py-2.5 text-[11px] font-medium transition-colors disabled:opacity-60",
+                  "flex min-w-0 flex-col items-center gap-1 rounded-xl px-1.5 py-3 text-[11px] font-medium transition-colors disabled:opacity-60",
                   selected
                     ? "bg-white text-gray-900 shadow-sm ring-2 ring-sky-400 dark:bg-zinc-800 dark:text-white dark:ring-sky-400"
                     : "bg-gray-100 text-gray-400 hover:text-gray-600 dark:bg-white/5 dark:text-white/40 dark:hover:text-white/70"
