@@ -3,12 +3,16 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
-import { MEDIA_CARD_DEFAULT_HEIGHT, MEDIA_CARD_DEFAULT_WIDTH, MediaCardWidget } from "./media-card-widget";
+import { MediaCardWidget } from "./media-card-widget";
+import {
+  clampMediaCardHeight,
+  clampMediaCardWidth,
+  resizeMediaCardFromBottomRight,
+} from "@/lib/media-card";
+import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY = "dashboard.floatingMediaCardPosition";
 const DEFAULT_OFFSET = 24;
-const DEFAULT_CARD_WIDTH = MEDIA_CARD_DEFAULT_WIDTH;
-const DEFAULT_CARD_HEIGHT = MEDIA_CARD_DEFAULT_HEIGHT;
 
 type Position = { left: number; bottom: number };
 
@@ -54,14 +58,15 @@ const LONG_PRESS_MS = 500;
 export function FloatingMediaCard({
   title,
   entity_id,
-  width: cardWidth = DEFAULT_CARD_WIDTH,
-  height: cardHeight,
+  width,
+  height,
   editMode = false,
   storageScope,
   widgetId,
   onRemove,
   onEdit,
   onEnterEditMode,
+  onResize,
 }: {
   title: string;
   entity_id: string;
@@ -74,12 +79,19 @@ export function FloatingMediaCard({
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
+  onResize?: (size: { width: number; height: number }) => void;
 }) {
-  const totalWidth = cardWidth != null && cardWidth > 0 ? cardWidth : DEFAULT_CARD_WIDTH;
-  const totalHeight = cardHeight != null && cardHeight > 0 ? cardHeight : DEFAULT_CARD_HEIGHT;
+  const { t } = useTranslation();
+  const cardWidth = clampMediaCardWidth(width);
+  const cardHeight = clampMediaCardHeight(height);
+  const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const totalWidth = liveSize?.width ?? cardWidth;
+  const totalHeight = liveSize?.height ?? cardHeight;
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
+  const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,9 +139,29 @@ export function FloatingMediaCard({
     savePosition(storageScope, p, widgetId);
   }, [totalWidth, totalHeight, storageScope, widgetId]);
 
+  useEffect(() => {
+    if (!initialized.current || isResizing) return;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
+    setPosition((prev) =>
+      snapToGrid(
+        {
+          left: Math.max(0, Math.min(prev.left, maxLeft)),
+          bottom: Math.max(0, Math.min(prev.bottom, maxBottom)),
+        },
+        { maxLeft, maxBottom }
+      )
+    );
+  }, [cardWidth, cardHeight, totalWidth, totalHeight, isResizing]);
+
+  useEffect(() => {
+    if (!liveSize || isResizing) return;
+    if (cardWidth === liveSize.width && cardHeight === liveSize.height) setLiveSize(null);
+  }, [cardWidth, cardHeight, liveSize, isResizing]);
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!editMode) return;
+      if (!editMode || isResizing) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
       e.stopPropagation();
@@ -143,7 +175,7 @@ export function FloatingMediaCard({
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [position, editMode]
+    [position, editMode, isResizing]
   );
 
   const handlePointerMove = useCallback(
@@ -183,12 +215,72 @@ export function FloatingMediaCard({
     [isDragging, totalWidth, totalHeight, storageScope, widgetId]
   );
 
+  const applyResizeDelta = useCallback((clientX: number, clientY: number) => {
+    const start = resizeStart.current;
+    const next = resizeMediaCardFromBottomRight({
+      startWidth: start.width,
+      startHeight: start.height,
+      startLeft: start.left,
+      startBottom: start.bottom,
+      dx: clientX - start.x,
+      dy: clientY - start.y,
+      viewportWidth: typeof window !== "undefined" ? window.innerWidth : 1200,
+      viewportHeight: typeof window !== "undefined" ? window.innerHeight : 800,
+    });
+    setLiveSize({ width: next.width, height: next.height });
+    setPosition({ left: next.left, bottom: next.bottom });
+    return next;
+  }, []);
+
+  const handleResizePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!editMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      setIsResizing(true);
+      resizeStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        width: totalWidth,
+        height: totalHeight,
+        left: position.left,
+        bottom: position.bottom,
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    [editMode, totalWidth, totalHeight, position.left, position.bottom]
+  );
+
+  const handleResizePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isResizing) return;
+      applyResizeDelta(e.clientX, e.clientY);
+    },
+    [isResizing, applyResizeDelta]
+  );
+
+  const handleResizePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (isResizing) {
+        const next = applyResizeDelta(e.clientX, e.clientY);
+        setIsResizing(false);
+        setPosition({ left: next.left, bottom: next.bottom });
+        savePosition(storageScope, { left: next.left, bottom: next.bottom }, widgetId);
+        onResize?.({ width: next.width, height: next.height });
+        if (!onResize) setLiveSize(null);
+      }
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    },
+    [isResizing, applyResizeDelta, storageScope, widgetId, onResize]
+  );
+
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-40 overflow-hidden rounded-2xl shadow-xl",
-        editMode && "cursor-grab touch-none active:cursor-grabbing",
-        editMode && !isDragging && "animate-edit-wiggle"
+        "card-plot-in fixed z-40",
+        editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
+        editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}
       style={{
         left: position.left,
@@ -221,6 +313,27 @@ export function FloatingMediaCard({
           onMoreClick={editMode ? onEdit : undefined}
         />
       </div>
+      {editMode ? (
+        <button
+          type="button"
+          aria-label={t("mediaCard.resize")}
+          className="absolute -bottom-1.5 -right-1.5 z-30 flex h-9 w-9 cursor-nwse-resize touch-none items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/25"
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={handleResizePointerMove}
+          onPointerUp={handleResizePointerUp}
+          onPointerCancel={handleResizePointerUp}
+        >
+          <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-gray-600 dark:text-white/80" aria-hidden>
+            <path
+              d="M3.5 10.5h7M10.5 3.5v7M6 10.5h4.5M10.5 6v4.5"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="1.6"
+            />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }

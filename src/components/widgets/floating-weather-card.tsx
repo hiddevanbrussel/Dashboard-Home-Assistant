@@ -6,27 +6,15 @@ import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-gri
 import { WeatherCardWidget } from "./weather-card-widget";
 import { WeatherBottomSheet } from "@/components/weather/weather-bottom-sheet";
 import { isVacuumCardTap } from "@/lib/vacuum-card";
+import {
+  clampWeatherCardHeight,
+  clampWeatherCardWidth,
+  resizeWeatherCardFromBottomRight,
+} from "@/lib/weather-card";
+import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY = "dashboard.floatingWeatherCardPosition";
 const DEFAULT_OFFSET = 24;
-const DEFAULT_CARD_WIDTH = 320;
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 500;
-const DEFAULT_CARD_HEIGHT = 180;
-const MIN_HEIGHT = 100;
-const MAX_HEIGHT = 400;
-
-function clampWidth(w: unknown): number {
-  const n = Number(w);
-  if (!Number.isFinite(n)) return DEFAULT_CARD_WIDTH;
-  return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n)));
-}
-
-function clampHeight(w: unknown): number {
-  const n = Number(w);
-  if (!Number.isFinite(n)) return DEFAULT_CARD_HEIGHT;
-  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.round(n)));
-}
 
 type Position = { left: number; bottom: number };
 
@@ -80,6 +68,7 @@ export function FloatingWeatherCard({
   onRemove,
   onEdit,
   onEnterEditMode,
+  onResize,
 }: {
   title: string;
   entity_id: string;
@@ -91,12 +80,19 @@ export function FloatingWeatherCard({
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
+  onResize?: (size: { width: number; height: number }) => void;
 }) {
-  const totalWidth = clampWidth(width);
-  const totalHeight = clampHeight(height);
+  const { t } = useTranslation();
+  const cardWidth = clampWeatherCardWidth(width);
+  const cardHeight = clampWeatherCardHeight(height);
+  const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const totalWidth = liveSize?.width ?? cardWidth;
+  const totalHeight = liveSize?.height ?? cardHeight;
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
+  const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFiredRef = useRef(false);
@@ -172,9 +168,29 @@ export function FloatingWeatherCard({
     savePosition(storageScope, p);
   }, [totalWidth, totalHeight, storageScope]);
 
+  useEffect(() => {
+    if (!initialized.current || isResizing) return;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
+    setPosition((prev) =>
+      snapToGrid(
+        {
+          left: Math.max(0, Math.min(prev.left, maxLeft)),
+          bottom: Math.max(0, Math.min(prev.bottom, maxBottom)),
+        },
+        { maxLeft, maxBottom }
+      )
+    );
+  }, [cardWidth, cardHeight, totalWidth, totalHeight, isResizing]);
+
+  useEffect(() => {
+    if (!liveSize || isResizing) return;
+    if (cardWidth === liveSize.width && cardHeight === liveSize.height) setLiveSize(null);
+  }, [cardWidth, cardHeight, liveSize, isResizing]);
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!editMode) return;
+      if (!editMode || isResizing) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
       e.stopPropagation();
@@ -188,7 +204,7 @@ export function FloatingWeatherCard({
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [position, editMode]
+    [position, editMode, isResizing]
   );
 
   const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
@@ -227,13 +243,73 @@ export function FloatingWeatherCard({
     [isDragging, maxLeft, maxBottom, storageScope]
   );
 
+  const applyResizeDelta = useCallback((clientX: number, clientY: number) => {
+    const start = resizeStart.current;
+    const next = resizeWeatherCardFromBottomRight({
+      startWidth: start.width,
+      startHeight: start.height,
+      startLeft: start.left,
+      startBottom: start.bottom,
+      dx: clientX - start.x,
+      dy: clientY - start.y,
+      viewportWidth: typeof window !== "undefined" ? window.innerWidth : 1200,
+      viewportHeight: typeof window !== "undefined" ? window.innerHeight : 800,
+    });
+    setLiveSize({ width: next.width, height: next.height });
+    setPosition({ left: next.left, bottom: next.bottom });
+    return next;
+  }, []);
+
+  const handleResizePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!editMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      setIsResizing(true);
+      resizeStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        width: totalWidth,
+        height: totalHeight,
+        left: position.left,
+        bottom: position.bottom,
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    [editMode, totalWidth, totalHeight, position.left, position.bottom]
+  );
+
+  const handleResizePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isResizing) return;
+      applyResizeDelta(e.clientX, e.clientY);
+    },
+    [isResizing, applyResizeDelta]
+  );
+
+  const handleResizePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (isResizing) {
+        const next = applyResizeDelta(e.clientX, e.clientY);
+        setIsResizing(false);
+        setPosition({ left: next.left, bottom: next.bottom });
+        savePosition(storageScope, { left: next.left, bottom: next.bottom });
+        onResize?.({ width: next.width, height: next.height });
+        if (!onResize) setLiveSize(null);
+      }
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    },
+    [isResizing, applyResizeDelta, storageScope, onResize]
+  );
+
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl",
+        "card-plot-in fixed z-30",
         !editMode && "cursor-pointer",
-        editMode && "cursor-grab touch-none active:cursor-grabbing",
-        editMode && !isDragging && "animate-edit-wiggle"
+        editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
+        editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}
       data-no-page-swipe={editMode || sheetOpen ? true : undefined}
       aria-haspopup="dialog"
@@ -259,7 +335,12 @@ export function FloatingWeatherCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className={cn("flex flex-col h-full min-h-0", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
+      <div
+        className={cn(
+          "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl bg-white/10 shadow-xl backdrop-blur-2xl dark:bg-black/50",
+          editMode && "[&>div]:rounded-t-none [&>div]:shadow-none"
+        )}
+      >
         <WeatherCardWidget
           title={title}
           entity_id={entity_id}
@@ -269,6 +350,27 @@ export function FloatingWeatherCard({
           className="flex-1 min-h-0"
         />
       </div>
+      {editMode ? (
+        <button
+          type="button"
+          aria-label={t("weatherCard.resize")}
+          className="absolute -bottom-1.5 -right-1.5 z-30 flex h-9 w-9 cursor-nwse-resize touch-none items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/25"
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={handleResizePointerMove}
+          onPointerUp={handleResizePointerUp}
+          onPointerCancel={handleResizePointerUp}
+        >
+          <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-gray-600 dark:text-white/80" aria-hidden>
+            <path
+              d="M3.5 10.5h7M10.5 3.5v7M6 10.5h4.5M10.5 6v4.5"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="1.6"
+            />
+          </svg>
+        </button>
+      ) : null}
       <WeatherBottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} entityId={entity_id} />
     </div>
   );
