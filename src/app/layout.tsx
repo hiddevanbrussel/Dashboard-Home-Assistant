@@ -50,7 +50,7 @@ export default function RootLayout({
           <OnboardingGuard>
             <MusicPlayerProvider>
               <PageBackgroundProvider>
-                <div className="relative z-0 min-h-screen">{children}</div>
+                <div className="relative min-h-screen">{children}</div>
               </PageBackgroundProvider>
               <GlobalMusicBar />
             </MusicPlayerProvider>

@@ -90,8 +90,12 @@
 }
 
 /* Floating cards are `fixed`; pin them to the dashboard page so snap-scroll can move them.
-   The pager portal is pointer-events: none — cards need an explicit auto hit target.
-   In edit mode the scroller itself stays none so it cannot steal card drags. */
+   The pager portal covers the viewport — empty page surface must not steal sidebar/header hits.
+   Only the cards themselves are hit targets. */
+[data-dashboard-page] {
+  pointer-events: none;
+}
+
 [data-dashboard-page] .fixed {
   position: absolute;
   pointer-events: auto;
@@ -101,7 +105,8 @@
   pointer-events: auto;
 }
 
-html[data-dashboard-edit] [data-dashboard-pager] {
+html[data-dashboard-edit] [data-dashboard-pager],
+html[data-dashboard-edit] [data-dashboard-page] {
   pointer-events: none;
 }
 

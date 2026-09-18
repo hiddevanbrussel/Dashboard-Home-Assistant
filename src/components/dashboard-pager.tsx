@@ -212,7 +212,7 @@ export function DashboardPager({
             key={index}
             data-dashboard-page
             data-dashboard-page-swipe={index === page ? true : undefined}
-            className="relative box-border h-full w-full min-w-full shrink-0 basis-full snap-start"
+            className="relative box-border h-full w-full min-w-full shrink-0 basis-full snap-start pointer-events-none"
             aria-hidden={index !== page}
           >
             {children(index)}
