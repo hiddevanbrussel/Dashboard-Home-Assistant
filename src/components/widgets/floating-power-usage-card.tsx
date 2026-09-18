@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { snapToGrid } from "@/lib/floating-card-grid";
+import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { PowerUsageCardWidget } from "./power-usage-card-widget";
 
 const STORAGE_KEY = "dashboard.floatingPowerUsageCardPosition";
@@ -125,12 +125,14 @@ export function FloatingPowerUsageCard({
       if (!editMode) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
+      e.stopPropagation();
       setIsDragging(true);
+      const measured = floatingPositionFromElement(e.currentTarget as HTMLElement);
       dragStart.current = {
         x: e.clientX,
         y: e.clientY,
-        left: position.left,
-        bottom: position.bottom,
+        left: measured.left,
+        bottom: measured.bottom,
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
@@ -199,9 +201,6 @@ export function FloatingPowerUsageCard({
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
         onPointerUp: handlePointerUp,
-        onPointerLeave: (e: React.PointerEvent) => {
-          if (isDragging) handlePointerUp(e);
-        },
         onPointerCancel: handlePointerUp,
       })}
     >

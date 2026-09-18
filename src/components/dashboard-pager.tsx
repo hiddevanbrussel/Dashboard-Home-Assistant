@@ -182,10 +182,10 @@ export function DashboardPager({
         tabIndex={pageCount > 1 ? 0 : undefined}
         className={cn(
           "flex h-full w-full min-w-0 overflow-y-hidden outline-none scrollbar-hide overscroll-x-contain",
-          (pageCount > 1 || editMode) && "pointer-events-auto",
+          pageCount > 1 && !editMode && "pointer-events-auto",
           pageCount > 1 && !editMode &&
             "cursor-grab snap-x snap-mandatory overflow-x-auto touch-pan-x active:cursor-grabbing",
-          (pageCount < 2 || editMode) && "overflow-x-hidden"
+          (pageCount < 2 || editMode) && "overflow-x-hidden pointer-events-none"
         )}
         onPointerDown={onScrollerPointerDown}
         onPointerMove={onScrollerPointerMove}
@@ -212,7 +212,7 @@ export function DashboardPager({
             key={index}
             data-dashboard-page
             data-dashboard-page-swipe={index === page ? true : undefined}
-            className="relative box-border h-full w-full min-w-full shrink-0 basis-full snap-start"
+            className="relative box-border h-full w-full min-w-full shrink-0 basis-full snap-start pointer-events-none"
             aria-hidden={index !== page}
           >
             {children(index)}

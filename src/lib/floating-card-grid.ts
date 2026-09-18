@@ -38,6 +38,36 @@ export function leftBottomInParent(
   };
 }
 
+/** Prefer the on-screen box so a drag stays under the pointer after containing-block changes. */
+export function beginFloatingCardDrag(
+  pointer: { clientX: number; clientY: number },
+  fallback: Position,
+  measured?: Position | null
+): { x: number; y: number; left: number; bottom: number } {
+  const origin =
+    measured && Number.isFinite(measured.left) && Number.isFinite(measured.bottom)
+      ? measured
+      : fallback;
+  return {
+    x: pointer.clientX,
+    y: pointer.clientY,
+    left: origin.left,
+    bottom: origin.bottom,
+  };
+}
+
+export function floatingDragBounds(
+  cardWidth: number,
+  cardHeight: number,
+  parent: { width: number; height: number },
+  insetBottom = 0
+): { maxLeft: number; maxBottom: number } {
+  return {
+    maxLeft: Math.max(0, parent.width - cardWidth),
+    maxBottom: Math.max(0, parent.height - cardHeight - insetBottom),
+  };
+}
+
 export function createsContainingBlock(style: {
   position?: string;
   transform?: string;

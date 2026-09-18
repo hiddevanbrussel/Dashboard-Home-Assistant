@@ -328,7 +328,7 @@ export function AppShell({
         <div
           data-app-header
           className={cn(
-            "relative z-50 flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
+            "relative z-[70] flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
             headerFixed && "absolute inset-x-0 top-0",
             headerContentLight ? "text-white" : "text-gray-700 dark:text-gray-300"
           )}
