@@ -12,7 +12,7 @@ export const SCREENSAVER_CLOCK_POSITIONS = [
 
 export type ScreensaverClockPosition = (typeof SCREENSAVER_CLOCK_POSITIONS)[number];
 
-export const DEFAULT_SCREENSAVER_CLOCK_POSITION: ScreensaverClockPosition = "bottom-right";
+export const DEFAULT_SCREENSAVER_CLOCK_POSITION: ScreensaverClockPosition = "center";
 
 export function isScreensaverClockPosition(value: unknown): value is ScreensaverClockPosition {
   return SCREENSAVER_CLOCK_POSITIONS.some((position) => position === value);

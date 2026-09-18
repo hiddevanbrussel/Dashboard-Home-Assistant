@@ -2,7 +2,7 @@ export const SCREENSAVER_CLOCK_SIZES = ["sm", "md", "lg", "xl"] as const;
 
 export type ScreensaverClockSize = (typeof SCREENSAVER_CLOCK_SIZES)[number];
 
-export const DEFAULT_SCREENSAVER_CLOCK_SIZE: ScreensaverClockSize = "md";
+export const DEFAULT_SCREENSAVER_CLOCK_SIZE: ScreensaverClockSize = "xl";
 
 export function isScreensaverClockSize(value: unknown): value is ScreensaverClockSize {
   return SCREENSAVER_CLOCK_SIZES.some((size) => size === value);
@@ -15,13 +15,13 @@ export function getScreensaverClockSizeOrDefault(value: string | null | undefine
 export function clockSizeTimeClass(size: ScreensaverClockSize): string {
   switch (size) {
     case "sm":
-      return "text-4xl sm:text-5xl";
+      return "text-6xl sm:text-7xl";
     case "lg":
-      return "text-7xl sm:text-8xl";
+      return "text-[6.5rem] sm:text-[8rem]";
     case "xl":
-      return "text-8xl sm:text-9xl";
+      return "text-[clamp(5.5rem,16vw,10.5rem)]";
     default:
-      return "text-5xl sm:text-6xl";
+      return "text-8xl sm:text-9xl";
   }
 }
 
@@ -41,12 +41,12 @@ export function clockSizeAmpmClass(size: ScreensaverClockSize): string {
 export function clockSizeDateClass(size: ScreensaverClockSize): string {
   switch (size) {
     case "sm":
-      return "text-xs";
-    case "lg":
-      return "text-base";
-    case "xl":
-      return "text-lg";
-    default:
       return "text-sm";
+    case "lg":
+      return "text-xl";
+    case "xl":
+      return "text-2xl";
+    default:
+      return "text-lg";
   }
 }

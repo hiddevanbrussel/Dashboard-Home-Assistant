@@ -3,17 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
-import {
-  Cloud,
-  CloudFog,
-  CloudLightning,
-  CloudRain,
-  CloudSnow,
-  Moon,
-  Sun,
-  Wind,
-  Disc3,
-} from "lucide-react";
+import { Disc3 } from "lucide-react";
 import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverClockPosition, getScreensaverClockSize, getScreensaverMediaSource } from "@/stores/screensaver-store";
 import { useImmichStore } from "@/stores/immich-store";
 import { resolveScreensaverPlayback } from "@/lib/screensaver-media-source";
@@ -31,32 +21,25 @@ import {
   screensaverMediaSide,
 } from "@/lib/screensaver-clock-position";
 import {
+  clockSizeAmpmClass,
+  clockSizeDateClass,
+  clockSizeTimeClass,
   type ScreensaverClockSize,
 } from "@/lib/screensaver-clock-size";
+import {
+  formatLockDateNumeric,
+  formatLockTemperature,
+  formatLockWeekday,
+  lockClockParts,
+  weatherConditionI18nKey,
+  weatherLocationLabel,
+} from "@/lib/screensaver-lock-clock";
 import { formatTimerMs } from "@/lib/timer";
 import { useLiveTimerRemaining } from "@/hooks/use-live-timer";
 import { useTimerStore } from "@/stores/timer-store";
 
-const CLOCK_TIME_CLASS: Record<ScreensaverClockSize, string> = {
-  sm: "text-4xl sm:text-5xl",
-  md: "text-5xl sm:text-6xl",
-  lg: "text-7xl sm:text-8xl",
-  xl: "text-8xl sm:text-9xl",
-};
-
-const CLOCK_AMPM_CLASS: Record<ScreensaverClockSize, string> = {
-  sm: "text-base sm:text-lg",
-  md: "text-lg sm:text-xl",
-  lg: "text-2xl sm:text-3xl",
-  xl: "text-3xl sm:text-4xl",
-};
-
-const CLOCK_DATE_CLASS: Record<ScreensaverClockSize, string> = {
-  sm: "text-xs",
-  md: "text-sm",
-  lg: "text-base",
-  xl: "text-lg",
-};
+const LOCK_HOUR_COLOR = "text-[#EDE6DC]";
+const LOCK_MINUTE_COLOR = "text-[#D2B17A]";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
@@ -133,49 +116,35 @@ function useIdleScreensaver() {
   return { active, setActive };
 }
 
-function ScreensaverWeatherIcon({ state }: { state: string }) {
-  const s = state?.toLowerCase() ?? "";
-  const iconClass = "h-6 w-6 shrink-0 text-white/90";
-  if (s === "sunny" || s === "clear") return <Sun className={iconClass} aria-hidden />;
-  if (s === "clear-night") return <Moon className={iconClass} aria-hidden />;
-  if (s === "fog" || s === "mist") return <CloudFog className={iconClass} aria-hidden />;
-  if (s === "rainy" || s === "pouring" || s === "hail") return <CloudRain className={iconClass} aria-hidden />;
-  if (s === "snowy" || s === "snowy-rainy") return <CloudSnow className={iconClass} aria-hidden />;
-  if (s === "lightning" || s === "lightning-rainy") return <CloudLightning className={iconClass} aria-hidden />;
-  if (s === "windy" || s === "windy-variant") return <Wind className={iconClass} aria-hidden />;
-  if (s === "cloudy" || s === "partlycloudy" || s === "exceptional") return <Cloud className={iconClass} aria-hidden />;
-  return <Cloud className={iconClass} aria-hidden />;
-}
-
-function ScreensaverWeather() {
+function useScreensaverWeatherLines() {
+  const { t } = useTranslation();
   const entityId =
     getScreensaverWeatherEntityId() ??
     (typeof window !== "undefined" ? localStorage.getItem("dashboard.headerTemperatureEntityId") : null) ??
     "weather.home";
   const entity = useEntityStateStore((s) => s.getState(entityId));
+  const zoneHome = useEntityStateStore((s) => s.getState("zone.home"));
 
   const condition = (entity?.state as string) ?? "";
   const temperature =
     entity?.attributes?.temperature != null
-      ? Number(entity.attributes.temperature)
-      : (entity?.state != null && entityId.startsWith("sensor.") ? Number(entity.state) : undefined);
-  const tempStr =
-    temperature != null && !Number.isNaN(temperature)
-      ? `${Math.round(temperature)}°`
+      ? entity.attributes.temperature
+      : entity?.state != null && entityId.startsWith("sensor.")
+        ? entity.state
+        : undefined;
+  const tempStr = formatLockTemperature(temperature);
+  const conditionKey = weatherConditionI18nKey(condition);
+  const conditionStr = conditionKey
+    ? t(conditionKey)
+    : entityId.startsWith("weather.") && condition.trim()
+      ? condition.trim()
       : null;
-
-  if (!tempStr && !condition) return null;
-
-  return (
-    <div className="flex items-center gap-2 text-white/90 drop-shadow-md">
-      {(condition || entityId.startsWith("weather.")) && (
-        <ScreensaverWeatherIcon state={condition} />
-      )}
-      {tempStr && (
-        <span className="text-xl font-light tabular-nums">{tempStr}</span>
-      )}
-    </div>
+  const location = weatherLocationLabel(
+    entity?.attributes as Record<string, unknown> | undefined,
+    zoneHome?.attributes as Record<string, unknown> | undefined
   );
+
+  return { tempStr, location, conditionStr };
 }
 
 function ScreensaverFootballLogo({ src, alt }: { src?: string | null; alt: string }) {
@@ -386,52 +355,58 @@ function ScreensaverMusic() {
   );
 }
 
-function ScreensaverClock({
-  align,
+function ScreensaverLockClock({
   size,
 }: {
-  align: "left" | "center" | "right";
   size: ScreensaverClockSize;
 }) {
+  const { language } = useTranslation();
   const [time, setTime] = useState(() => new Date());
   const use24h = getScreensaverClock24h();
+  const weather = useScreensaverWeatherLines();
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const timeStr = use24h
-    ? `${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`
-    : `${(time.getHours() % 12 || 12)}:${time.getMinutes().toString().padStart(2, "0")}`;
-  const ampm = use24h ? null : (time.getHours() < 12 ? "am" : "pm");
-
-  const dateStr = time.toLocaleDateString("nl-NL", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  const { hours, minutes, period } = lockClockParts(time, use24h);
+  const dateNumeric = formatLockDateNumeric(time, language);
+  const weekday = formatLockWeekday(time, language);
+  const metaClass = cn(
+    "font-light leading-tight text-white/90 drop-shadow-md",
+    clockSizeDateClass(size)
+  );
+  const digitClass = cn(
+    "font-extralight leading-none tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
+    clockSizeTimeClass(size)
+  );
 
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-1",
-        align === "left" ? "items-start" : align === "right" ? "items-end" : "items-center"
-      )}
-    >
-      <time
-        dateTime={time.toISOString()}
-        className={cn("font-light tabular-nums text-white/90 drop-shadow-md", CLOCK_TIME_CLASS[size])}
-      >
-        {timeStr}
-        {ampm != null && (
-          <span className={cn("ml-1.5 font-normal text-white/70", CLOCK_AMPM_CLASS[size])}>
-            {ampm}
+    <time dateTime={time.toISOString()} className="flex items-center gap-[0.12em]">
+      <span className="flex flex-col items-end justify-center">
+        <span className={cn(digitClass, LOCK_HOUR_COLOR)}>{hours}</span>
+        {period != null && (
+          <span className={cn("mt-1 font-light uppercase tracking-wider text-white/70", clockSizeAmpmClass(size))}>
+            {period}
           </span>
         )}
-      </time>
-      <span className={cn("text-white/50 tabular-nums", CLOCK_DATE_CLASS[size])}>{dateStr}</span>
-    </div>
+      </span>
+      <span className="flex flex-col items-start">
+        <span className={cn(metaClass, "mb-[0.35em]")}>
+          <span className="block">{dateNumeric}</span>
+          <span className="block">{weekday}</span>
+        </span>
+        <span className={cn(digitClass, LOCK_MINUTE_COLOR)}>{minutes}</span>
+        {(weather.tempStr || weather.location || weather.conditionStr) && (
+          <span className={cn(metaClass, "mt-[0.4em]")}>
+            {weather.tempStr && <span className="block tabular-nums">{weather.tempStr}</span>}
+            {weather.location && <span className="block">{weather.location}</span>}
+            {weather.conditionStr && <span className="block">{weather.conditionStr}</span>}
+          </span>
+        )}
+      </span>
+    </time>
   );
 }
 
@@ -864,7 +839,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
               </div>
             </>
           )}
-          <div className="absolute inset-0 bg-black/50" aria-hidden />
+          <div className="absolute inset-0 bg-black/30" aria-hidden />
         </>
       )}
       <div
@@ -879,8 +854,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
             clockAlign === "left" ? "items-start" : clockAlign === "right" ? "items-end" : "items-center"
           )}
         >
-          <ScreensaverWeather />
-          <ScreensaverClock align={clockAlign} size={clockSize} />
+          <ScreensaverLockClock size={clockSize} />
           <ScreensaverTimer align={clockAlign} />
         </div>
       </div>

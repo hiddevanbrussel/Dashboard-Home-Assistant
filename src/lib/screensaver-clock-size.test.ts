@@ -7,10 +7,10 @@ import {
 } from "./screensaver-clock-size";
 
 describe("screensaver clock size", () => {
-  it("defaults to medium", () => {
-    expect(DEFAULT_SCREENSAVER_CLOCK_SIZE).toBe("md");
-    expect(getScreensaverClockSizeOrDefault(undefined)).toBe("md");
-    expect(getScreensaverClockSizeOrDefault("huge")).toBe("md");
+  it("defaults to extra large", () => {
+    expect(DEFAULT_SCREENSAVER_CLOCK_SIZE).toBe("xl");
+    expect(getScreensaverClockSizeOrDefault(undefined)).toBe("xl");
+    expect(getScreensaverClockSizeOrDefault("huge")).toBe("xl");
   });
 
   it("accepts the four sizes", () => {
@@ -20,9 +20,9 @@ describe("screensaver clock size", () => {
   });
 
   it("maps larger sizes to larger type classes", () => {
-    expect(clockSizeTimeClass("sm")).toContain("text-4xl");
-    expect(clockSizeTimeClass("md")).toContain("text-5xl");
-    expect(clockSizeTimeClass("lg")).toContain("text-7xl");
-    expect(clockSizeTimeClass("xl")).toContain("text-8xl");
+    expect(clockSizeTimeClass("sm")).toContain("text-6xl");
+    expect(clockSizeTimeClass("md")).toContain("text-8xl");
+    expect(clockSizeTimeClass("lg")).toContain("text-[6.5rem]");
+    expect(clockSizeTimeClass("xl")).toContain("16vw");
   });
 });
