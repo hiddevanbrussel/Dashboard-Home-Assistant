@@ -13,10 +13,16 @@ import {
   resolveFanSpeedForMode,
   VACUUM_CARD_2_DEFAULT_HEIGHT,
   VACUUM_CARD_2_DEFAULT_IMAGE,
+  VACUUM_CARD_2_DEFAULT_IMAGE_DARK,
   VACUUM_CARD_2_DEFAULT_WIDTH,
   isVacuumCardTap,
+  lastCleanAtFromAttributes,
   shouldIgnoreVacuumSheetBackdropClose,
+  cleanedAreaM2FromAttributes,
+  vacuumCard2ArtSrc,
   vacuumHeadlineKind,
+  vacuumRelativeTimeKind,
+  vacuumSessionStatusKey,
 } from "./vacuum-card";
 
 describe("vacuum-card helpers", () => {
@@ -84,7 +90,8 @@ describe("vacuum-card helpers", () => {
   });
 
   it("clamps vacuum card 2 width and height", () => {
-    expect(VACUUM_CARD_2_DEFAULT_IMAGE).toBe("/vacuum-xiaomi-5-top.webp");
+    expect(VACUUM_CARD_2_DEFAULT_IMAGE).toBe("/vacuum-robot-light.webp");
+    expect(VACUUM_CARD_2_DEFAULT_IMAGE_DARK).toBe("/vacuum-robot-dark.webp");
     expect(clampVacuumCard2Width(undefined)).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
     expect(clampVacuumCard2Width("not-a-number")).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
     expect(clampVacuumCard2Width(100)).toBe(240);
@@ -92,7 +99,7 @@ describe("vacuum-card helpers", () => {
     expect(clampVacuumCard2Width(360)).toBe(360);
     expect(clampVacuumCard2Height(undefined)).toBe(VACUUM_CARD_2_DEFAULT_HEIGHT);
     expect(clampVacuumCard2Height(200)).toBe(260);
-    expect(clampVacuumCard2Height(900)).toBe(520);
+    expect(clampVacuumCard2Height(900)).toBe(640);
     expect(clampVacuumCard2Height(400)).toBe(400);
   });
 
@@ -120,6 +127,38 @@ describe("vacuum-card helpers", () => {
     });
     expect(againstViewport.bottom).toBe(0);
     expect(againstViewport.height).toBe(340);
+  });
+
+  it("picks the themed default robot art unless a custom image is set", () => {
+    expect(vacuumCard2ArtSrc({ isDark: false })).toBe(VACUUM_CARD_2_DEFAULT_IMAGE);
+    expect(vacuumCard2ArtSrc({ isDark: true })).toBe(VACUUM_CARD_2_DEFAULT_IMAGE_DARK);
+    expect(vacuumCard2ArtSrc({ isDark: true, backgroundImage: " /custom.webp " })).toBe("/custom.webp");
+  });
+
+  it("reads last clean time and cleaned area from vacuum attributes", () => {
+    expect(lastCleanAtFromAttributes({ last_clean_end: "2026-09-18T18:00:00.000Z" })).toBe(
+      Date.parse("2026-09-18T18:00:00.000Z")
+    );
+    expect(lastCleanAtFromAttributes({ last_clean: 1_700_000_000 })).toBe(1_700_000_000_000);
+    expect(lastCleanAtFromAttributes({ last_clean_end: "unknown" })).toBeNull();
+    expect(cleanedAreaM2FromAttributes({ cleaned_area: 32 })).toBe(32);
+    expect(cleanedAreaM2FromAttributes({ cleaned_area: "32.4 m2" })).toBe(32.4);
+    expect(cleanedAreaM2FromAttributes({})).toBeNull();
+  });
+
+  it("formats a last-session relative time", () => {
+    const now = 1_000_000_000_000;
+    expect(vacuumRelativeTimeKind(now - 20_000, now)).toEqual({ key: "justNow", n: 0 });
+    expect(vacuumRelativeTimeKind(now - 10 * 60_000, now)).toEqual({ key: "minutesAgo", n: 10 });
+    expect(vacuumRelativeTimeKind(now - 2 * 60 * 60_000, now)).toEqual({ key: "hoursAgo", n: 2 });
+    expect(vacuumRelativeTimeKind(now - 3 * 24 * 60 * 60_000, now)).toEqual({ key: "daysAgo", n: 3 });
+  });
+
+  it("uses Gereed when the vacuum is docked or idle", () => {
+    expect(vacuumSessionStatusKey("docked")).toBe("ready");
+    expect(vacuumSessionStatusKey("idle")).toBe("ready");
+    expect(vacuumSessionStatusKey("cleaning")).toBe("cleaning");
+    expect(vacuumSessionStatusKey("returning")).toBe("returning");
   });
 
   it("opens the vacuum sheet only on a short unmoved tap", () => {

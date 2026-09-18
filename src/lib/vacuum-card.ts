@@ -1,10 +1,12 @@
-export const VACUUM_CARD_2_DEFAULT_WIDTH = 300;
-export const VACUUM_CARD_2_DEFAULT_HEIGHT = 330;
+export const VACUUM_CARD_2_DEFAULT_WIDTH = 320;
+export const VACUUM_CARD_2_DEFAULT_HEIGHT = 460;
 export const VACUUM_CARD_2_MIN_WIDTH = 240;
 export const VACUUM_CARD_2_MAX_WIDTH = 500;
 export const VACUUM_CARD_2_MIN_HEIGHT = 260;
-export const VACUUM_CARD_2_MAX_HEIGHT = 520;
-export const VACUUM_CARD_2_DEFAULT_IMAGE = "/vacuum-xiaomi-5-top.webp";
+export const VACUUM_CARD_2_MAX_HEIGHT = 640;
+export const VACUUM_CARD_2_DEFAULT_IMAGE = "/vacuum-robot-light.webp";
+export const VACUUM_CARD_2_DEFAULT_IMAGE_DARK = "/vacuum-robot-dark.webp";
+export const VACUUM_CARD_2_FOOTER_MIN_HEIGHT = 380;
 
 export function clampVacuumCard2Width(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
@@ -172,4 +174,76 @@ export function shouldIgnoreVacuumSheetBackdropClose(
   windowMs = VACUUM_SHEET_BACKDROP_GUARD_MS
 ): boolean {
   return now - openedAt < windowMs;
+}
+
+export function vacuumCard2ArtSrc(input: {
+  backgroundImage?: string | null;
+  isDark: boolean;
+}): string {
+  const custom = input.backgroundImage?.trim();
+  if (custom) return custom;
+  return input.isDark ? VACUUM_CARD_2_DEFAULT_IMAGE_DARK : VACUUM_CARD_2_DEFAULT_IMAGE;
+}
+
+function parseTimestampMs(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value < 1e12 ? Math.round(value * 1000) : Math.round(value);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === "unknown" || trimmed === "unavailable" || trimmed === "none") return null;
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+      const n = Number(trimmed);
+      if (!Number.isFinite(n)) return null;
+      return n < 1e12 ? Math.round(n * 1000) : Math.round(n);
+    }
+    const parsed = Date.parse(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+export function lastCleanAtFromAttributes(attrs: Record<string, unknown> | undefined): number | null {
+  if (!attrs) return null;
+  return (
+    parseTimestampMs(attrs.last_clean_end) ??
+    parseTimestampMs(attrs.last_clean_start) ??
+    parseTimestampMs(attrs.clean_start) ??
+    parseTimestampMs(attrs.last_clean) ??
+    parseTimestampMs(attrs.last_seen)
+  );
+}
+
+export function cleanedAreaM2FromAttributes(attrs: Record<string, unknown> | undefined): number | null {
+  if (!attrs) return null;
+  const raw = attrs.cleaned_area ?? attrs.cleaned_area_m2 ?? attrs.clean_area ?? attrs.total_cleaned_area;
+  if (raw == null || raw === "") return null;
+  const n = typeof raw === "number" ? raw : Number(String(raw).replace(",", ".").replace(/[^\d.-]/g, ""));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.round(n * 10) / 10;
+}
+
+export type VacuumRelativeTimeKind = "justNow" | "minutesAgo" | "hoursAgo" | "daysAgo";
+
+export function vacuumRelativeTimeKind(
+  fromMs: number,
+  nowMs: number
+): { key: VacuumRelativeTimeKind; n: number } {
+  const delta = Math.max(0, nowMs - fromMs);
+  const minutes = Math.round(delta / 60000);
+  if (minutes < 1) return { key: "justNow", n: 0 };
+  if (minutes < 60) return { key: "minutesAgo", n: minutes };
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return { key: "hoursAgo", n: hours };
+  return { key: "daysAgo", n: Math.round(hours / 24) };
+}
+
+export function vacuumSessionStatusKey(
+  state: string | undefined | null
+): "ready" | Exclude<VacuumHeadlineKind, "cleaningProgress" | "unknown"> {
+  const kind = vacuumHeadlineKind(state, null);
+  if (kind === "docked" || kind === "idle") return "ready";
+  if (kind === "unknown" || kind === "cleaningProgress") return "ready";
+  return kind;
 }

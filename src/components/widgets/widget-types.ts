@@ -109,9 +109,9 @@ export type VacuumCard2Props = WidgetBaseProps & {
   progress_entity_id?: string;
   /** Optionele productfoto; zonder deze waarde toont de kaart de standaardillustratie. */
   background_image?: string;
-  /** Breedte kaart in px (standaard 300). */
+  /** Breedte kaart in px (standaard 320). */
   width?: number;
-  /** Hoogte kaart in px (standaard 330). */
+  /** Hoogte kaart in px (standaard 460). */
   height?: number;
 };
 
