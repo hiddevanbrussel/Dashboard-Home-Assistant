@@ -51,6 +51,36 @@ export function clockSizeDateClass(size: ScreensaverClockSize): string {
   }
 }
 
+/**
+ * Date sits above the minutes, weather below. Large display fonts leave empty
+ * space in the glyph box; pull the meta lines into that padding.
+ */
+export function clockSizeMetaAboveClass(size: ScreensaverClockSize): string {
+  switch (size) {
+    case "sm":
+      return "-mb-1.5";
+    case "lg":
+      return "-mb-6";
+    case "xl":
+      return "-mb-12";
+    default:
+      return "-mb-4";
+  }
+}
+
+export function clockSizeMetaBelowClass(size: ScreensaverClockSize): string {
+  switch (size) {
+    case "sm":
+      return "-mt-1";
+    case "lg":
+      return "-mt-5";
+    case "xl":
+      return "-mt-10";
+    default:
+      return "-mt-3";
+  }
+}
+
 /** Relative digit size for the settings preview cards, not the live screensaver. */
 export function clockSizePreviewDigitClass(size: ScreensaverClockSize): string {
   switch (size) {
