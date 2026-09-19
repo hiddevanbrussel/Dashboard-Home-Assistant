@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Battery, Home, PlugZap, Settings2, Sun, type LucideIcon } from "lucide-react";
+import { Battery, Home, PlugZap, Sun, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   ENERGY_OVERVIEW_HOUSE_IMAGE,
@@ -107,11 +107,9 @@ function HouseCallout({
 
 function HouseScene({
   image,
-  toolbar,
   callouts,
 }: {
   image?: string | null;
-  toolbar: ReactNode;
   callouts: Array<{ id: HouseCalloutId; label: string; value: string }>;
 }) {
   const custom = Boolean(image?.trim());
@@ -152,7 +150,6 @@ function HouseScene({
       {callouts.map((callout) => (
         <HouseCallout key={callout.id} {...callout} />
       ))}
-      <div className="absolute right-3 top-3 z-10 flex items-center gap-2">{toolbar}</div>
     </div>
   );
 }
@@ -298,18 +295,6 @@ export function EnergyOverview({
   const solarWindow = useMemo(() => bestSolarWindow(dayGeneration ?? []), [dayGeneration]);
   const showSmartMoment = Boolean(generationId);
 
-  const toolbar = (
-    <div className="pointer-events-auto flex items-center gap-2">
-      <a
-        href="/settings?section=energy"
-        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white/90 px-2.5 text-[11px] font-medium text-gray-600 shadow-sm ring-1 ring-black/5 hover:text-gray-900 dark:bg-zinc-900/90 dark:text-white/70 dark:ring-white/10"
-      >
-        <Settings2 className="h-3.5 w-3.5" />
-        {t("settings.energy.entities")}
-      </a>
-    </div>
-  );
-
   return (
     <div className="mx-auto w-full max-w-[88rem] pb-8">
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,1.1fr)]">
@@ -340,7 +325,7 @@ export function EnergyOverview({
           </div>
         </div>
         <div className="card-plot-in">
-          <HouseScene image={houseImage} toolbar={toolbar} callouts={houseCallouts} />
+          <HouseScene image={houseImage} callouts={houseCallouts} />
         </div>
       </div>
 
