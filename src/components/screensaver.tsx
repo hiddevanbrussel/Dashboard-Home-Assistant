@@ -37,7 +37,7 @@ import { formatTimerMs } from "@/lib/timer";
 import { useLiveTimerRemaining } from "@/hooks/use-live-timer";
 import { useTimerStore } from "@/stores/timer-store";
 import { useThemeStore } from "@/stores/theme-store";
-import { accentRgbCss, screensaverClockRgb } from "@/lib/theme-accents";
+import { accentRgbCss, screensaverClockPairRgb } from "@/lib/theme-accents";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
@@ -372,7 +372,9 @@ function ScreensaverLockClock({
   const { hours, minutes, period } = lockClockParts(time, use24h);
   const dateNumeric = formatLockDateNumeric(time, language);
   const weekday = formatLockWeekday(time, language);
-  const clockColor = accentRgbCss(screensaverClockRgb(accent));
+  const clockColors = screensaverClockPairRgb(accent);
+  const hourColor = accentRgbCss(clockColors.hours);
+  const minuteColor = accentRgbCss(clockColors.minutes);
   const metaClass = cn(
     "font-montserrat font-medium leading-tight text-white/90 drop-shadow-md",
     clockSizeDateClass(size)
@@ -397,10 +399,10 @@ function ScreensaverLockClock({
           </span>
         )}
       </span>
-      <span className={digitClass} style={{ color: clockColor }}>
+      <span className={digitClass} style={{ color: hourColor }}>
         {hours}
       </span>
-      <span className={digitClass} style={{ color: clockColor }}>
+      <span className={digitClass} style={{ color: minuteColor }}>
         {minutes}
       </span>
       <span />

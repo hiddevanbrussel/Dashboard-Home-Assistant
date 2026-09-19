@@ -61,3 +61,14 @@ export function screensaverClockRgb(id: string | undefined): Rgb {
   const tinted = mixRgb(SCREENSAVER_CLOCK_WARM, getThemeAccent(id).rgb, 0.14);
   return mixRgb(tinted, SCREENSAVER_CLOCK_LIFT, 0.28);
 }
+
+const SCREENSAVER_CLOCK_HOUR_LIFT: Rgb = [248, 240, 226];
+
+/** Hours a bit paler than minutes so the two blocks stay distinct. */
+export function screensaverClockPairRgb(id: string | undefined): { hours: Rgb; minutes: Rgb } {
+  const minutes = screensaverClockRgb(id);
+  return {
+    hours: mixRgb(minutes, SCREENSAVER_CLOCK_HOUR_LIFT, 0.4),
+    minutes,
+  };
+}

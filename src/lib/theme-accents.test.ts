@@ -5,6 +5,7 @@ import {
   isThemeAccentId,
   mixRgb,
   SCREENSAVER_CLOCK_WARM,
+  screensaverClockPairRgb,
   screensaverClockRgb,
   THEME_ACCENTS,
   themeAccentCssVars,
@@ -55,5 +56,12 @@ describe("theme accents", () => {
     expect(orange[2]).toBeLessThan(purple[2]);
     expect(purple[0]).toBeGreaterThan(210);
     expect(purple[1]).toBeGreaterThan(150);
+  });
+
+  it("makes hours paler than minutes", () => {
+    const { hours, minutes } = screensaverClockPairRgb("purple");
+    expect(hours).not.toEqual(minutes);
+    expect(hours[0] + hours[1] + hours[2]).toBeGreaterThan(minutes[0] + minutes[1] + minutes[2]);
+    expect(hours[2]).toBeGreaterThan(minutes[2]);
   });
 });
