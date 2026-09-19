@@ -3,6 +3,7 @@ import {
   beginFloatingCardDrag,
   createsContainingBlock,
   floatingDragBounds,
+  isFloatingCardNoDragTarget,
   leftBottomInParent,
   snapToGrid,
 } from "./floating-card-grid";
@@ -38,6 +39,12 @@ describe("floating-card-grid", () => {
     expect(
       beginFloatingCardDrag({ clientX: 10, clientY: 20 }, { left: 80, bottom: 40 }, null)
     ).toEqual({ x: 10, y: 20, left: 80, bottom: 40 });
+  });
+
+  it("only treats data-no-drag targets as non-draggable", () => {
+    expect(isFloatingCardNoDragTarget(null)).toBe(false);
+    expect(isFloatingCardNoDragTarget({ closest: () => null })).toBe(false);
+    expect(isFloatingCardNoDragTarget({ closest: (sel: string) => (sel === "[data-no-drag]" ? {} : null) })).toBe(true);
   });
 
   it("clamps drag bounds to the containing block, not the window", () => {
