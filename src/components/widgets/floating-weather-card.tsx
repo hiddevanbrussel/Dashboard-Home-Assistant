@@ -354,13 +354,13 @@ export function FloatingWeatherCard({
         <button
           type="button"
           aria-label={t("weatherCard.resize")}
-          className="absolute -bottom-1.5 -right-1.5 z-30 flex h-9 w-9 cursor-nwse-resize touch-none items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/25"
+          className="absolute bottom-0 right-0 z-30 flex h-8 w-8 cursor-nwse-resize touch-none items-end justify-end p-1"
           onPointerDown={handleResizePointerDown}
           onPointerMove={handleResizePointerMove}
           onPointerUp={handleResizePointerUp}
           onPointerCancel={handleResizePointerUp}
         >
-          <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-gray-600 dark:text-white/80" aria-hidden>
+          <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 text-gray-500/70 dark:text-white/50" aria-hidden>
             <path
               d="M3.5 10.5h7M10.5 3.5v7M6 10.5h4.5M10.5 6v4.5"
               fill="none"
