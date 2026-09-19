@@ -320,6 +320,89 @@ export function formatHourTick(hour: string): string {
   return `${twelve}${suffix}`;
 }
 
+export type EnergyHistoryState = { state: string; last_changed: string };
+
+export function computeHourlyMeanFromStates(states: EnergyHistoryState[]): HourlyPoint[] {
+  const buckets = new Map<string, { sum: number; n: number }>();
+  for (const s of states) {
+    const val = parseFloat(s.state);
+    if (Number.isNaN(val)) continue;
+    const hour = `${String(new Date(s.last_changed).getHours()).padStart(2, "0")}:00`;
+    const bucket = buckets.get(hour) ?? { sum: 0, n: 0 };
+    bucket.sum += val;
+    bucket.n += 1;
+    buckets.set(hour, bucket);
+  }
+  return Array.from({ length: 24 }, (_, hour) => {
+    const key = `${String(hour).padStart(2, "0")}:00`;
+    const bucket = buckets.get(key);
+    return { hour: key, value: bucket && bucket.n > 0 ? bucket.sum / bucket.n : 0 };
+  });
+}
+
+export type HouseCalloutId = "solar" | "home" | "grid" | "battery";
+
+export function visibleHouseCallouts(input: {
+  solarKw?: number;
+  homeKw?: number;
+  gridValue?: number;
+  batterySoc?: number;
+  batteryKw?: number;
+}): HouseCalloutId[] {
+  const out: HouseCalloutId[] = [];
+  if (hasEnergyReading(input.solarKw)) out.push("solar");
+  if (hasEnergyReading(input.homeKw)) out.push("home");
+  if (hasEnergyReading(input.gridValue)) out.push("grid");
+  if (hasEnergyReading(input.batterySoc) || hasEnergyReading(input.batteryKw)) out.push("battery");
+  return out;
+}
+
+export function bestSolarWindow(
+  hourly: HourlyPoint[],
+  windowHours = 3
+): { startHour: number; endHour: number; total: number } | null {
+  const size = Math.max(1, Math.min(12, Math.round(windowHours)));
+  const values = Array.from({ length: 24 }, (_, hour) => {
+    const key = `${String(hour).padStart(2, "0")}:00`;
+    return hourly.find((point) => point.hour === key)?.value ?? 0;
+  });
+  let best = { start: 0, total: -1 };
+  for (let start = 0; start <= 24 - size; start += 1) {
+    const total = values.slice(start, start + size).reduce((sum, value) => sum + value, 0);
+    if (total > best.total) best = { start, total };
+  }
+  if (best.total <= 0) return null;
+  return { startHour: best.start, endHour: best.start + size, total: best.total };
+}
+
+export function formatHourRange(startHour: number, endHour: number): string {
+  const pad = (hour: number) => `${String(((hour % 24) + 24) % 24).padStart(2, "0")}:00`;
+  return `${pad(startHour)} – ${pad(endHour)}`;
+}
+
+export function seriesMax(values: number[]): number {
+  const max = Math.max(0, ...values.filter((value) => Number.isFinite(value)));
+  return max > 0 ? max : 1;
+}
+
+export function polylinePoints(values: number[], width: number, height: number, max = seriesMax(values)): string {
+  if (values.length === 0) return "";
+  const span = Math.max(1, values.length - 1);
+  return values
+    .map((value, index) => {
+      const x = (index / span) * width;
+      const y = height - (Math.max(0, value) / max) * height;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+}
+
+export function areaPath(values: number[], width: number, height: number, max = seriesMax(values)): string {
+  const line = polylinePoints(values, width, height, max);
+  if (!line) return "";
+  return `M0,${height} L${line.replace(/ /g, " L")} L${width},${height} Z`;
+}
+
 function entityDomain(entityId: string): string {
   return entityId.split(".")[0] ?? "";
 }

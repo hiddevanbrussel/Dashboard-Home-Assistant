@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
+import { computeHourlyMeanFromStates } from "@/lib/energy-dashboard";
 import { getHistory } from "@/lib/ha/rest";
 
 type HourData = { hour: string; value: number };
@@ -14,6 +15,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const entityIdsParam = searchParams.get("entity_ids");
   const granularity = searchParams.get("granularity");
+  const mode = searchParams.get("mode");
   const days = Math.min(31, Math.max(1, parseInt(searchParams.get("days") ?? "7", 10)));
   const connectionId = searchParams.get("connectionId") ?? undefined;
 
@@ -49,7 +51,8 @@ export async function GET(request: Request) {
       for (let ei = 0; ei < entityIds.length; ei++) {
         const entityId = entityIds[ei];
         const states = rawHistory[ei] ?? [];
-        const hourData = computeHourlyFromStates(states);
+        const hourData =
+          mode === "mean" ? computeHourlyMeanFromStates(states) : computeHourlyFromStates(states);
         result[entityId] = hourData;
       }
       return NextResponse.json(result);
