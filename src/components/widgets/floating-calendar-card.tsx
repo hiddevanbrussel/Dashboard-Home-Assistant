@@ -2,7 +2,14 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import {
+  beginFloatingCardDrag,
+  floatingDragBounds,
+  floatingParentSize,
+  floatingPositionFromElement,
+  isFloatingCardNoDragTarget,
+  snapToGrid,
+} from "@/lib/floating-card-grid";
 import { CalendarCardWidget } from "./calendar-card-widget";
 import {
   clampCalendarCardHeight,
@@ -189,19 +196,31 @@ export function FloatingCalendarCard({
     return next;
   }, []);
 
+  const dragBoundsFor = useCallback(
+    (el: HTMLElement) => {
+      const parent = typeof window !== "undefined" ? floatingParentSize(el) : { width: 400, height: 400 };
+      return floatingDragBounds(displayWidth, displayHeight, parent);
+    },
+    [displayWidth, displayHeight]
+  );
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode || isResizing) return;
-      if ((e.target as HTMLElement).closest?.("button, a")) return;
+      if (isFloatingCardNoDragTarget(e.target)) return;
       e.preventDefault();
       e.stopPropagation();
-      const measured = floatingPositionFromElement(e.currentTarget as HTMLElement);
+      const el = e.currentTarget as HTMLElement;
       draggingRef.current = true;
       setIsDragging(true);
-      dragStart.current = { x: e.clientX, y: e.clientY, left: measured.left, bottom: measured.bottom };
-      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      dragStart.current = beginFloatingCardDrag(
+        { clientX: e.clientX, clientY: e.clientY },
+        position,
+        floatingPositionFromElement(el)
+      );
+      el.setPointerCapture?.(e.pointerId);
     },
-    [editMode, isResizing]
+    [editMode, isResizing, position]
   );
 
   const handlePointerMove = useCallback(
@@ -209,14 +228,13 @@ export function FloatingCalendarCard({
       if (!draggingRef.current) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxLeft = typeof window !== "undefined" ? window.innerWidth - displayWidth : 400;
-      const maxBottom = typeof window !== "undefined" ? window.innerHeight - displayHeight : 400;
+      const { maxLeft, maxBottom } = dragBoundsFor(e.currentTarget as HTMLElement);
       setPosition({
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
         bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
       });
     },
-    [displayWidth, displayHeight]
+    [dragBoundsFor]
   );
 
   const handlePointerUp = useCallback(
@@ -226,8 +244,7 @@ export function FloatingCalendarCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxLeft = typeof window !== "undefined" ? window.innerWidth - displayWidth : 400;
-        const maxBottom = typeof window !== "undefined" ? window.innerHeight - displayHeight : 400;
+        const { maxLeft, maxBottom } = dragBoundsFor(e.currentTarget as HTMLElement);
         const raw = {
           left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
           bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
@@ -238,7 +255,7 @@ export function FloatingCalendarCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [storageScope, widget.id, displayWidth, displayHeight]
+    [storageScope, widget.id, dragBoundsFor]
   );
 
   const handleResizePointerDown = useCallback(
@@ -291,7 +308,7 @@ export function FloatingCalendarCard({
       onDragStart={(event) => event.preventDefault()}
       className={cn(
         "card-plot-in fixed z-40 [-webkit-user-drag:none]",
-        editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing"
+        editMode && !isResizing && "cursor-grab touch-none select-none active:cursor-grabbing"
       )}
       style={{
         left: position.left,
@@ -331,6 +348,7 @@ export function FloatingCalendarCard({
         <button
           type="button"
           data-no-page-swipe
+          data-no-drag
           aria-label={t("calendar.resize")}
           className="absolute -bottom-1.5 -right-1.5 z-30 flex h-9 w-9 cursor-nwse-resize touch-none items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/25"
           onPointerDown={handleResizePointerDown}

@@ -180,8 +180,9 @@ export function CalendarCardWidget({
       <div className={cn("flex items-center gap-1 px-3 pb-3", onMoreClick ? "pt-3" : "pt-5")}>
         <button
           type="button"
+          disabled={Boolean(onMoreClick)}
           onClick={() => shiftWeek(-1)}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200 disabled:pointer-events-none"
           aria-label={t("calendar.prevWeek")}
         >
           <ChevronLeft className="h-4 w-4" />
@@ -197,11 +198,13 @@ export function CalendarCardWidget({
                 type="button"
                 role="tab"
                 aria-selected={selected}
+                disabled={Boolean(onMoreClick)}
                 onClick={() => setSelectedDate(day)}
                 className={cn(
                   "flex flex-col items-center rounded-xl px-0.5 py-1.5 transition-colors",
                   selected ? "text-gray-900 dark:text-white" : "text-gray-400 hover:bg-black/5 dark:text-gray-500 dark:hover:bg-white/10",
-                  isToday && !selected && "text-gray-700 dark:text-gray-200"
+                  isToday && !selected && "text-gray-700 dark:text-gray-200",
+                  onMoreClick && "pointer-events-none"
                 )}
               >
                 <span className={cn("text-sm font-semibold tabular-nums leading-none", selected && "text-gray-900 dark:text-white")}>
@@ -222,8 +225,9 @@ export function CalendarCardWidget({
         </div>
         <button
           type="button"
+          disabled={Boolean(onMoreClick)}
           onClick={() => shiftWeek(1)}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200 disabled:pointer-events-none"
           aria-label={t("calendar.nextWeek")}
         >
           <ChevronRight className="h-4 w-4" />
@@ -231,6 +235,7 @@ export function CalendarCardWidget({
         {onMoreClick ? (
           <button
             type="button"
+            data-no-drag
             onClick={onMoreClick}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
             aria-label={t("editPanel.editTile")}
@@ -244,8 +249,9 @@ export function CalendarCardWidget({
         <div className="px-5 pb-2">
           <button
             type="button"
+            disabled={Boolean(onMoreClick)}
             onClick={() => setSelectedDate(today)}
-            className="rounded-full bg-black/[0.04] px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:bg-black/[0.07] dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/15"
+            className="rounded-full bg-black/[0.04] px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:bg-black/[0.07] dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/15 disabled:pointer-events-none"
           >
             {t("calendar.today")}
           </button>
@@ -261,7 +267,7 @@ export function CalendarCardWidget({
             <Link
               href="/settings"
               draggable={false}
-              className="mt-1 text-xs font-medium text-brand hover:underline"
+              className={cn("mt-1 text-xs font-medium text-brand hover:underline", onMoreClick && "pointer-events-none")}
               onPointerDown={(e) => e.stopPropagation()}
               onDragStart={(e) => e.preventDefault()}
             >

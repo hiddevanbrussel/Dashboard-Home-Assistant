@@ -94,3 +94,14 @@ export function floatingPositionFromElement(el: HTMLElement): Position {
   const parent = containingBlockRect(el);
   return leftBottomInParent(rect, parent);
 }
+
+export function floatingParentSize(el: HTMLElement): { width: number; height: number } {
+  const parent = containingBlockRect(el);
+  return { width: parent.width, height: parent.height };
+}
+
+/** Keep edit-mode controls clickable; the rest of the card is the drag surface. */
+export function isFloatingCardNoDragTarget(target: EventTarget | null): boolean {
+  const el = target as { closest?: (selector: string) => unknown } | null;
+  return typeof el?.closest === "function" && Boolean(el.closest("[data-no-drag]"));
+}
