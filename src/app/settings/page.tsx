@@ -16,6 +16,7 @@ import {
   SettingsToggle,
 } from "@/components/settings/settings-panel";
 import { MusicAssistantSettings } from "@/components/settings/music-assistant-settings";
+import { VoiceSatelliteSettings } from "@/components/settings/voice-satellite-settings";
 import { ValetudoSettings } from "@/components/settings/valetudo-settings";
 import { PexelsSettings } from "@/components/settings/pexels-settings";
 import { ImmichSettings } from "@/components/settings/immich-settings";
@@ -42,17 +43,18 @@ import { hydrateMusicAssistantStore, useMusicAssistantStore } from "@/stores/mus
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { hydrateValetudoStore, useValetudoStore } from "@/stores/valetudo-store";
+import { hydrateVoiceSatelliteStore, useVoiceSatelliteStore } from "@/stores/voice-satellite-store";
 import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { EnergyEntitySettings } from "@/components/settings/energy-entity-settings";
 import { useNewsStore } from "@/stores/news-store";
-import { RobotVacuum, CalendarDays, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X, Zap } from "lucide-react";
+import { RobotVacuum, CalendarDays, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 
 type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "energy" | "tasks" | "apps" | "entities";
-type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich";
+type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich" | "voice-satellite";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -73,6 +75,7 @@ const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string
   valetudo: { labelKey: "settings.valetudo", descriptionKey: "settings.valetudo.description", icon: RobotVacuum },
   pexels: { labelKey: "settings.pexels", descriptionKey: "settings.pexels.description", icon: ImageIcon },
   immich: { labelKey: "settings.immich", descriptionKey: "settings.immich.description", icon: Images },
+  "voice-satellite": { labelKey: "settings.voiceSatellite", descriptionKey: "settings.voiceSatellite.description", icon: Mic },
 };
 
 type HaEntity = {
@@ -201,6 +204,7 @@ export default function SettingsPage() {
   const newsStore = useNewsStore();
   const musicAssistant = useMusicAssistantStore();
   const valetudo = useValetudoStore();
+  const voiceSatellite = useVoiceSatelliteStore();
   const immich = useImmichStore();
   const [pexelsEnabled, setPexelsEnabled] = useState(false);
   const [newsFeedDraft, setNewsFeedDraft] = useState<string[]>([]);
@@ -214,6 +218,7 @@ export default function SettingsPage() {
     hydrateEnergyStore();
     hydrateChoresStore();
     hydrateValetudoStore();
+    hydrateVoiceSatelliteStore();
     hydrateImmichStore();
     const next = new URLSearchParams(window.location.search).get("section");
     if (next && next in SECTION_KEYS) setSection(next as SettingsSection);
@@ -535,6 +540,7 @@ export default function SettingsPage() {
     valetudo: valetudo.enabled,
     pexels: pexelsEnabled,
     immich: immich.enabled,
+    "voice-satellite": voiceSatellite.enabled,
   };
   const pexelsReady = isPexelsSourceReady(pexelsEnabled, getScreensaverPexelsApiKey());
   const immichReady = isImmichSourceReady(immich.enabled, immich.baseUrl, immich.apiKey);
@@ -1252,6 +1258,8 @@ export default function SettingsPage() {
           {selectedApp === "pexels" && <PexelsSettings />}
 
           {selectedApp === "immich" && <ImmichSettings />}
+
+          {selectedApp === "voice-satellite" && <VoiceSatelliteSettings />}
 
           {section === "entities" && (
             <>

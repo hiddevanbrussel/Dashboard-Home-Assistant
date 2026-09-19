@@ -29,6 +29,7 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getScreensaverClock24h } from "@/stores/screensaver-store";
 import { HeaderMediaPlaying } from "./header-media-playing";
 import { HeaderTimer } from "./header-timer";
+import { HeaderVoice } from "./header-voice";
 import { useNewsStore } from "@/stores/news-store";
 import { NewsOverlay } from "@/components/news-overlay";
 
@@ -379,6 +380,7 @@ export function AppShell({
             )}
             {headerStartAction}
             {headerEndAction}
+            <HeaderVoice contentLight={headerContentLight} />
             <HeaderTimer contentLight={headerContentLight} />
             <HeaderMediaPlaying contentLight={headerContentLight} />
           </div>

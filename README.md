@@ -25,6 +25,7 @@ Recent updates that landed on `main`:
 - **Resizable cards** — Media, Weather, Climate, and Vacuum cards scale from a bottom-right handle in edit mode, same as each other.
 - **Swipeable Home pages** — up to six dashboard pages, swiped like the Rooms floors.
 - **Screensaver media** — custom upload, [Pexels](https://www.pexels.com/api/), or your own [Immich](https://immich.app/) library.
+- **Voice Satellite** — tap-to-talk Assist from the header. Uses your Home Assistant voice pipeline for speech-to-text, conversation, and spoken replies.
 
 ---
 
@@ -77,13 +78,13 @@ Enable extra pages in Settings when you need them:
 | **Music** | Music Assistant home (search, shelves, player) or a Home Assistant media-player fallback |
 | **Vacuum** | Full-page Valetudo map and room cleaning (from Settings → Apps → Valetudo, or the vacuum card) |
 
-The header also shows the clock, weather temperature, optional RSS news, a timer, and now-playing.
+The header also shows the clock, weather temperature, optional RSS news, a timer, Voice Satellite, and now-playing.
 
 ### Settings & integrations
 
 - **Appearance** — light / dark / system theme and accent color.
 - **Connection** — Home Assistant base URL and long-lived access token.
-- **Apps** — Music Assistant, Valetudo, Pexels, Immich, and RSS news.
+- **Apps** — Music Assistant, Valetudo, Pexels, Immich, RSS news, and Voice Satellite (Home Assistant Assist).
 
 ---
 
