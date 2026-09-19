@@ -22,6 +22,8 @@ import {
 } from "@/lib/screensaver-clock-position";
 import {
   clockSizeDateClass,
+  clockSizeMetaAboveClass,
+  clockSizeMetaBelowClass,
   clockSizeTimeClass,
   type ScreensaverClockSize,
 } from "@/lib/screensaver-clock-size";
@@ -414,7 +416,7 @@ function ScreensaverLockClock({
     clockSizeDateClass(size)
   );
   const digitClass = cn(
-    "font-montserrat font-medium leading-none tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
+    "font-montserrat font-medium leading-[0.82] tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
     clockSizeTimeClass(size)
   );
 
@@ -424,7 +426,7 @@ function ScreensaverLockClock({
       className="grid grid-cols-[auto_auto] items-end gap-x-[0.14em]"
     >
       <span />
-      <span className={cn(metaClass, "mb-[0.22em]")}>
+      <span className={cn(metaClass, clockSizeMetaAboveClass(size))}>
         <span className="block">{dateNumeric}</span>
         <span className="block">{weekday}</span>
         {period != null && (
@@ -441,7 +443,7 @@ function ScreensaverLockClock({
       </span>
       <span />
       {(weather.tempStr || weather.location || weather.conditionStr) ? (
-        <span className={cn(metaClass, "mt-[0.28em]")}>
+        <span className={cn(metaClass, clockSizeMetaBelowClass(size))}>
           {weather.tempStr && <span className="block tabular-nums">{weather.tempStr}</span>}
           {weather.location && <span className="block">{weather.location}</span>}
           {weather.conditionStr && <span className="block">{weather.conditionStr}</span>}

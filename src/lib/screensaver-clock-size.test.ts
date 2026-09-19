@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SCREENSAVER_CLOCK_SIZE,
+  clockSizeMetaAboveClass,
+  clockSizeMetaBelowClass,
   clockSizePreviewDigitClass,
   clockSizeTimeClass,
   getScreensaverClockSizeOrDefault,
@@ -26,6 +28,13 @@ describe("screensaver clock size", () => {
     expect(clockSizeTimeClass("lg")).toContain("text-[6.5rem]");
     expect(clockSizeTimeClass("xl")).toContain("22vw");
     expect(clockSizeTimeClass("xl")).toContain("15rem");
+  });
+
+  it("pulls date and weather closer on larger clocks", () => {
+    expect(clockSizeMetaAboveClass("sm")).toContain("-mb-");
+    expect(clockSizeMetaBelowClass("sm")).toContain("-mt-");
+    expect(clockSizeMetaAboveClass("xl")).toBe("-mb-10");
+    expect(clockSizeMetaBelowClass("xl")).toBe("-mt-6");
   });
 
   it("keeps settings previews in the same size order", () => {
