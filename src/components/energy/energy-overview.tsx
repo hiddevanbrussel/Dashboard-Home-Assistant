@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Battery, Home, PlugZap, Settings2, Sun, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   ENERGY_OVERVIEW_HOUSE_IMAGE,
-  areaPath,
   bestSolarWindow,
   clampPercent,
   displayUnitForEnergy,
@@ -15,17 +14,12 @@ import {
   hasEnergyReading,
   hasLinkedEnergyEntities,
   heatmapTones,
-  mergeDatedSeries,
-  mergeHourlySeries,
   parseHaNumber,
-  polylinePoints,
-  seriesMax,
   shouldShowBatteryCard,
   shouldShowHeatmap,
   toKilowatts,
   toKwh,
   visibleHouseCallouts,
-  type EnergyHourlyRow,
   type HeatmapTone,
   type HouseCalloutId,
   type HourlyPoint,
@@ -33,8 +27,6 @@ import {
 import { cn } from "@/lib/utils";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-
-type ChartRange = "day" | "week" | "month";
 
 const HOUSE_CALLOUT_META: Record<
   HouseCalloutId,
@@ -194,91 +186,10 @@ function BatteryRow({
   );
 }
 
-function FlowChart({
-  rows,
-  range,
-  generationLabel,
-  consumptionLabel,
-}: {
-  rows: EnergyHourlyRow[];
-  range: ChartRange;
-  generationLabel: string;
-  consumptionLabel: string;
-}) {
-  const width = 640;
-  const height = 210;
-  const padTop = 12;
-  const padBottom = 24;
-  const plotH = height - padTop - padBottom;
-  const generation = rows.map((row) => row.generation);
-  const consumption = rows.map((row) => row.consumption);
-  const max = seriesMax([...generation, ...consumption]);
-  const genLine = polylinePoints(generation, width, plotH, max);
-  const useLine = polylinePoints(consumption, width, plotH, max);
-  const genArea = areaPath(generation, width, plotH, max);
-  const nowX = range === "day" ? (new Date().getHours() / 23) * width : null;
-  const ticks =
-    range === "day"
-      ? [
-          { x: 0, label: "00:00" },
-          { x: width * 0.25, label: "06:00" },
-          { x: width * 0.5, label: "12:00" },
-          { x: width * 0.75, label: "18:00" },
-          { x: width, label: "24:00" },
-        ]
-      : rows.filter((_, i) => i === 0 || i === rows.length - 1 || i === Math.floor(rows.length / 2)).map((row, i, list) => ({
-          x: list.length <= 1 ? 0 : (rows.indexOf(row) / Math.max(1, rows.length - 1)) * width,
-          label: row.hour,
-        }));
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full overflow-visible" role="img">
-      <g transform={`translate(0 ${padTop})`}>
-        {genArea ? <path d={genArea} className="fill-brand/20 dark:fill-brand/25" /> : null}
-        {genLine ? (
-          <polyline points={genLine} fill="none" className="stroke-brand" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-        ) : null}
-        {useLine ? (
-          <polyline points={useLine} fill="none" className="stroke-emerald-500 dark:stroke-emerald-400" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-        ) : null}
-        {nowX != null ? (
-          <line x1={nowX} x2={nowX} y1={0} y2={plotH} className="stroke-gray-400/70 dark:stroke-white/30" strokeDasharray="3 5" />
-        ) : null}
-      </g>
-      {ticks.map((tick) => (
-        <text
-          key={`${tick.x}-${tick.label}`}
-          x={tick.x}
-          y={height - 4}
-          textAnchor={tick.x === 0 ? "start" : tick.x === width ? "end" : "middle"}
-          className="fill-gray-400 text-[10px] dark:fill-white/40"
-        >
-          {tick.label}
-        </text>
-      ))}
-      <text x={0} y={10} className="fill-gray-400 text-[10px] dark:fill-white/40">
-        {generationLabel}
-      </text>
-      <text x={width} y={10} textAnchor="end" className="fill-emerald-500 text-[10px] dark:fill-emerald-400">
-        {consumptionLabel}
-      </text>
-    </svg>
-  );
-}
-
-async function fetchHistorySeries(
-  ids: string[],
-  range: ChartRange,
-  mode?: "mean"
-): Promise<Record<string, HourlyPoint[] | { date: string; consumption: number }[]>> {
+async function fetchHourlySeries(ids: string[], mode?: "mean"): Promise<Record<string, HourlyPoint[]>> {
   if (ids.length === 0) return {};
-  const params = new URLSearchParams({ entity_ids: ids.join(",") });
-  if (range === "day") {
-    params.set("granularity", "hourly");
-    if (mode === "mean") params.set("mode", "mean");
-  } else {
-    params.set("days", range === "week" ? "7" : "31");
-  }
+  const params = new URLSearchParams({ entity_ids: ids.join(","), granularity: "hourly" });
+  if (mode === "mean") params.set("mode", "mean");
   const res = await fetch(`/api/ha/history?${params.toString()}`);
   if (!res.ok) return {};
   return res.json();
@@ -309,7 +220,6 @@ export function EnergyOverview({
   const panelTempEntityIds = useEnergyStore((s) => s.panelTempEntityIds);
   const linked = hasLinkedEnergyEntities(entities, panelTempEntityIds);
 
-  const [chartRange, setChartRange] = useState<ChartRange>("day");
   const yieldReading = useEntityReading(entities.solarYieldTodayEntityId);
   const powerReading = useEntityReading(entities.solarPowerEntityId);
   const exportReading = useEntityReading(entities.gridExportEntityId);
@@ -377,57 +287,16 @@ export function EnergyOverview({
 
   const generationId = entities.solarPowerEntityId || entities.solarYieldTodayEntityId;
   const generationIsPower = Boolean(entities.solarPowerEntityId);
-  const consumptionId = entities.consumptionEntityId;
-  const exportId = entities.gridExportEntityId;
-  const historyIds = [generationId, consumptionId, exportId].filter(Boolean);
-  const { data: historyData } = useQuery({
-    queryKey: ["energy-overview-history", chartRange, historyIds.join(","), generationIsPower],
-    enabled: historyIds.length > 0,
-    queryFn: async () => {
-      if (chartRange === "day") {
-        const powerIds = [
-          generationIsPower ? generationId : "",
-          consumptionId,
-        ].filter(Boolean);
-        const energyIds = [
-          !generationIsPower ? generationId : "",
-          exportId,
-        ].filter((id, index, list) => Boolean(id) && !powerIds.includes(id) && list.indexOf(id) === index);
-        const [powerSeries, energySeries] = await Promise.all([
-          fetchHistorySeries(powerIds, "day", "mean"),
-          fetchHistorySeries(energyIds, "day"),
-        ]);
-        return mergeHourlySeries(
-          { ...energySeries, ...powerSeries } as Record<string, HourlyPoint[]>,
-          { generation: generationId, consumption: consumptionId, export: exportId }
-        );
-      }
-      const datedGenerationId = entities.solarYieldTodayEntityId || generationId;
-      const datedIds = [datedGenerationId, consumptionId, exportId].filter(Boolean);
-      const dated = await fetchHistorySeries(datedIds, chartRange);
-      return mergeDatedSeries(dated as Record<string, { date: string; consumption: number }[]>, {
-        generation: datedGenerationId,
-        consumption: consumptionId,
-        export: exportId,
-      });
-    },
-  });
-  const chartRows = historyData ?? [];
-  const hasChartValues = chartRows.some((row) => row.generation > 0 || row.consumption > 0);
   const { data: dayGeneration } = useQuery({
     queryKey: ["energy-overview-smart-window", generationId, generationIsPower],
     enabled: Boolean(generationId),
     queryFn: async () => {
-      const series = await fetchHistorySeries(
-        [generationId],
-        "day",
-        generationIsPower ? "mean" : undefined
-      );
-      return (series[generationId] as HourlyPoint[] | undefined) ?? [];
+      const series = await fetchHourlySeries([generationId], generationIsPower ? "mean" : undefined);
+      return series[generationId] ?? [];
     },
   });
   const solarWindow = useMemo(() => bestSolarWindow(dayGeneration ?? []), [dayGeneration]);
-  const showFlow = historyIds.length > 0;
+  const showSmartMoment = Boolean(generationId);
 
   const toolbar = (
     <div className="pointer-events-auto flex items-center gap-2">
@@ -475,63 +344,24 @@ export function EnergyOverview({
         </div>
       </div>
 
-      {showFlow ? (
-        <section className="card-plot-in mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(16rem,0.7fr)]">
-          <div>
-            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.chartTitle")}</h2>
-              <div className="flex items-center gap-1 rounded-full bg-black/[0.04] p-0.5 dark:bg-white/10">
-                {(["day", "week", "month"] as const).map((range) => (
-                  <button
-                    key={range}
-                    type="button"
-                    onClick={() => setChartRange(range)}
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-[11px] font-medium",
-                      chartRange === range
-                        ? "bg-brand text-white"
-                        : "text-gray-500 hover:text-gray-800 dark:text-white/55 dark:hover:text-white"
-                    )}
-                  >
-                    {t(
-                      range === "day"
-                        ? "energy.overview.rangeDay"
-                        : range === "week"
-                          ? "energy.overview.rangeWeek"
-                          : "energy.overview.rangeMonth"
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {hasChartValues ? (
-              <FlowChart
-                rows={chartRows}
-                range={chartRange}
-                generationLabel={t("energy.overview.generation")}
-                consumptionLabel={t("energy.overview.consumption")}
-              />
-            ) : (
-              <p className="py-10 text-sm text-gray-400 dark:text-white/40">
-                {linked ? t("energy.overview.chartLiveHint") : t("energy.overview.chartHint")}
-              </p>
-            )}
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-gray-400 dark:text-white/40">
+      {showSmartMoment ? (
+        <section className="card-plot-in mt-10 max-w-md">
+          <div className="rounded-[1.75rem] bg-white/80 px-6 py-5 shadow-sm ring-1 ring-black/[0.06] dark:bg-white/10 dark:ring-white/10">
+            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-400 dark:text-white/45">
+              <Sun className="h-3.5 w-3.5 text-brand" aria-hidden />
               {t("energy.overview.smartMoment")}
             </p>
             {solarWindow ? (
               <>
-                <p className="mt-2 text-[2rem] font-semibold tracking-tight text-gray-900 dark:text-white">
+                <p className="mt-3 text-[2rem] font-semibold tracking-tight text-gray-900 dark:text-white">
                   {formatHourRange(solarWindow.startHour, solarWindow.endHour)}
                 </p>
-                <p className="mt-2 max-w-xs text-sm leading-relaxed text-gray-500 dark:text-white/55">
+                <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-white/55">
                   {t("energy.overview.smartMomentHint")}
                 </p>
               </>
             ) : (
-              <p className="mt-3 max-w-xs text-sm leading-relaxed text-gray-400 dark:text-white/40">
+              <p className="mt-3 text-sm leading-relaxed text-gray-400 dark:text-white/40">
                 {t("energy.overview.smartMomentEmpty")}
               </p>
             )}
