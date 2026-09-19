@@ -58,26 +58,26 @@ export function clockSizeDateClass(size: ScreensaverClockSize): string {
 export function clockSizeMetaAboveClass(size: ScreensaverClockSize): string {
   switch (size) {
     case "sm":
-      return "-mb-1";
+      return "-mb-1.5";
     case "lg":
-      return "-mb-5";
+      return "-mb-6";
     case "xl":
-      return "-mb-10";
+      return "-mb-12";
     default:
-      return "-mb-3";
+      return "-mb-4";
   }
 }
 
 export function clockSizeMetaBelowClass(size: ScreensaverClockSize): string {
   switch (size) {
     case "sm":
-      return "-mt-0.5";
+      return "-mt-1";
     case "lg":
-      return "-mt-3";
+      return "-mt-5";
     case "xl":
-      return "-mt-6";
+      return "-mt-10";
     default:
-      return "-mt-2";
+      return "-mt-3";
   }
 }
 

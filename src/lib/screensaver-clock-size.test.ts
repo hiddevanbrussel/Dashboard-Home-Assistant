@@ -33,8 +33,8 @@ describe("screensaver clock size", () => {
   it("pulls date and weather closer on larger clocks", () => {
     expect(clockSizeMetaAboveClass("sm")).toContain("-mb-");
     expect(clockSizeMetaBelowClass("sm")).toContain("-mt-");
-    expect(clockSizeMetaAboveClass("xl")).toBe("-mb-10");
-    expect(clockSizeMetaBelowClass("xl")).toBe("-mt-6");
+    expect(clockSizeMetaAboveClass("xl")).toBe("-mb-12");
+    expect(clockSizeMetaBelowClass("xl")).toBe("-mt-10");
   });
 
   it("keeps settings previews in the same size order", () => {
