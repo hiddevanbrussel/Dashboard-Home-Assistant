@@ -85,8 +85,8 @@ export function appendWakeWordPcm(
   const frames: Int16Array[] = [];
   let offset = 0;
   while (offset + size <= merged.length) {
-    frames.push(merged.slice(offset, offset + size));
+    frames.push(new Int16Array(merged.subarray(offset, offset + size)));
     offset += size;
   }
-  return { frames, rest: merged.slice(offset) };
+  return { frames, rest: new Int16Array(merged.subarray(offset)) };
 }
