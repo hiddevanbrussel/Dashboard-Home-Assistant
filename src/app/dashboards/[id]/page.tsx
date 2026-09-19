@@ -54,8 +54,6 @@ import {
   FloatingCardGroup,
   RoomCardWidget,
   FloatingRoomCard,
-  clampRoomCardWidth,
-  clampRoomCardHeight,
   NutsCardWidget,
   FloatingNutsCard,
   EnergyMonitorCardWidget,
@@ -125,6 +123,12 @@ import {
   CALENDAR_CARD_MIN_HEIGHT,
   CALENDAR_CARD_MIN_WIDTH,
 } from "@/lib/calendar-card";
+import {
+  clampRoomCardHeight,
+  clampRoomCardWidth,
+  ROOM_CARD_DEFAULT_HEIGHT,
+  ROOM_CARD_DEFAULT_WIDTH,
+} from "@/lib/room-card";
 import {
   clampMediaCardHeight,
   clampMediaCardWidth,
@@ -1117,6 +1121,7 @@ export default function DashboardEditPage() {
       ...(type === "weather_card" && { width: WEATHER_CARD_DEFAULT_WIDTH, height: WEATHER_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
       ...(type === "calendar_card" && { width: CALENDAR_CARD_DEFAULT_WIDTH, height: CALENDAR_CARD_DEFAULT_HEIGHT }),
+      ...(type === "room_card" && { width: ROOM_CARD_DEFAULT_WIDTH, height: ROOM_CARD_DEFAULT_HEIGHT }),
       ...((type === "climate_card" || type === "climate_card_2") && { width: CLIMATE_CARD_DEFAULT_WIDTH, height: CLIMATE_CARD_DEFAULT_HEIGHT }),
       page: dashboardPageRef.current,
     };
@@ -1257,6 +1262,17 @@ export default function DashboardEditPage() {
   function handleCalendarCardResize(widgetId: string, size: { width: number; height: number }) {
     const width = clampCalendarCardWidth(size.width);
     const height = clampCalendarCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleRoomCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampRoomCardWidth(size.width);
+    const height = clampRoomCardHeight(size.height);
     const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
     setWidgets(newWidgets);
     if (editingWidgetId === widgetId) {
@@ -2186,6 +2202,7 @@ export default function DashboardEditPage() {
                   ? () => setClickedCardForDefinition({ widgetId: w.id, title: w.title ?? t("cardType.room_card") })
                   : undefined
               }
+              onResize={editMode ? (size) => handleRoomCardResize(w.id, size) : undefined}
             />
           ));
         })()}

@@ -3,16 +3,16 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, FLOATING_CARD_GRID_STEP, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import {
+  clampRoomCardHeight,
+  clampRoomCardWidth,
+  resizeRoomCardFromBottomRight,
+} from "@/lib/room-card";
+import { useTranslation } from "@/hooks/use-translation";
 import { RoomCardWidget } from "./room-card-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingRoomCardPosition.";
 const DEFAULT_OFFSET = 24;
-const DEFAULT_CARD_WIDTH = 220;
-const MIN_WIDTH = 180;
-const MAX_WIDTH = 380;
-const DEFAULT_CARD_HEIGHT = 100;
-const MIN_HEIGHT = 72;
-const MAX_HEIGHT = 200;
 const ROOM_CARD_GAP = 12;
 
 type Position = { left: number; bottom: number };
@@ -60,25 +60,7 @@ function defaultPosition(widgetIndex: number, cardWidth: number, cardHeight: num
   return { left: Math.max(0, left), bottom: Math.max(0, bottom) };
 }
 
-export function clampRoomCardWidth(w: unknown): number {
-  const n = Number(w);
-  if (!Number.isFinite(n)) return DEFAULT_CARD_WIDTH;
-  return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n)));
-}
-
-export function clampRoomCardHeight(w: unknown): number {
-  const n = Number(w);
-  if (!Number.isFinite(n)) return DEFAULT_CARD_HEIGHT;
-  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.round(n)));
-}
-
-function clampWidth(w: unknown): number {
-  return clampRoomCardWidth(w);
-}
-
-function clampHeight(w: unknown): number {
-  return clampRoomCardHeight(w);
-}
+export { clampRoomCardWidth, clampRoomCardHeight } from "@/lib/room-card";
 
 type Rect = { left: number; bottom: number; width: number; height: number };
 
@@ -157,6 +139,7 @@ export function FloatingRoomCard({
   onEdit,
   onEnterEditMode,
   onCardClick,
+  onResize,
 }: {
   widget: RoomCardWidgetItem;
   widgetIndex?: number;
@@ -170,12 +153,19 @@ export function FloatingRoomCard({
   onEdit?: () => void;
   onEnterEditMode?: () => void;
   onCardClick?: () => void;
+  onResize?: (size: { width: number; height: number }) => void;
 }) {
-  const totalWidth = clampWidth(widget.width);
-  const totalHeight = clampHeight(widget.height);
+  const { t } = useTranslation();
+  const cardWidth = clampRoomCardWidth(widget.width);
+  const cardHeight = clampRoomCardHeight(widget.height);
+  const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const totalWidth = liveSize?.width ?? cardWidth;
+  const totalHeight = liveSize?.height ?? cardHeight;
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widget.id) ?? { left: 0, bottom: DEFAULT_OFFSET });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
+  const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0, left: 0, bottom: 0 });
   const isPointerDownOnCard = useRef(false);
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -243,9 +233,14 @@ export function FloatingRoomCard({
     savePosition(storageScope, widget.id, p);
   }, [widget.id, widgetIndex, totalWidth, totalHeight, storageScope, bounds, getOthersRects]);
 
+  useEffect(() => {
+    if (!liveSize || isResizing) return;
+    if (cardWidth === liveSize.width && cardHeight === liveSize.height) setLiveSize(null);
+  }, [cardWidth, cardHeight, liveSize, isResizing]);
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!editMode) return;
+      if (!editMode || isResizing) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
       e.stopPropagation();
@@ -259,7 +254,7 @@ export function FloatingRoomCard({
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [position, editMode]
+    [position, editMode, isResizing]
   );
 
   const handlePointerMove = useCallback(
@@ -307,6 +302,90 @@ export function FloatingRoomCard({
     [isDragging, bounds, widget.id, storageScope, totalWidth, totalHeight, getOthersRects]
   );
 
+  const applyResizeDelta = useCallback((clientX: number, clientY: number) => {
+    const start = resizeStart.current;
+    const next = resizeRoomCardFromBottomRight({
+      startWidth: start.width,
+      startHeight: start.height,
+      startLeft: start.left,
+      startBottom: start.bottom,
+      dx: clientX - start.x,
+      dy: clientY - start.y,
+      viewportWidth: typeof window !== "undefined" ? window.innerWidth : 1200,
+      viewportHeight: typeof window !== "undefined" ? window.innerHeight : 800,
+    });
+    setLiveSize({ width: next.width, height: next.height });
+    setPosition({ left: next.left, bottom: next.bottom });
+    return next;
+  }, []);
+
+  const handleResizePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!editMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      setIsResizing(true);
+      resizeStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        width: totalWidth,
+        height: totalHeight,
+        left: position.left,
+        bottom: position.bottom,
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    [editMode, totalWidth, totalHeight, position]
+  );
+
+  const handleResizePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isResizing) return;
+      applyResizeDelta(e.clientX, e.clientY);
+    },
+    [isResizing, applyResizeDelta]
+  );
+
+  const handleResizePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (isResizing) {
+        const next = applyResizeDelta(e.clientX, e.clientY);
+        setIsResizing(false);
+        setPosition({ left: next.left, bottom: next.bottom });
+        savePosition(storageScope, widget.id, { left: next.left, bottom: next.bottom });
+        onResize?.({ width: next.width, height: next.height });
+        if (!onResize) setLiveSize(null);
+      }
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    },
+    [isResizing, applyResizeDelta, storageScope, widget.id, onResize]
+  );
+
+  const resizeHandle = editMode ? (
+    <button
+      type="button"
+      data-no-page-swipe
+      data-no-drag
+      aria-label={t("roomCard.resize")}
+      className="absolute -bottom-1.5 -right-1.5 z-30 flex h-9 w-9 cursor-nwse-resize touch-none items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/25"
+      onPointerDown={handleResizePointerDown}
+      onPointerMove={handleResizePointerMove}
+      onPointerUp={handleResizePointerUp}
+      onPointerCancel={handleResizePointerUp}
+    >
+      <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-gray-600 dark:text-white/80" aria-hidden>
+        <path
+          d="M3.5 10.5h7M10.5 3.5v7M6 10.5h4.5M10.5 6v4.5"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeWidth="1.6"
+        />
+      </svg>
+    </button>
+  ) : null;
+
   const cardContent = (
     <div className={cn("shrink-0 flex flex-col w-full", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
       <RoomCardWidget
@@ -331,13 +410,12 @@ export function FloatingRoomCard({
     return (
       <div
         className={cn(
-          "card-plot-in z-30 shadow-xl rounded-2xl overflow-hidden backdrop-blur-2xl border flex transition-colors duration-200 shrink-0",
-          "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
-          editMode && "animate-edit-wiggle"
+          "card-plot-in relative z-30 shrink-0",
+          editMode && !isResizing && "animate-edit-wiggle"
         )}
         style={{
           width: totalWidth,
-          minHeight: totalHeight,
+          height: totalHeight,
           ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
         }}
         {...(!editMode &&
@@ -348,7 +426,15 @@ export function FloatingRoomCard({
             onPointerCancel: endLongPress,
           })}
       >
-        {cardContent}
+        <div
+          className={cn(
+            "flex h-full w-full overflow-hidden rounded-2xl border shadow-xl backdrop-blur-2xl transition-colors duration-200",
+            "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10"
+          )}
+        >
+          {cardContent}
+        </div>
+        {resizeHandle}
       </div>
     );
   }
@@ -356,16 +442,15 @@ export function FloatingRoomCard({
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30 shadow-xl rounded-2xl overflow-hidden backdrop-blur-2xl border flex transition-colors duration-200",
-        "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
-        editMode && "cursor-grab touch-none active:cursor-grabbing",
-        editMode && !isDragging && "animate-edit-wiggle"
+        "card-plot-in fixed z-30",
+        editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing"
       )}
+      data-no-page-swipe={editMode ? true : undefined}
       style={{
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
-        minHeight: totalHeight,
+        height: totalHeight,
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -382,7 +467,16 @@ export function FloatingRoomCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      {cardContent}
+      <div
+        className={cn(
+          "flex h-full w-full overflow-hidden rounded-2xl border shadow-xl backdrop-blur-2xl transition-colors duration-200",
+          "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
+          editMode && !isDragging && !isResizing && "animate-edit-wiggle"
+        )}
+      >
+        {cardContent}
+      </div>
+      {resizeHandle}
     </div>
   );
 }
