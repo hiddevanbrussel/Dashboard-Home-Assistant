@@ -41,22 +41,22 @@ function getWsUrl(baseUrl: string): string {
 export function parsePipelineList(raw: unknown): AssistPipelineList {
   const obj = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const list = Array.isArray(obj.pipelines) ? obj.pipelines : [];
-  const pipelines = list
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
-      const p = item as Record<string, unknown>;
-      const id = typeof p.id === "string" ? p.id : "";
-      if (!id) return null;
-      return {
-        id,
-        name: typeof p.name === "string" && p.name.trim() ? p.name : id,
-        language: typeof p.language === "string" ? p.language : "",
-        conversation_engine: typeof p.conversation_engine === "string" ? p.conversation_engine : undefined,
-        stt_engine: typeof p.stt_engine === "string" ? p.stt_engine : p.stt_engine === null ? null : undefined,
-        tts_engine: typeof p.tts_engine === "string" ? p.tts_engine : p.tts_engine === null ? null : undefined,
-      } satisfies AssistPipeline;
-    })
-    .filter((p): p is AssistPipeline => p != null);
+  const pipelines: AssistPipeline[] = [];
+  for (const item of list) {
+    if (!item || typeof item !== "object") continue;
+    const p = item as Record<string, unknown>;
+    const id = typeof p.id === "string" ? p.id : "";
+    if (!id) continue;
+    const pipeline: AssistPipeline = {
+      id,
+      name: typeof p.name === "string" && p.name.trim() ? p.name : id,
+      language: typeof p.language === "string" ? p.language : "",
+    };
+    if (typeof p.conversation_engine === "string") pipeline.conversation_engine = p.conversation_engine;
+    if (typeof p.stt_engine === "string" || p.stt_engine === null) pipeline.stt_engine = p.stt_engine;
+    if (typeof p.tts_engine === "string" || p.tts_engine === null) pipeline.tts_engine = p.tts_engine;
+    pipelines.push(pipeline);
+  }
   const preferred = typeof obj.preferred_pipeline === "string" ? obj.preferred_pipeline : null;
   return { pipelines, preferred_pipeline: preferred };
 }

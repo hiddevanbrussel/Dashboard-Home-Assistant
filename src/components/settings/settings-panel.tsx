@@ -132,7 +132,7 @@ export function SettingsGroup({
 }: {
   title?: string;
   description?: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <div className="space-y-3 rounded-2xl bg-black/[0.03] p-4 dark:bg-white/5">
