@@ -1,0 +1,10 @@
+Wake word ONNX models
+=====================
+
+melspectrogram.onnx, embedding_model.onnx, alexa_v0.1.onnx,
+hey_jarvis_v0.1.onnx, hey_mycroft_v0.1.onnx, and hey_rhasspy_v0.1.onnx
+are from the openWakeWord v0.5.1 release by David Scripka
+(https://github.com/dscripka/openWakeWord), Apache License 2.0.
+
+ok_nabu.onnx is the community openWakeWord “Okay Nabu” classifier used
+by Home Assistant voice satellites (same embedding pipeline).

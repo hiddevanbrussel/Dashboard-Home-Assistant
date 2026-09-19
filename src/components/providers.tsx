@@ -7,6 +7,7 @@ import { ScreensaverProvider } from "./screensaver";
 import { TimerSound } from "./timer-sound";
 import { CardPlotController } from "./card-plot-controller";
 import { VoiceSatelliteOverlay } from "./voice/voice-satellite-overlay";
+import { VoiceWakeWordListener } from "./voice/voice-wake-word-listener";
 import { useEntityStatePolling } from "@/hooks/use-entity-state";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <EntityStatePoller />
         <CardPlotController />
         <TimerSound />
+        <VoiceWakeWordListener />
         <VoiceSatelliteOverlay />
         <ScreensaverProvider>{children}</ScreensaverProvider>
       </ThemeProvider>
