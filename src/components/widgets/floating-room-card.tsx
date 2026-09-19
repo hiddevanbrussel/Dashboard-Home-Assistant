@@ -368,13 +368,13 @@ export function FloatingRoomCard({
       data-no-page-swipe
       data-no-drag
       aria-label={t("roomCard.resize")}
-      className="absolute bottom-0 right-0 z-30 flex h-8 w-8 cursor-nwse-resize touch-none items-end justify-end p-1"
+      className="absolute -bottom-0.5 -right-0.5 z-30 flex h-6 w-6 cursor-nwse-resize touch-none items-center justify-center rounded-md bg-white/70 shadow-sm ring-1 ring-black/[0.08] backdrop-blur-sm dark:bg-zinc-800/75 dark:ring-white/15"
       onPointerDown={handleResizePointerDown}
       onPointerMove={handleResizePointerMove}
       onPointerUp={handleResizePointerUp}
       onPointerCancel={handleResizePointerUp}
     >
-      <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 text-gray-500/70 dark:text-white/50" aria-hidden>
+      <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 text-gray-500/80 dark:text-white/55" aria-hidden>
         <path
           d="M3.5 10.5h7M10.5 3.5v7M6 10.5h4.5M10.5 6v4.5"
           fill="none"
