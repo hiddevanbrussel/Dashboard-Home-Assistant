@@ -22,7 +22,13 @@ import {
   shouldShowHeatmap,
   toKilowatts,
   toKwh,
+  areaPath,
+  bestSolarWindow,
+  computeHourlyMeanFromStates,
+  formatHourRange,
   formatHourTick,
+  polylinePoints,
+  visibleHouseCallouts,
 } from "./energy-dashboard";
 
 describe("energy overview house", () => {
@@ -171,6 +177,38 @@ describe("energy dashboard entities", () => {
   it("maps panel temperatures onto heatmap tones", () => {
     expect(heatmapTones([22, 35, 55])).toEqual(["idle", "warm", "hot"]);
     expect(heatmapTones([undefined, undefined])).toEqual(["idle", "idle"]);
+  });
+
+  it("averages power readings per hour", () => {
+    const points = computeHourlyMeanFromStates([
+      { state: "1000", last_changed: "2026-09-19T10:10:00" },
+      { state: "3000", last_changed: "2026-09-19T10:40:00" },
+      { state: "500", last_changed: "2026-09-19T11:05:00" },
+    ]);
+    expect(points[10]).toEqual({ hour: "10:00", value: 2000 });
+    expect(points[11]).toEqual({ hour: "11:00", value: 500 });
+    expect(points[9].value).toBe(0);
+  });
+
+  it("only shows house callouts that have a reading", () => {
+    expect(visibleHouseCallouts({})).toEqual([]);
+    expect(visibleHouseCallouts({ solarKw: 3.8, gridValue: 0.6 })).toEqual(["solar", "grid"]);
+    expect(visibleHouseCallouts({ homeKw: 1.2, batterySoc: 64 })).toEqual(["home", "battery"]);
+  });
+
+  it("picks the sunniest three-hour window", () => {
+    const hourly = Array.from({ length: 24 }, (_, hour) => ({
+      hour: `${String(hour).padStart(2, "0")}:00`,
+      value: hour >= 12 && hour < 15 ? 4 : hour === 11 ? 1 : 0,
+    }));
+    expect(bestSolarWindow(hourly, 3)).toEqual({ startHour: 12, endHour: 15, total: 12 });
+    expect(formatHourRange(12, 15)).toBe("12:00 – 15:00");
+    expect(bestSolarWindow(hourly.map((p) => ({ ...p, value: 0 })))).toBeNull();
+  });
+
+  it("builds chart paths from a series", () => {
+    expect(polylinePoints([0, 2, 4], 100, 50, 4)).toBe("0.0,50.0 50.0,25.0 100.0,0.0");
+    expect(areaPath([0, 4], 100, 50, 4)).toBe("M0,50 L0.0,50.0 L100.0,0.0 L100,50 Z");
   });
 
   it("hides battery and heatmap when there is no reading", () => {

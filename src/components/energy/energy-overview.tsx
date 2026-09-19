@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
-import { Settings2 } from "lucide-react";
+import { useEffect, useMemo, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Battery, Home, PlugZap, Settings2, Sun, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   ENERGY_OVERVIEW_HOUSE_IMAGE,
+  bestSolarWindow,
   clampPercent,
   displayUnitForEnergy,
   formatEnergyValue,
+  formatHourRange,
   hasEnergyReading,
   hasLinkedEnergyEntities,
   heatmapTones,
@@ -16,11 +19,44 @@ import {
   shouldShowHeatmap,
   toKilowatts,
   toKwh,
+  visibleHouseCallouts,
   type HeatmapTone,
+  type HouseCalloutId,
+  type HourlyPoint,
 } from "@/lib/energy-dashboard";
 import { cn } from "@/lib/utils";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+
+const HOUSE_CALLOUT_META: Record<
+  HouseCalloutId,
+  { icon: LucideIcon; labelKey: string; box: string; line: { x1: string; y1: string; x2: string; y2: string } }
+> = {
+  solar: {
+    icon: Sun,
+    labelKey: "energy.overview.houseSolar",
+    box: "left-0 top-[6%]",
+    line: { x1: "18%", y1: "14%", x2: "48%", y2: "20%" },
+  },
+  home: {
+    icon: Home,
+    labelKey: "energy.overview.houseHome",
+    box: "right-0 top-[20%]",
+    line: { x1: "82%", y1: "28%", x2: "72%", y2: "38%" },
+  },
+  battery: {
+    icon: Battery,
+    labelKey: "energy.overview.houseBattery",
+    box: "left-0 bottom-[28%]",
+    line: { x1: "20%", y1: "70%", x2: "34%", y2: "76%" },
+  },
+  grid: {
+    icon: PlugZap,
+    labelKey: "energy.overview.houseGrid",
+    box: "right-0 bottom-[6%]",
+    line: { x1: "82%", y1: "84%", x2: "74%", y2: "78%" },
+  },
+};
 
 function Stat({
   label,
@@ -45,17 +81,43 @@ function Stat({
   );
 }
 
+function HouseCallout({
+  id,
+  label,
+  value,
+}: {
+  id: HouseCalloutId;
+  label: string;
+  value: string;
+}) {
+  const meta = HOUSE_CALLOUT_META[id];
+  const Icon = meta.icon;
+  return (
+    <div className={cn("pointer-events-none absolute z-10 max-w-[10rem]", meta.box)}>
+      <div className="inline-flex items-center gap-2 rounded-full bg-white/55 px-2.5 py-1.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:bg-black/40 dark:ring-white/10">
+        <Icon className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
+        <div className="min-w-0">
+          <p className="text-[10px] font-medium leading-none text-gray-500 dark:text-white/50">{label}</p>
+          <p className="mt-0.5 text-sm font-semibold tabular-nums text-gray-900 dark:text-white">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HouseScene({
   image,
   toolbar,
+  callouts,
 }: {
   image?: string | null;
   toolbar: ReactNode;
+  callouts: Array<{ id: HouseCalloutId; label: string; value: string }>;
 }) {
   const custom = Boolean(image?.trim());
   const src = image?.trim() || ENERGY_OVERVIEW_HOUSE_IMAGE;
   return (
-    <div className="relative">
+    <div className="relative px-2 sm:px-16">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
@@ -68,7 +130,29 @@ function HouseScene({
       {custom ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent dark:from-black" />
       ) : null}
-      <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">{toolbar}</div>
+      {callouts.length > 0 ? (
+        <svg className="pointer-events-none absolute inset-0 z-[1] h-full w-full" aria-hidden>
+          {callouts.map((callout) => {
+            const line = HOUSE_CALLOUT_META[callout.id].line;
+            return (
+              <line
+                key={callout.id}
+                x1={line.x1}
+                y1={line.y1}
+                x2={line.x2}
+                y2={line.y2}
+                className="stroke-brand/45 dark:stroke-white/35"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            );
+          })}
+        </svg>
+      ) : null}
+      {callouts.map((callout) => (
+        <HouseCallout key={callout.id} {...callout} />
+      ))}
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-2">{toolbar}</div>
     </div>
   );
 }
@@ -102,6 +186,15 @@ function BatteryRow({
   );
 }
 
+async function fetchHourlySeries(ids: string[], mode?: "mean"): Promise<Record<string, HourlyPoint[]>> {
+  if (ids.length === 0) return {};
+  const params = new URLSearchParams({ entity_ids: ids.join(","), granularity: "hourly" });
+  if (mode === "mean") params.set("mode", "mean");
+  const res = await fetch(`/api/ha/history?${params.toString()}`);
+  if (!res.ok) return {};
+  return res.json();
+}
+
 function useEntityReading(entityId: string) {
   const entity = useEntityStateStore((s) => (entityId ? s.getState(entityId) : undefined));
   const value = parseHaNumber(entity?.state);
@@ -130,6 +223,7 @@ export function EnergyOverview({
   const yieldReading = useEntityReading(entities.solarYieldTodayEntityId);
   const powerReading = useEntityReading(entities.solarPowerEntityId);
   const exportReading = useEntityReading(entities.gridExportEntityId);
+  const consumptionReading = useEntityReading(entities.consumptionEntityId);
   const batterySoc = useEntityReading(entities.batterySocEntityId);
   const batteryPower = useEntityReading(entities.batteryPowerEntityId);
   const batteryTemp = useEntityReading(entities.batteryTempEntityId);
@@ -146,6 +240,10 @@ export function EnergyOverview({
   const exportUnit = displayUnitForEnergy(exportReading.unit);
   const batteryKw =
     batteryPower.value != null ? toKilowatts(batteryPower.value, batteryPower.unit) : undefined;
+  const homeKw =
+    consumptionReading.value != null
+      ? toKilowatts(consumptionReading.value, consumptionReading.unit)
+      : undefined;
   const showBattery = shouldShowBatteryCard({
     soc: batterySoc.value,
     power: batteryKw,
@@ -159,6 +257,46 @@ export function EnergyOverview({
   const heatmap: HeatmapTone[] = showHeatmap ? heatmapTones(panelReadings) : [];
   const heatmapRows = Math.max(1, Math.ceil(heatmap.length / 12));
   const resolvedSubtitle = subtitle?.trim() || (linked ? t("energy.overview.liveSubtitle") : t("energy.overview.subtitle"));
+  const calloutIds = visibleHouseCallouts({
+    solarKw: powerKw,
+    homeKw,
+    gridValue: exportValue,
+    batterySoc: batterySoc.value,
+    batteryKw,
+  });
+  const houseCallouts = calloutIds.map((id) => {
+    if (id === "solar") {
+      return { id, label: t("energy.overview.houseSolar"), value: `${formatEnergyValue(powerKw)} kW` };
+    }
+    if (id === "home") {
+      return { id, label: t("energy.overview.houseHome"), value: `${formatEnergyValue(homeKw)} kW` };
+    }
+    if (id === "grid") {
+      return { id, label: t("energy.overview.houseGrid"), value: `${formatEnergyValue(exportValue)} ${exportUnit}` };
+    }
+    const soc = hasEnergyReading(batterySoc.value) ? `${formatEnergyValue(batterySoc.value, 0)}%` : "";
+    const flow = hasEnergyReading(batteryKw)
+      ? `${batteryKw >= 0 ? "+" : "−"}${formatEnergyValue(Math.abs(batteryKw))} kW`
+      : "";
+    return {
+      id,
+      label: t("energy.overview.houseBattery"),
+      value: [soc, flow].filter(Boolean).join(" · "),
+    };
+  });
+
+  const generationId = entities.solarPowerEntityId || entities.solarYieldTodayEntityId;
+  const generationIsPower = Boolean(entities.solarPowerEntityId);
+  const { data: dayGeneration } = useQuery({
+    queryKey: ["energy-overview-smart-window", generationId, generationIsPower],
+    enabled: Boolean(generationId),
+    queryFn: async () => {
+      const series = await fetchHourlySeries([generationId], generationIsPower ? "mean" : undefined);
+      return series[generationId] ?? [];
+    },
+  });
+  const solarWindow = useMemo(() => bestSolarWindow(dayGeneration ?? []), [dayGeneration]);
+  const showSmartMoment = Boolean(generationId);
 
   const toolbar = (
     <div className="pointer-events-auto flex items-center gap-2">
@@ -202,9 +340,34 @@ export function EnergyOverview({
           </div>
         </div>
         <div className="card-plot-in">
-          <HouseScene image={houseImage} toolbar={toolbar} />
+          <HouseScene image={houseImage} toolbar={toolbar} callouts={houseCallouts} />
         </div>
       </div>
+
+      {showSmartMoment ? (
+        <section className="card-plot-in mt-10 max-w-md">
+          <div className="rounded-[1.75rem] bg-white/80 px-6 py-5 shadow-sm ring-1 ring-black/[0.06] dark:bg-white/10 dark:ring-white/10">
+            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-400 dark:text-white/45">
+              <Sun className="h-3.5 w-3.5 text-brand" aria-hidden />
+              {t("energy.overview.smartMoment")}
+            </p>
+            {solarWindow ? (
+              <>
+                <p className="mt-3 text-[2rem] font-semibold tracking-tight text-gray-900 dark:text-white">
+                  {formatHourRange(solarWindow.startHour, solarWindow.endHour)}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-white/55">
+                  {t("energy.overview.smartMomentHint")}
+                </p>
+              </>
+            ) : (
+              <p className="mt-3 text-sm leading-relaxed text-gray-400 dark:text-white/40">
+                {t("energy.overview.smartMomentEmpty")}
+              </p>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {showBattery ? (
         <section className="card-plot-in mt-6 max-w-md">
