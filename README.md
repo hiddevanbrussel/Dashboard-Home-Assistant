@@ -2,7 +2,81 @@
 
 A personal, touchscreen-friendly dashboard for Home Assistant. Add widgets, set backgrounds, manage rooms, track energy, and more — all without writing code.
 
+The interface is available in **English** and **Dutch**.
+
 <img width="1234" height="689" alt="Dashboard preview" src="https://github.com/user-attachments/assets/cf92e71b-15b3-48c5-925e-f43cc083af4a" />
+
+---
+
+## What's new
+
+Recent updates that landed on `main`:
+
+- **Screensaver lock clock** — Montserrat Medium, hours and minutes side by side in warm gold (hours slightly paler), with a tint from your accent color. Four sizes from phone to wall display; Extra large is meant for a TV or wall tablet.
+- **Music on the screensaver** — choose which Home Assistant `media_player` may show now-playing. Automatic (first player that is playing), a specific speaker, or hide music entirely. Useful when some speakers report playback but do not pass a real track.
+- **Vacuum card** — restyled around light/dark robot illustrations, with a full control sheet (and Valetudo map when configured).
+- **Resizable cards** — Media, Weather, Climate, and Vacuum cards scale from a bottom-right handle in edit mode, same as each other.
+- **Swipeable Home pages** — up to six dashboard pages, swiped like the Rooms floors.
+- **Screensaver media** — custom upload, [Pexels](https://www.pexels.com/api/), or your own [Immich](https://immich.app/) library.
+
+---
+
+## Features
+
+### Home & rooms
+
+- Free-form dashboard: drag cards, optional edit passcode, welcome title, and a wallpaper per light/dark theme.
+- Up to six swipeable Home pages.
+- Rooms grouped by floor; swipe between floors, then open a room board with the same editor.
+
+### Cards
+
+Add tiles in edit mode. Current types:
+
+| Card | Notes |
+|---|---|
+| Light | Brightness, color, and color temperature |
+| Climate | Temperature gauge; swipe between climate entities |
+| Media | Now playing; resizable |
+| Weather | Current conditions; tap for hourly/weekly forecast; resizable |
+| Vacuum | Robot illustration and control sheet; resizable |
+| Calendar | Compact Now / Up next |
+| Tasks | Family chore summary |
+| Room | Shortcut into a room |
+| Text / Image / Stat pill | Labels, photos, and single-value stats |
+
+### Screensaver
+
+After idle time the dashboard becomes a lock screen. Dismiss it with a tap or mouse move.
+
+- Clock size and position (nine placements), 12- or 24-hour format, and a full-screen preview from Settings.
+- Weather (same entity as the header, or a specific one).
+- Now-playing from a chosen speaker, or hidden.
+- Optional football match overlay from a `sensor.team_…` entity.
+- A running kitchen timer stays visible on the lock screen.
+- Background: uploaded image, Pexels photos/videos, or Immich photos/videos.
+
+Configure this under **Settings → Screensaver**.
+
+### Pages
+
+Enable extra pages in Settings when you need them:
+
+| Page | What it does |
+|---|---|
+| **Energy** | Solar/grid/battery overview, house scene, panel heatmap, and an editable energy board |
+| **Calendar** | Day / week / month, Today, Now, and Up next from Home Assistant calendars |
+| **Family / Tasks** | Children, chores, points, streaks, and a rewards shop — works **without** Home Assistant |
+| **Music** | Music Assistant home (search, shelves, player) or a Home Assistant media-player fallback |
+| **Vacuum** | Full-page Valetudo map and room cleaning (from Settings → Apps → Valetudo, or the vacuum card) |
+
+The header also shows the clock, weather temperature, optional RSS news, a timer, and now-playing.
+
+### Settings & integrations
+
+- **Appearance** — light / dark / system theme and accent color.
+- **Connection** — Home Assistant base URL and long-lived access token.
+- **Apps** — Music Assistant, Valetudo, Pexels, Immich, and RSS news.
 
 ---
 
