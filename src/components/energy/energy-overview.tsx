@@ -160,7 +160,7 @@ function HouseScene({
       {callouts.map((callout) => (
         <HouseCallout key={callout.id} {...callout} />
       ))}
-      <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">{toolbar}</div>
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-2">{toolbar}</div>
     </div>
   );
 }
