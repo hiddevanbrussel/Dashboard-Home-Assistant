@@ -267,7 +267,7 @@ export function ClockSizePreview({ size }: { size: ScreensaverClockSize }) {
     clockSizePreviewDigitClass(size)
   );
   return (
-    <div className="flex h-[5.25rem] items-center justify-center bg-[#0A0014]">
+    <div className="flex h-24 items-center justify-center overflow-hidden bg-[#0A0014]">
       <span className="grid grid-cols-[auto_auto] items-end gap-x-0.5">
         <span className={cn(digitClass, "text-[#EBC895]")}>08</span>
         <span className={cn(digitClass, "text-[#E3AE62]")}>42</span>

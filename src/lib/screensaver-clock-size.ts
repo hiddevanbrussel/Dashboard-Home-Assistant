@@ -19,7 +19,7 @@ export function clockSizeTimeClass(size: ScreensaverClockSize): string {
     case "lg":
       return "text-[6.5rem] sm:text-[8rem]";
     case "xl":
-      return "text-[clamp(5.5rem,16vw,10.5rem)]";
+      return "text-[clamp(7rem,22vw,15rem)]";
     default:
       return "text-8xl sm:text-9xl";
   }
@@ -32,7 +32,7 @@ export function clockSizeAmpmClass(size: ScreensaverClockSize): string {
     case "lg":
       return "text-2xl sm:text-3xl";
     case "xl":
-      return "text-3xl sm:text-4xl";
+      return "text-4xl sm:text-5xl";
     default:
       return "text-lg sm:text-xl";
   }
@@ -45,7 +45,7 @@ export function clockSizeDateClass(size: ScreensaverClockSize): string {
     case "lg":
       return "text-2xl";
     case "xl":
-      return "text-3xl";
+      return "text-4xl";
     default:
       return "text-xl";
   }
@@ -59,7 +59,7 @@ export function clockSizePreviewDigitClass(size: ScreensaverClockSize): string {
     case "lg":
       return "text-3xl";
     case "xl":
-      return "text-4xl";
+      return "text-5xl";
     default:
       return "text-2xl";
   }
