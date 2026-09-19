@@ -256,6 +256,28 @@ export function setScreensaverFootballEntityId(entityId: string | null): void {
   }
 }
 
+const STORAGE_KEY_MUSIC_ENTITY = "dashboard.screensaverMusicEntityId";
+
+/** media_player entity for screensaver now-playing. Empty = first active player / Music Assistant. `off` = hide. */
+export function getScreensaverMusicEntityId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = localStorage.getItem(STORAGE_KEY_MUSIC_ENTITY);
+    return v && v.length > 0 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setScreensaverMusicEntityId(entityId: string | null): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_MUSIC_ENTITY, entityId ?? "");
+    window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
+  } catch {
+    // ignore
+  }
+}
+
 const STORAGE_KEY_CLOCK_SIZE = "dashboard.screensaverClockSize";
 
 export function getScreensaverClockSize(): ScreensaverClockSize {

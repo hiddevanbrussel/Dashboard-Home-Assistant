@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { Disc3 } from "lucide-react";
-import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverClockPosition, getScreensaverClockSize, getScreensaverMediaSource } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverMusicEntityId, getScreensaverClockPosition, getScreensaverClockSize, getScreensaverMediaSource } from "@/stores/screensaver-store";
 import { useImmichStore } from "@/stores/immich-store";
 import { resolveScreensaverPlayback } from "@/lib/screensaver-media-source";
 import { buildImmichAssetProxyUrl, pickRandomImmichAsset } from "@/lib/immich-url";
@@ -33,6 +33,12 @@ import {
   weatherConditionI18nKey,
   weatherLocationLabel,
 } from "@/lib/screensaver-lock-clock";
+import {
+  isActiveMediaPlayerState,
+  pickScreensaverMusicPlayer,
+  screensaverMusicFromHaEntity,
+  shouldShowScreensaverMusic,
+} from "@/lib/screensaver-music";
 import { formatTimerMs } from "@/lib/timer";
 import { useLiveTimerRemaining } from "@/hooks/use-live-timer";
 import { useTimerStore } from "@/stores/timer-store";
@@ -272,14 +278,42 @@ function ScreensaverFootball() {
 }
 
 function ScreensaverMusic() {
+  const preferredEntityId = getScreensaverMusicEntityId();
   const queueState = useMusicPlayerStore((s) => s.queueState);
   const states = useEntityStateStore((s) => s.states);
   const musicAssistant = useMusicAssistantStore();
   const { baseUrl, token } = musicAssistant;
+  const pinnedPlayer = pickScreensaverMusicPlayer(Object.values(states), preferredEntityId);
+  const usePinnedPlayer = Boolean(preferredEntityId && pinnedPlayer);
   const isPlaying = queueState?.state === "playing" || queueState?.state === "paused";
   const cur = queueState?.current_item as { name?: string; artists?: { name?: string }[] | { name?: string }; artist?: string; stream_title?: string; [key: string]: unknown } | undefined;
 
-  if (!isPlaying || !cur) return null;
+  if (usePinnedPlayer && pinnedPlayer) {
+    const ha = screensaverMusicFromHaEntity(pinnedPlayer);
+    if (!ha.title && !ha.artist && !ha.coverUrl) return null;
+    return (
+      <div className="flex gap-3 w-max max-w-[240px] sm:max-w-[280px] text-white/95 drop-shadow-md min-w-0">
+        {ha.coverUrl ? (
+          <div className="image-theme-fixed relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={ha.coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg text-white/80">
+            <Disc3 className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden />
+          </div>
+        )}
+        <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1">
+          <p className="text-xs sm:text-sm truncate text-white/80">{ha.artist || "—"}</p>
+          {ha.title ? (
+            <p className="text-sm sm:text-base font-medium truncate text-white drop-shadow-md">{ha.title}</p>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  if (preferredEntityId || !isPlaying || !cur) return null;
 
   const coverUrl = getImageSrc(getItemImageUrl(cur), baseUrl, token);
   const hasStreamTitle = typeof cur?.stream_title === "string" && cur.stream_title.trim().length > 0;
@@ -493,9 +527,25 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
     return () => window.removeEventListener("screensaver-setting-changed", onChange);
   }, []);
 
-  const showMusicOnScreensaver = useMusicPlayerStore((s) => {
+  const musicEntityId = getScreensaverMusicEntityId();
+  const pinnedMusicState = useEntityStateStore((s) =>
+    musicEntityId && musicEntityId !== "off" ? s.getState(musicEntityId)?.state : undefined
+  );
+  const anyMusicPlayerActive = useEntityStateStore((s) =>
+    Object.values(s.states).some(
+      (entity) => entity.entity_id.startsWith("media_player.") && isActiveMediaPlayerState(entity.state)
+    )
+  );
+  const musicAssistantPlaying = useMusicPlayerStore((s) => {
     const q = s.queueState;
-    return (q?.state === "playing" || q?.state === "paused") && q?.current_item;
+    return (q?.state === "playing" || q?.state === "paused") && Boolean(q?.current_item);
+  });
+  const showMusicOnScreensaver = shouldShowScreensaverMusic({
+    preferredEntityId: musicEntityId,
+    preferredPlayerActive: musicEntityId
+      ? isActiveMediaPlayerState(pinnedMusicState)
+      : anyMusicPlayerActive,
+    musicAssistantPlaying,
   });
 
   const [dismissing, setDismissing] = useState(false);
