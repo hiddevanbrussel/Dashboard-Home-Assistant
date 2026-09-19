@@ -36,9 +36,8 @@ import {
 import { formatTimerMs } from "@/lib/timer";
 import { useLiveTimerRemaining } from "@/hooks/use-live-timer";
 import { useTimerStore } from "@/stores/timer-store";
-
-const LOCK_HOUR_COLOR = "text-[#EDE6DC]";
-const LOCK_MINUTE_COLOR = "text-[#D2B17A]";
+import { useThemeStore } from "@/stores/theme-store";
+import { accentRgbCss, screensaverClockPairRgb } from "@/lib/theme-accents";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
@@ -360,6 +359,7 @@ function ScreensaverLockClock({
   size: ScreensaverClockSize;
 }) {
   const { language } = useTranslation();
+  const accent = useThemeStore((s) => s.accent);
   const [time, setTime] = useState(() => new Date());
   const use24h = getScreensaverClock24h();
   const weather = useScreensaverWeatherLines();
@@ -372,37 +372,49 @@ function ScreensaverLockClock({
   const { hours, minutes, period } = lockClockParts(time, use24h);
   const dateNumeric = formatLockDateNumeric(time, language);
   const weekday = formatLockWeekday(time, language);
+  const clockColors = screensaverClockPairRgb(accent);
+  const hourColor = accentRgbCss(clockColors.hours);
+  const minuteColor = accentRgbCss(clockColors.minutes);
   const metaClass = cn(
-    "font-light leading-tight text-white/90 drop-shadow-md",
+    "font-montserrat font-medium leading-tight text-white/90 drop-shadow-md",
     clockSizeDateClass(size)
   );
   const digitClass = cn(
-    "font-extralight leading-none tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
+    "font-montserrat font-medium leading-none tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
     clockSizeTimeClass(size)
   );
 
   return (
-    <time dateTime={time.toISOString()} className="flex items-center gap-[0.12em]">
-      <span className={cn(digitClass, LOCK_HOUR_COLOR)}>{hours}</span>
-      <span className="flex flex-col items-start">
-        <span className={cn(metaClass, "mb-[0.28em]")}>
-          <span className="block">{dateNumeric}</span>
-          <span className="block">{weekday}</span>
-          {period != null && (
-            <span className="mt-0.5 block text-sm font-light uppercase tracking-[0.2em] text-white/60">
-              {period}
-            </span>
-          )}
-        </span>
-        <span className={cn(digitClass, LOCK_MINUTE_COLOR)}>{minutes}</span>
-        {(weather.tempStr || weather.location || weather.conditionStr) && (
-          <span className={cn(metaClass, "mt-[0.32em]")}>
-            {weather.tempStr && <span className="block tabular-nums">{weather.tempStr}</span>}
-            {weather.location && <span className="block">{weather.location}</span>}
-            {weather.conditionStr && <span className="block">{weather.conditionStr}</span>}
+    <time
+      dateTime={time.toISOString()}
+      className="grid grid-cols-[auto_auto] items-end gap-x-[0.14em]"
+    >
+      <span />
+      <span className={cn(metaClass, "mb-[0.22em]")}>
+        <span className="block">{dateNumeric}</span>
+        <span className="block">{weekday}</span>
+        {period != null && (
+          <span className="mt-0.5 block text-sm font-medium uppercase tracking-[0.18em] text-white/70">
+            {period}
           </span>
         )}
       </span>
+      <span className={digitClass} style={{ color: hourColor }}>
+        {hours}
+      </span>
+      <span className={digitClass} style={{ color: minuteColor }}>
+        {minutes}
+      </span>
+      <span />
+      {(weather.tempStr || weather.location || weather.conditionStr) ? (
+        <span className={cn(metaClass, "mt-[0.28em]")}>
+          {weather.tempStr && <span className="block tabular-nums">{weather.tempStr}</span>}
+          {weather.location && <span className="block">{weather.location}</span>}
+          {weather.conditionStr && <span className="block">{weather.conditionStr}</span>}
+        </span>
+      ) : (
+        <span />
+      )}
     </time>
   );
 }
@@ -421,10 +433,10 @@ function ScreensaverTimer({ align }: { align: "left" | "center" | "right" }) {
         align === "left" ? "items-start" : align === "right" ? "items-end" : "items-center"
       )}
     >
-      <p className="text-xs font-medium uppercase tracking-wider text-white/60">{t("timer.title")}</p>
+      <p className="font-montserrat text-xs font-medium uppercase tracking-wider text-white/60">{t("timer.title")}</p>
       <p
         className={cn(
-          "font-light tabular-nums text-white drop-shadow-md",
+          "font-montserrat font-medium tabular-nums text-white drop-shadow-md",
           status === "ringing" ? "animate-pulse text-5xl" : "text-4xl sm:text-5xl"
         )}
       >

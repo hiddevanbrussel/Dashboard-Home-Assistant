@@ -21,6 +21,7 @@ import { PexelsSettings } from "@/components/settings/pexels-settings";
 import { ImmichSettings } from "@/components/settings/immich-settings";
 import {
   ClockFormatPreview,
+  ClockSizePreview,
   LanguagePreview,
   SettingsAccentDots,
   SettingsChipSelect,
@@ -752,16 +753,20 @@ export default function SettingsPage() {
                 ]}
               />
 
-              <SettingsChipSelect
+              <SettingsChoiceCards
                 label={t("settings.screensaver.clockSize")}
+                hint={t("settings.screensaver.clockSizeHint")}
+                columns={2}
                 value={screensaverClockSize}
                 onChange={(size) => {
                   setScreensaverClockSizeState(size);
                   setScreensaverClockSize(size);
                 }}
-                items={SCREENSAVER_CLOCK_SIZES.map((size) => ({
+                options={SCREENSAVER_CLOCK_SIZES.map((size) => ({
                   id: size,
                   label: t(`settings.screensaver.clockSize.${size}`),
+                  description: t(`settings.screensaver.clockSize.${size}Hint`),
+                  preview: <ClockSizePreview size={size} />,
                 }))}
               />
 

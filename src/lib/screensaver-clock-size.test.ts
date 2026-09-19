@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SCREENSAVER_CLOCK_SIZE,
+  clockSizePreviewDigitClass,
   clockSizeTimeClass,
   getScreensaverClockSizeOrDefault,
   isScreensaverClockSize,
@@ -24,5 +25,12 @@ describe("screensaver clock size", () => {
     expect(clockSizeTimeClass("md")).toContain("text-8xl");
     expect(clockSizeTimeClass("lg")).toContain("text-[6.5rem]");
     expect(clockSizeTimeClass("xl")).toContain("16vw");
+  });
+
+  it("keeps settings previews in the same size order", () => {
+    expect(clockSizePreviewDigitClass("sm")).toContain("text-xl");
+    expect(clockSizePreviewDigitClass("md")).toContain("text-2xl");
+    expect(clockSizePreviewDigitClass("lg")).toContain("text-3xl");
+    expect(clockSizePreviewDigitClass("xl")).toContain("text-4xl");
   });
 });

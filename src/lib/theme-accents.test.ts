@@ -3,6 +3,10 @@ import {
   DEFAULT_THEME_ACCENT,
   getThemeAccent,
   isThemeAccentId,
+  mixRgb,
+  SCREENSAVER_CLOCK_WARM,
+  screensaverClockPairRgb,
+  screensaverClockRgb,
   THEME_ACCENTS,
   themeAccentCssVars,
 } from "./theme-accents";
@@ -37,5 +41,27 @@ describe("theme accents", () => {
   it("narrows stored accent ids", () => {
     expect(isThemeAccentId("teal")).toBe(true);
     expect(isThemeAccentId("yellow")).toBe(false);
+  });
+
+  it("mixes RGB channels toward a second color", () => {
+    expect(mixRgb([100, 0, 0], [0, 100, 0], 0.5)).toEqual([50, 50, 0]);
+    expect(mixRgb([10, 10, 10], [20, 20, 20], 2)).toEqual([20, 20, 20]);
+  });
+
+  it("keeps the screensaver clock warm and tints it with the accent", () => {
+    const purple = screensaverClockRgb("purple");
+    const orange = screensaverClockRgb("orange");
+    expect(purple).not.toEqual(SCREENSAVER_CLOCK_WARM);
+    expect(purple).not.toEqual(orange);
+    expect(orange[2]).toBeLessThan(purple[2]);
+    expect(purple[0]).toBeGreaterThan(210);
+    expect(purple[1]).toBeGreaterThan(150);
+  });
+
+  it("makes hours paler than minutes", () => {
+    const { hours, minutes } = screensaverClockPairRgb("purple");
+    expect(hours).not.toEqual(minutes);
+    expect(hours[0] + hours[1] + hours[2]).toBeGreaterThan(minutes[0] + minutes[1] + minutes[2]);
+    expect(hours[2]).toBeGreaterThan(minutes[2]);
   });
 });

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { OnboardingGuard } from "@/components/onboarding-guard";
@@ -8,6 +8,12 @@ import { MusicPlayerProvider } from "@/components/music-player-provider";
 import { GlobalMusicBar } from "@/components/global-music-bar";
 
 const inter = Inter({ subsets: ["latin"] });
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-montserrat",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Home Assistant Dashboard",
@@ -44,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <body className={`relative ${inter.className}`}>
         <Providers>
           <OnboardingGuard>

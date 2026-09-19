@@ -46,6 +46,9 @@ const config: Config = {
       backdropBlur: {
         glass: "12px",
       },
+      fontFamily: {
+        montserrat: ["var(--font-montserrat)", "ui-sans-serif", "system-ui"],
+      },
       fontSize: {
         "hero-title": ["2.75rem", { lineHeight: "1.2" }],
         "hero-subtitle": ["1.125rem", { lineHeight: "1.4" }],

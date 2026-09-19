@@ -12,6 +12,10 @@ import {
   accentRgbCss,
   type ThemeAccentId,
 } from "@/lib/theme-accents";
+import {
+  clockSizePreviewDigitClass,
+  type ScreensaverClockSize,
+} from "@/lib/screensaver-clock-size";
 
 export function SettingsChoiceCards<T extends string>({
   label,
@@ -253,6 +257,21 @@ export function ClockFormatPreview({ variant }: { variant: "24" | "12" }) {
     <div className="flex h-[4.75rem] flex-col items-center justify-center gap-0.5 bg-[#0A0014] text-white">
       <span className="text-2xl font-light tabular-nums">{variant === "24" ? "14:32" : "2:32"}</span>
       <span className="text-[11px] text-white/55">{variant === "24" ? "24:00" : "pm"}</span>
+    </div>
+  );
+}
+
+export function ClockSizePreview({ size }: { size: ScreensaverClockSize }) {
+  const digitClass = cn(
+    "font-montserrat font-medium leading-none tabular-nums",
+    clockSizePreviewDigitClass(size)
+  );
+  return (
+    <div className="flex h-[5.25rem] items-center justify-center bg-[#0A0014]">
+      <span className="grid grid-cols-[auto_auto] items-end gap-x-0.5">
+        <span className={cn(digitClass, "text-[#EBC895]")}>08</span>
+        <span className={cn(digitClass, "text-[#E3AE62]")}>42</span>
+      </span>
     </div>
   );
 }

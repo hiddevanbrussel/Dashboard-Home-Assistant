@@ -50,3 +50,17 @@ export function clockSizeDateClass(size: ScreensaverClockSize): string {
       return "text-xl";
   }
 }
+
+/** Relative digit size for the settings preview cards, not the live screensaver. */
+export function clockSizePreviewDigitClass(size: ScreensaverClockSize): string {
+  switch (size) {
+    case "sm":
+      return "text-xl";
+    case "lg":
+      return "text-3xl";
+    case "xl":
+      return "text-4xl";
+    default:
+      return "text-2xl";
+  }
+}
