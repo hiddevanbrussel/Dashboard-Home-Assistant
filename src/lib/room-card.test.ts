@@ -5,6 +5,7 @@ import {
   clampRoomCardHeight,
   clampRoomCardWidth,
   resizeRoomCardFromBottomRight,
+  roomDashboardHref,
 } from "./room-card";
 
 describe("room-card helpers", () => {
@@ -43,5 +44,13 @@ describe("room-card helpers", () => {
     });
     expect(againstViewport.bottom).toBe(0);
     expect(againstViewport.height).toBe(110);
+  });
+
+  it("builds a room dashboard href only when an area id is set", () => {
+    expect(roomDashboardHref(undefined)).toBeNull();
+    expect(roomDashboardHref("")).toBeNull();
+    expect(roomDashboardHref("   ")).toBeNull();
+    expect(roomDashboardHref("living-room")).toBe("/dashboards/room-living-room");
+    expect(roomDashboardHref("woon kamer")).toBe("/dashboards/room-woon%20kamer");
   });
 });

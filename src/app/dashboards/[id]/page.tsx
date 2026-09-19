@@ -128,6 +128,7 @@ import {
   clampRoomCardWidth,
   ROOM_CARD_DEFAULT_HEIGHT,
   ROOM_CARD_DEFAULT_WIDTH,
+  roomDashboardHref,
 } from "@/lib/room-card";
 import {
   clampMediaCardHeight,
@@ -321,6 +322,68 @@ function MoveCardToRoomSection({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function LinkedRoomSelect({
+  value,
+  onChange,
+  t,
+}: {
+  value?: string;
+  onChange: (areaId: string | undefined) => void;
+  t: (key: string) => string;
+}) {
+  const [rooms, setRooms] = useState<RoomListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/room-dashboards")
+      .then((res) => res.json())
+      .then((list: RoomListItem[]) => setRooms(Array.isArray(list) ? list : []))
+      .catch(() => setRooms([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <p className="text-sm text-gray-500 dark:text-gray-400">{t("editPanel.loading")}</p>;
+  }
+
+  if (rooms.length === 0) {
+    return (
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+          {t("editPanel.linkedRoom")}
+        </label>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t("editPanel.linkedRoomEmpty")}</p>
+      </div>
+    );
+  }
+
+  const selectedMissing = Boolean(value && !rooms.some((r) => r.areaId === value));
+
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+        {t("editPanel.linkedRoom")}
+      </label>
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value || undefined)}
+        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+      >
+        <option value="">{t("editPanel.linkedRoomNone")}</option>
+        {selectedMissing && value ? (
+          <option value={value}>{value}</option>
+        ) : null}
+        {rooms.map((r) => (
+          <option key={r.areaId} value={r.areaId}>
+            {r.name || r.areaId}
+          </option>
+        ))}
+      </select>
+      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.linkedRoomHint")}</p>
     </div>
   );
 }
@@ -687,6 +750,7 @@ export default function DashboardEditPage() {
     modal_light_entity_ids?: string[];
     media_player_entity_id?: string;
     climate_entity_id?: string;
+    area_id?: string;
     background_image?: string;
     background_image_dark?: string;
     icon_background_color?: string;
@@ -728,6 +792,7 @@ export default function DashboardEditPage() {
     modal_light_entity_ids: [],
     media_player_entity_id: "",
     climate_entity_id: "",
+    area_id: "",
     background_image: "",
     background_image_dark: "",
     icon_background_color: "",
@@ -895,6 +960,7 @@ export default function DashboardEditPage() {
         light_entity_id: editingWidget.light_entity_id ?? "",
         media_player_entity_id: editingWidget.media_player_entity_id ?? "",
         climate_entity_id: editingWidget.climate_entity_id ?? "",
+        area_id: editingWidget.area_id ?? "",
         background_image: editingWidget.background_image ?? "",
         background_image_dark: editingWidget.background_image_dark ?? "",
         icon_background_color: editingWidget.icon_background_color ?? "",
@@ -1218,7 +1284,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; page?: number }
+    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; media_player_entity_id?: string; climate_entity_id?: string; area_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; page?: number }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -2199,7 +2265,14 @@ export default function DashboardEditPage() {
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onCardClick={
                 !editMode
-                  ? () => setClickedCardForDefinition({ widgetId: w.id, title: w.title ?? t("cardType.room_card") })
+                  ? () => {
+                      const href = roomDashboardHref(w.area_id);
+                      if (href) {
+                        router.push(href);
+                        return;
+                      }
+                      setClickedCardForDefinition({ widgetId: w.id, title: w.title ?? t("cardType.room_card") });
+                    }
                   : undefined
               }
               onResize={editMode ? (size) => handleRoomCardResize(w.id, size) : undefined}
@@ -3035,6 +3108,11 @@ export default function DashboardEditPage() {
                     </div>
                     {editTab === "entiteiten" && (
                       <div className="space-y-4">
+                        <LinkedRoomSelect
+                          value={editForm.area_id}
+                          onChange={(areaId) => setEditForm((prev) => ({ ...prev, area_id: areaId ?? "" }))}
+                          t={t}
+                        />
                         <div>
                           <EntitySelectWithSearch
                             entities={entities}
@@ -5433,6 +5511,7 @@ aria-label={t("editPanel.removeCondition")}
                           light_entity_id: editForm.light_entity_id || undefined,
                           media_player_entity_id: editForm.media_player_entity_id || undefined,
                           climate_entity_id: editForm.climate_entity_id || undefined,
+                          area_id: editForm.area_id || undefined,
                           background_image: editForm.background_image || undefined,
                           icon_background_color: editForm.icon_background_color || undefined,
                           width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,

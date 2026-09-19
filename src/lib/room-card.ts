@@ -1,3 +1,10 @@
+export function roomDashboardHref(areaId: unknown): string | null {
+  if (typeof areaId !== "string") return null;
+  const id = areaId.trim();
+  if (!id) return null;
+  return `/dashboards/room-${encodeURIComponent(id)}`;
+}
+
 export const ROOM_CARD_DEFAULT_WIDTH = 220;
 export const ROOM_CARD_DEFAULT_HEIGHT = 100;
 export const ROOM_CARD_MIN_WIDTH = 180;
