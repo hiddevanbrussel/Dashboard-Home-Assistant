@@ -9,6 +9,7 @@ import {
   SettingsToggle,
 } from "@/components/settings/settings-panel";
 import { useTranslation } from "@/hooks/use-translation";
+import { WAKE_WORD_IDS, WAKE_WORD_MODELS } from "@/lib/wake-word";
 import { hydrateVoiceSatelliteStore, useVoiceSatelliteStore } from "@/stores/voice-satellite-store";
 
 type PipelineList = {
@@ -20,8 +21,13 @@ export function VoiceSatelliteSettings() {
   const { t } = useTranslation();
   const enabled = useVoiceSatelliteStore((s) => s.enabled);
   const pipelineId = useVoiceSatelliteStore((s) => s.pipelineId);
+  const wakeWordEnabled = useVoiceSatelliteStore((s) => s.wakeWordEnabled);
+  const wakeWordId = useVoiceSatelliteStore((s) => s.wakeWordId);
+  const wakeWordStatus = useVoiceSatelliteStore((s) => s.wakeWordStatus);
   const setEnabled = useVoiceSatelliteStore((s) => s.setEnabled);
   const setPipelineId = useVoiceSatelliteStore((s) => s.setPipelineId);
+  const setWakeWordEnabled = useVoiceSatelliteStore((s) => s.setWakeWordEnabled);
+  const setWakeWordId = useVoiceSatelliteStore((s) => s.setWakeWordId);
   const [pipelines, setPipelines] = useState<PipelineList | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +66,19 @@ export function VoiceSatelliteSettings() {
     };
   }, [t]);
 
+  async function onToggleWakeWord(next: boolean) {
+    if (next && typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      } catch {
+        setWakeWordEnabled(true);
+        return;
+      }
+    }
+    setWakeWordEnabled(next);
+  }
+
   return (
     <div className="space-y-4">
       <SettingsToggle
@@ -83,6 +102,32 @@ export function VoiceSatelliteSettings() {
               ))}
             </SettingsSelect>
           </SettingsField>
+        ) : null}
+      </SettingsGroup>
+      <SettingsGroup title={t("settings.voiceSatellite.wakeWord")} description={t("settings.voiceSatellite.wakeWordHint")}>
+        <SettingsToggle
+          checked={enabled && wakeWordEnabled}
+          onChange={(v) => {
+            if (!enabled) return;
+            void onToggleWakeWord(v);
+          }}
+          label={t("settings.voiceSatellite.wakeWordEnabled")}
+          description={t("settings.voiceSatellite.wakeWordEnabledHint")}
+        />
+        <SettingsField label={t("settings.voiceSatellite.wakeWordPhrase")}>
+          <SettingsSelect value={wakeWordId} onChange={(e) => setWakeWordId(e.target.value)} disabled={!enabled || !wakeWordEnabled}>
+            {WAKE_WORD_IDS.map((id) => (
+              <option key={id} value={id}>
+                {t(WAKE_WORD_MODELS[id].labelKey)}
+              </option>
+            ))}
+          </SettingsSelect>
+        </SettingsField>
+        {wakeWordEnabled && wakeWordStatus === "denied" ? (
+          <SettingsAlert tone="error">{t("settings.voiceSatellite.wakeWordDenied")}</SettingsAlert>
+        ) : null}
+        {wakeWordEnabled && wakeWordStatus === "error" ? (
+          <SettingsAlert tone="error">{t("settings.voiceSatellite.wakeWordError")}</SettingsAlert>
         ) : null}
       </SettingsGroup>
       <SettingsGroup title={t("settings.voiceSatellite.requirements")} description={t("settings.voiceSatellite.requirementsHint")} />

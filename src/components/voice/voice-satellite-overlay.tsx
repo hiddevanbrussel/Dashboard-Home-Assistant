@@ -22,6 +22,8 @@ type AssistRunResponse = {
   error?: string | null;
 };
 
+let lastHandledWakeListenId = 0;
+
 export function VoiceSatelliteOverlay() {
   const enabled = useVoiceSatelliteStore((s) => s.enabled);
   const open = useVoiceSatelliteStore((s) => s.open);
@@ -41,6 +43,8 @@ function VoiceSatelliteSheet() {
   const speech = useVoiceSatelliteStore((s) => s.speech);
   const error = useVoiceSatelliteStore((s) => s.error);
   const conversationId = useVoiceSatelliteStore((s) => s.conversationId);
+  const wakeWordEnabled = useVoiceSatelliteStore((s) => s.wakeWordEnabled);
+  const wakeListenId = useVoiceSatelliteStore((s) => s.wakeListenId);
   const setOpen = useVoiceSatelliteStore((s) => s.setOpen);
   const setPhase = useVoiceSatelliteStore((s) => s.setPhase);
   const setTurn = useVoiceSatelliteStore((s) => s.setTurn);
@@ -211,6 +215,12 @@ function VoiceSatelliteSheet() {
   }, [phase, setPhase, startListening, stopRecording, submitPcm]);
 
   useEffect(() => {
+    if (wakeListenId === 0 || lastHandledWakeListenId === wakeListenId) return;
+    lastHandledWakeListenId = wakeListenId;
+    void startListening();
+  }, [startListening, wakeListenId]);
+
+  useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
@@ -234,7 +244,9 @@ function VoiceSatelliteSheet() {
         ? t("voice.processing")
         : phase === "responding"
           ? t("voice.responding")
-          : t("voice.idleHint"));
+          : wakeWordEnabled
+            ? t("voice.idleHintWake")
+            : t("voice.idleHint"));
 
   return (
     <div className="fixed inset-0 z-[220] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
@@ -246,6 +258,7 @@ function VoiceSatelliteSheet() {
             onClick={() => {
               void stopRecording();
               stopPlayback();
+              setPhase("idle");
               setOpen(false);
             }}
             className="rounded-full p-2 text-gray-500 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/10"

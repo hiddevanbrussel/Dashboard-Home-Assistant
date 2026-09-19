@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "npx prisma migrate deploy && next dev --turbopack",
-    "build": "npx prisma generate && next build",
+    "build": "node scripts/prepare-wake-word-models.mjs && npx prisma generate && next build",
+    "prepare-wake-word": "node scripts/prepare-wake-word-models.mjs",
     "postbuild": "npx prisma migrate deploy",
     "start": "next start",
     "lint": "next lint",
@@ -21,6 +22,7 @@
     "dotenv": "^17.3.1",
     "lucide-react": "^1.46.0",
     "next": "^15.0.0",
+    "openwakeword-web": "^0.1.0",
     "prisma": "^7.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
