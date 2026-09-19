@@ -33,7 +33,7 @@ import {
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import type { ThemeAccentId } from "@/lib/theme-accents";
 import { useLanguageStore } from "@/stores/language-store";
-import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize, getScreensaverMediaSource, setScreensaverMediaSource, type ScreensaverMediaSource } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverMusicEntityId, setScreensaverMusicEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize, getScreensaverMediaSource, setScreensaverMediaSource, type ScreensaverMediaSource } from "@/stores/screensaver-store";
 import { isImmichSourceReady, isPexelsSourceReady } from "@/lib/screensaver-media-source";
 import { DEFAULT_SCREENSAVER_CLOCK_POSITION, SCREENSAVER_CLOCK_POSITIONS, type ScreensaverClockPosition } from "@/lib/screensaver-clock-position";
 import { DEFAULT_SCREENSAVER_CLOCK_SIZE, SCREENSAVER_CLOCK_SIZES, type ScreensaverClockSize } from "@/lib/screensaver-clock-size";
@@ -191,6 +191,7 @@ export default function SettingsPage() {
   const [screensaverClockSize, setScreensaverClockSizeState] = useState<ScreensaverClockSize>(DEFAULT_SCREENSAVER_CLOCK_SIZE);
   const [screensaverWeatherEntityId, setScreensaverWeatherEntityIdState] = useState<string | null>(null);
   const [screensaverFootballEntityId, setScreensaverFootballEntityIdState] = useState<string | null>(null);
+  const [screensaverMusicEntityId, setScreensaverMusicEntityIdState] = useState<string | null>(null);
   const [screensaverMediaSource, setScreensaverMediaSourceState] = useState<ScreensaverMediaSource>("custom");
   const [uploadingScreensaverBg, setUploadingScreensaverBg] = useState(false);
   const [appVersion, setAppVersion] = useState<string | null>(null);
@@ -236,6 +237,7 @@ export default function SettingsPage() {
     setScreensaverClockSizeState(getScreensaverClockSize());
     setScreensaverWeatherEntityIdState(getScreensaverWeatherEntityId());
     setScreensaverFootballEntityIdState(getScreensaverFootballEntityId());
+    setScreensaverMusicEntityIdState(getScreensaverMusicEntityId());
     setScreensaverMediaSourceState(getScreensaverMediaSource());
     setPexelsEnabled(getScreensaverPexelsEnabled());
     const onScreensaverChange = () => {
@@ -930,6 +932,30 @@ export default function SettingsPage() {
                   <option value="">{t("settings.screensaver.footballOff")}</option>
                   {entities
                     .filter((e) => e.entity_id.startsWith("sensor.team"))
+                    .map((e) => {
+                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
+                      return (
+                        <option key={e.entity_id} value={e.entity_id}>
+                          {name}
+                        </option>
+                      );
+                    })}
+                </SettingsSelect>
+              </SettingsField>
+
+              <SettingsField label={t("settings.screensaver.music")} hint={t("settings.screensaver.musicHint")}>
+                <SettingsSelect
+                  value={screensaverMusicEntityId ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value || null;
+                    setScreensaverMusicEntityIdState(v);
+                    setScreensaverMusicEntityId(v);
+                  }}
+                >
+                  <option value="">{t("settings.screensaver.musicAuto")}</option>
+                  <option value="off">{t("settings.screensaver.musicOff")}</option>
+                  {entities
+                    .filter((e) => e.entity_id.startsWith("media_player."))
                     .map((e) => {
                       const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
                       return (
