@@ -52,7 +52,7 @@ export function VoiceWakeWordListener() {
     let context: AudioContext | null = null;
     let processor: ScriptProcessorNode | null = null;
     let engine: WakeEngine | null = null;
-    let pending = new Int16Array(0);
+    let pending: Int16Array = new Int16Array(0);
     let lastDetect = 0;
     let detecting = false;
 
