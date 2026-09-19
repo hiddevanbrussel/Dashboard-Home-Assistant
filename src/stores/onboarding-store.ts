@@ -71,6 +71,8 @@ export type WidgetConfig = {
   media_player_entity_id?: string;
   /** Room card: entity_id voor klimaat (bijv. climate.woonkamer). */
   climate_entity_id?: string;
+  /** Room card: gekoppelde kamer (area_id); klik opent die kamer. */
+  area_id?: string;
   /** Room card: optionele achtergrondafbeelding (URL). */
   background_image?: string;
   /** Afbeeldingskaart: achtergrond voor dark mode. */

@@ -168,6 +168,7 @@ export function RoomCardWidget({
             {onMoreClick && (
               <button
                 type="button"
+                data-no-drag
                 onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
                 className={cn(
                   "p-1.5 rounded-lg shrink-0 transition-colors",
