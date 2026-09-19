@@ -24,6 +24,7 @@ export function VoiceSatelliteSettings() {
   const wakeWordEnabled = useVoiceSatelliteStore((s) => s.wakeWordEnabled);
   const wakeWordId = useVoiceSatelliteStore((s) => s.wakeWordId);
   const wakeWordStatus = useVoiceSatelliteStore((s) => s.wakeWordStatus);
+  const wakeWordError = useVoiceSatelliteStore((s) => s.wakeWordError);
   const setEnabled = useVoiceSatelliteStore((s) => s.setEnabled);
   const setPipelineId = useVoiceSatelliteStore((s) => s.setPipelineId);
   const setWakeWordEnabled = useVoiceSatelliteStore((s) => s.setWakeWordEnabled);
@@ -127,7 +128,9 @@ export function VoiceSatelliteSettings() {
           <SettingsAlert tone="error">{t("settings.voiceSatellite.wakeWordDenied")}</SettingsAlert>
         ) : null}
         {wakeWordEnabled && wakeWordStatus === "error" ? (
-          <SettingsAlert tone="error">{t("settings.voiceSatellite.wakeWordError")}</SettingsAlert>
+          <SettingsAlert tone="error">
+            {wakeWordError === "nomics" ? t("settings.voiceSatellite.wakeWordNoMic") : t("settings.voiceSatellite.wakeWordError")}
+          </SettingsAlert>
         ) : null}
       </SettingsGroup>
       <SettingsGroup title={t("settings.voiceSatellite.requirements")} description={t("settings.voiceSatellite.requirementsHint")} />

@@ -122,9 +122,10 @@ export function VoiceWakeWordListener() {
         statusRef.current("armed");
       } catch (err) {
         if (cancelled) return;
-        const denied =
-          err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "PermissionDeniedError");
-        statusRef.current(denied ? "denied" : "error", err instanceof Error ? err.message : "wake-word");
+        const name = err instanceof DOMException ? err.name : "";
+        const denied = name === "NotAllowedError" || name === "PermissionDeniedError";
+        const noMic = name === "NotFoundError" || name === "DevicesNotFoundError";
+        statusRef.current(denied ? "denied" : "error", noMic ? "nomics" : err instanceof Error ? err.message : "wake-word");
         stream?.getTracks().forEach((track) => track.stop());
       }
     }
