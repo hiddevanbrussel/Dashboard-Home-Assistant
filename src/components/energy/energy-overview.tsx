@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Battery, Home, PlugZap, Settings2, Sun, type LucideIcon } from "lucide-react";
+import { Battery, Home, PlugZap, Sun, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   ENERGY_OVERVIEW_HOUSE_IMAGE,
@@ -107,24 +107,22 @@ function HouseCallout({
 
 function HouseScene({
   image,
-  toolbar,
   callouts,
 }: {
   image?: string | null;
-  toolbar: ReactNode;
   callouts: Array<{ id: HouseCalloutId; label: string; value: string }>;
 }) {
   const custom = Boolean(image?.trim());
   const src = image?.trim() || ENERGY_OVERVIEW_HOUSE_IMAGE;
   return (
-    <div className="relative px-2 sm:px-16">
+    <div className="relative px-1 sm:px-8">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt=""
         className={cn(
           "relative z-0 mx-auto h-auto w-full",
-          custom ? "min-h-[24rem] object-cover object-top" : "max-h-[34rem] object-contain object-center"
+          custom ? "min-h-[28rem] object-cover object-top" : "max-h-[42rem] object-contain object-center"
         )}
       />
       {custom ? (
@@ -152,7 +150,6 @@ function HouseScene({
       {callouts.map((callout) => (
         <HouseCallout key={callout.id} {...callout} />
       ))}
-      <div className="absolute right-3 top-3 z-10 flex items-center gap-2">{toolbar}</div>
     </div>
   );
 }
@@ -298,21 +295,9 @@ export function EnergyOverview({
   const solarWindow = useMemo(() => bestSolarWindow(dayGeneration ?? []), [dayGeneration]);
   const showSmartMoment = Boolean(generationId);
 
-  const toolbar = (
-    <div className="pointer-events-auto flex items-center gap-2">
-      <a
-        href="/settings?section=energy"
-        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white/90 px-2.5 text-[11px] font-medium text-gray-600 shadow-sm ring-1 ring-black/5 hover:text-gray-900 dark:bg-zinc-900/90 dark:text-white/70 dark:ring-white/10"
-      >
-        <Settings2 className="h-3.5 w-3.5" />
-        {t("settings.energy.entities")}
-      </a>
-    </div>
-  );
-
   return (
     <div className="mx-auto w-full max-w-[88rem] pb-8">
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,1.1fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(26rem,1.3fr)]">
         <div className="card-plot-in">
           {title?.trim() ? (
             <h1 className="max-w-xl text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-white">
@@ -340,34 +325,33 @@ export function EnergyOverview({
           </div>
         </div>
         <div className="card-plot-in">
-          <HouseScene image={houseImage} toolbar={toolbar} callouts={houseCallouts} />
+          <HouseScene image={houseImage} callouts={houseCallouts} />
+          {showSmartMoment ? (
+            <section className="mt-6 px-1 sm:px-8">
+              <div className="rounded-[1.75rem] bg-white/80 px-6 py-5 shadow-sm ring-1 ring-black/[0.06] dark:bg-white/10 dark:ring-white/10">
+                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-400 dark:text-white/45">
+                  <Sun className="h-3.5 w-3.5 text-brand" aria-hidden />
+                  {t("energy.overview.smartMoment")}
+                </p>
+                {solarWindow ? (
+                  <>
+                    <p className="mt-3 text-[2rem] font-semibold tracking-tight text-gray-900 dark:text-white">
+                      {formatHourRange(solarWindow.startHour, solarWindow.endHour)}
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-white/55">
+                      {t("energy.overview.smartMomentHint")}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-3 text-sm leading-relaxed text-gray-400 dark:text-white/40">
+                    {t("energy.overview.smartMomentEmpty")}
+                  </p>
+                )}
+              </div>
+            </section>
+          ) : null}
         </div>
       </div>
-
-      {showSmartMoment ? (
-        <section className="card-plot-in mt-10 max-w-md">
-          <div className="rounded-[1.75rem] bg-white/80 px-6 py-5 shadow-sm ring-1 ring-black/[0.06] dark:bg-white/10 dark:ring-white/10">
-            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-400 dark:text-white/45">
-              <Sun className="h-3.5 w-3.5 text-brand" aria-hidden />
-              {t("energy.overview.smartMoment")}
-            </p>
-            {solarWindow ? (
-              <>
-                <p className="mt-3 text-[2rem] font-semibold tracking-tight text-gray-900 dark:text-white">
-                  {formatHourRange(solarWindow.startHour, solarWindow.endHour)}
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-white/55">
-                  {t("energy.overview.smartMomentHint")}
-                </p>
-              </>
-            ) : (
-              <p className="mt-3 text-sm leading-relaxed text-gray-400 dark:text-white/40">
-                {t("energy.overview.smartMomentEmpty")}
-              </p>
-            )}
-          </div>
-        </section>
-      ) : null}
 
       {showBattery ? (
         <section className="card-plot-in mt-6 max-w-md">
