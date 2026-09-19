@@ -37,7 +37,13 @@ export function VoiceSatelliteSettings() {
     fetch("/api/ha/assist/pipelines")
       .then(async (res) => {
         const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || t("settings.voiceSatellite.pipelinesError"));
+        if (!res.ok) {
+          throw new Error(
+            data?.error === "No HA connection"
+              ? t("settings.voiceSatellite.noHa")
+              : data?.error || t("settings.voiceSatellite.pipelinesError")
+          );
+        }
         return data as PipelineList;
       })
       .then((list) => {
