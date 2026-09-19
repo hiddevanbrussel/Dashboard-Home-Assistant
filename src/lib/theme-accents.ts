@@ -45,6 +45,7 @@ export function accentRgbCss(rgb: Rgb) {
 
 /** Warm yellow-orange used for the screensaver clock before the brand tint. */
 export const SCREENSAVER_CLOCK_WARM: Rgb = [244, 186, 88];
+const SCREENSAVER_CLOCK_LIFT: Rgb = [246, 210, 92];
 
 export function mixRgb(a: Rgb, b: Rgb, amount: number): Rgb {
   const t = Math.min(1, Math.max(0, amount));
@@ -57,5 +58,6 @@ export function mixRgb(a: Rgb, b: Rgb, amount: number): Rgb {
 
 /** Clock digit color: warm yellow/orange, slightly tinted by the chosen accent. */
 export function screensaverClockRgb(id: string | undefined): Rgb {
-  return mixRgb(SCREENSAVER_CLOCK_WARM, getThemeAccent(id).rgb, 0.22);
+  const tinted = mixRgb(SCREENSAVER_CLOCK_WARM, getThemeAccent(id).rgb, 0.14);
+  return mixRgb(tinted, SCREENSAVER_CLOCK_LIFT, 0.28);
 }

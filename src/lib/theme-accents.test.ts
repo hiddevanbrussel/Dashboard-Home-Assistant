@@ -53,7 +53,7 @@ describe("theme accents", () => {
     expect(purple).not.toEqual(SCREENSAVER_CLOCK_WARM);
     expect(purple).not.toEqual(orange);
     expect(orange[2]).toBeLessThan(purple[2]);
-    expect(purple[0]).toBeGreaterThan(180);
-    expect(purple[1]).toBeGreaterThan(120);
+    expect(purple[0]).toBeGreaterThan(210);
+    expect(purple[1]).toBeGreaterThan(150);
   });
 });
