@@ -4,7 +4,14 @@ A personal, touchscreen-friendly dashboard for Home Assistant. Add widgets, set 
 
 The interface is available in **English** and **Dutch**.
 
-<img width="1234" height="689" alt="Dashboard preview" src="https://github.com/user-attachments/assets/cf92e71b-15b3-48c5-925e-f43cc083af4a" />
+<img alt="Home dashboard with vacuum and weather cards" src="docs/readme/dashboard.webp" />
+
+<p>
+<img width="49%" alt="Screensaver lock clock" src="docs/readme/screensaver.webp" />
+<img width="49%" alt="Screensaver settings" src="docs/readme/settings-screensaver.webp" />
+</p>
+
+<img alt="Energy page" src="docs/readme/energy.webp" />
 
 ---
 
