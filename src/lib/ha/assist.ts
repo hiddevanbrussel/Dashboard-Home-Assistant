@@ -42,7 +42,7 @@ export function parsePipelineList(raw: unknown): AssistPipelineList {
   const obj = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const list = Array.isArray(obj.pipelines) ? obj.pipelines : [];
   const pipelines = list
-    .map((item) => {
+    .map((item): AssistPipeline | null => {
       if (!item || typeof item !== "object") return null;
       const p = item as Record<string, unknown>;
       const id = typeof p.id === "string" ? p.id : "";
@@ -54,7 +54,7 @@ export function parsePipelineList(raw: unknown): AssistPipelineList {
         conversation_engine: typeof p.conversation_engine === "string" ? p.conversation_engine : undefined,
         stt_engine: typeof p.stt_engine === "string" ? p.stt_engine : p.stt_engine === null ? null : undefined,
         tts_engine: typeof p.tts_engine === "string" ? p.tts_engine : p.tts_engine === null ? null : undefined,
-      } satisfies AssistPipeline;
+      };
     })
     .filter((p): p is AssistPipeline => p != null);
   const preferred = typeof obj.preferred_pipeline === "string" ? obj.preferred_pipeline : null;
