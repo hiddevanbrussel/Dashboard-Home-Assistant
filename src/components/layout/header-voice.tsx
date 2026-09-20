@@ -96,7 +96,7 @@ export function HeaderVoice({ contentLight }: { contentLight?: boolean } = {}) {
           {caption}
         </span>
       ) : null}
-      {armed || listening ? (
+      {!problem && (armed || listening) ? (
         <span
           className={cn(
             "h-1.5 w-1.5 shrink-0 rounded-full",
