@@ -57,6 +57,8 @@ export function HeaderVoice({ contentLight }: { contentLight?: boolean } = {}) {
                         : null;
   const showChip = Boolean(caption);
   const label = caption || t("voice.title");
+  const listening = phase === "listening";
+  const problem = phase === "error" || wakeWordStatus === "denied" || wakeWordStatus === "error";
 
   return (
     <button
@@ -70,19 +72,15 @@ export function HeaderVoice({ contentLight }: { contentLight?: boolean } = {}) {
         setOpen(!open);
       }}
       className={cn(
-        "relative flex h-9 shrink-0 items-center justify-center gap-2 transition-colors",
-        showChip ? "max-w-[20rem] rounded-full px-3 text-sm font-semibold" : "w-9 rounded-lg",
-        phase === "listening"
-          ? "bg-red-500 text-white shadow-sm"
-          : phase === "processing" || phase === "responding"
-            ? "bg-brand text-white shadow-sm"
-            : phase === "error" || wakeWordStatus === "denied" || wakeWordStatus === "error"
-              ? "bg-red-500/15 text-red-700 dark:bg-red-500/20 dark:text-red-200"
-              : armed
-                ? "bg-emerald-500/20 text-emerald-800 ring-1 ring-emerald-400/50 dark:bg-emerald-400/15 dark:text-emerald-200"
-                : contentLight
-                  ? "text-white/90 hover:bg-white/10"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+        "relative flex shrink-0 items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition-colors",
+        showChip ? "max-w-[16rem] px-2 py-1 -mx-2" : "h-9 w-9",
+        problem
+          ? contentLight
+            ? "text-red-200 hover:bg-white/10"
+            : "text-red-600 hover:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/10"
+          : contentLight
+            ? "text-white/90 hover:bg-white/10"
+            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
       )}
       aria-label={label}
       aria-pressed={open}
@@ -91,12 +89,21 @@ export function HeaderVoice({ contentLight }: { contentLight?: boolean } = {}) {
       {phase === "processing" || wakeWordStatus === "loading" ? (
         <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
       ) : (
-        <Mic className={cn("h-4 w-4 shrink-0", (active || armed) && "animate-pulse")} aria-hidden />
+        <Mic className={cn("h-4 w-4 shrink-0", listening && "animate-pulse")} aria-hidden />
       )}
       {caption ? (
         <span className="min-w-0 truncate" aria-live="polite">
           {caption}
         </span>
+      ) : null}
+      {!problem && (armed || listening) ? (
+        <span
+          className={cn(
+            "h-1.5 w-1.5 shrink-0 rounded-full",
+            listening ? "bg-red-500" : "bg-emerald-500/70"
+          )}
+          aria-hidden
+        />
       ) : null}
     </button>
   );
