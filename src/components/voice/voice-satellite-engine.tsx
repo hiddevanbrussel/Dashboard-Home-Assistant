@@ -11,6 +11,7 @@ import {
   nextWakeSilenceState,
   pcm16ToArrayBuffer,
   pcmRms,
+  type WakeSilenceState,
 } from "@/lib/voice-audio";
 import { useVoiceSatelliteStore } from "@/stores/voice-satellite-store";
 
@@ -153,7 +154,7 @@ export function VoiceSatelliteEngine() {
       gain.gain.value = 0;
       const processor = context.createScriptProcessor(4096, 1, 1);
       const chunks: Float32Array[] = [];
-      let silence = { heard: 0, silent: 0 };
+      let silence: WakeSilenceState = { heard: 0, silent: 0, done: false };
       processor.onaudioprocess = (event) => {
         const frame = new Float32Array(event.inputBuffer.getChannelData(0));
         chunks.push(frame);

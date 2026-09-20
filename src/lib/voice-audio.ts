@@ -15,10 +15,12 @@ export function pcmRms(samples: ArrayLike<number>): number {
   return Math.sqrt(sum / samples.length);
 }
 
+export type WakeSilenceState = { heard: number; silent: number; done: boolean };
+
 export function nextWakeSilenceState(
-  state: { heard: number; silent: number },
+  state: Pick<WakeSilenceState, "heard" | "silent">,
   rms: number
-): { heard: number; silent: number; done: boolean } {
+): WakeSilenceState {
   if (rms >= VOICE_WAKE_SPEECH_RMS) return { heard: state.heard + 1, silent: 0, done: false };
   if (state.heard < VOICE_WAKE_MIN_SPEECH_CHUNKS) return { heard: state.heard, silent: 0, done: false };
   const silent = rms <= VOICE_WAKE_SILENCE_RMS ? state.silent + 1 : 0;
