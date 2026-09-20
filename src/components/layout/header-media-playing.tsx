@@ -9,6 +9,7 @@ import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { MediaCardWidget } from "@/components/widgets/media-card-widget";
 import { useTranslation } from "@/hooks/use-translation";
+import { isPlayingMediaPlayerState, selectPlayingMediaPlayers } from "@/lib/media-player-state";
 
 function getMaArtistTitle(cur: { name?: string; artists?: unknown; artist?: string; stream_title?: string } | undefined): { artist: string; title: string } {
   if (!cur) return { artist: "", title: "" };
@@ -48,25 +49,22 @@ export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  const playingEntities = Object.values(states).filter(
-    (e) =>
-      e.entity_id.startsWith("media_player.") &&
-      (e.state === "playing" || e.state === "paused")
-  );
+  const playingEntities = selectPlayingMediaPlayers(Object.values(states));
+  const queuePlaying = isPlayingMediaPlayerState(queueState?.state);
 
   useEffect(() => {
-    if (musicAssistant.enabled && (queueState?.state === "playing" || queueState?.state === "paused")) {
+    if (musicAssistant.enabled && queuePlaying) {
       fetch("/api/ha/ma-entity-map")
         .then((r) => (r.ok ? r.json() : {}))
         .then((map: Record<string, string>) => setEntityMap(map))
         .catch(() => setEntityMap({}));
     }
-  }, [musicAssistant.enabled, queueState?.state]);
+  }, [musicAssistant.enabled, queuePlaying]);
 
   const playingEntity = useMemo(() => {
     if (playingEntities.length === 0) return null;
     if (playingEntities.length === 1) return playingEntities[0].entity_id;
-    const maPlaying = musicAssistant.enabled && (queueState?.state === "playing" || queueState?.state === "paused") && selectedQueueId;
+    const maPlaying = musicAssistant.enabled && queuePlaying && selectedQueueId;
     if (maPlaying && entityMap[selectedQueueId!]) {
       const maEntity = entityMap[selectedQueueId!];
       const isPlaying = playingEntities.some((e) => e.entity_id === maEntity);
@@ -78,9 +76,9 @@ export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } 
         e.entity_id.toLowerCase().includes("woonkamer")
     );
     return woonkamer?.entity_id ?? playingEntities[0].entity_id;
-  }, [playingEntities, musicAssistant.enabled, queueState?.state, selectedQueueId, entityMap]);
+  }, [playingEntities, musicAssistant.enabled, queuePlaying, selectedQueueId, entityMap]);
 
-  const isActivelyPlaying = playingEntities.some((e) => e.state === "playing");
+  const isActivelyPlaying = playingEntities.some((e) => isPlayingMediaPlayerState(e.state));
 
   useEffect(() => {
     let cancelled = false;
@@ -126,7 +124,7 @@ export function HeaderMediaPlaying({ contentLight }: { contentLight?: boolean } 
   if (playingEntity == null) return null;
 
   const cur = queueState?.current_item as { name?: string; artists?: unknown; artist?: string; stream_title?: string } | undefined;
-  const useMaOverride = musicAssistant.enabled && (queueState?.state === "playing" || queueState?.state === "paused") && cur;
+  const useMaOverride = musicAssistant.enabled && queuePlaying && cur;
   const { artist: maArtist, title: maTitle } = useMaOverride ? getMaArtistTitle(cur) : { artist: "", title: "" };
 
   return (
