@@ -1,28 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, Mic, Send, Square, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import { hydrateVoiceSatelliteStore, useVoiceSatelliteStore } from "@/stores/voice-satellite-store";
-import {
-  VOICE_MAX_SECONDS,
-  concatFloat32,
-  downsampleTo16k,
-  floatTo16BitPcm,
-  pcm16ToArrayBuffer,
-} from "@/lib/voice-audio";
-
-type AssistRunResponse = {
-  transcript?: string | null;
-  speech?: string | null;
-  conversationId?: string | null;
-  ttsUrl?: string | null;
-  error?: string | null;
-};
-
-let lastHandledWakeListenId = 0;
+import { VoiceSatelliteEngine } from "./voice-satellite-engine";
 
 export function VoiceSatelliteOverlay() {
   const enabled = useVoiceSatelliteStore((s) => s.enabled);
@@ -30,108 +14,31 @@ export function VoiceSatelliteOverlay() {
   useEffect(() => {
     hydrateVoiceSatelliteStore();
   }, []);
-  if (!enabled || !open) return null;
-  if (typeof document === "undefined") return null;
-  return createPortal(<VoiceSatelliteSheet />, document.body);
+  if (!enabled) return null;
+  return (
+    <>
+      <VoiceSatelliteEngine />
+      {open && typeof document !== "undefined" ? createPortal(<VoiceSatelliteSheet />, document.body) : null}
+    </>
+  );
 }
 
 function VoiceSatelliteSheet() {
   const { t } = useTranslation();
-  const pipelineId = useVoiceSatelliteStore((s) => s.pipelineId);
   const phase = useVoiceSatelliteStore((s) => s.phase);
   const transcript = useVoiceSatelliteStore((s) => s.transcript);
   const speech = useVoiceSatelliteStore((s) => s.speech);
   const error = useVoiceSatelliteStore((s) => s.error);
-  const conversationId = useVoiceSatelliteStore((s) => s.conversationId);
   const wakeWordEnabled = useVoiceSatelliteStore((s) => s.wakeWordEnabled);
-  const wakeListenId = useVoiceSatelliteStore((s) => s.wakeListenId);
+  const pipelineId = useVoiceSatelliteStore((s) => s.pipelineId);
+  const conversationId = useVoiceSatelliteStore((s) => s.conversationId);
   const setOpen = useVoiceSatelliteStore((s) => s.setOpen);
   const setPhase = useVoiceSatelliteStore((s) => s.setPhase);
   const setTurn = useVoiceSatelliteStore((s) => s.setTurn);
-  const resetTurn = useVoiceSatelliteStore((s) => s.resetTurn);
+  const requestListen = useVoiceSatelliteStore((s) => s.requestListen);
+  const requestStopListen = useVoiceSatelliteStore((s) => s.requestStopListen);
+  const requestCancelListen = useVoiceSatelliteStore((s) => s.requestCancelListen);
   const [text, setText] = useState("");
-  const [micError, setMicError] = useState<string | null>(null);
-  const recorderRef = useRef<{
-    stream: MediaStream;
-    context: AudioContext;
-    chunks: Float32Array[];
-    sampleRate: number;
-    timer: ReturnType<typeof setTimeout>;
-  } | null>(null);
-  const playerRef = useRef<HTMLAudioElement | null>(null);
-
-  const stopPlayback = useCallback(() => {
-    const player = playerRef.current;
-    if (!player) return;
-    player.pause();
-    player.removeAttribute("src");
-    playerRef.current = null;
-  }, []);
-
-  const stopRecording = useCallback(async () => {
-    const rec = recorderRef.current;
-    recorderRef.current = null;
-    if (!rec) return null;
-    clearTimeout(rec.timer);
-    rec.stream.getTracks().forEach((track) => track.stop());
-    await rec.context.close().catch(() => {});
-    const raw = concatFloat32(rec.chunks);
-    const pcm = floatTo16BitPcm(downsampleTo16k(raw, rec.sampleRate));
-    return pcm;
-  }, []);
-
-  const playTts = useCallback(
-    (ttsUrl: string | null | undefined) => {
-      stopPlayback();
-      if (!ttsUrl) {
-        setPhase("idle");
-        return;
-      }
-      const href = `/api/ha/assist/tts?url=${encodeURIComponent(ttsUrl)}`;
-      const audio = new Audio(href);
-      playerRef.current = audio;
-      setPhase("responding");
-      audio.onended = () => setPhase("idle");
-      audio.onerror = () => setPhase("idle");
-      audio.play().catch(() => setPhase("idle"));
-    },
-    [setPhase, stopPlayback]
-  );
-
-  const submitPcm = useCallback(
-    async (pcm: Int16Array) => {
-      setPhase("processing");
-      try {
-        const res = await fetch("/api/ha/assist/run", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/octet-stream",
-            "X-Sample-Rate": "16000",
-            ...(pipelineId ? { "X-Assist-Pipeline": pipelineId } : {}),
-            ...(conversationId ? { "X-Assist-Conversation": conversationId } : {}),
-          },
-          body: pcm16ToArrayBuffer(pcm),
-        });
-        const data = (await res.json()) as AssistRunResponse & { error?: string };
-        if (!res.ok) throw new Error(data.error || t("voice.error"));
-        setTurn({
-          transcript: data.transcript ?? "",
-          speech: data.speech ?? "",
-          error: data.error ?? null,
-          conversationId: data.conversationId ?? conversationId,
-        });
-        if (data.error) {
-          setPhase("error");
-          return;
-        }
-        playTts(data.ttsUrl);
-      } catch (err) {
-        setTurn({ error: err instanceof Error ? err.message : t("voice.error") });
-        setPhase("error");
-      }
-    },
-    [conversationId, pipelineId, playTts, setPhase, setTurn, t]
-  );
 
   const submitText = useCallback(async () => {
     const next = text.trim();
@@ -149,7 +56,7 @@ function VoiceSatelliteSheet() {
           conversationId: conversationId || undefined,
         }),
       });
-      const data = (await res.json()) as AssistRunResponse & { error?: string };
+      const data = (await res.json()) as { transcript?: string; speech?: string; error?: string; conversationId?: string; ttsUrl?: string };
       if (!res.ok) throw new Error(data.error || t("voice.error"));
       setTurn({
         transcript: data.transcript ?? next,
@@ -161,64 +68,29 @@ function VoiceSatelliteSheet() {
         setPhase("error");
         return;
       }
-      playTts(data.ttsUrl);
+      if (!data.ttsUrl) {
+        setPhase("idle");
+        return;
+      }
+      const audio = new Audio(`/api/ha/assist/tts?url=${encodeURIComponent(data.ttsUrl)}`);
+      setPhase("responding");
+      audio.onended = () => setPhase("idle");
+      audio.onerror = () => setPhase("idle");
+      audio.play().catch(() => setPhase("idle"));
     } catch (err) {
       setTurn({ error: err instanceof Error ? err.message : t("voice.error") });
       setPhase("error");
     }
-  }, [conversationId, phase, pipelineId, playTts, setPhase, setTurn, t, text]);
+  }, [conversationId, phase, pipelineId, setPhase, setTurn, t, text]);
 
-  const startListening = useCallback(async () => {
-    setMicError(null);
-    resetTurn();
-    stopPlayback();
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
-      });
-      const context = new AudioContext();
-      const source = context.createMediaStreamSource(stream);
-      const gain = context.createGain();
-      gain.gain.value = 0;
-      const processor = context.createScriptProcessor(4096, 1, 1);
-      const chunks: Float32Array[] = [];
-      processor.onaudioprocess = (event) => {
-        chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
-      };
-      source.connect(processor);
-      processor.connect(gain);
-      gain.connect(context.destination);
-      const timer = setTimeout(() => {
-        void (async () => {
-          const pcm = await stopRecording();
-          if (pcm && pcm.length) await submitPcm(pcm);
-          else setPhase("idle");
-        })();
-      }, VOICE_MAX_SECONDS * 1000);
-      recorderRef.current = { stream, context, chunks, sampleRate: context.sampleRate, timer };
-      setPhase("listening");
-    } catch {
-      setMicError(t("voice.micDenied"));
-      setPhase("error");
-    }
-  }, [resetTurn, setPhase, stopPlayback, stopRecording, submitPcm, t]);
-
-  const toggleListen = useCallback(async () => {
+  const toggleListen = useCallback(() => {
     if (phase === "processing") return;
     if (phase === "listening") {
-      const pcm = await stopRecording();
-      if (pcm && pcm.length) await submitPcm(pcm);
-      else setPhase("idle");
+      requestStopListen();
       return;
     }
-    await startListening();
-  }, [phase, setPhase, startListening, stopRecording, submitPcm]);
-
-  useEffect(() => {
-    if (wakeListenId === 0 || lastHandledWakeListenId === wakeListenId) return;
-    lastHandledWakeListenId = wakeListenId;
-    void startListening();
-  }, [startListening, wakeListenId]);
+    requestListen();
+  }, [phase, requestListen, requestStopListen]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -228,15 +100,7 @@ function VoiceSatelliteSheet() {
     return () => document.removeEventListener("keydown", onKey);
   }, [setOpen]);
 
-  useEffect(() => {
-    return () => {
-      void stopRecording();
-      stopPlayback();
-    };
-  }, [stopPlayback, stopRecording]);
-
   const status =
-    micError ||
     error ||
     (phase === "listening"
       ? t("voice.listening")
@@ -256,9 +120,7 @@ function VoiceSatelliteSheet() {
           <button
             type="button"
             onClick={() => {
-              void stopRecording();
-              stopPlayback();
-              setPhase("idle");
+              requestCancelListen();
               setOpen(false);
             }}
             className="rounded-full p-2 text-gray-500 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/10"

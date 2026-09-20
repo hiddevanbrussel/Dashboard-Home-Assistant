@@ -357,6 +357,7 @@ export function AppShell({
               {temperatureDisplay ?? "—"}
             </button>
           )}
+          <HeaderVoice contentLight={headerContentLight} />
           {headerCenterAction ? (
             <div className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center">
               <div className="pointer-events-auto">{headerCenterAction}</div>
@@ -380,7 +381,6 @@ export function AppShell({
             )}
             {headerStartAction}
             {headerEndAction}
-            <HeaderVoice contentLight={headerContentLight} />
             <HeaderTimer contentLight={headerContentLight} />
             <HeaderMediaPlaying contentLight={headerContentLight} />
           </div>
