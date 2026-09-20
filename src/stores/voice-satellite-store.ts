@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import type { VoiceSessionSource } from "@/lib/voice-session";
 import { DEFAULT_WAKE_WORD_ID, resolveWakeWordId, type WakeWordId, type WakeWordStatus } from "@/lib/wake-word";
 
 const STORAGE_KEY_ENABLED = "dashboard.voiceSatellite.enabled";
@@ -39,7 +40,10 @@ export type VoiceSatelliteStore = {
   wakeWordId: WakeWordId;
   wakeWordStatus: WakeWordStatus;
   wakeWordError: string | null;
-  wakeListenId: number;
+  source: VoiceSessionSource;
+  listenId: number;
+  stopListenId: number;
+  cancelListenId: number;
   open: boolean;
   phase: VoicePhase;
   transcript: string;
@@ -52,6 +56,9 @@ export type VoiceSatelliteStore = {
   setWakeWordId: (id: string) => void;
   setWakeWordStatus: (status: WakeWordStatus, error?: string | null) => void;
   triggerWakeListen: () => void;
+  requestListen: () => void;
+  requestStopListen: () => void;
+  requestCancelListen: () => void;
   setOpen: (open: boolean) => void;
   setPhase: (phase: VoicePhase) => void;
   setTurn: (turn: { transcript?: string; speech?: string; error?: string | null; conversationId?: string | null }) => void;
@@ -65,7 +72,10 @@ export const useVoiceSatelliteStore = create<VoiceSatelliteStore>((set) => ({
   wakeWordId: resolveWakeWordId(getStored(STORAGE_KEY_WAKE_WORD_ID, DEFAULT_WAKE_WORD_ID) as string),
   wakeWordStatus: "off",
   wakeWordError: null,
-  wakeListenId: 0,
+  source: "manual",
+  listenId: 0,
+  stopListenId: 0,
+  cancelListenId: 0,
   open: false,
   phase: "idle",
   transcript: "",
@@ -74,7 +84,7 @@ export const useVoiceSatelliteStore = create<VoiceSatelliteStore>((set) => ({
   conversationId: null,
   setEnabled: (v) => {
     setStored(STORAGE_KEY_ENABLED, v);
-    set((state) => ({ enabled: v, open: v ? state.open : false }));
+    set((state) => ({ enabled: v, open: v ? state.open : false, phase: v ? state.phase : "idle" }));
   },
   setPipelineId: (id) => {
     setStored(STORAGE_KEY_PIPELINE, id);
@@ -90,7 +100,10 @@ export const useVoiceSatelliteStore = create<VoiceSatelliteStore>((set) => ({
     set({ wakeWordId });
   },
   setWakeWordStatus: (status, error = null) => set({ wakeWordStatus: status, wakeWordError: error }),
-  triggerWakeListen: () => set((state) => ({ open: true, wakeListenId: state.wakeListenId + 1 })),
+  triggerWakeListen: () => set((state) => ({ source: "wake", listenId: state.listenId + 1 })),
+  requestListen: () => set((state) => ({ source: "manual", listenId: state.listenId + 1 })),
+  requestStopListen: () => set((state) => ({ stopListenId: state.stopListenId + 1 })),
+  requestCancelListen: () => set((state) => ({ cancelListenId: state.cancelListenId + 1, phase: "idle" })),
   setOpen: (open) => set({ open }),
   setPhase: (phase) => set({ phase }),
   setTurn: (turn) =>
