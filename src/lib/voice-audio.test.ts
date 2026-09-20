@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { concatFloat32, downsampleTo16k, floatTo16BitPcm, nextWakeSilenceState, pcmRms } from "./voice-audio";
+import {
+  concatFloat32,
+  downsampleTo16k,
+  floatTo16BitPcm,
+  nextWakeSilenceState,
+  pcmRms,
+  type WakeSilenceState,
+} from "./voice-audio";
 
 describe("voice audio helpers", () => {
   it("converts float samples to 16-bit PCM", () => {
@@ -22,7 +29,7 @@ describe("voice audio helpers", () => {
   it("detects end of speech after energy then silence", () => {
     expect(pcmRms([0, 0, 0])).toBe(0);
     expect(pcmRms([1, -1])).toBeCloseTo(1);
-    let state = { heard: 0, silent: 0 };
+    let state: WakeSilenceState = { heard: 0, silent: 0, done: false };
     for (let i = 0; i < 4; i++) {
       state = nextWakeSilenceState(state, 0.05);
       expect(state.done).toBe(false);
