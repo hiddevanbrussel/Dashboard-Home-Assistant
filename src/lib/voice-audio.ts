@@ -1,5 +1,29 @@
 export const VOICE_SAMPLE_RATE = 16000;
 export const VOICE_MAX_SECONDS = 10;
+export const VOICE_WAKE_SPEECH_RMS = 0.02;
+export const VOICE_WAKE_SILENCE_RMS = 0.012;
+export const VOICE_WAKE_MIN_SPEECH_CHUNKS = 4;
+export const VOICE_WAKE_SILENCE_CHUNKS = 10;
+
+export function pcmRms(samples: ArrayLike<number>): number {
+  if (!samples.length) return 0;
+  let sum = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const value = samples[i] ?? 0;
+    sum += value * value;
+  }
+  return Math.sqrt(sum / samples.length);
+}
+
+export function nextWakeSilenceState(
+  state: { heard: number; silent: number },
+  rms: number
+): { heard: number; silent: number; done: boolean } {
+  if (rms >= VOICE_WAKE_SPEECH_RMS) return { heard: state.heard + 1, silent: 0, done: false };
+  if (state.heard < VOICE_WAKE_MIN_SPEECH_CHUNKS) return { heard: state.heard, silent: 0, done: false };
+  const silent = rms <= VOICE_WAKE_SILENCE_RMS ? state.silent + 1 : 0;
+  return { heard: state.heard, silent, done: silent >= VOICE_WAKE_SILENCE_CHUNKS };
+}
 
 export function floatTo16BitPcm(input: Float32Array): Int16Array {
   const out = new Int16Array(input.length);
