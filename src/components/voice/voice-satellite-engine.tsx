@@ -14,6 +14,10 @@ import {
 } from "@/lib/voice-audio";
 import { useVoiceSatelliteStore } from "@/stores/voice-satellite-store";
 
+function onProgrammaticWake() {
+  useVoiceSatelliteStore.getState().triggerWakeListen();
+}
+
 type AssistRunResponse = {
   transcript?: string | null;
   speech?: string | null;
@@ -197,6 +201,11 @@ export function VoiceSatelliteEngine() {
     void stopRecording();
     stopPlayback();
   }, [enabled, stopPlayback, stopRecording]);
+
+  useEffect(() => {
+    window.addEventListener("dashboard:voice-wake", onProgrammaticWake);
+    return () => window.removeEventListener("dashboard:voice-wake", onProgrammaticWake);
+  }, []);
 
   useEffect(() => {
     return () => {
