@@ -22,7 +22,7 @@ describe("voice audio helpers", () => {
   it("detects end of speech after energy then silence", () => {
     expect(pcmRms([0, 0, 0])).toBe(0);
     expect(pcmRms([1, -1])).toBeCloseTo(1);
-    let state = { heard: 0, silent: 0 };
+    let state = { heard: 0, silent: 0, done: false };
     for (let i = 0; i < 4; i++) {
       state = nextWakeSilenceState(state, 0.05);
       expect(state.done).toBe(false);
