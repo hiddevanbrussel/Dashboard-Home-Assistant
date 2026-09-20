@@ -73,6 +73,12 @@ export function shouldRunWakeWordListener(input: {
   return input.phase === "idle" || input.phase === "error";
 }
 
+function copyPcm16(view: ArrayLike<number>): Int16Array {
+  const copy = new Int16Array(view.length);
+  copy.set(view);
+  return copy;
+}
+
 export function appendWakeWordPcm(
   pending: Int16Array,
   incoming: Int16Array,
@@ -85,8 +91,8 @@ export function appendWakeWordPcm(
   const frames: Int16Array[] = [];
   let offset = 0;
   while (offset + size <= merged.length) {
-    frames.push(merged.slice(offset, offset + size));
+    frames.push(copyPcm16(merged.subarray(offset, offset + size)));
     offset += size;
   }
-  return { frames, rest: merged.slice(offset) };
+  return { frames, rest: copyPcm16(merged.subarray(offset)) };
 }
