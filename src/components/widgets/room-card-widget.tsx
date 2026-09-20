@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Lightbulb, Disc3, MoreVertical, Thermometer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isPlayingMediaPlayerState } from "@/lib/media-player-state";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { CARD_ICONS } from "./card-icons";
@@ -58,7 +59,7 @@ export function RoomCardWidget({
 
   const [loading, setLoading] = useState(false);
   const isLightOn = lightEntity?.state === "on";
-  const isMediaPlaying = mediaEntity && (mediaEntity.state === "playing" || mediaEntity.state === "paused");
+  const isMediaPlaying = isPlayingMediaPlayerState(mediaEntity?.state);
 
   const refreshState = useCallback(async () => {
     const res = await fetch("/api/ha/state").then((r) => r.json());
