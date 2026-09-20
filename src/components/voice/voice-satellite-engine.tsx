@@ -8,6 +8,7 @@ import {
   concatFloat32,
   downsampleTo16k,
   floatTo16BitPcm,
+  initialWakeSilenceState,
   nextWakeSilenceState,
   pcm16ToArrayBuffer,
   pcmRms,
@@ -153,7 +154,7 @@ export function VoiceSatelliteEngine() {
       gain.gain.value = 0;
       const processor = context.createScriptProcessor(4096, 1, 1);
       const chunks: Float32Array[] = [];
-      let silence = { heard: 0, silent: 0 };
+      let silence = initialWakeSilenceState();
       processor.onaudioprocess = (event) => {
         const frame = new Float32Array(event.inputBuffer.getChannelData(0));
         chunks.push(frame);
