@@ -243,7 +243,7 @@ function WidgetByType({
   }
 }
 
-type HaEntity = { entity_id: string; attributes?: Record<string, unknown> };
+type HaEntity = { entity_id: string; state?: string; attributes?: Record<string, unknown> };
 
 const STORAGE_SCOPE = "energy";
 
@@ -656,17 +656,18 @@ export default function EnergyPage() {
           </div>
         </div>
 
-        {!editMode ? (
-          <EnergyOverview
-            title={welcomeTitle}
-            subtitle={welcomeSubtitle}
-            houseImage={
-              widgets.find((w) => w.type === "energy_monitor_card")?.background_image ??
-              widgets.find((w) => w.type === "energy_monitor_card")?.background_image_dark ??
-              null
-            }
-          />
-        ) : (
+        <EnergyOverview
+          title={welcomeTitle}
+          subtitle={welcomeSubtitle}
+          houseImage={
+            widgets.find((w) => w.type === "energy_monitor_card")?.background_image ??
+            widgets.find((w) => w.type === "energy_monitor_card")?.background_image_dark ??
+            null
+          }
+          editMode={editMode}
+          haEntities={entities}
+        />
+        {editMode ? (
         <>
         <div className={cn("rounded-card overflow-hidden", editMode && "grid-edit-touch")}>
           <ReactGridLayout
@@ -886,7 +887,7 @@ export default function EnergyPage() {
           />
         ))}
         </>
-        )}
+        ) : null}
 
         {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
           <EditPanelModal

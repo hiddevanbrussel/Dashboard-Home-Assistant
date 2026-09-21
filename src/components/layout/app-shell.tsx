@@ -335,7 +335,7 @@ export function AppShell({
           )}
         >
           {!hideHeaderClock && (
-            <span className={cn("text-sm font-medium tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
+            <span className={cn("text-sm font-bold tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
               {headerTime}
             </span>
           )}

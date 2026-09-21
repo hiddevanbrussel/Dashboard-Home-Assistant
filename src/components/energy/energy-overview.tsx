@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Battery, Home, PlugZap, Sun, type LucideIcon } from "lucide-react";
+import { EnergyEntityBindModal, type EnergyBindEntity } from "@/components/energy/energy-entity-bind-modal";
 import { useTranslation } from "@/hooks/use-translation";
 import {
+  ALL_HOUSE_CALLOUTS,
   ENERGY_OVERVIEW_HOUSE_IMAGE,
   bestSolarWindow,
   clampPercent,
@@ -14,12 +16,14 @@ import {
   hasEnergyReading,
   hasLinkedEnergyEntities,
   heatmapTones,
+  houseCalloutEntityKey,
   parseHaNumber,
   shouldShowBatteryCard,
   shouldShowHeatmap,
   toKilowatts,
   toKwh,
   visibleHouseCallouts,
+  type EnergyEntityKey,
   type HeatmapTone,
   type HouseCalloutId,
   type HourlyPoint,
@@ -63,44 +67,95 @@ function Stat({
   value,
   unit,
   hint,
+  editMode,
+  linked,
+  onBind,
 }: {
   label: string;
   value: string;
   unit?: string;
   hint?: string;
+  editMode?: boolean;
+  linked?: boolean;
+  onBind?: () => void;
 }) {
-  return (
-    <div className="min-w-0">
+  const body = (
+    <>
       <p className="text-xs font-medium text-gray-400 dark:text-white/45">{label}</p>
       <p className="mt-1 flex items-baseline gap-1 text-[1.85rem] font-semibold tracking-tight text-gray-900 dark:text-white">
         {value}
         {unit ? <span className="text-sm font-medium text-gray-400 dark:text-white/40">{unit}</span> : null}
       </p>
-      {hint ? <p className="mt-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">{hint}</p> : null}
-    </div>
+      {hint ? (
+        <p
+          className={cn(
+            "mt-1 text-[11px] font-medium",
+            editMode && !linked ? "text-brand" : "text-emerald-600 dark:text-emerald-400"
+          )}
+        >
+          {hint}
+        </p>
+      ) : null}
+    </>
   );
+  if (editMode && onBind) {
+    return (
+      <button
+        type="button"
+        onClick={onBind}
+        className={cn(
+          "-m-2 min-w-0 rounded-2xl p-2 text-left transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5",
+          !linked && "ring-1 ring-dashed ring-brand/35"
+        )}
+      >
+        {body}
+      </button>
+    );
+  }
+  return <div className="min-w-0">{body}</div>;
 }
 
 function HouseCallout({
   id,
   label,
   value,
+  editMode,
+  linked,
+  onBind,
 }: {
   id: HouseCalloutId;
   label: string;
   value: string;
+  editMode?: boolean;
+  linked?: boolean;
+  onBind?: () => void;
 }) {
   const meta = HOUSE_CALLOUT_META[id];
   const Icon = meta.icon;
-  return (
-    <div className={cn("pointer-events-none absolute z-10 max-w-[10rem]", meta.box)}>
-      <div className="inline-flex items-center gap-2 rounded-full bg-white/55 px-2.5 py-1.5 shadow-sm ring-1 ring-black/5 backdrop-blur-md dark:bg-black/40 dark:ring-white/10">
-        <Icon className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
-        <div className="min-w-0">
-          <p className="text-[10px] font-medium leading-none text-gray-500 dark:text-white/50">{label}</p>
-          <p className="mt-0.5 text-sm font-semibold tabular-nums text-gray-900 dark:text-white">{value}</p>
-        </div>
+  const pill = (
+    <div
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full bg-white/55 px-2.5 py-1.5 shadow-sm ring-1 backdrop-blur-md dark:bg-black/40",
+        editMode && !linked ? "ring-dashed ring-brand/50" : "ring-black/5 dark:ring-white/10",
+        editMode && "hover:ring-brand"
+      )}
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
+      <div className="min-w-0">
+        <p className="text-[10px] font-medium leading-none text-gray-500 dark:text-white/50">{label}</p>
+        <p className="mt-0.5 text-sm font-semibold tabular-nums text-gray-900 dark:text-white">{value}</p>
       </div>
+    </div>
+  );
+  return (
+    <div className={cn("absolute z-10 max-w-[10rem]", editMode ? "pointer-events-auto" : "pointer-events-none", meta.box)}>
+      {editMode && onBind ? (
+        <button type="button" onClick={onBind} className="text-left">
+          {pill}
+        </button>
+      ) : (
+        pill
+      )}
     </div>
   );
 }
@@ -110,7 +165,14 @@ function HouseScene({
   callouts,
 }: {
   image?: string | null;
-  callouts: Array<{ id: HouseCalloutId; label: string; value: string }>;
+  callouts: Array<{
+    id: HouseCalloutId;
+    label: string;
+    value: string;
+    editMode?: boolean;
+    linked?: boolean;
+    onBind?: () => void;
+  }>;
 }) {
   const custom = Boolean(image?.trim());
   const src = image?.trim() || ENERGY_OVERVIEW_HOUSE_IMAGE;
@@ -159,14 +221,20 @@ function BatteryRow({
   valueLabel,
   percent,
   tone,
+  editMode,
+  linked,
+  onBind,
 }: {
   label: string;
   valueLabel: string;
   percent: number;
   tone: string;
+  editMode?: boolean;
+  linked?: boolean;
+  onBind?: () => void;
 }) {
-  return (
-    <div>
+  const body = (
+    <>
       <div className="mb-1 flex justify-between text-[12px] text-gray-400">
         <span>{label}</span>
         <span className="font-medium text-gray-700 dark:text-white/75">{valueLabel}</span>
@@ -179,8 +247,23 @@ function BatteryRow({
           <span key={i} className="h-1.5 flex-1 rounded-[1px] bg-gray-200/90 dark:bg-white/10" />
         ))}
       </div>
-    </div>
+    </>
   );
+  if (editMode && onBind) {
+    return (
+      <button
+        type="button"
+        onClick={onBind}
+        className={cn(
+          "w-full rounded-xl p-1 text-left transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5",
+          !linked && "ring-1 ring-dashed ring-brand/35"
+        )}
+      >
+        {body}
+      </button>
+    );
+  }
+  return <div>{body}</div>;
 }
 
 async function fetchHourlySeries(ids: string[], mode?: "mean"): Promise<Record<string, HourlyPoint[]>> {
@@ -203,12 +286,17 @@ export function EnergyOverview({
   title,
   subtitle,
   houseImage,
+  editMode = false,
+  haEntities = [],
 }: {
   title?: string | null;
   subtitle?: string | null;
   houseImage?: string | null;
+  editMode?: boolean;
+  haEntities?: EnergyBindEntity[];
 }) {
   const { t } = useTranslation();
+  const [bindKey, setBindKey] = useState<EnergyEntityKey | null>(null);
   useEffect(() => {
     hydrateEnergyStore();
   }, []);
@@ -241,11 +329,13 @@ export function EnergyOverview({
     consumptionReading.value != null
       ? toKilowatts(consumptionReading.value, consumptionReading.unit)
       : undefined;
-  const showBattery = shouldShowBatteryCard({
-    soc: batterySoc.value,
-    power: batteryKw,
-    temp: batteryTemp.value,
-  });
+  const showBattery =
+    editMode ||
+    shouldShowBatteryCard({
+      soc: batterySoc.value,
+      power: batteryKw,
+      temp: batteryTemp.value,
+    });
 
   const panelReadings = panelTempEntityIds
     .map((id) => parseHaNumber(panelStates[id]?.state))
@@ -253,23 +343,63 @@ export function EnergyOverview({
   const showHeatmap = shouldShowHeatmap(panelReadings);
   const heatmap: HeatmapTone[] = showHeatmap ? heatmapTones(panelReadings) : [];
   const heatmapRows = Math.max(1, Math.ceil(heatmap.length / 12));
-  const resolvedSubtitle = subtitle?.trim() || (linked ? t("energy.overview.liveSubtitle") : t("energy.overview.subtitle"));
-  const calloutIds = visibleHouseCallouts({
-    solarKw: powerKw,
-    homeKw,
-    gridValue: exportValue,
-    batterySoc: batterySoc.value,
-    batteryKw,
-  });
+  const resolvedSubtitle = subtitle?.trim()
+    || (editMode ? t("energy.overview.bindHint") : linked ? t("energy.overview.liveSubtitle") : t("energy.overview.subtitle"));
+  const calloutIds = editMode
+    ? ALL_HOUSE_CALLOUTS
+    : visibleHouseCallouts({
+        solarKw: powerKw,
+        homeKw,
+        gridValue: exportValue,
+        batterySoc: batterySoc.value,
+        batteryKw,
+      });
   const houseCallouts = calloutIds.map((id) => {
+    const entityKey = houseCalloutEntityKey(id);
+    const slotLinked = id === "battery"
+      ? Boolean(entities.batterySocEntityId || entities.batteryPowerEntityId)
+      : Boolean(entities[entityKey]);
     if (id === "solar") {
-      return { id, label: t("energy.overview.houseSolar"), value: `${formatEnergyValue(powerKw)} kW` };
+      return {
+        id,
+        label: t("energy.overview.houseSolar"),
+        value: hasEnergyReading(powerKw)
+          ? `${formatEnergyValue(powerKw)} kW`
+          : editMode
+            ? t("energy.overview.tapToLink")
+            : `${formatEnergyValue(powerKw)} kW`,
+        editMode,
+        linked: slotLinked,
+        onBind: editMode ? () => setBindKey("solarPowerEntityId") : undefined,
+      };
     }
     if (id === "home") {
-      return { id, label: t("energy.overview.houseHome"), value: `${formatEnergyValue(homeKw)} kW` };
+      return {
+        id,
+        label: t("energy.overview.houseHome"),
+        value: hasEnergyReading(homeKw)
+          ? `${formatEnergyValue(homeKw)} kW`
+          : editMode
+            ? t("energy.overview.tapToLink")
+            : `${formatEnergyValue(homeKw)} kW`,
+        editMode,
+        linked: slotLinked,
+        onBind: editMode ? () => setBindKey("consumptionEntityId") : undefined,
+      };
     }
     if (id === "grid") {
-      return { id, label: t("energy.overview.houseGrid"), value: `${formatEnergyValue(exportValue)} ${exportUnit}` };
+      return {
+        id,
+        label: t("energy.overview.houseGrid"),
+        value: hasEnergyReading(exportValue)
+          ? `${formatEnergyValue(exportValue)} ${exportUnit}`
+          : editMode
+            ? t("energy.overview.tapToLink")
+            : `${formatEnergyValue(exportValue)} ${exportUnit}`,
+        editMode,
+        linked: slotLinked,
+        onBind: editMode ? () => setBindKey("gridExportEntityId") : undefined,
+      };
     }
     const soc = hasEnergyReading(batterySoc.value) ? `${formatEnergyValue(batterySoc.value, 0)}%` : "";
     const flow = hasEnergyReading(batteryKw)
@@ -278,7 +408,10 @@ export function EnergyOverview({
     return {
       id,
       label: t("energy.overview.houseBattery"),
-      value: [soc, flow].filter(Boolean).join(" · "),
+      value: [soc, flow].filter(Boolean).join(" · ") || (editMode ? t("energy.overview.tapToLink") : "—"),
+      editMode,
+      linked: slotLinked,
+      onBind: editMode ? () => setBindKey("batterySocEntityId") : undefined,
     };
   });
 
@@ -314,14 +447,39 @@ export function EnergyOverview({
           </p>
 
           <div className="mt-8 grid grid-cols-3 gap-6 border-b border-gray-100 pb-6 dark:border-white/10">
-            <Stat label={t("energy.overview.totalGenerated")} value={formatEnergyValue(yieldKwh)} unit="kWh" />
+            <Stat
+              label={t("energy.overview.totalGenerated")}
+              value={formatEnergyValue(yieldKwh)}
+              unit="kWh"
+              hint={editMode && !entities.solarYieldTodayEntityId ? t("energy.overview.tapToLink") : undefined}
+              editMode={editMode}
+              linked={Boolean(entities.solarYieldTodayEntityId)}
+              onBind={() => setBindKey("solarYieldTodayEntityId")}
+            />
             <Stat
               label={t("energy.overview.currentOutput")}
               value={formatEnergyValue(powerKw)}
               unit="kW"
-              hint={powerKw != null && powerKw > 0.2 ? t("energy.overview.peakActive") : undefined}
+              hint={
+                editMode && !entities.solarPowerEntityId
+                  ? t("energy.overview.tapToLink")
+                  : powerKw != null && powerKw > 0.2
+                    ? t("energy.overview.peakActive")
+                    : undefined
+              }
+              editMode={editMode}
+              linked={Boolean(entities.solarPowerEntityId)}
+              onBind={() => setBindKey("solarPowerEntityId")}
             />
-            <Stat label={t("energy.overview.gridExport")} value={formatEnergyValue(exportValue)} unit={exportUnit} />
+            <Stat
+              label={t("energy.overview.gridExport")}
+              value={formatEnergyValue(exportValue)}
+              unit={exportUnit}
+              hint={editMode && !entities.gridExportEntityId ? t("energy.overview.tapToLink") : undefined}
+              editMode={editMode}
+              linked={Boolean(entities.gridExportEntityId)}
+              onBind={() => setBindKey("gridExportEntityId")}
+            />
           </div>
         </div>
         <div className="card-plot-in">
@@ -364,12 +522,19 @@ export function EnergyOverview({
             ) : null}
           </div>
           <div className="space-y-4">
-            {hasEnergyReading(batterySoc.value) ? (
+            {hasEnergyReading(batterySoc.value) || editMode ? (
               <BatteryRow
                 label={t("energy.overview.energy")}
-                valueLabel={`${formatEnergyValue(batterySoc.value, 0)}%`}
+                valueLabel={
+                  hasEnergyReading(batterySoc.value)
+                    ? `${formatEnergyValue(batterySoc.value, 0)}%`
+                    : t("energy.overview.tapToLink")
+                }
                 percent={clampPercent(batterySoc.value)}
                 tone="bg-emerald-300"
+                editMode={editMode}
+                linked={Boolean(entities.batterySocEntityId)}
+                onBind={() => setBindKey("batterySocEntityId")}
               />
             ) : hasEnergyReading(batteryKw) ? (
               <BatteryRow
@@ -379,20 +544,34 @@ export function EnergyOverview({
                 tone="bg-emerald-300"
               />
             ) : null}
-            {hasEnergyReading(batteryKw) ? (
+            {hasEnergyReading(batteryKw) || editMode ? (
               <BatteryRow
                 label={t("energy.overview.consuming")}
-                valueLabel={`${formatEnergyValue(Math.abs(batteryKw))} kW`}
-                percent={clampPercent(Math.abs(batteryKw) * 20)}
+                valueLabel={
+                  hasEnergyReading(batteryKw)
+                    ? `${formatEnergyValue(Math.abs(batteryKw))} kW`
+                    : t("energy.overview.tapToLink")
+                }
+                percent={clampPercent(hasEnergyReading(batteryKw) ? Math.abs(batteryKw) * 20 : 0)}
                 tone="bg-orange-200"
+                editMode={editMode}
+                linked={Boolean(entities.batteryPowerEntityId)}
+                onBind={() => setBindKey("batteryPowerEntityId")}
               />
             ) : null}
-            {hasEnergyReading(batteryTemp.value) ? (
+            {hasEnergyReading(batteryTemp.value) || editMode ? (
               <BatteryRow
                 label={t("energy.overview.temperature")}
-                valueLabel={`${formatEnergyValue(batteryTemp.value, 0)}° C`}
+                valueLabel={
+                  hasEnergyReading(batteryTemp.value)
+                    ? `${formatEnergyValue(batteryTemp.value, 0)}° C`
+                    : t("energy.overview.tapToLink")
+                }
                 percent={clampPercent(batteryTemp.value, 80) * (100 / 80)}
                 tone="bg-amber-200"
+                editMode={editMode}
+                linked={Boolean(entities.batteryTempEntityId)}
+                onBind={() => setBindKey("batteryTempEntityId")}
               />
             ) : null}
           </div>
@@ -433,6 +612,10 @@ export function EnergyOverview({
             </div>
           </div>
         </section>
+      ) : null}
+
+      {bindKey ? (
+        <EnergyEntityBindModal fieldKey={bindKey} haEntities={haEntities} onClose={() => setBindKey(null)} />
       ) : null}
     </div>
   );
