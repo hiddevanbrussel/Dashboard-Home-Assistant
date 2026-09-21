@@ -55,10 +55,10 @@ export async function fetchMusicAssistantHome(input: {
   const text = await res.text();
   const data = (() => {
     try {
-      if (!text.trim()) return {};
-      return JSON.parse(text) as MusicAssistantHomePayload & { error?: string };
+      if (!text.trim()) return {} as Record<string, unknown>;
+      return JSON.parse(text) as Record<string, unknown>;
     } catch {
-      return {};
+      return {} as Record<string, unknown>;
     }
   })();
   if (!res.ok) {
