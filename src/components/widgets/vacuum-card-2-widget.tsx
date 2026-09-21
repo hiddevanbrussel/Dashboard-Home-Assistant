@@ -22,7 +22,6 @@ import {
   batteryFromAttributes,
   clampVacuumCard2Height,
   clampVacuumCard2Width,
-  cleanedAreaM2FromAttributes,
   currentFanSpeedFromAttributes,
   fanModeFromSpeed,
   fanSpeedListFromAttributes,
@@ -91,7 +90,7 @@ export function VacuumCard2Widget({
   const { t } = useTranslation();
   const isDark = useThemeStore((s) => s.resolved) === "dark";
   const entity = useEntityStateStore((s) => s.getState(entity_id));
-  const relatedEntities = useEntityStateStore((s) => Object.values(s.states));
+  const entityStates = useEntityStateStore((s) => s.states);
   const progressEntity = useEntityStateStore((s) =>
     progress_entity_id ? s.getState(progress_entity_id) : null
   );
@@ -128,7 +127,7 @@ export function VacuumCard2Widget({
   const showFooter = cardHeight >= VACUUM_CARD_2_FOOTER_MIN_HEIGHT;
   const lastCleanAt = resolveVacuumLastCleanAt({
     attrs,
-    entities: relatedEntities,
+    entities: Object.values(entityStates),
     vacuumEntityId: entity_id,
   });
   const lastSession = lastCleanAt
@@ -145,7 +144,7 @@ export function VacuumCard2Widget({
     : "—";
   const area = resolveVacuumCleanedAreaM2({
     attrs,
-    entities: relatedEntities,
+    entities: Object.values(entityStates),
     vacuumEntityId: entity_id,
     valetudoAreaCm2: valetudo.stats.areaCm2,
   });
