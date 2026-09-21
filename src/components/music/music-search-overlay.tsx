@@ -69,22 +69,22 @@ export function MusicSearchOverlay({
 
   return (
     <div
-      className="fixed inset-y-0 right-0 z-[80] flex flex-col bg-page-light dark:bg-dark-page"
+      className="fixed inset-y-0 right-0 z-[100] flex flex-col bg-page-light dark:bg-dark-page"
       style={{ left: SIDEBAR_INSET }}
       role="dialog"
       aria-label={t("music.search")}
     >
-      <div className="shrink-0 px-4 pb-3 pt-3 sm:px-6">
+      <div className="shrink-0 px-4 pb-3 pt-4 sm:px-6 sm:pt-5">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/10"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/10"
             aria-label={t("music.close")}
           >
             <X className="h-5 w-5" />
           </button>
-          <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full bg-black/5 px-4 dark:bg-white/10">
+          <label className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-full bg-black/5 px-4 dark:bg-white/10">
             <Search className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
             <input
               ref={inputRef}

@@ -1462,6 +1462,7 @@ export default function MusicPage() {
       activeTab="/music"
       contentNoScroll
       headerFixed
+      hideHeader={searchOverlayOpen}
       headerContentLight={headerOverHero}
       headerEndAction={
         useMA ? (

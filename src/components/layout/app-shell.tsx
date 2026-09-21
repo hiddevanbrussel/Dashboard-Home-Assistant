@@ -85,6 +85,8 @@ type AppShellProps = {
   contentRightInset?: string;
   /** Hide the header clock (e.g. when the calendar panel already shows the time). */
   hideHeaderClock?: boolean;
+  /** Hide the whole header bar (e.g. while Music search fills the content column). */
+  hideHeader?: boolean;
   className?: string;
 };
 
@@ -237,6 +239,7 @@ export function AppShell({
   headerFixed = false,
   contentRightInset,
   hideHeaderClock = false,
+  hideHeader = false,
   className,
 }: AppShellProps) {
   const { t } = useTranslation();
@@ -326,7 +329,7 @@ export function AppShell({
         className={cn("relative flex min-h-0 flex-1 flex-col", showSidebar && "pl-[5.5rem]")}
         style={contentRightInset ? { paddingRight: contentRightInset } : undefined}
       >
-        <div
+        {!hideHeader && <div
           data-app-header
           className={cn(
             "relative z-[70] flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
@@ -384,7 +387,7 @@ export function AppShell({
             <HeaderTimer contentLight={headerContentLight} />
             <HeaderMediaPlaying contentLight={headerContentLight} />
           </div>
-        </div>
+        </div>}
 
         {temperatureModalOpen &&
           typeof document !== "undefined" &&
