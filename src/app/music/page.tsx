@@ -11,6 +11,7 @@ import {
   type MusicHomeSpotlight,
   type MusicHomeTile,
 } from "@/components/music/music-home-discovery";
+import { MusicSearchOverlay, type MusicSearchResult } from "@/components/music/music-search-overlay";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
 import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, ChevronDown, ListMusic, Home, ListPlus } from "lucide-react";
@@ -1043,7 +1044,7 @@ export default function MusicPage() {
       const artists = parseArtists(data).map((a) => ({ ...a, __mediaType: "artist" as const }));
       const albums = parseAlbums(data).map((a) => ({ ...a, __mediaType: "album" as const }));
       const radios = parseRadios(data).map((r) => ({ ...r, __mediaType: "radio" as const }));
-      return [...tracks, ...artists, ...albums, ...radios];
+      return [...artists, ...albums, ...tracks, ...radios];
     }
     const tryAttempt = (cmdIndex: number, argIndex: number): Promise<void> =>
       callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, commands[cmdIndex]!, argsList[argIndex]!).then(
@@ -1061,6 +1062,17 @@ export default function MusicPage() {
       );
     tryAttempt(0, 0).catch((err) => setError(err instanceof Error ? err.message : t("music.searchFailed"))).finally(() => setSearching(false));
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, searchQuery, searchFilter]);
+
+  useEffect(() => {
+    if (!searchOverlayOpen) return;
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+    const timeout = window.setTimeout(() => runSearch(), 350);
+    return () => window.clearTimeout(timeout);
+  }, [searchOverlayOpen, searchQuery, searchFilter, runSearch]);
 
   const playOnPlayer = useCallback(
     (uri: string) => {
@@ -1128,225 +1140,82 @@ export default function MusicPage() {
 
   const showPlayerBar = useMA && maPlayers.length > 0;
 
+  const searchRows: MusicSearchResult[] = searchResults.map((item, index) => {
+    const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
+    const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
+    const provider = (item as { provider?: string })?.provider ?? "library";
+    const itemMediaType = (item as { __mediaType?: "track" | "artist" | "album" | "radio" }).__mediaType;
+    const mediaType =
+      itemMediaType ??
+      (searchFilter === "artist"
+        ? "artist"
+        : searchFilter === "album"
+          ? "album"
+          : searchFilter === "radio"
+            ? "radio"
+            : "track");
+    const uri =
+      typeof rawUri === "string" && rawUri
+        ? rawUri
+        : itemId != null
+          ? `${provider}://${mediaType}/${itemId}`
+          : "";
+    const name = item.name ?? t("music.unknown");
+    const artists = item.artists;
+    const artistNames = Array.isArray(artists)
+      ? artists.map((a) => (a && typeof a === "object" && "name" in a ? (a as { name?: string }).name : null)).filter(Boolean).join(", ") || ""
+      : artists && typeof artists === "object" && "name" in artists
+        ? (artists as { name?: string }).name ?? ""
+        : "";
+    const albumName = item.album?.name;
+    const providerLabel = getProviderLabel(item);
+    const subtitle = [artistNames || null, albumName || null, providerLabel || null].filter(Boolean).join(" · ");
+    const isAlbum = mediaType === "album";
+    const isArtist = mediaType === "artist";
+    const canOpenAlbum = isAlbum && Boolean(getAlbumParams(item));
+    const canOpenArtist = isArtist && Boolean(getArtistParams(item));
+    const lp = createTrackLongPressHandlers(item);
+    return {
+      key: uri || `item-${index}`,
+      name,
+      subtitle,
+      durationLabel: mediaType === "track" ? formatDuration(item.duration) : "",
+      mediaType,
+      imageSrc: getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token),
+      canPlay: Boolean(uri && selectedQueueId),
+      canOpen: Boolean(canOpenAlbum || canOpenArtist),
+      isPlayPending: Boolean(uri && playPending === uri),
+      isFavorited: Boolean(uri && favorited.has(uri)),
+      isFavoritePending: Boolean(uri && favoritePending.has(uri)),
+      onOpen: canOpenAlbum
+        ? () => { setSelectedAlbum(item); setSearchOverlayOpen(false); }
+        : canOpenArtist
+          ? () => { setSelectedArtist(item); setSearchOverlayOpen(false); }
+          : undefined,
+      onPlay: () => lp.wrapClick(() => uri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(uri)))(),
+      onFavorite: uri ? () => addToFavorites(uri) : undefined,
+      longPress: {
+        onPointerDown: lp.onPointerDown,
+        onPointerUp: lp.onPointerUp,
+        onPointerLeave: lp.onPointerLeave,
+      },
+    };
+  });
+
   const searchOverlay = searchOverlayOpen && typeof document !== "undefined" && createPortal(
-    <div
-      className="fixed inset-0 z-[60] flex flex-col bg-page-light dark:bg-dark-page"
-      role="dialog"
-      aria-label={t("music.search")}
-    >
-      <div className="shrink-0 flex items-center gap-2 border-b border-gray-200 dark:border-white/10 bg-white/90 dark:bg-gray-900/95 backdrop-blur-md px-4 py-3">
-        <Search className="h-5 w-5 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
-        <input
-          ref={searchInputRef}
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") runSearch();
-            if (e.key === "Escape") setSearchOverlayOpen(false);
-          }}
-          placeholder={t("music.searchPlaceholder")}
-          className="flex-1 min-w-0 rounded-xl border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:border-accent-yellow dark:focus:border-accent-green focus:outline-none focus:ring-1 focus:ring-accent-yellow dark:focus:ring-accent-green"
-          aria-label={t("music.search")}
-        />
-        <button
-          type="button"
-          onClick={runSearch}
-          disabled={searching || !searchQuery.trim()}
-          className="shrink-0 rounded-xl bg-accent-yellow dark:bg-accent-green px-4 py-2.5 text-sm font-medium text-gray-900 disabled:opacity-50"
-        >
-          {searching ? t("music.searching") : t("music.searchButton")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setSearchOverlayOpen(false)}
-          className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-          aria-label={t("music.close")}
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-      <div className="shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-gray-200 dark:border-white/10 bg-white/50 dark:bg-gray-900/50">
-        {(["all", "track", "artist", "album", "radio"] as const).map((filter) => (
-          <button
-            key={filter}
-            type="button"
-            onClick={() => setSearchFilter(filter)}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
-              searchFilter === filter
-                ? "bg-accent-yellow dark:bg-accent-green text-gray-900"
-                : "bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
-            )}
-          >
-            {filter === "all"
-              ? t("music.filterAll")
-              : filter === "track"
-                ? t("music.filterTrack")
-                : filter === "artist"
-                  ? t("music.filterArtist")
-                  : filter === "album"
-                    ? t("music.filterAlbum")
-                    : t("music.filterRadio")}
-          </button>
-        ))}
-      </div>
-      <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
-        {selectedQueueId && maPlayers.length > 0 && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-3">
-            {t("music.playOn")}: <span className="font-medium text-gray-900 dark:text-white">{playerLabel(maPlayers.find((p) => p.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId })}</span>
-          </p>
-        )}
-        {searchResults.length > 0 ? (
-          <ul className="space-y-1 max-w-2xl mx-auto" role="list">
-            {searchResults.map((item, index) => {
-              const rawUri = item.uri ?? (item as { item_uri?: string })?.item_uri;
-              const itemId = item.item_id ?? (item as { item_id?: number | string })?.item_id;
-              const provider = (item as { provider?: string })?.provider ?? "library";
-              const itemMediaType = (item as { __mediaType?: "track" | "artist" | "album" | "radio" }).__mediaType;
-              const mediaType =
-                itemMediaType ??
-                (searchFilter === "artist"
-                  ? "artist"
-                  : searchFilter === "album"
-                    ? "album"
-                    : searchFilter === "radio"
-                      ? "radio"
-                      : "track");
-              const uri =
-                typeof rawUri === "string" && rawUri
-                  ? rawUri
-                  : itemId != null
-                    ? `${provider}://${mediaType}/${itemId}`
-                    : "";
-              const name = item.name ?? t("music.unknown");
-              const artists = item.artists;
-              const artistNames = Array.isArray(artists)
-                ? artists.map((a) => (a && typeof a === "object" && "name" in a ? (a as { name?: string }).name : null)).filter(Boolean).join(", ") || "—"
-                : artists && typeof artists === "object" && "name" in artists
-                  ? (artists as { name?: string }).name
-                  : "—";
-              const albumName = item.album?.name;
-              const duration = item.duration;
-              const providerLabel = getProviderLabel(item);
-              const isPlayPending = uri && playPending === uri;
-              const canPlay = !!uri && !!selectedQueueId;
-              const isAlbum = mediaType === "album";
-              const isArtist = mediaType === "artist";
-              const isRadio = mediaType === "radio";
-              const canOpenAlbum = isAlbum && getAlbumParams(item);
-              const canOpenArtist = isArtist && getArtistParams(item);
-              const openAlbum = () => {
-                if (canOpenAlbum) {
-                  setSelectedAlbum(item);
-                  setSearchOverlayOpen(false);
-                }
-              };
-              const openArtist = () => {
-                if (canOpenArtist) {
-                  setSelectedArtist(item);
-                  setSearchOverlayOpen(false);
-                }
-              };
-              const canOpen = canOpenAlbum || canOpenArtist;
-              const openAction = canOpenAlbum ? openAlbum : canOpenArtist ? openArtist : undefined;
-              const openTitle = canOpenAlbum ? t("music.viewAlbum") : canOpenArtist ? t("music.viewArtist") : undefined;
-              const lp = createTrackLongPressHandlers(item);
-              return (
-                <li
-                  key={uri ?? `item-${index}`}
-                  className="flex items-center gap-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2.5 hover:bg-white dark:hover:bg-white/10"
-                  onPointerDown={lp.onPointerDown}
-                  onPointerUp={lp.onPointerUp}
-                  onPointerLeave={lp.onPointerLeave}
-                >
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800",
-                      canOpen && "cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
-                    )}
-                    onClick={canOpen ? openAction : undefined}
-                    onKeyDown={canOpen ? (e) => e.key === "Enter" && openAction?.() : undefined}
-                    role={canOpen ? "button" : undefined}
-                    tabIndex={canOpen ? 0 : undefined}
-                    title={openTitle}
-                  >
-                    {isArtist ? (
-                      <User className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
-                    ) : isRadio ? (
-                      <Radio className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
-                    ) : (
-                      <Disc3 className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden />
-                    )}
-                  </div>
-                  <div
-                    className={cn("min-w-0 flex-1", canOpen ? "cursor-pointer" : "cursor-default")}
-                    onClick={canOpen ? openAction : undefined}
-                    onKeyDown={canOpen ? (e) => e.key === "Enter" && openAction?.() : undefined}
-                    role={canOpen ? "button" : undefined}
-                    tabIndex={canOpen ? 0 : undefined}
-                    title={openTitle}
-                  >
-                    <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
-                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-                      {artistNames}
-                      {albumName ? ` · ${albumName}` : ""}
-                      {providerLabel ? ` · ${providerLabel}` : ""}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-                    {formatDuration(duration)}
-                  </span>
-                  {uri && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); addToFavorites(uri); }}
-                      disabled={favoritePending.has(uri)}
-                      className={cn(
-                        "shrink-0 rounded-full p-2 transition-colors",
-                        favorited.has(uri) || favoritePending.has(uri)
-                          ? "text-red-500 dark:text-red-400"
-                          : "text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                      )}
-                      title={t("music.addToFavorites")}
-                      aria-label={t("music.addToFavorites")}
-                    >
-                      {favoritePending.has(uri) ? (
-                        <span className="h-4 w-4 block animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
-                      ) : (
-                        <Heart className={cn("h-4 w-4", (favorited.has(uri) || favoritePending.has(uri)) && "fill-current")} aria-hidden />
-                      )}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); lp.wrapClick(() => canPlay && playOnPlayer(normalizePlayMediaUri(uri)))(); }}
-                    disabled={!canPlay || !!isPlayPending}
-                    className="shrink-0 rounded-full bg-accent-yellow p-2 text-gray-900 hover:opacity-90 disabled:opacity-50 dark:bg-accent-green dark:text-gray-900"
-                    title={`${t("music.playOn")} ${selectedQueueId ? playerLabel(maPlayers.find((x) => x.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : t("music.player")}`}
-                  >
-                    {isPlayPending ? (
-                      <span className="h-4 w-4 block animate-spin rounded-full border-2 border-gray-900 border-t-transparent dark:border-gray-900 dark:border-t-transparent" aria-hidden />
-                    ) : (
-                      <Play className="h-4 w-4 fill-current" aria-hidden />
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : searchQuery.trim() && !searching ? (
-          <div className="flex items-center gap-3 py-8 text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
-            <User className="h-10 w-10 shrink-0" aria-hidden />
-            <p className="text-sm">{t("music.noResults")} &quot;{searchQuery.trim()}&quot;. {t("music.noResultsTry")}</p>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl mx-auto py-8">
-            {t("music.searchHint")}
-          </p>
-        )}
-      </div>
-    </div>,
+    <MusicSearchOverlay
+      query={searchQuery}
+      onQueryChange={setSearchQuery}
+      filter={searchFilter}
+      onFilterChange={setSearchFilter}
+      results={searchRows}
+      searching={searching}
+      inputRef={searchInputRef}
+      playerLabel={selectedQueueId && maPlayers.length > 0 ? playerLabel(maPlayers.find((p) => p.queue_id === selectedQueueId) ?? { queue_id: selectedQueueId }) : undefined}
+      onClose={() => setSearchOverlayOpen(false)}
+      onSubmit={runSearch}
+      t={t}
+    />,
     document.body
   );
 
