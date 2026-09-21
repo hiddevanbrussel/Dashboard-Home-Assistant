@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Smile, Bike,
+  Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Smile, Bike, Sprout,
   IceCreamCone, CakeSlice, Sandwich,
   X, Plus, Pencil, ListTodo, ChevronLeft, Trophy, Eye, EyeOff, Gift, Search,
 } from "lucide-react";
@@ -32,6 +32,7 @@ const CHORE_ICONS: { name: string; Icon: React.FC<{ className?: string }> }[] = 
   { name: "Brush", Icon: Brush },
   { name: "Wrench", Icon: Wrench },
   { name: "Bike", Icon: Bike },
+  { name: "Sprout", Icon: Sprout },
 ];
 
 function ChoreIcon({ name, className }: { name: string | null; className?: string }) {
@@ -839,6 +840,7 @@ export default function FamilyPage() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["chore-completions", todayDate] });
+      queryClient.invalidateQueries({ queryKey: ["reward-balances"] });
     },
   });
 
@@ -884,6 +886,7 @@ export default function FamilyPage() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["chore-completions", todayDate] });
+      queryClient.invalidateQueries({ queryKey: ["reward-balances"] });
     },
   });
 

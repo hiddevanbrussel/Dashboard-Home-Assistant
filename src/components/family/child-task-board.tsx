@@ -30,7 +30,8 @@ function WeekDots({ days }: { days: WeekDayProgress[] }) {
             day.status === "done" && "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300",
             day.status === "partial" && "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300",
             day.status === "missed" && "bg-rose-100 text-rose-400 dark:bg-rose-900/30 dark:text-rose-300",
-            (day.status === "today" || day.status === "empty") && "bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500",
+            day.status === "today" && "bg-white text-gray-400 ring-2 ring-gray-200 dark:bg-white/10 dark:ring-white/20",
+            day.status === "empty" && "bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500",
             day.status === "future" && "bg-gray-50 text-gray-300 dark:bg-white/5 dark:text-gray-600"
           )}
         >
@@ -63,8 +64,8 @@ function TaskCard({
         penalty && "ring-rose-200 dark:ring-rose-800/50"
       )}
     >
-      <div className="relative h-28 bg-[#F7F8FC] dark:bg-white/5">
-        <TaskArt icon={chore.icon} className="px-4 pt-2" />
+      <div className="relative h-36 bg-[#F7F8FC] dark:bg-white/5">
+        <TaskArt icon={chore.icon} className="px-3 pt-1" />
         <span
           className={cn(
             "absolute right-3 top-3 flex h-7 min-w-7 items-center justify-center rounded-lg px-2 text-xs font-bold",
