@@ -446,7 +446,7 @@ export default function EnergyPage() {
       h: isTextCard ? 1 : 2,
     };
     const newWidgets = [...widgets, newWidget];
-    const newLayout = [...layout, newLayoutItem];
+    const newLayout = isTextCard ? layout : [...layout, newLayoutItem];
 
     queryClient.setQueryData(["energy-dashboard"], (old: unknown) => {
       if (!old || typeof old !== "object") return old;
@@ -461,7 +461,7 @@ export default function EnergyPage() {
     setAddTileStep("type");
     setAddTileSelectedType(null);
     saveMutation.mutate({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
-    return type === "nuts_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" ? newId : undefined;
+    return type === "nuts_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" || type === "text_card" ? newId : undefined;
   }
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
@@ -668,8 +668,7 @@ export default function EnergyPage() {
           haEntities={entities}
         />
         {editMode ? (
-        <>
-        <div className={cn("rounded-card overflow-hidden", editMode && "grid-edit-touch")}>
+        <div className={cn("rounded-card overflow-hidden", "grid-edit-touch")}>
           <ReactGridLayout
             className="layout"
             layout={layoutForGrid}
@@ -743,6 +742,7 @@ export default function EnergyPage() {
               })}
           </ReactGridLayout>
         </div>
+        ) : null}
 
         {widgets.filter((w) => w.type === "text_card").map((w, i) => (
           <FloatingTextCard
@@ -886,8 +886,6 @@ export default function EnergyPage() {
             onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
           />
         ))}
-        </>
-        ) : null}
 
         {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
           <EditPanelModal
@@ -936,7 +934,7 @@ export default function EnergyPage() {
                         key={type}
                         type="button"
                         onClick={() => {
-                          if (type === "text_card") { handleAddTile("text_card", "", t("editPanel.newText")); setAddTileOpen(false); return; }
+                          if (type === "text_card") { const newId = handleAddTile("text_card", "", t("editPanel.newText")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           if (type === "energy_monitor_card") { const newId = handleAddTile("energy_monitor_card", "", t("cardType.energy_monitor_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           if (type === "power_usage_card") { const newId = handleAddTile("power_usage_card", "", t("cardType.power_usage_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           if (type === "device_consumption_card") { const newId = handleAddTile("device_consumption_card", "", t("cardType.device_consumption_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
