@@ -27,10 +27,11 @@ import {
   fanModeFromSpeed,
   fanSpeedListFromAttributes,
   isVacuumOn,
-  lastCleanAtFromAttributes,
   parsePercent,
   progressFromAttributes,
   resolveFanSpeedForMode,
+  resolveVacuumCleanedAreaM2,
+  resolveVacuumLastCleanAt,
   vacuumCard2ArtSrc,
   vacuumHeadlineKind,
   vacuumRelativeTimeKind,
@@ -38,6 +39,7 @@ import {
   VACUUM_CARD_2_FOOTER_MIN_HEIGHT,
   type VacuumFanMode,
 } from "@/lib/vacuum-card";
+import { useVacuumSession } from "@/hooks/use-vacuum-session";
 
 const MODE_UI: { mode: VacuumFanMode; labelKey: string; Icon: typeof Leaf }[] = [
   { mode: "eco", labelKey: "vacuumCard.eco", Icon: Leaf },
@@ -89,9 +91,11 @@ export function VacuumCard2Widget({
   const { t } = useTranslation();
   const isDark = useThemeStore((s) => s.resolved) === "dark";
   const entity = useEntityStateStore((s) => s.getState(entity_id));
+  const relatedEntities = useEntityStateStore((s) => Object.values(s.states));
   const progressEntity = useEntityStateStore((s) =>
     progress_entity_id ? s.getState(progress_entity_id) : null
   );
+  const valetudo = useVacuumSession({ active: Boolean(entity_id), includeMaintenance: false });
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const revertEntityState = useEntityStateStore((s) => s.revertEntityState);
   const requestRefresh = useEntityStateStore((s) => s.requestRefresh);
@@ -122,7 +126,11 @@ export function VacuumCard2Widget({
   const cardWidth = clampVacuumCard2Width(width);
   const cardHeight = clampVacuumCard2Height(height);
   const showFooter = cardHeight >= VACUUM_CARD_2_FOOTER_MIN_HEIGHT;
-  const lastCleanAt = lastCleanAtFromAttributes(attrs);
+  const lastCleanAt = resolveVacuumLastCleanAt({
+    attrs,
+    entities: relatedEntities,
+    vacuumEntityId: entity_id,
+  });
   const lastSession = lastCleanAt
     ? vacuumRelativeTimeKind(lastCleanAt, Date.now())
     : null;
@@ -135,7 +143,12 @@ export function VacuumCard2Widget({
           ? t("vacuumCard.dayAgo")
           : t(`vacuumCard.${lastSession.key}`).replace("{n}", String(lastSession.n))
     : "—";
-  const area = cleanedAreaM2FromAttributes(attrs);
+  const area = resolveVacuumCleanedAreaM2({
+    attrs,
+    entities: relatedEntities,
+    vacuumEntityId: entity_id,
+    valetudoAreaCm2: valetudo.stats.areaCm2,
+  });
   const areaLabel = area != null ? `${area} m²` : "—";
   const sessionStatusKey = vacuumSessionStatusKey(state);
   const sessionStatusLabel =

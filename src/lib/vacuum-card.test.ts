@@ -19,6 +19,10 @@ import {
   lastCleanAtFromAttributes,
   shouldIgnoreVacuumSheetBackdropClose,
   cleanedAreaM2FromAttributes,
+  findRelatedVacuumSensor,
+  normalizeVacuumAreaM2,
+  resolveVacuumCleanedAreaM2,
+  resolveVacuumLastCleanAt,
   vacuumCard2ArtSrc,
   vacuumHeadlineKind,
   vacuumRelativeTimeKind,
@@ -141,9 +145,62 @@ describe("vacuum-card helpers", () => {
     );
     expect(lastCleanAtFromAttributes({ last_clean: 1_700_000_000 })).toBe(1_700_000_000_000);
     expect(lastCleanAtFromAttributes({ last_clean_end: "unknown" })).toBeNull();
+    expect(lastCleanAtFromAttributes({ last_clean_stop: "2026-09-21 08:15:00" })).toBe(
+      Date.parse("2026-09-21T08:15:00")
+    );
+    expect(
+      lastCleanAtFromAttributes({ last_clean_record: { end: "2026-09-18T18:00:00.000Z", area: 28 } })
+    ).toBe(Date.parse("2026-09-18T18:00:00.000Z"));
     expect(cleanedAreaM2FromAttributes({ cleaned_area: 32 })).toBe(32);
     expect(cleanedAreaM2FromAttributes({ cleaned_area: "32.4 m2" })).toBe(32.4);
+    expect(cleanedAreaM2FromAttributes({ last_clean_area: 18 })).toBe(18);
+    expect(cleanedAreaM2FromAttributes({ last_clean_record: { area: 245000 } })).toBe(24.5);
     expect(cleanedAreaM2FromAttributes({})).toBeNull();
+    expect(normalizeVacuumAreaM2(245000, "cm2")).toBe(24.5);
+    expect(normalizeVacuumAreaM2(32, "m²")).toBe(32);
+  });
+
+  it("reads last session and area from related Home Assistant sensors", () => {
+    const entities = [
+      { entity_id: "vacuum.roborock_s8", state: "docked", attributes: {} },
+      {
+        entity_id: "sensor.roborock_s8_last_clean_end",
+        state: "2026-09-21T07:40:00.000Z",
+        attributes: {},
+      },
+      {
+        entity_id: "sensor.roborock_s8_last_clean_area",
+        state: "27.5",
+        attributes: { unit_of_measurement: "m²" },
+      },
+      {
+        entity_id: "sensor.other_vacuum_last_clean_area",
+        state: "99",
+        attributes: { unit_of_measurement: "m²" },
+      },
+    ];
+    expect(
+      findRelatedVacuumSensor(entities, "vacuum.roborock_s8", ["last_clean_end"])?.entity_id
+    ).toBe("sensor.roborock_s8_last_clean_end");
+    expect(
+      resolveVacuumLastCleanAt({ vacuumEntityId: "vacuum.roborock_s8", entities, attrs: {} })
+    ).toBe(Date.parse("2026-09-21T07:40:00.000Z"));
+    expect(
+      resolveVacuumCleanedAreaM2({ vacuumEntityId: "vacuum.roborock_s8", entities, attrs: {} })
+    ).toBe(27.5);
+    expect(
+      resolveVacuumCleanedAreaM2({
+        vacuumEntityId: "vacuum.valetudo_robot",
+        entities: [
+          {
+            entity_id: "sensor.valetudo_robot_current_statistics_area",
+            state: "185000",
+            attributes: {},
+          },
+        ],
+        attrs: {},
+      })
+    ).toBe(18.5);
   });
 
   it("formats a last-session relative time", () => {
