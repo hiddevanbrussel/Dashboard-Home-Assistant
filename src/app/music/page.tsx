@@ -1409,7 +1409,7 @@ export default function MusicPage() {
     };
 
     const jumpBackIn = musicAssistant.sectionRecentlyPlayedEnabled
-      ? recentItems.slice(0, 6).map((item, i) => toTile(item, i, "jump"))
+      ? recentItems.slice(0, 4).map((item, i) => toTile(item, i, "jump"))
       : [];
 
     const featuredPlaylists = featuredPlaylistData
@@ -1500,15 +1500,6 @@ export default function MusicPage() {
           setSelectedCategory(null);
         },
       });
-      for (const { id, playlist, tracks } of featuredPlaylistData) {
-        if (!playlist || tracks.length === 0) continue;
-        shelves.push({
-          id: `featured-tracks-${id}`,
-          title: playlist.name ?? t("music.playlist"),
-          variant: "square",
-          items: tracks.slice(0, 16).map((item, i) => toTile(item, i, `ft-${id}`)),
-        });
-      }
     }
 
     shelves.push({

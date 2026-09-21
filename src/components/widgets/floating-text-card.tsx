@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { TextCardWidget } from "./text-card-widget";
+import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingTextCardPosition.";
 const DEFAULT_OFFSET = 24;
@@ -85,6 +87,7 @@ export function FloatingTextCard({
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
+  const { t } = useTranslation();
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widget.id) ?? { left: 0, bottom: DEFAULT_OFFSET });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
@@ -146,7 +149,7 @@ export function FloatingTextCard({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!editMode) return;
-      if ((e.target as HTMLElement)?.closest?.("button")) return;
+      if ((e.target as HTMLElement)?.closest?.("button, [data-no-drag]")) return;
       e.preventDefault();
       e.stopPropagation();
       isPointerDownOnCard.current = true;
@@ -189,8 +192,10 @@ export function FloatingTextCard({
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
+      const wasDown = isPointerDownOnCard.current;
+      const dragged = isDragging;
       isPointerDownOnCard.current = false;
-      if (isDragging) {
+      if (dragged) {
         e.preventDefault();
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
@@ -203,16 +208,19 @@ export function FloatingTextCard({
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
         savePosition(storageScope, widget.id, next);
+      } else if (wasDown && editMode && onEdit) {
+        onEdit();
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft, widget.id, storageScope]
+    [isDragging, maxLeft, widget.id, storageScope, editMode, onEdit]
   );
 
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30 rounded-2xl overflow-visible flex transition-colors duration-200",
+        "card-plot-in fixed rounded-2xl overflow-visible flex transition-colors duration-200",
+        editMode ? "z-[80]" : "z-30",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -235,6 +243,22 @@ export function FloatingTextCard({
         onPointerCancel: handlePointerUp,
       })}
     >
+      {editMode && onEdit && (
+        <button
+          type="button"
+          data-no-drag
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onEdit();
+          }}
+          className="absolute -right-2 -top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-gray-700 text-white shadow hover:bg-gray-800"
+          aria-label={t("editPanel.editTile")}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      )}
       <div className={cn("shrink-0 flex flex-col p-4 w-full", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")} style={{ width: totalWidth }}>
         <TextCardWidget
           text={widget.title ?? ""}

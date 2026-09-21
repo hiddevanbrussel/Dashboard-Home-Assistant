@@ -194,13 +194,13 @@ describe("energy dashboard entities", () => {
 
   it("only shows house callouts that have a reading", () => {
     expect(visibleHouseCallouts({})).toEqual([]);
-    expect(visibleHouseCallouts({ solarKw: 3.8, gridValue: 0.6 })).toEqual(["solar", "grid"]);
+    expect(visibleHouseCallouts({ solar: 18.4, gridValue: 0.6 })).toEqual(["solar", "grid"]);
     expect(visibleHouseCallouts({ homeKw: 1.2, batterySoc: 64 })).toEqual(["home", "battery"]);
   });
 
   it("maps house callouts to the entity you bind on the page", () => {
     expect(ALL_HOUSE_CALLOUTS).toEqual(["solar", "home", "grid", "battery"]);
-    expect(houseCalloutEntityKey("solar")).toBe("solarPowerEntityId");
+    expect(houseCalloutEntityKey("solar")).toBe("solarYieldTodayEntityId");
     expect(houseCalloutEntityKey("home")).toBe("consumptionEntityId");
     expect(houseCalloutEntityKey("grid")).toBe("gridExportEntityId");
     expect(houseCalloutEntityKey("battery")).toBe("batterySocEntityId");

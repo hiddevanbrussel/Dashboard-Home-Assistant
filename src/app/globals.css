@@ -115,6 +115,19 @@ html[data-dashboard-edit] [data-dashboard-page] .card-plot-in {
   pointer-events: auto;
 }
 
+/* Title/text cards often sit in the header band. Let taps reach the card,
+   while header controls stay clickable. */
+html[data-dashboard-edit] [data-app-header] {
+  pointer-events: none;
+}
+
+html[data-dashboard-edit] [data-app-header] button,
+html[data-dashboard-edit] [data-app-header] a,
+html[data-dashboard-edit] [data-app-header] input,
+html[data-dashboard-edit] [data-app-header] [role="button"] {
+  pointer-events: auto;
+}
+
 @keyframes card-plot-in {
   from {
     opacity: 0;
