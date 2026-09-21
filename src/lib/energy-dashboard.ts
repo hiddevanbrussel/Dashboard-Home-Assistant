@@ -342,6 +342,21 @@ export function computeHourlyMeanFromStates(states: EnergyHistoryState[]): Hourl
 
 export type HouseCalloutId = "solar" | "home" | "grid" | "battery";
 
+export const ALL_HOUSE_CALLOUTS: HouseCalloutId[] = ["solar", "home", "grid", "battery"];
+
+export function houseCalloutEntityKey(id: HouseCalloutId): EnergyEntityKey {
+  switch (id) {
+    case "solar":
+      return "solarPowerEntityId";
+    case "home":
+      return "consumptionEntityId";
+    case "grid":
+      return "gridExportEntityId";
+    case "battery":
+      return "batterySocEntityId";
+  }
+}
+
 export function visibleHouseCallouts(input: {
   solarKw?: number;
   homeKw?: number;
