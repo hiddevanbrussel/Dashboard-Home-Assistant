@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { ChoreCompletionsResponse, ChildWithChores, ChoreCompletionRecord, ChoreFrequency } from "@/lib/chores-types";
+import type { ChoreCompletionsResponse, ChildWithChores, ChoreCompletionRecord, ChoreFrequency, WeekDayProgress } from "@/lib/chores-types";
 
 const SLOT_LABELS = ["ochtend", "avond"];
 
@@ -15,6 +15,12 @@ function getMondayDate(dateStr: string): string {
 function isWeekend(dateStr: string): boolean {
   const day = new Date(dateStr + "T00:00:00").getDay();
   return day === 0 || day === 6;
+}
+
+function addDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
 }
 
 function parseChildIds(raw: string | null): string[] | null {
@@ -188,6 +194,31 @@ export async function GET(request: Request) {
     // weekPoints: subtract today's uncompleted penalty chores (same as todayPenalty)
     const weekPointsAdjusted = weekPoints - todayPenalty;
 
+    const weekProgress: WeekDayProgress[] = Array.from({ length: 7 }, (_, i) => {
+      const date = addDays(mondayDate, i);
+      const weekend = isWeekend(date);
+      const slots = allChildChores.flatMap((chore) => {
+        if (chore.frequency === "weekly") return [];
+        if ((chore as { penalty?: boolean }).penalty) return [];
+        if (chore.frequency === "weekdays" && weekend) return [];
+        const timesPerDay = (chore as { timesPerDay?: number }).timesPerDay ?? 1;
+        if (timesPerDay === 3) return [`${chore.id}:1`];
+        if (timesPerDay >= 2) return [`${chore.id}:0`, `${chore.id}:1`];
+        return [chore.id];
+      });
+      const total = slots.length;
+      const done = slots.filter((choreId) =>
+        childCompletions.some((c) => c.choreId === choreId && c.date === date)
+      ).length;
+      let status: WeekDayProgress["status"];
+      if (date > todayDate) status = "future";
+      else if (total === 0) status = "empty";
+      else if (done === total) status = "done";
+      else if (date === todayDate) status = done === 0 ? "today" : "partial";
+      else status = done === 0 ? "missed" : "partial";
+      return { date, status, done, total };
+    });
+
     return {
       id: child.id,
       name: child.name,
@@ -195,6 +226,7 @@ export async function GET(request: Request) {
       color: child.color,
       todayPoints,
       weekPoints: weekPointsAdjusted,
+      weekProgress,
       chores: choreRows,
     };
   });

@@ -45,6 +45,15 @@ export type ScoreRecord = {
 
 export type ScoresResponse = { children: ScoreRecord[] };
 
+export type WeekDayStatus = "done" | "partial" | "missed" | "today" | "future" | "empty";
+
+export type WeekDayProgress = {
+  date: string;
+  status: WeekDayStatus;
+  done: number;
+  total: number;
+};
+
 export type ChildWithChores = {
   id: string;
   name: string;
@@ -52,6 +61,7 @@ export type ChildWithChores = {
   color: string | null;
   todayPoints: number;
   weekPoints: number;
+  weekProgress: WeekDayProgress[];
   chores: ChoreCompletionRecord[];
 };
 

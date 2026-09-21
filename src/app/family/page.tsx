@@ -6,13 +6,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Smile, Bike,
   IceCreamCone, CakeSlice, Sandwich,
-  Check, X, Plus, Pencil, ListTodo, ChevronLeft, Trophy, Eye, EyeOff, Gift, Flame,
+  X, Plus, Pencil, ListTodo, ChevronLeft, Trophy, Eye, EyeOff, Gift, Search,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
+import { CelebrationSheet, type CelebrationState } from "@/components/family/celebration-sheet";
+import { ChildTaskBoard } from "@/components/family/child-task-board";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
-import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode, getEveningHour } from "@/stores/dashboard-settings-store";
-import type { ChildRecord, ChoreRecord, ChildWithChores, ChoreCompletionsResponse, ScoresResponse, ChoreFrequency, RewardRecord, StreaksResponse, BalancesResponse } from "@/lib/chores-types";
+import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
+import type { ChildRecord, ChoreRecord, ChoreCompletionsResponse, ScoresResponse, ChoreFrequency, RewardRecord, StreaksResponse, BalancesResponse } from "@/lib/chores-types";
 
 // ── icon picker ──────────────────────────────────────────────────────────────
 
@@ -57,217 +59,10 @@ function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Slot 0 = morning (always visible), slot 1 = evening (visible from configured hour)
-function isChoreVisibleByTime(choreId: string): boolean {
-  const m = choreId.match(/:(\d+)$/);
-  if (!m) return true; // no slot suffix → always visible
-  const slot = parseInt(m[1]);
-  if (slot === 0) return true;
-  return new Date().getHours() >= getEveningHour();
-}
-
 const COLOR_PRESETS = [
   "#FF6B6B", "#FF9F43", "#FECA57", "#1DD1A1", "#54A0FF", "#5F27CD",
   "#FF6BB5", "#C8D6E5", "#576574", "#222F3E",
 ];
-
-// ── ChoreRow ──────────────────────────────────────────────────────────────────
-
-type ChoreRowProps = {
-  choreId: string;
-  title: string;
-  points: number;
-  icon: string | null;
-  penalty: boolean;
-  completionId: string | null;
-  onComplete: (choreId: string) => void;
-  onUncomplete: (completionId: string) => void;
-};
-
-function ChoreRow({ choreId, title, points, icon, penalty, completionId, onComplete, onUncomplete }: ChoreRowProps) {
-  const [justDone, setJustDone] = useState(false);
-  const done = completionId !== null;
-  const ispenalty = penalty && !done;
-
-  function handleClick() {
-    if (done) {
-      onUncomplete(completionId!);
-    } else {
-      setJustDone(true);
-      setTimeout(() => setJustDone(false), 600);
-      onComplete(choreId);
-    }
-  }
-
-  return (
-    <button
-      onClick={handleClick}
-      className={cn(
-        "flex items-center gap-3 w-full rounded-2xl px-4 py-3 text-left transition-all duration-300",
-        done
-          ? "bg-green-50 dark:bg-green-900/20"
-          : ispenalty
-          ? "bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/40"
-          : "bg-white/60 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10",
-        justDone && "scale-[0.97]",
-      )}
-    >
-      {/* checkbox */}
-      <span className={cn(
-        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300",
-        done
-          ? "border-green-500 bg-green-500 text-white"
-          : ispenalty
-          ? "border-red-400 dark:border-red-500"
-          : "border-gray-300 dark:border-gray-600",
-        justDone && "scale-125",
-      )}>
-        {done && <Check className="h-4 w-4" strokeWidth={3} />}
-      </span>
-
-      {/* icon + title */}
-      <span className="flex items-center gap-2 min-w-0 flex-1">
-        <ChoreIcon name={icon} className={cn("h-4 w-4 shrink-0", done ? "text-green-500" : ispenalty ? "text-red-400" : "text-gray-400")} />
-        <span className={cn("truncate text-sm font-medium", done && "line-through text-gray-400 dark:text-gray-500")}>
-          {title}
-        </span>
-      </span>
-
-      {/* points */}
-      <span className={cn(
-        "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold transition-all duration-300",
-        done
-          ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
-          : ispenalty
-          ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
-          : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
-        justDone && "scale-110",
-      )}>
-        {ispenalty ? `-${points}` : points}
-      </span>
-    </button>
-  );
-}
-
-// ── ChildColumn ───────────────────────────────────────────────────────────────
-
-type ChildColumnProps = {
-  child: ChildWithChores;
-  streak: number;
-  showCompleted: boolean;
-  onComplete: (choreId: string, childId: string, frequency: string) => void;
-  onUncomplete: (completionId: string) => void;
-};
-
-function ChildColumn({ child, streak, showCompleted, onComplete, onUncomplete }: ChildColumnProps) {
-  const { t } = useTranslation();
-  const visibleChores = child.chores
-    .filter((c) => isChoreVisibleByTime(c.choreId))
-    .filter((c) => showCompleted || c.completionId === null);
-  const dailyChores = visibleChores.filter((c) => c.frequency === "daily");
-  const weekdayChores = visibleChores.filter((c) => c.frequency === "weekdays");
-  const weeklyChores = visibleChores.filter((c) => c.frequency === "weekly");
-
-  return (
-    <div className="flex flex-col gap-4 min-w-[260px] flex-1">
-      {/* avatar + name + points */}
-      <div className="flex items-center gap-3 pb-1">
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
-          style={{ background: child.color ?? "#6366F1" }}
-        >
-          {child.emoji ?? "👤"}
-        </div>
-        <div className="flex flex-col min-w-0 gap-1">
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">{child.name}</span>
-          <div className="flex flex-wrap gap-1.5">
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-              {t("family.todayPoints").replace("{n}", String(child.todayPoints))}
-            </span>
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
-              {t("family.weekPoints").replace("{n}", String(child.weekPoints))}
-            </span>
-            {streak >= 2 && (
-              <span className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
-                <Flame className="h-3 w-3" /> {streak} {t("family.streak")}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* daily chores */}
-      {dailyChores.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="px-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-            {t("family.daily")}
-          </p>
-          {dailyChores.map((chore) => (
-            <ChoreRow
-              key={chore.choreId}
-              choreId={chore.choreId}
-              title={chore.title}
-              points={chore.points}
-              icon={chore.icon}
-              penalty={chore.penalty}
-              completionId={chore.completionId}
-              onComplete={(cId) => onComplete(cId, child.id, "daily")}
-              onUncomplete={onUncomplete}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* weekday chores */}
-      {weekdayChores.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="px-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-            {t("family.weekdays")}
-          </p>
-          {weekdayChores.map((chore) => (
-            <ChoreRow
-              key={chore.choreId}
-              choreId={chore.choreId}
-              title={chore.title}
-              points={chore.points}
-              icon={chore.icon}
-              penalty={chore.penalty}
-              completionId={chore.completionId}
-              onComplete={(cId) => onComplete(cId, child.id, "weekdays")}
-              onUncomplete={onUncomplete}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* weekly chores */}
-      {weeklyChores.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="px-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-            {t("family.weekly")}
-          </p>
-          {weeklyChores.map((chore) => (
-            <ChoreRow
-              key={chore.choreId}
-              choreId={chore.choreId}
-              title={chore.title}
-              points={chore.points}
-              icon={chore.icon}
-              penalty={chore.penalty}
-              completionId={chore.completionId}
-              onComplete={(cId) => onComplete(cId, child.id, "weekly")}
-              onUncomplete={onUncomplete}
-            />
-          ))}
-        </div>
-      )}
-
-      {child.chores.length === 0 && (
-        <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-4">—</p>
-      )}
-    </div>
-  );
-}
 
 // ── Edit panel ────────────────────────────────────────────────────────────────
 
@@ -958,6 +753,8 @@ export default function FamilyPage() {
   const [activeChildIndex, setActiveChildIndex] = useState(0);
   const [view, setView] = useState<"tasks" | "scoreboard" | "rewards">("tasks");
   const [showCompleted, setShowCompleted] = useState(false);
+  const [taskQuery, setTaskQuery] = useState("");
+  const [celebration, setCelebration] = useState<CelebrationState | null>(null);
   const [passcodeModalOpen, setPasscodeModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState<string | null>(null);
@@ -1019,8 +816,13 @@ export default function FamilyPage() {
             const pts = chore?.points ?? 0;
             return {
               ...c,
-              todayPoints: chore?.frequency === "daily" ? c.todayPoints + pts : c.todayPoints,
+              todayPoints: chore?.frequency === "daily" || chore?.frequency === "weekdays" ? c.todayPoints + pts : c.todayPoints,
               weekPoints: c.weekPoints + pts,
+              weekProgress: (c.weekProgress ?? []).map((day) => {
+                if (day.date !== todayDate || chore?.frequency === "weekly") return day;
+                const done = day.done + 1;
+                return { ...day, done, status: done >= day.total && day.total > 0 ? "done" : "partial" };
+              }),
               chores: c.chores.map((ch) =>
                 ch.choreId === choreId
                   ? { ...ch, completionId: "optimistic", completedAt: new Date().toISOString() }
@@ -1059,8 +861,13 @@ export default function FamilyPage() {
             const pts = chore.points;
             return {
               ...c,
-              todayPoints: chore.frequency === "daily" ? Math.max(0, c.todayPoints - pts) : c.todayPoints,
+              todayPoints: chore.frequency === "daily" || chore.frequency === "weekdays" ? Math.max(0, c.todayPoints - pts) : c.todayPoints,
               weekPoints: Math.max(0, c.weekPoints - pts),
+              weekProgress: (c.weekProgress ?? []).map((day) => {
+                if (day.date !== todayDate || chore.frequency === "weekly") return day;
+                const done = Math.max(0, day.done - 1);
+                return { ...day, done, status: done === 0 ? "today" : "partial" };
+              }),
               chores: c.chores.map((ch) =>
                 ch.completionId === completionId
                   ? { ...ch, completionId: null, completedAt: null }
@@ -1081,8 +888,13 @@ export default function FamilyPage() {
   });
 
   const handleComplete = useCallback((choreId: string, childId: string, frequency: string) => {
+    const child = children.find((c) => c.id === childId);
+    const chore = child?.chores.find((ch) => ch.choreId === choreId);
+    if (child && chore && !chore.penalty) {
+      setCelebration({ points: chore.points, title: chore.title, childName: child.name });
+    }
     completeMutation.mutate({ choreId, childId, frequency });
-  }, [completeMutation]);
+  }, [completeMutation, children]);
 
   const handleUncomplete = useCallback((completionId: string) => {
     uncompleteMutation.mutate(completionId);
@@ -1123,15 +935,28 @@ export default function FamilyPage() {
     },
   });
 
-  const useTabLayout = children.length > 3;
+  const useTabLayout = children.length > 2;
 
   return (
     <AppShell activeTab="/family" contentNoScroll>
       <div className="flex h-full flex-col">
         {/* page header */}
-        <div className="flex items-center justify-between px-6 py-4">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{t("family.title")}</h1>
-          <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white">{t("family.yourTasks")}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            {view === "tasks" && children.length > 0 ? (
+              <label className="flex h-10 w-56 items-center gap-2 rounded-full bg-white px-3 shadow-sm ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
+                <Search className="h-4 w-4 text-gray-400" aria-hidden />
+                <input
+                  type="search"
+                  value={taskQuery}
+                  onChange={(e) => setTaskQuery(e.target.value)}
+                  placeholder={t("family.searchPlaceholder")}
+                  className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 outline-none dark:text-white"
+                  aria-label={t("family.searchPlaceholder")}
+                />
+              </label>
+            ) : null}
             <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
               <button
                 onClick={() => setView("tasks")}
@@ -1404,10 +1229,10 @@ export default function FamilyPage() {
                     key={child.id}
                     onClick={() => setActiveChildIndex(i)}
                     className={cn(
-                      "flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors",
+                      "flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
                       activeChildIndex === i
-                        ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
-                        : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                        ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                        : "bg-white text-gray-600 shadow-sm ring-1 ring-black/5 hover:bg-gray-50 dark:bg-white/5 dark:text-gray-300 dark:ring-white/10"
                     )}
                   >
                     <span>{child.emoji ?? "👤"}</span>
@@ -1421,28 +1246,34 @@ export default function FamilyPage() {
             {!isLoading && children.length > 0 && (
               <div className={cn(
                 "flex-1 min-h-0 overflow-y-auto px-6 pb-6",
-                !useTabLayout && "flex gap-6 overflow-x-auto"
+                !useTabLayout && "flex gap-6"
               )}>
                 {useTabLayout ? (
                   children[activeChildIndex] && (
-                    <ChildColumn
+                    <ChildTaskBoard
                       key={children[activeChildIndex].id}
                       child={children[activeChildIndex]}
                       streak={streakMap.get(children[activeChildIndex].id) ?? 0}
+                      balance={balanceMap.get(children[activeChildIndex].id)?.balance ?? children[activeChildIndex].weekPoints}
                       showCompleted={showCompleted}
+                      query={taskQuery}
                       onComplete={handleComplete}
                       onUncomplete={handleUncomplete}
+                      t={t}
                     />
                   )
                 ) : (
                   children.map((child) => (
-                    <ChildColumn
+                    <ChildTaskBoard
                       key={child.id}
                       child={child}
                       streak={streakMap.get(child.id) ?? 0}
+                      balance={balanceMap.get(child.id)?.balance ?? child.weekPoints}
                       showCompleted={showCompleted}
+                      query={taskQuery}
                       onComplete={handleComplete}
                       onUncomplete={handleUncomplete}
+                      t={t}
                     />
                   ))
                 )}
@@ -1454,6 +1285,7 @@ export default function FamilyPage() {
 
       {/* edit panel overlay */}
       {editOpen && <EditPanel onClose={() => setEditOpen(false)} />}
+      <CelebrationSheet celebration={celebration} onClose={() => setCelebration(null)} t={t} />
     </AppShell>
   );
 }
