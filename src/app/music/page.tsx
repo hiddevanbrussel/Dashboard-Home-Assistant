@@ -337,6 +337,39 @@ type MusicHomeMemory = {
 };
 
 let musicHomeMemory: MusicHomeMemory | null = null;
+let musicHomeInflight: Promise<MusicHomeMemory | { error: string }> | null = null;
+let musicHomeInflightKey = "";
+
+function loadMusicHome(
+  cacheKey: string,
+  input: Parameters<typeof fetchMusicAssistantHome>[0]
+): Promise<MusicHomeMemory | { error: string }> {
+  if (musicHomeInflight && musicHomeInflightKey === cacheKey) return musicHomeInflight;
+  musicHomeInflightKey = cacheKey;
+  musicHomeInflight = fetchMusicAssistantHome(input)
+    .then((data) => {
+      if ("error" in data) return data;
+      const next: MusicHomeMemory = {
+        key: cacheKey,
+        albums: data.albums as MASearchItem[],
+        artists: data.artists as MASearchItem[],
+        playlists: data.playlists as MASearchItem[],
+        radios: data.radios as MASearchItem[],
+        recent: data.recent as MASearchItem[],
+        featured: data.featured.map((entry) => ({
+          id: entry.id,
+          playlist: (entry.playlist as MASearchItem | null) ?? null,
+          tracks: (entry.tracks as MASearchItem[]) ?? [],
+        })),
+      };
+      musicHomeMemory = next;
+      return next;
+    })
+    .finally(() => {
+      if (musicHomeInflightKey === cacheKey) musicHomeInflight = null;
+    });
+  return musicHomeInflight;
+}
 
 const LONG_PRESS_MS = 500;
 
@@ -820,7 +853,7 @@ export default function MusicPage() {
     }
 
     let cancelled = false;
-    fetchMusicAssistantHome({
+    loadMusicHome(cacheKey, {
       baseUrl: musicAssistant.baseUrl,
       token: musicAssistant.token,
       featuredPlaylistIds: featuredIds,
@@ -828,8 +861,9 @@ export default function MusicPage() {
       includeRecent: musicAssistant.sectionRecentlyPlayedEnabled,
     })
       .then((data) => {
-        if (cancelled || "error" in data) {
-          if (!cancelled && !cached && "error" in data) {
+        if (cancelled) return;
+        if ("error" in data) {
+          if (!cached) {
             setLibraryAlbums([]);
             setLibraryArtists([]);
             setLibraryPlaylists([]);
@@ -839,27 +873,12 @@ export default function MusicPage() {
           }
           return;
         }
-        const featured = data.featured.map((entry) => ({
-          id: entry.id,
-          playlist: (entry.playlist as MASearchItem | null) ?? null,
-          tracks: (entry.tracks as MASearchItem[]) ?? [],
-        }));
-        const next = {
-          key: cacheKey,
-          albums: data.albums as MASearchItem[],
-          artists: data.artists as MASearchItem[],
-          playlists: data.playlists as MASearchItem[],
-          radios: data.radios as MASearchItem[],
-          recent: data.recent as MASearchItem[],
-          featured,
-        };
-        musicHomeMemory = next;
-        setLibraryAlbums(next.albums);
-        setLibraryArtists(next.artists);
-        setLibraryPlaylists(next.playlists);
-        setRadioStations(next.radios);
-        setRecentItems(next.recent);
-        setFeaturedPlaylistData(next.featured);
+        setLibraryAlbums(data.albums);
+        setLibraryArtists(data.artists);
+        setLibraryPlaylists(data.playlists);
+        setRadioStations(data.radios);
+        setRecentItems(data.recent);
+        setFeaturedPlaylistData(data.featured);
       })
       .catch(() => {
         if (cancelled || cached) return;
