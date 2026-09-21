@@ -13,6 +13,8 @@ import {
   monthGridDays,
   startOfWeek,
   stepTime,
+  timedEventFrame,
+  TIMED_EVENT_GAP_PX,
   toDateKey,
   visibleMonthDays,
 } from "./calendar-utils";
@@ -66,6 +68,14 @@ describe("calendar-utils", () => {
     expect(hourHeightForViewport(0)).toBe(DEFAULT_HOUR_H);
     expect(hourHeightForViewport(700)).toBe(70);
     expect(hourHeightForViewport(200)).toBe(MIN_HOUR_H);
+  });
+
+  it("leaves a gap between back-to-back hourly events", () => {
+    const hourH = DEFAULT_HOUR_H;
+    const first = timedEventFrame(new Date(2026, 8, 21, 10, 0), new Date(2026, 8, 21, 11, 0), hourH, 22);
+    const second = timedEventFrame(new Date(2026, 8, 21, 11, 0), new Date(2026, 8, 21, 12, 0), hourH, 22);
+    expect(second.top - (first.top + first.height)).toBe(TIMED_EVENT_GAP_PX);
+    expect(first.height).toBe(hourH - TIMED_EVENT_GAP_PX);
   });
 
   it("highlights the current or next timed event on today", () => {

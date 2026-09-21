@@ -7,10 +7,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
   Clock,
   MapPin,
-  Plus,
   Video,
   X,
 } from "lucide-react";
@@ -35,11 +33,10 @@ import {
   isSameDay,
   localeOf,
   looksLikeMeet,
-  minutesInDay,
   monthGridDays,
   monthNames as monthNameList,
   startOfWeek,
-  stepTime,
+  timedEventFrame,
   timedOnDay,
   toDateKey,
   visibleMonthDays,
@@ -163,20 +160,6 @@ function useNowMinutes(): number {
     return () => clearInterval(id);
   }, []);
   return mins;
-}
-
-function TimeStepper({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex items-center gap-1 rounded-2xl bg-black/[0.04] px-1.5 py-1 dark:bg-white/5">
-      <button type="button" onClick={() => onChange(stepTime(value, -15))} className="rounded-lg p-1 hover:bg-black/5 dark:hover:bg-white/10" aria-label="-15 min">
-        <ChevronDown className="h-4 w-4 text-gray-400" />
-      </button>
-      <span className="min-w-[3.4rem] text-center text-sm font-semibold tabular-nums text-gray-900 dark:text-white">{value}</span>
-      <button type="button" onClick={() => onChange(stepTime(value, 15))} className="rounded-lg p-1 hover:bg-black/5 dark:hover:bg-white/10" aria-label="+15 min">
-        <ChevronUp className="h-4 w-4 text-gray-400" />
-      </button>
-    </div>
-  );
 }
 
 function MonthGrid({
@@ -401,8 +384,7 @@ function WeekGrid({
                 {dayEvents.map((ev, ei) => {
                   const start = eventStart(ev);
                   const end = eventEnd(ev);
-                  const top = hoursFromFocus(minutesInDay(start) / 60) * hourH;
-                  const height = Math.max(((end.getTime() - start.getTime()) / 60_000 / 60) * hourH, 22);
+                  const { top, height } = timedEventFrame(start, end, hourH, 22);
                   const color = colorMap[ev.entityId] ?? CAL_COLORS[0];
                   return (
                     <button
@@ -513,8 +495,7 @@ function DayGrid({
             {dayEvents.map((ev, i) => {
               const start = eventStart(ev);
               const end = eventEnd(ev);
-              const top = hoursFromFocus(minutesInDay(start) / 60) * hourH;
-              const height = Math.max(((end.getTime() - start.getTime()) / 60_000 / 60) * hourH, 28);
+              const { top, height } = timedEventFrame(start, end, hourH, 28);
               const color = colorMap[ev.entityId] ?? CAL_COLORS[0];
               return (
                 <button
@@ -560,7 +541,6 @@ function AgendaSidebar({
   t,
   onToggleCalendar,
   onSelectEvent,
-  onAdd,
 }: {
   date: Date;
   events: CalendarEvent[];
@@ -572,27 +552,15 @@ function AgendaSidebar({
   t: (key: string) => string;
   onToggleCalendar: (id: string) => void;
   onSelectEvent: (ev: CalendarEvent) => void;
-  onAdd: () => void;
 }) {
   const dayEvents = eventsOnDay(events, date);
   const dateLabel = date.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" });
 
   return (
     <aside className="flex h-[28vh] min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-card border border-white/70 bg-white/45 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.05] lg:h-auto lg:min-h-0 lg:w-[300px]">
-      <div className="flex items-start justify-between gap-3 px-4 pb-2 pt-4">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{t("calendar.scheduled")}</h2>
-          <p className="mt-0.5 text-xs capitalize text-gray-500 dark:text-gray-400">{dateLabel}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onAdd}
-          disabled={calendarEntityIds.length === 0}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
-          aria-label={t("calendar.addEvent")}
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+      <div className="px-4 pb-2 pt-4">
+        <h2 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{t("calendar.scheduled")}</h2>
+        <p className="mt-0.5 text-xs capitalize text-gray-500 dark:text-gray-400">{dateLabel}</p>
       </div>
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-3 scrollbar-hide">
@@ -773,187 +741,6 @@ function EventDetail({
   );
 }
 
-function CreateEventModal({
-  calendarEntityIds,
-  colorMap,
-  entityNames,
-  defaultDate,
-  locale,
-  t,
-  onClose,
-  onAdded,
-}: {
-  calendarEntityIds: string[];
-  colorMap: Record<string, CalColor>;
-  entityNames: Record<string, string>;
-  defaultDate: Date;
-  locale: string;
-  t: (key: string) => string;
-  onClose: () => void;
-  onAdded: () => void;
-}) {
-  const hour = Math.max(defaultDate.getHours(), CALENDAR_FOCUS_HOUR);
-  const [title, setTitle] = useState("");
-  const [calendarId, setCalendarId] = useState(calendarEntityIds[0] ?? "");
-  const [typeOpen, setTypeOpen] = useState(false);
-  const [allDay, setAllDay] = useState(false);
-  const [date, setDate] = useState(toDateKey(defaultDate));
-  const [startTime, setStartTime] = useState(`${String(hour).padStart(2, "0")}:00`);
-  const [endTime, setEndTime] = useState(`${String((hour + 1) % 24).padStart(2, "0")}:00`);
-  const [note, setNote] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim() || !calendarId) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const dtstart = allDay ? date : `${date}T${startTime}:00`;
-      const dtend = allDay ? date : `${date}T${endTime}:00`;
-      const res = await fetch("/api/ha/call-service", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          entity_id: calendarId,
-          domain: "calendar",
-          service: "create_event",
-          service_data: {
-            summary: title.trim(),
-            dtstart,
-            dtend,
-            ...(note.trim() ? { description: note.trim() } : {}),
-          },
-        }),
-      });
-      if (!res.ok) throw new Error("fail");
-      onAdded();
-      onClose();
-    } catch {
-      setError(t("calendar.createError"));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const dateObj = new Date(`${date}T12:00:00`);
-  const dateLabel = dateObj.toLocaleDateString(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <form
-        onSubmit={handleSubmit}
-        className="relative z-10 w-full max-w-md space-y-4 rounded-card border border-white/60 bg-white/90 p-6 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-[#1a1a1a]/92"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={t("calendar.titlePlaceholder")}
-            required
-            autoFocus
-            className="w-full bg-transparent text-2xl font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none dark:text-white dark:placeholder:text-gray-600"
-          />
-          <button type="button" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10">
-            <X className="h-4 w-4 text-gray-500" />
-          </button>
-        </div>
-
-        <label className="block space-y-1">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400">{t("calendar.date")}</span>
-          <div className="relative">
-            <p className="text-sm font-medium capitalize text-gray-800 dark:text-gray-200">{dateLabel}</p>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0" />
-          </div>
-        </label>
-
-        <div className="relative space-y-1">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400">{t("calendar.type")}</span>
-          <button
-            type="button"
-            onClick={() => setTypeOpen((v) => !v)}
-            className="flex w-full items-center gap-2 rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm font-medium text-gray-800 dark:bg-white/5 dark:text-gray-100"
-          >
-            <span className={cn("h-2.5 w-2.5 rounded-full", (colorMap[calendarId] ?? CAL_COLORS[0]).bar)} />
-            <span className="flex-1 truncate text-left">{entityNames[calendarId] ?? calendarId}</span>
-            <ChevronDown className="h-4 w-4 text-gray-400" />
-          </button>
-          {typeOpen && (
-            <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-2xl border border-white/60 bg-white py-1 shadow-xl dark:border-white/10 dark:bg-[#222]">
-              {calendarEntityIds.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setCalendarId(id);
-                    setTypeOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10"
-                >
-                  <span className={cn("h-2.5 w-2.5 rounded-full", (colorMap[id] ?? CAL_COLORS[0]).bar)} />
-                  <span className="truncate text-gray-800 dark:text-gray-100">{entityNames[id] ?? id}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400">{t("calendar.hour")}</span>
-            <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <input
-                type="checkbox"
-                checked={allDay}
-                onChange={(e) => setAllDay(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-gray-300 accent-[#4700B5]"
-              />
-              {t("calendar.allDay")}
-            </label>
-          </div>
-          {!allDay && (
-            <div className="flex items-center justify-between gap-2">
-              <TimeStepper value={startTime} onChange={setStartTime} />
-              <span className="text-xs text-gray-400">—</span>
-              <TimeStepper value={endTime} onChange={setEndTime} />
-            </div>
-          )}
-        </div>
-
-        <label className="block space-y-1">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400">{t("calendar.note")}</span>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={t("calendar.notePlaceholder")}
-            rows={3}
-            className="w-full resize-none rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
-          />
-        </label>
-
-        {error && <p className="text-sm text-red-500">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={saving || !title.trim() || !calendarId}
-          className="w-full rounded-2xl bg-brand py-3 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
-        >
-          {saving ? t("calendar.saving") : t("calendar.save")}
-        </button>
-      </form>
-    </div>
-  );
-}
-
 export default function CalendarPage() {
   const { t, language } = useTranslation();
   const locale = localeOf(language);
@@ -967,7 +754,6 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [hiddenCalendars, setHiddenCalendars] = useState<Set<string>>(new Set());
-  const [createOpen, setCreateOpen] = useState(false);
   const timeScrollRef = useRef<HTMLDivElement>(null);
 
   const today = new Date();
@@ -1197,15 +983,6 @@ export default function CalendarPage() {
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={() => setCreateOpen(true)}
-                disabled={calendarEntityIds.length === 0}
-                className="flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-40"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                {t("calendar.add")}
-              </button>
             </div>
           </div>
 
@@ -1256,7 +1033,6 @@ export default function CalendarPage() {
           t={t}
           onToggleCalendar={toggleCalendar}
           onSelectEvent={setSelectedEvent}
-          onAdd={() => setCreateOpen(true)}
         />
       </div>
 
@@ -1267,19 +1043,6 @@ export default function CalendarPage() {
           locale={locale}
           t={t}
           onClose={() => setSelectedEvent(null)}
-        />
-      )}
-
-      {createOpen && (
-        <CreateEventModal
-          calendarEntityIds={calendarEntityIds}
-          colorMap={colorMap}
-          entityNames={entityNames}
-          defaultDate={selectedDate}
-          locale={locale}
-          t={t}
-          onClose={() => setCreateOpen(false)}
-          onAdded={loadEvents}
         />
       )}
     </AppShell>
