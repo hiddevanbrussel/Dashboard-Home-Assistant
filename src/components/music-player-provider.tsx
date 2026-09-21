@@ -95,8 +95,14 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         .catch(() => {});
     };
     fetchState();
-    const interval = setInterval(fetchState, POLL_INTERVAL_PLAYING_MS);
-    return () => clearInterval(interval);
+    let timeout: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      fetchState();
+      const playing = useMusicPlayerStore.getState().queueState?.state === "playing";
+      timeout = setTimeout(tick, playing ? POLL_INTERVAL_PLAYING_MS : POLL_INTERVAL_MS);
+    };
+    timeout = setTimeout(tick, POLL_INTERVAL_MS);
+    return () => clearTimeout(timeout);
   }, [musicAssistant, selectedQueueId, setQueueState]);
 
   return <>{children}</>;

@@ -16,6 +16,7 @@ import Image from "next/image";
 import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, ChevronDown, ListMusic, Home, ListPlus } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
+import { fetchMusicAssistantHome } from "@/lib/music-assistant";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
@@ -291,12 +292,13 @@ async function callMusicAssistant(
   baseUrl: string,
   token: string,
   command: string,
-  args: Record<string, unknown> = {}
+  args: Record<string, unknown> = {},
+  options: { skipCache?: boolean } = {}
 ): Promise<unknown> {
   const res = await fetch("/api/music-assistant", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ baseUrl, token, command, args }),
+    body: JSON.stringify({ baseUrl, token, command, args, skipCache: options.skipCache === true }),
   });
   const text = await res.text();
   const data = (() => {
@@ -323,6 +325,18 @@ function formatDuration(seconds?: number): string {
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
+
+type MusicHomeMemory = {
+  key: string;
+  albums: MASearchItem[];
+  artists: MASearchItem[];
+  playlists: MASearchItem[];
+  radios: MASearchItem[];
+  recent: MASearchItem[];
+  featured: { id: string; playlist: MASearchItem | null; tracks: MASearchItem[] }[];
+};
+
+let musicHomeMemory: MusicHomeMemory | null = null;
 
 const LONG_PRESS_MS = 500;
 
@@ -523,6 +537,11 @@ export default function MusicPage() {
   }
 
   useEffect(() => {
+    if (musicAssistant.enabled && musicAssistant.baseUrl) {
+      setEntities([]);
+      setPlayersLoading(false);
+      return;
+    }
     setPlayersLoading(true);
     setError(null);
     setEntities([]);
@@ -538,7 +557,7 @@ export default function MusicPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Er is iets misgegaan."))
       .finally(() => setPlayersLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, t]);
 
   useEffect(() => {
     if (musicAssistant.enabled && maPlayers.length > 0) setPlayersLoading(false);
@@ -752,210 +771,127 @@ export default function MusicPage() {
   }, [selectedArtist, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   useEffect(() => {
-    const ids = musicAssistant.featuredPlaylistIds?.filter((id) => String(id).trim()) ?? [];
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl || ids.length === 0) {
+    if (!musicAssistant.enabled || !musicAssistant.baseUrl) {
       setFeaturedPlaylistData([]);
       setFeaturedPlaylistLoading(false);
-      return;
-    }
-    setFeaturedPlaylistLoading(true);
-    const parsePlaylist = (data: unknown): MASearchItem | null => {
-      const err = (data as { error?: string })?.error;
-      if (err) return null;
-      const d = data as Record<string, unknown>;
-      const item =
-        (d?.result as MASearchItem) ??
-        (d?.playlist as MASearchItem) ??
-        (typeof data === "object" && data !== null && (data as MASearchItem).name ? (data as MASearchItem) : null);
-      return item && typeof item === "object" && (item.name || item.uri) ? item : null;
-    };
-    const parsePlaylistTracks = (data: unknown): MASearchItem[] => {
-      const err = (data as { error?: string })?.error;
-      if (err) return [];
-      const d = data as Record<string, unknown>;
-      const result = d?.result ?? d;
-      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-      const extractTrack = (x: unknown): MASearchItem | null => {
-        if (!x || typeof x !== "object") return null;
-        const obj = x as Record<string, unknown>;
-        const track = (obj?.track ?? obj) as MASearchItem;
-        return track && typeof track === "object" ? track : null;
-      };
-      if (Array.isArray(resultObj.tracks)) return resultObj.tracks as MASearchItem[];
-      if (Array.isArray(resultObj.items)) {
-        return (resultObj.items as unknown[]).map(extractTrack).filter((x): x is MASearchItem => x != null);
-      }
-      if (Array.isArray((resultObj as { playlist_tracks?: unknown[] }).playlist_tracks)) {
-        return (resultObj as { playlist_tracks: unknown[] }).playlist_tracks.map(extractTrack).filter((x): x is MASearchItem => x != null);
-      }
-      if (Array.isArray(result)) return result as MASearchItem[];
-      return [];
-    };
-    Promise.all(
-      ids.map(async (id) => {
-        const [playlistRes, tracksRes] = await Promise.all([
-          callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/playlists/get", {
-            item_id: id,
-            provider_instance_id_or_domain: "library",
-          }),
-          callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/playlists/playlist_tracks", {
-            item_id: id,
-            provider_instance_id_or_domain: "library",
-          }),
-        ]);
-        const playlist = parsePlaylist(playlistRes);
-        const tracks = parsePlaylistTracks(tracksRes);
-        return { id, playlist, tracks };
-      })
-    )
-      .then(setFeaturedPlaylistData)
-      .catch(() => setFeaturedPlaylistData([]))
-      .finally(() => setFeaturedPlaylistLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, musicAssistant.featuredPlaylistIds]);
-
-  useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !musicAssistant.sectionRadioEnabled) {
       setRadioStations([]);
       setRadioStationsLoading(false);
-      return;
-    }
-    setRadioStationsLoading(true);
-    const parseItems = (data: unknown): MASearchItem[] => {
-      const err = (data as { error?: string })?.error;
-      if (err) return [];
-      const d = data as Record<string, unknown>;
-      const result = d?.result ?? d;
-      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-      if (Array.isArray(resultObj.items)) return resultObj.items as MASearchItem[];
-      if (Array.isArray(resultObj.radios)) return resultObj.radios as MASearchItem[];
-      if (Array.isArray(result)) return result as MASearchItem[];
-      return [];
-    };
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/radios/library_items", { limit: 50, in_library_only: true })
-      .then((data) => setRadioStations(parseItems(data)))
-      .catch(() => setRadioStations([]))
-      .finally(() => setRadioStationsLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, musicAssistant.sectionRadioEnabled]);
-
-  useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl) {
       setLibraryPlaylists([]);
       setLibraryPlaylistsLoading(false);
-      return;
-    }
-    setLibraryPlaylistsLoading(true);
-    const parseItems = (data: unknown): MASearchItem[] => {
-      const err = (data as { error?: string })?.error;
-      if (err) return [];
-      const d = data as Record<string, unknown>;
-      const result = d?.result ?? d;
-      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-      if (Array.isArray(resultObj.items)) return resultObj.items as MASearchItem[];
-      if (Array.isArray(resultObj.playlists)) return resultObj.playlists as MASearchItem[];
-      if (Array.isArray(result)) return result as MASearchItem[];
-      return [];
-    };
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/playlists/library_items", { limit: 100, in_library_only: true })
-      .then((data) => setLibraryPlaylists(parseItems(data)))
-      .catch(() => setLibraryPlaylists([]))
-      .finally(() => setLibraryPlaylistsLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
-
-  useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl) {
       setLibraryArtists([]);
       setLibraryArtistsLoading(false);
-      return;
-    }
-    setLibraryArtistsLoading(true);
-    const parseItems = (data: unknown): MASearchItem[] => {
-      const err = (data as { error?: string })?.error;
-      if (err) return [];
-      const d = data as Record<string, unknown>;
-      const result = d?.result ?? d;
-      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-      if (Array.isArray(resultObj.items)) return resultObj.items as MASearchItem[];
-      if (Array.isArray(resultObj.artists)) return resultObj.artists as MASearchItem[];
-      if (Array.isArray(result)) return result as MASearchItem[];
-      return [];
-    };
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/artists/library_items", { limit: 200, in_library_only: true })
-      .then((data) => setLibraryArtists(parseItems(data)))
-      .catch(() => setLibraryArtists([]))
-      .finally(() => setLibraryArtistsLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
-
-  useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl) {
       setLibraryAlbums([]);
       setLibraryAlbumsLoading(false);
+      setRecentItems([]);
+      setRecentLoading(false);
       return;
     }
-    setLibraryAlbumsLoading(true);
-    const parseItems = (data: unknown): MASearchItem[] => {
-      const err = (data as { error?: string })?.error;
-      if (err) return [];
-      const d = data as Record<string, unknown>;
-      const result = d?.result ?? d;
-      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-      if (Array.isArray(resultObj.items)) return resultObj.items as MASearchItem[];
-      if (Array.isArray(resultObj.albums)) return resultObj.albums as MASearchItem[];
-      if (Array.isArray(result)) return result as MASearchItem[];
-      return [];
-    };
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/albums/library_items", { limit: 200, in_library_only: true })
-      .then((data) => setLibraryAlbums(parseItems(data)))
-      .catch(() => setLibraryAlbums([]))
-      .finally(() => setLibraryAlbumsLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
-  useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl) {
-      setLibraryArtists([]);
+    const featuredIds = musicAssistant.sectionFeaturedPlaylistEnabled
+      ? (musicAssistant.featuredPlaylistIds ?? []).map((id) => String(id).trim()).filter(Boolean)
+      : [];
+    const cacheKey = [
+      musicAssistant.baseUrl,
+      featuredIds.join(","),
+      musicAssistant.sectionRadioEnabled ? "radio" : "",
+      musicAssistant.sectionRecentlyPlayedEnabled ? "recent" : "",
+    ].join("|");
+    const cached = musicHomeMemory && musicHomeMemory.key === cacheKey ? musicHomeMemory : null;
+    if (cached) {
+      setLibraryAlbums(cached.albums);
+      setLibraryArtists(cached.artists);
+      setLibraryPlaylists(cached.playlists);
+      setRadioStations(cached.radios);
+      setRecentItems(cached.recent);
+      setFeaturedPlaylistData(cached.featured);
+      setLibraryAlbumsLoading(false);
       setLibraryArtistsLoading(false);
-      return;
+      setLibraryPlaylistsLoading(false);
+      setRadioStationsLoading(false);
+      setRecentLoading(false);
+      setFeaturedPlaylistLoading(false);
+    } else {
+      setLibraryAlbumsLoading(true);
+      setLibraryArtistsLoading(true);
+      setLibraryPlaylistsLoading(true);
+      setRadioStationsLoading(musicAssistant.sectionRadioEnabled);
+      setRecentLoading(musicAssistant.sectionRecentlyPlayedEnabled);
+      setFeaturedPlaylistLoading(featuredIds.length > 0);
     }
-    setLibraryArtistsLoading(true);
-    const parseItems = (data: unknown): MASearchItem[] => {
-      const err = (data as { error?: string })?.error;
-      if (err) return [];
-      const d = data as Record<string, unknown>;
-      const result = d?.result ?? d;
-      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-      if (Array.isArray(resultObj.items)) return resultObj.items as MASearchItem[];
-      if (Array.isArray(resultObj.artists)) return resultObj.artists as MASearchItem[];
-      if (Array.isArray(result)) return result as MASearchItem[];
-      return [];
-    };
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/artists/library_items", { limit: 200, in_library_only: true })
-      .then((data) => setLibraryArtists(parseItems(data)))
-      .catch(() => setLibraryArtists([]))
-      .finally(() => setLibraryArtistsLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
-  useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl) {
-      setLibraryAlbums([]);
-      setLibraryAlbumsLoading(false);
-      return;
-    }
-    setLibraryAlbumsLoading(true);
-    const parseItems = (data: unknown): MASearchItem[] => {
-      const err = (data as { error?: string })?.error;
-      if (err) return [];
-      const d = data as Record<string, unknown>;
-      const result = d?.result ?? d;
-      const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-      if (Array.isArray(resultObj.items)) return resultObj.items as MASearchItem[];
-      if (Array.isArray(resultObj.albums)) return resultObj.albums as MASearchItem[];
-      if (Array.isArray(result)) return result as MASearchItem[];
-      return [];
+    let cancelled = false;
+    fetchMusicAssistantHome({
+      baseUrl: musicAssistant.baseUrl,
+      token: musicAssistant.token,
+      featuredPlaylistIds: featuredIds,
+      includeRadio: musicAssistant.sectionRadioEnabled,
+      includeRecent: musicAssistant.sectionRecentlyPlayedEnabled,
+    })
+      .then((data) => {
+        if (cancelled || "error" in data) {
+          if (!cancelled && !cached && "error" in data) {
+            setLibraryAlbums([]);
+            setLibraryArtists([]);
+            setLibraryPlaylists([]);
+            setRadioStations([]);
+            setRecentItems([]);
+            setFeaturedPlaylistData([]);
+          }
+          return;
+        }
+        const featured = data.featured.map((entry) => ({
+          id: entry.id,
+          playlist: (entry.playlist as MASearchItem | null) ?? null,
+          tracks: (entry.tracks as MASearchItem[]) ?? [],
+        }));
+        const next = {
+          key: cacheKey,
+          albums: data.albums as MASearchItem[],
+          artists: data.artists as MASearchItem[],
+          playlists: data.playlists as MASearchItem[],
+          radios: data.radios as MASearchItem[],
+          recent: data.recent as MASearchItem[],
+          featured,
+        };
+        musicHomeMemory = next;
+        setLibraryAlbums(next.albums);
+        setLibraryArtists(next.artists);
+        setLibraryPlaylists(next.playlists);
+        setRadioStations(next.radios);
+        setRecentItems(next.recent);
+        setFeaturedPlaylistData(next.featured);
+      })
+      .catch(() => {
+        if (cancelled || cached) return;
+        setLibraryAlbums([]);
+        setLibraryArtists([]);
+        setLibraryPlaylists([]);
+        setRadioStations([]);
+        setRecentItems([]);
+        setFeaturedPlaylistData([]);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLibraryAlbumsLoading(false);
+        setLibraryArtistsLoading(false);
+        setLibraryPlaylistsLoading(false);
+        setRadioStationsLoading(false);
+        setRecentLoading(false);
+        setFeaturedPlaylistLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
     };
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/albums/library_items", { limit: 200, in_library_only: true })
-      .then((data) => setLibraryAlbums(parseItems(data)))
-      .catch(() => setLibraryAlbums([]))
-      .finally(() => setLibraryAlbumsLoading(false));
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+  }, [
+    musicAssistant.enabled,
+    musicAssistant.baseUrl,
+    musicAssistant.token,
+    musicAssistant.featuredPlaylistIds,
+    musicAssistant.sectionFeaturedPlaylistEnabled,
+    musicAssistant.sectionRadioEnabled,
+    musicAssistant.sectionRecentlyPlayedEnabled,
+  ]);
 
   const fetchRecentItems = useCallback(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl) return;
@@ -986,7 +922,7 @@ export default function MusicPage() {
       limit: 24,
       media_types: ["track", "album"],
       in_library_only: true,
-    })
+    }, { skipCache: true })
       .then((data) => setRecentItems(parseRecentResponse(data)))
       .catch(() => setRecentItems([]))
       .finally(() => setRecentLoading(false));
@@ -999,7 +935,6 @@ export default function MusicPage() {
       setRecentLoading(false);
       return;
     }
-    fetchRecentItems();
     const interval = setInterval(fetchRecentItems, 45000);
     return () => clearInterval(interval);
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.sectionRecentlyPlayedEnabled, fetchRecentItems]);
