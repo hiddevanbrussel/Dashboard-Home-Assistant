@@ -198,30 +198,180 @@ function parseTimestampMs(value: unknown): number | null {
       if (!Number.isFinite(n)) return null;
       return n < 1e12 ? Math.round(n * 1000) : Math.round(n);
     }
-    const parsed = Date.parse(trimmed);
+    const parsed = Date.parse(trimmed.replace(" ", "T"));
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
 }
 
+function lastCleanRecord(attrs: Record<string, unknown> | undefined): Record<string, unknown> | null {
+  if (!attrs) return null;
+  const raw = attrs.last_clean_record ?? attrs.last_clean;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) return raw as Record<string, unknown>;
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const trimmed = raw.trim();
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed as Record<string, unknown>;
+  } catch {
+    // Xiaomi-style: begin,end,duration,area,...
+  }
+  const parts = trimmed.split(",").map((part) => part.trim());
+  if (parts.length < 2) return null;
+  return { begin: parts[0], end: parts[1], area: parts[3] };
+}
+
 export function lastCleanAtFromAttributes(attrs: Record<string, unknown> | undefined): number | null {
   if (!attrs) return null;
+  const record = lastCleanRecord(attrs);
   return (
     parseTimestampMs(attrs.last_clean_end) ??
+    parseTimestampMs(attrs.last_clean_stop) ??
+    parseTimestampMs(attrs.last_clean_finish) ??
+    parseTimestampMs(attrs.clean_stop) ??
+    parseTimestampMs(attrs.clean_end) ??
     parseTimestampMs(attrs.last_clean_start) ??
+    parseTimestampMs(attrs.last_clean_begin) ??
     parseTimestampMs(attrs.clean_start) ??
-    parseTimestampMs(attrs.last_clean) ??
+    parseTimestampMs(record?.end) ??
+    parseTimestampMs(record?.finish) ??
+    parseTimestampMs(record?.stop) ??
+    parseTimestampMs(record?.begin) ??
+    parseTimestampMs(typeof attrs.last_clean === "object" ? null : attrs.last_clean) ??
     parseTimestampMs(attrs.last_seen)
   );
 }
 
-export function cleanedAreaM2FromAttributes(attrs: Record<string, unknown> | undefined): number | null {
-  if (!attrs) return null;
-  const raw = attrs.cleaned_area ?? attrs.cleaned_area_m2 ?? attrs.clean_area ?? attrs.total_cleaned_area;
+export function normalizeVacuumAreaM2(n: number, unit?: string | null): number | null {
+  if (!Number.isFinite(n) || n < 0) return null;
+  const u = (unit ?? "").toLowerCase().replace("²", "2").replace(/\s/g, "");
+  if (u === "cm2" || u === "cm^2") return Math.round((n / 10000) * 10) / 10;
+  if (u === "m2" || u === "m^2" || u === "sqm" || u === "sq.m") return Math.round(n * 10) / 10;
+  // Valetudo / Xiaomi often report cm² without a unit.
+  if (n > 1000) return Math.round((n / 10000) * 10) / 10;
+  return Math.round(n * 10) / 10;
+}
+
+function parseAreaNumber(raw: unknown): number | null {
   if (raw == null || raw === "") return null;
   const n = typeof raw === "number" ? raw : Number(String(raw).replace(",", ".").replace(/[^\d.-]/g, ""));
-  if (!Number.isFinite(n) || n < 0) return null;
-  return Math.round(n * 10) / 10;
+  return Number.isFinite(n) ? n : null;
+}
+
+export function cleanedAreaM2FromAttributes(attrs: Record<string, unknown> | undefined): number | null {
+  if (!attrs) return null;
+  const record = lastCleanRecord(attrs);
+  const raw =
+    attrs.cleaned_area ??
+    attrs.cleaned_area_m2 ??
+    attrs.clean_area ??
+    attrs.last_clean_area ??
+    attrs.last_cleaning_area ??
+    attrs.cleaning_area ??
+    attrs.total_cleaned_area ??
+    record?.area ??
+    record?.cleaned_area;
+  const n = parseAreaNumber(raw);
+  if (n == null) return null;
+  return normalizeVacuumAreaM2(n);
+}
+
+export type VacuumRelatedEntity = {
+  entity_id: string;
+  state: string;
+  attributes?: Record<string, unknown>;
+};
+
+export function vacuumObjectId(entityId: string | undefined | null): string {
+  if (!entityId) return "";
+  const dot = entityId.indexOf(".");
+  return dot >= 0 ? entityId.slice(dot + 1) : entityId;
+}
+
+export const VACUUM_LAST_SESSION_SENSOR_HINTS = [
+  "last_clean_end",
+  "last_clean_stop",
+  "last_cleaning_end",
+  "last_clean_finish",
+  "last_clean_begin",
+  "last_clean_start",
+  "last_clean",
+] as const;
+
+export const VACUUM_AREA_SENSOR_HINTS = [
+  "last_clean_area",
+  "last_cleaning_area",
+  "cleaned_area",
+  "cleaning_area",
+  "clean_area",
+  "current_statistics_area",
+] as const;
+
+export function findRelatedVacuumSensor(
+  entities: Iterable<VacuumRelatedEntity>,
+  vacuumEntityId: string | undefined | null,
+  hints: readonly string[]
+): VacuumRelatedEntity | undefined {
+  const objectId = vacuumObjectId(vacuumEntityId);
+  if (!objectId) return undefined;
+  const prefix = `sensor.${objectId}`;
+  const related: VacuumRelatedEntity[] = [];
+  for (const entity of entities) {
+    if (entity.entity_id === prefix || entity.entity_id.startsWith(`${prefix}_`)) related.push(entity);
+  }
+  for (const hint of hints) {
+    const found = related.find((entity) => entity.entity_id.includes(hint));
+    if (found) return found;
+  }
+  return undefined;
+}
+
+export function lastCleanAtFromEntity(entity: VacuumRelatedEntity | undefined): number | null {
+  if (!entity) return null;
+  return (
+    parseTimestampMs(entity.state) ??
+    parseTimestampMs(entity.attributes?.timestamp) ??
+    parseTimestampMs(entity.attributes?.last_changed)
+  );
+}
+
+export function cleanedAreaM2FromEntity(entity: VacuumRelatedEntity | undefined): number | null {
+  if (!entity) return null;
+  const n = parseAreaNumber(entity.state);
+  if (n == null) return null;
+  const unit =
+    typeof entity.attributes?.unit_of_measurement === "string"
+      ? entity.attributes.unit_of_measurement
+      : null;
+  return normalizeVacuumAreaM2(n, unit);
+}
+
+export function resolveVacuumLastCleanAt(input: {
+  attrs?: Record<string, unknown>;
+  entities?: Iterable<VacuumRelatedEntity>;
+  vacuumEntityId?: string | null;
+}): number | null {
+  return (
+    lastCleanAtFromAttributes(input.attrs) ??
+    lastCleanAtFromEntity(
+      findRelatedVacuumSensor(input.entities ?? [], input.vacuumEntityId, VACUUM_LAST_SESSION_SENSOR_HINTS)
+    )
+  );
+}
+
+export function resolveVacuumCleanedAreaM2(input: {
+  attrs?: Record<string, unknown>;
+  entities?: Iterable<VacuumRelatedEntity>;
+  vacuumEntityId?: string | null;
+  valetudoAreaCm2?: number | null;
+}): number | null {
+  return (
+    cleanedAreaM2FromAttributes(input.attrs) ??
+    cleanedAreaM2FromEntity(
+      findRelatedVacuumSensor(input.entities ?? [], input.vacuumEntityId, VACUUM_AREA_SENSOR_HINTS)
+    ) ??
+    normalizeVacuumAreaM2(input.valetudoAreaCm2 ?? Number.NaN, "cm2")
+  );
 }
 
 export type VacuumRelativeTimeKind = "justNow" | "minutesAgo" | "hoursAgo" | "daysAgo";
