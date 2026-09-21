@@ -10,7 +10,7 @@ import { GlobalMusicBar } from "@/components/global-music-bar";
 const inter = Inter({ subsets: ["latin"] });
 const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["500", "600"],
+  weight: ["500", "600", "800", "900"],
   variable: "--font-montserrat",
   display: "swap",
 });

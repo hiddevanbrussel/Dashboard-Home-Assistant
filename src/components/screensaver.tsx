@@ -416,7 +416,7 @@ function ScreensaverLockClock({
     clockSizeDateClass(size)
   );
   const digitClass = cn(
-    "font-montserrat font-medium leading-[0.82] tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
+    "font-montserrat font-black leading-[0.82] tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
     clockSizeTimeClass(size)
   );
 
