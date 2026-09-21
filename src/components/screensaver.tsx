@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
+import { usePathname, useRouter } from "next/navigation";
 import { Disc3 } from "lucide-react";
 import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverMusicEntityId, getScreensaverClockPosition, getScreensaverClockSize, getScreensaverMediaSource } from "@/stores/screensaver-store";
 import { useImmichStore } from "@/stores/immich-store";
@@ -46,6 +47,7 @@ import { useLiveTimerRemaining } from "@/hooks/use-live-timer";
 import { useTimerStore } from "@/stores/timer-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { accentRgbCss, screensaverClockPairRgb } from "@/lib/theme-accents";
+import { isMainDashboardPath } from "@/lib/screensaver-home-path";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
@@ -53,6 +55,7 @@ const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
 const ACTIVITY_EVENTS = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "click"] as const;
 const PHOTO_ROTATION_SECONDS = 10;
 const FADE_DURATION_MS = 1200;
+const DISMISS_BLOCK_MS = 400;
 
 function preloadImage(url: string): Promise<void> {
   return new Promise((resolve) => {
@@ -66,8 +69,12 @@ function preloadImage(url: string): Promise<void> {
 
 function useIdleScreensaver() {
   const [active, setActive] = useState(false);
+  const [activatedBy, setActivatedBy] = useState<"idle" | "preview">("idle");
   const [timeoutSeconds, setTimeoutSeconds] = useState(0);
   const ignoreUntilRef = useRef(0);
+  const activeRef = useRef(false);
+  const armTimerRef = useRef<() => void>(() => {});
+  activeRef.current = active;
 
   useEffect(() => {
     const sec = getScreensaverDelaySeconds();
@@ -75,6 +82,7 @@ function useIdleScreensaver() {
     const onSettingChange = () => setTimeoutSeconds(getScreensaverDelaySeconds());
     const onActivate = () => {
       ignoreUntilRef.current = Date.now() + 500;
+      setActivatedBy("preview");
       setActive(true);
     };
     window.addEventListener("screensaver-setting-changed", onSettingChange);
@@ -87,25 +95,34 @@ function useIdleScreensaver() {
 
   useEffect(() => {
     if (timeoutSeconds <= 0) {
+      armTimerRef.current = () => setActive(false);
       return;
     }
     const delayMs = timeoutSeconds * 1000;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    const resetTimer = () => {
-      setActive(false);
+    const armTimer = () => {
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         ignoreUntilRef.current = Date.now() + 400;
+        setActivatedBy("idle");
         setActive(true);
       }, delayMs);
     };
 
-    resetTimer();
+    armTimerRef.current = () => {
+      setActive(false);
+      armTimer();
+    };
+
+    if (!activeRef.current) armTimer();
 
     const onActivity = () => {
       if (Date.now() < ignoreUntilRef.current) return;
-      resetTimer();
+      // Pointer events while the overlay is up must not unmount it — that
+      // lets the same tap fall through to a card underneath.
+      if (activeRef.current) return;
+      armTimer();
     };
     for (const ev of ACTIVITY_EVENTS) {
       window.addEventListener(ev, onActivity, { passive: true });
@@ -119,7 +136,12 @@ function useIdleScreensaver() {
     };
   }, [timeoutSeconds]);
 
-  return { active, setActive };
+  const dismiss = useCallback(() => {
+    ignoreUntilRef.current = Date.now() + DISMISS_BLOCK_MS;
+    armTimerRef.current();
+  }, []);
+
+  return { active, activatedBy, dismiss };
 }
 
 function useScreensaverWeatherLines() {
@@ -494,9 +516,13 @@ function ScreensaverTimer({ align }: { align: "left" | "center" | "right" }) {
   );
 }
 
-const DISMISS_BLOCK_MS = 400;
-
-function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
+function ScreensaverOverlay({
+  onDismiss,
+  onDismissStart,
+}: {
+  onDismiss: () => void;
+  onDismissStart?: () => void;
+}) {
   const { t } = useTranslation();
   const mediaSource = getScreensaverMediaSource();
   const customBg = getScreensaverBackgroundImage();
@@ -811,8 +837,18 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
 
   const handleDismiss = useCallback(() => {
     if (dismissing) return;
+    onDismissStart?.();
     setDismissing(true);
-  }, [dismissing]);
+  }, [dismissing, onDismissStart]);
+
+  const eatDismissEvent = useCallback(
+    (e: { preventDefault: () => void; stopPropagation: () => void }) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleDismiss();
+    },
+    [handleDismiss]
+  );
 
   return (
     <div
@@ -820,7 +856,7 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
       tabIndex={0}
       aria-label={t("screensaver.dismiss")}
       className={cn(
-        "fixed inset-0 z-[9999] overflow-hidden bg-black cursor-pointer transition-opacity duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
+        "fixed inset-0 z-[9999] overflow-hidden bg-black cursor-pointer touch-none transition-opacity duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
         dismissing && "opacity-0 pointer-events-auto"
       )}
       style={
@@ -828,9 +864,17 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
           ? { background: "linear-gradient(to bottom right, #111827, #1f2937, #000)" }
           : undefined
       }
-      onClick={handleDismiss}
+      onPointerDown={eatDismissEvent}
+      onPointerUp={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onClick={eatDismissEvent}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") handleDismiss();
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleDismiss();
+        }
       }}
     >
       {!useGradient && (
@@ -964,9 +1008,15 @@ function ScreensaverOverlay({ onDismiss }: { onDismiss: () => void }) {
 }
 
 export function ScreensaverProvider({ children }: { children: React.ReactNode }) {
-  const { active, setActive } = useIdleScreensaver();
+  const { active, activatedBy, dismiss } = useIdleScreensaver();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const dismiss = useCallback(() => setActive(false), [setActive]);
+  const goHomeIfNeeded = useCallback(() => {
+    if (activatedBy === "idle" && !isMainDashboardPath(pathname ?? "")) {
+      router.push("/");
+    }
+  }, [activatedBy, pathname, router]);
 
   return (
     <>
@@ -974,7 +1024,7 @@ export function ScreensaverProvider({ children }: { children: React.ReactNode })
       {active &&
         typeof document !== "undefined" &&
         createPortal(
-          <ScreensaverOverlay onDismiss={dismiss} />,
+          <ScreensaverOverlay onDismiss={dismiss} onDismissStart={goHomeIfNeeded} />,
           document.body
         )}
     </>
