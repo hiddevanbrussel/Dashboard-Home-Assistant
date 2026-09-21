@@ -219,7 +219,8 @@ export function FloatingTextCard({
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30 rounded-2xl overflow-visible flex transition-colors duration-200",
+        "card-plot-in fixed rounded-2xl overflow-visible flex transition-colors duration-200",
+        editMode ? "z-[80]" : "z-30",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
