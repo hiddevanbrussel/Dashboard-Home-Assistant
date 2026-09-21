@@ -183,6 +183,22 @@ export function hoursFromFocus(absoluteHours: number, focusHour = CALENDAR_FOCUS
   return absoluteHours - focusHour;
 }
 
+/** Pixel gap so back-to-back hourly events do not sit on the same edge. */
+export const TIMED_EVENT_GAP_PX = 8;
+
+/** Absolute top/height for a timed event on the week/day time grid. */
+export function timedEventFrame(
+  start: Date,
+  end: Date,
+  hourH: number,
+  minHeight: number,
+  gap = TIMED_EVENT_GAP_PX
+): { top: number; height: number } {
+  const top = hoursFromFocus(minutesInDay(start) / 60) * hourH;
+  const rawHeight = ((end.getTime() - start.getTime()) / 60_000 / 60) * hourH;
+  return { top, height: Math.max(rawHeight - gap, minHeight) };
+}
+
 /** Scale hour rows so ~16 hours fit in the visible time-grid viewport. */
 export function hourHeightForViewport(clientHeight: number): number {
   if (clientHeight <= 0) return DEFAULT_HOUR_H;
