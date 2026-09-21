@@ -347,7 +347,7 @@ export const ALL_HOUSE_CALLOUTS: HouseCalloutId[] = ["solar", "home", "grid", "b
 export function houseCalloutEntityKey(id: HouseCalloutId): EnergyEntityKey {
   switch (id) {
     case "solar":
-      return "solarPowerEntityId";
+      return "solarYieldTodayEntityId";
     case "home":
       return "consumptionEntityId";
     case "grid":
@@ -358,6 +358,7 @@ export function houseCalloutEntityKey(id: HouseCalloutId): EnergyEntityKey {
 }
 
 export function visibleHouseCallouts(input: {
+  solar?: number;
   solarKw?: number;
   homeKw?: number;
   gridValue?: number;
@@ -365,7 +366,7 @@ export function visibleHouseCallouts(input: {
   batteryKw?: number;
 }): HouseCalloutId[] {
   const out: HouseCalloutId[] = [];
-  if (hasEnergyReading(input.solarKw)) out.push("solar");
+  if (hasEnergyReading(input.solar) || hasEnergyReading(input.solarKw)) out.push("solar");
   if (hasEnergyReading(input.homeKw)) out.push("home");
   if (hasEnergyReading(input.gridValue)) out.push("grid");
   if (hasEnergyReading(input.batterySoc) || hasEnergyReading(input.batteryKw)) out.push("battery");

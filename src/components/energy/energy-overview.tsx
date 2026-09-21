@@ -306,7 +306,6 @@ export function EnergyOverview({
   const linked = hasLinkedEnergyEntities(entities, panelTempEntityIds);
 
   const yieldReading = useEntityReading(entities.solarYieldTodayEntityId);
-  const powerReading = useEntityReading(entities.solarPowerEntityId);
   const exportReading = useEntityReading(entities.gridExportEntityId);
   const consumptionReading = useEntityReading(entities.consumptionEntityId);
   const batterySoc = useEntityReading(entities.batterySocEntityId);
@@ -315,7 +314,6 @@ export function EnergyOverview({
   const panelStates = useEntityStateStore((s) => s.states);
 
   const yieldKwh = yieldReading.value != null ? toKwh(yieldReading.value, yieldReading.unit) : undefined;
-  const powerKw = powerReading.value != null ? toKilowatts(powerReading.value, powerReading.unit) : undefined;
   const exportValue =
     exportReading.value != null
       ? displayUnitForEnergy(exportReading.unit) === "kW"
@@ -348,7 +346,7 @@ export function EnergyOverview({
   const calloutIds = editMode
     ? ALL_HOUSE_CALLOUTS
     : visibleHouseCallouts({
-        solarKw: powerKw,
+        solar: yieldKwh,
         homeKw,
         gridValue: exportValue,
         batterySoc: batterySoc.value,
@@ -363,14 +361,14 @@ export function EnergyOverview({
       return {
         id,
         label: t("energy.overview.houseSolar"),
-        value: hasEnergyReading(powerKw)
-          ? `${formatEnergyValue(powerKw)} kW`
+        value: hasEnergyReading(yieldKwh)
+          ? `${formatEnergyValue(yieldKwh)} kWh`
           : editMode
             ? t("energy.overview.tapToLink")
-            : `${formatEnergyValue(powerKw)} kW`,
+            : `${formatEnergyValue(yieldKwh)} kWh`,
         editMode,
         linked: slotLinked,
-        onBind: editMode ? () => setBindKey("solarPowerEntityId") : undefined,
+        onBind: editMode ? () => setBindKey("solarYieldTodayEntityId") : undefined,
       };
     }
     if (id === "home") {
@@ -457,19 +455,13 @@ export function EnergyOverview({
               onBind={() => setBindKey("solarYieldTodayEntityId")}
             />
             <Stat
-              label={t("energy.overview.currentOutput")}
-              value={formatEnergyValue(powerKw)}
+              label={t("energy.overview.gridUse")}
+              value={formatEnergyValue(homeKw)}
               unit="kW"
-              hint={
-                editMode && !entities.solarPowerEntityId
-                  ? t("energy.overview.tapToLink")
-                  : powerKw != null && powerKw > 0.2
-                    ? t("energy.overview.peakActive")
-                    : undefined
-              }
+              hint={editMode && !entities.consumptionEntityId ? t("energy.overview.tapToLink") : undefined}
               editMode={editMode}
-              linked={Boolean(entities.solarPowerEntityId)}
-              onBind={() => setBindKey("solarPowerEntityId")}
+              linked={Boolean(entities.consumptionEntityId)}
+              onBind={() => setBindKey("consumptionEntityId")}
             />
             <Stat
               label={t("energy.overview.gridExport")}
