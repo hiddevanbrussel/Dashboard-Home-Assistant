@@ -858,7 +858,7 @@ function ScreensaverOverlay({
       className={cn(
         "fixed inset-0 z-[9999] overflow-hidden bg-black cursor-pointer touch-none transition-opacity duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
         dismissing && "opacity-0 pointer-events-auto"
-      )}}
+      )}
       style={
         useGradient && !dismissing
           ? { background: "linear-gradient(to bottom right, #111827, #1f2937, #000)" }
