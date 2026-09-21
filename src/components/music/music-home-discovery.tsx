@@ -137,16 +137,17 @@ export function MusicHomeDiscovery({
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-brand to-gray-900" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/15" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20" />
               </div>
             );
           })}
-          <div className="relative z-20 flex min-h-[176px] items-end gap-4 p-4 sm:min-h-[200px] sm:p-6 lg:min-h-[220px]">
+          {/* Cover bottom-left with title/subtitle/CTA beside it */}
+          <div className="relative z-20 flex min-h-[176px] items-end gap-3 p-4 sm:min-h-[200px] sm:gap-4 sm:p-6 lg:min-h-[220px]">
             {spotlight.imageSrc ? (
               <button
                 type="button"
                 onClick={spotlight.onOpen ?? spotlight.onPlay}
-                className="relative hidden h-28 w-28 shrink-0 overflow-hidden rounded-2xl shadow-2xl sm:block"
+                className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl shadow-2xl sm:h-28 sm:w-28 sm:rounded-2xl"
                 aria-label={spotlight.title}
               >
                 <Image
@@ -160,10 +161,14 @@ export function MusicHomeDiscovery({
                   unoptimized
                 />
               </button>
-            ) : null}
-            <div className="min-w-0 flex-1">
+            ) : (
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl bg-white/10 sm:h-28 sm:w-28 sm:rounded-2xl">
+                <Disc3 className="h-10 w-10 text-white/70" aria-hidden />
+              </div>
+            )}
+            <div className="min-w-0 flex-1 pb-0.5">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">{spotlight.kicker}</p>
-              <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">{spotlight.title}</h2>
+              <h2 className="mt-1 line-clamp-2 text-lg font-bold text-white sm:text-2xl">{spotlight.title}</h2>
               {spotlight.subtitle ? (
                 <p className="mt-1 max-w-xl truncate text-sm text-white/80">{spotlight.subtitle}</p>
               ) : null}
@@ -242,7 +247,7 @@ export function MusicHomeDiscovery({
                 ))}
               </div>
             ) : (
-              <div className="music-h-scroll flex gap-3 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
+              <div className="music-h-scroll flex gap-3 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain">
                 {shelf.items.map((item) => (
                   <button
                     key={item.key}

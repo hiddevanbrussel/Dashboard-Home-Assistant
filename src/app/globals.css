@@ -229,12 +229,13 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
   color: inherit;
 }
 
-/* Muziek-carousels: pan-x pan-y = horizontale vegen scrollen de carousel, verticale vegen scrollen de pagina. */
+/* Muziek-carousels: pan-x pan-y = horizontale vegen scrollen de carousel, verticale vegen scrollen de pagina.
+   Geen Tailwind touch-pan-x hier — die overschrijft pan-y en blokkeert scrollen op tegels. */
 .music-h-scroll {
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: auto;
 }
 
 @layer utilities {

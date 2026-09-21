@@ -14,10 +14,11 @@ import {
 import { MusicSearchOverlay, type MusicSearchResult } from "@/components/music/music-search-overlay";
 import { OfflinePill } from "@/components/offline-pill";
 import Image from "next/image";
-import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, ChevronDown, ListMusic, Home, ListPlus } from "lucide-react";
+import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume2, VolumeX, CirclePlus, CircleMinus, X, ArrowLeft, Heart, Donut, Radio, ChevronDown, ListMusic, Home, ListPlus, Podcast } from "lucide-react";
 import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { fetchMusicAssistantHome } from "@/lib/music-assistant";
+import { getMaItemParams } from "@/lib/ma-item-params";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
@@ -43,8 +44,10 @@ type MASearchItem = {
   [key: string]: unknown;
 };
 
+type PlayableMediaType = "track" | "album" | "artist" | "radio" | "playlist" | "podcast" | "podcast_episode";
+
 /** Build playable URI for MA. Prefer item.uri; else use provider_mappings or provider + mediaType + item_id. */
-function getPlayableUri(item: MASearchItem, mediaType: "track" | "album" | "artist" | "radio" | "playlist"): string {
+function getPlayableUri(item: MASearchItem, mediaType: PlayableMediaType): string {
   const raw = item.uri ?? (item as { item_uri?: string }).item_uri;
   if (typeof raw === "string" && raw.trim()) return raw.trim();
   const mappings = (item as { provider_mappings?: { provider_instance_id?: string; item_id?: string }[] }).provider_mappings;
@@ -69,31 +72,7 @@ function getPlayableUri(item: MASearchItem, mediaType: "track" | "album" | "arti
 
 /** Get item_id and provider for MA API (album_tracks, albums/get, artist_albums, etc.). */
 function getItemParams(item: MASearchItem): { item_id: string; provider_instance_id_or_domain: string } | null {
-  const mappings = (item as { provider_mappings?: { provider_instance_id?: string; provider_instance?: string; item_id?: string | number }[] }).provider_mappings;
-  if (Array.isArray(mappings) && mappings.length > 0) {
-    const first = mappings[0];
-    const prov = first?.provider_instance_id ?? (first as { provider_instance?: string }).provider_instance ?? (first as { provider?: string }).provider;
-    const rawId = first?.item_id ?? (first as { id?: string | number }).id;
-    const id = rawId != null ? String(rawId) : null;
-    if (prov && id) return { item_id: id, provider_instance_id_or_domain: String(prov).replace(/\/+$/, "") };
-  }
-  const raw = item.uri ?? (item as { item_uri?: string }).item_uri;
-  if (typeof raw === "string" && raw.includes("://")) {
-    const [scheme, rest] = raw.split("://");
-    const parts = rest?.split("/");
-    const id = parts?.pop();
-    if (scheme && id) return { item_id: id, provider_instance_id_or_domain: scheme.replace(/\/+$/, "") };
-  }
-  const itemId = item.item_id ?? (item as { item_id?: number | string }).item_id ?? (item as { id?: number | string }).id;
-  if (itemId == null) return null;
-  const provider =
-    (item as { provider_instance_id?: string }).provider_instance_id ??
-    (item as { provider_instance_id_or_domain?: string }).provider_instance_id_or_domain ??
-    (item as { provider_instance?: string }).provider_instance ??
-    (item as { provider?: string }).provider ??
-    (item as { provider_domain?: string }).provider_domain ??
-    "library";
-  return { item_id: String(itemId), provider_instance_id_or_domain: String(provider).replace(/\/+$/, "") };
+  return getMaItemParams(item);
 }
 
 /** Alias for album flows (album_tracks, albums/get). */
@@ -149,12 +128,39 @@ function isRadioItem(item: MASearchItem): boolean {
   return itemMediaTypeHint(item) === "radio";
 }
 
-function detectPlayableType(item: MASearchItem): "track" | "album" | "artist" | "radio" | "playlist" {
+function isPodcastItem(item: MASearchItem): boolean {
+  const uri = itemUri(item);
+  if (uri.includes("/podcast/") && !uri.includes("/podcast_episode/")) return true;
+  return itemMediaTypeHint(item) === "podcast";
+}
+
+function isPodcastEpisodeItem(item: MASearchItem): boolean {
+  if (itemUri(item).includes("/podcast_episode/")) return true;
+  return itemMediaTypeHint(item) === "podcast_episode";
+}
+
+function detectPlayableType(item: MASearchItem): PlayableMediaType {
   if (isAlbumItem(item)) return "album";
   if (isArtistItem(item)) return "artist";
   if (isPlaylistItem(item)) return "playlist";
   if (isRadioItem(item)) return "radio";
+  if (isPodcastEpisodeItem(item)) return "podcast_episode";
+  if (isPodcastItem(item)) return "podcast";
   return "track";
+}
+
+function parseArtistTrackList(data: unknown): MASearchItem[] {
+  const d = data as Record<string, unknown>;
+  const err = (d?.error as string) ?? (d?.message as string);
+  if (err) return [];
+  const result = d?.result ?? d;
+  const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+  if (Array.isArray(resultObj.tracks)) return resultObj.tracks as MASearchItem[];
+  if (Array.isArray(resultObj.items)) return resultObj.items as MASearchItem[];
+  if (Array.isArray(result)) return result as MASearchItem[];
+  if (Array.isArray(d.tracks)) return d.tracks as MASearchItem[];
+  if (Array.isArray(d.items)) return d.items as MASearchItem[];
+  return [];
 }
 
 /** Normalize MA URI: "provider--instance://type/id" -> "provider://type/id" for play_media (avoids 500 on some MA versions). */
@@ -480,7 +486,12 @@ export default function MusicPage() {
   const [featuredPlaylistLoading, setFeaturedPlaylistLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<MusicSectionId | null>(null);
   const musicMenuOpen = true;
-  const [selectedMenu, setSelectedMenu] = useState<"artists" | "albums" | "playlists" | null>(null);
+  const [selectedMenu, setSelectedMenu] = useState<"artists" | "albums" | "playlists" | "podcasts" | null>(null);
+  const [libraryPodcasts, setLibraryPodcasts] = useState<MASearchItem[]>([]);
+  const [libraryPodcastsLoading, setLibraryPodcastsLoading] = useState(false);
+  const [selectedPodcast, setSelectedPodcast] = useState<MASearchItem | null>(null);
+  const [podcastEpisodes, setPodcastEpisodes] = useState<MASearchItem[]>([]);
+  const [podcastEpisodesLoading, setPodcastEpisodesLoading] = useState(false);
   const [addToPlaylistTrack, setAddToPlaylistTrack] = useState<MASearchItem | null>(null);
   const [addToPlaylistPlaylists, setAddToPlaylistPlaylists] = useState<MASearchItem[]>([]);
   const [addToPlaylistLoading, setAddToPlaylistLoading] = useState(false);
@@ -496,14 +507,98 @@ export default function MusicPage() {
   }, [searchOverlayOpen]);
 
   useEffect(() => {
-    if (selectedAlbum || selectedArtist) {
+    if (selectedAlbum || selectedArtist || selectedPodcast) {
       musicScrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
     }
-  }, [selectedAlbum, selectedArtist]);
+  }, [selectedAlbum, selectedArtist, selectedPodcast]);
 
   useEffect(() => {
     hydrateMusicAssistantStore();
   }, []);
+
+  useEffect(() => {
+    if (selectedMenu !== "podcasts" || !musicAssistant.enabled || !musicAssistant.baseUrl) {
+      return;
+    }
+    let cancelled = false;
+    setLibraryPodcastsLoading(true);
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/podcasts/library_items", {
+      limit: 80,
+      in_library_only: true,
+    })
+      .then((data: unknown) => {
+        if (cancelled) return;
+        const d = data as Record<string, unknown>;
+        const err = (d?.error as string) ?? (d?.message as string);
+        if (err) {
+          setLibraryPodcasts([]);
+          return;
+        }
+        const result = d?.result ?? d;
+        const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+        let list: MASearchItem[] = [];
+        if (Array.isArray(resultObj.podcasts)) list = resultObj.podcasts as MASearchItem[];
+        else if (Array.isArray(resultObj.items)) list = resultObj.items as MASearchItem[];
+        else if (Array.isArray(result)) list = result as MASearchItem[];
+        else if (Array.isArray(d.podcasts)) list = d.podcasts as MASearchItem[];
+        else if (Array.isArray(d.items)) list = d.items as MASearchItem[];
+        setLibraryPodcasts(list);
+      })
+      .catch(() => {
+        if (!cancelled) setLibraryPodcasts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLibraryPodcastsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMenu, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
+
+  useEffect(() => {
+    if (!selectedPodcast || !musicAssistant.enabled || !musicAssistant.baseUrl) {
+      setPodcastEpisodes([]);
+      return;
+    }
+    const params = getItemParams(selectedPodcast);
+    if (!params) {
+      setPodcastEpisodes([]);
+      return;
+    }
+    let cancelled = false;
+    setPodcastEpisodesLoading(true);
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/podcasts/podcast_episodes", {
+      item_id: params.item_id,
+      provider_instance_id_or_domain: params.provider_instance_id_or_domain,
+    })
+      .then((data: unknown) => {
+        if (cancelled) return;
+        const d = data as Record<string, unknown>;
+        const err = (d?.error as string) ?? (d?.message as string);
+        if (err) {
+          setPodcastEpisodes([]);
+          return;
+        }
+        const result = d?.result ?? d;
+        const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
+        let list: MASearchItem[] = [];
+        if (Array.isArray(resultObj.episodes)) list = resultObj.episodes as MASearchItem[];
+        else if (Array.isArray(resultObj.items)) list = resultObj.items as MASearchItem[];
+        else if (Array.isArray(result)) list = result as MASearchItem[];
+        else if (Array.isArray(d.episodes)) list = d.episodes as MASearchItem[];
+        else if (Array.isArray(d.items)) list = d.items as MASearchItem[];
+        setPodcastEpisodes(list);
+      })
+      .catch(() => {
+        if (!cancelled) setPodcastEpisodes([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPodcastEpisodesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPodcast, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   useEffect(() => {
     if (!addToPlaylistTrack || !musicAssistant.enabled || !musicAssistant.baseUrl) {
@@ -782,22 +877,22 @@ export default function MusicPage() {
       .finally(() => setArtistAlbumsLoading(false));
 
     setArtistTracksLoading(true);
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/artists/artist_tracks", {
+    const { baseUrl, token } = musicAssistant;
+    // Prefer library artist identity (via getArtistParams). Fall back to top_tracks when
+    // artist_tracks is empty — some providers only expose featured/top tracks.
+    callMusicAssistant(baseUrl, token, "music/artists/artist_tracks", {
       item_id: params.item_id,
       provider_instance_id_or_domain: params.provider_instance_id_or_domain,
     })
-      .then((data: unknown) => {
-        const d = data as Record<string, unknown>;
-        const err = (d?.error as string) ?? (d?.message as string);
-        if (err) return;
-        const result = d?.result ?? d;
-        const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-        let list: MASearchItem[] = [];
-        if (Array.isArray(resultObj.tracks)) list = resultObj.tracks as MASearchItem[];
-        else if (Array.isArray(resultObj.items)) list = resultObj.items as MASearchItem[];
-        else if (Array.isArray(result)) list = result as MASearchItem[];
-        else if (Array.isArray(d.tracks)) list = d.tracks as MASearchItem[];
-        else if (Array.isArray(d.items)) list = d.items as MASearchItem[];
+      .then(async (data: unknown) => {
+        let list = parseArtistTrackList(data);
+        if (list.length === 0) {
+          const top = await callMusicAssistant(baseUrl, token, "music/artists/top_tracks", {
+            item_id: params.item_id,
+            provider_instance_id_or_domain: params.provider_instance_id_or_domain,
+          });
+          list = parseArtistTrackList(top);
+        }
         setArtistTracks(list);
       })
       .catch(() => setArtistTracks([]))
@@ -1220,7 +1315,7 @@ export default function MusicPage() {
   );
 
   const allowSpeakerSelection = musicAssistant.allowSpeakerSelection;
-  const isMusicHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum;
+  const isMusicHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && !selectedPodcast;
   const headerOverHero = false;
 
   const homeGreeting =
@@ -1496,9 +1591,10 @@ export default function MusicPage() {
               { id: "artists" as const, label: t("music.menuArtists"), icon: User },
               { id: "albums" as const, label: t("music.menuAlbums"), icon: Disc3 },
               { id: "playlists" as const, label: t("music.menuPlaylists"), icon: ListMusic },
+              { id: "podcasts" as const, label: t("music.menuPodcasts"), icon: Podcast },
             ] as const
           ).map(({ id, label, icon: Icon }) => {
-            const active = id === "home" ? !selectedMenu && !selectedCategory : selectedMenu === id;
+            const active = id === "home" ? !selectedMenu && !selectedCategory && !selectedPodcast : selectedMenu === id;
             const light = headerOverHero;
             return (
               <button
@@ -1507,6 +1603,8 @@ export default function MusicPage() {
                 onClick={() => {
                   setSelectedArtist(null);
                   setSelectedAlbum(null);
+                  setSelectedPodcast(null);
+                  setPodcastEpisodes([]);
                   setSelectedCategory(null);
                   if (id === "home") {
                     setSelectedMenu(null);
@@ -1809,7 +1907,7 @@ export default function MusicPage() {
                       ) : artistAlbums.length === 0 ? (
                         <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noAlbums")}</p>
                       ) : (
-                        <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain touch-pan-x">
+                        <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain">
                           {artistAlbums.map((item, index) => {
                             const albumUri = getPlayableUri(item, "album");
                             const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
@@ -1936,6 +2034,112 @@ export default function MusicPage() {
                         type="button"
                         onClick={() => artistUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(artistUri))}
                         disabled={!artistUri || !selectedQueueId}
+                        className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
+                        aria-label={t("music.play")}
+                      >
+                        <Play className="h-4 w-4 fill-current ml-0.5" />
+                        {t("music.play")}
+                      </button>
+                    </div>
+                  </aside>
+                </div>
+              </div>
+            );
+          })()
+        ) : selectedPodcast ? (
+          (() => {
+            const podcastImageSrc = getImageSrc(getItemImageUrl(selectedPodcast), musicAssistant.baseUrl, musicAssistant.token);
+            const podcastUri = getPlayableUri(selectedPodcast, "podcast");
+            const publisher =
+              (selectedPodcast as { publisher?: string }).publisher ??
+              getArtistsString(selectedPodcast) ??
+              "";
+            return (
+              <div className="space-y-4 pb-8">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPodcast(null);
+                    setPodcastEpisodes([]);
+                    setError(null);
+                    setSelectedMenu("podcasts");
+                    setSelectedCategory(null);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full bg-black/[0.04] px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-black/[0.07] dark:bg-white/8 dark:text-white dark:hover:bg-white/12"
+                  aria-label={t("music.back")}
+                >
+                  <ArrowLeft className="h-4 w-4 shrink-0" />
+                  {t("music.back")}
+                </button>
+                <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)]">
+                  <section className="min-w-0 order-2 lg:order-1">
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
+                      {t("music.podcastEpisodes")}
+                    </h3>
+                    {podcastEpisodesLoading ? (
+                      <div className="flex justify-center py-8">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+                      </div>
+                    ) : podcastEpisodes.length === 0 ? (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noPodcastEpisodes")}</p>
+                    ) : (
+                      <ul className="space-y-1" role="list">
+                        {podcastEpisodes.map((item, index) => {
+                          const uri = getPlayableUri(item, "podcast_episode");
+                          const name = item.name ?? t("music.unknown");
+                          const duration = (item as { duration?: number }).duration;
+                          const isPlayPending = uri && playPending === uri;
+                          const canPlay = !!uri && !!selectedQueueId;
+                          return (
+                            <li
+                              key={uri ?? `podcast-ep-${index}`}
+                              className="flex items-center gap-3 rounded-2xl bg-black/[0.03] px-3 py-2.5 hover:bg-black/[0.06] dark:bg-white/5 dark:hover:bg-white/10"
+                            >
+                              <span className="w-8 tabular-nums text-sm text-gray-400">{index + 1}</span>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
+                              </div>
+                              <span className="shrink-0 tabular-nums text-xs text-gray-400">{formatDuration(duration)}</span>
+                              <button
+                                type="button"
+                                onClick={() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri))}
+                                disabled={!canPlay || !!isPlayPending}
+                                className="shrink-0 rounded-full bg-brand p-2 text-white hover:opacity-90 disabled:opacity-50"
+                                aria-label={t("music.playOn")}
+                              >
+                                {isPlayPending ? (
+                                  <span className="h-4 w-4 block animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
+                                ) : (
+                                  <Play className="h-4 w-4 fill-current ml-0.5" aria-hidden />
+                                )}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </section>
+                  <aside className="order-1 lg:order-2 lg:sticky lg:top-20">
+                    <div className="relative mx-auto aspect-square w-full max-w-[22rem] overflow-hidden rounded-3xl bg-black/[0.04] shadow-lg dark:bg-white/8">
+                      {podcastImageSrc ? (
+                        <Image src={podcastImageSrc} alt="" fill className="object-cover" sizes="352px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized priority />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Podcast className="h-16 w-16 text-gray-400" aria-hidden />
+                        </div>
+                      )}
+                    </div>
+                    <h2 className="mt-4 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+                      {(selectedPodcast as MASearchItem).name ?? t("music.unknown")}
+                    </h2>
+                    {publisher ? (
+                      <p className="mt-1 text-sm text-gray-500 dark:text-white/60">{publisher}</p>
+                    ) : null}
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={() => podcastUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(podcastUri))}
+                        disabled={!podcastUri || !selectedQueueId}
                         className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
                         aria-label={t("music.play")}
                       >
@@ -2095,6 +2299,57 @@ export default function MusicPage() {
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <ListMusic className="h-12 w-12 text-gray-500 dark:text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-1.5 truncate text-sm font-medium text-gray-900 dark:text-white text-center">{item.name ?? t("music.unknown")}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : selectedMenu === "podcasts" && !selectedCategory ? (
+          <div className="space-y-6">
+            <div className="relative flex items-center justify-center w-full min-h-[2rem]">
+              <button
+                type="button"
+                onClick={() => setSelectedMenu(null)}
+                className="absolute left-0 flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {t("music.back")}
+              </button>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">{t("music.menuPodcasts")}</h2>
+            </div>
+            {libraryPodcastsLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
+              </div>
+            ) : libraryPodcasts.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t("music.noPodcasts")}</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {libraryPodcasts.map((item, index) => {
+                  const podcastParams = getItemParams(item);
+                  const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
+                  const handleClick = () => {
+                    if (podcastParams) setSelectedPodcast(item);
+                  };
+                  return (
+                    <button
+                      key={item.uri ?? item.item_id ?? `podcast-${index}`}
+                      type="button"
+                      onClick={handleClick}
+                      disabled={!podcastParams}
+                      className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                    >
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
+                        {imageSrc ? (
+                          <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Podcast className="h-12 w-12 text-gray-500 dark:text-gray-400" />
                           </div>
                         )}
                       </div>
