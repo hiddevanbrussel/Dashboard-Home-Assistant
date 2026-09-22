@@ -17,6 +17,7 @@ describe("ma home jobs", () => {
       "music/playlists/get",
       "music/playlists/playlist_tracks",
     ]);
+    expect(jobs[0].args).toMatchObject({ order_by: "timestamp_added_desc" });
     expect(jobs.some((job) => job.command === "music/radios/library_items")).toBe(false);
   });
 });

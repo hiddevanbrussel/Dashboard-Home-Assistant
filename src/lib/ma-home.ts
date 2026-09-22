@@ -1,10 +1,17 @@
 import { callMaServerSafe } from "@/lib/ma-server";
 import { parseMaItemList, parseMaPlaylist, parseMaPlaylistTracks, parseMaRecentItems } from "@/lib/ma-parse";
+import {
+  folderItems,
+  parseRecommendationFolders,
+  pickStationsForYouFolder,
+  stationsRequestArgs,
+} from "@/lib/ma-recommendations";
 
 export const MA_HOME_ALBUM_LIMIT = 80;
 export const MA_HOME_ARTIST_LIMIT = 80;
 export const MA_HOME_PLAYLIST_LIMIT = 60;
 export const MA_HOME_RADIO_LIMIT = 30;
+export const MA_HOME_STATION_LIMIT = 16;
 export const MA_HOME_RECENT_LIMIT = 24;
 export const MA_HOME_FEATURED_TRACK_LIMIT = 16;
 
@@ -27,6 +34,7 @@ export type MaHomePayload = {
   artists: unknown[];
   playlists: unknown[];
   radios: unknown[];
+  stations: unknown[];
   recent: unknown[];
   featured: MaHomeFeatured[];
 };
@@ -43,7 +51,11 @@ export function maHomeJobs(input: Pick<MaHomeRequest, "featuredPlaylistIds" | "i
 }[] {
   const featuredIds = featuredPlaylistIds(input.featuredPlaylistIds);
   const jobs: { key: string; command: string; args: Record<string, unknown> }[] = [
-    { key: "albums", command: "music/albums/library_items", args: { limit: MA_HOME_ALBUM_LIMIT, in_library_only: true } },
+    {
+      key: "albums",
+      command: "music/albums/library_items",
+      args: { limit: MA_HOME_ALBUM_LIMIT, in_library_only: true, order_by: "timestamp_added_desc" },
+    },
     { key: "artists", command: "music/artists/library_items", args: { limit: MA_HOME_ARTIST_LIMIT, in_library_only: true } },
     { key: "playlists", command: "music/playlists/library_items", args: { limit: MA_HOME_PLAYLIST_LIMIT, in_library_only: true } },
   ];
@@ -72,18 +84,33 @@ export function maHomeJobs(input: Pick<MaHomeRequest, "featuredPlaylistIds" | "i
   return jobs;
 }
 
+async function fetchStationsForYou(baseUrl: string, token: string, recommendationsData: unknown): Promise<unknown[]> {
+  const folders = parseRecommendationFolders(recommendationsData);
+  const folder = pickStationsForYouFolder(folders);
+  const embedded = folderItems(folder);
+  if (embedded.length > 0) return embedded.slice(0, MA_HOME_STATION_LIMIT);
+
+  const args = stationsRequestArgs(folder);
+  if (!args) return [];
+  const itemsData = await callMaServerSafe(baseUrl, token, "music/recommendations/items", args);
+  return parseMaItemList(itemsData, ["items"]).slice(0, MA_HOME_STATION_LIMIT);
+}
+
 export async function fetchMaHome(input: MaHomeRequest): Promise<MaHomePayload> {
   const { baseUrl, token } = input;
   const featuredIds = featuredPlaylistIds(input.featuredPlaylistIds);
   const jobs = maHomeJobs(input);
-  const results = await Promise.all(jobs.map((job) => callMaServerSafe(baseUrl, token, job.command, job.args)));
-  const byKey = new Map(jobs.map((job, index) => [job.key, results[index]]));
+  const recJob = { key: "recommendations", command: "music/recommendations", args: {} };
+  const allJobs = [...jobs, recJob];
+  const results = await Promise.all(allJobs.map((job) => callMaServerSafe(baseUrl, token, job.command, job.args)));
+  const byKey = new Map(allJobs.map((job, index) => [job.key, results[index]]));
 
   return {
     albums: parseMaItemList(byKey.get("albums"), ["albums"]),
     artists: parseMaItemList(byKey.get("artists"), ["artists"]),
     playlists: parseMaItemList(byKey.get("playlists"), ["playlists"]),
     radios: byKey.has("radios") ? parseMaItemList(byKey.get("radios"), ["radios"]) : [],
+    stations: await fetchStationsForYou(baseUrl, token, byKey.get("recommendations")),
     recent: byKey.has("recent") ? parseMaRecentItems(byKey.get("recent")) : [],
     featured: featuredIds.map((id) => ({
       id,

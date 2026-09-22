@@ -6,6 +6,7 @@ export type MusicAssistantHomePayload = {
   artists: unknown[];
   playlists: unknown[];
   radios: unknown[];
+  stations: unknown[];
   recent: unknown[];
   featured: { id: string; playlist: Record<string, unknown> | null; tracks: unknown[] }[];
 };
@@ -72,6 +73,7 @@ export async function fetchMusicAssistantHome(input: {
     artists: Array.isArray(data.artists) ? data.artists : [],
     playlists: Array.isArray(data.playlists) ? data.playlists : [],
     radios: Array.isArray(data.radios) ? data.radios : [],
+    stations: Array.isArray(data.stations) ? data.stations : [],
     recent: Array.isArray(data.recent) ? data.recent : [],
     featured: Array.isArray(data.featured) ? data.featured : [],
   };

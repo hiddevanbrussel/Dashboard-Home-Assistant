@@ -19,6 +19,7 @@ import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { fetchMusicAssistantHome } from "@/lib/music-assistant";
 import { getMaItemParams } from "@/lib/ma-item-params";
+import { generatedCoverDataUri } from "@/lib/generated-cover";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
@@ -339,6 +340,7 @@ type MusicHomeMemory = {
   artists: MASearchItem[];
   playlists: MASearchItem[];
   radios: MASearchItem[];
+  stations: MASearchItem[];
   recent: MASearchItem[];
   featured: { id: string; playlist: MASearchItem | null; tracks: MASearchItem[] }[];
 };
@@ -362,6 +364,7 @@ function loadMusicHome(
         artists: data.artists as MASearchItem[],
         playlists: data.playlists as MASearchItem[],
         radios: data.radios as MASearchItem[],
+        stations: (Array.isArray(data.stations) ? data.stations : []) as MASearchItem[],
         recent: data.recent as MASearchItem[],
         featured: data.featured.map((entry) => ({
           id: entry.id,
@@ -484,6 +487,8 @@ export default function MusicPage() {
   const [libraryArtistsLoading, setLibraryArtistsLoading] = useState(false);
   const [libraryAlbums, setLibraryAlbums] = useState<MASearchItem[]>([]);
   const [libraryAlbumsLoading, setLibraryAlbumsLoading] = useState(false);
+  const [appleStations, setAppleStations] = useState<MASearchItem[]>([]);
+  const [appleStationsLoading, setAppleStationsLoading] = useState(false);
   const [featuredPlaylistData, setFeaturedPlaylistData] = useState<{ id: string; playlist: MASearchItem | null; tracks: MASearchItem[] }[]>([]);
   const [featuredPlaylistLoading, setFeaturedPlaylistLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<MusicSectionId | null>(null);
@@ -919,6 +924,8 @@ export default function MusicPage() {
       setLibraryArtistsLoading(false);
       setLibraryAlbums([]);
       setLibraryAlbumsLoading(false);
+      setAppleStations([]);
+      setAppleStationsLoading(false);
       setRecentItems([]);
       setRecentLoading(false);
       return;
@@ -939,12 +946,14 @@ export default function MusicPage() {
       setLibraryArtists(cached.artists);
       setLibraryPlaylists(cached.playlists);
       setRadioStations(cached.radios);
+      setAppleStations(cached.stations ?? []);
       setRecentItems(cached.recent);
       setFeaturedPlaylistData(cached.featured);
       setLibraryAlbumsLoading(false);
       setLibraryArtistsLoading(false);
       setLibraryPlaylistsLoading(false);
       setRadioStationsLoading(false);
+      setAppleStationsLoading(false);
       setRecentLoading(false);
       setFeaturedPlaylistLoading(false);
     } else {
@@ -952,6 +961,7 @@ export default function MusicPage() {
       setLibraryArtistsLoading(true);
       setLibraryPlaylistsLoading(true);
       setRadioStationsLoading(musicAssistant.sectionRadioEnabled);
+      setAppleStationsLoading(true);
       setRecentLoading(musicAssistant.sectionRecentlyPlayedEnabled);
       setFeaturedPlaylistLoading(featuredIds.length > 0);
     }
@@ -972,6 +982,7 @@ export default function MusicPage() {
             setLibraryArtists([]);
             setLibraryPlaylists([]);
             setRadioStations([]);
+            setAppleStations([]);
             setRecentItems([]);
             setFeaturedPlaylistData([]);
           }
@@ -981,6 +992,7 @@ export default function MusicPage() {
         setLibraryArtists(data.artists);
         setLibraryPlaylists(data.playlists);
         setRadioStations(data.radios);
+        setAppleStations(data.stations);
         setRecentItems(data.recent);
         setFeaturedPlaylistData(data.featured);
       })
@@ -990,6 +1002,7 @@ export default function MusicPage() {
         setLibraryArtists([]);
         setLibraryPlaylists([]);
         setRadioStations([]);
+        setAppleStations([]);
         setRecentItems([]);
         setFeaturedPlaylistData([]);
       })
@@ -999,6 +1012,7 @@ export default function MusicPage() {
         setLibraryArtistsLoading(false);
         setLibraryPlaylistsLoading(false);
         setRadioStationsLoading(false);
+        setAppleStationsLoading(false);
         setRecentLoading(false);
         setFeaturedPlaylistLoading(false);
       });
@@ -1476,40 +1490,22 @@ export default function MusicPage() {
 
     const shelves: MusicHomeShelf[] = [];
 
-    if (musicAssistant.sectionFeaturedPlaylistEnabled) {
-      shelves.push({
-        id: "featured",
-        title: t("music.featured"),
-        variant: "square",
-        loading: featuredPlaylistLoading,
-        items: featuredPlaylists.map((p, i) => toTile(p, i, "featured", "playlist")),
-        onSeeAll: () => {
-          setSelectedMenu("playlists");
-          setSelectedCategory(null);
-        },
-      });
-    }
+    shelves.push({
+      id: "stations",
+      title: t("music.stationsForYou"),
+      variant: "station",
+      loading: appleStationsLoading,
+      items: appleStations.slice(0, 16).map((item, i) => toTile(item, i, "station", detectPlayableType(item))),
+    });
 
     shelves.push({
       id: "albums",
-      title: t("music.yourAlbums"),
+      title: t("music.recentlyAddedAlbums"),
       variant: "square",
       loading: libraryAlbumsLoading,
       items: libraryAlbums.slice(0, 16).map((item, i) => toTile(item, i, "album", "album")),
       onSeeAll: () => {
         setSelectedMenu("albums");
-        setSelectedCategory(null);
-      },
-    });
-
-    shelves.push({
-      id: "artists",
-      title: t("music.yourArtists"),
-      variant: "circle",
-      loading: libraryArtistsLoading,
-      items: libraryArtists.slice(0, 16).map((item, i) => toTile(item, i, "artist", "artist")),
-      onSeeAll: () => {
-        setSelectedMenu("artists");
         setSelectedCategory(null);
       },
     });
@@ -1522,6 +1518,20 @@ export default function MusicPage() {
         loading: radioStationsLoading,
         items: radioStations.slice(0, 16).map((item, i) => toTile(item, i, "radio", "radio")),
         onSeeAll: () => setSelectedCategory("radio"),
+      });
+    }
+
+    if (musicAssistant.sectionFeaturedPlaylistEnabled) {
+      shelves.push({
+        id: "featured",
+        title: t("music.featured"),
+        variant: "square",
+        loading: featuredPlaylistLoading,
+        items: featuredPlaylists.map((p, i) => toTile(p, i, "featured", "playlist")),
+        onSeeAll: () => {
+          setSelectedMenu("playlists");
+          setSelectedCategory(null);
+        },
       });
     }
 
@@ -1546,8 +1556,8 @@ export default function MusicPage() {
       (musicAssistant.sectionRecentlyPlayedEnabled && recentLoading) ||
       featuredPlaylistLoading ||
       libraryAlbumsLoading ||
-      libraryArtistsLoading ||
       libraryPlaylistsLoading ||
+      appleStationsLoading ||
       (musicAssistant.sectionRadioEnabled && radioStationsLoading);
 
     return { jumpBackIn, spotlights, shelves, loading };
@@ -1566,10 +1576,10 @@ export default function MusicPage() {
     featuredPlaylistLoading,
     libraryAlbums,
     libraryAlbumsLoading,
-    libraryArtists,
-    libraryArtistsLoading,
     libraryPlaylists,
     libraryPlaylistsLoading,
+    appleStations,
+    appleStationsLoading,
     radioStations,
     radioStationsLoading,
     playPending,
@@ -2314,7 +2324,9 @@ export default function MusicPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {libraryPlaylists.map((item, index) => {
                   const playlistUri = getPlayableUri(item, "playlist");
-                  const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
+                  const imageSrc =
+                    getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token) ??
+                    generatedCoverDataUri(item.name ?? t("music.unknown"));
                   const canPlay = !!playlistUri && !!selectedQueueId;
                   const handleClick = () => {
                     if (canPlay && playlistUri) playOnPlayer(normalizePlayMediaUri(playlistUri));
