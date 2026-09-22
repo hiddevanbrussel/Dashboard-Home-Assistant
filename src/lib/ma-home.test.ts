@@ -13,10 +13,12 @@ describe("ma home jobs", () => {
       "music/albums/library_items",
       "music/artists/library_items",
       "music/playlists/library_items",
+      "music/genres/library_items",
       "music/recently_played_items",
       "music/playlists/get",
       "music/playlists/playlist_tracks",
     ]);
+    expect(jobs[0].args).toMatchObject({ order_by: "timestamp_added_desc" });
     expect(jobs.some((job) => job.command === "music/radios/library_items")).toBe(false);
   });
 });

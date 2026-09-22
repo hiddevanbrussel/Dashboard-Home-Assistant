@@ -5,6 +5,8 @@ import Image from "next/image";
 import { ChevronRight, Disc3, Play, Radio, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MUSIC_IMAGE_BLUR } from "@/lib/music-item-image";
+import { MusicGenreBrowse } from "@/components/music/music-genre-browse";
+import type { MusicGenre } from "@/lib/music-genres";
 
 export type MusicHomeTile = {
   key: string;
@@ -46,6 +48,9 @@ type Props = {
   spotlights: MusicHomeSpotlight[];
   spotlightIntervalMs?: number;
   shelves: MusicHomeShelf[];
+  genres?: MusicGenre[];
+  genreTitle?: string;
+  onSelectGenre?: (genre: MusicGenre) => void;
   banner?: string | null;
   emptyLabel?: string | null;
 };
@@ -61,6 +66,9 @@ export function MusicHomeDiscovery({
   spotlights,
   spotlightIntervalMs = 8000,
   shelves,
+  genres = [],
+  genreTitle,
+  onSelectGenre,
   banner,
   emptyLabel,
 }: Props) {
@@ -83,7 +91,10 @@ export function MusicHomeDiscovery({
   }, [spotlightCount, spotlightIntervalMs]);
 
   const hasContent =
-    jumpBackIn.length > 0 || spotlightCount > 0 || shelves.some((shelf) => shelf.loading || shelf.items.length > 0);
+    jumpBackIn.length > 0 ||
+    spotlightCount > 0 ||
+    shelves.some((shelf) => shelf.loading || shelf.items.length > 0) ||
+    genres.length > 0;
 
   const showHeroRow = Boolean(spotlight) || jumpBackIn.length > 0;
 
@@ -286,6 +297,10 @@ export function MusicHomeDiscovery({
           </section>
         );
       })}
+
+      {genreTitle && onSelectGenre && genres.length > 0 ? (
+        <MusicGenreBrowse title={genreTitle} items={genres} onSelect={onSelectGenre} />
+      ) : null}
 
       {!hasContent && emptyLabel ? (
         <p className="px-1 text-sm text-gray-500 dark:text-gray-400">{emptyLabel}</p>

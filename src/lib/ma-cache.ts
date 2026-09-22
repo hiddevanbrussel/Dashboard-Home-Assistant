@@ -7,6 +7,7 @@ const CACHEABLE_TTL_MS: Record<string, number> = {
   "music/artists/library_items": MA_LIBRARY_CACHE_MS,
   "music/playlists/library_items": MA_LIBRARY_CACHE_MS,
   "music/radios/library_items": MA_LIBRARY_CACHE_MS,
+  "music/genres/library_items": MA_LIBRARY_CACHE_MS,
   "music/podcasts/library_items": MA_LIBRARY_CACHE_MS,
   "music/playlists/get": MA_LIBRARY_CACHE_MS,
   "music/playlists/playlist_tracks": MA_LIBRARY_CACHE_MS,

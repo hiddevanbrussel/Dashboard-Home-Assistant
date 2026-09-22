@@ -5,6 +5,7 @@ export const MA_HOME_ALBUM_LIMIT = 80;
 export const MA_HOME_ARTIST_LIMIT = 80;
 export const MA_HOME_PLAYLIST_LIMIT = 60;
 export const MA_HOME_RADIO_LIMIT = 30;
+export const MA_HOME_GENRE_LIMIT = 24;
 export const MA_HOME_RECENT_LIMIT = 24;
 export const MA_HOME_FEATURED_TRACK_LIMIT = 16;
 
@@ -27,6 +28,7 @@ export type MaHomePayload = {
   artists: unknown[];
   playlists: unknown[];
   radios: unknown[];
+  genres: unknown[];
   recent: unknown[];
   featured: MaHomeFeatured[];
 };
@@ -43,9 +45,14 @@ export function maHomeJobs(input: Pick<MaHomeRequest, "featuredPlaylistIds" | "i
 }[] {
   const featuredIds = featuredPlaylistIds(input.featuredPlaylistIds);
   const jobs: { key: string; command: string; args: Record<string, unknown> }[] = [
-    { key: "albums", command: "music/albums/library_items", args: { limit: MA_HOME_ALBUM_LIMIT, in_library_only: true } },
+    {
+      key: "albums",
+      command: "music/albums/library_items",
+      args: { limit: MA_HOME_ALBUM_LIMIT, in_library_only: true, order_by: "timestamp_added_desc" },
+    },
     { key: "artists", command: "music/artists/library_items", args: { limit: MA_HOME_ARTIST_LIMIT, in_library_only: true } },
     { key: "playlists", command: "music/playlists/library_items", args: { limit: MA_HOME_PLAYLIST_LIMIT, in_library_only: true } },
+    { key: "genres", command: "music/genres/library_items", args: { limit: MA_HOME_GENRE_LIMIT } },
   ];
   if (input.includeRadio !== false) {
     jobs.push({ key: "radios", command: "music/radios/library_items", args: { limit: MA_HOME_RADIO_LIMIT, in_library_only: true } });
@@ -84,6 +91,7 @@ export async function fetchMaHome(input: MaHomeRequest): Promise<MaHomePayload> 
     artists: parseMaItemList(byKey.get("artists"), ["artists"]),
     playlists: parseMaItemList(byKey.get("playlists"), ["playlists"]),
     radios: byKey.has("radios") ? parseMaItemList(byKey.get("radios"), ["radios"]) : [],
+    genres: parseMaItemList(byKey.get("genres"), ["genres"]),
     recent: byKey.has("recent") ? parseMaRecentItems(byKey.get("recent")) : [],
     featured: featuredIds.map((id) => ({
       id,
