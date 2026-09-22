@@ -21,10 +21,15 @@ export function CameraCardWidget({
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const friendlyName = (entity?.attributes?.friendly_name as string) ?? entity_id;
   const [refreshKey, setRefreshKey] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
   const imageSrc = entity_id
     ? `/api/ha/camera-image?entity_id=${encodeURIComponent(entity_id)}&t=${refreshKey}`
     : null;
+
+  useEffect(() => {
+    setImageError(false);
+  }, [refreshKey, entity_id]);
 
   useEffect(() => {
     if (!refresh || refresh < 1) return;
@@ -47,7 +52,7 @@ export function CameraCardWidget({
       )}
     >
       <div className="relative flex-1 min-h-0 w-full bg-black overflow-hidden">
-        {imageSrc ? (
+        {imageSrc && !imageError ? (
           <Image
             src={imageSrc}
             alt={title}
@@ -55,9 +60,10 @@ export function CameraCardWidget({
             sizes="(max-width: 640px) 100vw, 640px"
             className="object-cover"
             unoptimized
+            onError={() => setImageError(true)}
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-white/50">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/50">
             <Video className="h-12 w-12" aria-hidden />
             <span className="sr-only">{t("cameraCard.noCamera")}</span>
           </div>
