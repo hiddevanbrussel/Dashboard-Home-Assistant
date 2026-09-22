@@ -15,13 +15,13 @@ export function getScreensaverClockSizeOrDefault(value: string | null | undefine
 export function clockSizeTimeClass(size: ScreensaverClockSize): string {
   switch (size) {
     case "sm":
-      return "text-6xl sm:text-7xl";
+      return "text-7xl sm:text-8xl";
     case "lg":
-      return "text-[6.5rem] sm:text-[8rem]";
+      return "text-[7.5rem] sm:text-[9.5rem]";
     case "xl":
-      return "text-[clamp(7rem,22vw,15rem)]";
+      return "text-[clamp(8rem,26vw,17rem)]";
     default:
-      return "text-8xl sm:text-9xl";
+      return "text-9xl sm:text-[10rem]";
   }
 }
 
@@ -85,12 +85,12 @@ export function clockSizeMetaBelowClass(size: ScreensaverClockSize): string {
 export function clockSizePreviewDigitClass(size: ScreensaverClockSize): string {
   switch (size) {
     case "sm":
-      return "text-xl";
-    case "lg":
-      return "text-3xl";
-    case "xl":
-      return "text-5xl";
-    default:
       return "text-2xl";
+    case "lg":
+      return "text-4xl";
+    case "xl":
+      return "text-6xl";
+    default:
+      return "text-3xl";
   }
 }

@@ -263,7 +263,7 @@ export function ClockFormatPreview({ variant }: { variant: "24" | "12" }) {
 
 export function ClockSizePreview({ size }: { size: ScreensaverClockSize }) {
   const digitClass = cn(
-    "font-montserrat font-black leading-none tabular-nums",
+    "font-montserrat font-extrabold leading-none tabular-nums",
     clockSizePreviewDigitClass(size)
   );
   return (
