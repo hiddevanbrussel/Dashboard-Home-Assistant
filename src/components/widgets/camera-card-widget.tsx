@@ -58,7 +58,8 @@ export function CameraCardWidget({
             alt={title}
             fill
             sizes="(max-width: 640px) 100vw, 640px"
-            className="object-cover"
+            className="pointer-events-none select-none object-cover"
+            draggable={false}
             unoptimized
             onError={() => setImageError(true)}
           />
