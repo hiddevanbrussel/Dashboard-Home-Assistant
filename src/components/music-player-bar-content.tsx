@@ -24,6 +24,7 @@ import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerActions } from "@/hooks/use-music-player-actions";
 import { useSpeakerPairing, resolveEntityId } from "@/hooks/use-speaker-pairing";
+import { MusicNowPlayingOverlay } from "@/components/music-now-playing-overlay";
 import { getItemImageUrl, getImageSrc, formatDuration, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
   const { t } = useTranslation();
   const speakerPopoverRef = useRef<HTMLDivElement>(null);
   const [speakerPopoverOpen, setSpeakerPopoverOpen] = useState(false);
+  const [nowPlayingOpen, setNowPlayingOpen] = useState(false);
 
   const { maPlayers, queueState, selectedQueueId, setSelectedQueueId } = useMusicPlayerStore();
   const musicAssistant = useMusicAssistantStore();
@@ -178,7 +180,12 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
       <div className="w-full flex items-center gap-4 sm:gap-6 min-w-0">
         {/* Left: cover + artist/title */}
         <div className="flex items-center gap-3 min-w-[120px] max-w-[220px] sm:max-w-xs shrink-0 flex-shrink-0">
-          <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-gray-200/80 dark:bg-white/10">
+          <button
+            type="button"
+            onClick={() => setNowPlayingOpen(true)}
+            className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-gray-200/80 dark:bg-white/10 transition-transform active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-yellow dark:focus-visible:ring-accent-green"
+            aria-label={t("music.nowPlayingOpen")}
+          >
             {coverSrc ? (
               <Image
                 src={coverSrc}
@@ -195,11 +202,16 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
                 <Disc3 className="h-7 w-7 text-gray-500 dark:text-white/50" aria-hidden />
               </div>
             )}
-          </div>
-          <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+          </button>
+          <button
+            type="button"
+            onClick={() => setNowPlayingOpen(true)}
+            className="min-w-0 flex-1 flex flex-col gap-0.5 text-left rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-yellow dark:focus-visible:ring-accent-green"
+            aria-label={t("music.nowPlayingOpen")}
+          >
             <p className="truncate text-xs text-gray-600 dark:text-white/70">{artistLine || "—"}</p>
             <p className="truncate text-sm font-medium text-gray-900 dark:text-white/95">{titleLine || "—"}</p>
-          </div>
+          </button>
         </div>
 
         {/* Center: prev / play / next / dont-stop, then seek */}
@@ -445,6 +457,32 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
         </div>
       </div>
       </div>
+      <MusicNowPlayingOverlay
+        open={nowPlayingOpen}
+        onClose={() => setNowPlayingOpen(false)}
+        coverSrc={coverSrc}
+        title={titleLine || "—"}
+        artist={artistLine || "—"}
+        isPlaying={isPlaying}
+        position={position}
+        duration={duration}
+        onPlayPause={() => queueControl(isPlaying ? "pause" : "play")}
+        onPrevious={() => queueControl("previous")}
+        onNext={() => queueControl("next")}
+        currentItem={cur}
+        baseUrl={musicAssistant.baseUrl}
+        token={musicAssistant.token}
+        labels={{
+          close: t("music.close"),
+          play: t("music.play"),
+          pause: t("music.pause"),
+          previous: t("music.previous"),
+          next: t("music.next"),
+          lyrics: t("music.lyrics"),
+          noLyrics: t("music.noLyrics"),
+          lyricsLoading: t("music.lyricsLoading"),
+        }}
+      />
     </footer>
   );
 }
