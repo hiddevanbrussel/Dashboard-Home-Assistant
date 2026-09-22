@@ -139,6 +139,16 @@ import {
   MEDIA_CARD_MIN_WIDTH,
 } from "@/lib/media-card";
 import {
+  CAMERA_CARD_DEFAULT_HEIGHT,
+  CAMERA_CARD_DEFAULT_WIDTH,
+  CAMERA_CARD_MAX_HEIGHT,
+  CAMERA_CARD_MAX_WIDTH,
+  CAMERA_CARD_MIN_HEIGHT,
+  CAMERA_CARD_MIN_WIDTH,
+  clampCameraCardHeight,
+  clampCameraCardWidth,
+} from "@/lib/camera-card";
+import {
   clampWeatherCardHeight,
   clampWeatherCardWidth,
   WEATHER_CARD_DEFAULT_HEIGHT,
@@ -1184,7 +1194,12 @@ export default function DashboardEditPage() {
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
-      ...(type === "camera_card" && { width: 360, height: 270, refresh: 10, show_title: true }),
+      ...(type === "camera_card" && {
+        width: CAMERA_CARD_DEFAULT_WIDTH,
+        height: CAMERA_CARD_DEFAULT_HEIGHT,
+        refresh: 10,
+        show_title: true,
+      }),
       ...(type === "weather_card" && { width: WEATHER_CARD_DEFAULT_WIDTH, height: WEATHER_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
       ...(type === "calendar_card" && { width: CALENDAR_CARD_DEFAULT_WIDTH, height: CALENDAR_CARD_DEFAULT_HEIGHT }),
@@ -1296,6 +1311,17 @@ export default function DashboardEditPage() {
   function handleMediaCardResize(widgetId: string, size: { width: number; height: number }) {
     const width = clampMediaCardWidth(size.width);
     const height = clampMediaCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleCameraCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampCameraCardWidth(size.width);
+    const height = clampCameraCardHeight(size.height);
     const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
     setWidgets(newWidgets);
     if (editingWidgetId === widgetId) {
@@ -2170,6 +2196,7 @@ export default function DashboardEditPage() {
                   ? () => handleRemoveTile(w.id)
                   : undefined
               }
+              onResize={editMode ? (size) => handleCameraCardResize(w.id, size) : undefined}
             />
           ))}
 
@@ -4874,10 +4901,10 @@ aria-label={t("editPanel.removeCondition")}
                       </label>
                       <input
                         type="number"
-                        min={200}
-                        max={600}
+                        min={CAMERA_CARD_MIN_WIDTH}
+                        max={CAMERA_CARD_MAX_WIDTH}
                         step={10}
-                        value={editForm.width ?? 360}
+                        value={editForm.width ?? CAMERA_CARD_DEFAULT_WIDTH}
                         onChange={(e) => {
                           const v = e.target.value === "" ? undefined : Number(e.target.value);
                           setEditForm((prev) => ({
@@ -4885,10 +4912,12 @@ aria-label={t("editPanel.removeCondition")}
                             width: v != null && !Number.isNaN(v) ? v : undefined,
                           }));
                         }}
-                        placeholder="360"
+                        placeholder={String(CAMERA_CARD_DEFAULT_WIDTH)}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange360")}</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        {CAMERA_CARD_MIN_WIDTH}–{CAMERA_CARD_MAX_WIDTH} px
+                      </p>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -4896,10 +4925,10 @@ aria-label={t("editPanel.removeCondition")}
                       </label>
                       <input
                         type="number"
-                        min={150}
-                        max={450}
+                        min={CAMERA_CARD_MIN_HEIGHT}
+                        max={CAMERA_CARD_MAX_HEIGHT}
                         step={10}
-                        value={editForm.height ?? 270}
+                        value={editForm.height ?? CAMERA_CARD_DEFAULT_HEIGHT}
                         onChange={(e) => {
                           const v = e.target.value === "" ? undefined : Number(e.target.value);
                           setEditForm((prev) => ({
@@ -4907,10 +4936,12 @@ aria-label={t("editPanel.removeCondition")}
                             height: v != null && !Number.isNaN(v) ? v : undefined,
                           }));
                         }}
-                        placeholder="270"
+                        placeholder={String(CAMERA_CARD_DEFAULT_HEIGHT)}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange270")}</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        {CAMERA_CARD_MIN_HEIGHT}–{CAMERA_CARD_MAX_HEIGHT} px
+                      </p>
                     </div>
                     </>
                     )}
@@ -5481,8 +5512,8 @@ aria-label={t("editPanel.removeCondition")}
                         ...(editingWidget.type === "camera_card" && {
                           refresh: editForm.refresh ?? 10,
                           show_title: editForm.show_title !== false,
-                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
-                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
+                          width: editForm.width != null && editForm.width > 0 ? clampCameraCardWidth(editForm.width) : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? clampCameraCardHeight(editForm.height) : undefined,
                         }),
                         ...(editingWidget.type === "vacuum_card" && {
                           script_ids: editForm.script_ids ?? [],
