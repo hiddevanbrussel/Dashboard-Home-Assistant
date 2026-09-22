@@ -23,11 +23,11 @@ describe("screensaver clock size", () => {
   });
 
   it("maps larger sizes to larger type classes", () => {
-    expect(clockSizeTimeClass("sm")).toContain("text-6xl");
-    expect(clockSizeTimeClass("md")).toContain("text-8xl");
-    expect(clockSizeTimeClass("lg")).toContain("text-[6.5rem]");
-    expect(clockSizeTimeClass("xl")).toContain("22vw");
-    expect(clockSizeTimeClass("xl")).toContain("15rem");
+    expect(clockSizeTimeClass("sm")).toContain("text-7xl");
+    expect(clockSizeTimeClass("md")).toContain("text-9xl");
+    expect(clockSizeTimeClass("lg")).toContain("text-[7.5rem]");
+    expect(clockSizeTimeClass("xl")).toContain("26vw");
+    expect(clockSizeTimeClass("xl")).toContain("17rem");
   });
 
   it("pulls date and weather closer on larger clocks", () => {
@@ -38,9 +38,9 @@ describe("screensaver clock size", () => {
   });
 
   it("keeps settings previews in the same size order", () => {
-    expect(clockSizePreviewDigitClass("sm")).toContain("text-xl");
-    expect(clockSizePreviewDigitClass("md")).toContain("text-2xl");
-    expect(clockSizePreviewDigitClass("lg")).toContain("text-3xl");
-    expect(clockSizePreviewDigitClass("xl")).toContain("text-5xl");
+    expect(clockSizePreviewDigitClass("sm")).toContain("text-2xl");
+    expect(clockSizePreviewDigitClass("md")).toContain("text-3xl");
+    expect(clockSizePreviewDigitClass("lg")).toContain("text-4xl");
+    expect(clockSizePreviewDigitClass("xl")).toContain("text-6xl");
   });
 });

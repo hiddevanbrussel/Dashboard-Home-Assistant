@@ -5,7 +5,7 @@ import Image from "next/image";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { Disc3 } from "lucide-react";
-import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverMusicEntityId, getScreensaverClockPosition, getScreensaverClockSize, getScreensaverMediaSource } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverMusicEntityId, getScreensaverClockPosition, getScreensaverClockSize, getScreensaverClockWeight, getScreensaverMediaSource } from "@/stores/screensaver-store";
 import { useImmichStore } from "@/stores/immich-store";
 import { resolveScreensaverPlayback } from "@/lib/screensaver-media-source";
 import { buildImmichAssetProxyUrl, pickRandomImmichAsset } from "@/lib/immich-url";
@@ -28,6 +28,10 @@ import {
   clockSizeTimeClass,
   type ScreensaverClockSize,
 } from "@/lib/screensaver-clock-size";
+import {
+  clockWeightClass,
+  type ScreensaverClockWeight,
+} from "@/lib/screensaver-clock-weight";
 import {
   formatLockDateNumeric,
   formatLockTemperature,
@@ -428,8 +432,10 @@ function ScreensaverMusic() {
 
 function ScreensaverLockClock({
   size,
+  weight,
 }: {
   size: ScreensaverClockSize;
+  weight: ScreensaverClockWeight;
 }) {
   const { language } = useTranslation();
   const accent = useThemeStore((s) => s.accent);
@@ -453,7 +459,8 @@ function ScreensaverLockClock({
     clockSizeDateClass(size)
   );
   const digitClass = cn(
-    "font-montserrat font-black leading-[0.82] tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
+    "font-montserrat leading-[0.82] tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
+    clockWeightClass(weight),
     clockSizeTimeClass(size)
   );
 
@@ -559,6 +566,7 @@ function ScreensaverOverlay({
   });
   const clockPosition = getScreensaverClockPosition();
   const clockSize = getScreensaverClockSize();
+  const clockWeight = getScreensaverClockWeight();
   const { match: footballMatch, live: footballLive } = useScreensaverFootballMatch();
   const liveClockPosition = footballLive ? "top-center" : clockPosition;
   const clockAlign = clockPositionAxis(liveClockPosition).x;
@@ -979,7 +987,7 @@ function ScreensaverOverlay({
             clockAlign === "left" ? "items-start" : clockAlign === "right" ? "items-end" : "items-center"
           )}
         >
-          <ScreensaverLockClock size={clockSize} />
+          <ScreensaverLockClock size={clockSize} weight={clockWeight} />
           <ScreensaverTimer align={clockAlign} />
         </div>
       </div>
