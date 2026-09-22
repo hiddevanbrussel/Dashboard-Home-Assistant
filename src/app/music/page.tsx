@@ -423,6 +423,8 @@ export default function MusicPage() {
   const [searchResults, setSearchResults] = useState<MASearchItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [playPending, setPlayPending] = useState<string | null>(null);
+  const [playFlash, setPlayFlash] = useState<string | null>(null);
+  const playFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -504,6 +506,12 @@ export default function MusicPage() {
   const [addToPlaylistError, setAddToPlaylistError] = useState<string | null>(null);
   const musicAssistant = useMusicAssistantStore();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    return () => {
+      if (playFlashTimerRef.current) clearTimeout(playFlashTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (searchOverlayOpen) {
@@ -1194,6 +1202,9 @@ export default function MusicPage() {
       const baseUrl = musicAssistant.baseUrl;
       const token = musicAssistant.token;
       const queueId = selectedQueueId;
+      const speaker =
+        maPlayers.find((p) => p.queue_id === queueId)?.display_name ??
+        queueId;
 
       const tryPlayMedia = (args: Record<string, unknown>): Promise<void> =>
         callMusicAssistant(baseUrl, token, "player_queues/play_media", args).then((data: unknown) => {
@@ -1214,14 +1225,22 @@ export default function MusicPage() {
       for (let i = 1; i < attempts.length; i++) {
         p = p.catch(() => tryPlayMedia(attempts[i]!));
       }
-      p.then(() => fetchRecentItems())
+      p.then(() => {
+        fetchRecentItems();
+        if (playFlashTimerRef.current) clearTimeout(playFlashTimerRef.current);
+        setPlayFlash(t("music.playStarted").replace("{player}", String(speaker)));
+        playFlashTimerRef.current = setTimeout(() => {
+          setPlayFlash(null);
+          playFlashTimerRef.current = null;
+        }, 2200);
+      })
         .catch((err) => {
           const msg = err instanceof Error ? err.message : t("music.playFailed");
           setError(msg);
         })
         .finally(() => setPlayPending(null));
     },
-    [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, fetchRecentItems]
+    [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, fetchRecentItems, maPlayers, t]
   );
 
   const addToFavorites = useCallback(
@@ -1356,6 +1375,7 @@ export default function MusicPage() {
       const albumParams = mediaType === "album" ? getAlbumParams(item) : null;
       const artistParams = mediaType === "artist" ? getArtistParams(item) : null;
       const uri = getPlayableUri(item, mediaType);
+      const normalized = uri ? normalizePlayMediaUri(uri) : "";
       const subtitle =
         mediaType === "playlist"
           ? t("music.playlist")
@@ -1368,6 +1388,7 @@ export default function MusicPage() {
         subtitle,
         imageSrc: imageSrcFor(item),
         disabled: albumParams || artistParams ? false : !canPlay || !uri,
+        pending: Boolean(playPending && (playPending === uri || playPending === normalized)),
         onClick: () => {
           if (albumParams) {
             setSelectedAlbum(item);
@@ -1431,34 +1452,37 @@ export default function MusicPage() {
     const spotlights: MusicHomeSpotlight[] = shuffleSeeded(spotlightPool, spotlightSeedRef.current)
       .slice(0, 32)
       .map(({ item, kicker, key }) => {
-      const kind = detectPlayableType(item);
-      return {
-        key,
-        kicker,
-        title: item.name ?? unknown,
-        subtitle: getArtistsString(item) || undefined,
-        imageSrc: imageSrcFor(item),
-        disabled: !canPlay,
-        onPlay: () => {
-          const uri = getPlayableUri(item, kind === "playlist" ? "playlist" : kind === "album" ? "album" : kind);
-          if (uri) playOnPlayer(normalizePlayMediaUri(uri));
-        },
-        onOpen:
-          kind === "album"
-            ? () => {
-                setSelectedAlbum(item);
-                setSelectedMenu(null);
-                setSelectedCategory(null);
-              }
-            : kind === "artist"
+        const kind = detectPlayableType(item);
+        const playKind = kind === "playlist" ? "playlist" : kind === "album" ? "album" : kind;
+        const uri = getPlayableUri(item, playKind);
+        const normalized = uri ? normalizePlayMediaUri(uri) : "";
+        return {
+          key,
+          kicker,
+          title: item.name ?? unknown,
+          subtitle: getArtistsString(item) || undefined,
+          imageSrc: imageSrcFor(item),
+          disabled: !canPlay,
+          pending: Boolean(playPending && uri && (playPending === uri || playPending === normalized)),
+          onPlay: () => {
+            if (uri) playOnPlayer(normalizePlayMediaUri(uri));
+          },
+          onOpen:
+            kind === "album"
               ? () => {
-                  setSelectedArtist(item);
-                  setSelectedMenu("artists");
+                  setSelectedAlbum(item);
+                  setSelectedMenu(null);
                   setSelectedCategory(null);
                 }
-              : undefined,
-      };
-    });
+              : kind === "artist"
+                ? () => {
+                    setSelectedArtist(item);
+                    setSelectedMenu("artists");
+                    setSelectedCategory(null);
+                  }
+                : undefined,
+        };
+      });
 
     const featuredIds = new Set(
       featuredPlaylists.map((p) => String(p.uri ?? p.item_id ?? "")).filter(Boolean)
@@ -1558,6 +1582,7 @@ export default function MusicPage() {
     appleStationsLoading,
     radioStations,
     radioStationsLoading,
+    playPending,
     playOnPlayer,
     t,
   ]);
@@ -1729,6 +1754,15 @@ export default function MusicPage() {
             role="alert"
           >
             {error}
+          </div>
+        )}
+        {playFlash && (
+          <div
+            className="pointer-events-none fixed left-1/2 top-20 z-40 -translate-x-1/2 rounded-full bg-gray-900/90 px-4 py-2 text-sm font-medium text-white shadow-lg dark:bg-white/90 dark:text-gray-900"
+            role="status"
+            aria-live="polite"
+          >
+            {playFlash}
           </div>
         )}
 
@@ -2195,7 +2229,7 @@ export default function MusicPage() {
                       type="button"
                       onClick={handleClick}
                       disabled={!artistParams}
-                      className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                      className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left transition-transform duration-150 active:scale-[0.96] active:opacity-90"
                     >
                       <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                         {imageSrc ? (
@@ -2249,7 +2283,7 @@ export default function MusicPage() {
                       type="button"
                       onClick={handleClick}
                       disabled={!albumParams && !canPlay}
-                      className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                      className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left transition-transform duration-150 active:scale-[0.96] active:opacity-90"
                     >
                       <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                         {imageSrc ? (
@@ -2303,7 +2337,7 @@ export default function MusicPage() {
                       type="button"
                       onClick={handleClick}
                       disabled={!canPlay}
-                      className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                      className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left transition-transform duration-150 active:scale-[0.96] active:opacity-90"
                     >
                       <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                         {imageSrc ? (
@@ -2354,7 +2388,7 @@ export default function MusicPage() {
                       type="button"
                       onClick={handleClick}
                       disabled={!podcastParams}
-                      className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                      className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left transition-transform duration-150 active:scale-[0.96] active:opacity-90"
                     >
                       <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                         {imageSrc ? (
@@ -2416,7 +2450,7 @@ export default function MusicPage() {
                         onPointerLeave={lp.onPointerLeave}
                         onClick={handleClick}
                         disabled={!albumParams && !canPlay}
-                        className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                        className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left transition-transform duration-150 active:scale-[0.96] active:opacity-90"
                       >
                         <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                           {imageSrc ? (
@@ -2451,7 +2485,7 @@ export default function MusicPage() {
                         type="button"
                         onClick={() => canPlay && radioUri && playOnPlayer(normalizePlayMediaUri(radioUri))}
                         disabled={!canPlay}
-                        className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
+                        className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left transition-transform duration-150 active:scale-[0.96] active:opacity-90"
                       >
                         <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
                           {imageSrc ? (

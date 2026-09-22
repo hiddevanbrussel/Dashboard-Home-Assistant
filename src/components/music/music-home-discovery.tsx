@@ -13,6 +13,8 @@ export type MusicHomeTile = {
   subtitle?: string;
   imageSrc: string | null;
   disabled?: boolean;
+  /** True while this tile's play/open request is in flight. */
+  pending?: boolean;
   onClick: () => void;
 };
 
@@ -23,6 +25,7 @@ export type MusicHomeSpotlight = {
   subtitle?: string;
   imageSrc: string | null;
   disabled?: boolean;
+  pending?: boolean;
   onPlay: () => void;
   onOpen?: () => void;
 };
@@ -180,10 +183,14 @@ export function MusicHomeDiscovery({
                 <button
                   type="button"
                   onClick={spotlight.onPlay}
-                  disabled={spotlight.disabled}
-                  className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm font-semibold text-gray-900 shadow-lg transition-transform hover:scale-[1.03] disabled:opacity-50"
+                  disabled={spotlight.disabled || spotlight.pending}
+                  className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm font-semibold text-gray-900 shadow-lg transition-transform hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50"
                 >
-                  <Play className="h-4 w-4 fill-current ml-0.5" aria-hidden />
+                  {spotlight.pending ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" aria-hidden />
+                  ) : (
+                    <Play className="h-4 w-4 fill-current ml-0.5" aria-hidden />
+                  )}
                   {playLabel}
                 </button>
               </div>
@@ -210,10 +217,11 @@ export function MusicHomeDiscovery({
                 key={item.key}
                 type="button"
                 onClick={item.onClick}
-                disabled={item.disabled}
-                className="group flex min-w-0 items-center gap-3 rounded-2xl bg-black/[0.04] p-2 text-left transition-colors hover:bg-black/[0.07] disabled:opacity-50 dark:bg-white/8 dark:hover:bg-white/12"
+                disabled={item.disabled || item.pending}
+                aria-busy={item.pending || undefined}
+                className="group flex min-w-0 items-center gap-3 rounded-2xl bg-black/[0.04] p-2 text-left transition-[transform,background-color,opacity] duration-150 hover:bg-black/[0.07] active:scale-[0.98] active:bg-black/[0.1] disabled:opacity-50 dark:bg-white/8 dark:hover:bg-white/12 dark:active:bg-white/16"
               >
-                <Cover imageSrc={item.imageSrc} title={item.title} className="h-12 w-12 shrink-0 rounded-xl" />
+                <Cover imageSrc={item.imageSrc} title={item.title} className="h-12 w-12 shrink-0 rounded-xl" pending={item.pending} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-gray-900 dark:text-white">
                     {item.title}
@@ -224,8 +232,17 @@ export function MusicHomeDiscovery({
                     </span>
                   ) : null}
                 </span>
-                <span className="mr-1 hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-white group-hover:flex group-focus-visible:flex">
-                  <Play className="h-3.5 w-3.5 fill-current ml-0.5" aria-hidden />
+                <span
+                  className={cn(
+                    "mr-1 h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-white",
+                    item.pending ? "flex" : "hidden group-hover:flex group-focus-visible:flex group-active:flex"
+                  )}
+                >
+                  {item.pending ? (
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
+                  ) : (
+                    <Play className="h-3.5 w-3.5 fill-current ml-0.5" aria-hidden />
+                  )}
                 </span>
               </button>
             ))}
@@ -259,14 +276,15 @@ export function MusicHomeDiscovery({
                     key={item.key}
                     type="button"
                     onClick={item.onClick}
-                    disabled={item.disabled}
-                    className="group w-32 shrink-0 snap-start text-left disabled:opacity-50 sm:w-36"
+                    disabled={item.disabled || item.pending}
+                    aria-busy={item.pending || undefined}
+                    className="group w-32 shrink-0 snap-start text-left transition-transform duration-150 active:scale-[0.96] disabled:opacity-50 sm:w-36"
                   >
                     <div
                       className={cn(
                         "relative overflow-hidden bg-gray-200 dark:bg-gray-800",
                         shelf.variant === "circle" ? "rounded-full" : "rounded-2xl",
-                        "aspect-square"
+                        "aspect-square ring-0 transition-[box-shadow,opacity] duration-150 group-active:ring-2 group-active:ring-brand/40"
                       )}
                     >
                       <Cover
@@ -275,10 +293,20 @@ export function MusicHomeDiscovery({
                         circle={shelf.variant === "circle"}
                         station={shelf.variant === "station"}
                         className="h-full w-full"
+                        pending={item.pending}
                       />
                       {shelf.variant !== "circle" ? (
-                        <span className="absolute bottom-2 right-2 hidden h-10 w-10 items-center justify-center rounded-full bg-brand text-white shadow-lg group-hover:flex group-focus-visible:flex">
-                          <Play className="h-4 w-4 fill-current ml-0.5" aria-hidden />
+                        <span
+                          className={cn(
+                            "absolute bottom-2 right-2 h-10 w-10 items-center justify-center rounded-full bg-brand text-white shadow-lg",
+                            item.pending ? "flex" : "hidden group-hover:flex group-focus-visible:flex group-active:flex"
+                          )}
+                        >
+                          {item.pending ? (
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden />
+                          ) : (
+                            <Play className="h-4 w-4 fill-current ml-0.5" aria-hidden />
+                          )}
                         </span>
                       ) : null}
                     </div>
@@ -343,12 +371,14 @@ function Cover({
   className,
   circle,
   station,
+  pending,
 }: {
   imageSrc: string | null;
   title?: string;
   className?: string;
   circle?: boolean;
   station?: boolean;
+  pending?: boolean;
 }) {
   const src = imageSrc || (title ? generatedCoverDataUri(title) : null);
   return (
@@ -358,7 +388,7 @@ function Cover({
           src={src}
           alt=""
           fill
-          className="object-cover"
+          className={cn("object-cover transition-opacity duration-150", pending && "opacity-60")}
           sizes="160px"
           placeholder="blur"
           blurDataURL={MUSIC_IMAGE_BLUR}
@@ -375,6 +405,11 @@ function Cover({
           )}
         </span>
       )}
+      {pending ? (
+        <span className="absolute inset-0 flex items-center justify-center bg-black/25" aria-hidden>
+          <span className="h-7 w-7 animate-spin rounded-full border-2 border-white border-t-transparent" />
+        </span>
+      ) : null}
     </span>
   );
 }
