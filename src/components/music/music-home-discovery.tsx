@@ -5,8 +5,7 @@ import Image from "next/image";
 import { ChevronRight, Disc3, Play, Radio, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MUSIC_IMAGE_BLUR } from "@/lib/music-item-image";
-import { MusicGenreBrowse } from "@/components/music/music-genre-browse";
-import type { MusicGenre } from "@/lib/music-genres";
+import { generatedCoverDataUri } from "@/lib/generated-cover";
 
 export type MusicHomeTile = {
   key: string;
@@ -48,9 +47,6 @@ type Props = {
   spotlights: MusicHomeSpotlight[];
   spotlightIntervalMs?: number;
   shelves: MusicHomeShelf[];
-  genres?: MusicGenre[];
-  genreTitle?: string;
-  onSelectGenre?: (genre: MusicGenre) => void;
   banner?: string | null;
   emptyLabel?: string | null;
 };
@@ -66,9 +62,6 @@ export function MusicHomeDiscovery({
   spotlights,
   spotlightIntervalMs = 8000,
   shelves,
-  genres = [],
-  genreTitle,
-  onSelectGenre,
   banner,
   emptyLabel,
 }: Props) {
@@ -91,10 +84,7 @@ export function MusicHomeDiscovery({
   }, [spotlightCount, spotlightIntervalMs]);
 
   const hasContent =
-    jumpBackIn.length > 0 ||
-    spotlightCount > 0 ||
-    shelves.some((shelf) => shelf.loading || shelf.items.length > 0) ||
-    genres.length > 0;
+    jumpBackIn.length > 0 || spotlightCount > 0 || shelves.some((shelf) => shelf.loading || shelf.items.length > 0);
 
   const showHeroRow = Boolean(spotlight) || jumpBackIn.length > 0;
 
@@ -218,7 +208,7 @@ export function MusicHomeDiscovery({
                 disabled={item.disabled}
                 className="group flex min-w-0 items-center gap-3 rounded-2xl bg-black/[0.04] p-2 text-left transition-colors hover:bg-black/[0.07] disabled:opacity-50 dark:bg-white/8 dark:hover:bg-white/12"
               >
-                <Cover imageSrc={item.imageSrc} className="h-12 w-12 shrink-0 rounded-xl" />
+                <Cover imageSrc={item.imageSrc} title={item.title} className="h-12 w-12 shrink-0 rounded-xl" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-gray-900 dark:text-white">
                     {item.title}
@@ -276,6 +266,7 @@ export function MusicHomeDiscovery({
                     >
                       <Cover
                         imageSrc={item.imageSrc}
+                        title={item.title}
                         circle={shelf.variant === "circle"}
                         station={shelf.variant === "station"}
                         className="h-full w-full"
@@ -297,10 +288,6 @@ export function MusicHomeDiscovery({
           </section>
         );
       })}
-
-      {genreTitle && onSelectGenre && genres.length > 0 ? (
-        <MusicGenreBrowse title={genreTitle} items={genres} onSelect={onSelectGenre} />
-      ) : null}
 
       {!hasContent && emptyLabel ? (
         <p className="px-1 text-sm text-gray-500 dark:text-gray-400">{emptyLabel}</p>
@@ -347,20 +334,23 @@ function SectionHeading({
 
 function Cover({
   imageSrc,
+  title,
   className,
   circle,
   station,
 }: {
   imageSrc: string | null;
+  title?: string;
   className?: string;
   circle?: boolean;
   station?: boolean;
 }) {
+  const src = imageSrc || (title ? generatedCoverDataUri(title) : null);
   return (
     <span className={cn("relative block overflow-hidden bg-gray-200 dark:bg-gray-800", className)}>
-      {imageSrc ? (
+      {src ? (
         <Image
-          src={imageSrc}
+          src={src}
           alt=""
           fill
           className="object-cover"
