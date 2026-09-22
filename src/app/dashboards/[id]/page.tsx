@@ -1184,6 +1184,7 @@ export default function DashboardEditPage() {
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
+      ...(type === "camera_card" && { width: 360, height: 270, refresh: 10, show_title: true }),
       ...(type === "weather_card" && { width: WEATHER_CARD_DEFAULT_WIDTH, height: WEATHER_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
       ...(type === "calendar_card" && { width: CALENDAR_CARD_DEFAULT_WIDTH, height: CALENDAR_CARD_DEFAULT_HEIGHT }),
@@ -2144,32 +2145,33 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {(() => {
-          const firstCamera = widgets.find((w) => w.type === "camera_card" && widgetPage(w) === pageIndex);
-          return firstCamera ? (
+        {widgets
+          .filter((w) => w.type === "camera_card" && widgetPage(w) === pageIndex)
+          .map((w) => (
             <FloatingCameraCard
-              title={firstCamera.title ?? "Camera"}
-              entity_id={firstCamera.entity_id}
-              refresh={firstCamera.refresh}
-              show_title={firstCamera.show_title}
-              width={firstCamera.width}
-              height={firstCamera.height}
+              key={w.id}
+              title={w.title ?? "Camera"}
+              entity_id={w.entity_id}
+              refresh={w.refresh}
+              show_title={w.show_title}
+              width={w.width}
+              height={w.height}
               editMode={editMode}
               storageScope={id}
+              widgetId={w.id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstCamera.id)
+                  ? () => setEditingWidgetId(w.id)
                   : undefined
               }
               onRemove={
                 editMode
-                  ? () => handleRemoveTile(firstCamera.id)
+                  ? () => handleRemoveTile(w.id)
                   : undefined
               }
             />
-          ) : null;
-        })()}
+          ))}
 
         {(() => {
           const firstVacuum = widgets.find((w) => w.type === "vacuum_card" && widgetPage(w) === pageIndex);

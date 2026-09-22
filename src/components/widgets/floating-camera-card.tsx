@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { CameraCardWidget } from "./camera-card-widget";
+import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY = "dashboard.floatingCameraCardPosition";
 const DEFAULT_OFFSET = 24;
@@ -28,14 +29,15 @@ function clampHeight(w: unknown): number {
 
 type Position = { left: number; bottom: number };
 
-function storageKeyForScope(scope: string | undefined): string {
+function storageKeyForScope(scope: string | undefined, widgetId?: string): string {
+  if (widgetId) return scope ? `${STORAGE_KEY}.${scope}.${widgetId}` : `${STORAGE_KEY}.${widgetId}`;
   return scope ? `${STORAGE_KEY}.${scope}` : STORAGE_KEY;
 }
 
-function loadPosition(scope: string | undefined): Position | null {
+function loadPosition(scope: string | undefined, widgetId?: string): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(storageKeyForScope(scope));
+    const s = localStorage.getItem(storageKeyForScope(scope, widgetId));
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
@@ -48,10 +50,10 @@ function loadPosition(scope: string | undefined): Position | null {
   return null;
 }
 
-function savePosition(scope: string | undefined, p: Position) {
+function savePosition(scope: string | undefined, p: Position, widgetId?: string) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(storageKeyForScope(scope), JSON.stringify(p));
+    localStorage.setItem(storageKeyForScope(scope, widgetId), JSON.stringify(p));
   } catch {
     // ignore
   }
@@ -75,6 +77,7 @@ export function FloatingCameraCard({
   height,
   editMode = false,
   storageScope,
+  widgetId,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -88,13 +91,16 @@ export function FloatingCameraCard({
   editMode?: boolean;
   /** Dashboard/room id so position is stored per page. */
   storageScope?: string;
+  /** Unieke id van de widget (nodig bij meerdere camera-kaarten voor aparte posities). */
+  widgetId?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
+  const { t } = useTranslation();
   const totalWidth = clampWidth(width);
   const totalHeight = clampHeight(height);
-  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope) ?? { left: 0, bottom: 0 });
+  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
@@ -134,15 +140,15 @@ export function FloatingCameraCard({
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
     const bounds = { maxLeft, maxBottom };
-    const saved = loadPosition(storageScope);
+    const saved = loadPosition(storageScope, widgetId);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
       return;
     }
     const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
     setPosition(p);
-    savePosition(storageScope, p);
-  }, [totalWidth, totalHeight, storageScope]);
+    savePosition(storageScope, p, widgetId);
+  }, [totalWidth, totalHeight, storageScope, widgetId]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -160,7 +166,7 @@ export function FloatingCameraCard({
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [position, editMode]
+    [editMode]
   );
 
   const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
@@ -192,18 +198,19 @@ export function FloatingCameraCard({
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(storageScope, next);
+        savePosition(storageScope, next, widgetId);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, maxLeft, maxBottom, storageScope]
+    [isDragging, maxLeft, maxBottom, storageScope, widgetId]
   );
 
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-black/90 backdrop-blur-2xl",
-        editMode && "cursor-grab touch-none active:cursor-grabbing",
+        "card-plot-in fixed z-30 shadow-xl rounded-2xl bg-black/90 backdrop-blur-2xl",
+        !editMode && "overflow-hidden",
+        editMode && "relative cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
       style={{
@@ -227,7 +234,7 @@ export function FloatingCameraCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className={cn("flex flex-col h-full min-h-0", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
+      <div className={cn("flex flex-col h-full min-h-0 overflow-hidden rounded-2xl", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
         <CameraCardWidget
           title={title}
           entity_id={entity_id}
@@ -238,6 +245,19 @@ export function FloatingCameraCard({
           className="flex-1 min-h-0"
         />
       </div>
+      {editMode && onRemove && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className="absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600"
+          aria-label={t("editPanel.remove")}
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 }

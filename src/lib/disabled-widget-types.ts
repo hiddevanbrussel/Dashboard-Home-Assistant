@@ -9,7 +9,6 @@ export const TEMPORARILY_DISABLED_WIDGET_TYPES = new Set<string>([
   "solar_card",
   "sensor_card",
   "vacuum_card",
-  "camera_card",
   "alarm_card",
   "nuts_card",
   "card_group",
