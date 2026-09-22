@@ -111,7 +111,7 @@ export function MusicHomeDiscovery({
           )}
         >
       {spotlight ? (
-        <section className="relative min-h-[176px] overflow-hidden rounded-3xl bg-gray-900 sm:min-h-[200px] lg:min-h-full">
+        <section className="relative isolate min-h-[220px] overflow-hidden rounded-3xl bg-gray-900 sm:min-h-[268px] lg:h-full lg:min-h-[280px]">
           {spotlights.map((slide, index) => {
             const active = index === spotlightIndex % spotlightCount;
             return (
@@ -138,50 +138,55 @@ export function MusicHomeDiscovery({
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-brand to-gray-900" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
               </div>
             );
           })}
-          {/* Cover bottom-left with title/subtitle/CTA beside it */}
-          <div className="relative z-20 flex min-h-[176px] items-end gap-3 p-4 sm:min-h-[200px] sm:gap-4 sm:p-6 lg:min-h-[220px]">
-            {spotlight.imageSrc ? (
-              <button
-                type="button"
-                onClick={spotlight.onOpen ?? spotlight.onPlay}
-                className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl shadow-2xl sm:h-28 sm:w-28 sm:rounded-2xl"
-                aria-label={spotlight.title}
-              >
-                <Image
-                  src={spotlight.imageSrc}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  sizes="112px"
-                  placeholder="blur"
-                  blurDataURL={MUSIC_IMAGE_BLUR}
-                  unoptimized
-                />
-              </button>
-            ) : (
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl bg-white/10 sm:h-28 sm:w-28 sm:rounded-2xl">
-                <Disc3 className="h-10 w-10 text-white/70" aria-hidden />
+          <div className="absolute inset-0 z-20 flex items-end justify-start p-4 sm:p-6">
+            <div className="flex max-w-[min(100%,28rem)] items-center gap-3 sm:gap-4">
+              {spotlight.imageSrc ? (
+                <button
+                  type="button"
+                  onClick={spotlight.onOpen ?? spotlight.onPlay}
+                  className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full shadow-2xl ring-2 ring-white/20 sm:h-20 sm:w-20"
+                  aria-label={spotlight.title}
+                >
+                  <Image
+                    src={spotlight.imageSrc}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="80px"
+                    placeholder="blur"
+                    blurDataURL={MUSIC_IMAGE_BLUR}
+                    unoptimized
+                  />
+                </button>
+              ) : (
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 ring-2 ring-white/20 sm:h-20 sm:w-20">
+                  <Disc3 className="h-8 w-8 text-white/70" aria-hidden />
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70 sm:text-xs">
+                  {spotlight.kicker}
+                </p>
+                <h2 className="mt-0.5 truncate text-lg font-bold text-white sm:text-2xl">{spotlight.title}</h2>
+                {spotlight.subtitle ? (
+                  <p className="truncate text-xs uppercase tracking-wide text-white/75 sm:text-sm">
+                    {spotlight.subtitle}
+                  </p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={spotlight.onPlay}
+                  disabled={spotlight.disabled}
+                  className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm font-semibold text-gray-900 shadow-lg transition-transform hover:scale-[1.03] disabled:opacity-50"
+                >
+                  <Play className="h-4 w-4 fill-current ml-0.5" aria-hidden />
+                  {playLabel}
+                </button>
               </div>
-            )}
-            <div className="min-w-0 flex-1 pb-0.5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">{spotlight.kicker}</p>
-              <h2 className="mt-1 line-clamp-2 text-lg font-bold text-white sm:text-2xl">{spotlight.title}</h2>
-              {spotlight.subtitle ? (
-                <p className="mt-1 max-w-xl truncate text-sm text-white/80">{spotlight.subtitle}</p>
-              ) : null}
-              <button
-                type="button"
-                onClick={spotlight.onPlay}
-                disabled={spotlight.disabled}
-                className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-lg transition-transform hover:scale-[1.03] disabled:opacity-50"
-              >
-                <Play className="h-4 w-4 fill-current ml-0.5" aria-hidden />
-                {playLabel}
-              </button>
             </div>
           </div>
         </section>
