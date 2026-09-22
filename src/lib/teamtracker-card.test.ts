@@ -19,13 +19,13 @@ describe("teamtracker-card helpers", () => {
     expect(clampTeamtrackerCardWidth(900)).toBe(520);
     expect(clampTeamtrackerCardHeight(undefined)).toBe(TEAMTRACKER_CARD_DEFAULT_HEIGHT);
     expect(clampTeamtrackerCardHeight(50)).toBe(TEAMTRACKER_CARD_MIN_HEIGHT);
-    expect(clampTeamtrackerCardHeight(900)).toBe(280);
+    expect(clampTeamtrackerCardHeight(900)).toBe(300);
   });
 
   it("resizes from the bottom-right while keeping the top-left fixed", () => {
     const grown = resizeTeamtrackerCardFromBottomRight({
       startWidth: 380,
-      startHeight: 200,
+      startHeight: 220,
       startLeft: 40,
       startBottom: 40,
       dx: 40,
@@ -33,7 +33,7 @@ describe("teamtracker-card helpers", () => {
       viewportWidth: 1200,
       viewportHeight: 800,
     });
-    expect(grown).toEqual({ width: 420, height: 220, left: 40, bottom: 20 });
+    expect(grown).toEqual({ width: 420, height: 240, left: 40, bottom: 20 });
   });
 
   it("detects teamtracker entity ids", () => {
@@ -47,7 +47,7 @@ describe("teamtracker-card helpers", () => {
     expect(readTeamtrackerPeriod({ period: "HT" })).toBe("HT");
   });
 
-  it("reads match details including abbreviations and league", () => {
+  it("reads match details including abbreviations, league, and match day", () => {
     const match = readTeamtrackerMatch({
       state: "IN",
       attributes: {
@@ -61,6 +61,7 @@ describe("teamtracker-card helpers", () => {
         clock: "35:35",
         quarter: "1",
         league: "Premier League",
+        week: 2,
         team_logo: "https://example.com/che.png",
         opponent_logo: "https://example.com/mci.png",
       },
@@ -73,6 +74,7 @@ describe("teamtracker-card helpers", () => {
     expect(match?.clock).toBe("35:35");
     expect(match?.period).toBe("1ST");
     expect(match?.league).toBe("Premier League");
+    expect(match?.matchDay).toBe("2");
     expect(match?.showScores).toBe(true);
   });
 });
