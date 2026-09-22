@@ -7,11 +7,11 @@ import {
 } from "@/lib/screensaver-football";
 
 export const TEAMTRACKER_CARD_DEFAULT_WIDTH = 380;
-export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 200;
+export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 220;
 export const TEAMTRACKER_CARD_MIN_WIDTH = 280;
 export const TEAMTRACKER_CARD_MAX_WIDTH = 520;
-export const TEAMTRACKER_CARD_MIN_HEIGHT = 160;
-export const TEAMTRACKER_CARD_MAX_HEIGHT = 280;
+export const TEAMTRACKER_CARD_MIN_HEIGHT = 180;
+export const TEAMTRACKER_CARD_MAX_HEIGHT = 300;
 
 export function clampTeamtrackerCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
@@ -55,6 +55,8 @@ export type TeamtrackerMatch = FootballMatch & {
   teamAbbr: string | null;
   opponentAbbr: string | null;
   period: string | null;
+  /** Optional center caption above the score (match day / round / week). */
+  matchDay: string | null;
 };
 
 function asOptionalString(value: unknown): string | null {
@@ -73,6 +75,41 @@ function abbreviateName(name: string | null, max = 6): string | null {
     if (initials.length >= 2) return initials.toUpperCase();
   }
   return cleaned.slice(0, max).toUpperCase();
+}
+
+/** Read match-day / round / week label when Team Tracker exposes one. */
+export function readTeamtrackerMatchDay(attrs: Record<string, unknown>): string | null {
+  const data = attrs.data as Record<string, unknown> | undefined;
+  const candidates = [
+    attrs.matchday,
+    attrs.match_day,
+    attrs.round,
+    attrs.week,
+    attrs.gameweek,
+    data?.matchday,
+    data?.match_day,
+    data?.round,
+    data?.week,
+    data?.gameweek,
+  ];
+  for (const value of candidates) {
+    if (value == null || value === "") continue;
+    const text = String(value).trim();
+    if (!text) continue;
+    if (/^\d+$/.test(text)) return text;
+    return text;
+  }
+  return null;
+}
+
+/** Format a raw match-day value for display (numeric → localized "Match day N"). */
+export function formatTeamtrackerMatchDay(
+  raw: string | null | undefined,
+  t: (key: string) => string
+): string | null {
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) return t("teamtrackerCard.matchDay").replace("{n}", raw);
+  return raw;
 }
 
 /** Read period / half label from Team Tracker attributes when present. */
@@ -133,6 +170,7 @@ export function readTeamtrackerMatch(entity: {
     teamAbbr,
     opponentAbbr,
     period: readTeamtrackerPeriod(attrs),
+    matchDay: readTeamtrackerMatchDay(attrs),
   };
 }
 
