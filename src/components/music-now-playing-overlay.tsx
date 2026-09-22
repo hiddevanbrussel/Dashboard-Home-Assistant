@@ -173,27 +173,32 @@ export function MusicNowPlayingOverlay({
       <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-8 px-5 pb-8 pt-2 lg:flex-row lg:items-center lg:justify-center lg:gap-16 lg:px-12">
         {/* Vinyl + cover */}
         <div className="flex w-full flex-col items-center gap-5 lg:w-auto lg:shrink-0">
-          <div className="relative mx-auto aspect-square w-[min(78vw,22rem)] sm:w-[min(70vw,26rem)]">
-            {/* Vinyl peeking from behind cover */}
+          <div className="relative mx-auto aspect-square w-[min(82vw,24rem)] sm:w-[min(70vw,28rem)]">
+            {/* Vinyl peeking from behind cover (right side) */}
             <div
-              className="absolute left-[18%] top-1/2 z-0 h-[92%] w-[92%] -translate-y-1/2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.55)]"
+              className="absolute left-[26%] top-1/2 z-0 h-[94%] w-[94%] -translate-y-1/2 rounded-full shadow-[0_18px_40px_rgba(0,0,0,0.55)]"
               style={{
                 background: `
-                  radial-gradient(circle at center, #1a1a1a 0%, #1a1a1a 14%, #0d0d0d 15%, #0d0d0d 16%,
-                    #151515 17%, #111 38%, #1c1c1c 39%, #111 40%, #111 58%, #1c1c1c 59%, #0f0f0f 60%, #0a0a0a 100%),
-                  repeating-radial-gradient(circle at center, rgba(255,255,255,0.04) 0 1px, transparent 1px 3px)
+                  radial-gradient(circle at center,
+                    #2a2a2a 0%, #2a2a2a 12%,
+                    #0c0c0c 13%, #0c0c0c 14.5%,
+                    #222 15.5%, #111 36%,
+                    #2a2a2a 37%, #111 38%,
+                    #111 56%, #2a2a2a 57%,
+                    #0a0a0a 58%, #050505 100%),
+                  repeating-radial-gradient(circle at center, rgba(255,255,255,0.06) 0 1px, transparent 1px 4px)
                 `,
               }}
               aria-hidden
             >
-              <div className="absolute left-1/2 top-1/2 h-[18%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-gray-600 to-gray-900 ring-2 ring-black/40" />
-              <div className="absolute left-1/2 top-1/2 h-[4%] w-[4%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-black" />
+              <div className="absolute left-1/2 top-1/2 h-[20%] w-[20%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-rose-700/80 via-gray-700 to-gray-950 ring-1 ring-white/10" />
+              <div className="absolute left-1/2 top-1/2 h-[5%] w-[5%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-black" />
             </div>
             {/* Sleeve / cover */}
             <button
               type="button"
               onClick={onPlayPause}
-              className="absolute left-0 top-0 z-10 aspect-square w-[78%] overflow-hidden rounded-md shadow-[0_24px_60px_rgba(0,0,0,0.65)] ring-1 ring-white/10 transition-transform active:scale-[0.98]"
+              className="absolute left-0 top-0 z-10 aspect-square w-[72%] overflow-hidden rounded-sm shadow-[0_28px_70px_rgba(0,0,0,0.7)] ring-1 ring-white/15 transition-transform active:scale-[0.98]"
               aria-label={isPlaying ? labels.pause : labels.play}
             >
               {art ? (
