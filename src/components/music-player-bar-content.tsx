@@ -469,18 +469,12 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
         onPlayPause={() => queueControl(isPlaying ? "pause" : "play")}
         onPrevious={() => queueControl("previous")}
         onNext={() => queueControl("next")}
-        currentItem={cur}
-        baseUrl={musicAssistant.baseUrl}
-        token={musicAssistant.token}
         labels={{
           close: t("music.close"),
           play: t("music.play"),
           pause: t("music.pause"),
           previous: t("music.previous"),
           next: t("music.next"),
-          lyrics: t("music.lyrics"),
-          noLyrics: t("music.noLyrics"),
-          lyricsLoading: t("music.lyricsLoading"),
         }}
       />
     </footer>
