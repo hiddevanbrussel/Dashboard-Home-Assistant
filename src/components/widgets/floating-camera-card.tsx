@@ -110,19 +110,38 @@ export function FloatingCameraCard({
   const startLongPress = useCallback(
     (e: React.PointerEvent) => {
       if (editMode || !onEnterEditMode) return;
+      // #region agent log
+      try { fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:startLongPress',message:'long-press pointerdown capture',data:{pointerId:e.pointerId,targetTag:(e.target as HTMLElement)?.tagName,width:totalWidth,height:totalHeight,left:position.left,bottom:position.bottom},timestamp:Date.now()})}).catch(()=>{}) } catch {}
+      // #endregion
       clearLongPress();
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       longPressTimerRef.current = setTimeout(() => {
         longPressTimerRef.current = null;
+        // #region agent log
+        try { fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:longPressFire',message:'long-press fired enterEditMode while pointer may still be down',data:{pointerId:e.pointerId},timestamp:Date.now()})}).catch(()=>{}) } catch {}
+        // #endregion
         onEnterEditMode();
       }, LONG_PRESS_MS);
     },
-    [editMode, onEnterEditMode, clearLongPress]
+    [editMode, onEnterEditMode, clearLongPress, totalWidth, totalHeight, position.left, position.bottom]
   );
 
   const endLongPress = useCallback(
     (e: React.PointerEvent) => {
-      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      // #region agent log
+      try {
+        const el = e.currentTarget as HTMLElement;
+        const has = typeof el.hasPointerCapture === 'function' ? el.hasPointerCapture(e.pointerId) : null;
+        fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:endLongPress',message:'long-press end/release',data:{pointerId:e.pointerId,type:e.type,hasCapture:has},timestamp:Date.now()})}).catch(()=>{})
+      } catch {}
+      // #endregion
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      } catch (err) {
+        // #region agent log
+        try { fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'D',location:'floating-camera-card.tsx:endLongPress',message:'releasePointerCapture threw',data:{err:String(err),pointerId:e.pointerId,type:e.type},timestamp:Date.now()})}).catch(()=>{}) } catch {}
+        // #endregion
+      }
       clearLongPress();
     },
     [clearLongPress]
@@ -178,9 +197,12 @@ export function FloatingCameraCard({
         left: measured.left,
         bottom: measured.bottom,
       };
+      // #region agent log
+      try { fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handlePointerDown',message:'drag start capture',data:{pointerId:e.pointerId,measured,totalWidth,totalHeight},timestamp:Date.now()})}).catch(()=>{}) } catch {}
+      // #endregion
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [editMode, isResizing]
+    [editMode, isResizing, totalWidth, totalHeight]
   );
 
   const handlePointerMove = useCallback(
@@ -215,7 +237,20 @@ export function FloatingCameraCard({
         setPosition(next);
         savePosition(storageScope, next, widgetId);
       }
-      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      // #region agent log
+      try {
+        const el = e.currentTarget as HTMLElement;
+        const has = typeof el.hasPointerCapture === 'function' ? el.hasPointerCapture(e.pointerId) : null;
+        fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handlePointerUp',message:'drag pointer up',data:{pointerId:e.pointerId,type:e.type,isDragging,hasCapture:has},timestamp:Date.now()})}).catch(()=>{})
+      } catch {}
+      // #endregion
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      } catch (err) {
+        // #region agent log
+        try { fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'D',location:'floating-camera-card.tsx:handlePointerUp',message:'releasePointerCapture threw',data:{err:String(err),pointerId:e.pointerId},timestamp:Date.now()})}).catch(()=>{}) } catch {}
+        // #endregion
+      }
     },
     [isDragging, totalWidth, totalHeight, storageScope, widgetId]
   );
@@ -275,10 +310,30 @@ export function FloatingCameraCard({
         onResize?.({ width: next.width, height: next.height });
         if (!onResize) setLiveSize(null);
       }
-      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      // #region agent log
+      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handleResizePointerUp',message:'resize pointer up',data:{pointerId:e.pointerId,type:e.type,isResizing},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      } catch (err) {
+        // #region agent log
+        fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'D',location:'floating-camera-card.tsx:handleResizePointerUp',message:'releasePointerCapture threw',data:{err:String(err),pointerId:e.pointerId},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+      }
     },
     [isResizing, applyResizeDelta, storageScope, widgetId, onResize]
   );
+
+  // #region agent log
+  useEffect(() => {
+    try {
+      const vw = typeof window !== 'undefined' ? window.innerWidth : 0;
+      const vh = typeof window !== 'undefined' ? window.innerHeight : 0;
+      const coverPct = vw && vh ? Math.round(100 * (totalWidth * totalHeight) / (vw * vh)) : null;
+      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'B',location:'floating-camera-card.tsx:renderSize',message:'camera card geometry',data:{widgetId,editMode,isDragging,isResizing,totalWidth,totalHeight,left:position.left,bottom:position.bottom,vw,vh,coverPct,touchNone:!editMode && !!onEnterEditMode},timestamp:Date.now()})}).catch(()=>{})
+    } catch {}
+  }, [widgetId, editMode, isDragging, isResizing, totalWidth, totalHeight, position.left, position.bottom, onEnterEditMode]);
+  // #endregion
 
   return (
     <div
