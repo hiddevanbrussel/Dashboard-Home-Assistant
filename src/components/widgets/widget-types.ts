@@ -129,6 +129,14 @@ export type CameraCardProps = WidgetBaseProps & {
   show_title?: boolean;
 };
 
+/** Team Tracker card: live score / stand van een wedstrijd (sensor.team_*). */
+export type TeamtrackerCardProps = WidgetBaseProps & {
+  /** Breedte kaart in px. */
+  width?: number;
+  /** Hoogte kaart in px. */
+  height?: number;
+};
+
 export type MediaCardProps = WidgetBaseProps & {
   state?: "on" | "off" | "playing" | "paused" | "idle";
   media_title?: string;

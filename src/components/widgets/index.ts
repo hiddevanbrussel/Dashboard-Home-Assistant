@@ -42,6 +42,8 @@ export { StatPillCardWidget } from "./stat-pill-card-widget";
 export { FloatingStatPillCard } from "./floating-stat-pill-card";
 export { CameraCardWidget } from "./camera-card-widget";
 export { FloatingCameraCard } from "./floating-camera-card";
+export { TeamtrackerCardWidget } from "./teamtracker-card-widget";
+export { FloatingTeamtrackerCard } from "./floating-teamtracker-card";
 export { AlarmCardWidget } from "./alarm-card-widget";
 export { FloatingAlarmCard } from "./floating-alarm-card";
 export { CARD_ICON_OPTIONS } from "./card-icons";
