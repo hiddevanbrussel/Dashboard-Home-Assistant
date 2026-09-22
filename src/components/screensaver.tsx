@@ -48,6 +48,14 @@ import { useTimerStore } from "@/stores/timer-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { accentRgbCss, screensaverClockPairRgb } from "@/lib/theme-accents";
 import { isMainDashboardPath } from "@/lib/screensaver-home-path";
+import {
+  SCREENSAVER_FOOTBALL_LIVE_BACKGROUND,
+  footballMatchHasContent,
+  footballMatchStatus,
+  isLiveFootballMatch,
+  readFootballMatch,
+  type FootballMatch,
+} from "@/lib/screensaver-football";
 
 /** Standaard achtergrond wanneer er geen afbeelding is geüpload (zet bestand in public/default-screensaver.png). */
 const DEFAULT_SCREENSAVER_IMAGE = "/default-screensaver.png";
@@ -175,104 +183,76 @@ function useScreensaverWeatherLines() {
   return { tempStr, location, conditionStr };
 }
 
-function ScreensaverFootballLogo({ src, alt }: { src?: string | null; alt: string }) {
+function ScreensaverFootballLogo({
+  src,
+  alt,
+  className,
+}: {
+  src?: string | null;
+  alt: string;
+  className?: string;
+}) {
   if (!src || typeof src !== "string") return null;
-  const url = src.startsWith("http") ? src : src.startsWith("/") ? `${typeof window !== "undefined" ? window.location.origin : ""}${src}` : src;
+  const url = src.startsWith("http")
+    ? src
+    : src.startsWith("/")
+      ? `${typeof window !== "undefined" ? window.location.origin : ""}${src}`
+      : src;
   return (
-    <div className="image-theme-fixed flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center">
+    <div className={cn("image-theme-fixed flex shrink-0 items-center justify-center", className ?? "h-12 w-12 sm:h-14 sm:w-14")}>
       {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic external URL from Home Assistant sensor */}
       <img
         src={url}
         alt={alt}
         className="h-full w-full object-contain"
         loading="lazy"
-        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = "none";
+        }}
       />
     </div>
   );
 }
 
-/** Leest score uit attributes: direct of genest (data), ondersteunt number en string. */
-function readScoreAttr(attrs: Record<string, unknown>, ...keys: string[]): string {
-  const data = attrs.data as Record<string, unknown> | undefined;
-  for (const key of keys) {
-    const v = attrs[key] ?? (data && data[key]);
-    if (v !== undefined && v !== null) {
-      const s = String(v).trim();
-      if (s !== "") return s;
-    }
-  }
-  return "—";
+function footballCenterLabel(match: FootballMatch, t: (key: string) => string): string | null {
+  if (match.clock) return match.clock;
+  if (match.status === "PRE") return t("screensaver.match.pre");
+  if (match.status === "IN") return t("screensaver.match.in");
+  if (match.status === "POST") return t("screensaver.match.post");
+  return match.status || null;
 }
 
-/** Parsed entity.state als "1-0" of "2 - 1" → [team, opponent] of null. */
-function parseStateAsScore(state: string | undefined): [string, string] | null {
-  if (state == null || typeof state !== "string") return null;
-  const trimmed = state.trim();
-  const parts = trimmed.split(/\s*[-–]\s*/);
-  if (parts.length !== 2) return null;
-  const a = parts[0].trim();
-  const b = parts[1].trim();
-  if (a === "" || b === "" || !/^\d+$/.test(a) || !/^\d+$/.test(b)) return null;
-  return [a, b];
+function useScreensaverFootballMatch() {
+  const [entityId, setEntityId] = useState<string | null>(null);
+  useEffect(() => {
+    const sync = () => setEntityId(getScreensaverFootballEntityId());
+    sync();
+    window.addEventListener("screensaver-setting-changed", sync);
+    return () => window.removeEventListener("screensaver-setting-changed", sync);
+  }, []);
+  const entity = useEntityStateStore((s) => (entityId ? s.getState(entityId) ?? null : null));
+  return { entityId, entity, match: readFootballMatch(entity), live: isLiveFootballMatch(entity) };
 }
 
 function ScreensaverFootball() {
   const { t } = useTranslation();
-  const entityId = getScreensaverFootballEntityId();
-  const entity = useEntityStateStore((s) => (entityId ? s.getState(entityId) : null));
-  if (!entityId || !entity) return null;
+  const { entityId, match } = useScreensaverFootballMatch();
+  if (!entityId || !footballMatchHasContent(match) || !match) return null;
 
-  const attrs = (entity.attributes ?? {}) as Record<string, unknown>;
-  const status = String(attrs.status ?? "").toUpperCase();
-  const clock = attrs.clock as string | number | undefined;
-  const clockStr = clock != null ? String(clock) : null;
-  const kickoffIn = attrs.kickoff_in as string | number | undefined;
-  const kickoffInStr = kickoffIn != null ? String(kickoffIn) : undefined;
-  const teamLogo = attrs.team_logo as string | undefined;
-  const teamLongName = attrs.team_long_name as string | undefined;
-  const opponentLogo = attrs.opponent_logo as string | undefined;
-  const opponentLongName = attrs.opponent_long_name as string | undefined;
-  // Scores: uit attributes (meerdere keys) of uit entity.state als "1-0" / "2 - 1"
-  let teamScoreStr = readScoreAttr(attrs, "team_score", "team_goals", "home_score");
-  let opponentScoreStr = readScoreAttr(attrs, "opponent_score", "opponent_goals", "away_score");
-  if (teamScoreStr === "—" && opponentScoreStr === "—") {
-    const fromState = parseStateAsScore(entity.state);
-    if (fromState) {
-      teamScoreStr = fromState[0];
-      opponentScoreStr = fromState[1];
-    }
-  }
-  const hasScoreValues = teamScoreStr !== "—" || opponentScoreStr !== "—";
-  const showScores = status === "IN" || status === "POST" || hasScoreValues;
-
-  const statusLabel =
-    status === "PRE"
-      ? t("screensaver.match.pre")
-      : status === "IN"
-        ? t("screensaver.match.in")
-        : status === "POST"
-          ? t("screensaver.match.post")
-          : status
-            ? status
-            : null;
-  const centerLabel = clockStr ?? statusLabel;
-
-  if (!teamLongName && !opponentLongName && !kickoffInStr && !centerLabel) return null;
+  const centerLabel = footballCenterLabel(match, t);
 
   return (
     <div className="flex flex-col gap-2 px-3 py-2.5 text-white/95 drop-shadow-md w-max max-w-[240px] sm:max-w-[280px]">
-      {kickoffInStr && (
-        <p className="text-xs sm:text-sm text-white/90 text-center w-full mb-0 leading-tight">{kickoffInStr}</p>
+      {match.kickoffIn && (
+        <p className="text-xs sm:text-sm text-white/90 text-center w-full mb-0 leading-tight">{match.kickoffIn}</p>
       )}
-      {/* Rij 1: team_logo | team_score | clock | opponent_score | opponent_logo */}
       <div className="grid grid-cols-5 items-center gap-2 w-full min-w-0">
         <div className="flex justify-center min-w-0">
-          <ScreensaverFootballLogo src={teamLogo} alt="" />
+          <ScreensaverFootballLogo src={match.teamLogo} alt="" />
         </div>
         <div className="flex justify-center">
           <span className="inline-flex h-8 min-w-[2rem] sm:h-9 sm:min-w-[2.25rem] items-center justify-center rounded bg-white/20 px-1.5 text-sm sm:text-base font-bold tabular-nums text-white">
-            {showScores ? teamScoreStr : "—"}
+            {match.showScores ? match.teamScore : "—"}
           </span>
         </div>
         <div className="flex justify-center min-w-0">
@@ -284,18 +264,53 @@ function ScreensaverFootball() {
         </div>
         <div className="flex justify-center">
           <span className="inline-flex h-8 min-w-[2rem] sm:h-9 sm:min-w-[2.25rem] items-center justify-center rounded bg-white/20 px-1.5 text-sm sm:text-base font-bold tabular-nums text-white">
-            {showScores ? opponentScoreStr : "—"}
+            {match.showScores ? match.opponentScore : "—"}
           </span>
         </div>
         <div className="flex justify-center min-w-0">
-          <ScreensaverFootballLogo src={opponentLogo} alt="" />
+          <ScreensaverFootballLogo src={match.opponentLogo} alt="" />
         </div>
       </div>
-      {/* Rij 2: team_long_name (links) | ... | opponent_long_name (rechts) */}
       <div className="grid grid-cols-5 gap-2 w-full min-w-0">
-        <span className="text-xs sm:text-sm font-medium truncate text-center col-span-1">{teamLongName ?? "—"}</span>
+        <span className="text-xs sm:text-sm font-medium truncate text-center col-span-1">{match.teamName ?? "—"}</span>
         <div className="col-span-3" />
-        <span className="text-xs sm:text-sm font-medium truncate text-center col-span-1">{opponentLongName ?? "—"}</span>
+        <span className="text-xs sm:text-sm font-medium truncate text-center col-span-1">{match.opponentName ?? "—"}</span>
+      </div>
+    </div>
+  );
+}
+
+function ScreensaverFootballLive({ match }: { match: FootballMatch }) {
+  const { t } = useTranslation();
+  const centerLabel = footballCenterLabel(match, t);
+
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-6 sm:px-8 sm:pb-10">
+      <div className="w-full max-w-4xl rounded-[2rem] bg-black/55 px-5 py-5 text-white shadow-2xl backdrop-blur-md sm:px-8 sm:py-6">
+        {match.kickoffIn ? (
+          <p className="mb-3 text-center text-sm font-medium uppercase tracking-[0.18em] text-white/80 sm:text-base">
+            {match.kickoffIn}
+          </p>
+        ) : null}
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_minmax(0,1fr)] items-center gap-3 sm:gap-6">
+          <div className="flex min-w-0 items-center justify-end gap-3 sm:gap-4">
+            <span className="truncate text-right text-lg font-semibold sm:text-2xl">{match.teamName ?? "—"}</span>
+            <ScreensaverFootballLogo src={match.teamLogo} alt="" className="h-14 w-14 sm:h-20 sm:w-20" />
+          </div>
+          <span className="inline-flex h-14 min-w-[3.25rem] items-center justify-center rounded-2xl bg-white/15 px-3 text-3xl font-bold tabular-nums sm:h-16 sm:min-w-[3.75rem] sm:text-5xl">
+            {match.showScores ? match.teamScore : "—"}
+          </span>
+          <span className="px-1 text-center text-sm font-semibold uppercase tracking-[0.18em] text-white/80 sm:text-lg">
+            {centerLabel ?? "—"}
+          </span>
+          <span className="inline-flex h-14 min-w-[3.25rem] items-center justify-center rounded-2xl bg-white/15 px-3 text-3xl font-bold tabular-nums sm:h-16 sm:min-w-[3.75rem] sm:text-5xl">
+            {match.showScores ? match.opponentScore : "—"}
+          </span>
+          <div className="flex min-w-0 items-center justify-start gap-3 sm:gap-4">
+            <ScreensaverFootballLogo src={match.opponentLogo} alt="" className="h-14 w-14 sm:h-20 sm:w-20" />
+            <span className="truncate text-left text-lg font-semibold sm:text-2xl">{match.opponentName ?? "—"}</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -544,8 +559,10 @@ function ScreensaverOverlay({
   });
   const clockPosition = getScreensaverClockPosition();
   const clockSize = getScreensaverClockSize();
-  const clockAlign = clockPositionAxis(clockPosition).x;
-  const clockY = clockPositionAxis(clockPosition).y;
+  const { match: footballMatch, live: footballLive } = useScreensaverFootballMatch();
+  const liveClockPosition = footballLive ? "top-center" : clockPosition;
+  const clockAlign = clockPositionAxis(liveClockPosition).x;
+  const clockY = clockPositionAxis(liveClockPosition).y;
   const mediaSide = screensaverMediaSide(clockPosition);
   const [, setSettingsTick] = useState(0);
 
@@ -817,12 +834,15 @@ function ScreensaverOverlay({
     videoRotateTimer.current = setTimeout(fetchRemoteVideo, VIDEO_MAX_SECONDS * 1000);
   }, [fetchRemoteVideo]);
 
-  const backgroundImage =
-    playback.mode === "custom"
+  const backgroundImage = footballLive
+    ? SCREENSAVER_FOOTBALL_LIVE_BACKGROUND
+    : playback.mode === "custom"
       ? playback.url
       : currentImage || DEFAULT_SCREENSAVER_IMAGE;
+  const showVideoBackground = isVideoMode && !footballLive;
   const useGradient =
-    !isVideoMode &&
+    !footballLive &&
+    !showVideoBackground &&
     (imageFailed ||
       ((isRemotePhoto || isVideoMode) && mediaError && !currentImage));
   const fadeStyle = { transition: `opacity ${FADE_DURATION_MS}ms ease-in-out` as const };
@@ -879,7 +899,7 @@ function ScreensaverOverlay({
     >
       {!useGradient && (
         <>
-          {isVideoMode ? (
+          {showVideoBackground ? (
             <>
               {currentVideoUrl && (
                 // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -950,7 +970,7 @@ function ScreensaverOverlay({
       <div
         className={cn(
           "pointer-events-none absolute inset-0 z-10 flex p-8",
-          clockPositionOverlayClass(clockPosition)
+          clockPositionOverlayClass(liveClockPosition)
         )}
       >
         <div
@@ -963,17 +983,21 @@ function ScreensaverOverlay({
           <ScreensaverTimer align={clockAlign} />
         </div>
       </div>
-      <div
-        className={cn(
-          "pointer-events-none absolute bottom-8 z-10",
-          mediaSide === "left" ? "left-8" : "right-8"
-        )}
-      >
-        <div className="pointer-events-auto flex flex-col items-start">
-          {showMusicOnScreensaver ? <ScreensaverMusic /> : <ScreensaverFootball />}
+      {footballLive && footballMatchHasContent(footballMatch) && footballMatch ? (
+        <ScreensaverFootballLive match={footballMatch} />
+      ) : (
+        <div
+          className={cn(
+            "pointer-events-none absolute bottom-8 z-10",
+            mediaSide === "left" ? "left-8" : "right-8"
+          )}
+        >
+          <div className="pointer-events-auto flex flex-col items-start">
+            {showMusicOnScreensaver ? <ScreensaverMusic /> : <ScreensaverFootball />}
+          </div>
         </div>
-      </div>
-      {(currentAttribution || ((playback.mode === "pexels-photo" || playback.mode === "pexels-video") && !mediaError)) && (
+      )}
+      {!footballLive && (currentAttribution || ((playback.mode === "pexels-photo" || playback.mode === "pexels-video") && !mediaError)) && (
         <div className={cn(
           "pointer-events-none absolute inset-x-0 z-10 flex justify-center px-8",
           clockY === "bottom" ? "top-3" : "bottom-3"
@@ -1011,6 +1035,16 @@ export function ScreensaverProvider({ children }: { children: React.ReactNode })
   const { active, activatedBy, dismiss } = useIdleScreensaver();
   const router = useRouter();
   const pathname = usePathname();
+  const { entity, live } = useScreensaverFootballMatch();
+  const previousLiveRef = useRef(false);
+
+  useEffect(() => {
+    const nowLive = live && footballMatchStatus(entity) === "IN";
+    if (nowLive && !previousLiveRef.current) {
+      window.dispatchEvent(new Event("screensaver-activate"));
+    }
+    previousLiveRef.current = nowLive;
+  }, [entity, live]);
 
   const goHomeIfNeeded = useCallback(() => {
     if (activatedBy === "idle" && !isMainDashboardPath(pathname ?? "")) {
