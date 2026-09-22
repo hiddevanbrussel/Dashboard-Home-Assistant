@@ -46,11 +46,33 @@ function savePosition(scope: string | undefined, p: Position, widgetId?: string)
   }
 }
 
-function defaultPosition(cardWidth: number, cardHeight: number): Position {
+
+function safeReleasePointerCapture(el: HTMLElement | null, pointerId: number) {
+  if (!el || typeof el.releasePointerCapture !== "function") return;
+  if (typeof el.hasPointerCapture === "function" && !el.hasPointerCapture(pointerId)) return;
+  try {
+    el.releasePointerCapture(pointerId);
+  } catch {
+    // ignore — already released or invalid id
+  }
+}
+
+function defaultPosition(cardWidth: number, cardHeight: number, widgetId?: string): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  const maxLeft = window.innerWidth - cardWidth;
-  const maxBottom = window.innerHeight - cardHeight;
-  return { left: Math.max(0, maxLeft / 2), bottom: Math.max(DEFAULT_OFFSET, maxBottom / 2) };
+  const maxLeft = Math.max(0, window.innerWidth - cardWidth);
+  const maxBottom = Math.max(0, window.innerHeight - cardHeight);
+  // Stagger multiple cameras so they do not stack and cover the whole dashboard.
+  let hash = 0;
+  if (widgetId) {
+    for (let i = 0; i < widgetId.length; i++) hash = (hash * 31 + widgetId.charCodeAt(i)) | 0;
+  }
+  const slot = Math.abs(hash) % 4;
+  const ox = (slot % 2) * Math.min(80, Math.floor(maxLeft * 0.15));
+  const oy = Math.floor(slot / 2) * Math.min(80, Math.floor(maxBottom * 0.15));
+  return {
+    left: Math.max(0, Math.min(maxLeft, maxLeft / 2 + ox - 40)),
+    bottom: Math.max(DEFAULT_OFFSET, Math.min(maxBottom, maxBottom / 2 + oy - 40)),
+  };
 }
 
 const LONG_PRESS_MS = 500;
@@ -95,10 +117,13 @@ export function FloatingCameraCard({
   const totalHeight = liveSize?.height ?? cardHeight;
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+  const isResizingRef = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cardElRef = useRef<HTMLDivElement | null>(null);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -110,16 +135,21 @@ export function FloatingCameraCard({
   const startLongPress = useCallback(
     (e: React.PointerEvent) => {
       if (editMode || !onEnterEditMode) return;
+      if ((e.target as HTMLElement)?.closest?.("button, a, [role=button], input, select, textarea")) return;
       // #region agent log
-      try { fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:startLongPress',message:'long-press pointerdown capture',data:{pointerId:e.pointerId,targetTag:(e.target as HTMLElement)?.tagName,width:totalWidth,height:totalHeight,left:position.left,bottom:position.bottom},timestamp:Date.now()})}).catch(()=>{}) } catch {}
+      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:startLongPress',message:'long-press pointerdown (no capture)',data:{pointerId:e.pointerId,targetTag:(e.target as HTMLElement)?.tagName,width:totalWidth,height:totalHeight,left:position.left,bottom:position.bottom},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
       // #endregion
       clearLongPress();
-      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      // Do not setPointerCapture here — capturing on a large camera card redirects
+      // all dashboard pointer events to this element until release, which makes the
+      // whole dashboard feel dead if release is delayed or missed.
+      const pointerId = e.pointerId;
       longPressTimerRef.current = setTimeout(() => {
         longPressTimerRef.current = null;
         // #region agent log
-        try { fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:longPressFire',message:'long-press fired enterEditMode while pointer may still be down',data:{pointerId:e.pointerId},timestamp:Date.now()})}).catch(()=>{}) } catch {}
+        fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:longPressFire',message:'long-press fired enterEditMode',data:{pointerId},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
         // #endregion
+        safeReleasePointerCapture(cardElRef.current, pointerId);
         onEnterEditMode();
       }, LONG_PRESS_MS);
     },
@@ -129,19 +159,11 @@ export function FloatingCameraCard({
   const endLongPress = useCallback(
     (e: React.PointerEvent) => {
       // #region agent log
-      try {
-        const el = e.currentTarget as HTMLElement;
-        const has = typeof el.hasPointerCapture === 'function' ? el.hasPointerCapture(e.pointerId) : null;
-        fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:endLongPress',message:'long-press end/release',data:{pointerId:e.pointerId,type:e.type,hasCapture:has},timestamp:Date.now()})}).catch(()=>{})
-      } catch {}
+      const el = e.currentTarget as HTMLElement;
+      const has = typeof el.hasPointerCapture === 'function' ? el.hasPointerCapture(e.pointerId) : null;
+      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:endLongPress',message:'long-press end/release',data:{pointerId:e.pointerId,type:e.type,hasCapture:has},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
       // #endregion
-      try {
-        (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
-      } catch (err) {
-        // #region agent log
-        try { fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'D',location:'floating-camera-card.tsx:endLongPress',message:'releasePointerCapture threw',data:{err:String(err),pointerId:e.pointerId,type:e.type},timestamp:Date.now()})}).catch(()=>{}) } catch {}
-        // #endregion
-      }
+      safeReleasePointerCapture(e.currentTarget as HTMLElement, e.pointerId);
       clearLongPress();
     },
     [clearLongPress]
@@ -158,7 +180,7 @@ export function FloatingCameraCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
+    const p = snapToGrid(defaultPosition(totalWidth, totalHeight, widgetId), bounds);
     setPosition(p);
     savePosition(storageScope, p, widgetId);
   }, [totalWidth, totalHeight, storageScope, widgetId]);
@@ -185,10 +207,11 @@ export function FloatingCameraCard({
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!editMode || isResizing) return;
+      if (!editMode || isResizingRef.current) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
       e.stopPropagation();
+      isDraggingRef.current = true;
       setIsDragging(true);
       const measured = floatingPositionFromElement(e.currentTarget as HTMLElement);
       dragStart.current = {
@@ -198,16 +221,16 @@ export function FloatingCameraCard({
         bottom: measured.bottom,
       };
       // #region agent log
-      try { fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handlePointerDown',message:'drag start capture',data:{pointerId:e.pointerId,measured,totalWidth,totalHeight},timestamp:Date.now()})}).catch(()=>{}) } catch {}
+      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handlePointerDown',message:'drag start capture',data:{pointerId:e.pointerId,measured,totalWidth,totalHeight},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
       // #endregion
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [editMode, isResizing, totalWidth, totalHeight]
+    [editMode, totalWidth, totalHeight]
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!isDragging) return;
+      if (!isDraggingRef.current) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
       const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
@@ -218,12 +241,13 @@ export function FloatingCameraCard({
       };
       setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging, totalWidth, totalHeight]
+    [totalWidth, totalHeight]
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (isDragging) {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
@@ -238,21 +262,15 @@ export function FloatingCameraCard({
         savePosition(storageScope, next, widgetId);
       }
       // #region agent log
-      try {
+      {
         const el = e.currentTarget as HTMLElement;
         const has = typeof el.hasPointerCapture === 'function' ? el.hasPointerCapture(e.pointerId) : null;
-        fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handlePointerUp',message:'drag pointer up',data:{pointerId:e.pointerId,type:e.type,isDragging,hasCapture:has},timestamp:Date.now()})}).catch(()=>{})
-      } catch {}
-      // #endregion
-      try {
-        (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
-      } catch (err) {
-        // #region agent log
-        try { fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'D',location:'floating-camera-card.tsx:handlePointerUp',message:'releasePointerCapture threw',data:{err:String(err),pointerId:e.pointerId},timestamp:Date.now()})}).catch(()=>{}) } catch {}
-        // #endregion
+        fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handlePointerUp',message:'drag pointer up',data:{pointerId:e.pointerId,type:e.type,isDragging:isDraggingRef.current,hasCapture:has},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
       }
+      // #endregion
+      safeReleasePointerCapture(e.currentTarget as HTMLElement, e.pointerId);
     },
-    [isDragging, totalWidth, totalHeight, storageScope, widgetId]
+    [totalWidth, totalHeight, storageScope, widgetId]
   );
 
   const applyResizeDelta = useCallback((clientX: number, clientY: number) => {
@@ -277,7 +295,9 @@ export function FloatingCameraCard({
       if (!editMode) return;
       e.preventDefault();
       e.stopPropagation();
+      isDraggingRef.current = false;
       setIsDragging(false);
+      isResizingRef.current = true;
       setIsResizing(true);
       resizeStart.current = {
         x: e.clientX,
@@ -294,16 +314,17 @@ export function FloatingCameraCard({
 
   const handleResizePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!isResizing) return;
+      if (!isResizingRef.current) return;
       applyResizeDelta(e.clientX, e.clientY);
     },
-    [isResizing, applyResizeDelta]
+    [applyResizeDelta]
   );
 
   const handleResizePointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (isResizing) {
+      if (isResizingRef.current) {
         const next = applyResizeDelta(e.clientX, e.clientY);
+        isResizingRef.current = false;
         setIsResizing(false);
         setPosition({ left: next.left, bottom: next.bottom });
         savePosition(storageScope, { left: next.left, bottom: next.bottom }, widgetId);
@@ -311,17 +332,11 @@ export function FloatingCameraCard({
         if (!onResize) setLiveSize(null);
       }
       // #region agent log
-      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handleResizePointerUp',message:'resize pointer up',data:{pointerId:e.pointerId,type:e.type,isResizing},timestamp:Date.now()})}).catch(()=>{});
+      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handleResizePointerUp',message:'resize pointer up',data:{pointerId:e.pointerId,type:e.type,isResizing:isResizingRef.current},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
       // #endregion
-      try {
-        (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
-      } catch (err) {
-        // #region agent log
-        fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'D',location:'floating-camera-card.tsx:handleResizePointerUp',message:'releasePointerCapture threw',data:{err:String(err),pointerId:e.pointerId},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
-      }
+      safeReleasePointerCapture(e.currentTarget as HTMLElement, e.pointerId);
     },
-    [isResizing, applyResizeDelta, storageScope, widgetId, onResize]
+    [applyResizeDelta, storageScope, widgetId, onResize]
   );
 
   // #region agent log
@@ -337,6 +352,7 @@ export function FloatingCameraCard({
 
   return (
     <div
+      ref={cardElRef}
       className={cn(
         "card-plot-in fixed z-40",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
