@@ -46,7 +46,6 @@ function savePosition(scope: string | undefined, p: Position, widgetId?: string)
   }
 }
 
-
 function safeReleasePointerCapture(el: HTMLElement | null, pointerId: number) {
   if (!el || typeof el.releasePointerCapture !== "function") return;
   if (typeof el.hasPointerCapture === "function" && !el.hasPointerCapture(pointerId)) return;
@@ -136,9 +135,6 @@ export function FloatingCameraCard({
     (e: React.PointerEvent) => {
       if (editMode || !onEnterEditMode) return;
       if ((e.target as HTMLElement)?.closest?.("button, a, [role=button], input, select, textarea")) return;
-      // #region agent log
-      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:startLongPress',message:'long-press pointerdown (no capture)',data:{pointerId:e.pointerId,targetTag:(e.target as HTMLElement)?.tagName,width:totalWidth,height:totalHeight,left:position.left,bottom:position.bottom},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
-      // #endregion
       clearLongPress();
       // Do not setPointerCapture here — capturing on a large camera card redirects
       // all dashboard pointer events to this element until release, which makes the
@@ -146,23 +142,15 @@ export function FloatingCameraCard({
       const pointerId = e.pointerId;
       longPressTimerRef.current = setTimeout(() => {
         longPressTimerRef.current = null;
-        // #region agent log
-        fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:longPressFire',message:'long-press fired enterEditMode',data:{pointerId},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
-        // #endregion
         safeReleasePointerCapture(cardElRef.current, pointerId);
         onEnterEditMode();
       }, LONG_PRESS_MS);
     },
-    [editMode, onEnterEditMode, clearLongPress, totalWidth, totalHeight, position.left, position.bottom]
+    [editMode, onEnterEditMode, clearLongPress]
   );
 
   const endLongPress = useCallback(
     (e: React.PointerEvent) => {
-      // #region agent log
-      const el = e.currentTarget as HTMLElement;
-      const has = typeof el.hasPointerCapture === 'function' ? el.hasPointerCapture(e.pointerId) : null;
-      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:endLongPress',message:'long-press end/release',data:{pointerId:e.pointerId,type:e.type,hasCapture:has},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
-      // #endregion
       safeReleasePointerCapture(e.currentTarget as HTMLElement, e.pointerId);
       clearLongPress();
     },
@@ -220,12 +208,9 @@ export function FloatingCameraCard({
         left: measured.left,
         bottom: measured.bottom,
       };
-      // #region agent log
-      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handlePointerDown',message:'drag start capture',data:{pointerId:e.pointerId,measured,totalWidth,totalHeight},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
-      // #endregion
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [editMode, totalWidth, totalHeight]
+    [editMode]
   );
 
   const handlePointerMove = useCallback(
@@ -261,13 +246,6 @@ export function FloatingCameraCard({
         setPosition(next);
         savePosition(storageScope, next, widgetId);
       }
-      // #region agent log
-      {
-        const el = e.currentTarget as HTMLElement;
-        const has = typeof el.hasPointerCapture === 'function' ? el.hasPointerCapture(e.pointerId) : null;
-        fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handlePointerUp',message:'drag pointer up',data:{pointerId:e.pointerId,type:e.type,isDragging:isDraggingRef.current,hasCapture:has},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
-      }
-      // #endregion
       safeReleasePointerCapture(e.currentTarget as HTMLElement, e.pointerId);
     },
     [totalWidth, totalHeight, storageScope, widgetId]
@@ -331,24 +309,10 @@ export function FloatingCameraCard({
         onResize?.({ width: next.width, height: next.height });
         if (!onResize) setLiveSize(null);
       }
-      // #region agent log
-      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'A',location:'floating-camera-card.tsx:handleResizePointerUp',message:'resize pointer up',data:{pointerId:e.pointerId,type:e.type,isResizing:isResizingRef.current},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
-      // #endregion
       safeReleasePointerCapture(e.currentTarget as HTMLElement, e.pointerId);
     },
     [applyResizeDelta, storageScope, widgetId, onResize]
   );
-
-  // #region agent log
-  useEffect(() => {
-    try {
-      const vw = typeof window !== 'undefined' ? window.innerWidth : 0;
-      const vh = typeof window !== 'undefined' ? window.innerHeight : 0;
-      const coverPct = vw && vh ? Math.round(100 * (totalWidth * totalHeight) / (vw * vh)) : null;
-      fetch('/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hypothesisId:'B',location:'floating-camera-card.tsx:renderSize',message:'camera card geometry',data:{widgetId,editMode,isDragging,isResizing,totalWidth,totalHeight,left:position.left,bottom:position.bottom,vw,vh,coverPct,touchNone:!editMode && !!onEnterEditMode},timestamp:Date.now()})}).catch(()=>{})
-    } catch {}
-  }, [widgetId, editMode, isDragging, isResizing, totalWidth, totalHeight, position.left, position.bottom, onEnterEditMode]);
-  // #endregion
 
   return (
     <div
