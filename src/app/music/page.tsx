@@ -19,7 +19,7 @@ import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { fetchMusicAssistantHome } from "@/lib/music-assistant";
 import { getMaItemParams } from "@/lib/ma-item-params";
-import { albumMatchesGenre, mergeHomeGenres, type MusicGenre } from "@/lib/music-genres";
+import { generatedCoverDataUri } from "@/lib/generated-cover";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
@@ -340,7 +340,7 @@ type MusicHomeMemory = {
   artists: MASearchItem[];
   playlists: MASearchItem[];
   radios: MASearchItem[];
-  genres: unknown[];
+  stations: MASearchItem[];
   recent: MASearchItem[];
   featured: { id: string; playlist: MASearchItem | null; tracks: MASearchItem[] }[];
 };
@@ -364,7 +364,7 @@ function loadMusicHome(
         artists: data.artists as MASearchItem[],
         playlists: data.playlists as MASearchItem[],
         radios: data.radios as MASearchItem[],
-        genres: Array.isArray(data.genres) ? data.genres : [],
+        stations: (Array.isArray(data.stations) ? data.stations : []) as MASearchItem[],
         recent: data.recent as MASearchItem[],
         featured: data.featured.map((entry) => ({
           id: entry.id,
@@ -485,10 +485,8 @@ export default function MusicPage() {
   const [libraryArtistsLoading, setLibraryArtistsLoading] = useState(false);
   const [libraryAlbums, setLibraryAlbums] = useState<MASearchItem[]>([]);
   const [libraryAlbumsLoading, setLibraryAlbumsLoading] = useState(false);
-  const [libraryGenres, setLibraryGenres] = useState<unknown[]>([]);
-  const [selectedGenre, setSelectedGenre] = useState<MusicGenre | null>(null);
-  const [genreAlbums, setGenreAlbums] = useState<MASearchItem[]>([]);
-  const [genreAlbumsLoading, setGenreAlbumsLoading] = useState(false);
+  const [appleStations, setAppleStations] = useState<MASearchItem[]>([]);
+  const [appleStationsLoading, setAppleStationsLoading] = useState(false);
   const [featuredPlaylistData, setFeaturedPlaylistData] = useState<{ id: string; playlist: MASearchItem | null; tracks: MASearchItem[] }[]>([]);
   const [featuredPlaylistLoading, setFeaturedPlaylistLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<MusicSectionId | null>(null);
@@ -918,7 +916,8 @@ export default function MusicPage() {
       setLibraryArtistsLoading(false);
       setLibraryAlbums([]);
       setLibraryAlbumsLoading(false);
-      setLibraryGenres([]);
+      setAppleStations([]);
+      setAppleStationsLoading(false);
       setRecentItems([]);
       setRecentLoading(false);
       return;
@@ -939,13 +938,14 @@ export default function MusicPage() {
       setLibraryArtists(cached.artists);
       setLibraryPlaylists(cached.playlists);
       setRadioStations(cached.radios);
-      setLibraryGenres(cached.genres ?? []);
+      setAppleStations(cached.stations ?? []);
       setRecentItems(cached.recent);
       setFeaturedPlaylistData(cached.featured);
       setLibraryAlbumsLoading(false);
       setLibraryArtistsLoading(false);
       setLibraryPlaylistsLoading(false);
       setRadioStationsLoading(false);
+      setAppleStationsLoading(false);
       setRecentLoading(false);
       setFeaturedPlaylistLoading(false);
     } else {
@@ -953,6 +953,7 @@ export default function MusicPage() {
       setLibraryArtistsLoading(true);
       setLibraryPlaylistsLoading(true);
       setRadioStationsLoading(musicAssistant.sectionRadioEnabled);
+      setAppleStationsLoading(true);
       setRecentLoading(musicAssistant.sectionRecentlyPlayedEnabled);
       setFeaturedPlaylistLoading(featuredIds.length > 0);
     }
@@ -973,7 +974,7 @@ export default function MusicPage() {
             setLibraryArtists([]);
             setLibraryPlaylists([]);
             setRadioStations([]);
-            setLibraryGenres([]);
+            setAppleStations([]);
             setRecentItems([]);
             setFeaturedPlaylistData([]);
           }
@@ -983,7 +984,7 @@ export default function MusicPage() {
         setLibraryArtists(data.artists);
         setLibraryPlaylists(data.playlists);
         setRadioStations(data.radios);
-        setLibraryGenres(data.genres);
+        setAppleStations(data.stations);
         setRecentItems(data.recent);
         setFeaturedPlaylistData(data.featured);
       })
@@ -993,7 +994,7 @@ export default function MusicPage() {
         setLibraryArtists([]);
         setLibraryPlaylists([]);
         setRadioStations([]);
-        setLibraryGenres([]);
+        setAppleStations([]);
         setRecentItems([]);
         setFeaturedPlaylistData([]);
       })
@@ -1003,6 +1004,7 @@ export default function MusicPage() {
         setLibraryArtistsLoading(false);
         setLibraryPlaylistsLoading(false);
         setRadioStationsLoading(false);
+        setAppleStationsLoading(false);
         setRecentLoading(false);
         setFeaturedPlaylistLoading(false);
       });
@@ -1019,53 +1021,6 @@ export default function MusicPage() {
     musicAssistant.sectionRadioEnabled,
     musicAssistant.sectionRecentlyPlayedEnabled,
   ]);
-
-  useEffect(() => {
-    if (!selectedGenre) {
-      setGenreAlbums([]);
-      setGenreAlbumsLoading(false);
-      return;
-    }
-    const localMatches = libraryAlbums.filter((item) => albumMatchesGenre(item, selectedGenre));
-    if (!selectedGenre.itemId || !musicAssistant.enabled || !musicAssistant.baseUrl) {
-      setGenreAlbums(localMatches);
-      setGenreAlbumsLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setGenreAlbumsLoading(true);
-    const numericId = Number(selectedGenre.itemId);
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "music/albums/library_items", {
-      limit: 60,
-      in_library_only: true,
-      order_by: "timestamp_added_desc",
-      genre_ids: Number.isFinite(numericId) ? [numericId] : selectedGenre.itemId,
-    })
-      .then((data: unknown) => {
-        if (cancelled) return;
-        const d = data as Record<string, unknown>;
-        if (d?.error) {
-          setGenreAlbums(localMatches);
-          return;
-        }
-        const result = d?.result ?? d;
-        const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-        let list: MASearchItem[] = [];
-        if (Array.isArray(resultObj.albums)) list = resultObj.albums as MASearchItem[];
-        else if (Array.isArray(resultObj.items)) list = resultObj.items as MASearchItem[];
-        else if (Array.isArray(result)) list = result as MASearchItem[];
-        setGenreAlbums(list.length > 0 ? list : localMatches);
-      })
-      .catch(() => {
-        if (!cancelled) setGenreAlbums(localMatches);
-      })
-      .finally(() => {
-        if (!cancelled) setGenreAlbumsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedGenre, libraryAlbums, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   const fetchRecentItems = useCallback(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl) return;
@@ -1374,8 +1329,7 @@ export default function MusicPage() {
   );
 
   const allowSpeakerSelection = musicAssistant.allowSpeakerSelection;
-  const isMusicHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && !selectedPodcast && !selectedGenre;
-  const homeGenres = useMemo(() => mergeHomeGenres(libraryGenres, libraryAlbums), [libraryGenres, libraryAlbums]);
+  const isMusicHome = !selectedMenu && !selectedCategory && !selectedArtist && !selectedAlbum && !selectedPodcast;
   const headerOverHero = false;
 
   const homeGreeting =
@@ -1512,16 +1466,13 @@ export default function MusicPage() {
 
     const shelves: MusicHomeShelf[] = [];
 
-    if (musicAssistant.sectionRadioEnabled) {
-      shelves.push({
-        id: "radio",
-        title: t("music.stationsForYou"),
-        variant: "station",
-        loading: radioStationsLoading,
-        items: radioStations.slice(0, 16).map((item, i) => toTile(item, i, "radio", "radio")),
-        onSeeAll: () => setSelectedCategory("radio"),
-      });
-    }
+    shelves.push({
+      id: "stations",
+      title: t("music.stationsForYou"),
+      variant: "station",
+      loading: appleStationsLoading,
+      items: appleStations.slice(0, 16).map((item, i) => toTile(item, i, "station", detectPlayableType(item))),
+    });
 
     shelves.push({
       id: "albums",
@@ -1534,6 +1485,17 @@ export default function MusicPage() {
         setSelectedCategory(null);
       },
     });
+
+    if (musicAssistant.sectionRadioEnabled) {
+      shelves.push({
+        id: "radio",
+        title: t("music.radioStations"),
+        variant: "station",
+        loading: radioStationsLoading,
+        items: radioStations.slice(0, 16).map((item, i) => toTile(item, i, "radio", "radio")),
+        onSeeAll: () => setSelectedCategory("radio"),
+      });
+    }
 
     if (musicAssistant.sectionFeaturedPlaylistEnabled) {
       shelves.push({
@@ -1571,6 +1533,7 @@ export default function MusicPage() {
       featuredPlaylistLoading ||
       libraryAlbumsLoading ||
       libraryPlaylistsLoading ||
+      appleStationsLoading ||
       (musicAssistant.sectionRadioEnabled && radioStationsLoading);
 
     return { jumpBackIn, spotlights, shelves, loading };
@@ -1591,6 +1554,8 @@ export default function MusicPage() {
     libraryAlbumsLoading,
     libraryPlaylists,
     libraryPlaylistsLoading,
+    appleStations,
+    appleStationsLoading,
     radioStations,
     radioStationsLoading,
     playOnPlayer,
@@ -1639,7 +1604,7 @@ export default function MusicPage() {
               { id: "podcasts" as const, label: t("music.menuPodcasts"), icon: Podcast },
             ] as const
           ).map(({ id, label, icon: Icon }) => {
-            const active = id === "home" ? !selectedMenu && !selectedCategory && !selectedPodcast && !selectedGenre : selectedMenu === id;
+            const active = id === "home" ? !selectedMenu && !selectedCategory && !selectedPodcast : selectedMenu === id;
             const light = headerOverHero;
             return (
               <button
@@ -1649,7 +1614,6 @@ export default function MusicPage() {
                   setSelectedArtist(null);
                   setSelectedAlbum(null);
                   setSelectedPodcast(null);
-                  setSelectedGenre(null);
                   setPodcastEpisodes([]);
                   setSelectedCategory(null);
                   if (id === "home") {
@@ -1788,8 +1752,8 @@ export default function MusicPage() {
                     setAlbumDetails(null);
                     setAlbumTracks([]);
                     setError(null);
+                    setSelectedMenu("albums");
                     setSelectedCategory(null);
-                    if (!selectedGenre) setSelectedMenu("albums");
                   }}
                   className="inline-flex items-center gap-2 rounded-full bg-black/[0.04] px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-black/[0.07] dark:bg-white/8 dark:text-white dark:hover:bg-white/12"
                   aria-label={t("music.back")}
@@ -2326,7 +2290,9 @@ export default function MusicPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {libraryPlaylists.map((item, index) => {
                   const playlistUri = getPlayableUri(item, "playlist");
-                  const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
+                  const imageSrc =
+                    getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token) ??
+                    generatedCoverDataUri(item.name ?? t("music.unknown"));
                   const canPlay = !!playlistUri && !!selectedQueueId;
                   const handleClick = () => {
                     if (canPlay && playlistUri) playOnPlayer(normalizePlayMediaUri(playlistUri));
@@ -2396,60 +2362,6 @@ export default function MusicPage() {
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <Podcast className="h-12 w-12 text-gray-500 dark:text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="mt-1.5 truncate text-sm font-medium text-gray-900 dark:text-white text-center">{item.name ?? t("music.unknown")}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ) : selectedGenre ? (
-          <div className="space-y-6">
-            <div className="relative flex items-center justify-center w-full min-h-[2rem]">
-              <button
-                type="button"
-                onClick={() => setSelectedGenre(null)}
-                className="absolute left-0 flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {t("music.back")}
-              </button>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">{selectedGenre.name}</h2>
-            </div>
-            {genreAlbumsLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
-              </div>
-            ) : genreAlbums.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("music.noAlbums")}</p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {genreAlbums.map((item, index) => {
-                  const albumUri = getPlayableUri(item, "album");
-                  const imageSrc = getImageSrc(getItemImageUrl(item), musicAssistant.baseUrl, musicAssistant.token);
-                  const albumParams = getAlbumParams(item);
-                  const canPlay = !!albumUri && !!selectedQueueId;
-                  const handleClick = () => {
-                    if (albumParams) setSelectedAlbum(item);
-                    else if (canPlay && albumUri) playOnPlayer(normalizePlayMediaUri(albumUri));
-                  };
-                  return (
-                    <button
-                      key={albumUri ?? `genre-album-${index}`}
-                      type="button"
-                      onClick={handleClick}
-                      disabled={!albumParams && !canPlay}
-                      className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-accent-yellow dark:focus:ring-accent-green focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] disabled:opacity-50 text-left"
-                    >
-                      <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-xl overflow-hidden relative bg-gray-200 dark:bg-gray-700">
-                        {imageSrc ? (
-                          <Image src={imageSrc} alt="" fill className="object-cover" sizes="128px" placeholder="blur" blurDataURL={MUSIC_IMAGE_BLUR} unoptimized />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Disc3 className="h-12 w-12 text-gray-500 dark:text-gray-400" />
                           </div>
                         )}
                       </div>
@@ -2619,14 +2531,6 @@ export default function MusicPage() {
             spotlights={homeDiscovery.spotlights}
             spotlightIntervalMs={musicAssistant.heroSliderIntervalMs}
             shelves={homeDiscovery.shelves}
-            genres={homeGenres}
-            genreTitle={t("music.browseByGenre")}
-            onSelectGenre={(genre) => {
-              setSelectedGenre(genre);
-              setSelectedMenu(null);
-              setSelectedCategory(null);
-              setSelectedAlbum(null);
-            }}
             banner={!playersLoading && maPlayers.length === 0 ? t("music.connectPlayerToPlay") : null}
             emptyLabel={!homeDiscovery.loading ? t("music.homeEmpty") : null}
           />
