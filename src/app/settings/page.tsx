@@ -23,6 +23,7 @@ import { ImmichSettings } from "@/components/settings/immich-settings";
 import {
   ClockFormatPreview,
   ClockSizePreview,
+  ClockWeightPreview,
   LanguagePreview,
   SettingsAccentDots,
   SettingsChipSelect,
@@ -34,10 +35,11 @@ import {
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import type { ThemeAccentId } from "@/lib/theme-accents";
 import { useLanguageStore } from "@/stores/language-store";
-import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverMusicEntityId, setScreensaverMusicEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize, getScreensaverMediaSource, setScreensaverMediaSource, type ScreensaverMediaSource } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverMusicEntityId, setScreensaverMusicEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize, getScreensaverClockWeight, setScreensaverClockWeight, getScreensaverMediaSource, setScreensaverMediaSource, type ScreensaverMediaSource } from "@/stores/screensaver-store";
 import { isImmichSourceReady, isPexelsSourceReady } from "@/lib/screensaver-media-source";
 import { DEFAULT_SCREENSAVER_CLOCK_POSITION, SCREENSAVER_CLOCK_POSITIONS, type ScreensaverClockPosition } from "@/lib/screensaver-clock-position";
 import { DEFAULT_SCREENSAVER_CLOCK_SIZE, SCREENSAVER_CLOCK_SIZES, type ScreensaverClockSize } from "@/lib/screensaver-clock-size";
+import { DEFAULT_SCREENSAVER_CLOCK_WEIGHT, SCREENSAVER_CLOCK_WEIGHTS, type ScreensaverClockWeight } from "@/lib/screensaver-clock-weight";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
 import { hydrateMusicAssistantStore, useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
@@ -192,6 +194,7 @@ export default function SettingsPage() {
   const [screensaverClock24h, setScreensaverClock24hState] = useState(true);
   const [screensaverClockPosition, setScreensaverClockPositionState] = useState<ScreensaverClockPosition>(DEFAULT_SCREENSAVER_CLOCK_POSITION);
   const [screensaverClockSize, setScreensaverClockSizeState] = useState<ScreensaverClockSize>(DEFAULT_SCREENSAVER_CLOCK_SIZE);
+  const [screensaverClockWeight, setScreensaverClockWeightState] = useState<ScreensaverClockWeight>(DEFAULT_SCREENSAVER_CLOCK_WEIGHT);
   const [screensaverWeatherEntityId, setScreensaverWeatherEntityIdState] = useState<string | null>(null);
   const [screensaverFootballEntityId, setScreensaverFootballEntityIdState] = useState<string | null>(null);
   const [screensaverMusicEntityId, setScreensaverMusicEntityIdState] = useState<string | null>(null);
@@ -240,6 +243,7 @@ export default function SettingsPage() {
     setScreensaverClock24hState(getScreensaverClock24h());
     setScreensaverClockPositionState(getScreensaverClockPosition());
     setScreensaverClockSizeState(getScreensaverClockSize());
+    setScreensaverClockWeightState(getScreensaverClockWeight());
     setScreensaverWeatherEntityIdState(getScreensaverWeatherEntityId());
     setScreensaverFootballEntityIdState(getScreensaverFootballEntityId());
     setScreensaverMusicEntityIdState(getScreensaverMusicEntityId());
@@ -774,7 +778,24 @@ export default function SettingsPage() {
                   id: size,
                   label: t(`settings.screensaver.clockSize.${size}`),
                   description: t(`settings.screensaver.clockSize.${size}Hint`),
-                  preview: <ClockSizePreview size={size} />,
+                  preview: <ClockSizePreview size={size} weight={screensaverClockWeight} />,
+                }))}
+              />
+
+              <SettingsChoiceCards
+                label={t("settings.screensaver.clockWeight")}
+                hint={t("settings.screensaver.clockWeightHint")}
+                columns={2}
+                value={screensaverClockWeight}
+                onChange={(weight) => {
+                  setScreensaverClockWeightState(weight);
+                  setScreensaverClockWeight(weight);
+                }}
+                options={SCREENSAVER_CLOCK_WEIGHTS.map((weight) => ({
+                  id: weight,
+                  label: t(`settings.screensaver.clockWeight.${weight}`),
+                  description: t(`settings.screensaver.clockWeight.${weight}Hint`),
+                  preview: <ClockWeightPreview weight={weight} size={screensaverClockSize} />,
                 }))}
               />
 
