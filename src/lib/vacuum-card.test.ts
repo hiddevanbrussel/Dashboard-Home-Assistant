@@ -24,6 +24,7 @@ import {
   resolveVacuumCleanedAreaM2,
   resolveVacuumLastCleanAt,
   vacuumCard2ArtSrc,
+  vacuumCard2Density,
   vacuumHeadlineKind,
   vacuumRelativeTimeKind,
   vacuumSessionStatusKey,
@@ -102,9 +103,15 @@ describe("vacuum-card helpers", () => {
     expect(clampVacuumCard2Width(800)).toBe(500);
     expect(clampVacuumCard2Width(360)).toBe(360);
     expect(clampVacuumCard2Height(undefined)).toBe(VACUUM_CARD_2_DEFAULT_HEIGHT);
-    expect(clampVacuumCard2Height(200)).toBe(260);
+    expect(clampVacuumCard2Height(200)).toBe(240);
     expect(clampVacuumCard2Height(900)).toBe(640);
     expect(clampVacuumCard2Height(400)).toBe(400);
+  });
+
+  it("picks density from card height so media-sized cards stay usable", () => {
+    expect(vacuumCard2Density(460)).toBe("comfortable");
+    expect(vacuumCard2Density(320)).toBe("compact");
+    expect(vacuumCard2Density(248)).toBe("dense");
   });
 
   it("resizes from the bottom-right while keeping the top-left fixed", () => {
@@ -120,9 +127,9 @@ describe("vacuum-card helpers", () => {
     expect(grown).toEqual({ width: 380, height: 380, left: 88, bottom: 22 });
     const shrunk = resizeVacuumCard2FromBottomRight({ ...start, dx: -80, dy: -80 });
     expect(shrunk.width).toBe(240);
-    expect(shrunk.height).toBe(260);
+    expect(shrunk.height).toBe(250);
     expect(shrunk.left).toBe(88);
-    expect(shrunk.bottom).toBe(142);
+    expect(shrunk.bottom).toBe(152);
     const againstViewport = resizeVacuumCard2FromBottomRight({
       ...start,
       startBottom: 10,
