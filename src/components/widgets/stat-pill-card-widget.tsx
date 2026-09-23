@@ -141,7 +141,7 @@ export function StatPillCardWidget({
   return (
     <div
       className={cn(
-        "relative flex items-center justify-center p-4",
+        "relative inline-flex",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
@@ -172,10 +172,10 @@ export function StatPillCardWidget({
             e.stopPropagation();
             onMoreClick();
           }}
-          className="absolute right-2 bottom-2 p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-900/5 dark:hover:bg-white/10 transition-colors"
+          className="absolute -right-1.5 -top-1.5 z-10 rounded-full bg-white/90 p-1 text-gray-500 shadow-sm ring-1 ring-black/5 hover:text-gray-700 dark:bg-zinc-900 dark:text-gray-300 dark:ring-white/10 dark:hover:text-white"
           aria-label={t("common.options")}
         >
-          <MoreVertical className="h-4 w-4" aria-hidden />
+          <MoreVertical className="h-3.5 w-3.5" aria-hidden />
         </button>
       )}
     </div>

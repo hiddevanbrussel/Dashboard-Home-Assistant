@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { snapToGrid, floatingPositionFromElement, floatingParentSize } from "@/lib/floating-card-grid";
 import { StatPillCardWidget } from "./stat-pill-card-widget";
 import type { SensorCondition } from "./widget-types";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingStatPillCardPosition.";
 const DEFAULT_OFFSET = 24;
-const CARD_WIDTH = 260;
+/** Edit-options button may slightly overhang; allow flush edge placement of the pill. */
+const EDGE_OVERFLOW = 8;
+const FALLBACK_WIDTH = 140;
+const FALLBACK_HEIGHT = 44;
 
 type Position = { left: number; bottom: number };
 
@@ -25,7 +27,7 @@ function loadPosition(scope: string | undefined, widgetId: string): Position | n
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
     if (typeof p?.left === "number" && typeof p?.top === "number") {
-      return { left: p.left, bottom: window.innerHeight - p.top - 120 };
+      return { left: p.left, bottom: window.innerHeight - p.top - FALLBACK_HEIGHT };
     }
   } catch {
     // ignore
@@ -44,10 +46,27 @@ function savePosition(scope: string | undefined, widgetId: string, p: Position) 
 
 function defaultPosition(widgetIndex: number): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  const maxLeft = window.innerWidth - CARD_WIDTH;
-  const maxBottom = window.innerHeight - 120;
-  const offset = widgetIndex * (CARD_WIDTH + 16);
-  return { left: Math.min(offset, maxLeft / 2), bottom: maxBottom / 2 };
+  const maxLeft = window.innerWidth - FALLBACK_WIDTH;
+  const maxBottom = window.innerHeight - FALLBACK_HEIGHT;
+  const offset = widgetIndex * (FALLBACK_WIDTH + 16);
+  return { left: Math.min(offset, Math.max(0, maxLeft / 2)), bottom: Math.max(0, maxBottom / 2) };
+}
+
+function dragBounds(el: HTMLElement | null): {
+  maxLeft: number;
+  maxBottom: number;
+  minLeft: number;
+  minBottom: number;
+} {
+  const parent = el ? floatingParentSize(el) : { width: window.innerWidth, height: window.innerHeight };
+  const width = Math.max(FALLBACK_WIDTH, el?.offsetWidth ?? FALLBACK_WIDTH);
+  const height = Math.max(FALLBACK_HEIGHT, el?.offsetHeight ?? FALLBACK_HEIGHT);
+  return {
+    minLeft: -EDGE_OVERFLOW,
+    minBottom: -EDGE_OVERFLOW,
+    maxLeft: Math.max(-EDGE_OVERFLOW, parent.width - width + EDGE_OVERFLOW),
+    maxBottom: Math.max(-EDGE_OVERFLOW, parent.height - height + EDGE_OVERFLOW),
+  };
 }
 
 const LONG_PRESS_MS = 500;
@@ -86,6 +105,7 @@ export function FloatingStatPillCard({
 }) {
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const cardElRef = useRef<HTMLDivElement | null>(null);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -121,9 +141,7 @@ export function FloatingStatPillCard({
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
-    const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
-    const bounds = { maxLeft, maxBottom };
+    const bounds = dragBounds(cardElRef.current);
     const saved = loadPosition(storageScope, widgetId);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
@@ -150,7 +168,7 @@ export function FloatingStatPillCard({
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [position, editMode]
+    [editMode]
   );
 
   const handlePointerMove = useCallback(
@@ -158,13 +176,12 @@ export function FloatingStatPillCard({
       if (!isDragging) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
-      const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+      const bounds = dragBounds(cardElRef.current);
       const raw = {
-        left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
-        bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
+        left: dragStart.current.left + dx,
+        bottom: dragStart.current.bottom - dy,
       };
-      setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
+      setPosition(snapToGrid(raw, bounds));
     },
     [isDragging]
   );
@@ -175,13 +192,12 @@ export function FloatingStatPillCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxLeft = typeof window !== "undefined" ? window.innerWidth - CARD_WIDTH : 400;
-        const maxBottom = typeof window !== "undefined" ? window.innerHeight - 120 : 400;
+        const bounds = dragBounds(cardElRef.current);
         const raw = {
-          left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
-          bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
+          left: dragStart.current.left + dx,
+          bottom: dragStart.current.bottom - dy,
         };
-        const next = snapToGrid(raw, { maxLeft, maxBottom });
+        const next = snapToGrid(raw, bounds);
         setPosition(next);
         savePosition(storageScope, widgetId, next);
       }
@@ -192,8 +208,9 @@ export function FloatingStatPillCard({
 
   return (
     <div
+      ref={cardElRef}
       className={cn(
-        "card-plot-in fixed z-30 w-[260px] overflow-visible bg-transparent",
+        "card-plot-in fixed z-30 w-fit overflow-visible bg-transparent",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -216,18 +233,16 @@ export function FloatingStatPillCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className={cn(editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
-        <StatPillCardWidget
-          title={title}
-          entity_id={entity_id}
-          label={label}
-          icon={icon}
-          color={color}
-          conditions={conditions as SensorCondition[] | undefined}
-          size={size}
-          onMoreClick={editMode ? onEdit : undefined}
-        />
-      </div>
+      <StatPillCardWidget
+        title={title}
+        entity_id={entity_id}
+        label={label}
+        icon={icon}
+        color={color}
+        conditions={conditions as SensorCondition[] | undefined}
+        size={size}
+        onMoreClick={editMode ? onEdit : undefined}
+      />
     </div>
   );
 }

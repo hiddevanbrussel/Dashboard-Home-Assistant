@@ -213,7 +213,7 @@ export function VacuumCard2Widget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:bg-zinc-950 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.55)] dark:ring-1 dark:ring-white/10",
+        "flex w-full flex-col overflow-hidden rounded-2xl border-0 bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] outline-none dark:bg-zinc-950 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.65)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         interactive && "cursor-pointer",
