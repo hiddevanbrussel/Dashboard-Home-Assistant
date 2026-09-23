@@ -5426,7 +5426,7 @@ aria-label={t("editPanel.removeCondition")}
                   ) : (
                     <div className="max-w-xs text-center">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                        {editForm.title || t(`cardType.${editingWidget.type}` as "cardType.teamtracker_card")}
+                        {editForm.title || editingWidget.type.replace(/_/g, " ")}
                       </p>
                       <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                         {editingWidget.type}
