@@ -30,7 +30,7 @@ function TeamLogo({
     return (
       <div
         className={cn(
-          "image-theme-fixed flex shrink-0 items-center justify-center rounded-full bg-[#F3F4F6] ring-1 ring-black/[0.06]",
+          "image-theme-fixed flex shrink-0 items-center justify-center",
           className ?? "h-16 w-16"
         )}
         aria-hidden
@@ -40,7 +40,7 @@ function TeamLogo({
   return (
     <div
       className={cn(
-        "image-theme-fixed flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-[0_4px_14px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06]",
+        "image-theme-fixed flex shrink-0 items-center justify-center overflow-visible",
         className ?? "h-16 w-16"
       )}
     >
@@ -48,7 +48,7 @@ function TeamLogo({
       <img
         src={src}
         alt={alt}
-        className="h-full w-full object-contain p-1.5"
+        className="h-full w-full object-contain"
         loading="lazy"
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";
@@ -225,7 +225,7 @@ export function TeamtrackerCardWidget({
       )}
       style={{ paddingTop: TEAMTRACKER_CARD_LOGO_OVERHANG }}
     >
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-visible rounded-[1.5rem] bg-white text-[#1A1C2E] shadow-[0_8px_28px_rgba(15,23,42,0.10)] ring-1 ring-black/[0.04]">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl bg-white text-[#1A1C2E] shadow-[0_8px_28px_rgba(15,23,42,0.10)] ring-1 ring-black/[0.04]">
         {onMoreClick ? (
           <button
             type="button"
