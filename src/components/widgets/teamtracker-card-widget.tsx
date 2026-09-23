@@ -249,14 +249,14 @@ export function TeamtrackerCardWidget({
           </div>
         ) : (
           <>
-            <div className="pointer-events-none absolute left-[18%] top-0 z-10 -translate-x-1/2 -translate-y-1/2 sm:left-[20%]">
+            <div className="pointer-events-none absolute left-[18%] top-0 z-10 -translate-x-1/2 -translate-y-[18%] sm:left-[20%]">
               <TeamLogo src={sides.left.logo} alt={sides.left.name} className="h-[4.5rem] w-[4.5rem]" />
             </div>
-            <div className="pointer-events-none absolute right-[18%] top-0 z-10 translate-x-1/2 -translate-y-1/2 sm:right-[20%]">
+            <div className="pointer-events-none absolute right-[18%] top-0 z-10 translate-x-1/2 -translate-y-[18%] sm:right-[20%]">
               <TeamLogo src={sides.right.logo} alt={sides.right.name} className="h-[4.5rem] w-[4.5rem]" />
             </div>
 
-            <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 px-4 pb-5 pt-12 sm:px-5">
+            <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 px-4 pb-5 pt-[4.25rem] sm:px-5">
               <div className="flex min-w-0 flex-col items-center gap-1">
                 <p className="max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
                   {sides.left.name}
