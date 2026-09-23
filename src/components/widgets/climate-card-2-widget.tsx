@@ -259,7 +259,7 @@ export function ClimateCard2Widget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] isolate dark:bg-zinc-900 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] isolate dark:bg-zinc-950 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.55)] dark:ring-1 dark:ring-white/10",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         className
@@ -340,7 +340,7 @@ export function ClimateCard2Widget({
           aria-valuemax={CLIMATE_GAUGE_MAX}
           aria-valuenow={Math.round(Math.min(CLIMATE_GAUGE_MAX, Math.max(CLIMATE_GAUGE_MIN, setpoint)) * 2) / 2}
         >
-          <div className="absolute inset-0 rounded-full bg-gray-50 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.04)] dark:bg-zinc-800/90 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]" />
+          <div className="absolute inset-0 rounded-full bg-gray-50 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.04)] dark:bg-zinc-900 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]" />
           <ClimateTempGauge value={setpoint} active={isOn} />
 
           <div
@@ -416,7 +416,7 @@ export function ClimateCard2Widget({
               }}
               disabled={(!entity_id && !previewing) || !isOn || setpoint <= minTemp}
               className={cn(
-                "flex items-center justify-center rounded-full bg-white text-[#3B9EFF] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-sky-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-sky-400 dark:ring-white/10 dark:hover:bg-zinc-700",
+                "flex items-center justify-center rounded-full bg-white text-[#3B9EFF] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-sky-50 disabled:opacity-30 dark:bg-zinc-900 dark:text-sky-400 dark:ring-white/10 dark:hover:bg-zinc-800",
                 isDense ? "h-7 w-7" : "h-9 w-9"
               )}
               aria-label={t("climateCard.tempDown")}
@@ -431,7 +431,7 @@ export function ClimateCard2Widget({
               }}
               disabled={(!entity_id && !previewing) || !isOn || setpoint >= maxTemp}
               className={cn(
-                "flex items-center justify-center rounded-full bg-white text-[#F97316] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-orange-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-orange-400 dark:ring-white/10 dark:hover:bg-zinc-700",
+                "flex items-center justify-center rounded-full bg-white text-[#F97316] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-orange-50 disabled:opacity-30 dark:bg-zinc-900 dark:text-orange-400 dark:ring-white/10 dark:hover:bg-zinc-800",
                 isDense ? "h-7 w-7" : "h-9 w-9"
               )}
               aria-label={t("climateCard.tempUp")}
