@@ -248,33 +248,36 @@ export function TeamtrackerCardWidget({
             <p className="text-xs">{t("teamtrackerCard.empty")}</p>
           </div>
         ) : (
-          <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 px-4 pb-5 pt-10 sm:px-5">
-            <div className="relative flex min-w-0 flex-col items-center gap-1.5">
-              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[calc(50%+0.35rem)]">
-                <TeamLogo src={sides.left.logo} alt={sides.left.name} className="h-[4.25rem] w-[4.25rem]" />
-              </div>
-              <p className="mt-8 max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
-                {sides.left.name}
-              </p>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93]">
-                {sides.left.role === "home" ? t("teamtrackerCard.home") : t("teamtrackerCard.away")}
-              </p>
+          <>
+            <div className="pointer-events-none absolute left-[18%] top-0 z-10 -translate-x-1/2 -translate-y-1/2 sm:left-[20%]">
+              <TeamLogo src={sides.left.logo} alt={sides.left.name} className="h-[4.5rem] w-[4.5rem]" />
+            </div>
+            <div className="pointer-events-none absolute right-[18%] top-0 z-10 translate-x-1/2 -translate-y-1/2 sm:right-[20%]">
+              <TeamLogo src={sides.right.logo} alt={sides.right.name} className="h-[4.5rem] w-[4.5rem]" />
             </div>
 
-            <CenterStack match={match} statusLabel={statusLabel} t={t} language={language} />
-
-            <div className="relative flex min-w-0 flex-col items-center gap-1.5">
-              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[calc(50%+0.35rem)]">
-                <TeamLogo src={sides.right.logo} alt={sides.right.name} className="h-[4.25rem] w-[4.25rem]" />
+            <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 px-4 pb-5 pt-12 sm:px-5">
+              <div className="flex min-w-0 flex-col items-center gap-1">
+                <p className="max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
+                  {sides.left.name}
+                </p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93]">
+                  {sides.left.role === "home" ? t("teamtrackerCard.home") : t("teamtrackerCard.away")}
+                </p>
               </div>
-              <p className="mt-8 max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
-                {sides.right.name}
-              </p>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93]">
-                {sides.right.role === "home" ? t("teamtrackerCard.home") : t("teamtrackerCard.away")}
-              </p>
+
+              <CenterStack match={match} statusLabel={statusLabel} t={t} language={language} />
+
+              <div className="flex min-w-0 flex-col items-center gap-1">
+                <p className="max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
+                  {sides.right.name}
+                </p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93]">
+                  {sides.right.role === "home" ? t("teamtrackerCard.home") : t("teamtrackerCard.away")}
+                </p>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
