@@ -1519,7 +1519,7 @@ export default function DashboardEditPage() {
             {addTileOpen && typeof document !== "undefined" && createPortal(
               <>
                 <div
-                  className="fixed inset-0 z-[300] bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
+                  className="fixed inset-0 z-[300] bg-black/40 dark:bg-black/70 backdrop-blur-sm transition-opacity"
                   aria-hidden
                   onClick={() => {
                     setAddTileOpen(false);
@@ -1528,7 +1528,7 @@ export default function DashboardEditPage() {
                     setAddTileEntitySearch("");
                   }}
                 />
-                <div className="fixed left-1/2 top-1/2 z-[301] flex max-h-[min(820px,calc(100vh-2rem))] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-gray-900">
+                <div className="fixed left-1/2 top-1/2 z-[301] flex max-h-[min(780px,calc(100vh-6rem))] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950">
                   <div className="flex shrink-0 items-center justify-between border-b border-gray-200 p-5 pb-3 dark:border-white/10">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {addTileStep === "type" ? t("editPanel.addTile") : t("editPanel.chooseEntity")}
@@ -2483,7 +2483,7 @@ export default function DashboardEditPage() {
         {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
           <>
             <div
-              className="fixed inset-0 z-40 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-[190] bg-black/40 dark:bg-black/70 backdrop-blur-sm"
               aria-hidden
               data-no-page-swipe
               onClick={() => {
@@ -2494,7 +2494,7 @@ export default function DashboardEditPage() {
                 }
               }}
             />
-            <div className="fixed left-1/2 top-1/2 z-50 flex max-h-[min(860px,calc(100vh-2rem))] w-[min(960px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-gray-900">
+            <div className="fixed left-1/2 top-1/2 z-[200] flex max-h-[min(820px,calc(100vh-6rem))] w-[min(960px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950">
               <div className="flex shrink-0 items-center justify-between border-b border-gray-200 p-5 pb-3 dark:border-white/10">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {(editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card")
@@ -5396,12 +5396,12 @@ aria-label={t("editPanel.removeCondition")}
                 )
               }
               </div>
-              <div className="flex min-h-[220px] flex-1 flex-col bg-gray-50 p-5 dark:bg-black/20 md:min-h-0">
-                <p className="mb-1 text-xs font-medium uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">
+              <div className="flex min-h-[220px] flex-1 flex-col bg-gray-50 p-5 dark:bg-black/40 md:min-h-0">
+                <p className="mb-1 text-xs font-medium uppercase tracking-[0.08em] text-gray-500 dark:text-zinc-400">
                   {t("editPanel.preview")}
                 </p>
-                <p className="mb-4 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.previewHint")}</p>
-                <div className="flex flex-1 items-center justify-center overflow-auto rounded-xl border border-dashed border-gray-200 bg-[radial-gradient(circle_at_top,_#f8fafc,_#eef2f7)] p-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,_#1f2937,_#0b1220)]">
+                <p className="mb-4 text-xs text-gray-400 dark:text-zinc-500">{t("editPanel.previewHint")}</p>
+                <div className="flex flex-1 items-center justify-center overflow-auto rounded-xl border border-dashed border-gray-200 bg-[radial-gradient(circle_at_top,_#f8fafc,_#eef2f7)] p-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,_#18181b,_#09090b)]">
                   {editingWidget.type === "teamtracker_card" ? (
                     editForm.entity_id ? (
                       <div
@@ -5436,7 +5436,7 @@ aria-label={t("editPanel.removeCondition")}
                 </div>
               </div>
               </div>
-                <div className="flex shrink-0 justify-between gap-2 border-t border-gray-200 bg-white p-5 pb-6 pt-4 dark:border-white/10 dark:bg-gray-900">
+                <div className="flex shrink-0 justify-between gap-2 border-t border-gray-200 bg-white p-5 pb-6 pt-4 dark:border-white/10 dark:bg-zinc-950">
                   {editingWidget.type === "card_group" && editingGroupChildId ? (
                     <>
                       <button

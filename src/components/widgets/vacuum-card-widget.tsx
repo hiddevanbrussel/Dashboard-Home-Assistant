@@ -85,7 +85,7 @@ export function VacuumCardWidget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/90 dark:bg-black/50 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 min-h-[7.75rem]",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/90 dark:bg-zinc-950/95 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 min-h-[7.75rem]",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",

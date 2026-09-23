@@ -213,7 +213,7 @@ export function VacuumCard2Widget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:bg-zinc-900 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
+        "flex w-full flex-col overflow-hidden rounded-2xl bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:bg-zinc-950 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.55)] dark:ring-1 dark:ring-white/10",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         interactive && "cursor-pointer",
@@ -303,8 +303,8 @@ export function VacuumCard2Widget({
                     "flex min-w-0 flex-col items-center rounded-xl px-1.5 text-[11px] font-medium transition-colors disabled:opacity-60",
                     showModeLabels ? "gap-1 py-3" : "gap-0 py-2",
                     selected
-                      ? "bg-white text-gray-900 shadow-sm ring-2 ring-sky-400 dark:bg-zinc-800 dark:text-white dark:ring-sky-400"
-                      : "bg-gray-100 text-gray-400 hover:text-gray-600 dark:bg-white/5 dark:text-white/40 dark:hover:text-white/70"
+                      ? "bg-white text-gray-900 shadow-sm ring-2 ring-sky-400 dark:bg-zinc-900 dark:text-white dark:ring-sky-400"
+                      : "bg-gray-100 text-gray-400 hover:text-gray-600 dark:bg-white/[0.04] dark:text-white/40 dark:hover:text-white/70"
                   )}
                   aria-label={t(labelKey)}
                 >

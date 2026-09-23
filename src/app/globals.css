@@ -92,11 +92,11 @@
 @keyframes fade-scale-in-center {
   from {
     opacity: 0;
-    transform: translate(-50%, -48%) scale(0.97);
+    transform: translate(-50%, calc(-50% + 1.25rem)) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, calc(-50% + 1.75rem)) scale(1);
   }
 }
 
