@@ -83,7 +83,6 @@ export function FloatingTeamtrackerCard({
   editMode = false,
   storageScope,
   widgetId,
-  onRemove,
   onEdit,
   onEnterEditMode,
   onResize,
@@ -95,7 +94,6 @@ export function FloatingTeamtrackerCard({
   editMode?: boolean;
   storageScope?: string;
   widgetId?: string;
-  onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
   onResize?: (size: { width: number; height: number }) => void;
@@ -341,19 +339,6 @@ export function FloatingTeamtrackerCard({
           className="h-full min-h-0"
         />
       </div>
-      {editMode && onRemove && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          className="absolute -right-2 -top-2 z-30 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600"
-          aria-label={t("editPanel.remove")}
-        >
-          ×
-        </button>
-      )}
       {editMode ? (
         <button
           type="button"
