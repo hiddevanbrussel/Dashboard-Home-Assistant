@@ -40,7 +40,7 @@ function WatermarkLogo({
       <img
         src={src}
         alt={alt}
-        className="h-full w-auto max-w-[7.25rem] object-contain opacity-[0.16]"
+        className="h-full w-auto max-w-[7.25rem] object-contain opacity-[0.16] dark:opacity-[0.28] dark:brightness-110"
         loading="lazy"
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";
@@ -67,20 +67,20 @@ function StatusBadge({
   }
   if (status === "PRE") {
     return (
-      <span className="inline-flex items-center rounded-full bg-[#E8F8EE] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#1F7A45]">
+      <span className="inline-flex items-center rounded-full bg-[#E8F8EE] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#1F7A45] dark:bg-emerald-500/15 dark:text-emerald-300">
         {label}
       </span>
     );
   }
   if (status === "POST") {
     return (
-      <span className="inline-flex items-center rounded-full bg-[#EEF0F3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6B7280]">
+      <span className="inline-flex items-center rounded-full bg-[#EEF0F3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6B7280] dark:bg-white/10 dark:text-white/55">
         {label}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-[#EEF0F3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6B7280]">
+    <span className="inline-flex items-center rounded-full bg-[#EEF0F3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6B7280] dark:bg-white/10 dark:text-white/55">
       {label}
     </span>
   );
@@ -128,9 +128,9 @@ function venueScores(match: TeamtrackerMatch): { left: string; right: string } {
 
 function ScoreLine({ left, right }: { left: string; right: string }) {
   return (
-    <span className="text-[2rem] font-bold tabular-nums leading-none tracking-tight text-[#1A1C2E] sm:text-[2.35rem]">
+    <span className="text-[2rem] font-bold tabular-nums leading-none tracking-tight text-[#1A1C2E] dark:text-white sm:text-[2.35rem]">
       {left}
-      <span className="mx-1.5 font-semibold text-[#1A1C2E]">-</span>
+      <span className="mx-1.5 font-semibold text-[#1A1C2E] dark:text-white">-</span>
       {right}
     </span>
   );
@@ -159,7 +159,7 @@ function CenterStack({
 
   if (status === "PRE") {
     headline = (
-      <span className="text-[2rem] font-bold tabular-nums leading-none tracking-tight text-[#1A1C2E] sm:text-[2.35rem]">
+      <span className="text-[2rem] font-bold tabular-nums leading-none tracking-tight text-[#1A1C2E] dark:text-white sm:text-[2.35rem]">
         {kickoffTime ?? match.kickoffIn ?? "—"}
       </span>
     );
@@ -186,7 +186,7 @@ function CenterStack({
       <StatusBadge label={statusLabel} status={status} />
       {headline}
       {subtitle ? (
-        <span className="text-[11px] font-medium text-[#8E8E93]">{subtitle}</span>
+        <span className="text-[11px] font-medium text-[#8E8E93] dark:text-white/50">{subtitle}</span>
       ) : (
         <span className="h-4" aria-hidden />
       )}
@@ -203,10 +203,10 @@ function TeamColumn({
 }) {
   return (
     <div className="relative z-10 flex min-w-0 flex-col items-center gap-1 px-2">
-      <p className="max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
+      <p className="max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] dark:text-white sm:text-lg">
         {name}
       </p>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93]">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93] dark:text-white/45">
         {roleLabel}
       </p>
     </div>
@@ -229,8 +229,8 @@ export function TeamtrackerCardWidget({
 
   return (
     <div className={cn("relative flex h-full min-h-0 w-full flex-col", className)}>
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-white text-[#1A1C2E] shadow-[0_8px_28px_rgba(15,23,42,0.10)] ring-1 ring-black/[0.04]">
-        {/* Pitch fades up from the bottom into the white card */}
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-white text-[#1A1C2E] shadow-[0_8px_28px_rgba(15,23,42,0.10)] ring-1 ring-black/[0.04] dark:bg-zinc-950 dark:text-white dark:shadow-[0_12px_36px_rgba(0,0,0,0.55)] dark:ring-white/10">
+        {/* Pitch fades up from the bottom into the card surface */}
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[52%] overflow-hidden"
           aria-hidden
@@ -239,7 +239,7 @@ export function TeamtrackerCardWidget({
           <img
             src={PITCH_SRC}
             alt=""
-            className="absolute inset-x-0 bottom-0 h-[165%] w-full object-cover object-bottom"
+            className="absolute inset-x-0 bottom-0 h-[165%] w-full object-cover object-bottom dark:opacity-90"
             style={{
               WebkitMaskImage:
                 "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.15) 18%, rgba(0,0,0,0.55) 38%, black 68%)",
@@ -248,7 +248,7 @@ export function TeamtrackerCardWidget({
             }}
             draggable={false}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/70 to-transparent dark:from-zinc-950 dark:via-zinc-950/75 dark:to-transparent" />
         </div>
 
         {onMoreClick ? (
@@ -258,7 +258,7 @@ export function TeamtrackerCardWidget({
               e.stopPropagation();
               onMoreClick();
             }}
-            className="absolute right-2 top-2 z-20 rounded-lg p-1.5 text-[#1A1C2E]/35 transition-colors hover:bg-black/5 hover:text-[#1A1C2E]/70"
+            className="absolute right-2 top-2 z-20 rounded-lg p-1.5 text-[#1A1C2E]/35 transition-colors hover:bg-black/5 hover:text-[#1A1C2E]/70 dark:text-white/35 dark:hover:bg-white/10 dark:hover:text-white/70"
             aria-label={t("common.options")}
           >
             <MoreVertical className="h-4 w-4" aria-hidden />
@@ -266,8 +266,8 @@ export function TeamtrackerCardWidget({
         ) : null}
 
         {!hasContent || !match || !sides ? (
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-[#8E8E93]">
-            <p className="text-sm font-medium text-[#1A1C2E]/70">
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-[#8E8E93] dark:text-white/45">
+            <p className="text-sm font-medium text-[#1A1C2E]/70 dark:text-white/70">
               {title || t("cardType.teamtracker_card")}
             </p>
             <p className="text-xs">{t("teamtrackerCard.empty")}</p>

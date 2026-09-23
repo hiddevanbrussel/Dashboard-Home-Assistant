@@ -1528,8 +1528,8 @@ export default function DashboardEditPage() {
                     setAddTileEntitySearch("");
                   }}
                 />
-                <div className="fixed top-4 right-4 bottom-4 z-[301] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-2xl">
-                  <div className="shrink-0 flex items-center justify-between p-5 pb-0">
+                <div className="fixed left-1/2 top-1/2 z-[301] flex max-h-[min(820px,calc(100vh-2rem))] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-gray-900">
+                  <div className="flex shrink-0 items-center justify-between border-b border-gray-200 p-5 pb-3 dark:border-white/10">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {addTileStep === "type" ? t("editPanel.addTile") : t("editPanel.chooseEntity")}
                     </h3>
@@ -1541,13 +1541,13 @@ export default function DashboardEditPage() {
                         setAddTileSelectedType(null);
                         setAddTileEntitySearch("");
                       }}
-                      className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
+                      className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
                       aria-label={t("editPanel.close")}
                     >
                       <X className="h-5 w-5" />
                     </button>
                   </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4">
+                  <div className="min-h-0 flex-1 overflow-y-auto p-5 pt-4">
                   {addTileStep === "type" ? (
                     <div className="grid grid-cols-3 gap-2">
                       {ADDABLE_WIDGET_TILES.filter(({ type }) => !isWidgetTypeTemporarilyDisabled(type)).map(({ type, labelKey, Icon }) => (
@@ -2494,11 +2494,8 @@ export default function DashboardEditPage() {
                 }
               }}
             />
-            <div className={cn(
-              "fixed top-4 right-4 bottom-4 z-50 w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-2xl",
-              editingWidget.type === "room_card" && "max-w-lg"
-            )}>
-              <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
+            <div className="fixed left-1/2 top-1/2 z-50 flex max-h-[min(860px,calc(100vh-2rem))] w-[min(960px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-gray-900">
+              <div className="flex shrink-0 items-center justify-between border-b border-gray-200 p-5 pb-3 dark:border-white/10">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {(editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card")
                   ? t("editPanel.editText")
@@ -2523,13 +2520,14 @@ export default function DashboardEditPage() {
                     setEditingWidgetId(null);
                   }
                 }}
-                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
+                className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
                 aria-label={t("editPanel.close")}
               >
                 <X className="h-5 w-5" />
               </button>
               </div>
-              <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-3">
+              <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5 pt-4 md:max-w-[440px] md:shrink-0 md:border-r md:border-gray-200 dark:md:border-white/10">
                 {pageCount > 1 && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -5398,7 +5396,47 @@ aria-label={t("editPanel.removeCondition")}
                 )
               }
               </div>
-                <div className="shrink-0 flex justify-between gap-2 p-5 pt-4 pb-6 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900">
+              <div className="flex min-h-[220px] flex-1 flex-col bg-gray-50 p-5 dark:bg-black/20 md:min-h-0">
+                <p className="mb-1 text-xs font-medium uppercase tracking-[0.08em] text-gray-500 dark:text-gray-400">
+                  {t("editPanel.preview")}
+                </p>
+                <p className="mb-4 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.previewHint")}</p>
+                <div className="flex flex-1 items-center justify-center overflow-auto rounded-xl border border-dashed border-gray-200 bg-[radial-gradient(circle_at_top,_#f8fafc,_#eef2f7)] p-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,_#1f2937,_#0b1220)]">
+                  {editingWidget.type === "teamtracker_card" ? (
+                    editForm.entity_id ? (
+                      <div
+                        className="w-full max-w-full"
+                        style={{
+                          width: clampTeamtrackerCardWidth(editForm.width ?? TEAMTRACKER_CARD_DEFAULT_WIDTH),
+                          height: clampTeamtrackerCardHeight(editForm.height ?? TEAMTRACKER_CARD_DEFAULT_HEIGHT),
+                          maxWidth: "100%",
+                        }}
+                      >
+                        <TeamtrackerCardWidget
+                          title={editForm.title || t("cardType.teamtracker_card")}
+                          entity_id={editForm.entity_id}
+                          className="h-full min-h-0"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                        {t("editPanel.previewEmpty")}
+                      </p>
+                    )
+                  ) : (
+                    <div className="max-w-xs text-center">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        {editForm.title || t(`cardType.${editingWidget.type}` as "cardType.teamtracker_card")}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                        {editingWidget.type}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              </div>
+                <div className="flex shrink-0 justify-between gap-2 border-t border-gray-200 bg-white p-5 pb-6 pt-4 dark:border-white/10 dark:bg-gray-900">
                   {editingWidget.type === "card_group" && editingGroupChildId ? (
                     <>
                       <button
