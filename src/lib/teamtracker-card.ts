@@ -14,7 +14,7 @@ export const TEAMTRACKER_CARD_MAX_WIDTH = 520;
 export const TEAMTRACKER_CARD_MIN_HEIGHT = 190;
 export const TEAMTRACKER_CARD_MAX_HEIGHT = 320;
 /** Space reserved above the white card so logos can overlap the top edge. */
-export const TEAMTRACKER_CARD_LOGO_OVERHANG = 36;
+export const TEAMTRACKER_CARD_LOGO_OVERHANG = 18;
 
 export function clampTeamtrackerCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
