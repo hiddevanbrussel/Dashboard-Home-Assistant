@@ -333,7 +333,7 @@ export function FloatingTeamtrackerCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className="h-full w-full overflow-hidden rounded-[1.75rem] shadow-xl" style={{ width: totalWidth, height: totalHeight }}>
+      <div className="h-full w-full overflow-visible" style={{ width: totalWidth, height: totalHeight }}>
         <TeamtrackerCardWidget
           title={title}
           entity_id={entity_id}
