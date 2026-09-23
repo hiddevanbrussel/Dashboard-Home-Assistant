@@ -29,7 +29,7 @@ describe("teamtracker-card helpers", () => {
   it("resizes from the bottom-right while keeping the top-left fixed", () => {
     const grown = resizeTeamtrackerCardFromBottomRight({
       startWidth: 380,
-      startHeight: 210,
+      startHeight: 200,
       startLeft: 40,
       startBottom: 40,
       dx: 40,
@@ -37,7 +37,7 @@ describe("teamtracker-card helpers", () => {
       viewportWidth: 1200,
       viewportHeight: 800,
     });
-    expect(grown).toEqual({ width: 420, height: 230, left: 40, bottom: 20 });
+    expect(grown).toEqual({ width: 420, height: 220, left: 40, bottom: 20 });
   });
 
   it("detects teamtracker entity ids", () => {
