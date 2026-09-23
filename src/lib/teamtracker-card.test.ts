@@ -6,7 +6,11 @@ import {
   TEAMTRACKER_CARD_MIN_WIDTH,
   clampTeamtrackerCardHeight,
   clampTeamtrackerCardWidth,
+  formatTeamtrackerKickoffDayLabel,
+  formatTeamtrackerKickoffTime,
+  formatTeamtrackerPeriodLabel,
   isTeamtrackerEntityId,
+  readTeamtrackerHomeAway,
   readTeamtrackerMatch,
   readTeamtrackerPeriod,
   resizeTeamtrackerCardFromBottomRight,
@@ -19,13 +23,13 @@ describe("teamtracker-card helpers", () => {
     expect(clampTeamtrackerCardWidth(900)).toBe(520);
     expect(clampTeamtrackerCardHeight(undefined)).toBe(TEAMTRACKER_CARD_DEFAULT_HEIGHT);
     expect(clampTeamtrackerCardHeight(50)).toBe(TEAMTRACKER_CARD_MIN_HEIGHT);
-    expect(clampTeamtrackerCardHeight(900)).toBe(300);
+    expect(clampTeamtrackerCardHeight(900)).toBe(320);
   });
 
   it("resizes from the bottom-right while keeping the top-left fixed", () => {
     const grown = resizeTeamtrackerCardFromBottomRight({
       startWidth: 380,
-      startHeight: 220,
+      startHeight: 230,
       startLeft: 40,
       startBottom: 40,
       dx: 40,
@@ -33,7 +37,7 @@ describe("teamtracker-card helpers", () => {
       viewportWidth: 1200,
       viewportHeight: 800,
     });
-    expect(grown).toEqual({ width: 420, height: 240, left: 40, bottom: 20 });
+    expect(grown).toEqual({ width: 420, height: 250, left: 40, bottom: 20 });
   });
 
   it("detects teamtracker entity ids", () => {
@@ -47,34 +51,62 @@ describe("teamtracker-card helpers", () => {
     expect(readTeamtrackerPeriod({ period: "HT" })).toBe("HT");
   });
 
-  it("reads match details including abbreviations, league, and match day", () => {
+  it("formats localized period labels", () => {
+    const t = (key: string) =>
+      ({
+        "teamtrackerCard.period.firstHalf": "1e helft",
+        "teamtrackerCard.period.secondHalf": "2e helft",
+        "teamtrackerCard.period.halfTime": "Rust",
+      })[key] ?? key;
+    expect(formatTeamtrackerPeriodLabel("1ST", t)).toBe("1e helft");
+    expect(formatTeamtrackerPeriodLabel("2ND", t)).toBe("2e helft");
+    expect(formatTeamtrackerPeriodLabel("HT", t)).toBe("Rust");
+  });
+
+  it("reads home/away and kickoff date", () => {
+    expect(readTeamtrackerHomeAway({ team_homeaway: "home" })).toBe("home");
+    expect(readTeamtrackerHomeAway({ team_homeaway: "away" })).toBe("away");
     const match = readTeamtrackerMatch({
       state: "IN",
       attributes: {
         status: "IN",
-        team_abbr: "CHE",
-        opponent_abbr: "MCI",
-        team_long_name: "Chelsea",
-        opponent_long_name: "Manchester City",
+        team_abbr: "PSV",
+        opponent_abbr: "AJA",
+        team_name: "PSV",
+        opponent_name: "Ajax",
+        team_long_name: "PSV Eindhoven",
+        opponent_long_name: "Ajax Amsterdam",
         team_score: 2,
-        opponent_score: 0,
-        clock: "35:35",
-        quarter: "1",
-        league: "Premier League",
-        week: 2,
-        team_logo: "https://example.com/che.png",
-        opponent_logo: "https://example.com/mci.png",
+        opponent_score: 1,
+        clock: "67'",
+        half: "2",
+        league: "Eredivisie",
+        team_homeaway: "home",
+        date: "2026-09-23T18:00:00+00:00",
+        team_logo: "https://example.com/psv.png",
+        opponent_logo: "https://example.com/ajax.png",
       },
     });
-    expect(match?.status).toBe("IN");
-    expect(match?.teamAbbr).toBe("CHE");
-    expect(match?.opponentAbbr).toBe("MCI");
-    expect(match?.teamScore).toBe("2");
-    expect(match?.opponentScore).toBe("0");
-    expect(match?.clock).toBe("35:35");
-    expect(match?.period).toBe("1ST");
-    expect(match?.league).toBe("Premier League");
-    expect(match?.matchDay).toBe("2");
-    expect(match?.showScores).toBe(true);
+    expect(match?.teamShortName).toBe("PSV");
+    expect(match?.opponentShortName).toBe("Ajax");
+    expect(match?.homeAway).toBe("home");
+    expect(match?.period).toBe("2ND");
+    expect(match?.kickoffAt?.toISOString()).toBe("2026-09-23T18:00:00.000Z");
+  });
+
+  it("formats kickoff time and day labels", () => {
+    const kickoff = new Date(2026, 8, 23, 20, 0, 0);
+    const t = (key: string) =>
+      ({
+        "teamtrackerCard.kickoff.today": "Vandaag",
+        "teamtrackerCard.kickoff.tomorrow": "Morgen",
+      })[key] ?? key;
+    expect(formatTeamtrackerKickoffTime(kickoff, "nl")).toMatch(/20:00/);
+    expect(formatTeamtrackerKickoffDayLabel(kickoff, t, "nl", new Date(2026, 8, 23, 12, 0, 0))).toBe(
+      "Vandaag"
+    );
+    expect(formatTeamtrackerKickoffDayLabel(kickoff, t, "nl", new Date(2026, 8, 22, 12, 0, 0))).toBe(
+      "Morgen"
+    );
   });
 });

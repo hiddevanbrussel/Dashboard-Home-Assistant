@@ -1,14 +1,19 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
+  TEAMTRACKER_CARD_LOGO_OVERHANG,
   footballMatchHasContent,
-  formatTeamtrackerMatchDay,
+  formatTeamtrackerKickoffDayLabel,
+  formatTeamtrackerKickoffTime,
+  formatTeamtrackerPeriodLabel,
   readTeamtrackerMatch,
   teamtrackerStatusLabel,
+  type TeamtrackerMatch,
 } from "@/lib/teamtracker-card";
 import type { TeamtrackerCardProps } from "./widget-types";
 
@@ -25,24 +30,23 @@ function TeamLogo({
     return (
       <div
         className={cn(
-          "image-theme-fixed flex shrink-0 items-center justify-center rounded-full bg-black/5 ring-1 ring-black/5",
-          className ?? "h-14 w-14"
+          "image-theme-fixed flex shrink-0 items-center justify-center rounded-full bg-[#F3F4F6] ring-1 ring-black/[0.06]",
+          className ?? "h-16 w-16"
         )}
         aria-hidden
       />
     );
   }
-  const url = src.startsWith("http") || src.startsWith("/") ? src : src;
   return (
     <div
       className={cn(
-        "image-theme-fixed flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/70 shadow-sm ring-1 ring-black/5",
-        className ?? "h-14 w-14"
+        "image-theme-fixed flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-[0_4px_14px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06]",
+        className ?? "h-16 w-16"
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic HA Team Tracker logo URL */}
       <img
-        src={url}
+        src={src}
         alt={alt}
         className="h-full w-full object-contain p-1.5"
         loading="lazy"
@@ -56,34 +60,146 @@ function TeamLogo({
 
 function StatusBadge({
   label,
-  isLive,
   status,
 }: {
   label: string;
-  isLive: boolean;
   status: string;
 }) {
-  if (isLive) {
+  if (status === "IN") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-[#F05A5A] px-2.5 py-1 text-[11px] font-bold tracking-wide text-white shadow-sm">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FDECEC] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#E5484D]">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#E5484D]" aria-hidden />
         {label}
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" aria-hidden />
+      </span>
+    );
+  }
+  if (status === "PRE") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-[#E8F8EE] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#1F7A45]">
+        {label}
+      </span>
+    );
+  }
+  if (status === "POST") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-[#EEF0F3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6B7280]">
+        {label}
       </span>
     );
   }
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide",
-        status === "PRE"
-          ? "bg-black/80 text-white"
-          : status === "POST"
-            ? "bg-black/15 text-black/70"
-            : "bg-black/10 text-black/60"
-      )}
-    >
+    <span className="inline-flex items-center rounded-full bg-[#EEF0F3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6B7280]">
       {label}
     </span>
+  );
+}
+
+function venueSides(match: TeamtrackerMatch): {
+  left: {
+    logo: string | null;
+    name: string;
+    role: "home" | "away";
+  };
+  right: {
+    logo: string | null;
+    name: string;
+    role: "home" | "away";
+  };
+} {
+  const team = {
+    logo: match.teamLogo,
+    name: match.teamShortName ?? match.teamAbbr ?? match.teamName ?? "—",
+  };
+  const opponent = {
+    logo: match.opponentLogo,
+    name: match.opponentShortName ?? match.opponentAbbr ?? match.opponentName ?? "—",
+  };
+
+  if (match.homeAway === "away") {
+    return {
+      left: { ...opponent, role: "home" },
+      right: { ...team, role: "away" },
+    };
+  }
+  // Default / home: tracked team on the left as home
+  return {
+    left: { ...team, role: "home" },
+    right: { ...opponent, role: "away" },
+  };
+}
+
+function venueScores(match: TeamtrackerMatch): { left: string; right: string } {
+  if (match.homeAway === "away") {
+    return { left: match.opponentScore, right: match.teamScore };
+  }
+  return { left: match.teamScore, right: match.opponentScore };
+}
+
+function ScoreLine({ left, right }: { left: string; right: string }) {
+  return (
+    <span className="text-[2rem] font-bold tabular-nums leading-none tracking-tight text-[#1A1C2E] sm:text-[2.35rem]">
+      {left}
+      <span className="mx-1.5 font-semibold text-[#1A1C2E]">-</span>
+      {right}
+    </span>
+  );
+}
+
+function CenterStack({
+  match,
+  statusLabel,
+  t,
+  language,
+}: {
+  match: TeamtrackerMatch;
+  statusLabel: string;
+  t: (key: string) => string;
+  language: string;
+}) {
+  const status = match.status;
+  const periodLabel = formatTeamtrackerPeriodLabel(match.period, t);
+  const clock = match.clock;
+  const kickoffTime = formatTeamtrackerKickoffTime(match.kickoffAt, language);
+  const kickoffDay = formatTeamtrackerKickoffDayLabel(match.kickoffAt, t, language);
+  const scores = venueScores(match);
+
+  let headline: ReactNode;
+  let subtitle: string | null = null;
+
+  if (status === "PRE") {
+    headline = (
+      <span className="text-[2rem] font-bold tabular-nums leading-none tracking-tight text-[#1A1C2E] sm:text-[2.35rem]">
+        {kickoffTime ?? match.kickoffIn ?? "—"}
+      </span>
+    );
+    subtitle = kickoffDay;
+  } else if (status === "POST") {
+    headline = match.showScores ? (
+      <ScoreLine left={scores.left} right={scores.right} />
+    ) : (
+      <ScoreLine left="—" right="—" />
+    );
+    subtitle = t("teamtrackerCard.finalScore");
+  } else {
+    headline = match.showScores ? (
+      <ScoreLine left={scores.left} right={scores.right} />
+    ) : (
+      <ScoreLine left="—" right="—" />
+    );
+    const parts = [periodLabel, clock].filter(Boolean);
+    subtitle = parts.length ? parts.join(" • ") : null;
+  }
+
+  return (
+    <div className="flex min-w-[6.5rem] flex-col items-center justify-center gap-1.5 px-1 text-center">
+      <StatusBadge label={statusLabel} status={status} />
+      {headline}
+      {subtitle ? (
+        <span className="text-[11px] font-medium text-[#8E8E93]">{subtitle}</span>
+      ) : (
+        <span className="h-4" aria-hidden />
+      )}
+    </div>
   );
 }
 
@@ -93,106 +209,74 @@ export function TeamtrackerCardWidget({
   className,
   onMoreClick,
 }: TeamtrackerCardProps & { className?: string; onMoreClick?: () => void }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const match = readTeamtrackerMatch(entity);
   const hasContent = footballMatchHasContent(match);
-
   const status = match?.status ?? "";
-  const isLive = status === "IN";
   const statusLabel = teamtrackerStatusLabel(status, t);
-  const period = match?.period;
-  const matchDay = formatTeamtrackerMatchDay(match?.matchDay, t);
-  const clock =
-    match?.clock ??
-    (status === "PRE" ? match?.kickoffIn : null) ??
-    (status === "POST" ? t("teamtrackerCard.status.final") : null);
-
-  const periodClock = [period, clock].filter(Boolean).join(" · ");
+  const sides = match ? venueSides(match) : null;
 
   return (
     <div
       className={cn(
-        "relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.75rem] text-[#141414] shadow-xl",
-        "bg-[linear-gradient(145deg,#FFF8F2_0%,#FFE8DC_42%,#FFD6E8_78%,#E8D4FF_100%)]",
+        "relative flex h-full min-h-0 w-full flex-col overflow-visible",
         className
       )}
+      style={{ paddingTop: TEAMTRACKER_CARD_LOGO_OVERHANG }}
     >
-      {onMoreClick ? (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onMoreClick();
-          }}
-          className="absolute right-2 top-2 z-10 rounded-lg p-1.5 text-black/35 transition-colors hover:bg-black/5 hover:text-black/70"
-          aria-label={t("common.options")}
-        >
-          <MoreVertical className="h-4 w-4" aria-hidden />
-        </button>
-      ) : null}
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-visible rounded-[1.5rem] bg-white text-[#1A1C2E] shadow-[0_8px_28px_rgba(15,23,42,0.10)] ring-1 ring-black/[0.04]">
+        {onMoreClick ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoreClick();
+            }}
+            className="absolute right-2 top-2 z-20 rounded-lg p-1.5 text-[#1A1C2E]/35 transition-colors hover:bg-black/5 hover:text-[#1A1C2E]/70"
+            aria-label={t("common.options")}
+          >
+            <MoreVertical className="h-4 w-4" aria-hidden />
+          </button>
+        ) : null}
 
-      {!hasContent || !match ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-black/40">
-          <p className="text-sm font-medium text-black/65">{title || t("cardType.teamtracker_card")}</p>
-          <p className="text-xs">{t("teamtrackerCard.empty")}</p>
-        </div>
-      ) : (
-        <div className="flex flex-1 flex-col justify-between gap-3 px-5 pb-5 pt-4">
-          <div className={cn("flex items-start gap-3", onMoreClick ? "pr-7" : "")}>
-            <p className="min-w-0 flex-1 truncate text-sm font-bold tracking-tight text-[#141414]">
-              {match.league || title || t("cardType.teamtracker_card")}
+        {!hasContent || !match || !sides ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-[#8E8E93]">
+            <p className="text-sm font-medium text-[#1A1C2E]/70">
+              {title || t("cardType.teamtracker_card")}
             </p>
-            <StatusBadge label={statusLabel} isLive={isLive} status={status} />
+            <p className="text-xs">{t("teamtrackerCard.empty")}</p>
           </div>
-
-          <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <div className="flex min-w-0 flex-col items-center gap-2">
-              <TeamLogo src={match.teamLogo} alt={match.teamName ?? ""} className="h-14 w-14 sm:h-16 sm:w-16" />
-              <p className="max-w-full truncate text-xs font-bold uppercase tracking-wide text-[#141414]">
-                {match.teamAbbr ?? match.teamName ?? "—"}
+        ) : (
+          <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 px-4 pb-5 pt-10 sm:px-5">
+            <div className="relative flex min-w-0 flex-col items-center gap-1.5">
+              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[calc(50%+0.35rem)]">
+                <TeamLogo src={sides.left.logo} alt={sides.left.name} className="h-[4.25rem] w-[4.25rem]" />
+              </div>
+              <p className="mt-8 max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
+                {sides.left.name}
+              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93]">
+                {sides.left.role === "home" ? t("teamtrackerCard.home") : t("teamtrackerCard.away")}
               </p>
             </div>
 
-            <div className="flex min-w-[5.5rem] flex-col items-center justify-center gap-1 px-1 text-center">
-              {matchDay ? (
-                <span className="text-[11px] font-medium text-black/50">{matchDay}</span>
-              ) : (
-                <span className="h-4" aria-hidden />
-              )}
-              <p className="text-3xl font-bold tabular-nums leading-none tracking-tight sm:text-4xl">
-                {match.showScores ? (
-                  <>
-                    <span>{match.teamScore}</span>
-                    <span className="mx-1.5 text-black/35">:</span>
-                    <span>{match.opponentScore}</span>
-                  </>
-                ) : (
-                  <span className="text-black/35">— : —</span>
-                )}
-              </p>
-              {periodClock ? (
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-black/55">
-                  {periodClock}
-                </span>
-              ) : (
-                <span className="h-4" aria-hidden />
-              )}
-            </div>
+            <CenterStack match={match} statusLabel={statusLabel} t={t} language={language} />
 
-            <div className="flex min-w-0 flex-col items-center gap-2">
-              <TeamLogo
-                src={match.opponentLogo}
-                alt={match.opponentName ?? ""}
-                className="h-14 w-14 sm:h-16 sm:w-16"
-              />
-              <p className="max-w-full truncate text-xs font-bold uppercase tracking-wide text-[#141414]">
-                {match.opponentAbbr ?? match.opponentName ?? "—"}
+            <div className="relative flex min-w-0 flex-col items-center gap-1.5">
+              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[calc(50%+0.35rem)]">
+                <TeamLogo src={sides.right.logo} alt={sides.right.name} className="h-[4.25rem] w-[4.25rem]" />
+              </div>
+              <p className="mt-8 max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
+                {sides.right.name}
+              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93]">
+                {sides.right.role === "home" ? t("teamtrackerCard.home") : t("teamtrackerCard.away")}
               </p>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -7,11 +7,14 @@ import {
 } from "@/lib/screensaver-football";
 
 export const TEAMTRACKER_CARD_DEFAULT_WIDTH = 380;
-export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 220;
+/** Includes top overhang for logos that sit on the card edge. */
+export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 230;
 export const TEAMTRACKER_CARD_MIN_WIDTH = 280;
 export const TEAMTRACKER_CARD_MAX_WIDTH = 520;
-export const TEAMTRACKER_CARD_MIN_HEIGHT = 180;
-export const TEAMTRACKER_CARD_MAX_HEIGHT = 300;
+export const TEAMTRACKER_CARD_MIN_HEIGHT = 190;
+export const TEAMTRACKER_CARD_MAX_HEIGHT = 320;
+/** Space reserved above the white card so logos can overlap the top edge. */
+export const TEAMTRACKER_CARD_LOGO_OVERHANG = 36;
 
 export function clampTeamtrackerCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
@@ -50,13 +53,21 @@ export function resizeTeamtrackerCardFromBottomRight(input: {
   return { width, height, left: input.startLeft, bottom };
 }
 
+export type TeamtrackerHomeAway = "home" | "away" | null;
+
 export type TeamtrackerMatch = FootballMatch & {
   league: string | null;
   teamAbbr: string | null;
   opponentAbbr: string | null;
+  teamShortName: string | null;
+  opponentShortName: string | null;
   period: string | null;
   /** Optional center caption above the score (match day / round / week). */
   matchDay: string | null;
+  /** Whether the tracked team is home or away. */
+  homeAway: TeamtrackerHomeAway;
+  /** Kickoff datetime from Team Tracker `date` attribute. */
+  kickoffAt: Date | null;
 };
 
 function asOptionalString(value: unknown): string | null {
@@ -75,6 +86,14 @@ function abbreviateName(name: string | null, max = 6): string | null {
     if (initials.length >= 2) return initials.toUpperCase();
   }
   return cleaned.slice(0, max).toUpperCase();
+}
+
+function displayShortName(
+  short: string | null,
+  abbr: string | null,
+  longName: string | null
+): string | null {
+  return short ?? abbr ?? (longName ? longName.split(/\s+/)[0] : null);
 }
 
 /** Read match-day / round / week label when Team Tracker exposes one. */
@@ -112,6 +131,30 @@ export function formatTeamtrackerMatchDay(
   return raw;
 }
 
+export function readTeamtrackerHomeAway(attrs: Record<string, unknown>): TeamtrackerHomeAway {
+  const data = attrs.data as Record<string, unknown> | undefined;
+  const raw =
+    asOptionalString(attrs.team_homeaway) ??
+    asOptionalString(attrs.homeaway) ??
+    asOptionalString(attrs.home_away) ??
+    asOptionalString(data?.team_homeaway) ??
+    asOptionalString(data?.homeaway);
+  if (!raw) return null;
+  const lower = raw.toLowerCase();
+  if (lower === "home" || lower === "h") return "home";
+  if (lower === "away" || lower === "a") return "away";
+  return null;
+}
+
+export function readTeamtrackerKickoffAt(attrs: Record<string, unknown>): Date | null {
+  const data = attrs.data as Record<string, unknown> | undefined;
+  const raw = asOptionalString(attrs.date) ?? asOptionalString(data?.date);
+  if (!raw) return null;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
 /** Read period / half label from Team Tracker attributes when present. */
 export function readTeamtrackerPeriod(attrs: Record<string, unknown>): string | null {
   const data = attrs.data as Record<string, unknown> | undefined;
@@ -143,6 +186,52 @@ export function readTeamtrackerPeriod(attrs: Record<string, unknown>): string | 
   return null;
 }
 
+/** Localized half / period label for the center subtitle. */
+export function formatTeamtrackerPeriodLabel(
+  period: string | null | undefined,
+  t: (key: string) => string
+): string | null {
+  if (!period) return null;
+  const upper = period.toUpperCase();
+  if (upper === "1ST" || upper === "1") return t("teamtrackerCard.period.firstHalf");
+  if (upper === "2ND" || upper === "2") return t("teamtrackerCard.period.secondHalf");
+  if (upper === "3RD" || upper === "3") return t("teamtrackerCard.period.third");
+  if (upper === "4TH" || upper === "4") return t("teamtrackerCard.period.fourth");
+  if (upper === "HT") return t("teamtrackerCard.period.halfTime");
+  if (upper === "FT") return t("teamtrackerCard.period.fullTime");
+  if (upper === "OT") return t("teamtrackerCard.period.overtime");
+  return period;
+}
+
+export function formatTeamtrackerKickoffTime(
+  kickoffAt: Date | null | undefined,
+  language: string
+): string | null {
+  if (!kickoffAt) return null;
+  const locale = language === "nl" ? "nl-NL" : "en-GB";
+  return new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", hour12: false }).format(
+    kickoffAt
+  );
+}
+
+export function formatTeamtrackerKickoffDayLabel(
+  kickoffAt: Date | null | undefined,
+  t: (key: string) => string,
+  language: string,
+  now = new Date()
+): string | null {
+  if (!kickoffAt) return null;
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((startOf(kickoffAt) - startOf(now)) / 86_400_000);
+  if (diffDays === 0) return t("teamtrackerCard.kickoff.today");
+  if (diffDays === 1) return t("teamtrackerCard.kickoff.tomorrow");
+  if (diffDays === -1) return t("teamtrackerCard.kickoff.yesterday");
+  const locale = language === "nl" ? "nl-NL" : "en-GB";
+  return new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }).format(
+    kickoffAt
+  );
+}
+
 export function readTeamtrackerMatch(entity: {
   state?: string;
   attributes?: Record<string, unknown>;
@@ -159,6 +248,16 @@ export function readTeamtrackerMatch(entity: {
     asOptionalString(attrs.opponent_abbr) ??
     asOptionalString(data?.opponent_abbr) ??
     abbreviateName(base.opponentName);
+  const teamShortName = displayShortName(
+    asOptionalString(attrs.team_name) ?? asOptionalString(data?.team_name),
+    teamAbbr,
+    base.teamName
+  );
+  const opponentShortName = displayShortName(
+    asOptionalString(attrs.opponent_name) ?? asOptionalString(data?.opponent_name),
+    opponentAbbr,
+    base.opponentName
+  );
   const league =
     asOptionalString(attrs.league) ??
     asOptionalString(attrs.league_path) ??
@@ -169,8 +268,12 @@ export function readTeamtrackerMatch(entity: {
     league,
     teamAbbr,
     opponentAbbr,
+    teamShortName,
+    opponentShortName,
     period: readTeamtrackerPeriod(attrs),
     matchDay: readTeamtrackerMatchDay(attrs),
+    homeAway: readTeamtrackerHomeAway(attrs),
+    kickoffAt: readTeamtrackerKickoffAt(attrs),
   };
 }
 
