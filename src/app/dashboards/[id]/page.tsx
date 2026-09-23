@@ -700,6 +700,14 @@ function WidgetByType({
           onMoreClick={onMoreClick}
         />
       );
+    case "teamtracker_card":
+      return (
+        <TeamtrackerCardWidget
+          title={title}
+          entity_id={entity_id}
+          onMoreClick={onMoreClick}
+        />
+      );
     default:
       return (
         <div className="rounded-card border border-dashed p-4 text-sm text-gray-500">
@@ -5402,27 +5410,57 @@ aria-label={t("editPanel.removeCondition")}
                 </p>
                 <p className="mb-4 text-xs text-gray-400 dark:text-zinc-500">{t("editPanel.previewHint")}</p>
                 <div className="flex flex-1 items-center justify-center overflow-auto rounded-xl border border-dashed border-gray-200 bg-[radial-gradient(circle_at_top,_#f8fafc,_#eef2f7)] p-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,_#18181b,_#09090b)]">
-                  {editingWidget.type === "teamtracker_card" ? (
-                    editForm.entity_id ? (
-                      <div
-                        className="w-full max-w-full"
-                        style={{
-                          width: clampTeamtrackerCardWidth(editForm.width ?? TEAMTRACKER_CARD_DEFAULT_WIDTH),
-                          height: clampTeamtrackerCardHeight(editForm.height ?? TEAMTRACKER_CARD_DEFAULT_HEIGHT),
-                          maxWidth: "100%",
-                        }}
-                      >
-                        <TeamtrackerCardWidget
-                          title={editForm.title || t("cardType.teamtracker_card")}
-                          entity_id={editForm.entity_id}
-                          className="h-full min-h-0"
-                        />
-                      </div>
-                    ) : (
-                      <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-                        {t("editPanel.previewEmpty")}
-                      </p>
-                    )
+                  {!editForm.entity_id &&
+                  (editingWidget.type === "teamtracker_card" ||
+                    editingWidget.type === "climate_card" ||
+                    editingWidget.type === "climate_card_2" ||
+                    editingWidget.type === "vacuum_card" ||
+                    editingWidget.type === "vacuum_card_2") ? (
+                    <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                      {t("editPanel.previewEmpty")}
+                    </p>
+                  ) : editingWidget.type === "teamtracker_card" ? (
+                    <div
+                      className="w-full max-w-full"
+                      style={{
+                        width: clampTeamtrackerCardWidth(editForm.width ?? TEAMTRACKER_CARD_DEFAULT_WIDTH),
+                        height: clampTeamtrackerCardHeight(editForm.height ?? TEAMTRACKER_CARD_DEFAULT_HEIGHT),
+                        maxWidth: "100%",
+                      }}
+                    >
+                      <TeamtrackerCardWidget
+                        title={editForm.title || t("cardType.teamtracker_card")}
+                        entity_id={editForm.entity_id}
+                        className="h-full min-h-0"
+                      />
+                    </div>
+                  ) : editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" ? (
+                    <ClimateCard2Widget
+                      title={editForm.title || t("cardType.climate_card_2")}
+                      entity_id={editForm.entity_id}
+                      humidity_entity_id={editForm.humidity_entity_id}
+                      icon={editForm.icon}
+                      width={clampClimateCardWidth(editForm.width ?? CLIMATE_CARD_DEFAULT_WIDTH)}
+                      height={clampClimateCardHeight(editForm.height ?? CLIMATE_CARD_DEFAULT_HEIGHT)}
+                    />
+                  ) : editingWidget.type === "vacuum_card_2" ? (
+                    <VacuumCard2Widget
+                      title={editForm.title || t("cardType.vacuum_card_2")}
+                      entity_id={editForm.entity_id}
+                      progress_entity_id={editForm.progress_entity_id}
+                      background_image={editForm.background_image}
+                      width={clampVacuumCard2Width(editForm.width ?? VACUUM_CARD_2_DEFAULT_WIDTH)}
+                      height={clampVacuumCard2Height(editForm.height ?? VACUUM_CARD_2_DEFAULT_HEIGHT)}
+                    />
+                  ) : editingWidget.type === "vacuum_card" ? (
+                    <VacuumCardWidget
+                      title={editForm.title || t("cardType.vacuum_card")}
+                      entity_id={editForm.entity_id}
+                      script_ids={editForm.script_ids}
+                      script_names={editForm.script_names}
+                      cleaned_area_entity_id={editForm.cleaned_area_entity_id}
+                      icon={editForm.icon}
+                    />
                   ) : (
                     <div className="max-w-xs text-center">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
