@@ -2,11 +2,24 @@ export const VACUUM_CARD_2_DEFAULT_WIDTH = 320;
 export const VACUUM_CARD_2_DEFAULT_HEIGHT = 460;
 export const VACUUM_CARD_2_MIN_WIDTH = 240;
 export const VACUUM_CARD_2_MAX_WIDTH = 500;
-export const VACUUM_CARD_2_MIN_HEIGHT = 260;
+/** Matches media-card min height so vacuum can sit at ~248px beside media. */
+export const VACUUM_CARD_2_MIN_HEIGHT = 240;
 export const VACUUM_CARD_2_MAX_HEIGHT = 640;
 export const VACUUM_CARD_2_DEFAULT_IMAGE = "/vacuum-robot-light.webp";
 export const VACUUM_CARD_2_DEFAULT_IMAGE_DARK = "/vacuum-robot-dark.webp";
 export const VACUUM_CARD_2_FOOTER_MIN_HEIGHT = 380;
+/** Below this, hide mode labels (icons only) and tighten chrome. */
+export const VACUUM_CARD_2_COMPACT_HEIGHT = 340;
+/** Below this, hide the mode row so the robot art can breathe at media-card sizes. */
+export const VACUUM_CARD_2_DENSE_HEIGHT = 280;
+
+export type VacuumCard2Density = "comfortable" | "compact" | "dense";
+
+export function vacuumCard2Density(height: number): VacuumCard2Density {
+  if (height < VACUUM_CARD_2_DENSE_HEIGHT) return "dense";
+  if (height < VACUUM_CARD_2_COMPACT_HEIGHT) return "compact";
+  return "comfortable";
+}
 
 export function clampVacuumCard2Width(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);

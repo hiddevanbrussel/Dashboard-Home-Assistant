@@ -12,6 +12,7 @@ import {
   climateTempsDiffer,
   climateTileEnabled,
   climateTileFromHvacMode,
+  climateCardDensity,
   CLIMATE_CARD_DEFAULT_HEIGHT,
   CLIMATE_CARD_DEFAULT_WIDTH,
   CLIMATE_CARD_MIN_HEIGHT,
@@ -33,6 +34,13 @@ describe("climate-card helpers", () => {
     expect(clampClimateCardHeight(180)).toBe(CLIMATE_CARD_MIN_HEIGHT);
     expect(clampClimateCardHeight(undefined)).toBe(CLIMATE_CARD_DEFAULT_HEIGHT);
     expect(clampClimateCardHeight(900)).toBe(480);
+    expect(CLIMATE_CARD_MIN_HEIGHT).toBe(240);
+  });
+
+  it("picks density from card height so media-sized cards stay usable", () => {
+    expect(climateCardDensity(340)).toBe("comfortable");
+    expect(climateCardDensity(280)).toBe("compact");
+    expect(climateCardDensity(248)).toBe("dense");
   });
 
   it("resizes from the bottom-right while keeping the top-left fixed", () => {

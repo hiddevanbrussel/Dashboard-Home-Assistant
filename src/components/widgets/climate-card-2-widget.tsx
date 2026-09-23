@@ -26,6 +26,7 @@ import {
   climateTempsDiffer,
   climateTileEnabled,
   climateTileFromHvacMode,
+  climateCardDensity,
   CLIMATE_GAUGE_MAX,
   CLIMATE_GAUGE_MIN,
   CLIMATE_GAUGE_TICK_COUNT,
@@ -164,6 +165,10 @@ export function ClimateCard2Widget({
 
   const cardWidth = clampClimateCardWidth(width);
   const cardHeight = clampClimateCardHeight(height);
+  const density = climateCardDensity(cardHeight);
+  const isDense = density === "dense";
+  const isCompact = density === "compact" || isDense;
+  const showModeLabels = density === "comfortable";
   const subtitle = title?.trim() || (attrs.friendly_name as string | undefined) || entity_id;
 
   async function callClimate(service: string, serviceData?: Record<string, unknown>) {
@@ -261,10 +266,27 @@ export function ClimateCard2Widget({
       )}
       style={{ width: cardWidth, height: cardHeight, minHeight: cardHeight }}
     >
-      <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-4">
+      <div
+        className={cn(
+          "flex shrink-0 items-start justify-between gap-3",
+          isDense ? "px-4 pt-3" : isCompact ? "px-4 pt-3.5" : "px-5 pt-4"
+        )}
+      >
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-medium text-gray-400 dark:text-white/50">{subtitle}</p>
-          <h2 className="truncate text-[1.35rem] font-semibold leading-tight tracking-tight text-gray-950 dark:text-white">
+          <p
+            className={cn(
+              "truncate font-medium text-gray-400 dark:text-white/50",
+              isDense ? "text-[11px]" : "text-[13px]"
+            )}
+          >
+            {subtitle}
+          </p>
+          <h2
+            className={cn(
+              "truncate font-semibold leading-tight tracking-tight text-gray-950 dark:text-white",
+              isDense ? "text-lg" : "text-[1.35rem]"
+            )}
+          >
             {t("climateCard.climate")}
           </h2>
         </div>
@@ -283,8 +305,8 @@ export function ClimateCard2Widget({
             aria-label={isOn ? t("climateCard.powerOff") : t("climateCard.powerOn")}
             aria-pressed={isOn}
           >
-            <Power className="h-5 w-5" aria-hidden />
-            {isOn ? t("climateCard.on") : t("climateCard.off")}
+            <Power className={cn(isDense ? "h-4 w-4" : "h-5 w-5")} aria-hidden />
+            {isDense ? null : isOn ? t("climateCard.on") : t("climateCard.off")}
           </button>
           {onMoreClick ? (
             <button
@@ -296,7 +318,7 @@ export function ClimateCard2Widget({
               className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
               aria-label={t("climateCard.moreOptions")}
             >
-              <MoreVertical className="h-5 w-5" aria-hidden />
+              <MoreVertical className={cn(isDense ? "h-4 w-4" : "h-5 w-5")} aria-hidden />
             </button>
           ) : null}
         </div>
@@ -305,7 +327,13 @@ export function ClimateCard2Widget({
       <div className="relative flex min-h-0 flex-1 items-center justify-center px-3" style={{ containerType: "size" }}>
         <div
           className="relative aspect-square"
-          style={{ width: "min(86cqw, 90cqh, 14rem)" }}
+          style={{
+            width: isDense
+              ? "min(92cqw, 98cqh)"
+              : isCompact
+                ? "min(88cqw, 94cqh, 12.5rem)"
+                : "min(86cqw, 90cqh, 14rem)",
+          }}
           role="meter"
           aria-label={t("climateCard.gauge").replace("{n}", String(Math.round((setpoint ?? 0) * 2) / 2))}
           aria-valuemin={CLIMATE_GAUGE_MIN}
@@ -315,10 +343,16 @@ export function ClimateCard2Widget({
           <div className="absolute inset-0 rounded-full bg-gray-50 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.04)] dark:bg-zinc-800/90 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]" />
           <ClimateTempGauge value={setpoint} active={isOn} />
 
-          <div className="absolute inset-[22%] bottom-[30%] flex flex-col items-center justify-center overflow-hidden px-2 text-center">
+          <div
+            className={cn(
+              "absolute inset-[22%] bottom-[30%] flex flex-col items-center justify-center overflow-hidden px-2 text-center",
+              isDense && "inset-[18%] bottom-[28%]"
+            )}
+          >
             <p
               className={cn(
-                "text-[10px] font-semibold uppercase tracking-[0.16em]",
+                "font-semibold uppercase tracking-[0.16em]",
+                isDense ? "text-[9px]" : "text-[10px]",
                 statusKind === "off"
                   ? "text-gray-400 dark:text-white/40"
                   : statusKind === "heating" || statusKind === "heat"
@@ -330,27 +364,50 @@ export function ClimateCard2Widget({
             >
               {t(climateStatusLabelKey(statusKind))}
             </p>
-            <p className="mt-0.5 text-[2.45rem] font-semibold leading-none tracking-tight tabular-nums text-gray-950 dark:text-white">
+            <p
+              className={cn(
+                "font-semibold leading-none tracking-tight tabular-nums text-gray-950 dark:text-white",
+                isDense ? "mt-0 text-[1.85rem]" : isCompact ? "mt-0.5 text-[2.1rem]" : "mt-0.5 text-[2.45rem]"
+              )}
+            >
               {empty ? (
                 "—"
               ) : (
                 <>
                   {int}
-                  {dec != null ? <sup className="ml-0.5 text-[1.35rem] font-semibold">{dec}</sup> : null}
-                  <span className="ml-0.5 text-[1.35rem] font-semibold text-gray-400 dark:text-white/40">°</span>
+                  {dec != null ? (
+                    <sup className={cn("ml-0.5 font-semibold", isDense ? "text-base" : "text-[1.35rem]")}>
+                      {dec}
+                    </sup>
+                  ) : null}
+                  <span
+                    className={cn(
+                      "ml-0.5 font-semibold text-gray-400 dark:text-white/40",
+                      isDense ? "text-base" : "text-[1.35rem]"
+                    )}
+                  >
+                    °
+                  </span>
                 </>
               )}
             </p>
-            <p className="mt-1.5 text-[11px] font-medium tracking-wide text-gray-400 dark:text-white/45">
-              {showCurrent && currentTemperature != null
-                ? t("climateCard.currentNow").replace("{n}", String(Math.round(currentTemperature * 2) / 2))
-                : showHumidity
-                  ? `${Math.round(humidity)}%`
-                  : t("climateCard.unit")}
-            </p>
+            {!isDense ? (
+              <p className="mt-1.5 text-[11px] font-medium tracking-wide text-gray-400 dark:text-white/45">
+                {showCurrent && currentTemperature != null
+                  ? t("climateCard.currentNow").replace("{n}", String(Math.round(currentTemperature * 2) / 2))
+                  : showHumidity
+                    ? `${Math.round(humidity)}%`
+                    : t("climateCard.unit")}
+              </p>
+            ) : null}
           </div>
 
-          <div className="absolute bottom-[10%] left-0 right-0 z-10 flex items-center justify-center gap-4">
+          <div
+            className={cn(
+              "absolute left-0 right-0 z-10 flex items-center justify-center",
+              isDense ? "bottom-[6%] gap-3" : "bottom-[10%] gap-4"
+            )}
+          >
             <button
               type="button"
               onClick={(e) => {
@@ -358,10 +415,13 @@ export function ClimateCard2Widget({
                 handleTemperature(setpoint - SELECTOR_STEP);
               }}
               disabled={(!entity_id && !previewing) || !isOn || setpoint <= minTemp}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#3B9EFF] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-sky-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-sky-400 dark:ring-white/10 dark:hover:bg-zinc-700"
+              className={cn(
+                "flex items-center justify-center rounded-full bg-white text-[#3B9EFF] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-sky-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-sky-400 dark:ring-white/10 dark:hover:bg-zinc-700",
+                isDense ? "h-7 w-7" : "h-9 w-9"
+              )}
               aria-label={t("climateCard.tempDown")}
             >
-              <Minus className="h-4 w-4" strokeWidth={2.5} />
+              <Minus className={cn(isDense ? "h-3.5 w-3.5" : "h-4 w-4")} strokeWidth={2.5} />
             </button>
             <button
               type="button"
@@ -370,16 +430,24 @@ export function ClimateCard2Widget({
                 handleTemperature(setpoint + SELECTOR_STEP);
               }}
               disabled={(!entity_id && !previewing) || !isOn || setpoint >= maxTemp}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#F97316] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-orange-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-orange-400 dark:ring-white/10 dark:hover:bg-zinc-700"
+              className={cn(
+                "flex items-center justify-center rounded-full bg-white text-[#F97316] shadow-[0_6px_16px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.06] transition-colors hover:bg-orange-50 disabled:opacity-30 dark:bg-zinc-800 dark:text-orange-400 dark:ring-white/10 dark:hover:bg-zinc-700",
+                isDense ? "h-7 w-7" : "h-9 w-9"
+              )}
               aria-label={t("climateCard.tempUp")}
             >
-              <Plus className="h-4 w-4" strokeWidth={2.5} />
+              <Plus className={cn(isDense ? "h-3.5 w-3.5" : "h-4 w-4")} strokeWidth={2.5} />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="grid shrink-0 grid-cols-3 gap-2 px-5 pb-4 pt-0">
+      <div
+        className={cn(
+          "grid shrink-0 grid-cols-3 gap-2",
+          isDense ? "px-3 pb-2.5 pt-0" : isCompact ? "px-4 pb-3 pt-0" : "px-5 pb-4 pt-0"
+        )}
+      >
         {MODE_UI.map(({ mode, labelKey, Icon }) => {
           const selected = activeTile === mode;
           const enabled = climateTileEnabled(mode, hvacModes);
@@ -393,14 +461,16 @@ export function ClimateCard2Widget({
               }}
               disabled={!entity_id || !enabled || busyMode != null}
               className={cn(
-                "flex min-w-0 flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-[11px] font-medium transition-colors disabled:opacity-50",
+                "flex min-w-0 flex-col items-center rounded-2xl px-2 text-[11px] font-medium transition-colors disabled:opacity-50",
+                showModeLabels ? "gap-1.5 py-3" : "gap-0 py-2",
                 selected
                   ? "bg-sky-50 text-sky-500 dark:bg-sky-400/15 dark:text-sky-300"
                   : "text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white/70"
               )}
+              aria-label={t(labelKey)}
             >
-              <Icon className="h-5 w-5" aria-hidden />
-              <span className="truncate">{t(labelKey)}</span>
+              <Icon className={cn(isDense ? "h-4 w-4" : "h-5 w-5")} aria-hidden />
+              {showModeLabels ? <span className="truncate">{t(labelKey)}</span> : null}
             </button>
           );
         })}
