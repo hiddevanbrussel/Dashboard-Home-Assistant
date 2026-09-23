@@ -123,13 +123,13 @@ export function useVacuumSession({
 
   const loadCapabilities = useCallback(async () => {
     if (!conn.baseUrl) return;
+    try {
+      const presets = await valetudoRequest<unknown>({ ...conn, path: FAN_PRESETS_PATH });
+      setFanPresets(parseFanPresets(presets));
+    } catch {
+      setFanPresets([]);
+    }
     if (includeMaintenance) {
-      try {
-        const presets = await valetudoRequest<unknown>({ ...conn, path: FAN_PRESETS_PATH });
-        setFanPresets(parseFanPresets(presets));
-      } catch {
-        setFanPresets([]);
-      }
       try {
         const props = await valetudoRequest<unknown>({ ...conn, path: CONSUMABLE_PROPERTIES_PATH });
         setConsumableMeta(parseConsumableProperties(props));

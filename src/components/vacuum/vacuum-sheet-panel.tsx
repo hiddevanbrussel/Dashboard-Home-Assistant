@@ -8,6 +8,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useVacuumSession } from "@/hooks/use-vacuum-session";
 import {
   clampSegmentIterations,
+  fanPresetLabelKey,
   formatVacuumAreaM2,
   formatVacuumTimeMin,
   vacuumBasicActionDisabled,
@@ -47,6 +48,10 @@ export function VacuumSheetPanel({ onClose }: { onClose?: () => void }) {
     cleanSelected,
     stats,
     robotName,
+    fanPresets,
+    fanSpeed,
+    fanBusy,
+    setFanPreset,
   } = session;
 
   const title = robotName || t("vacuum.title");
@@ -54,6 +59,7 @@ export function VacuumSheetPanel({ onClose }: { onClose?: () => void }) {
   const minutes = formatVacuumTimeMin(stats.timeSec);
   const selectedNames = selectedIds.map((id) => segmentNameFromLayers(map?.layers ?? [], id));
   const canCleanRooms = selectedIds.length > 0;
+  const showFan = fanPresets.length > 0;
   const primary =
     status === "cleaning"
       ? {
@@ -150,7 +156,7 @@ export function VacuumSheetPanel({ onClose }: { onClose?: () => void }) {
               />
             </div>
 
-            <div className="relative mx-auto h-[220px] w-full max-w-[300px]">
+            <div className="relative mx-auto h-[220px] w-full max-w-[340px]">
               <ValetudoMapCanvas
                 map={map}
                 selectedIds={cleanMode === "rooms" ? selectedIds : []}
@@ -171,19 +177,43 @@ export function VacuumSheetPanel({ onClose }: { onClose?: () => void }) {
                 : t("vacuum.mode.fullHint")}
             </p>
 
-            <div className="mt-3 flex items-end justify-between gap-3 pb-4">
+            {showFan ? (
+              <div
+                role="group"
+                aria-label={t("vacuum.fan")}
+                className="mt-3 grid gap-1.5"
+                style={{ gridTemplateColumns: `repeat(${Math.min(fanPresets.length, 5)}, minmax(0, 1fr))` }}
+              >
+                {fanPresets.map((preset) => {
+                  const selected = fanSpeed === preset;
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      disabled={fanBusy}
+                      onClick={() => void setFanPreset(preset)}
+                      className={cn(
+                        "min-w-0 truncate rounded-full px-2 py-2 text-[11px] font-semibold transition disabled:opacity-50",
+                        selected
+                          ? "bg-[#8AA8F7] text-white shadow-sm"
+                          : "bg-white text-gray-700 shadow-sm ring-1 ring-black/5 hover:bg-white/90 dark:bg-white/10 dark:text-white dark:ring-white/10"
+                      )}
+                    >
+                      {t(fanPresetLabelKey(preset))}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            <div className="mt-3 flex items-center justify-between gap-3 pb-4">
               <button
                 type="button"
                 onClick={cycleIterations}
-                className="flex flex-col items-center gap-1"
-                aria-label={t("vacuum.cycles")}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-800 shadow-sm dark:border-white/15 dark:bg-white/10 dark:text-white"
+                aria-label={`${t("vacuum.cycles")}: x${iterations}`}
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-800 shadow-sm dark:border-white/15 dark:bg-white/10 dark:text-white">
-                  x{iterations}
-                </span>
-                <span className="text-[11px] font-medium text-gray-400 dark:text-white/45">
-                  {t("vacuum.cycles")}
-                </span>
+                x{iterations}
               </button>
 
               <div className="flex items-center gap-2">
