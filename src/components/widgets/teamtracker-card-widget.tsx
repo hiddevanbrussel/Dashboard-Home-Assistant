@@ -31,8 +31,8 @@ function WatermarkLogo({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute top-[46%] z-0 -translate-y-1/2 select-none",
-        side === "left" ? "left-[-18%]" : "right-[-18%]"
+        "pointer-events-none absolute top-[48%] z-0 h-[62%] max-h-[7.25rem] -translate-y-1/2 select-none",
+        side === "left" ? "left-[-10%]" : "right-[-10%]"
       )}
       aria-hidden
     >
@@ -40,7 +40,7 @@ function WatermarkLogo({
       <img
         src={src}
         alt={alt}
-        className="h-[11rem] w-[11rem] object-contain opacity-[0.16] sm:h-[12rem] sm:w-[12rem]"
+        className="h-full w-auto max-w-[7.25rem] object-contain opacity-[0.16]"
         loading="lazy"
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";

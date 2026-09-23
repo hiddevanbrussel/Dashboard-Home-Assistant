@@ -7,10 +7,10 @@ import {
 } from "@/lib/screensaver-football";
 
 export const TEAMTRACKER_CARD_DEFAULT_WIDTH = 380;
-export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 210;
-export const TEAMTRACKER_CARD_MIN_WIDTH = 280;
+export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 200;
+export const TEAMTRACKER_CARD_MIN_WIDTH = 260;
 export const TEAMTRACKER_CARD_MAX_WIDTH = 520;
-export const TEAMTRACKER_CARD_MIN_HEIGHT = 180;
+export const TEAMTRACKER_CARD_MIN_HEIGHT = 160;
 export const TEAMTRACKER_CARD_MAX_HEIGHT = 320;
 
 export function clampTeamtrackerCardWidth(n: unknown): number {
