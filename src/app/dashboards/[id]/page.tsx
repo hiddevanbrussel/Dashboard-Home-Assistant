@@ -2251,11 +2251,6 @@ export default function DashboardEditPage() {
                   ? () => setEditingWidgetId(w.id)
                   : undefined
               }
-              onRemove={
-                editMode
-                  ? () => handleRemoveTile(w.id)
-                  : undefined
-              }
               onResize={editMode ? (size) => handleTeamtrackerCardResize(w.id, size) : undefined}
             />
           ))}
