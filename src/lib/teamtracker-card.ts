@@ -7,14 +7,11 @@ import {
 } from "@/lib/screensaver-football";
 
 export const TEAMTRACKER_CARD_DEFAULT_WIDTH = 380;
-/** Includes top overhang for logos that sit on the card edge. */
-export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 230;
+export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 210;
 export const TEAMTRACKER_CARD_MIN_WIDTH = 280;
 export const TEAMTRACKER_CARD_MAX_WIDTH = 520;
-export const TEAMTRACKER_CARD_MIN_HEIGHT = 190;
+export const TEAMTRACKER_CARD_MIN_HEIGHT = 180;
 export const TEAMTRACKER_CARD_MAX_HEIGHT = 320;
-/** Space reserved above the white card so logos can overlap the top edge. */
-export const TEAMTRACKER_CARD_LOGO_OVERHANG = 18;
 
 export function clampTeamtrackerCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);

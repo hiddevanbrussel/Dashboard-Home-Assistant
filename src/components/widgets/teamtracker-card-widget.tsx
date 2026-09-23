@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
-  TEAMTRACKER_CARD_LOGO_OVERHANG,
   footballMatchHasContent,
   formatTeamtrackerKickoffDayLabel,
   formatTeamtrackerKickoffTime,
@@ -17,38 +16,31 @@ import {
 } from "@/lib/teamtracker-card";
 import type { TeamtrackerCardProps } from "./widget-types";
 
-function TeamLogo({
+const PITCH_SRC = "/teamtracker-pitch.webp";
+
+function WatermarkLogo({
   src,
   alt,
-  className,
+  side,
 }: {
   src?: string | null;
   alt: string;
-  className?: string;
+  side: "left" | "right";
 }) {
-  if (!src) {
-    return (
-      <div
-        className={cn(
-          "image-theme-fixed flex shrink-0 items-center justify-center",
-          className ?? "h-16 w-16"
-        )}
-        aria-hidden
-      />
-    );
-  }
+  if (!src) return null;
   return (
     <div
       className={cn(
-        "image-theme-fixed flex shrink-0 items-center justify-center overflow-visible",
-        className ?? "h-16 w-16"
+        "pointer-events-none absolute top-[46%] z-0 -translate-y-1/2 select-none",
+        side === "left" ? "left-[-18%]" : "right-[-18%]"
       )}
+      aria-hidden
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic HA Team Tracker logo URL */}
       <img
         src={src}
         alt={alt}
-        className="h-full w-full object-contain"
+        className="h-[11rem] w-[11rem] object-contain opacity-[0.16] sm:h-[12rem] sm:w-[12rem]"
         loading="lazy"
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";
@@ -67,8 +59,8 @@ function StatusBadge({
 }) {
   if (status === "IN") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FDECEC] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#E5484D]">
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#E5484D]" aria-hidden />
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E53935] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-white shadow-[0_0_14px_rgba(229,57,53,0.55)]">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" aria-hidden />
         {label}
       </span>
     );
@@ -121,7 +113,6 @@ function venueSides(match: TeamtrackerMatch): {
       right: { ...team, role: "away" },
     };
   }
-  // Default / home: tracked team on the left as home
   return {
     left: { ...team, role: "home" },
     right: { ...opponent, role: "away" },
@@ -191,7 +182,7 @@ function CenterStack({
   }
 
   return (
-    <div className="flex min-w-[6.5rem] flex-col items-center justify-center gap-1.5 px-1 text-center">
+    <div className="relative z-10 flex min-w-[6.5rem] flex-col items-center justify-center gap-1.5 px-1 text-center">
       <StatusBadge label={statusLabel} status={status} />
       {headline}
       {subtitle ? (
@@ -199,6 +190,25 @@ function CenterStack({
       ) : (
         <span className="h-4" aria-hidden />
       )}
+    </div>
+  );
+}
+
+function TeamColumn({
+  name,
+  roleLabel,
+}: {
+  name: string;
+  roleLabel: string;
+}) {
+  return (
+    <div className="relative z-10 flex min-w-0 flex-col items-center gap-1 px-2">
+      <p className="max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
+        {name}
+      </p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93]">
+        {roleLabel}
+      </p>
     </div>
   );
 }
@@ -218,14 +228,29 @@ export function TeamtrackerCardWidget({
   const sides = match ? venueSides(match) : null;
 
   return (
-    <div
-      className={cn(
-        "relative flex h-full min-h-0 w-full flex-col overflow-visible",
-        className
-      )}
-      style={{ paddingTop: TEAMTRACKER_CARD_LOGO_OVERHANG }}
-    >
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl bg-white text-[#1A1C2E] shadow-[0_8px_28px_rgba(15,23,42,0.10)] ring-1 ring-black/[0.04]">
+    <div className={cn("relative flex h-full min-h-0 w-full flex-col", className)}>
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-white text-[#1A1C2E] shadow-[0_8px_28px_rgba(15,23,42,0.10)] ring-1 ring-black/[0.04]">
+        {/* Pitch fades up from the bottom into the white card */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[52%] overflow-hidden"
+          aria-hidden
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- Static pitch asset */}
+          <img
+            src={PITCH_SRC}
+            alt=""
+            className="absolute inset-x-0 bottom-0 h-[165%] w-full object-cover object-bottom"
+            style={{
+              WebkitMaskImage:
+                "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.15) 18%, rgba(0,0,0,0.55) 38%, black 68%)",
+              maskImage:
+                "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.15) 18%, rgba(0,0,0,0.55) 38%, black 68%)",
+            }}
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/70 to-transparent" />
+        </div>
+
         {onMoreClick ? (
           <button
             type="button"
@@ -241,7 +266,7 @@ export function TeamtrackerCardWidget({
         ) : null}
 
         {!hasContent || !match || !sides ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-[#8E8E93]">
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-[#8E8E93]">
             <p className="text-sm font-medium text-[#1A1C2E]/70">
               {title || t("cardType.teamtracker_card")}
             </p>
@@ -249,33 +274,25 @@ export function TeamtrackerCardWidget({
           </div>
         ) : (
           <>
-            <div className="pointer-events-none absolute left-[18%] top-0 z-10 -translate-x-1/2 -translate-y-[18%] sm:left-[20%]">
-              <TeamLogo src={sides.left.logo} alt={sides.left.name} className="h-[4.5rem] w-[4.5rem]" />
-            </div>
-            <div className="pointer-events-none absolute right-[18%] top-0 z-10 translate-x-1/2 -translate-y-[18%] sm:right-[20%]">
-              <TeamLogo src={sides.right.logo} alt={sides.right.name} className="h-[4.5rem] w-[4.5rem]" />
-            </div>
+            <WatermarkLogo src={sides.left.logo} alt={sides.left.name} side="left" />
+            <WatermarkLogo src={sides.right.logo} alt={sides.right.name} side="right" />
 
-            <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 px-4 pb-5 pt-[4.25rem] sm:px-5">
-              <div className="flex min-w-0 flex-col items-center gap-1">
-                <p className="max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
-                  {sides.left.name}
-                </p>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93]">
-                  {sides.left.role === "home" ? t("teamtrackerCard.home") : t("teamtrackerCard.away")}
-                </p>
-              </div>
+            <div className="relative z-10 grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 px-3 py-4 sm:px-4">
+              <TeamColumn
+                name={sides.left.name}
+                roleLabel={
+                  sides.left.role === "home" ? t("teamtrackerCard.home") : t("teamtrackerCard.away")
+                }
+              />
 
               <CenterStack match={match} statusLabel={statusLabel} t={t} language={language} />
 
-              <div className="flex min-w-0 flex-col items-center gap-1">
-                <p className="max-w-full truncate text-base font-bold tracking-tight text-[#1A1C2E] sm:text-lg">
-                  {sides.right.name}
-                </p>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8E8E93]">
-                  {sides.right.role === "home" ? t("teamtrackerCard.home") : t("teamtrackerCard.away")}
-                </p>
-              </div>
+              <TeamColumn
+                name={sides.right.name}
+                roleLabel={
+                  sides.right.role === "home" ? t("teamtrackerCard.home") : t("teamtrackerCard.away")
+                }
+              />
             </div>
           </>
         )}
