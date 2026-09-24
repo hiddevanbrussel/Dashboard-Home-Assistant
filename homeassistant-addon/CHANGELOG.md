@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2
+
+- Auto-link to Home Assistant via Supervisor when installed as an app (no long-lived token)
+- Onboarding and Settings show Supervisor connection status
+
 ## 0.4.1
 
 - Fix Ingress Open Web UI: stop Next.js 308 on `/` from sending the browser outside the ingress path
