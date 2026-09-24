@@ -6,6 +6,7 @@ import { OnboardingGuard } from "@/components/onboarding-guard";
 import { PageBackgroundProvider } from "@/components/page-background";
 import { MusicPlayerProvider } from "@/components/music-player-provider";
 import { GlobalMusicBar } from "@/components/global-music-bar";
+import { BasePathScript } from "@/components/base-path-script";
 
 const inter = Inter({ subsets: ["latin"] });
 const montserrat = Montserrat({
@@ -52,6 +53,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <body className={`relative ${inter.className}`}>
+        <BasePathScript />
         <Providers>
           <OnboardingGuard>
             <MusicPlayerProvider>
