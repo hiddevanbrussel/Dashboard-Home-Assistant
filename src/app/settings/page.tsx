@@ -169,6 +169,8 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const [baseUrl, setBaseUrl] = useState("http://homeassistant.local:8123");
   const [token, setToken] = useState("");
+  const [connectionSource, setConnectionSource] = useState<"supervisor" | "manual" | null>(null);
+  const [isAddon, setIsAddon] = useState(false);
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: true } | { ok: false; error: string } | null>(null);
@@ -262,6 +264,11 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d?.baseUrl) setBaseUrl(d.baseUrl);
+        if (d?.source === "supervisor" || d?.source === "manual") setConnectionSource(d.source);
+        if (typeof d?.addon === "boolean") setIsAddon(d.addon);
+        if (d?.source === "supervisor" && d?.ok === false && d?.error) {
+          setTestResult({ ok: false, error: d.error });
+        }
       })
       .catch(() => {});
   }, []);
@@ -334,6 +341,17 @@ export default function SettingsPage() {
     setTestResult(null);
     setTesting(true);
     try {
+      if (connectionSource === "supervisor" || (isAddon && !token.trim())) {
+        const res = await fetch("/api/ha/connection?test=1");
+        const data = await res.json();
+        if (data.ok !== false && (data.source === "supervisor" || data.baseUrl)) {
+          setTestResult({ ok: true });
+          setConnectionSource(data.source ?? "supervisor");
+        } else {
+          setTestResult({ ok: false, error: data.error ?? t("settings.connection.test") });
+        }
+        return;
+      }
       const res = await fetch("/api/ha/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -350,29 +368,85 @@ export default function SettingsPage() {
   }
 
   async function handleSave() {
+    if (connectionSource === "supervisor" && isAddon && !token.trim()) {
+      setSaving(true);
+      setSaveMessage(null);
+      try {
+        const res = await fetch("/api/ha/connection", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ useSupervisor: true }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          setSaveMessage("success");
+          setConnectionSource("supervisor");
+          setToken("");
+        } else {
+          setTestResult({ ok: false, error: data.error ?? t("settings.connection.save") });
+          setSaveMessage("error");
+        }
+      } catch {
+        setTestResult({ ok: false, error: t("settings.connection.save") });
+        setSaveMessage("error");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     if (!token.trim()) {
       setTestResult({ ok: false, error: t("settings.connection.pleaseEnterToken") });
       return;
     }
-    setSaveMessage(null);
     setSaving(true);
+    setSaveMessage(null);
     try {
       const res = await fetch("/api/ha/connection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ baseUrl, token }),
       });
-      const data = await res.json();
-      if (data.connectionId) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
         setSaveMessage("success");
-        setTestResult({ ok: true });
+        setConnectionSource(data.source === "supervisor" ? "supervisor" : "manual");
+        setToken("");
       } else {
-        setSaveMessage("error");
         setTestResult({ ok: false, error: data.error ?? t("settings.connection.save") });
+        setSaveMessage("error");
       }
     } catch {
-      setSaveMessage("error");
       setTestResult({ ok: false, error: t("settings.connection.save") });
+      setSaveMessage("error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleUseSupervisor() {
+    setSaving(true);
+    setSaveMessage(null);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/ha/connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useSupervisor: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setSaveMessage("success");
+        setConnectionSource("supervisor");
+        setBaseUrl(data.baseUrl ?? "http://supervisor/core");
+        setToken("");
+        setTestResult({ ok: true });
+      } else {
+        setTestResult({ ok: false, error: data.error ?? t("settings.connection.save") });
+        setSaveMessage("error");
+      }
+    } catch {
+      setTestResult({ ok: false, error: t("settings.connection.save") });
+      setSaveMessage("error");
     } finally {
       setSaving(false);
     }
@@ -527,7 +601,13 @@ export default function SettingsPage() {
     screensaver: { descriptionKey: "settings.screensaver.description", icon: Monitor },
     language: { descriptionKey: "settings.language.intro", icon: Globe },
     dashboard: { descriptionKey: "settings.dashboard.intro", icon: LayoutDashboard },
-    connection: { descriptionKey: "settings.connection.description", icon: Link2 },
+    connection: {
+      descriptionKey:
+        connectionSource === "supervisor"
+          ? "settings.connection.descriptionSupervisor"
+          : "settings.connection.description",
+      icon: Link2,
+    },
     calendar: { descriptionKey: "settings.calendar.description", icon: CalendarDays },
     energy: { descriptionKey: "settings.energy.description", icon: Zap },
     tasks: { descriptionKey: "settings.tasks.description", icon: ListTodo },
@@ -1031,25 +1111,39 @@ export default function SettingsPage() {
 
           {section === "connection" && (
             <div className="space-y-4">
-              <SettingsField label={t("settings.connection.baseUrl")} htmlFor="ha-baseUrl">
-                <SettingsInput
-                  id="ha-baseUrl"
-                  type="url"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder="http://homeassistant.local:8123"
-                />
-              </SettingsField>
-              <SettingsField label={t("settings.connection.token")} htmlFor="ha-token">
-                <SettingsInput
-                  id="ha-token"
-                  type="password"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  placeholder={t("settings.connection.tokenPlaceholder")}
-                  autoComplete="off"
-                />
-              </SettingsField>
+              {connectionSource === "supervisor" ? (
+                <SettingsAlert tone="ok">{t("settings.connection.supervisorLinked")}</SettingsAlert>
+              ) : null}
+              {isAddon && connectionSource !== "supervisor" ? (
+                <div className="flex flex-wrap gap-2">
+                  <SettingsPrimaryButton onClick={handleUseSupervisor} disabled={saving}>
+                    {t("settings.connection.useSupervisor")}
+                  </SettingsPrimaryButton>
+                </div>
+              ) : null}
+              {connectionSource !== "supervisor" ? (
+                <>
+                  <SettingsField label={t("settings.connection.baseUrl")} htmlFor="ha-baseUrl">
+                    <SettingsInput
+                      id="ha-baseUrl"
+                      type="url"
+                      value={baseUrl}
+                      onChange={(e) => setBaseUrl(e.target.value)}
+                      placeholder="http://homeassistant.local:8123"
+                    />
+                  </SettingsField>
+                  <SettingsField label={t("settings.connection.token")} htmlFor="ha-token">
+                    <SettingsInput
+                      id="ha-token"
+                      type="password"
+                      value={token}
+                      onChange={(e) => setToken(e.target.value)}
+                      placeholder={t("settings.connection.tokenPlaceholder")}
+                      autoComplete="off"
+                    />
+                  </SettingsField>
+                </>
+              ) : null}
               {testResult ? (
                 <SettingsAlert tone={testResult.ok ? "ok" : "error"}>
                   {testResult.ok ? t("settings.connection.success") : testResult.error}
@@ -1062,9 +1156,11 @@ export default function SettingsPage() {
                 <SettingsPrimaryButton onClick={handleTest} disabled={testing}>
                   {testing ? t("settings.connection.testing") : t("settings.connection.test")}
                 </SettingsPrimaryButton>
-                <SettingsSecondaryButton onClick={handleSave} disabled={saving || !token.trim()}>
-                  {saving ? t("settings.connection.saving") : t("settings.connection.save")}
-                </SettingsSecondaryButton>
+                {connectionSource !== "supervisor" ? (
+                  <SettingsSecondaryButton onClick={handleSave} disabled={saving || !token.trim()}>
+                    {saving ? t("settings.connection.saving") : t("settings.connection.save")}
+                  </SettingsSecondaryButton>
+                ) : null}
               </div>
             </div>
           )}

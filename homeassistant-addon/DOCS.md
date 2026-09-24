@@ -25,14 +25,9 @@ The first start pulls the pre-built image from GitHub Container Registry and may
 
 ## Connecting Home Assistant
 
-During onboarding, enter:
+When installed as a Home Assistant app, the dashboard **links automatically** via the Supervisor (`homeassistant_api`). Onboarding shows “Connected via Home Assistant” — no URL or long-lived token is required.
 
-| Field | Suggested value |
-|---|---|
-| Home Assistant URL | `http://homeassistant:8123` (works from inside the app network) |
-| Long-lived access token | Create one under your HA profile → **Long-Lived Access Tokens** |
-
-You can also use your usual LAN URL (e.g. `http://192.168.x.x:8123`) if that is reachable from the app container.
+You can still set a custom URL + token under **Settings → Connection** if you need to override the Supervisor link (for example to point at a remote instance).
 
 ## Ingress vs direct port
 
