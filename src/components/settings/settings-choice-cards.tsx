@@ -3,6 +3,7 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { Check, ImagePlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { cssUrl } from "@/lib/base-path";
 import {
   SCREENSAVER_CLOCK_POSITIONS,
   type ScreensaverClockPosition,
@@ -382,7 +383,7 @@ export function SettingsImagePick({
         {url ? (
           <span
             className="block h-[4.75rem] bg-cover bg-center"
-            style={{ backgroundImage: `url(${url})` }}
+            style={{ backgroundImage: cssUrl(url) }}
           />
         ) : (
           <span className="flex h-[4.75rem] flex-col items-center justify-center gap-1.5 bg-white/70 dark:bg-white/5">

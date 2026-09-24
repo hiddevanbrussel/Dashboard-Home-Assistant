@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { VacuumCard2Props } from "./widget-types";
 import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
@@ -68,7 +69,7 @@ function VacuumRobotArt({ src, compact }: { src: string; compact?: boolean }) {
       <div className="relative max-h-full w-full">
         <TargetingFrame compact={compact} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt="" className="relative z-10 mx-auto max-h-full w-full object-contain" />
+        <img src={withBasePath(src)} alt="" className="relative z-10 mx-auto max-h-full w-full object-contain" />
       </div>
     </div>
   );

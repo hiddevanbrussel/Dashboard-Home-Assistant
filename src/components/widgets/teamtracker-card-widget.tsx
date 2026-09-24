@@ -3,6 +3,7 @@
 import { type ReactNode } from "react";
 import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
@@ -16,7 +17,7 @@ import {
 } from "@/lib/teamtracker-card";
 import type { TeamtrackerCardProps } from "./widget-types";
 
-const PITCH_SRC = "/teamtracker-pitch.webp";
+const PITCH_SRC = withBasePath("/teamtracker-pitch.webp");
 
 function WatermarkLogo({
   src,
@@ -38,7 +39,7 @@ function WatermarkLogo({
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic HA Team Tracker logo URL */}
       <img
-        src={src}
+        src={withBasePath(src)}
         alt={alt}
         className="h-full w-auto max-w-[7.25rem] object-contain opacity-[0.16] dark:opacity-[0.28] dark:brightness-110"
         loading="lazy"

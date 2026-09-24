@@ -109,6 +109,8 @@ export function joinImmichUrl(baseUrl: string, path: string, search = ""): strin
   return `${base}${path}${search}`;
 }
 
+import { withBasePath } from "@/lib/base-path";
+
 export type ImmichAssetKind = "preview" | "video";
 
 export function buildImmichAssetProxyUrl(opts: {
@@ -123,7 +125,7 @@ export function buildImmichAssetProxyUrl(opts: {
     id: opts.id,
     kind: opts.kind,
   });
-  return `/api/immich/asset?${params.toString()}`;
+  return withBasePath(`/api/immich/asset?${params.toString()}`);
 }
 
 export function pickRandomImmichAsset(data: unknown): { id: string } | null {

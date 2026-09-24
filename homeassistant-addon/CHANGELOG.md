@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.3
+
+- Fix images under Ingress (energy house, Immich/Pexels screensaver, uploads, card art)
+- Prefix same-origin media URLs with the addon basePath and harden the client patch
+
 ## 0.4.2
 
 - Auto-link to Home Assistant via Supervisor when installed as an app (no long-lived token)

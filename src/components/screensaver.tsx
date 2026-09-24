@@ -14,6 +14,7 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { getItemImageUrl, getImageSrc } from "@/lib/music-item-image";
+import { cssUrl, withBasePath } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import {
@@ -75,7 +76,7 @@ function preloadImage(url: string): Promise<void> {
     img.decoding = "async";
     img.onload = () => resolve();
     img.onerror = () => resolve();
-    img.src = url;
+    img.src = withBasePath(url);
   });
 }
 
@@ -339,7 +340,7 @@ function ScreensaverMusic() {
         {ha.coverUrl ? (
           <div className="image-theme-fixed relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={ha.coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+            <img src={withBasePath(ha.coverUrl)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
         ) : (
           <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg text-white/80">
@@ -408,7 +409,7 @@ function ScreensaverMusic() {
         {coverUrl ? (
           <div className="image-theme-fixed relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+            <img src={withBasePath(coverUrl)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
         ) : (
         <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg text-white/80">
@@ -842,11 +843,14 @@ function ScreensaverOverlay({
     videoRotateTimer.current = setTimeout(fetchRemoteVideo, VIDEO_MAX_SECONDS * 1000);
   }, [fetchRemoteVideo]);
 
-  const backgroundImage = footballLive
-    ? SCREENSAVER_FOOTBALL_LIVE_BACKGROUND
-    : playback.mode === "custom"
-      ? playback.url
-      : currentImage || DEFAULT_SCREENSAVER_IMAGE;
+  const backgroundImageRaw =
+    footballLive
+      ? SCREENSAVER_FOOTBALL_LIVE_BACKGROUND
+      : playback.mode === "custom"
+        ? playback.url
+        : currentImage || DEFAULT_SCREENSAVER_IMAGE;
+  const backgroundImage = withBasePath(backgroundImageRaw);
+  const nextBackgroundImage = nextImage ? withBasePath(nextImage) : null;
   const showVideoBackground = isVideoMode && !footballLive;
   const useGradient =
     !footballLive &&
@@ -913,7 +917,7 @@ function ScreensaverOverlay({
                 // eslint-disable-next-line jsx-a11y/media-has-caption
                 <video
                   key={currentVideoUrl}
-                  src={currentVideoUrl}
+                  src={withBasePath(currentVideoUrl)}
                   autoPlay
                   muted
                   playsInline
@@ -927,7 +931,7 @@ function ScreensaverOverlay({
                 // eslint-disable-next-line jsx-a11y/media-has-caption
                 <video
                   key={nextVideoUrl}
-                  src={nextVideoUrl}
+                  src={withBasePath(nextVideoUrl)}
                   autoPlay
                   muted
                   playsInline
@@ -945,15 +949,15 @@ function ScreensaverOverlay({
             <>
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${backgroundImage})` }}
+                style={{ backgroundImage: cssUrl(backgroundImage) }}
                 aria-hidden
               />
-              {nextImage && (
+              {nextBackgroundImage && (
                 <div
                   className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                   style={{
                     ...fadeStyle,
-                    backgroundImage: `url(${nextImage})`,
+                    backgroundImage: cssUrl(nextBackgroundImage),
                     opacity: isFading ? 1 : 0,
                   }}
                   aria-hidden
@@ -961,7 +965,7 @@ function ScreensaverOverlay({
               )}
               <div className="absolute inset-0 pointer-events-none" aria-hidden>
                 <Image
-                  src={backgroundImage}
+                  src={backgroundImageRaw}
                   alt=""
                   fill
                   sizes="100vw"

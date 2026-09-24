@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import {
   buildImmichAssetProxyUrl,
   buildImmichBaseUrl,
@@ -12,6 +12,14 @@ import {
 } from "./immich-url";
 
 describe("immich-url", () => {
+  const prevBase = process.env.NEXT_PUBLIC_BASE_PATH;
+  beforeEach(() => {
+    delete process.env.NEXT_PUBLIC_BASE_PATH;
+  });
+  afterEach(() => {
+    if (prevBase === undefined) delete process.env.NEXT_PUBLIC_BASE_PATH;
+    else process.env.NEXT_PUBLIC_BASE_PATH = prevBase;
+  });
   it("turns a bare IP into http://ip:2283", () => {
     expect(normalizeImmichBaseUrl("192.168.1.50")).toBe("http://192.168.1.50:2283");
   });

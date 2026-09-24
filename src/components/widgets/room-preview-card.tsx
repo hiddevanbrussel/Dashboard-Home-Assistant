@@ -1,5 +1,6 @@
 "use client";
 
+import { cssUrl } from "@/lib/base-path";
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,7 @@ export function RoomPreviewCard({
         <>
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url(${background})` }}
+            style={{ backgroundImage: cssUrl(background) }}
             aria-hidden
           />
           <div className="absolute inset-0 bg-black/40" aria-hidden />

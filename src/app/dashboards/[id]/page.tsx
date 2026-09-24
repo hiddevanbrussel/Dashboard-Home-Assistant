@@ -84,6 +84,7 @@ import { OfflinePill } from "@/components/offline-pill";
 import { useTranslation } from "@/hooks/use-translation";
 import { useDashboardEditFlag } from "@/hooks/use-dashboard-edit-flag";
 import { cn, generateId } from "@/lib/utils";
+import { cssUrl } from "@/lib/base-path";
 import { DashboardPager } from "@/components/dashboard-pager";
 import {
   clampPageIndex,
@@ -3322,7 +3323,7 @@ export default function DashboardEditPage() {
                         {editForm.background_image && (
                           <div
                             className="h-24 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                            style={{ backgroundImage: `url(${editForm.background_image})` }}
+                            style={{ backgroundImage: cssUrl(editForm.background_image) }}
                           />
                         )}
                         <div className="flex gap-2">
@@ -3627,7 +3628,7 @@ export default function DashboardEditPage() {
                       {editForm.background_image && (
                         <div
                           className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                          style={{ backgroundImage: `url(${editForm.background_image})` }}
+                          style={{ backgroundImage: cssUrl(editForm.background_image) }}
                         />
                       )}
                       <div className="flex gap-2 mb-2">
@@ -3686,7 +3687,7 @@ export default function DashboardEditPage() {
                       {editForm.background_image_dark && (
                         <div
                           className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                          style={{ backgroundImage: `url(${editForm.background_image_dark})` }}
+                          style={{ backgroundImage: cssUrl(editForm.background_image_dark) }}
                         />
                       )}
                       <div className="flex gap-2 mb-2">
@@ -3821,7 +3822,7 @@ export default function DashboardEditPage() {
                             {cond.image && (
                               <div
                                 className="h-8 w-8 shrink-0 rounded bg-cover bg-center border border-gray-200 dark:border-white/10"
-                                style={{ backgroundImage: `url(${cond.image})` }}
+                                style={{ backgroundImage: cssUrl(cond.image) }}
                                 aria-hidden
                               />
                             )}
@@ -3874,7 +3875,7 @@ export default function DashboardEditPage() {
                             {cond.image_dark && (
                               <div
                                 className="h-8 w-8 shrink-0 rounded bg-cover bg-center border border-gray-200 dark:border-white/10"
-                                style={{ backgroundImage: `url(${cond.image_dark})` }}
+                                style={{ backgroundImage: cssUrl(cond.image_dark) }}
                                 aria-hidden
                               />
                             )}
@@ -4411,7 +4412,7 @@ aria-label={t("editPanel.removeCondition")}
                       {editForm.background_image ? (
                         <div
                           className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                          style={{ backgroundImage: `url(${editForm.background_image})` }}
+                          style={{ backgroundImage: cssUrl(editForm.background_image) }}
                         />
                       ) : null}
                       <div className="mb-2 flex gap-2">

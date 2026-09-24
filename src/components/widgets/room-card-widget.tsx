@@ -1,5 +1,6 @@
 "use client";
 
+import { cssUrl } from "@/lib/base-path";
 import { useState, useCallback } from "react";
 import { Lightbulb, Disc3, MoreVertical, Thermometer } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -127,7 +128,7 @@ export function RoomCardWidget({
         <>
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url(${background_image})` }}
+            style={{ backgroundImage: cssUrl(background_image) }}
             aria-hidden
           />
           <div className="absolute inset-0 bg-black/35 dark:bg-black/50" aria-hidden />

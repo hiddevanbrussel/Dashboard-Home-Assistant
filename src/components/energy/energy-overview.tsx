@@ -28,6 +28,7 @@ import {
   type HouseCalloutId,
   type HourlyPoint,
 } from "@/lib/energy-dashboard";
+import { withBasePath } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -175,7 +176,7 @@ function HouseScene({
   }>;
 }) {
   const custom = Boolean(image?.trim());
-  const src = image?.trim() || ENERGY_OVERVIEW_HOUSE_IMAGE;
+  const src = withBasePath(image?.trim() || ENERGY_OVERVIEW_HOUSE_IMAGE);
   return (
     <div className="relative px-1 sm:px-8">
       {/* eslint-disable-next-line @next/next/no-img-element */}

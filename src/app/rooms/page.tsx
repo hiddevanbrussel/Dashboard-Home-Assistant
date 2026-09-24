@@ -1,5 +1,6 @@
 "use client";
 
+import { cssUrl } from "@/lib/base-path";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { DoorOpen, Image as ImageIcon, Plus, X } from "lucide-react";
@@ -648,7 +649,7 @@ export default function RoomsPage() {
                     <>
                       <div
                         className="h-16 w-24 shrink-0 rounded-2xl bg-cover bg-center"
-                        style={{ backgroundImage: `url(${newBackgroundPreview})` }}
+                        style={{ backgroundImage: cssUrl(newBackgroundPreview) }}
                       />
                       <button
                         type="button"
@@ -867,7 +868,7 @@ export default function RoomsPage() {
                     <>
                       <div
                         className="h-16 w-24 shrink-0 rounded-2xl bg-cover bg-center"
-                        style={{ backgroundImage: `url(${editBackgroundPreview})` }}
+                        style={{ backgroundImage: cssUrl(editBackgroundPreview) }}
                       />
                       <button
                         type="button"
