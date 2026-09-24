@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useThemeStore } from "@/stores/theme-store";
 import { hidesDashboardWallpaper } from "@/lib/page-background-path";
+import { cssUrl } from "@/lib/base-path";
 
 type BackgroundData = {
   background: string | null;
@@ -100,7 +101,7 @@ export function PageBackgroundProvider({
       {url ? (
         <div
           className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${url})` }}
+          style={{ backgroundImage: cssUrl(url) }}
           aria-hidden
         />
       ) : null}
