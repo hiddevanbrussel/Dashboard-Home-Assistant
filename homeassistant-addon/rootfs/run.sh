@@ -59,7 +59,7 @@ rm -f /etc/nginx/http.d/default.conf
 APP_PID=$!
 
 i=0
-until wget -q -O /dev/null "http://127.0.0.1:3001/__ha_ingress__/" 2>/dev/null; do
+until wget -q -O /dev/null "http://127.0.0.1:3001/__ha_ingress__" 2>/dev/null; do
   i=$((i + 1))
   if [ "$i" -gt 90 ]; then
     echo "[addon] Next.js did not become ready in time" >&2

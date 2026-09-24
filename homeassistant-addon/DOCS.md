@@ -37,7 +37,7 @@ You can also use your usual LAN URL (e.g. `http://192.168.x.x:8123`) if that is 
 ## Ingress vs direct port
 
 - **Ingress (recommended)** — use **Open Web UI** or the sidebar entry. Traffic stays inside Home Assistant; no extra port on your LAN.
-- **Port 3000** — enable under the app’s network settings if you want a direct URL. Open `http://HOME_ASSISTANT_IP:3000/` (redirects to the app path).
+- **Port 3000** — enable under the app’s network settings if you want a direct URL. Open `http://HOME_ASSISTANT_IP:3000/` (redirects to `/__ha_ingress__`).
 
 ## Data
 
