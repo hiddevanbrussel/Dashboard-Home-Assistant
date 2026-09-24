@@ -7,7 +7,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Keep lowercase for GHCR + Home Assistant arch image paths
+  IMAGE_NAME: hiddevanbrussel/dashboard-home-assistant
+  ADDON_IMAGE_NAME: hiddevanbrussel/dashboard-home-assistant-addon
 
 jobs:
   build:
@@ -15,6 +17,17 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: app
+            dockerfile: Dockerfile
+            # Regular Docker / Unraid image (no basePath)
+            base_path: ""
+          - target: addon
+            dockerfile: Dockerfile.addon
+            base_path: "/__ha_ingress__"
 
     steps:
       - name: Checkout
@@ -29,6 +42,9 @@ jobs:
             echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -39,8 +55,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
+      - name: Docker meta (app)
+        if: matrix.target == 'app'
+        id: meta_app
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -50,14 +67,54 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=${{ steps.version.outputs.version }}
 
-      - name: Build and push
+      - name: Build and push (app)
+        if: matrix.target == 'app'
         uses: docker/build-push-action@v7
         with:
           context: .
+          file: Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: VERSION=${{ steps.version.outputs.version }}
-          # GitHub Actions cache: snellere rebuilds
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta_app.outputs.tags }}
+          labels: ${{ steps.meta_app.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
+
+      # Home Assistant expects: ghcr.io/.../addon/<arch>:<version from config.yaml>
+      - name: Build and push (addon amd64)
+        if: matrix.target == 'addon'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.addon
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/amd64:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/amd64:latest
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            BUILD_ARCH=amd64
+            NEXT_BASE_PATH=/__ha_ingress__
+          cache-from: type=gha,scope=addon-amd64
+          cache-to: type=gha,mode=max,scope=addon-amd64
+
+      - name: Build and push (addon aarch64)
+        if: matrix.target == 'addon'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.addon
+          push: true
+          platforms: linux/arm64
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/aarch64:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/aarch64:latest
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            BUILD_ARCH=aarch64
+            NEXT_BASE_PATH=/__ha_ingress__
+          cache-from: type=gha,scope=addon-arm64
+          cache-to: type=gha,mode=max,scope=addon-arm64
