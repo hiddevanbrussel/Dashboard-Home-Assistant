@@ -96,7 +96,7 @@ Install from Supervisor for Ingress (Open Web UI / sidebar), no separate Docker 
 2. Add `https://github.com/hiddevanbrussel/Dashboard-Home-Assistant`
 3. Install **Dashboard Builder**, start it, then open **Open Web UI**
 
-During onboarding use Home Assistant URL `http://homeassistant:8123` and a long-lived access token. Full steps: [`homeassistant-addon/DOCS.md`](homeassistant-addon/DOCS.md).
+During onboarding the app **links automatically** via the Supervisor (no long-lived token). Full steps: [`homeassistant-addon/DOCS.md`](homeassistant-addon/DOCS.md).
 
 ---
 

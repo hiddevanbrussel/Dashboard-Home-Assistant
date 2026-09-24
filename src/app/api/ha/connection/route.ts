@@ -2,22 +2,51 @@ import { NextResponse } from "next/server";
 import { validateConnectionInput } from "@/lib/validation";
 import { encrypt } from "@/lib/encrypt";
 import { prisma } from "@/lib/prisma";
+import { getHaConnection, getHaConnectionStatus } from "@/lib/db";
+import { getAddonHaConfig, isSupervisorBaseUrl } from "@/lib/ha/addon";
+import { testConnection } from "@/lib/ha/rest";
 
 /**
  * GET /api/ha/connection – Current connection (baseUrl only, never token).
+ * When running as a HA app, Supervisor credentials are used automatically.
+ * Pass ?test=1 to verify the Supervisor/API link.
  */
-export async function GET() {
-  const conn = await prisma.connection.findFirst({
-    orderBy: { createdAt: "desc" },
-    select: { baseUrl: true },
+export async function GET(request: Request) {
+  const status = await getHaConnectionStatus();
+  // Touch getHaConnection so addon seed runs
+  await getHaConnection();
+
+  const wantTest = new URL(request.url).searchParams.get("test") === "1";
+  if (wantTest && status.addon) {
+    const addon = getAddonHaConfig();
+    if (!addon) {
+      return NextResponse.json({
+        ...status,
+        ok: false,
+        error: "Supervisor token missing. Enable Home Assistant API access for this app.",
+      });
+    }
+    const test = await testConnection(addon);
+    return NextResponse.json({
+      baseUrl: addon.baseUrl,
+      source: "supervisor" as const,
+      addon: true,
+      ok: test.ok === true,
+      error: test.ok ? undefined : test.error,
+    });
+  }
+
+  return NextResponse.json({
+    baseUrl: status.baseUrl,
+    source: status.source,
+    addon: status.addon,
   });
-  if (!conn) return NextResponse.json({ baseUrl: null });
-  return NextResponse.json({ baseUrl: conn.baseUrl });
 }
 
 /**
  * POST /api/ha/connection – Save HA connection (single connection; existing is replaced).
  * Body: { baseUrl: string, token: string }. Never return token.
+ * Body: { useSupervisor: true } — re-link via Supervisor when running as an app.
  */
 export async function POST(request: Request) {
   let body: unknown;
@@ -26,6 +55,26 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
+
+  if (
+    body &&
+    typeof body === "object" &&
+    (body as { useSupervisor?: boolean }).useSupervisor === true
+  ) {
+    const addon = getAddonHaConfig();
+    if (!addon) {
+      return NextResponse.json(
+        { error: "Not running as a Home Assistant app, or Supervisor token is missing." },
+        { status: 400 }
+      );
+    }
+    const test = await testConnection(addon);
+    if (!test.ok) {
+      return NextResponse.json({ error: test.error }, { status: 400 });
+    }
+    body = { baseUrl: addon.baseUrl, token: addon.token };
+  }
+
   const validated = validateConnectionInput(body);
   if (!validated.success) {
     return NextResponse.json({ error: validated.error }, { status: 400 });
@@ -52,7 +101,11 @@ export async function POST(request: Request) {
         encryptedToken,
       },
     });
-    return NextResponse.json({ connectionId: conn.id });
+    return NextResponse.json({
+      connectionId: conn.id,
+      baseUrl: validated.data.baseUrl,
+      source: isSupervisorBaseUrl(validated.data.baseUrl) ? "supervisor" : "manual",
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to save connection";
     console.error("[api/ha/connection] POST error:", err);
