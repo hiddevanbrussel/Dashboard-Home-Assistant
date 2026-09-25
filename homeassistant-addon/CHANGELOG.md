@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.9
+
+- Fix Ingress 404: remove Next `trailingSlash` (it 308-looped `/__ha_ingress__/` ↔ `/__ha_ingress__` under the proxy)
+- Proxy root maps to `/__ha_ingress__` (no slash); body rewrite still emits `X-Ingress-Path/` for HA's route matcher
+- Strip upstream `http://127.0.0.1:3001` from `Location` headers so redirects stay inside Ingress
+
 ## 0.4.8
 
 - Fix HA Ingress 404 on bare `/api/hassio_ingress/<token>` (no trailing slash)

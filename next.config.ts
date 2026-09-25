@@ -6,23 +6,17 @@ import type { NextConfig } from "next";
  * dynamic `X-Ingress-Path` (e.g. `/api/hassio_ingress/<token>`) at runtime.
  * Leave unset for normal Docker / Unraid installs.
  *
- * trailingSlash: HA's ingress route is `/api/hassio_ingress/{token}/{path:.*}`
- * and does not match a bare `/api/hassio_ingress/{token}` (404). Root links
- * must therefore end with `/` after rewrite.
- * skipTrailingSlashRedirect: keep API fetches without a forced 308.
+ * Do NOT enable trailingSlash here: with App Router it 308s
+ * `/__ha_ingress__/` → `/__ha_ingress__`, and an ingress proxy that targets
+ * the slashed form loops / surfaces as a 404 in the HA iframe. The proxy
+ * still rewrites bare `/__ha_ingress__` links to `X-Ingress-Path/` so HA's
+ * `/api/hassio_ingress/{token}/{path:.*}` route matches.
  */
 const basePath = process.env.NEXT_BASE_PATH || "";
-const isHaIngress = Boolean(basePath);
 
 const nextConfig: NextConfig = {
   output: "standalone",
   basePath: basePath || undefined,
-  ...(isHaIngress
-    ? {
-        trailingSlash: true,
-        skipTrailingSlashRedirect: true,
-      }
-    : {}),
   serverExternalPackages: ["onnxruntime-web", "openwakeword-web"],
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
