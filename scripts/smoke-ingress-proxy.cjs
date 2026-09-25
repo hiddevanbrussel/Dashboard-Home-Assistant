@@ -44,6 +44,16 @@ assert(!rewritten.includes(`"${INGRESS}"`), "no bare token without slash");
 assert(rewritten.includes("\\u002Fapi\\u002Fhassio_ingress\\u002Ftesthash\\u002Ffoo"), "unicode path");
 assert(rewritten.includes("bare=\\u002Fapi\\u002Fhassio_ingress\\u002Ftesthash\\u002F"), "unicode bare root");
 
+// Unprefixed metadata / assets must not escape to HA Core /api
+const stray = rewriteText(
+  `href="/manifest.json" src="/api/pwa-icon?size=192" href="/_next/static/x.js"`,
+  INGRESS
+);
+assert(stray.includes(`href="${INGRESS}/manifest.json"`), "manifest prefixed");
+assert(stray.includes(`src="${INGRESS}/api/pwa-icon?size=192"`), "pwa icon prefixed");
+assert(stray.includes(`href="${INGRESS}/_next/static/x.js"`), "next static prefixed");
+assert(!stray.includes(`href="/manifest.json"`), "no stray manifest");
+
 const rscBody =
   '0:["$","div",null,{"children":"ok"}]\n' +
   `1:I{"id":"${PLACEHOLDER}/_next/static/chunks/1255.js","chunks":[]}\n` +

@@ -5,15 +5,8 @@
  * Buffers each upstream response and rewrites the build-time basePath
  * placeholder `/__ha_ingress__` to the request's `X-Ingress-Path`.
  *
- * nginx `sub_filter` breaks Next.js App Router RSC streaming
- * (browser: createFromReadableStream → "Connection closed").
- *
- * HA core only matches `/api/hassio_ingress/{token}/{path:.*}` — a bare
- * `/api/hassio_ingress/{token}` (no trailing slash) returns 404. Rewrites
- * therefore always produce a trailing slash on the ingress root.
- *
- * Upstream root must be `/__ha_ingress__` (no trailing slash): Next App Router
- * 308s the slashed form back to the unsashed one, which loops under Ingress.
+ * Also prefixes stray absolute `/api/...`, `/_next/...`, and `/manifest.json`
+ * paths so they do not escape the iframe and hit Home Assistant Core (404).
  */
 "use strict";
 
@@ -33,7 +26,10 @@ function clientIp(req) {
 function isAllowed(ip) {
   if (process.env.INGRESS_ALLOW_ALL === "1") return true;
   if (ip === "127.0.0.1" || ip === "::1") return true;
-  if (ip.startsWith("172.30.32.") || ip.startsWith("172.30.33.")) return true;
+  // Supervisor ingress + common Docker / HA OS nets
+  if (ip.startsWith("172.")) return true;
+  if (ip.startsWith("10.")) return true;
+  if (ip.startsWith("192.168.")) return true;
   return false;
 }
 
@@ -50,25 +46,36 @@ function shouldRewrite(contentType) {
 }
 
 /**
- * Rewrite placeholder → ingress path. Prefer `placeholder/` replacements
- * first so we never turn `/__ha_ingress__/x` into `/ingress//x`. Bare
- * placeholder (root) becomes `ingressPath/` so HA's route matches.
+ * Rewrite placeholder → ingress path, then catch absolute app paths that would
+ * otherwise resolve against HA Core (`/api/pwa-icon`, `/manifest.json`, …).
  */
 function rewriteText(text, ingressPath) {
-  if (!ingressPath || !text.includes("__ha_ingress__")) return text;
+  if (!ingressPath) return text;
   const root = ingressPath.endsWith("/") ? ingressPath : ingressPath + "/";
-  let out = text.split(PLACEHOLDER + "/").join(root);
-  out = out.split(PLACEHOLDER).join(root);
+  const prefix = ingressPath.replace(/\/+$/, "");
+  let out = text;
 
-  const phUni = "\\u002F__ha_ingress__";
-  const rootUni = root.replace(/\//g, "\\u002F");
-  out = out.split(phUni + "\\u002F").join(rootUni);
-  out = out.split(phUni).join(rootUni);
+  if (out.includes("__ha_ingress__")) {
+    out = out.split(PLACEHOLDER + "/").join(root);
+    out = out.split(PLACEHOLDER).join(root);
 
-  const phPct = "%2F__ha_ingress__";
-  const rootPct = root.replace(/\//g, "%2F");
-  out = out.split(phPct + "%2F").join(rootPct);
-  out = out.split(phPct).join(rootPct);
+    const phUni = "\\u002F__ha_ingress__";
+    const rootUni = root.replace(/\//g, "\\u002F");
+    out = out.split(phUni + "\\u002F").join(rootUni);
+    out = out.split(phUni).join(rootUni);
+
+    const phPct = "%2F__ha_ingress__";
+    const rootPct = root.replace(/\//g, "%2F");
+    out = out.split(phPct + "%2F").join(rootPct);
+    out = out.split(phPct).join(rootPct);
+  }
+
+  // href="/api/..." or src="/_next/..." or "/manifest.json" not already under ingress
+  out = out.replace(
+    /\b(href|src|content)=["'](\/(?!api\/hassio_ingress\/)(?:api\/|_next\/|manifest\.json)[^"']*)["']/gi,
+    (_, attr, path) => `${attr}="${prefix}${path}"`
+  );
+
   return out;
 }
 
@@ -82,7 +89,6 @@ function upstreamPath(url) {
   const path = q === -1 ? u : u.slice(0, q);
   const query = q === -1 ? "" : u.slice(q);
   if (path === "/" || path === "") return PLACEHOLDER + query;
-  // Collapse accidental double prefix if HA ever forwarded it
   if (path === PLACEHOLDER || path.startsWith(PLACEHOLDER + "/")) {
     return path + query;
   }
@@ -122,11 +128,8 @@ function stripHopByHop(headers) {
 
 function forwardRequestHeaders(req) {
   const headers = stripHopByHop(req.headers);
-  // Keep HA's forwarded host when present so absolute URLs stay on the
-  // public origin; fall back to upstream only if missing.
-  if (!headers["x-forwarded-host"] && !headers["x-forwarded-proto"]) {
-    headers.host = `${UPSTREAM_HOST}:${UPSTREAM_PORT}`;
-  }
+  // Always target Next by upstream host — public Host confuses some builds.
+  headers.host = `${UPSTREAM_HOST}:${UPSTREAM_PORT}`;
   headers["accept-encoding"] = "identity";
   return headers;
 }
@@ -141,14 +144,20 @@ function logAccess(ip, method, url, status, bytes, ingressPath, ms) {
 const server = http.createServer((req, res) => {
   const started = Date.now();
   const ip = clientIp(req);
+  const ingressPath = (req.headers["x-ingress-path"] || "").replace(/\/+$/, "") || "";
+
+  // Always log — if Open Web UI 404s with zero lines, HA never reached us.
+  console.log(
+    `[ingress-proxy] ← ${ip} ${req.method} ${req.url} x-ingress-path=${ingressPath || "-"}`
+  );
+
   if (!isAllowed(ip)) {
-    console.warn(`[ingress-proxy] 403 from ${ip} ${req.method} ${req.url}`);
+    console.warn(`[ingress-proxy] 403 from ${ip}`);
     res.writeHead(403, { "Content-Type": "text/plain" });
     res.end("Forbidden");
     return;
   }
 
-  const ingressPath = (req.headers["x-ingress-path"] || "").replace(/\/+$/, "") || "";
   const targetPath = upstreamPath(req.url);
 
   const proxyReq = http.request(

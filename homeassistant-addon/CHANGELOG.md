@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.10
+
+- Fix Ingress `/api/*` colliding with Home Assistant Core: unprefixed `/api/...` and `/manifest.json` were resolved on the HA host (404)
+- BasePathScript detects `/api/hassio_ingress/<token>` from `location.pathname` so fetch/XHR stay inside the iframe
+- Metadata (manifest, PWA icons) uses `withBasePath`
+- Proxy also rewrites stray absolute `/api`, `/_next`, `/manifest.json` hrefs/srcs; broader Docker IP allowlist; request arrival logs
+
 ## 0.4.9
 
 - Fix Ingress 404: remove Next `trailingSlash` (it 308-looped `/__ha_ingress__/` ↔ `/__ha_ingress__` under the proxy)

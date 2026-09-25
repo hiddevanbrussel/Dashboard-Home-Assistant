@@ -7,6 +7,7 @@ import { PageBackgroundProvider } from "@/components/page-background";
 import { MusicPlayerProvider } from "@/components/music-player-provider";
 import { GlobalMusicBar } from "@/components/global-music-bar";
 import { BasePathScript } from "@/components/base-path-script";
+import { withBasePath } from "@/lib/base-path";
 
 const inter = Inter({ subsets: ["latin"] });
 const montserrat = Montserrat({
@@ -19,20 +20,21 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "Home Assistant Dashboard",
   description: "Dashboard met live Home Assistant data.",
-  manifest: "/manifest.json",
+  // Prefix with basePath so Ingress does not resolve these against HA Core /api.
+  manifest: withBasePath("/manifest.json"),
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "HA Dashboard",
-    startupImage: "/api/pwa-icon?size=512",
+    startupImage: withBasePath("/api/pwa-icon?size=512"),
   },
   icons: {
     icon: [
-      { url: "/api/pwa-icon?size=192", sizes: "192x192", type: "image/png" },
-      { url: "/api/pwa-icon?size=512", sizes: "512x512", type: "image/png" },
+      { url: withBasePath("/api/pwa-icon?size=192"), sizes: "192x192", type: "image/png" },
+      { url: withBasePath("/api/pwa-icon?size=512"), sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/api/pwa-icon?size=180", sizes: "180x180", type: "image/png" },
+      { url: withBasePath("/api/pwa-icon?size=180"), sizes: "180x180", type: "image/png" },
     ],
   },
 };
