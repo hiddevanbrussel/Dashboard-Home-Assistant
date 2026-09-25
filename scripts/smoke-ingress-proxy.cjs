@@ -20,9 +20,10 @@ function assert(cond, msg) {
 }
 
 // Unit checks
-assert(upstreamPath("/") === PLACEHOLDER + "/", "root path");
-assert(upstreamPath("/?_rsc=1") === PLACEHOLDER + "/?_rsc=1", "rsc query");
+assert(upstreamPath("/") === PLACEHOLDER, "root path (no trailing slash)");
+assert(upstreamPath("/?_rsc=1") === PLACEHOLDER + "?_rsc=1", "rsc query");
 assert(upstreamPath("/music") === PLACEHOLDER + "/music", "page path");
+assert(upstreamPath("/music?x=1") === PLACEHOLDER + "/music?x=1", "page + query");
 assert(shouldRewrite("text/x-component"), "rsc content-type");
 assert(shouldRewrite("text/html; charset=utf-8"), "html");
 assert(!shouldRewrite("image/png"), "png skip");

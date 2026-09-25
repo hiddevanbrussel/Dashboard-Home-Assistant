@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.7
+
+- Fix Ingress root proxy path: map `/` → `/__ha_ingress__` (no trailing slash) to avoid Next.js 308 leaking out of the iframe
+- Log each ingress request (status, bytes, `X-Ingress-Path`) for easier debugging
+
 ## 0.4.6
 
 - Fix RSC `Connection closed` under Ingress: replace nginx `sub_filter` with a Node proxy that buffers and rewrites `/__ha_ingress__`
