@@ -2,6 +2,8 @@
 /**
  * Smoke test: Node ingress proxy buffers + rewrites without truncating RSC-like
  * payloads (regression for createFromReadableStream "Connection closed").
+ * Also guards HA bare-token 404: rewrite must never emit `/api/hassio_ingress/<token>`
+ * without a trailing slash.
  */
 "use strict";
 
@@ -20,26 +22,33 @@ function assert(cond, msg) {
 }
 
 // Unit checks
-assert(upstreamPath("/") === PLACEHOLDER, "root path (no trailing slash)");
-assert(upstreamPath("/?_rsc=1") === PLACEHOLDER + "?_rsc=1", "rsc query");
+assert(upstreamPath("/") === PLACEHOLDER + "/", "root path (trailing slash)");
+assert(upstreamPath("/?_rsc=1") === PLACEHOLDER + "/?_rsc=1", "rsc query");
 assert(upstreamPath("/music") === PLACEHOLDER + "/music", "page path");
 assert(upstreamPath("/music?x=1") === PLACEHOLDER + "/music?x=1", "page + query");
 assert(shouldRewrite("text/x-component"), "rsc content-type");
 assert(shouldRewrite("text/html; charset=utf-8"), "html");
 assert(!shouldRewrite("image/png"), "png skip");
 
-const sample = `href="${PLACEHOLDER}/_next/static/x.js"\n` +
+const sample =
+  `href="${PLACEHOLDER}/_next/static/x.js"\n` +
   `self.__next_f.push([1,"${PLACEHOLDER}/music"])\n` +
-  `\\u002F__ha_ingress__\\u002Ffoo`;
+  `home="${PLACEHOLDER}"\n` +
+  `\\u002F__ha_ingress__\\u002Ffoo\n` +
+  `bare=\\u002F__ha_ingress__`;
 const rewritten = rewriteText(sample, INGRESS);
 assert(!rewritten.includes("__ha_ingress__"), "placeholder gone");
 assert(rewritten.includes(`${INGRESS}/_next/static/x.js`), "href rewritten");
-assert(rewritten.includes("\\u002Fapi\\u002Fhassio_ingress\\u002Ftesthash\\u002Ffoo"), "unicode escape");
+assert(rewritten.includes(`home="${INGRESS}/"`), "bare root gets trailing slash");
+assert(!rewritten.includes(`"${INGRESS}"`), "no bare token without slash");
+assert(rewritten.includes("\\u002Fapi\\u002Fhassio_ingress\\u002Ftesthash\\u002Ffoo"), "unicode path");
+assert(rewritten.includes("bare=\\u002Fapi\\u002Fhassio_ingress\\u002Ftesthash\\u002F"), "unicode bare root");
 
 const rscBody =
   '0:["$","div",null,{"children":"ok"}]\n' +
   `1:I{"id":"${PLACEHOLDER}/_next/static/chunks/1255.js","chunks":[]}\n` +
-  "2:T" + "x".repeat(50000); // large flight chunk
+  "2:T" +
+  "x".repeat(50000); // large flight chunk
 
 let upstreamHits = 0;
 const upstream = http.createServer((req, res) => {
@@ -51,7 +60,6 @@ const upstream = http.createServer((req, res) => {
     "Transfer-Encoding": "chunked",
   });
   const mid = Math.floor(rscBody.length / 2);
-  // Split in the middle of the placeholder so byte-level filters break
   const full = rscBody;
   res.write(full.slice(0, mid));
   setTimeout(() => {
@@ -65,7 +73,6 @@ process.env.INGRESS_PORT = String(PROXY_PORT);
 process.env.INGRESS_ALLOW_ALL = "1";
 
 upstream.listen(UPSTREAM_PORT, "127.0.0.1", () => {
-  // Re-require after env set — module already evaluated listen only on main
   const { spawn } = require("child_process");
   const child = spawn(
     process.execPath,

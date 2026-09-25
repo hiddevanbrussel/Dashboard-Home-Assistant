@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.8
+
+- Fix HA Ingress 404 on bare `/api/hassio_ingress/<token>` (no trailing slash)
+- Enable `trailingSlash` for the addon Next.js build so root links end with `/`
+- Proxy rewrite always maps `/__ha_ingress__` → `<X-Ingress-Path>/`
+
 ## 0.4.7
 
 - Fix Ingress root proxy path: map `/` → `/__ha_ingress__` (no trailing slash) to avoid Next.js 308 leaking out of the iframe
