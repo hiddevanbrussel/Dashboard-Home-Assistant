@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: "Home Assistant Dashboard",
   description: "Dashboard met live Home Assistant data.",
   // Prefix with basePath so Ingress does not resolve these against HA Core /api.
-  manifest: withBasePath("/manifest.json"),
+  manifest: withBasePath("/manifest.webmanifest"),
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

@@ -12,6 +12,15 @@
 
 const http = require("http");
 
+// Line-buffer logs in Docker (non-TTY); otherwise Open Web UI traffic looks silent.
+if (process.stdout._handle && typeof process.stdout._handle.setBlocking === "function") {
+  try {
+    process.stdout._handle.setBlocking(true);
+  } catch (_) {
+    /* ignore */
+  }
+}
+
 const PLACEHOLDER = "/__ha_ingress__";
 const UPSTREAM_HOST = "127.0.0.1";
 const UPSTREAM_PORT = Number(process.env.INGRESS_UPSTREAM_PORT || 3001);
@@ -48,32 +57,54 @@ function shouldRewrite(contentType) {
 /**
  * Rewrite placeholder → ingress path, then catch absolute app paths that would
  * otherwise resolve against HA Core (`/api/pwa-icon`, `/manifest.json`, …).
+ *
+ * Critical: Next.js `basePath` must NOT gain a trailing slash. Rewriting
+ * `/__ha_ingress__` → `/api/hassio_ingress/TOK/` breaks the client router (404).
+ * Only exact root href/src get a trailing slash (HA route requires it).
  */
 function rewriteText(text, ingressPath) {
   if (!ingressPath) return text;
-  const root = ingressPath.endsWith("/") ? ingressPath : ingressPath + "/";
   const prefix = ingressPath.replace(/\/+$/, "");
+  const withSlash = prefix + "/";
   let out = text;
 
   if (out.includes("__ha_ingress__")) {
-    out = out.split(PLACEHOLDER + "/").join(root);
-    out = out.split(PLACEHOLDER).join(root);
+    // 1) Paths under the placeholder
+    out = out.split(PLACEHOLDER + "/").join(withSlash);
+
+    // 2) Exact root document links — HA matches only /{token}/… (needs slash)
+    out = out.replace(
+      /\b(href|src)=["']\/__ha_ingress__["']/gi,
+      (_, attr) => `${attr}="${withSlash}"`
+    );
+
+    // 3) Bare placeholder left = Next basePath / router prefix (no trailing slash)
+    out = out.split(PLACEHOLDER).join(prefix);
 
     const phUni = "\\u002F__ha_ingress__";
-    const rootUni = root.replace(/\//g, "\\u002F");
-    out = out.split(phUni + "\\u002F").join(rootUni);
-    out = out.split(phUni).join(rootUni);
+    const prefixUni = prefix.replace(/\//g, "\\u002F");
+    const withSlashUni = prefixUni + "\\u002F";
+    out = out.split(phUni + "\\u002F").join(withSlashUni);
+    out = out.split(phUni).join(prefixUni);
 
     const phPct = "%2F__ha_ingress__";
-    const rootPct = root.replace(/\//g, "%2F");
-    out = out.split(phPct + "%2F").join(rootPct);
-    out = out.split(phPct).join(rootPct);
+    const prefixPct = prefix.replace(/\//g, "%2F");
+    const withSlashPct = prefixPct + "%2F";
+    out = out.split(phPct + "%2F").join(withSlashPct);
+    out = out.split(phPct).join(prefixPct);
   }
 
-  // href="/api/..." or src="/_next/..." or "/manifest.json" not already under ingress
+  // Absolute app paths that would otherwise resolve on HA Core (404).
+  // Covers href/src/content/poster attributes and CSS url(...).
+  const appPath =
+    "\\/(?!api\\/hassio_ingress\\/)(?:api\\/|_next\\/|uploads\\/|wake-word\\/|manifest\\.webmanifest|manifest\\.json|[a-zA-Z0-9._-]+\\.(?:png|jpe?g|webp|gif|svg|onnx))[^\"')\\s]*";
   out = out.replace(
-    /\b(href|src|content)=["'](\/(?!api\/hassio_ingress\/)(?:api\/|_next\/|manifest\.json)[^"']*)["']/gi,
+    new RegExp(`\\b(href|src|content|poster)=["'](${appPath})["']`, "gi"),
     (_, attr, path) => `${attr}="${prefix}${path}"`
+  );
+  out = out.replace(
+    new RegExp(`url\\(\\s*(['"]?)(${appPath})\\1\\s*\\)`, "gi"),
+    (_, quote, path) => `url(${quote}${prefix}${path}${quote})`
   );
 
   return out;
@@ -193,7 +224,16 @@ const server = http.createServer((req, res) => {
           const cookies = Array.isArray(outHeaders["set-cookie"])
             ? outHeaders["set-cookie"]
             : [outHeaders["set-cookie"]];
-          outHeaders["set-cookie"] = cookies.map((c) => rewriteText(String(c), ingressPath));
+          // Scope cookies to the ingress path (Path=/ would stick on HA Core).
+          outHeaders["set-cookie"] = cookies.map((c) => {
+            let s = rewriteText(String(c), ingressPath);
+            if (/;\s*Path=/i.test(s)) {
+              s = s.replace(/;\s*Path=\/?/i, `; Path=${ingressPath}/`);
+            } else {
+              s = `${s}; Path=${ingressPath}/`;
+            }
+            return s;
+          });
         }
         outHeaders["content-length"] = String(Buffer.byteLength(body));
 

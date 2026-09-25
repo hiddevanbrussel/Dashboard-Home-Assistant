@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { EnergyMonitorCardWidget } from "./energy-monitor-card-widget";
 import type { ImageCondition } from "./widget-types";
@@ -112,7 +113,7 @@ export function FloatingEnergyMonitorCard({
         setDimensions({ width, height });
       }
     };
-    img.src = background_image;
+    img.src = withBasePath(background_image);
   }, [background_image]);
 
   const clearLongPress = useCallback(() => {

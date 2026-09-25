@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   DEFAULT_WAKE_WORD_ID,
   WAKE_WORD_FRAME_SAMPLES,
@@ -9,6 +9,12 @@ import {
 } from "./wake-word";
 
 describe("wake word helpers", () => {
+  const prevBase = process.env.NEXT_PUBLIC_BASE_PATH;
+  afterEach(() => {
+    if (prevBase === undefined) delete process.env.NEXT_PUBLIC_BASE_PATH;
+    else process.env.NEXT_PUBLIC_BASE_PATH = prevBase;
+  });
+
   it("falls back to Okay Nabu for unknown ids", () => {
     expect(resolveWakeWordId(undefined)).toBe(DEFAULT_WAKE_WORD_ID);
     expect(resolveWakeWordId("nope")).toBe("ok_nabu");
@@ -16,8 +22,17 @@ describe("wake word helpers", () => {
   });
 
   it("uses a custom URL for Okay Nabu and pretrained names otherwise", () => {
+    delete process.env.NEXT_PUBLIC_BASE_PATH;
     expect(wakeWordModelRef("ok_nabu")).toEqual({ name: "ok_nabu", url: "/wake-word/ok_nabu.onnx" });
     expect(wakeWordModelRef("alexa")).toBe("alexa");
+  });
+
+  it("prefixes wake-word model URLs with basePath under Ingress", () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = "/__ha_ingress__";
+    expect(wakeWordModelRef("ok_nabu")).toEqual({
+      name: "ok_nabu",
+      url: "/__ha_ingress__/wake-word/ok_nabu.onnx",
+    });
   });
 
   it("only arms the listener when the satellite is idle", () => {

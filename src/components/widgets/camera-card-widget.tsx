@@ -5,6 +5,7 @@ import Image from "next/image";
 import { RefreshCw, MoreVertical, Video } from "lucide-react";
 import type { CameraCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -24,7 +25,9 @@ export function CameraCardWidget({
   const [imageError, setImageError] = useState(false);
 
   const imageSrc = entity_id
-    ? `/api/ha/camera-image?entity_id=${encodeURIComponent(entity_id)}&t=${refreshKey}`
+    ? withBasePath(
+        `/api/ha/camera-image?entity_id=${encodeURIComponent(entity_id)}&t=${refreshKey}`
+      )
     : null;
 
   useEffect(() => {

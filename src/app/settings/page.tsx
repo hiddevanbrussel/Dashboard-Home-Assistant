@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import {
   SettingsAlert,
@@ -1191,13 +1192,13 @@ export default function SettingsPage() {
                       <span className="text-sm text-gray-500 dark:text-gray-400">{t("settings.tasks.eveningHourSuffix")}</span>
                     </div>
                   </SettingsField>
-                  <a
+                  <Link
                     href="/family"
                     className="inline-flex items-center gap-2 self-start rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90"
                   >
                     <ListTodo className="h-4 w-4" />
                     {t("settings.tasks.manage")}
-                  </a>
+                  </Link>
                 </SettingsGroup>
               ) : null}
             </>
@@ -1314,13 +1315,13 @@ export default function SettingsPage() {
                       />
                     </SettingsField>
                   </SettingsGroup>
-                  <a
+                  <Link
                     href="/energy"
                     className="inline-flex items-center gap-2 self-start rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90"
                   >
                     <Zap className="h-4 w-4" />
                     {t("nav.energy")}
-                  </a>
+                  </Link>
                 </>
               ) : null}
             </>
