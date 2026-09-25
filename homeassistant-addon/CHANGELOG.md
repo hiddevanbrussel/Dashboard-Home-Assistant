@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.5
+
+- Fix Ingress 502 Bad Gateway: stop sending `Connection: close` to Next.js with upstream keepalive
+- Larger proxy buffers for basePath body rewrite on JS/HTML
+- Allow Supervisor docker nets `172.30.32.0/23`
+- Also includes 0.4.4 blank-page fix (safe fetch/XHR-only basePath patch)
+
+## 0.4.4
+
+- Fix blank page on addon start: remove aggressive DOM prototype / MutationObserver patches that broke React hydration
+- Keep fetch/XHR basePath patch only; media still uses `withBasePath` / `cssUrl` at render time
+
 ## 0.4.3
 
 - Fix images under Ingress (energy house, Immich/Pexels screensaver, uploads, card art)

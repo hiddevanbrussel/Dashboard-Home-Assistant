@@ -1,5 +1,5 @@
 name: Dashboard Builder
-version: "0.4.3"
+version: "0.4.5"
 slug: dashboard_builder
 description: Touchscreen-friendly Home Assistant dashboard with widgets, rooms, energy, and more.
 url: https://github.com/hiddevanbrussel/Dashboard-Home-Assistant
