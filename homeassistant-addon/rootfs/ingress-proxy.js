@@ -94,10 +94,17 @@ function rewriteText(text, ingressPath) {
     out = out.split(phPct).join(prefixPct);
   }
 
-  // href="/api/..." or src="/_next/..." or "/manifest.json" not already under ingress
+  // Absolute app paths that would otherwise resolve on HA Core (404).
+  // Covers href/src/content/poster attributes and CSS url(...).
+  const appPath =
+    "\\/(?!api\\/hassio_ingress\\/)(?:api\\/|_next\\/|uploads\\/|wake-word\\/|manifest\\.webmanifest|manifest\\.json|[a-zA-Z0-9._-]+\\.(?:png|jpe?g|webp|gif|svg|onnx))[^\"')\\s]*";
   out = out.replace(
-    /\b(href|src|content)=["'](\/(?!api\/hassio_ingress\/)(?:api\/|_next\/|manifest\.json)[^"']*)["']/gi,
+    new RegExp(`\\b(href|src|content|poster)=["'](${appPath})["']`, "gi"),
     (_, attr, path) => `${attr}="${prefix}${path}"`
+  );
+  out = out.replace(
+    new RegExp(`url\\(\\s*(['"]?)(${appPath})\\1\\s*\\)`, "gi"),
+    (_, quote, path) => `url(${quote}${prefix}${path}${quote})`
   );
 
   return out;
@@ -217,7 +224,16 @@ const server = http.createServer((req, res) => {
           const cookies = Array.isArray(outHeaders["set-cookie"])
             ? outHeaders["set-cookie"]
             : [outHeaders["set-cookie"]];
-          outHeaders["set-cookie"] = cookies.map((c) => rewriteText(String(c), ingressPath));
+          // Scope cookies to the ingress path (Path=/ would stick on HA Core).
+          outHeaders["set-cookie"] = cookies.map((c) => {
+            let s = rewriteText(String(c), ingressPath);
+            if (/;\s*Path=/i.test(s)) {
+              s = s.replace(/;\s*Path=\/?/i, `; Path=${ingressPath}/`);
+            } else {
+              s = `${s}; Path=${ingressPath}/`;
+            }
+            return s;
+          });
         }
         outHeaders["content-length"] = String(Buffer.byteLength(body));
 

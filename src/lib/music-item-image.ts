@@ -2,6 +2,8 @@
  * Shared helpers for Music Assistant item images (used by music page and global player bar).
  */
 
+import { withBasePath } from "@/lib/base-path";
+
 export const MUSIC_IMAGE_BLUR =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjZTBlMGUwIi8+PC9zdmc+";
 
@@ -92,7 +94,7 @@ export function getImageSrc(
     if (base && url.startsWith(base)) {
       const params = new URLSearchParams({ baseUrl: base, url });
       if (token) params.set("token", token);
-      return `/api/music-assistant-image?${params.toString()}`;
+      return withBasePath(`/api/music-assistant-image?${params.toString()}`);
     }
     return url;
   }
@@ -103,7 +105,7 @@ export function getImageSrc(
     const full = isRelative ? `${base}${url}` : url;
     const params = new URLSearchParams({ baseUrl: base, url: full });
     if (token) params.set("token", token);
-    return `/api/music-assistant-image?${params.toString()}`;
+    return withBasePath(`/api/music-assistant-image?${params.toString()}`);
   }
   return url;
 }

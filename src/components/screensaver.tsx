@@ -965,7 +965,7 @@ function ScreensaverOverlay({
               )}
               <div className="absolute inset-0 pointer-events-none" aria-hidden>
                 <Image
-                  src={backgroundImageRaw}
+                  src={backgroundImage}
                   alt=""
                   fill
                   sizes="100vw"

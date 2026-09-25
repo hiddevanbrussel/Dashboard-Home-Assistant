@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.12
+
+- Broader Ingress audit after image/basePath work:
+  - Settings: `/family` and `/energy` use `next/link` (raw `<a>` escaped the iframe)
+  - Music/camera/energy-monitor/screensaver images use `withBasePath`
+  - Wake-word model URLs use `withBasePath`
+  - Dynamic `app/manifest.ts` with prefixed `start_url` / icons (removed static `public/manifest.json`)
+  - Proxy also rewrites `/uploads/`, `/wake-word/`, static image hrefs/srcs, CSS `url(...)`, and `poster=`
+  - Set-Cookie `Path` scoped to `X-Ingress-Path` so cookies do not attach to HA Core
+
 ## 0.4.11
 
 - Fix client-router 404: bare `/__ha_ingress__` (Next `basePath`) must rewrite to `X-Ingress-Path` **without** a trailing slash

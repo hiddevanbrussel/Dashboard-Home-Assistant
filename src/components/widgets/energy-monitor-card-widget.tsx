@@ -3,6 +3,7 @@
 import { MoreVertical, Sun } from "lucide-react";
 import type { EnergyMonitorCardProps, ImageCondition } from "./widget-types";
 import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
 import { useThemeStore } from "@/stores/theme-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
@@ -100,7 +101,7 @@ export function EnergyMonitorCardWidget({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={effectiveImage}
+            src={withBasePath(effectiveImage)}
             alt=""
             className="w-full h-full object-contain object-center"
             loading="lazy"

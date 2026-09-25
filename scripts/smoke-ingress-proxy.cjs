@@ -47,12 +47,22 @@ assert(rewritten.includes(`${INGRESS}/_next/static/x.js`), "href rewritten");
 assert(rewritten.includes("\\u002Fapi\\u002Fhassio_ingress\\u002Ftesthash\\u002Ffoo"), "unicode path");
 
 const stray = rewriteText(
-  `href="/manifest.json" src="/api/pwa-icon?size=192" href="/_next/static/x.js"`,
+  `href="/manifest.json" src="/api/pwa-icon?size=192" href="/_next/static/x.js" src="/uploads/a.webp" poster="/default-screensaver.png"`,
   INGRESS
 );
 assert(stray.includes(`href="${INGRESS}/manifest.json"`), "manifest prefixed");
 assert(stray.includes(`src="${INGRESS}/api/pwa-icon?size=192"`), "pwa icon prefixed");
+assert(stray.includes(`src="${INGRESS}/uploads/a.webp"`), "uploads prefixed");
+assert(stray.includes(`poster="${INGRESS}/default-screensaver.png"`), "poster prefixed");
 assert(!stray.includes(`href="/manifest.json"`), "no stray manifest");
+
+const cssUrl = rewriteText(
+  `background:url(/uploads/a.png);background-image:url("/energy-overview-house.webp")`,
+  INGRESS
+);
+assert(cssUrl.includes(`url(${INGRESS}/uploads/a.png)`), "css url uploads");
+assert(cssUrl.includes(`url("${INGRESS}/energy-overview-house.webp")`), "css url static image");
+assert(!cssUrl.includes("url(/uploads/"), "no bare css upload url");
 
 const rscBody =
   '0:["$","div",null,{"children":"ok"}]\n' +
