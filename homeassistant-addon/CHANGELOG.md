@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.4
+
+- Fix blank page on addon start: remove aggressive DOM prototype / MutationObserver patches that broke React hydration
+- Keep fetch/XHR basePath patch only; media still uses `withBasePath` / `cssUrl` at render time
+
 ## 0.4.3
 
 - Fix images under Ingress (energy house, Immich/Pexels screensaver, uploads, card art)
