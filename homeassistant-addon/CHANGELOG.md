@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.14
+
+- Fix Ingress-only blank page (`Connection closed`): Next splits Flight `T` rows across multiple `self.__next_f.push` chunks (length header in one script, body in the next). Per-chunk rewrite never updated the length. Now concatenate Flight pushes, rewrite length-aware, emit a single push.
+- Explains why direct port 3000 worked (no body rewrite) while HA menu/Ingress failed
+
 ## 0.4.13
 
 - Fix RSC `Connection closed` under Ingress: path rewrite expanded Flight `T` rows without updating hex byte-lengths, so `createFromReadableStream` saw an incomplete payload when the document stream closed

@@ -95,24 +95,31 @@ assert(
   "sanity: naïve rewrite breaks T length"
 );
 
-// HTML-embedded __next_f push with a T row
-const pushPayload = `0:{"b":"x"}\n2:T${Buffer.byteLength(inner, "utf8").toString(16)},${inner}\n`;
-const html = `<html><script>self.__next_f.push([1,${JSON.stringify(pushPayload)}])</script><img src="/uploads/a.png"></html>`;
-const htmlOut = rewriteHtmlDocument(html, INGRESS);
-assert(htmlOut.includes(`src="${INGRESS}/uploads/a.png"`), "html img prefixed");
-assert(!htmlOut.includes("__ha_ingress__"), "html flight placeholder gone");
-const pushMatch = /self\.__next_f\.push\(\[1,("(?:\\.|[^"\\])*")\]\)/.exec(htmlOut);
-assert(pushMatch, "push still present");
-const decoded = JSON.parse(pushMatch[1]);
-const tm = /^2:T([0-9a-f]+),/m.exec(decoded.split("\n")[1] || "");
-assert(tm, `embedded T row: ${decoded}`);
-const embDecl = parseInt(tm[1], 16);
-const embLine = decoded.split("\n")[1];
-const embPayload = embLine.slice(tm[0].length);
+// HTML-embedded __next_f: T-row header and body split across pushes (real Next behavior)
+const tPayload = `Hello ${PLACEHOLDER}/page and more text here!!`;
+const tLen = Buffer.byteLength(tPayload, "utf8").toString(16);
+const splitHtml =
+  `<script>(self.__next_f=self.__next_f||[]).push([0])</script>` +
+  `<script>self.__next_f.push([1,"0:{}\\n2:T${tLen},"])</script>` +
+  `<script>self.__next_f.push([1,${JSON.stringify(tPayload + "\n")}])</script>` +
+  `<img src="/uploads/a.png">`;
+const splitOut = rewriteHtmlDocument(splitHtml, INGRESS);
+assert(splitOut.includes("(self.__next_f=self.__next_f||[]).push([0])"), "bootstrap kept");
+assert(splitOut.includes(`src="${INGRESS}/uploads/a.png"`), "html img prefixed");
+assert(!splitOut.includes("__ha_ingress__"), "split html placeholder gone");
+const splitPush = /self\.__next_f\.push\((\[1,.*?\])\)/.exec(splitOut);
+assert(splitPush, "single data push present");
+const splitParsed = JSON.parse(splitPush[1]);
+const splitFlight = splitParsed[1];
+const splitT = /^2:T([0-9a-f]+),/m.exec(splitFlight);
+assert(splitT, `split T row header: ${splitFlight.slice(0, 60)}`);
+const splitDecl = parseInt(splitT[1], 16);
+const splitBody = splitFlight.split("\n").find((l) => l.startsWith("2:T")).slice(splitT[0].length);
 assert(
-  embDecl === Buffer.byteLength(embPayload, "utf8"),
-  `embedded T length ${embDecl} !== ${Buffer.byteLength(embPayload, "utf8")}`
+  splitDecl === Buffer.byteLength(splitBody, "utf8"),
+  `split T length ${splitDecl} !== ${Buffer.byteLength(splitBody, "utf8")}`
 );
+assert(splitBody.includes(`${INGRESS}/page`), "split T body rewritten");
 
 const rscBody =
   '0:["$","div",null,{"children":"ok"}]\n' +

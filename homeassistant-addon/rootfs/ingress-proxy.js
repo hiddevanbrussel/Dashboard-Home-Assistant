@@ -230,42 +230,136 @@ function unescapeJsString(escaped) {
 }
 
 /**
- * HTML documents embed Flight inside `self.__next_f.push([1,"…"])`.
- * Rewrite those payloads length-aware; rewrite the surrounding markup normally.
+ * Find `self.__next_f.push(...)` calls (not the bootstrap `||[]).push` form).
+ * Returns { start, end, kind, payload } where payload is a string (kind 1/2) or Buffer (kind 3).
+ */
+function findNextFPushes(html) {
+  const out = [];
+  const needle = "self.__next_f.push(";
+  let idx = 0;
+  while (idx < html.length) {
+    const start = html.indexOf(needle, idx);
+    if (start === -1) break;
+    // Skip bootstrap form: (self.__next_f=self.__next_f||[]).push(
+    if (start >= 2 && html.slice(start - 2, start) === "].") {
+      idx = start + needle.length;
+      continue;
+    }
+    const argStart = start + needle.length;
+    let depth = 0;
+    let inStr = false;
+    let esc = false;
+    let end = -1;
+    for (let j = argStart; j < html.length; j++) {
+      const c = html[j];
+      if (inStr) {
+        if (esc) {
+          esc = false;
+          continue;
+        }
+        if (c === "\\") {
+          esc = true;
+          continue;
+        }
+        if (c === '"') inStr = false;
+        continue;
+      }
+      if (c === '"') {
+        inStr = true;
+        continue;
+      }
+      if (c === "[") depth++;
+      else if (c === "]") {
+        depth--;
+        if (depth === 0) {
+          end = j + 1;
+          break;
+        }
+      }
+    }
+    if (end === -1) break;
+    const arg = html.slice(argStart, end);
+    try {
+      const parsed = JSON.parse(arg);
+      const kind = Number(parsed[0]);
+      if (kind === 1 || kind === 2) {
+        out.push({ start, end, kind, payload: String(parsed[1] ?? "") });
+      } else if (kind === 3) {
+        out.push({
+          start,
+          end,
+          kind,
+          payload: Buffer.from(String(parsed[1] ?? ""), "base64"),
+        });
+      } else {
+        out.push({ start, end, kind, payload: null });
+      }
+    } catch {
+      /* skip malformed */
+    }
+    idx = end;
+  }
+  return out;
+}
+
+/**
+ * HTML documents embed Flight inside split `self.__next_f.push([1,"…"])` chunks.
+ * Next often splits a length-prefixed `T` row across pushes (header in one, body in the
+ * next). Rewrite the concatenated Flight stream, then emit a single push.
  */
 function rewriteHtmlDocument(html, ingressPath) {
   if (!ingressPath) return html;
 
-  const re = /self\.__next_f\.push\(\[(\d+),\s*"((?:\\.|[^"\\])*)"\s*\]\)/g;
-  let out = "";
-  let last = 0;
-  let m;
-  while ((m = re.exec(html))) {
-    out += rewritePathsInText(html.slice(last, m.index), ingressPath);
-    const kind = Number(m[1]);
-    const escaped = m[2];
-    if (kind === 1) {
-      const raw = unescapeJsString(escaped);
-      const rewritten = rewriteFlightText(raw, ingressPath);
-      out += `self.__next_f.push([1,${JSON.stringify(rewritten)}])`;
-    } else if (kind === 3) {
-      const b64 = unescapeJsString(escaped);
-      try {
-        const decoded = Buffer.from(b64, "base64");
-        const rewritten = rewriteFlightBuffer(decoded, ingressPath);
-        out += `self.__next_f.push([3,${JSON.stringify(rewritten.toString("base64"))}])`;
-      } catch {
-        out += m[0];
-      }
-    } else {
-      // 0 = bootstrap init, 2 = form state — leave alone
-      out += m[0];
-    }
-    last = m.index + m[0].length;
+  const pushes = findNextFPushes(html);
+  const dataPushes = pushes.filter((p) => p.kind === 1 || p.kind === 3);
+
+  if (dataPushes.length === 0) {
+    return rewritePathsInText(html, ingressPath);
   }
-  out += rewritePathsInText(html.slice(last), ingressPath);
-  return out;
+
+  // Concatenate in document order (string chunks as UTF-8, binary as raw bytes).
+  const parts = dataPushes.map((p) =>
+    p.kind === 1 ? Buffer.from(p.payload, "utf8") : p.payload
+  );
+  const combined = Buffer.concat(parts);
+  const rewrittenBuf = rewriteFlightBuffer(combined, ingressPath);
+
+  // Expand span to surrounding <script>...</script> tags when present.
+  let spanStart = dataPushes[0].start;
+  let spanEnd = dataPushes[dataPushes.length - 1].end;
+  const openIdx = html.lastIndexOf("<script", spanStart);
+  const closeIdx = html.indexOf("</script>", spanEnd);
+  if (openIdx !== -1 && closeIdx !== -1 && openIdx < spanStart && closeIdx >= spanEnd) {
+    // Only expand if every data push sits in its own script tag within this region
+    // and there is no non-flight content we must keep between first open and last close.
+    spanStart = openIdx;
+    spanEnd = closeIdx + "</script>".length;
+  }
+
+  let replacement;
+  try {
+    const asText = rewrittenBuf.toString("utf8");
+    // Round-trip check: valid UTF-8 without replacement characters from binary.
+    if (Buffer.from(asText, "utf8").equals(rewrittenBuf)) {
+      replacement = `<script>self.__next_f.push(${JSON.stringify([1, asText])})</script>`;
+    } else {
+      replacement = `<script>self.__next_f.push(${JSON.stringify([
+        3,
+        rewrittenBuf.toString("base64"),
+      ])})</script>`;
+    }
+  } catch {
+    replacement = `<script>self.__next_f.push(${JSON.stringify([
+      3,
+      rewrittenBuf.toString("base64"),
+    ])})</script>`;
+  }
+
+  const before = rewritePathsInText(html.slice(0, spanStart), ingressPath);
+  const after = rewritePathsInText(html.slice(spanEnd), ingressPath);
+  return before + replacement + after;
 }
+
 
 function rewriteBody(body, contentType, ingressPath) {
   if (!ingressPath) return body;
