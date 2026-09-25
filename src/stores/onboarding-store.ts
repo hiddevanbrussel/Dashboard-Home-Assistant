@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import { generateId } from "@/lib/utils";
 
-export type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
+export type OnboardingStep = 1 | 2 | 3 | 4 | 5;
+
+/** Soft first-run wizard length (welcome → name → connect → extras → ready). */
+export const ONBOARDING_TOTAL_STEPS = 5;
 
 export type ConnectionState = {
   baseUrl: string;
@@ -181,7 +184,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   ...initialState,
   setStep: (step) => set({ step }),
   nextStep: () =>
-    set((s) => ({ step: Math.min(6, s.step + 1) as OnboardingStep })),
+    set((s) => ({ step: Math.min(ONBOARDING_TOTAL_STEPS, s.step + 1) as OnboardingStep })),
   prevStep: () =>
     set((s) => ({ step: Math.max(1, s.step - 1) as OnboardingStep })),
   setConnection: (c) =>
