@@ -1,3 +1,5 @@
+import { withBasePath } from "@/lib/base-path";
+
 /** Cache key so artwork reloads when the track changes, even if entity_picture stays the same. */
 export function mediaArtworkCacheKey(input: {
   entityPicture?: string | null;
@@ -15,7 +17,7 @@ export function mediaArtworkCacheKey(input: {
 
 export function mediaImageRequestUrl(entityId: string, cacheKey: string): string {
   const params = new URLSearchParams({ entity_id: entityId, t: cacheKey });
-  return `/api/ha/media-image?${params.toString()}`;
+  return withBasePath(`/api/ha/media-image?${params.toString()}`);
 }
 
 export function mediaImageServerCacheKey(entityId: string, trackKey: string): string {

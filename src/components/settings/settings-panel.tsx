@@ -1,5 +1,6 @@
 "use client";
 
+import { cssUrl } from "@/lib/base-path";
 import type { ButtonHTMLAttributes, ChangeEvent, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Check, ChevronLeft } from "lucide-react";
@@ -241,7 +242,7 @@ export function SettingsPreview({ url }: { url: string }) {
   return (
     <div
       className="h-32 rounded-2xl bg-cover bg-center ring-1 ring-white/60 dark:ring-white/10"
-      style={{ backgroundImage: `url(${url})` }}
+      style={{ backgroundImage: cssUrl(url) }}
     />
   );
 }

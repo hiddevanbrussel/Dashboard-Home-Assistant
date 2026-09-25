@@ -89,6 +89,21 @@
   animation: slide-in-from-right 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
+@keyframes fade-scale-in-center {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 1.25rem)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, calc(-50% + 1.75rem)) scale(1);
+  }
+}
+
+.animate-fade-scale-in-center {
+  animation: fade-scale-in-center 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
 /* Floating cards are `fixed`; pin them to the dashboard page so snap-scroll can move them.
    The pager portal covers the viewport — empty page surface must not steal sidebar/header hits.
    Only the cards themselves are hit targets. */

@@ -5,7 +5,7 @@ import Image from "next/image";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { Disc3 } from "lucide-react";
-import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverMusicEntityId, getScreensaverClockPosition, getScreensaverClockSize, getScreensaverMediaSource } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, getScreensaverBackgroundImage, getScreensaverClock24h, getScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsQuery, getScreensaverPexelsApiKey, getScreensaverPexelsType, getScreensaverFootballEntityId, getScreensaverMusicEntityId, getScreensaverClockPosition, getScreensaverClockSize, getScreensaverClockWeight, getScreensaverMediaSource } from "@/stores/screensaver-store";
 import { useImmichStore } from "@/stores/immich-store";
 import { resolveScreensaverPlayback } from "@/lib/screensaver-media-source";
 import { buildImmichAssetProxyUrl, pickRandomImmichAsset } from "@/lib/immich-url";
@@ -14,6 +14,7 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { getItemImageUrl, getImageSrc } from "@/lib/music-item-image";
+import { cssUrl, withBasePath } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import {
@@ -28,6 +29,10 @@ import {
   clockSizeTimeClass,
   type ScreensaverClockSize,
 } from "@/lib/screensaver-clock-size";
+import {
+  clockWeightClass,
+  type ScreensaverClockWeight,
+} from "@/lib/screensaver-clock-weight";
 import {
   formatLockDateNumeric,
   formatLockTemperature,
@@ -71,7 +76,7 @@ function preloadImage(url: string): Promise<void> {
     img.decoding = "async";
     img.onload = () => resolve();
     img.onerror = () => resolve();
-    img.src = url;
+    img.src = withBasePath(url);
   });
 }
 
@@ -335,7 +340,7 @@ function ScreensaverMusic() {
         {ha.coverUrl ? (
           <div className="image-theme-fixed relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={ha.coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+            <img src={withBasePath(ha.coverUrl)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
         ) : (
           <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg text-white/80">
@@ -404,7 +409,7 @@ function ScreensaverMusic() {
         {coverUrl ? (
           <div className="image-theme-fixed relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+            <img src={withBasePath(coverUrl)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
         ) : (
         <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg text-white/80">
@@ -428,8 +433,10 @@ function ScreensaverMusic() {
 
 function ScreensaverLockClock({
   size,
+  weight,
 }: {
   size: ScreensaverClockSize;
+  weight: ScreensaverClockWeight;
 }) {
   const { language } = useTranslation();
   const accent = useThemeStore((s) => s.accent);
@@ -453,7 +460,8 @@ function ScreensaverLockClock({
     clockSizeDateClass(size)
   );
   const digitClass = cn(
-    "font-montserrat font-black leading-[0.82] tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
+    "font-montserrat leading-[0.82] tabular-nums tracking-tight drop-shadow-[0_2px_16px_rgba(0,0,0,0.45)]",
+    clockWeightClass(weight),
     clockSizeTimeClass(size)
   );
 
@@ -559,6 +567,7 @@ function ScreensaverOverlay({
   });
   const clockPosition = getScreensaverClockPosition();
   const clockSize = getScreensaverClockSize();
+  const clockWeight = getScreensaverClockWeight();
   const { match: footballMatch, live: footballLive } = useScreensaverFootballMatch();
   const liveClockPosition = footballLive ? "top-center" : clockPosition;
   const clockAlign = clockPositionAxis(liveClockPosition).x;
@@ -834,11 +843,14 @@ function ScreensaverOverlay({
     videoRotateTimer.current = setTimeout(fetchRemoteVideo, VIDEO_MAX_SECONDS * 1000);
   }, [fetchRemoteVideo]);
 
-  const backgroundImage = footballLive
-    ? SCREENSAVER_FOOTBALL_LIVE_BACKGROUND
-    : playback.mode === "custom"
-      ? playback.url
-      : currentImage || DEFAULT_SCREENSAVER_IMAGE;
+  const backgroundImageRaw =
+    footballLive
+      ? SCREENSAVER_FOOTBALL_LIVE_BACKGROUND
+      : playback.mode === "custom"
+        ? playback.url
+        : currentImage || DEFAULT_SCREENSAVER_IMAGE;
+  const backgroundImage = withBasePath(backgroundImageRaw);
+  const nextBackgroundImage = nextImage ? withBasePath(nextImage) : null;
   const showVideoBackground = isVideoMode && !footballLive;
   const useGradient =
     !footballLive &&
@@ -905,7 +917,7 @@ function ScreensaverOverlay({
                 // eslint-disable-next-line jsx-a11y/media-has-caption
                 <video
                   key={currentVideoUrl}
-                  src={currentVideoUrl}
+                  src={withBasePath(currentVideoUrl)}
                   autoPlay
                   muted
                   playsInline
@@ -919,7 +931,7 @@ function ScreensaverOverlay({
                 // eslint-disable-next-line jsx-a11y/media-has-caption
                 <video
                   key={nextVideoUrl}
-                  src={nextVideoUrl}
+                  src={withBasePath(nextVideoUrl)}
                   autoPlay
                   muted
                   playsInline
@@ -937,15 +949,15 @@ function ScreensaverOverlay({
             <>
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${backgroundImage})` }}
+                style={{ backgroundImage: cssUrl(backgroundImage) }}
                 aria-hidden
               />
-              {nextImage && (
+              {nextBackgroundImage && (
                 <div
                   className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                   style={{
                     ...fadeStyle,
-                    backgroundImage: `url(${nextImage})`,
+                    backgroundImage: cssUrl(nextBackgroundImage),
                     opacity: isFading ? 1 : 0,
                   }}
                   aria-hidden
@@ -979,7 +991,7 @@ function ScreensaverOverlay({
             clockAlign === "left" ? "items-start" : clockAlign === "right" ? "items-end" : "items-center"
           )}
         >
-          <ScreensaverLockClock size={clockSize} />
+          <ScreensaverLockClock size={clockSize} weight={clockWeight} />
           <ScreensaverTimer align={clockAlign} />
         </div>
       </div>

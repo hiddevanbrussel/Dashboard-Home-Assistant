@@ -88,9 +88,21 @@ The header also shows the clock, weather temperature, optional RSS news, a timer
 
 ---
 
+## Home Assistant App (Addon)
+
+Install from Supervisor for Ingress (Open Web UI / sidebar), no separate Docker host required:
+
+1. **Settings → Apps → App Store** → ⋮ → **Repositories**
+2. Add `https://github.com/hiddevanbrussel/Dashboard-Home-Assistant`
+3. Install **Dashboard Builder**, start it, then open **Open Web UI**
+
+During onboarding the app **links automatically** via the Supervisor (no long-lived token). Full steps: [`homeassistant-addon/DOCS.md`](homeassistant-addon/DOCS.md).
+
+---
+
 ## Quick install with Docker
 
-The easiest way to run the dashboard is with the pre-built Docker image from GitHub Container Registry.
+The easiest way to run the dashboard outside Supervisor is the pre-built Docker image from GitHub Container Registry.
 
 ```bash
 docker run -d \

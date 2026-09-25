@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import {
   SettingsAlert,
@@ -23,6 +24,7 @@ import { ImmichSettings } from "@/components/settings/immich-settings";
 import {
   ClockFormatPreview,
   ClockSizePreview,
+  ClockWeightPreview,
   LanguagePreview,
   SettingsAccentDots,
   SettingsChipSelect,
@@ -34,10 +36,11 @@ import {
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import type { ThemeAccentId } from "@/lib/theme-accents";
 import { useLanguageStore } from "@/stores/language-store";
-import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverMusicEntityId, setScreensaverMusicEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize, getScreensaverMediaSource, setScreensaverMediaSource, type ScreensaverMediaSource } from "@/stores/screensaver-store";
+import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverMusicEntityId, setScreensaverMusicEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize, getScreensaverClockWeight, setScreensaverClockWeight, getScreensaverMediaSource, setScreensaverMediaSource, type ScreensaverMediaSource } from "@/stores/screensaver-store";
 import { isImmichSourceReady, isPexelsSourceReady } from "@/lib/screensaver-media-source";
 import { DEFAULT_SCREENSAVER_CLOCK_POSITION, SCREENSAVER_CLOCK_POSITIONS, type ScreensaverClockPosition } from "@/lib/screensaver-clock-position";
 import { DEFAULT_SCREENSAVER_CLOCK_SIZE, SCREENSAVER_CLOCK_SIZES, type ScreensaverClockSize } from "@/lib/screensaver-clock-size";
+import { DEFAULT_SCREENSAVER_CLOCK_WEIGHT, SCREENSAVER_CLOCK_WEIGHTS, type ScreensaverClockWeight } from "@/lib/screensaver-clock-weight";
 import { getEditModeAllowed, setEditModeAllowed, getEditModePasscode, setEditModePasscode, getEveningHour, setEveningHour } from "@/stores/dashboard-settings-store";
 import { hydrateMusicAssistantStore, useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
@@ -167,6 +170,8 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const [baseUrl, setBaseUrl] = useState("http://homeassistant.local:8123");
   const [token, setToken] = useState("");
+  const [connectionSource, setConnectionSource] = useState<"supervisor" | "manual" | null>(null);
+  const [isAddon, setIsAddon] = useState(false);
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: true } | { ok: false; error: string } | null>(null);
@@ -192,6 +197,7 @@ export default function SettingsPage() {
   const [screensaverClock24h, setScreensaverClock24hState] = useState(true);
   const [screensaverClockPosition, setScreensaverClockPositionState] = useState<ScreensaverClockPosition>(DEFAULT_SCREENSAVER_CLOCK_POSITION);
   const [screensaverClockSize, setScreensaverClockSizeState] = useState<ScreensaverClockSize>(DEFAULT_SCREENSAVER_CLOCK_SIZE);
+  const [screensaverClockWeight, setScreensaverClockWeightState] = useState<ScreensaverClockWeight>(DEFAULT_SCREENSAVER_CLOCK_WEIGHT);
   const [screensaverWeatherEntityId, setScreensaverWeatherEntityIdState] = useState<string | null>(null);
   const [screensaverFootballEntityId, setScreensaverFootballEntityIdState] = useState<string | null>(null);
   const [screensaverMusicEntityId, setScreensaverMusicEntityIdState] = useState<string | null>(null);
@@ -240,6 +246,7 @@ export default function SettingsPage() {
     setScreensaverClock24hState(getScreensaverClock24h());
     setScreensaverClockPositionState(getScreensaverClockPosition());
     setScreensaverClockSizeState(getScreensaverClockSize());
+    setScreensaverClockWeightState(getScreensaverClockWeight());
     setScreensaverWeatherEntityIdState(getScreensaverWeatherEntityId());
     setScreensaverFootballEntityIdState(getScreensaverFootballEntityId());
     setScreensaverMusicEntityIdState(getScreensaverMusicEntityId());
@@ -258,6 +265,11 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d?.baseUrl) setBaseUrl(d.baseUrl);
+        if (d?.source === "supervisor" || d?.source === "manual") setConnectionSource(d.source);
+        if (typeof d?.addon === "boolean") setIsAddon(d.addon);
+        if (d?.source === "supervisor" && d?.ok === false && d?.error) {
+          setTestResult({ ok: false, error: d.error });
+        }
       })
       .catch(() => {});
   }, []);
@@ -330,6 +342,17 @@ export default function SettingsPage() {
     setTestResult(null);
     setTesting(true);
     try {
+      if (connectionSource === "supervisor" || (isAddon && !token.trim())) {
+        const res = await fetch("/api/ha/connection?test=1");
+        const data = await res.json();
+        if (data.ok !== false && (data.source === "supervisor" || data.baseUrl)) {
+          setTestResult({ ok: true });
+          setConnectionSource(data.source ?? "supervisor");
+        } else {
+          setTestResult({ ok: false, error: data.error ?? t("settings.connection.test") });
+        }
+        return;
+      }
       const res = await fetch("/api/ha/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -346,29 +369,85 @@ export default function SettingsPage() {
   }
 
   async function handleSave() {
+    if (connectionSource === "supervisor" && isAddon && !token.trim()) {
+      setSaving(true);
+      setSaveMessage(null);
+      try {
+        const res = await fetch("/api/ha/connection", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ useSupervisor: true }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          setSaveMessage("success");
+          setConnectionSource("supervisor");
+          setToken("");
+        } else {
+          setTestResult({ ok: false, error: data.error ?? t("settings.connection.save") });
+          setSaveMessage("error");
+        }
+      } catch {
+        setTestResult({ ok: false, error: t("settings.connection.save") });
+        setSaveMessage("error");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     if (!token.trim()) {
       setTestResult({ ok: false, error: t("settings.connection.pleaseEnterToken") });
       return;
     }
-    setSaveMessage(null);
     setSaving(true);
+    setSaveMessage(null);
     try {
       const res = await fetch("/api/ha/connection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ baseUrl, token }),
       });
-      const data = await res.json();
-      if (data.connectionId) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
         setSaveMessage("success");
-        setTestResult({ ok: true });
+        setConnectionSource(data.source === "supervisor" ? "supervisor" : "manual");
+        setToken("");
       } else {
-        setSaveMessage("error");
         setTestResult({ ok: false, error: data.error ?? t("settings.connection.save") });
+        setSaveMessage("error");
       }
     } catch {
-      setSaveMessage("error");
       setTestResult({ ok: false, error: t("settings.connection.save") });
+      setSaveMessage("error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleUseSupervisor() {
+    setSaving(true);
+    setSaveMessage(null);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/ha/connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useSupervisor: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setSaveMessage("success");
+        setConnectionSource("supervisor");
+        setBaseUrl(data.baseUrl ?? "http://supervisor/core");
+        setToken("");
+        setTestResult({ ok: true });
+      } else {
+        setTestResult({ ok: false, error: data.error ?? t("settings.connection.save") });
+        setSaveMessage("error");
+      }
+    } catch {
+      setTestResult({ ok: false, error: t("settings.connection.save") });
+      setSaveMessage("error");
     } finally {
       setSaving(false);
     }
@@ -523,7 +602,13 @@ export default function SettingsPage() {
     screensaver: { descriptionKey: "settings.screensaver.description", icon: Monitor },
     language: { descriptionKey: "settings.language.intro", icon: Globe },
     dashboard: { descriptionKey: "settings.dashboard.intro", icon: LayoutDashboard },
-    connection: { descriptionKey: "settings.connection.description", icon: Link2 },
+    connection: {
+      descriptionKey:
+        connectionSource === "supervisor"
+          ? "settings.connection.descriptionSupervisor"
+          : "settings.connection.description",
+      icon: Link2,
+    },
     calendar: { descriptionKey: "settings.calendar.description", icon: CalendarDays },
     energy: { descriptionKey: "settings.energy.description", icon: Zap },
     tasks: { descriptionKey: "settings.tasks.description", icon: ListTodo },
@@ -774,7 +859,24 @@ export default function SettingsPage() {
                   id: size,
                   label: t(`settings.screensaver.clockSize.${size}`),
                   description: t(`settings.screensaver.clockSize.${size}Hint`),
-                  preview: <ClockSizePreview size={size} />,
+                  preview: <ClockSizePreview size={size} weight={screensaverClockWeight} />,
+                }))}
+              />
+
+              <SettingsChoiceCards
+                label={t("settings.screensaver.clockWeight")}
+                hint={t("settings.screensaver.clockWeightHint")}
+                columns={2}
+                value={screensaverClockWeight}
+                onChange={(weight) => {
+                  setScreensaverClockWeightState(weight);
+                  setScreensaverClockWeight(weight);
+                }}
+                options={SCREENSAVER_CLOCK_WEIGHTS.map((weight) => ({
+                  id: weight,
+                  label: t(`settings.screensaver.clockWeight.${weight}`),
+                  description: t(`settings.screensaver.clockWeight.${weight}Hint`),
+                  preview: <ClockWeightPreview weight={weight} size={screensaverClockSize} />,
                 }))}
               />
 
@@ -1010,25 +1112,39 @@ export default function SettingsPage() {
 
           {section === "connection" && (
             <div className="space-y-4">
-              <SettingsField label={t("settings.connection.baseUrl")} htmlFor="ha-baseUrl">
-                <SettingsInput
-                  id="ha-baseUrl"
-                  type="url"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder="http://homeassistant.local:8123"
-                />
-              </SettingsField>
-              <SettingsField label={t("settings.connection.token")} htmlFor="ha-token">
-                <SettingsInput
-                  id="ha-token"
-                  type="password"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  placeholder={t("settings.connection.tokenPlaceholder")}
-                  autoComplete="off"
-                />
-              </SettingsField>
+              {connectionSource === "supervisor" ? (
+                <SettingsAlert tone="ok">{t("settings.connection.supervisorLinked")}</SettingsAlert>
+              ) : null}
+              {isAddon && connectionSource !== "supervisor" ? (
+                <div className="flex flex-wrap gap-2">
+                  <SettingsPrimaryButton onClick={handleUseSupervisor} disabled={saving}>
+                    {t("settings.connection.useSupervisor")}
+                  </SettingsPrimaryButton>
+                </div>
+              ) : null}
+              {connectionSource !== "supervisor" ? (
+                <>
+                  <SettingsField label={t("settings.connection.baseUrl")} htmlFor="ha-baseUrl">
+                    <SettingsInput
+                      id="ha-baseUrl"
+                      type="url"
+                      value={baseUrl}
+                      onChange={(e) => setBaseUrl(e.target.value)}
+                      placeholder="http://homeassistant.local:8123"
+                    />
+                  </SettingsField>
+                  <SettingsField label={t("settings.connection.token")} htmlFor="ha-token">
+                    <SettingsInput
+                      id="ha-token"
+                      type="password"
+                      value={token}
+                      onChange={(e) => setToken(e.target.value)}
+                      placeholder={t("settings.connection.tokenPlaceholder")}
+                      autoComplete="off"
+                    />
+                  </SettingsField>
+                </>
+              ) : null}
               {testResult ? (
                 <SettingsAlert tone={testResult.ok ? "ok" : "error"}>
                   {testResult.ok ? t("settings.connection.success") : testResult.error}
@@ -1041,9 +1157,11 @@ export default function SettingsPage() {
                 <SettingsPrimaryButton onClick={handleTest} disabled={testing}>
                   {testing ? t("settings.connection.testing") : t("settings.connection.test")}
                 </SettingsPrimaryButton>
-                <SettingsSecondaryButton onClick={handleSave} disabled={saving || !token.trim()}>
-                  {saving ? t("settings.connection.saving") : t("settings.connection.save")}
-                </SettingsSecondaryButton>
+                {connectionSource !== "supervisor" ? (
+                  <SettingsSecondaryButton onClick={handleSave} disabled={saving || !token.trim()}>
+                    {saving ? t("settings.connection.saving") : t("settings.connection.save")}
+                  </SettingsSecondaryButton>
+                ) : null}
               </div>
             </div>
           )}
@@ -1074,13 +1192,13 @@ export default function SettingsPage() {
                       <span className="text-sm text-gray-500 dark:text-gray-400">{t("settings.tasks.eveningHourSuffix")}</span>
                     </div>
                   </SettingsField>
-                  <a
+                  <Link
                     href="/family"
                     className="inline-flex items-center gap-2 self-start rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90"
                   >
                     <ListTodo className="h-4 w-4" />
                     {t("settings.tasks.manage")}
-                  </a>
+                  </Link>
                 </SettingsGroup>
               ) : null}
             </>
@@ -1197,13 +1315,13 @@ export default function SettingsPage() {
                       />
                     </SettingsField>
                   </SettingsGroup>
-                  <a
+                  <Link
                     href="/energy"
                     className="inline-flex items-center gap-2 self-start rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90"
                   >
                     <Zap className="h-4 w-4" />
                     {t("nav.energy")}
-                  </a>
+                  </Link>
                 </>
               ) : null}
             </>

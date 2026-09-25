@@ -9,11 +9,21 @@ import {
   type ScreensaverClockSize,
 } from "@/lib/screensaver-clock-size";
 import {
+  DEFAULT_SCREENSAVER_CLOCK_WEIGHT,
+  getScreensaverClockWeightOrDefault,
+  type ScreensaverClockWeight,
+} from "@/lib/screensaver-clock-weight";
+import {
   migrateScreensaverMediaSource,
   type ScreensaverMediaSource,
 } from "@/lib/screensaver-media-source";
 
-export type { ScreensaverClockPosition, ScreensaverClockSize, ScreensaverMediaSource };
+export type {
+  ScreensaverClockPosition,
+  ScreensaverClockSize,
+  ScreensaverClockWeight,
+  ScreensaverMediaSource,
+};
 
 const STORAGE_KEY_DELAY = "dashboard.screensaverDelaySeconds";
 const STORAGE_KEY_LEGACY_MINUTES = "dashboard.screensaverMinutes";
@@ -292,6 +302,26 @@ export function getScreensaverClockSize(): ScreensaverClockSize {
 export function setScreensaverClockSize(size: ScreensaverClockSize): void {
   try {
     localStorage.setItem(STORAGE_KEY_CLOCK_SIZE, size);
+    window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
+  } catch {
+    // ignore
+  }
+}
+
+const STORAGE_KEY_CLOCK_WEIGHT = "dashboard.screensaverClockWeight";
+
+export function getScreensaverClockWeight(): ScreensaverClockWeight {
+  if (typeof window === "undefined") return DEFAULT_SCREENSAVER_CLOCK_WEIGHT;
+  try {
+    return getScreensaverClockWeightOrDefault(localStorage.getItem(STORAGE_KEY_CLOCK_WEIGHT));
+  } catch {
+    return DEFAULT_SCREENSAVER_CLOCK_WEIGHT;
+  }
+}
+
+export function setScreensaverClockWeight(weight: ScreensaverClockWeight): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_CLOCK_WEIGHT, weight);
     window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
   } catch {
     // ignore

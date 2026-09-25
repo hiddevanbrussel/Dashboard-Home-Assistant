@@ -10,7 +10,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { RobotVacuum, CalendarDays, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Type, Video, X, Zap } from "lucide-react";
+import { RobotVacuum, CalendarDays, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
 import { ArrowRightLeft } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -66,6 +66,8 @@ import {
   FloatingStatPillCard,
   CameraCardWidget,
   FloatingCameraCard,
+  TeamtrackerCardWidget,
+  FloatingTeamtrackerCard,
   AlarmCardWidget,
   FloatingAlarmCard,
   ChoreCardWidget,
@@ -82,6 +84,7 @@ import { OfflinePill } from "@/components/offline-pill";
 import { useTranslation } from "@/hooks/use-translation";
 import { useDashboardEditFlag } from "@/hooks/use-dashboard-edit-flag";
 import { cn, generateId } from "@/lib/utils";
+import { cssUrl } from "@/lib/base-path";
 import { DashboardPager } from "@/components/dashboard-pager";
 import {
   clampPageIndex,
@@ -139,6 +142,27 @@ import {
   MEDIA_CARD_MIN_WIDTH,
 } from "@/lib/media-card";
 import {
+  CAMERA_CARD_DEFAULT_HEIGHT,
+  CAMERA_CARD_DEFAULT_WIDTH,
+  CAMERA_CARD_MAX_HEIGHT,
+  CAMERA_CARD_MAX_WIDTH,
+  CAMERA_CARD_MIN_HEIGHT,
+  CAMERA_CARD_MIN_WIDTH,
+  clampCameraCardHeight,
+  clampCameraCardWidth,
+} from "@/lib/camera-card";
+import {
+  TEAMTRACKER_CARD_DEFAULT_HEIGHT,
+  TEAMTRACKER_CARD_DEFAULT_WIDTH,
+  TEAMTRACKER_CARD_MAX_HEIGHT,
+  TEAMTRACKER_CARD_MAX_WIDTH,
+  TEAMTRACKER_CARD_MIN_HEIGHT,
+  TEAMTRACKER_CARD_MIN_WIDTH,
+  clampTeamtrackerCardHeight,
+  clampTeamtrackerCardWidth,
+  isTeamtrackerEntityId,
+} from "@/lib/teamtracker-card";
+import {
   clampWeatherCardHeight,
   clampWeatherCardWidth,
   WEATHER_CARD_DEFAULT_HEIGHT,
@@ -150,7 +174,7 @@ import {
 } from "@/lib/weather-card";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card"] as const;
+const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; labelKey: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "text_card", labelKey: "cardType.text_card", Icon: Type },
@@ -168,6 +192,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "vacuum_card_2", labelKey: "cardType.vacuum_card_2", Icon: RobotVacuum },
   { type: "alarm_card", labelKey: "cardType.alarm_card", Icon: ShieldCheck },
   { type: "camera_card", labelKey: "cardType.camera_card", Icon: Video },
+  { type: "teamtracker_card", labelKey: "cardType.teamtracker_card", Icon: Trophy },
   { type: "pill_card", labelKey: "cardType.pill_card", Icon: CircleDot },
   { type: "room_card", labelKey: "cardType.room_card", Icon: Home },
   { type: "nuts_card", labelKey: "cardType.nuts_card", Icon: Fuel },
@@ -200,6 +225,7 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   vacuum_card_2: "vacuum",
   alarm_card: "alarm_control_panel",
   camera_card: "camera",
+  teamtracker_card: "sensor",
   pill_card: "switch",
   room_card: "",
   nuts_card: "sensor",
@@ -213,7 +239,7 @@ const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor", "binary
 const FLOATING_WIDGET_TYPES = new Set([
   "text_card", "title_card", "title_only_card", "subtitle_card", "media_card", "climate_card", "climate_card_2", "light_card", "solar_card",
   "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card",
-  "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card", "timer_card",
+  "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card", "timer_card",
 ]);
 
 type DashboardData = {
@@ -675,6 +701,14 @@ function WidgetByType({
           onMoreClick={onMoreClick}
         />
       );
+    case "teamtracker_card":
+      return (
+        <TeamtrackerCardWidget
+          title={title}
+          entity_id={entity_id}
+          onMoreClick={onMoreClick}
+        />
+      );
     default:
       return (
         <div className="rounded-card border border-dashed p-4 text-sm text-gray-500">
@@ -993,7 +1027,7 @@ export default function DashboardEditPage() {
       setPillIconSearch(editingWidget.type === "pill_card" ? (editingWidget.icon ?? "") : "");
       setGroupAddEntitySearch("");
       setPowerUsageDeviceSearch("");
-      if (editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "vacuum_card_2" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") {
+      if (editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "vacuum_card_2" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "teamtracker_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") {
         setEditTab(editingWidget.type === "room_card" ? "entiteiten" : editingWidget.type === "media_card" ? "weergave" : "algemeen");
       }
       if (editingWidget.type === "energy_monitor_card") {
@@ -1044,6 +1078,7 @@ export default function DashboardEditPage() {
           widget.type !== "vacuum_card_2" &&
           widget.type !== "alarm_card" &&
           widget.type !== "camera_card" &&
+          widget.type !== "teamtracker_card" &&
           widget.type !== "pill_card" &&
           widget.type !== "room_card" &&
           widget.type !== "nuts_card" &&
@@ -1160,7 +1195,7 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "text_card" && type !== "title_card" && type !== "title_only_card" && type !== "subtitle_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "device_consumption_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "vacuum_card_2" && type !== "alarm_card" && type !== "camera_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group" && type !== "chore_card" && type !== "calendar_card" && type !== "timer_card";
+    return type !== "text_card" && type !== "title_card" && type !== "title_only_card" && type !== "subtitle_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "device_consumption_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "vacuum_card_2" && type !== "alarm_card" && type !== "camera_card" && type !== "teamtracker_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group" && type !== "chore_card" && type !== "calendar_card" && type !== "timer_card";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
@@ -1184,6 +1219,16 @@ export default function DashboardEditPage() {
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
+      ...(type === "camera_card" && {
+        width: CAMERA_CARD_DEFAULT_WIDTH,
+        height: CAMERA_CARD_DEFAULT_HEIGHT,
+        refresh: 10,
+        show_title: true,
+      }),
+      ...(type === "teamtracker_card" && {
+        width: TEAMTRACKER_CARD_DEFAULT_WIDTH,
+        height: TEAMTRACKER_CARD_DEFAULT_HEIGHT,
+      }),
       ...(type === "weather_card" && { width: WEATHER_CARD_DEFAULT_WIDTH, height: WEATHER_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
       ...(type === "calendar_card" && { width: CALENDAR_CARD_DEFAULT_WIDTH, height: CALENDAR_CARD_DEFAULT_HEIGHT }),
@@ -1201,7 +1246,7 @@ export default function DashboardEditPage() {
       h: isTextCard ? 1 : 2,
     };
     const newWidgets = [...widgets, newWidget];
-    const isFloatingOnly = type === "text_card" || type === "media_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "vacuum_card_2" || type === "alarm_card" || type === "camera_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card";
+    const isFloatingOnly = type === "text_card" || type === "media_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "vacuum_card_2" || type === "alarm_card" || type === "camera_card" || type === "teamtracker_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card";
     const newLayout = isFloatingOnly ? layout : [...layout, newLayoutItem];
 
     // Optimistisch query-cache updaten zodat de widget direct beschikbaar is bij remount/refetch
@@ -1236,6 +1281,8 @@ export default function DashboardEditPage() {
   const entitiesToShow =
     addTileSelectedType === "pill_card"
       ? entities.filter((e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + ".")))
+      : addTileSelectedType === "teamtracker_card"
+        ? entities.filter((e) => isTeamtrackerEntityId(e.entity_id))
       : (addTileSelectedType === "sensor_card" || addTileSelectedType === "stat_pill_card")
         ? entities.filter((e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor."))
         : domain != null
@@ -1295,6 +1342,28 @@ export default function DashboardEditPage() {
   function handleMediaCardResize(widgetId: string, size: { width: number; height: number }) {
     const width = clampMediaCardWidth(size.width);
     const height = clampMediaCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleCameraCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampCameraCardWidth(size.width);
+    const height = clampCameraCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleTeamtrackerCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampTeamtrackerCardWidth(size.width);
+    const height = clampTeamtrackerCardHeight(size.height);
     const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
     setWidgets(newWidgets);
     if (editingWidgetId === widgetId) {
@@ -1459,7 +1528,7 @@ export default function DashboardEditPage() {
             {addTileOpen && typeof document !== "undefined" && createPortal(
               <>
                 <div
-                  className="fixed inset-0 z-[300] bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
+                  className="fixed inset-0 z-[300] bg-black/40 dark:bg-black/70 backdrop-blur-sm transition-opacity"
                   aria-hidden
                   onClick={() => {
                     setAddTileOpen(false);
@@ -1468,8 +1537,8 @@ export default function DashboardEditPage() {
                     setAddTileEntitySearch("");
                   }}
                 />
-                <div className="fixed top-4 right-4 bottom-4 z-[301] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-2xl">
-                  <div className="shrink-0 flex items-center justify-between p-5 pb-0">
+                <div className="fixed left-1/2 top-1/2 z-[301] flex max-h-[min(780px,calc(100vh-6rem))] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950">
+                  <div className="flex shrink-0 items-center justify-between border-b border-gray-200 p-5 pb-3 dark:border-white/10">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {addTileStep === "type" ? t("editPanel.addTile") : t("editPanel.chooseEntity")}
                     </h3>
@@ -1481,13 +1550,13 @@ export default function DashboardEditPage() {
                         setAddTileSelectedType(null);
                         setAddTileEntitySearch("");
                       }}
-                      className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
+                      className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
                       aria-label={t("editPanel.close")}
                     >
                       <X className="h-5 w-5" />
                     </button>
                   </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4">
+                  <div className="min-h-0 flex-1 overflow-y-auto p-5 pt-4">
                   {addTileStep === "type" ? (
                     <div className="grid grid-cols-3 gap-2">
                       {ADDABLE_WIDGET_TILES.filter(({ type }) => !isWidgetTypeTemporarilyDisabled(type)).map(({ type, labelKey, Icon }) => (
@@ -1774,7 +1843,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "text_card" && w.type !== "title_card" && w.type !== "title_only_card" && w.type !== "subtitle_card" && w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "vacuum_card_2" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group" && w.type !== "chore_card" && w.type !== "calendar_card" && w.type !== "timer_card")
+            .filter((w) => w.type !== "text_card" && w.type !== "title_card" && w.type !== "title_only_card" && w.type !== "subtitle_card" && w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "vacuum_card_2" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "teamtracker_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group" && w.type !== "chore_card" && w.type !== "calendar_card" && w.type !== "timer_card")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -2144,32 +2213,56 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {(() => {
-          const firstCamera = widgets.find((w) => w.type === "camera_card" && widgetPage(w) === pageIndex);
-          return firstCamera ? (
+        {widgets
+          .filter((w) => w.type === "camera_card" && widgetPage(w) === pageIndex)
+          .map((w) => (
             <FloatingCameraCard
-              title={firstCamera.title ?? "Camera"}
-              entity_id={firstCamera.entity_id}
-              refresh={firstCamera.refresh}
-              show_title={firstCamera.show_title}
-              width={firstCamera.width}
-              height={firstCamera.height}
+              key={w.id}
+              title={w.title ?? "Camera"}
+              entity_id={w.entity_id}
+              refresh={w.refresh}
+              show_title={w.show_title}
+              width={w.width}
+              height={w.height}
               editMode={editMode}
               storageScope={id}
+              widgetId={w.id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstCamera.id)
+                  ? () => setEditingWidgetId(w.id)
                   : undefined
               }
               onRemove={
                 editMode
-                  ? () => handleRemoveTile(firstCamera.id)
+                  ? () => handleRemoveTile(w.id)
                   : undefined
               }
+              onResize={editMode ? (size) => handleCameraCardResize(w.id, size) : undefined}
             />
-          ) : null;
-        })()}
+          ))}
+
+        {widgets
+          .filter((w) => w.type === "teamtracker_card" && widgetPage(w) === pageIndex)
+          .map((w) => (
+            <FloatingTeamtrackerCard
+              key={w.id}
+              title={w.title ?? t("cardType.teamtracker_card")}
+              entity_id={w.entity_id}
+              width={w.width}
+              height={w.height}
+              editMode={editMode}
+              storageScope={id}
+              widgetId={w.id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={
+                editMode
+                  ? () => setEditingWidgetId(w.id)
+                  : undefined
+              }
+              onResize={editMode ? (size) => handleTeamtrackerCardResize(w.id, size) : undefined}
+            />
+          ))}
 
         {(() => {
           const firstVacuum = widgets.find((w) => w.type === "vacuum_card" && widgetPage(w) === pageIndex);
@@ -2399,7 +2492,7 @@ export default function DashboardEditPage() {
         {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
           <>
             <div
-              className="fixed inset-0 z-40 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-[190] bg-black/40 dark:bg-black/70 backdrop-blur-sm"
               aria-hidden
               data-no-page-swipe
               onClick={() => {
@@ -2410,11 +2503,8 @@ export default function DashboardEditPage() {
                 }
               }}
             />
-            <div className={cn(
-              "fixed top-4 right-4 bottom-4 z-50 w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 shadow-2xl",
-              editingWidget.type === "room_card" && "max-w-lg"
-            )}>
-              <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-gray-200 dark:border-white/10">
+            <div className="fixed left-1/2 top-1/2 z-[200] flex max-h-[min(820px,calc(100vh-6rem))] w-[min(960px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950">
+              <div className="flex shrink-0 items-center justify-between border-b border-gray-200 p-5 pb-3 dark:border-white/10">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {(editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card")
                   ? t("editPanel.editText")
@@ -2439,13 +2529,14 @@ export default function DashboardEditPage() {
                     setEditingWidgetId(null);
                   }
                 }}
-                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400"
+                className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
                 aria-label={t("editPanel.close")}
               >
                 <X className="h-5 w-5" />
               </button>
               </div>
-              <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-3">
+              <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5 pt-4 md:max-w-[440px] md:shrink-0 md:border-r md:border-gray-200 dark:md:border-white/10">
                 {pageCount > 1 && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -2908,6 +2999,8 @@ export default function DashboardEditPage() {
                     filter={
                       editingWidget.type === "pill_card"
                         ? (e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + "."))
+                        : editingWidget.type === "teamtracker_card"
+                          ? (e) => isTeamtrackerEntityId(e.entity_id)
                         : editingWidget.type === "energy_monitor_card"
                           ? (e) => e.entity_id.startsWith("weather.") || e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor.")
                           : (editingWidget.type === "sensor_card" || editingWidget.type === "stat_pill_card")
@@ -3230,7 +3323,7 @@ export default function DashboardEditPage() {
                         {editForm.background_image && (
                           <div
                             className="h-24 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                            style={{ backgroundImage: `url(${editForm.background_image})` }}
+                            style={{ backgroundImage: cssUrl(editForm.background_image) }}
                           />
                         )}
                         <div className="flex gap-2">
@@ -3535,7 +3628,7 @@ export default function DashboardEditPage() {
                       {editForm.background_image && (
                         <div
                           className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                          style={{ backgroundImage: `url(${editForm.background_image})` }}
+                          style={{ backgroundImage: cssUrl(editForm.background_image) }}
                         />
                       )}
                       <div className="flex gap-2 mb-2">
@@ -3594,7 +3687,7 @@ export default function DashboardEditPage() {
                       {editForm.background_image_dark && (
                         <div
                           className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                          style={{ backgroundImage: `url(${editForm.background_image_dark})` }}
+                          style={{ backgroundImage: cssUrl(editForm.background_image_dark) }}
                         />
                       )}
                       <div className="flex gap-2 mb-2">
@@ -3729,7 +3822,7 @@ export default function DashboardEditPage() {
                             {cond.image && (
                               <div
                                 className="h-8 w-8 shrink-0 rounded bg-cover bg-center border border-gray-200 dark:border-white/10"
-                                style={{ backgroundImage: `url(${cond.image})` }}
+                                style={{ backgroundImage: cssUrl(cond.image) }}
                                 aria-hidden
                               />
                             )}
@@ -3782,7 +3875,7 @@ export default function DashboardEditPage() {
                             {cond.image_dark && (
                               <div
                                 className="h-8 w-8 shrink-0 rounded bg-cover bg-center border border-gray-200 dark:border-white/10"
-                                style={{ backgroundImage: `url(${cond.image_dark})` }}
+                                style={{ backgroundImage: cssUrl(cond.image_dark) }}
                                 aria-hidden
                               />
                             )}
@@ -4319,7 +4412,7 @@ aria-label={t("editPanel.removeCondition")}
                       {editForm.background_image ? (
                         <div
                           className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10"
-                          style={{ backgroundImage: `url(${editForm.background_image})` }}
+                          style={{ backgroundImage: cssUrl(editForm.background_image) }}
                         />
                       ) : null}
                       <div className="mb-2 flex gap-2">
@@ -4872,10 +4965,10 @@ aria-label={t("editPanel.removeCondition")}
                       </label>
                       <input
                         type="number"
-                        min={200}
-                        max={600}
+                        min={CAMERA_CARD_MIN_WIDTH}
+                        max={CAMERA_CARD_MAX_WIDTH}
                         step={10}
-                        value={editForm.width ?? 360}
+                        value={editForm.width ?? CAMERA_CARD_DEFAULT_WIDTH}
                         onChange={(e) => {
                           const v = e.target.value === "" ? undefined : Number(e.target.value);
                           setEditForm((prev) => ({
@@ -4883,10 +4976,12 @@ aria-label={t("editPanel.removeCondition")}
                             width: v != null && !Number.isNaN(v) ? v : undefined,
                           }));
                         }}
-                        placeholder="360"
+                        placeholder={String(CAMERA_CARD_DEFAULT_WIDTH)}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRange360")}</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        {CAMERA_CARD_MIN_WIDTH}–{CAMERA_CARD_MAX_WIDTH} px
+                      </p>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -4894,10 +4989,10 @@ aria-label={t("editPanel.removeCondition")}
                       </label>
                       <input
                         type="number"
-                        min={150}
-                        max={450}
+                        min={CAMERA_CARD_MIN_HEIGHT}
+                        max={CAMERA_CARD_MAX_HEIGHT}
                         step={10}
-                        value={editForm.height ?? 270}
+                        value={editForm.height ?? CAMERA_CARD_DEFAULT_HEIGHT}
                         onChange={(e) => {
                           const v = e.target.value === "" ? undefined : Number(e.target.value);
                           setEditForm((prev) => ({
@@ -4905,13 +5000,67 @@ aria-label={t("editPanel.removeCondition")}
                             height: v != null && !Number.isNaN(v) ? v : undefined,
                           }));
                         }}
-                        placeholder="270"
+                        placeholder={String(CAMERA_CARD_DEFAULT_HEIGHT)}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                       />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange270")}</p>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        {CAMERA_CARD_MIN_HEIGHT}–{CAMERA_CARD_MAX_HEIGHT} px
+                      </p>
                     </div>
                     </>
                     )}
+                  </>
+                )}
+                {editingWidget.type === "teamtracker_card" && (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.cardWidthPx")}
+                      </label>
+                      <input
+                        type="number"
+                        min={TEAMTRACKER_CARD_MIN_WIDTH}
+                        max={TEAMTRACKER_CARD_MAX_WIDTH}
+                        step={10}
+                        value={editForm.width ?? TEAMTRACKER_CARD_DEFAULT_WIDTH}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            width: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        placeholder={String(TEAMTRACKER_CARD_DEFAULT_WIDTH)}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        {TEAMTRACKER_CARD_MIN_WIDTH}–{TEAMTRACKER_CARD_MAX_WIDTH} px
+                      </p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.cardHeightPx")}
+                      </label>
+                      <input
+                        type="number"
+                        min={TEAMTRACKER_CARD_MIN_HEIGHT}
+                        max={TEAMTRACKER_CARD_MAX_HEIGHT}
+                        step={10}
+                        value={editForm.height ?? TEAMTRACKER_CARD_DEFAULT_HEIGHT}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            height: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        placeholder={String(TEAMTRACKER_CARD_DEFAULT_HEIGHT)}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        {TEAMTRACKER_CARD_MIN_HEIGHT}–{TEAMTRACKER_CARD_MAX_HEIGHT} px
+                      </p>
+                    </div>
                   </>
                 )}
                 {editingWidget.type === "weather_card" && (
@@ -5256,7 +5405,77 @@ aria-label={t("editPanel.removeCondition")}
                 )
               }
               </div>
-                <div className="shrink-0 flex justify-between gap-2 p-5 pt-4 pb-6 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900">
+              <div className="flex min-h-[220px] flex-1 flex-col bg-gray-50 p-5 dark:bg-black/40 md:min-h-0">
+                <p className="mb-1 text-xs font-medium uppercase tracking-[0.08em] text-gray-500 dark:text-zinc-400">
+                  {t("editPanel.preview")}
+                </p>
+                <p className="mb-4 text-xs text-gray-400 dark:text-zinc-500">{t("editPanel.previewHint")}</p>
+                <div className="flex flex-1 items-center justify-center overflow-auto rounded-xl border border-dashed border-gray-200 bg-[radial-gradient(circle_at_top,_#f8fafc,_#eef2f7)] p-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,_#18181b,_#09090b)]">
+                  {!editForm.entity_id &&
+                  (editingWidget.type === "teamtracker_card" ||
+                    editingWidget.type === "climate_card" ||
+                    editingWidget.type === "climate_card_2" ||
+                    editingWidget.type === "vacuum_card" ||
+                    editingWidget.type === "vacuum_card_2") ? (
+                    <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                      {t("editPanel.previewEmpty")}
+                    </p>
+                  ) : editingWidget.type === "teamtracker_card" ? (
+                    <div
+                      className="w-full max-w-full"
+                      style={{
+                        width: clampTeamtrackerCardWidth(editForm.width ?? TEAMTRACKER_CARD_DEFAULT_WIDTH),
+                        height: clampTeamtrackerCardHeight(editForm.height ?? TEAMTRACKER_CARD_DEFAULT_HEIGHT),
+                        maxWidth: "100%",
+                      }}
+                    >
+                      <TeamtrackerCardWidget
+                        title={editForm.title || t("cardType.teamtracker_card")}
+                        entity_id={editForm.entity_id}
+                        className="h-full min-h-0"
+                      />
+                    </div>
+                  ) : editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" ? (
+                    <ClimateCard2Widget
+                      title={editForm.title || t("cardType.climate_card_2")}
+                      entity_id={editForm.entity_id}
+                      humidity_entity_id={editForm.humidity_entity_id}
+                      icon={editForm.icon}
+                      width={clampClimateCardWidth(editForm.width ?? CLIMATE_CARD_DEFAULT_WIDTH)}
+                      height={clampClimateCardHeight(editForm.height ?? CLIMATE_CARD_DEFAULT_HEIGHT)}
+                    />
+                  ) : editingWidget.type === "vacuum_card_2" ? (
+                    <VacuumCard2Widget
+                      title={editForm.title || t("cardType.vacuum_card_2")}
+                      entity_id={editForm.entity_id}
+                      progress_entity_id={editForm.progress_entity_id}
+                      background_image={editForm.background_image}
+                      width={clampVacuumCard2Width(editForm.width ?? VACUUM_CARD_2_DEFAULT_WIDTH)}
+                      height={clampVacuumCard2Height(editForm.height ?? VACUUM_CARD_2_DEFAULT_HEIGHT)}
+                    />
+                  ) : editingWidget.type === "vacuum_card" ? (
+                    <VacuumCardWidget
+                      title={editForm.title || t("cardType.vacuum_card")}
+                      entity_id={editForm.entity_id}
+                      script_ids={editForm.script_ids}
+                      script_names={editForm.script_names}
+                      cleaned_area_entity_id={editForm.cleaned_area_entity_id}
+                      icon={editForm.icon}
+                    />
+                  ) : (
+                    <div className="max-w-xs text-center">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        {editForm.title || editingWidget.type.replace(/_/g, " ")}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                        {editingWidget.type}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              </div>
+                <div className="flex shrink-0 justify-between gap-2 border-t border-gray-200 bg-white p-5 pb-6 pt-4 dark:border-white/10 dark:bg-zinc-950">
                   {editingWidget.type === "card_group" && editingGroupChildId ? (
                     <>
                       <button
@@ -5479,8 +5698,12 @@ aria-label={t("editPanel.removeCondition")}
                         ...(editingWidget.type === "camera_card" && {
                           refresh: editForm.refresh ?? 10,
                           show_title: editForm.show_title !== false,
-                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
-                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
+                          width: editForm.width != null && editForm.width > 0 ? clampCameraCardWidth(editForm.width) : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? clampCameraCardHeight(editForm.height) : undefined,
+                        }),
+                        ...(editingWidget.type === "teamtracker_card" && {
+                          width: editForm.width != null && editForm.width > 0 ? clampTeamtrackerCardWidth(editForm.width) : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? clampTeamtrackerCardHeight(editForm.height) : undefined,
                         }),
                         ...(editingWidget.type === "vacuum_card" && {
                           script_ids: editForm.script_ids ?? [],

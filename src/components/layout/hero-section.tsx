@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { cssUrl } from "@/lib/base-path";
 
 type HeroSectionProps = {
   title: string;
@@ -48,7 +49,7 @@ export function HeroSection({
       {bgUrl && (
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${bgUrl})` }}
+          style={{ backgroundImage: cssUrl(bgUrl) }}
           aria-hidden
         />
       )}

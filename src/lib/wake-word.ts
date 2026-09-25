@@ -1,3 +1,5 @@
+import { withBasePath } from "@/lib/base-path";
+
 export const WAKE_WORD_IDS = ["ok_nabu", "hey_jarvis", "alexa", "hey_mycroft", "hey_rhasspy"] as const;
 
 export type WakeWordId = (typeof WAKE_WORD_IDS)[number];
@@ -61,7 +63,7 @@ export function resolveWakeWordId(value: string | null | undefined): WakeWordId 
 export function wakeWordModelRef(id: WakeWordId): string | { name: string; url: string } {
   const model = WAKE_WORD_MODELS[id];
   if (model.pretrained) return model.pretrained;
-  return { name: model.id, url: `${WAKE_WORD_MODELS_BASE}${model.file}` };
+  return { name: model.id, url: withBasePath(`${WAKE_WORD_MODELS_BASE}${model.file}`) };
 }
 
 export function shouldRunWakeWordListener(input: {

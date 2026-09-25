@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import {
   mediaArtworkCacheKey,
   mediaImageRequestUrl,
@@ -6,6 +6,14 @@ import {
 } from "./media-image";
 
 describe("mediaArtworkCacheKey", () => {
+  const prevBase = process.env.NEXT_PUBLIC_BASE_PATH;
+  beforeEach(() => {
+    delete process.env.NEXT_PUBLIC_BASE_PATH;
+  });
+  afterEach(() => {
+    if (prevBase === undefined) delete process.env.NEXT_PUBLIC_BASE_PATH;
+    else process.env.NEXT_PUBLIC_BASE_PATH = prevBase;
+  });
   it("changes when the title changes even if the picture URL is unchanged", () => {
     const picture = "/api/media_player_proxy/media_player.woonkamer";
     const first = mediaArtworkCacheKey({

@@ -1,0 +1,28 @@
+# Dependencies & build output
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+
+# Env & local data
+.env
+.env.*
+!.env.example
+prisma/*.db
+prisma/*.db-journal
+
+# Git / IDE
+.git
+.github
+.claude
+.cursor
+*.md
+!README.md
+
+# Tests & misc
+src/**/*.test.ts
+vitest.config.ts
+docs
+unraid-template.xml

@@ -1,5 +1,6 @@
 "use client";
 
+import { cssUrl } from "@/lib/base-path";
 import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
 import { X } from "lucide-react";
 import {
@@ -198,7 +199,7 @@ export function EditPanelModal(props: EditPanelModalProps) {
                 <>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.backgroundLight")}</label>
-                    {editForm.background_image && <div className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10" style={{ backgroundImage: `url(${editForm.background_image})` }} />}
+                    {editForm.background_image && <div className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10" style={{ backgroundImage: cssUrl(editForm.background_image) }} />}
                     <div className="flex gap-2 mb-2">
                       <label className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/10">
                         {uploadingEnergyBg ? t("editPanel.uploading") : t("editPanel.uploadImage")}
@@ -210,7 +211,7 @@ export function EditPanelModal(props: EditPanelModalProps) {
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.backgroundDark")}</label>
-                    {editForm.background_image_dark && <div className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10" style={{ backgroundImage: `url(${editForm.background_image_dark})` }} />}
+                    {editForm.background_image_dark && <div className="mb-2 h-20 rounded-lg bg-cover bg-center border border-gray-200 dark:border-white/10" style={{ backgroundImage: cssUrl(editForm.background_image_dark) }} />}
                     <div className="flex gap-2 mb-2">
                       <label className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/10">
                         {uploadingEnergyBgDark ? t("editPanel.uploading") : t("editPanel.uploadImage")}

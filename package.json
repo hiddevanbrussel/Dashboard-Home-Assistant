@@ -1,6 +1,6 @@
 {
   "name": "home-assistant-dashboard-builder",
-  "version": "0.4.0",
+  "version": "0.4.14",
   "private": true,
   "scripts": {
     "dev": "npx prisma migrate deploy && next dev --turbopack",

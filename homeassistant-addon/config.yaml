@@ -1,0 +1,29 @@
+name: Dashboard Builder
+version: "0.4.14"
+slug: dashboard_builder
+description: Touchscreen-friendly Home Assistant dashboard with widgets, rooms, energy, and more.
+url: https://github.com/hiddevanbrussel/Dashboard-Home-Assistant
+arch:
+  - aarch64
+  - amd64
+init: false
+ingress: true
+ingress_port: 8099
+# Proxy buffers full responses for Flight-safe path rewrite — not a streaming backend.
+ingress_stream: false
+panel_icon: mdi:view-dashboard-variant
+panel_title: Dashboard
+homeassistant_api: true
+ports:
+  3000/tcp: 3000
+ports_description:
+  3000/tcp: Direct access (bypasses ingress; open http://HOME_ASSISTANT:3000/__ha_ingress__)
+options:
+  app_secret: ""
+  pexels_api_key: ""
+  default_language: en
+schema:
+  app_secret: password
+  pexels_api_key: str?
+  default_language: list(en|nl)
+image: ghcr.io/hiddevanbrussel/dashboard-home-assistant-addon/{arch}

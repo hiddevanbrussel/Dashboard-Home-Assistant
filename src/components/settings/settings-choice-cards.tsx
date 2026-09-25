@@ -3,6 +3,7 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { Check, ImagePlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { cssUrl } from "@/lib/base-path";
 import {
   SCREENSAVER_CLOCK_POSITIONS,
   type ScreensaverClockPosition,
@@ -16,6 +17,10 @@ import {
   clockSizePreviewDigitClass,
   type ScreensaverClockSize,
 } from "@/lib/screensaver-clock-size";
+import {
+  clockWeightClass,
+  type ScreensaverClockWeight,
+} from "@/lib/screensaver-clock-weight";
 
 export function SettingsChoiceCards<T extends string>({
   label,
@@ -261,9 +266,16 @@ export function ClockFormatPreview({ variant }: { variant: "24" | "12" }) {
   );
 }
 
-export function ClockSizePreview({ size }: { size: ScreensaverClockSize }) {
+export function ClockSizePreview({
+  size,
+  weight = "extrabold",
+}: {
+  size: ScreensaverClockSize;
+  weight?: ScreensaverClockWeight;
+}) {
   const digitClass = cn(
-    "font-montserrat font-black leading-none tabular-nums",
+    "font-montserrat leading-none tabular-nums",
+    clockWeightClass(weight),
     clockSizePreviewDigitClass(size)
   );
   return (
@@ -274,6 +286,16 @@ export function ClockSizePreview({ size }: { size: ScreensaverClockSize }) {
       </span>
     </div>
   );
+}
+
+export function ClockWeightPreview({
+  weight,
+  size = "md",
+}: {
+  weight: ScreensaverClockWeight;
+  size?: ScreensaverClockSize;
+}) {
+  return <ClockSizePreview size={size} weight={weight} />;
 }
 
 export function SettingsAccentDots({
@@ -361,7 +383,7 @@ export function SettingsImagePick({
         {url ? (
           <span
             className="block h-[4.75rem] bg-cover bg-center"
-            style={{ backgroundImage: `url(${url})` }}
+            style={{ backgroundImage: cssUrl(url) }}
           />
         ) : (
           <span className="flex h-[4.75rem] flex-col items-center justify-center gap-1.5 bg-white/70 dark:bg-white/5">

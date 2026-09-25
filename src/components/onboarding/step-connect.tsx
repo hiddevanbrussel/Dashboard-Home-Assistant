@@ -211,7 +211,7 @@ export function StepConnect() {
           ? t("onboarding.connect.manualAddonHint")
           : t("onboarding.connect.manualHint")
       }
-        footer={
+      footer={
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row-reverse">
           {testResult?.ok ? (
             <button

@@ -2,8 +2,21 @@ export const CLIMATE_CARD_DEFAULT_WIDTH = 300;
 export const CLIMATE_CARD_DEFAULT_HEIGHT = 340;
 export const CLIMATE_CARD_MIN_WIDTH = 240;
 export const CLIMATE_CARD_MAX_WIDTH = 500;
-export const CLIMATE_CARD_MIN_HEIGHT = 280;
+/** Matches media-card min height so climate can sit at ~248px beside media. */
+export const CLIMATE_CARD_MIN_HEIGHT = 240;
 export const CLIMATE_CARD_MAX_HEIGHT = 480;
+/** Below this, icon-only mode tiles and a smaller gauge. */
+export const CLIMATE_CARD_COMPACT_HEIGHT = 300;
+/** Below this, denser chrome so the gauge still fits at media-card sizes. */
+export const CLIMATE_CARD_DENSE_HEIGHT = 270;
+
+export type ClimateCardDensity = "comfortable" | "compact" | "dense";
+
+export function climateCardDensity(height: number): ClimateCardDensity {
+  if (height < CLIMATE_CARD_DENSE_HEIGHT) return "dense";
+  if (height < CLIMATE_CARD_COMPACT_HEIGHT) return "compact";
+  return "comfortable";
+}
 
 export function clampClimateCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);

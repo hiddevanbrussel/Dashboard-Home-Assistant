@@ -1,0 +1,75 @@
+# Home Assistant addon image: app (with ingress basePath) + ingress proxy.
+# Built in CI and published as ghcr.io/hiddevanbrussel/dashboard-home-assistant-addon.
+# Local Supervisor installs pull the prebuilt image (see config.yaml `image:`).
+
+ARG VERSION=0.0.0
+ARG BUILD_ARCH=amd64
+
+# Reuse the same app build as the main image, with a fixed basePath placeholder.
+# /ingress-proxy.js rewrites /__ha_ingress__ → X-Ingress-Path (nginx is direct port only).
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --ignore-scripts
+
+COPY . .
+ENV DATABASE_URL="file:./dev.db"
+ENV NEXT_BASE_PATH="/__ha_ingress__"
+ENV NEXT_PUBLIC_BASE_PATH="/__ha_ingress__"
+ARG VERSION=0.0.0
+ENV APP_VERSION="${VERSION}"
+RUN npx prisma generate
+RUN npm run build
+
+FROM node:20-alpine AS runner
+
+ARG VERSION=0.0.0
+ARG BUILD_ARCH=amd64
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.title="Home Assistant Dashboard Builder (addon)" \
+      io.hass.version="${VERSION}" \
+      io.hass.type="addon" \
+      io.hass.arch="${BUILD_ARCH}"
+
+ENV APP_VERSION="${VERSION}"
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV WS_NO_BUFFER_UTIL=1
+ENV PORT=3001
+ENV HOSTNAME="127.0.0.1"
+ENV UPLOAD_DIR=/data/uploads
+ENV DATABASE_URL="file:/data/app.db"
+ENV NEXT_BASE_PATH="/__ha_ingress__"
+ENV NEXT_PUBLIC_BASE_PATH="/__ha_ingress__"
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs \
+  && apk add --no-cache gosu nginx jq openssl
+
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
+COPY --from=builder /app/generated ./generated
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+
+RUN apk add --no-cache python3 make g++ \
+  && npm rebuild better-sqlite3 \
+  && apk del python3 make g++
+
+COPY docker-entrypoint.sh ./
+COPY homeassistant-addon/rootfs /
+RUN chmod +x docker-entrypoint.sh /run.sh /ingress-proxy.js \
+  && mkdir -p /app/.next/cache /run/nginx /etc/nginx/http.d \
+  && chown -R nextjs:nodejs /app/.next/cache \
+  && rm -f /etc/nginx/http.d/default.conf /etc/nginx/http.d/ingress.conf
+
+EXPOSE 3000 8099
+
+ENTRYPOINT ["/run.sh"]
