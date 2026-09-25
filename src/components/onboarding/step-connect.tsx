@@ -211,7 +211,7 @@ export function StepConnect() {
           ? t("onboarding.connect.manualAddonHint")
           : t("onboarding.connect.manualHint")
       }
-      footer={
+        footer={
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row-reverse">
           {testResult?.ok ? (
             <button
@@ -232,6 +232,13 @@ export function StepConnect() {
               {testing ? t("onboarding.connect.testing") : t("onboarding.connect.test")}
             </button>
           )}
+          <button
+            type="button"
+            onClick={nextStep}
+            className="rounded-full px-6 py-3 text-sm font-medium text-gray-600 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/10"
+          >
+            {t("onboarding.connect.later")}
+          </button>
           <button
             type="button"
             onClick={prevStep}
