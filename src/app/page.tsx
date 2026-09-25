@@ -43,13 +43,13 @@ export default function HomePage() {
             Quick start
           </h3>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-            Set up your dashboard in 5–10 minutes with live Home Assistant data.
+            Set up your dashboard with a few quick questions.
           </p>
           <Link
             href="/onboarding"
             className="mt-3 inline-block rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 dark:bg-accent-green dark:text-gray-900 hover:dark:bg-accent-green/90"
           >
-            Start onboarding
+            Start setup
           </Link>
         </GlassCard>
       </div>

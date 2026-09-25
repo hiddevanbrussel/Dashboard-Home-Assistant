@@ -35,7 +35,7 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
           }
         } else if (d === null) {
           setAllowed(false);
-          router.replace("/onboarding/start");
+          router.replace("/onboarding");
         } else {
           setAllowed(true);
         }
