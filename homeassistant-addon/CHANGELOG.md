@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.13
+
+- Fix RSC `Connection closed` under Ingress: path rewrite expanded Flight `T` rows without updating hex byte-lengths, so `createFromReadableStream` saw an incomplete payload when the document stream closed
+  - Flight (`text/x-component`) and HTML-embedded `self.__next_f.push` payloads are rewritten length-aware
+  - Disable `ingress_stream` (proxy already buffers full responses)
+
 ## 0.4.12
 
 - Broader Ingress audit after image/basePath work:
