@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.11
+
+- Fix client-router 404: bare `/__ha_ingress__` (Next `basePath`) must rewrite to `X-Ingress-Path` **without** a trailing slash
+- Only exact root `href`/`src` keep a trailing slash (HA route matcher)
+- Line-buffer ingress-proxy logs in Docker so request traffic is visible
+
 ## 0.4.10
 
 - Fix Ingress `/api/*` colliding with Home Assistant Core: unprefixed `/api/...` and `/manifest.json` were resolved on the HA host (404)
