@@ -52,10 +52,18 @@ function rewriteText(text, ingressPath) {
   return out;
 }
 
+/**
+ * Map HA-stripped ingress URL onto Next.js basePath.
+ * Root must be `/__ha_ingress__` (no trailing slash) — a slash triggers
+ * Next.js 308 and can leak Location outside the ingress iframe.
+ */
 function upstreamPath(url) {
   const u = url || "/";
-  if (u === "/" || u === "") return PLACEHOLDER + "/";
-  return PLACEHOLDER + u;
+  const q = u.indexOf("?");
+  const path = q === -1 ? u : u.slice(0, q);
+  const query = q === -1 ? "" : u.slice(q);
+  if (path === "/" || path === "") return PLACEHOLDER + query;
+  return PLACEHOLDER + path + query;
 }
 
 function stripHopByHop(headers) {
@@ -85,21 +93,31 @@ function forwardRequestHeaders(req) {
   return headers;
 }
 
+function logAccess(ip, method, url, status, bytes, ingressPath, ms) {
+  const pathHint = ingressPath || "-";
+  console.log(
+    `[ingress-proxy] ${ip} "${method} ${url}" ${status} ${bytes} x-ingress-path=${pathHint} ${ms}ms`
+  );
+}
+
 const server = http.createServer((req, res) => {
+  const started = Date.now();
   const ip = clientIp(req);
   if (!isAllowed(ip)) {
+    console.warn(`[ingress-proxy] 403 from ${ip} ${req.method} ${req.url}`);
     res.writeHead(403, { "Content-Type": "text/plain" });
     res.end("Forbidden");
     return;
   }
 
   const ingressPath = (req.headers["x-ingress-path"] || "").replace(/\/+$/, "") || "";
+  const targetPath = upstreamPath(req.url);
 
   const proxyReq = http.request(
     {
       hostname: UPSTREAM_HOST,
       port: UPSTREAM_PORT,
-      path: upstreamPath(req.url),
+      path: targetPath,
       method: req.method,
       headers: forwardRequestHeaders(req),
     },
@@ -132,8 +150,10 @@ const server = http.createServer((req, res) => {
         }
         outHeaders["content-length"] = String(Buffer.byteLength(body));
 
-        res.writeHead(proxyRes.statusCode || 502, outHeaders);
+        const status = proxyRes.statusCode || 502;
+        res.writeHead(status, outHeaders);
         res.end(body);
+        logAccess(ip, req.method, req.url, status, body.length, ingressPath, Date.now() - started);
       });
     }
   );
@@ -144,6 +164,7 @@ const server = http.createServer((req, res) => {
       res.writeHead(502, { "Content-Type": "text/plain" });
     }
     res.end("Bad Gateway");
+    logAccess(ip, req.method, req.url, 502, 0, ingressPath, Date.now() - started);
   });
 
   req.pipe(proxyReq);
