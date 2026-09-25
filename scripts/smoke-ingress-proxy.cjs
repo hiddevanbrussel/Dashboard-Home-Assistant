@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 /**
- * Smoke test: ingress proxy rewrite + buffered RSC body.
+ * Smoke test: ingress proxy rewrite + buffered RSC body + Flight length prefixes.
  */
 "use strict";
 
 const http = require("http");
 const path = require("path");
-const { rewriteText, shouldRewrite, upstreamPath, PLACEHOLDER } = require(
-  path.join(__dirname, "..", "homeassistant-addon/rootfs/ingress-proxy.js")
-);
+const {
+  rewriteText,
+  rewritePathsInText,
+  rewriteFlightText,
+  rewriteHtmlDocument,
+  shouldRewrite,
+  upstreamPath,
+  PLACEHOLDER,
+} = require(path.join(__dirname, "..", "homeassistant-addon/rootfs/ingress-proxy.js"));
 
 const INGRESS = "/api/hassio_ingress/testhash";
 const UPSTREAM_PORT = 13001;
@@ -64,11 +70,57 @@ assert(cssUrl.includes(`url(${INGRESS}/uploads/a.png)`), "css url uploads");
 assert(cssUrl.includes(`url("${INGRESS}/energy-overview-house.webp")`), "css url static image");
 assert(!cssUrl.includes("url(/uploads/"), "no bare css upload url");
 
+// Flight T-row: path expansion must update hex byte-length or clients get Connection closed.
+const inner = `Hello ${PLACEHOLDER}/page and more`;
+const tRow = `2:T${Buffer.byteLength(inner, "utf8").toString(16)},${inner}\n`;
+const flightOut = rewriteFlightText(tRow, INGRESS);
+assert(!flightOut.includes("__ha_ingress__"), "flight placeholder gone");
+assert(flightOut.includes(`${INGRESS}/page`), "flight path rewritten");
+const m = /^2:T([0-9a-f]+),/.exec(flightOut);
+assert(m, `flight T header: ${flightOut.slice(0, 40)}`);
+const declared = parseInt(m[1], 16);
+const payload = flightOut.slice(m[0].length).replace(/\n$/, "");
+assert(
+  declared === Buffer.byteLength(payload, "utf8"),
+  `T length ${declared} !== actual ${Buffer.byteLength(payload, "utf8")}`
+);
+
+// Naïve rewrite (broken) would leave stale length — prove we fixed it vs rewritePathsInText alone
+const naive = rewritePathsInText(tRow, INGRESS);
+const naiveM = /^2:T([0-9a-f]+),/.exec(naive);
+const naiveDeclared = parseInt(naiveM[1], 16);
+const naivePayload = naive.slice(naiveM[0].length).replace(/\n$/, "");
+assert(
+  naiveDeclared !== Buffer.byteLength(naivePayload, "utf8"),
+  "sanity: naïve rewrite breaks T length"
+);
+
+// HTML-embedded __next_f push with a T row
+const pushPayload = `0:{"b":"x"}\n2:T${Buffer.byteLength(inner, "utf8").toString(16)},${inner}\n`;
+const html = `<html><script>self.__next_f.push([1,${JSON.stringify(pushPayload)}])</script><img src="/uploads/a.png"></html>`;
+const htmlOut = rewriteHtmlDocument(html, INGRESS);
+assert(htmlOut.includes(`src="${INGRESS}/uploads/a.png"`), "html img prefixed");
+assert(!htmlOut.includes("__ha_ingress__"), "html flight placeholder gone");
+const pushMatch = /self\.__next_f\.push\(\[1,("(?:\\.|[^"\\])*")\]\)/.exec(htmlOut);
+assert(pushMatch, "push still present");
+const decoded = JSON.parse(pushMatch[1]);
+const tm = /^2:T([0-9a-f]+),/m.exec(decoded.split("\n")[1] || "");
+assert(tm, `embedded T row: ${decoded}`);
+const embDecl = parseInt(tm[1], 16);
+const embLine = decoded.split("\n")[1];
+const embPayload = embLine.slice(tm[0].length);
+assert(
+  embDecl === Buffer.byteLength(embPayload, "utf8"),
+  `embedded T length ${embDecl} !== ${Buffer.byteLength(embPayload, "utf8")}`
+);
+
 const rscBody =
   '0:["$","div",null,{"children":"ok"}]\n' +
   `1:I{"id":"${PLACEHOLDER}/_next/static/chunks/1255.js","chunks":[]}\n` +
-  "2:T" +
-  "x".repeat(50000);
+  (() => {
+    const text = "x".repeat(1000);
+    return `2:T${Buffer.byteLength(text, "utf8").toString(16)},${text}\n`;
+  })();
 
 let upstreamHits = 0;
 const upstream = http.createServer((req, res) => {

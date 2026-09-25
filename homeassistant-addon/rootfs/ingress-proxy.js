@@ -5,8 +5,10 @@
  * Buffers each upstream response and rewrites the build-time basePath
  * placeholder `/__ha_ingress__` to the request's `X-Ingress-Path`.
  *
- * Also prefixes stray absolute `/api/...`, `/_next/...`, and `/manifest.json`
- * paths so they do not escape the iframe and hit Home Assistant Core (404).
+ * Critical for App Router: React Flight (`text/x-component` and `__next_f`
+ * payloads) uses length-prefixed `T` rows. Naïve string replace expands paths
+ * without updating those lengths → client `createFromReadableStream` hits
+ * "Connection closed." Flight bodies are rewritten length-aware.
  */
 "use strict";
 
@@ -26,6 +28,11 @@ const UPSTREAM_HOST = "127.0.0.1";
 const UPSTREAM_PORT = Number(process.env.INGRESS_UPSTREAM_PORT || 3001);
 const LISTEN_PORT = Number(process.env.INGRESS_PORT || 8099);
 const UPSTREAM_ORIGIN = `http://${UPSTREAM_HOST}:${UPSTREAM_PORT}`;
+
+/** Flight tags that use `id:TAG{hexLen},{bytes}` (see react-server-dom client). */
+const LENGTH_PREFIXED_TAGS = new Set(
+  Buffer.from("TAOoUSsLlGgMmV", "ascii")
+);
 
 function clientIp(req) {
   const raw = req.socket.remoteAddress || "";
@@ -54,6 +61,15 @@ function shouldRewrite(contentType) {
   );
 }
 
+function isHtml(contentType) {
+  return (contentType || "").toLowerCase().includes("text/html");
+}
+
+function isFlight(contentType) {
+  const t = (contentType || "").toLowerCase();
+  return t.includes("text/x-component") || t.includes("text/x-script");
+}
+
 /**
  * Rewrite placeholder → ingress path, then catch absolute app paths that would
  * otherwise resolve against HA Core (`/api/pwa-icon`, `/manifest.json`, …).
@@ -61,8 +77,10 @@ function shouldRewrite(contentType) {
  * Critical: Next.js `basePath` must NOT gain a trailing slash. Rewriting
  * `/__ha_ingress__` → `/api/hassio_ingress/TOK/` breaks the client router (404).
  * Only exact root href/src get a trailing slash (HA route requires it).
+ *
+ * Do NOT use this alone on Flight bodies — use rewriteFlightText/Buffer.
  */
-function rewriteText(text, ingressPath) {
+function rewritePathsInText(text, ingressPath) {
   if (!ingressPath) return text;
   const prefix = ingressPath.replace(/\/+$/, "");
   const withSlash = prefix + "/";
@@ -95,7 +113,6 @@ function rewriteText(text, ingressPath) {
   }
 
   // Absolute app paths that would otherwise resolve on HA Core (404).
-  // Covers href/src/content/poster attributes and CSS url(...).
   const appPath =
     "\\/(?!api\\/hassio_ingress\\/)(?:api\\/|_next\\/|uploads\\/|wake-word\\/|manifest\\.webmanifest|manifest\\.json|[a-zA-Z0-9._-]+\\.(?:png|jpe?g|webp|gif|svg|onnx))[^\"')\\s]*";
   out = out.replace(
@@ -108,6 +125,157 @@ function rewriteText(text, ingressPath) {
   );
 
   return out;
+}
+
+/** @deprecated Use rewritePathsInText — kept as alias for smoke tests / callers. */
+function rewriteText(text, ingressPath) {
+  return rewritePathsInText(text, ingressPath);
+}
+
+/**
+ * Rewrite a React Flight byte stream, updating length prefixes on `T` (text) rows
+ * after path expansion. Binary length-prefixed rows are left unchanged.
+ */
+function rewriteFlightBuffer(input, ingressPath) {
+  if (!ingressPath || !Buffer.isBuffer(input) || input.length === 0) return input;
+
+  const parts = [];
+  let i = 0;
+
+  while (i < input.length) {
+    const idStart = i;
+    while (i < input.length && input[i] !== 0x3a /* : */) i++;
+    if (i >= input.length) {
+      parts.push(input.subarray(idStart));
+      break;
+    }
+    const idBuf = input.subarray(idStart, i);
+    i++; // skip :
+
+    if (i >= input.length) {
+      parts.push(input.subarray(idStart));
+      break;
+    }
+
+    const tag = input[i];
+    if (LENGTH_PREFIXED_TAGS.has(tag)) {
+      i++; // consume tag
+      let byteLen = 0;
+      while (i < input.length && input[i] !== 0x2c /* , */) {
+        const c = input[i];
+        // hex digit
+        if (c >= 48 && c <= 57) byteLen = (byteLen << 4) | (c - 48);
+        else if (c >= 97 && c <= 102) byteLen = (byteLen << 4) | (c - 87);
+        else if (c >= 65 && c <= 70) byteLen = (byteLen << 4) | (c - 55);
+        else break;
+        i++;
+      }
+      if (i < input.length && input[i] === 0x2c) i++; // skip comma
+      else {
+        // Malformed — copy remainder raw
+        parts.push(input.subarray(idStart));
+        break;
+      }
+
+      const payload = input.subarray(i, Math.min(i + byteLen, input.length));
+      i += payload.length;
+
+      if (tag === 0x54 /* T */ && payload.length === byteLen) {
+        const rewritten = rewritePathsInText(payload.toString("utf8"), ingressPath);
+        const newPayload = Buffer.from(rewritten, "utf8");
+        parts.push(
+          idBuf,
+          Buffer.from(`:T${newPayload.length.toString(16)},`, "ascii"),
+          newPayload
+        );
+      } else {
+        // Binary / incomplete — pass through unchanged
+        parts.push(input.subarray(idStart, i));
+      }
+    } else {
+      // Newline-delimited row (JSON / module refs / …)
+      const nl = input.indexOf(0x0a, i);
+      const lineEnd = nl === -1 ? input.length : nl;
+      const line = input.subarray(idStart, lineEnd).toString("utf8");
+      const rewritten = rewritePathsInText(line, ingressPath);
+      parts.push(Buffer.from(rewritten, "utf8"));
+      if (nl !== -1) {
+        parts.push(Buffer.from([0x0a]));
+        i = nl + 1;
+      } else {
+        i = lineEnd;
+      }
+    }
+  }
+
+  return Buffer.concat(parts);
+}
+
+function rewriteFlightText(text, ingressPath) {
+  return rewriteFlightBuffer(Buffer.from(text, "utf8"), ingressPath).toString("utf8");
+}
+
+function unescapeJsString(escaped) {
+  try {
+    return JSON.parse(`"${escaped}"`);
+  } catch {
+    return escaped
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\r")
+      .replace(/\\t/g, "\t")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\");
+  }
+}
+
+/**
+ * HTML documents embed Flight inside `self.__next_f.push([1,"…"])`.
+ * Rewrite those payloads length-aware; rewrite the surrounding markup normally.
+ */
+function rewriteHtmlDocument(html, ingressPath) {
+  if (!ingressPath) return html;
+
+  const re = /self\.__next_f\.push\(\[(\d+),\s*"((?:\\.|[^"\\])*)"\s*\]\)/g;
+  let out = "";
+  let last = 0;
+  let m;
+  while ((m = re.exec(html))) {
+    out += rewritePathsInText(html.slice(last, m.index), ingressPath);
+    const kind = Number(m[1]);
+    const escaped = m[2];
+    if (kind === 1) {
+      const raw = unescapeJsString(escaped);
+      const rewritten = rewriteFlightText(raw, ingressPath);
+      out += `self.__next_f.push([1,${JSON.stringify(rewritten)}])`;
+    } else if (kind === 3) {
+      const b64 = unescapeJsString(escaped);
+      try {
+        const decoded = Buffer.from(b64, "base64");
+        const rewritten = rewriteFlightBuffer(decoded, ingressPath);
+        out += `self.__next_f.push([3,${JSON.stringify(rewritten.toString("base64"))}])`;
+      } catch {
+        out += m[0];
+      }
+    } else {
+      // 0 = bootstrap init, 2 = form state — leave alone
+      out += m[0];
+    }
+    last = m.index + m[0].length;
+  }
+  out += rewritePathsInText(html.slice(last), ingressPath);
+  return out;
+}
+
+function rewriteBody(body, contentType, ingressPath) {
+  if (!ingressPath) return body;
+  if (isFlight(contentType)) {
+    return rewriteFlightBuffer(body, ingressPath);
+  }
+  if (isHtml(contentType)) {
+    return Buffer.from(rewriteHtmlDocument(body.toString("utf8"), ingressPath), "utf8");
+  }
+  return Buffer.from(rewritePathsInText(body.toString("utf8"), ingressPath), "utf8");
 }
 
 /**
@@ -133,7 +301,7 @@ function rewriteLocation(location, ingressPath) {
     loc = loc.slice(UPSTREAM_ORIGIN.length) || "/";
   }
   if (ingressPath) {
-    loc = rewriteText(loc, ingressPath);
+    loc = rewritePathsInText(loc, ingressPath);
   }
   return loc;
 }
@@ -213,7 +381,12 @@ const server = http.createServer((req, res) => {
         let body = Buffer.concat(chunks);
         const ct = proxyRes.headers["content-type"] || "";
         if (shouldRewrite(ct) && ingressPath) {
-          body = Buffer.from(rewriteText(body.toString("utf8"), ingressPath), "utf8");
+          try {
+            body = rewriteBody(body, ct, ingressPath);
+          } catch (err) {
+            console.error("[ingress-proxy] rewrite failed:", err.message);
+            // Fall back to raw upstream body rather than serving corrupt Flight.
+          }
         }
 
         const outHeaders = stripHopByHop(proxyRes.headers);
@@ -226,7 +399,7 @@ const server = http.createServer((req, res) => {
             : [outHeaders["set-cookie"]];
           // Scope cookies to the ingress path (Path=/ would stick on HA Core).
           outHeaders["set-cookie"] = cookies.map((c) => {
-            let s = rewriteText(String(c), ingressPath);
+            let s = rewritePathsInText(String(c), ingressPath);
             if (/;\s*Path=/i.test(s)) {
               s = s.replace(/;\s*Path=\/?/i, `; Path=${ingressPath}/`);
             } else {
@@ -267,6 +440,11 @@ if (require.main === module) {
 
 module.exports = {
   rewriteText,
+  rewritePathsInText,
+  rewriteFlightText,
+  rewriteFlightBuffer,
+  rewriteHtmlDocument,
+  rewriteBody,
   rewriteLocation,
   shouldRewrite,
   upstreamPath,
