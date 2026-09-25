@@ -54,6 +54,7 @@ import { useNewsStore } from "@/stores/news-store";
 import { RobotVacuum, CalendarDays, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
 import { useTranslation } from "@/hooks/use-translation";
 
 type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "energy" | "tasks" | "apps" | "entities";
@@ -172,6 +173,8 @@ export default function SettingsPage() {
   const [token, setToken] = useState("");
   const [connectionSource, setConnectionSource] = useState<"supervisor" | "manual" | null>(null);
   const [isAddon, setIsAddon] = useState(false);
+  const [discoveredInstances, setDiscoveredInstances] = useState<{ baseUrl: string; name: string }[]>([]);
+  const [discovering, setDiscovering] = useState(false);
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: true } | { ok: false; error: string } | null>(null);
@@ -261,6 +264,24 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("ha_oauth") === "ok") {
+      const haBase = params.get("ha_base");
+      if (haBase) setBaseUrl(haBase);
+      setConnectionSource("manual");
+      setTestResult({ ok: true });
+      setSaveMessage("success");
+      setSection("connection");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (params.get("ha_oauth") === "error") {
+      setTestResult({
+        ok: false,
+        error: params.get("ha_oauth_error") || t("settings.connection.oauthFail"),
+      });
+      setSection("connection");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
     fetch("/api/ha/connection")
       .then((r) => r.json())
       .then((d) => {
@@ -272,7 +293,7 @@ export default function SettingsPage() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetch("/api/dashboard")
@@ -422,6 +443,48 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleDiscover() {
+    setDiscovering(true);
+    setTestResult(null);
+    try {
+      const q = baseUrl.trim() ? `?url=${encodeURIComponent(baseUrl.trim())}` : "";
+      const res = await fetch(`/api/ha/discover${q}`);
+      const data = (await res.json()) as {
+        instances?: { baseUrl: string; name: string }[];
+        skipped?: boolean;
+        error?: string;
+      };
+      if (data.skipped) {
+        setDiscoveredInstances([]);
+        return;
+      }
+      setDiscoveredInstances(data.instances ?? []);
+      if (data.error) {
+        setTestResult({ ok: false, error: data.error });
+      } else if ((data.instances?.length ?? 0) === 0) {
+        setTestResult({ ok: false, error: t("settings.connection.discoverEmpty") });
+      }
+    } catch (err) {
+      setTestResult({
+        ok: false,
+        error: err instanceof Error ? err.message : t("settings.connection.discoverFail"),
+      });
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
+  function handleOauthLogin() {
+    if (!baseUrl.trim()) {
+      setTestResult({ ok: false, error: t("settings.connection.needUrl") });
+      return;
+    }
+    const returnTo = encodeURIComponent("/settings");
+    window.location.href = withBasePath(
+      `/api/ha/oauth/start?baseUrl=${encodeURIComponent(baseUrl.trim())}&returnTo=${returnTo}`
+    );
   }
 
   async function handleUseSupervisor() {
@@ -1124,6 +1187,34 @@ export default function SettingsPage() {
               ) : null}
               {connectionSource !== "supervisor" ? (
                 <>
+                  {!isAddon && discoveredInstances.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("settings.connection.discovered")}
+                      </p>
+                      <ul className="space-y-1">
+                        {discoveredInstances.map((inst) => (
+                          <li key={inst.baseUrl}>
+                            <button
+                              type="button"
+                              onClick={() => setBaseUrl(inst.baseUrl)}
+                              className={cn(
+                                "w-full rounded-lg border px-3 py-2 text-left text-sm transition",
+                                baseUrl === inst.baseUrl
+                                  ? "border-accent-yellow/60 bg-accent-yellow/10 dark:border-accent-green/40 dark:bg-accent-green/10"
+                                  : "border-gray-200 hover:bg-black/[0.03] dark:border-white/10 dark:hover:bg-white/5"
+                              )}
+                            >
+                              <span className="font-medium text-gray-900 dark:text-white">{inst.name}</span>
+                              <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                                {inst.baseUrl}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
                   <SettingsField label={t("settings.connection.baseUrl")} htmlFor="ha-baseUrl">
                     <SettingsInput
                       id="ha-baseUrl"
@@ -1154,6 +1245,18 @@ export default function SettingsPage() {
                 <p className="text-sm text-emerald-700 dark:text-emerald-300">{t("settings.connection.saved")}</p>
               ) : null}
               <div className="flex flex-wrap gap-2">
+                {!isAddon && connectionSource !== "supervisor" ? (
+                  <>
+                    <SettingsSecondaryButton onClick={() => void handleDiscover()} disabled={discovering}>
+                      {discovering
+                        ? t("settings.connection.discovering")
+                        : t("settings.connection.discover")}
+                    </SettingsSecondaryButton>
+                    <SettingsPrimaryButton onClick={handleOauthLogin} disabled={!baseUrl.trim()}>
+                      {t("settings.connection.oauthLogin")}
+                    </SettingsPrimaryButton>
+                  </>
+                ) : null}
                 <SettingsPrimaryButton onClick={handleTest} disabled={testing}>
                   {testing ? t("settings.connection.testing") : t("settings.connection.test")}
                 </SettingsPrimaryButton>
