@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.6
+
+- Fix RSC `Connection closed` under Ingress: replace nginx `sub_filter` with a Node proxy that buffers and rewrites `/__ha_ingress__`
+- nginx `sub_filter` breaks Next.js App Router streaming (`createFromReadableStream`)
+
+## 0.4.5
+
+- Fix Ingress 502 Bad Gateway: stop sending `Connection: close` to Next.js with upstream keepalive
+- Larger proxy buffers for basePath body rewrite on JS/HTML
+- Allow Supervisor docker nets `172.30.32.0/23`
+
 ## 0.4.4
 
 - Fix blank page on addon start: remove aggressive DOM prototype / MutationObserver patches that broke React hydration
