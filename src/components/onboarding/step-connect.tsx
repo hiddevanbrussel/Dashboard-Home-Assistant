@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { OnboardingFullscreenLayout } from "./onboarding-fullscreen-layout";
-import { useOnboardingStore } from "@/stores/onboarding-store";
+import { SoftOnboardingLayout } from "./soft-onboarding-layout";
+import { useOnboardingStore, ONBOARDING_TOTAL_STEPS } from "@/stores/onboarding-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 type ConnectionStatus = {
   baseUrl: string | null;
@@ -13,12 +14,14 @@ type ConnectionStatus = {
 };
 
 export function StepConnect() {
-  const { connection, setConnection, setTestResult, testResult, nextStep } =
+  const { t } = useTranslation();
+  const { connection, setConnection, setTestResult, testResult, nextStep, prevStep } =
     useOnboardingStore();
   const [testing, setTesting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [addonStatus, setAddonStatus] = useState<ConnectionStatus | null>(null);
   const [addonBusy, setAddonBusy] = useState(true);
+  const [showManual, setShowManual] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,7 +32,6 @@ export function StepConnect() {
         if (cancelled) return;
         setAddonStatus(data);
         if (data.addon && (data.source === "supervisor" || !data.baseUrl)) {
-          // Probe Supervisor and persist when available
           const probe = await fetch("/api/ha/connection?test=1");
           const probed = (await probe.json()) as ConnectionStatus;
           if (cancelled) return;
@@ -58,15 +60,22 @@ export function StepConnect() {
             } else {
               setTestResult({
                 ok: false,
-                error: probed.error ?? saved.error ?? "Supervisor connection failed",
+                error: probed.error ?? saved.error ?? t("onboarding.connect.supervisorFail"),
               });
+              setShowManual(true);
             }
           } else if (probed.error) {
             setTestResult({ ok: false, error: probed.error });
+            setShowManual(true);
           }
+        } else if (!data.addon) {
+          setShowManual(true);
         }
       } catch {
-        if (!cancelled) setAddonStatus({ baseUrl: null, source: null, addon: false });
+        if (!cancelled) {
+          setAddonStatus({ baseUrl: null, source: null, addon: false });
+          setShowManual(true);
+        }
       } finally {
         if (!cancelled) setAddonBusy(false);
       }
@@ -74,7 +83,7 @@ export function StepConnect() {
     return () => {
       cancelled = true;
     };
-  }, [setConnection, setTestResult]);
+  }, [setConnection, setTestResult, t]);
 
   async function handleTest() {
     setTesting(true);
@@ -90,15 +99,12 @@ export function StepConnect() {
         }),
       });
       const data = await res.json();
-      if (data.ok) {
-        setTestResult({ ok: true });
-      } else {
-        setTestResult({ ok: false, error: data.error ?? "Connection failed" });
-      }
+      if (data.ok) setTestResult({ ok: true });
+      else setTestResult({ ok: false, error: data.error ?? t("onboarding.connect.fail") });
     } catch (err) {
       setTestResult({
         ok: false,
-        error: err instanceof Error ? err.message : "Request failed",
+        error: err instanceof Error ? err.message : t("onboarding.connect.fail"),
       });
     } finally {
       setTesting(false);
@@ -126,11 +132,13 @@ export function StepConnect() {
       if (res.ok && data.connectionId) {
         setConnection({ connectionId: data.connectionId });
         nextStep();
+      } else if (res.ok) {
+        nextStep();
       } else {
-        setSaveError(data.error ?? `Save failed (${res.status})`);
+        setSaveError(data.error ?? t("onboarding.connect.saveFail"));
       }
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Request failed");
+      setSaveError(err instanceof Error ? err.message : t("onboarding.connect.saveFail"));
     } finally {
       setTesting(false);
     }
@@ -143,64 +151,108 @@ export function StepConnect() {
 
   if (addonBusy) {
     return (
-      <OnboardingFullscreenLayout
-        step={2}
-        title="Connect to Home Assistant"
-        subtitle="Checking Supervisor connection…"
+      <SoftOnboardingLayout
+        step={3}
+        totalSteps={ONBOARDING_TOTAL_STEPS}
+        question={t("onboarding.connect.question")}
+        hint={t("onboarding.connect.checking")}
       >
-        <p className="text-sm text-gray-600 dark:text-gray-400">Please wait…</p>
-      </OnboardingFullscreenLayout>
+        <div className="flex justify-center py-6">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow border-t-transparent dark:border-accent-green" />
+        </div>
+      </SoftOnboardingLayout>
     );
   }
 
-  if (supervisorLinked) {
+  if (supervisorLinked && !showManual) {
     return (
-      <OnboardingFullscreenLayout
-        step={2}
-        title="Connected via Home Assistant"
-        subtitle="This app is linked automatically through the Supervisor. No URL or long-lived token needed."
-      >
-        <div className="space-y-4 max-w-md">
-          <div className="rounded-lg p-3 text-sm bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-200">
-            Supervisor connection OK.
+      <SoftOnboardingLayout
+        step={3}
+        totalSteps={ONBOARDING_TOTAL_STEPS}
+        question={t("onboarding.connect.linkedQuestion")}
+        hint={t("onboarding.connect.linkedHint")}
+        footer={
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row-reverse">
+            <button
+              type="button"
+              onClick={() => void handleSaveAndContinue()}
+              disabled={testing}
+              className="rounded-full bg-accent-yellow px-8 py-3.5 text-base font-semibold text-gray-900 shadow-sm transition hover:opacity-90 disabled:opacity-50 dark:bg-accent-green"
+            >
+              {t("onboarding.continue")}
+            </button>
+            <button
+              type="button"
+              onClick={prevStep}
+              className="rounded-full px-6 py-3 text-sm font-medium text-gray-600 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/10"
+            >
+              {t("onboarding.back")}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleSaveAndContinue}
-            disabled={testing}
-            className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
-          >
-            Continue
-          </button>
-          {saveError && (
-            <div className="rounded-lg p-3 text-sm bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200">
-              {saveError}
-            </div>
-          )}
+        }
+      >
+        <div className="rounded-2xl border border-green-200/80 bg-green-50/80 px-4 py-3 text-center text-sm text-green-800 dark:border-green-500/30 dark:bg-green-950/30 dark:text-green-200">
+          {t("onboarding.connect.linkedOk")}
         </div>
-      </OnboardingFullscreenLayout>
+        {saveError ? (
+          <p className="text-center text-sm text-red-600 dark:text-red-400">{saveError}</p>
+        ) : null}
+      </SoftOnboardingLayout>
     );
   }
 
   return (
-    <OnboardingFullscreenLayout
-      step={2}
-      title="Connect to Home Assistant"
-      subtitle={
+    <SoftOnboardingLayout
+      step={3}
+      totalSteps={ONBOARDING_TOTAL_STEPS}
+      question={t("onboarding.connect.question")}
+      hint={
         addonStatus?.addon
-          ? "Automatic Supervisor link failed. Enter a URL and long-lived token, or check that Home Assistant API access is enabled for this app."
-          : "Enter your instance URL and Long-Lived Access Token. The connection is saved in this step. Test it, then continue."
+          ? t("onboarding.connect.manualAddonHint")
+          : t("onboarding.connect.manualHint")
+      }
+      footer={
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row-reverse">
+          {testResult?.ok ? (
+            <button
+              type="button"
+              onClick={() => void handleSaveAndContinue()}
+              disabled={testing}
+              className="rounded-full bg-accent-yellow px-8 py-3.5 text-base font-semibold text-gray-900 shadow-sm transition hover:opacity-90 disabled:opacity-50 dark:bg-accent-green"
+            >
+              {t("onboarding.continue")}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void handleTest()}
+              disabled={testing || !connection.baseUrl.trim() || !connection.token.trim()}
+              className="rounded-full bg-accent-yellow px-8 py-3.5 text-base font-semibold text-gray-900 shadow-sm transition hover:opacity-90 disabled:opacity-50 dark:bg-accent-green"
+            >
+              {testing ? t("onboarding.connect.testing") : t("onboarding.connect.test")}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={nextStep}
+            className="rounded-full px-6 py-3 text-sm font-medium text-gray-600 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/10"
+          >
+            {t("onboarding.connect.later")}
+          </button>
+          <button
+            type="button"
+            onClick={prevStep}
+            className="rounded-full px-6 py-3 text-sm font-medium text-gray-600 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/10"
+          >
+            {t("onboarding.back")}
+          </button>
+        </div>
       }
     >
-      <div className="space-y-4 max-w-md">
-        {addonStatus?.addon && addonStatus.error && (
-          <div className="rounded-lg p-3 text-sm bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100">
-            {addonStatus.error}
-          </div>
-        )}
+      <div className="space-y-3">
         <div>
-          <label htmlFor="baseUrl" className="block text-sm font-medium mb-1">
-            Base URL
+          <label htmlFor="baseUrl" className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+            {t("onboarding.connect.url")}
           </label>
           <input
             id="baseUrl"
@@ -211,12 +263,12 @@ export function StepConnect() {
               setConnection({ baseUrl: e.target.value });
             }}
             placeholder="http://homeassistant.local:8123"
-            className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-accent-yellow/40 dark:border-white/15 dark:bg-white/10 dark:text-white dark:focus:ring-accent-green/30"
           />
         </div>
         <div>
-          <label htmlFor="token" className="block text-sm font-medium mb-1">
-            Long-Lived Access Token
+          <label htmlFor="token" className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+            {t("onboarding.connect.token")}
           </label>
           <input
             id="token"
@@ -226,63 +278,25 @@ export function StepConnect() {
               setSaveError(null);
               setConnection({ token: e.target.value });
             }}
-            placeholder="Paste your token"
-            className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
+            placeholder={t("onboarding.connect.tokenPlaceholder")}
+            className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-accent-yellow/40 dark:border-white/15 dark:bg-white/10 dark:text-white dark:focus:ring-accent-green/30"
           />
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={handleTest}
-            disabled={testing}
-            className="rounded-full bg-accent-yellow dark:bg-accent-green px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-50"
-          >
-            Test connection
-          </button>
-          {testResult?.ok && (
-            <button
-              type="button"
-              onClick={handleSaveAndContinue}
-              disabled={testing}
-              className="rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/20 px-4 py-2 text-sm font-medium"
-            >
-              Save and continue
-            </button>
-          )}
-        </div>
-        {saveError && (
-          <div className="rounded-lg p-3 text-sm bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200">
-            <p className="font-medium">Could not save connection</p>
-            <p className="mt-1">{saveError}</p>
-            <p className="mt-2 text-xs opacity-90">
-              If this is a server config error (e.g. APP_SECRET), set it in the project .env and restart the
-              dev server.
-            </p>
-          </div>
-        )}
-        {testResult !== null && !saveError && (
+        {saveError ? (
+          <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>
+        ) : null}
+        {testResult && !saveError ? (
           <div
-            className={`rounded-lg p-3 text-sm ${
+            className={`rounded-xl px-3 py-2 text-sm ${
               testResult.ok
-                ? "bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-200"
-                : "bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-200"
+                ? "bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-200"
+                : "bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-200"
             }`}
           >
-            {testing && "Testing…"}
-            {!testing && testResult.ok && "Connection successful. Save and continue above."}
-            {!testing && !testResult.ok && (
-              <>
-                <p className="font-medium">Connection failed</p>
-                <p className="mt-1">{testResult.error}</p>
-                <p className="mt-2 text-xs opacity-90">
-                  Tip: create a token in HA under Profile → Long-Lived Access Tokens; use HTTPS or a reverse
-                  proxy if needed.
-                </p>
-              </>
-            )}
+            {testResult.ok ? t("onboarding.connect.ok") : testResult.error}
           </div>
-        )}
+        ) : null}
       </div>
-    </OnboardingFullscreenLayout>
+    </SoftOnboardingLayout>
   );
 }
