@@ -1,4 +1,4 @@
-# Home Assistant addon image: app (with ingress basePath) + nginx proxy.
+# Home Assistant addon image: app (with ingress basePath) + ingress proxy.
 # Built in CI and published as ghcr.io/hiddevanbrussel/dashboard-home-assistant-addon.
 # Local Supervisor installs pull the prebuilt image (see config.yaml `image:`).
 
@@ -6,7 +6,7 @@ ARG VERSION=0.0.0
 ARG BUILD_ARCH=amd64
 
 # Reuse the same app build as the main image, with a fixed basePath placeholder.
-# nginx rewrites /__ha_ingress__ ↔ X-Ingress-Path at runtime.
+# /ingress-proxy.js rewrites /__ha_ingress__ → X-Ingress-Path (nginx is direct port only).
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -65,10 +65,10 @@ RUN apk add --no-cache python3 make g++ \
 
 COPY docker-entrypoint.sh ./
 COPY homeassistant-addon/rootfs /
-RUN chmod +x docker-entrypoint.sh /run.sh \
+RUN chmod +x docker-entrypoint.sh /run.sh /ingress-proxy.js \
   && mkdir -p /app/.next/cache /run/nginx /etc/nginx/http.d \
   && chown -R nextjs:nodejs /app/.next/cache \
-  && rm -f /etc/nginx/http.d/default.conf
+  && rm -f /etc/nginx/http.d/default.conf /etc/nginx/http.d/ingress.conf
 
 EXPOSE 3000 8099
 

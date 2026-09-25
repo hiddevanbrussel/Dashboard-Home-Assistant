@@ -3,7 +3,6 @@ set -e
 
 OPTIONS_FILE=/data/options.json
 
-# Home Assistant writes addon options here; fall back to empty object.
 if [ -f "$OPTIONS_FILE" ]; then
   APP_SECRET=$(jq -r '.app_secret // empty' "$OPTIONS_FILE")
   PEXELS_API_KEY=$(jq -r '.pexels_api_key // empty' "$OPTIONS_FILE")
@@ -14,7 +13,6 @@ else
   DEFAULT_LANGUAGE="en"
 fi
 
-# Generate a stable secret into /data if the user left the option blank.
 SECRET_FILE=/data/app_secret
 if [ -z "$APP_SECRET" ] || [ "$APP_SECRET" = "null" ]; then
   if [ -f "$SECRET_FILE" ]; then
@@ -45,15 +43,16 @@ if [ -d /data ]; then
   chown -R 1001:1001 /data 2>/dev/null || true
 fi
 
-# Next.js on an internal port; nginx owns :3000 (direct) and :8099 (ingress).
+# Next.js internal; ingress-proxy on :8099; nginx on :3000 (direct)
 export HOSTNAME="127.0.0.1"
 export PORT=3001
 
 echo "[addon] Starting Dashboard Builder ${APP_VERSION:-unknown}"
-echo "[addon] Next.js on 127.0.0.1:3001 — nginx :3000 (direct) / :8099 (ingress)"
+echo "[addon] Next.js :3001 — ingress-proxy :8099 — nginx :3000"
 
-# Drop Alpine's default site if present (conflicts with our http.d servers).
 rm -f /etc/nginx/http.d/default.conf
+# Ingress is handled by Node (no nginx sub_filter on 8099)
+rm -f /etc/nginx/http.d/ingress.conf
 
 /app/docker-entrypoint.sh sh -c "npx prisma migrate deploy && node server.js" &
 APP_PID=$!
@@ -73,18 +72,21 @@ until wget -q -O /dev/null "http://127.0.0.1:3001/__ha_ingress__" 2>/dev/null; d
   sleep 1
 done
 
-echo "[addon] Next.js is ready; starting nginx"
+echo "[addon] Next.js is ready; starting ingress-proxy + nginx"
+
+node /ingress-proxy.js &
+PROXY_PID=$!
+
 nginx -c /etc/nginx/nginx.conf -g "daemon off;" &
 NGINX_PID=$!
 
 shutdown() {
-  kill "$APP_PID" "$NGINX_PID" 2>/dev/null || true
-  wait "$APP_PID" "$NGINX_PID" 2>/dev/null || true
+  kill "$APP_PID" "$PROXY_PID" "$NGINX_PID" 2>/dev/null || true
+  wait "$APP_PID" "$PROXY_PID" "$NGINX_PID" 2>/dev/null || true
 }
 trap 'shutdown; exit 0' TERM INT
 
-# Exit if either child dies
-while kill -0 "$APP_PID" 2>/dev/null && kill -0 "$NGINX_PID" 2>/dev/null; do
+while kill -0 "$APP_PID" 2>/dev/null && kill -0 "$PROXY_PID" 2>/dev/null && kill -0 "$NGINX_PID" 2>/dev/null; do
   sleep 2
 done
 
