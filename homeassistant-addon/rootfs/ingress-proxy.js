@@ -7,6 +7,10 @@
  *
  * nginx `sub_filter` breaks Next.js App Router RSC streaming
  * (browser: createFromReadableStream → "Connection closed").
+ *
+ * HA core only matches `/api/hassio_ingress/{token}/{path:.*}` — a bare
+ * `/api/hassio_ingress/{token}` (no trailing slash) returns 404. Rewrites
+ * therefore always produce a trailing slash on the ingress root.
  */
 "use strict";
 
@@ -41,28 +45,40 @@ function shouldRewrite(contentType) {
   );
 }
 
+/**
+ * Rewrite placeholder → ingress path. Prefer `placeholder/` replacements
+ * first so we never turn `/__ha_ingress__/x` into `/ingress//x`. Bare
+ * placeholder (root) becomes `ingressPath/` so HA's route matches.
+ */
 function rewriteText(text, ingressPath) {
   if (!ingressPath || !text.includes("__ha_ingress__")) return text;
-  let out = text.split(PLACEHOLDER).join(ingressPath);
-  // Flight / JSON sometimes escape slashes
-  const ingressUnicode = ingressPath.replace(/\//g, "\\u002F");
-  out = out.split("\\u002F__ha_ingress__").join(ingressUnicode);
-  const ingressPct = ingressPath.replace(/\//g, "%2F");
-  out = out.split("%2F__ha_ingress__").join(ingressPct);
+  const root = ingressPath.endsWith("/") ? ingressPath : ingressPath + "/";
+  let out = text.split(PLACEHOLDER + "/").join(root);
+  out = out.split(PLACEHOLDER).join(root);
+
+  const phUni = "\\u002F__ha_ingress__";
+  const rootUni = root.replace(/\//g, "\\u002F");
+  out = out.split(phUni + "\\u002F").join(rootUni);
+  out = out.split(phUni).join(rootUni);
+
+  const phPct = "%2F__ha_ingress__";
+  const rootPct = root.replace(/\//g, "%2F");
+  out = out.split(phPct + "%2F").join(rootPct);
+  out = out.split(phPct).join(rootPct);
   return out;
 }
 
 /**
  * Map HA-stripped ingress URL onto Next.js basePath.
- * Root must be `/__ha_ingress__` (no trailing slash) — a slash triggers
- * Next.js 308 and can leak Location outside the ingress iframe.
+ * Root uses a trailing slash (`/__ha_ingress__/`) so Next + HA both agree
+ * on slash-terminated ingress roots.
  */
 function upstreamPath(url) {
   const u = url || "/";
   const q = u.indexOf("?");
   const path = q === -1 ? u : u.slice(0, q);
   const query = q === -1 ? "" : u.slice(q);
-  if (path === "/" || path === "") return PLACEHOLDER + query;
+  if (path === "/" || path === "") return PLACEHOLDER + "/" + query;
   return PLACEHOLDER + path + query;
 }
 

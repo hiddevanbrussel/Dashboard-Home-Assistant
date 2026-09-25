@@ -1,6 +1,6 @@
 /**
  * Prefix same-origin paths with Next.js `basePath` (addon: `/__ha_ingress__`).
- * Under HA Ingress, nginx rewrites that placeholder to `X-Ingress-Path`.
+ * Under HA Ingress, the addon ingress-proxy rewrites that placeholder to `X-Ingress-Path`.
  * Leave http(s), data:, blob:, and already-prefixed paths unchanged.
  */
 export function getBasePath(): string {
