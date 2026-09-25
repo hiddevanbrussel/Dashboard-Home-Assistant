@@ -11,6 +11,9 @@
  * HA core only matches `/api/hassio_ingress/{token}/{path:.*}` — a bare
  * `/api/hassio_ingress/{token}` (no trailing slash) returns 404. Rewrites
  * therefore always produce a trailing slash on the ingress root.
+ *
+ * Upstream root must be `/__ha_ingress__` (no trailing slash): Next App Router
+ * 308s the slashed form back to the unsashed one, which loops under Ingress.
  */
 "use strict";
 
@@ -20,6 +23,7 @@ const PLACEHOLDER = "/__ha_ingress__";
 const UPSTREAM_HOST = "127.0.0.1";
 const UPSTREAM_PORT = Number(process.env.INGRESS_UPSTREAM_PORT || 3001);
 const LISTEN_PORT = Number(process.env.INGRESS_PORT || 8099);
+const UPSTREAM_ORIGIN = `http://${UPSTREAM_HOST}:${UPSTREAM_PORT}`;
 
 function clientIp(req) {
   const raw = req.socket.remoteAddress || "";
@@ -70,16 +74,31 @@ function rewriteText(text, ingressPath) {
 
 /**
  * Map HA-stripped ingress URL onto Next.js basePath.
- * Root uses a trailing slash (`/__ha_ingress__/`) so Next + HA both agree
- * on slash-terminated ingress roots.
+ * Root is `/__ha_ingress__` (no trailing slash) to avoid Next 308 loops.
  */
 function upstreamPath(url) {
   const u = url || "/";
   const q = u.indexOf("?");
   const path = q === -1 ? u : u.slice(0, q);
   const query = q === -1 ? "" : u.slice(q);
-  if (path === "/" || path === "") return PLACEHOLDER + "/" + query;
+  if (path === "/" || path === "") return PLACEHOLDER + query;
+  // Collapse accidental double prefix if HA ever forwarded it
+  if (path === PLACEHOLDER || path.startsWith(PLACEHOLDER + "/")) {
+    return path + query;
+  }
   return PLACEHOLDER + path + query;
+}
+
+/** Make Location relative and rewrite placeholder; never leak upstream origin. */
+function rewriteLocation(location, ingressPath) {
+  let loc = String(location);
+  if (loc.startsWith(UPSTREAM_ORIGIN)) {
+    loc = loc.slice(UPSTREAM_ORIGIN.length) || "/";
+  }
+  if (ingressPath) {
+    loc = rewriteText(loc, ingressPath);
+  }
+  return loc;
 }
 
 function stripHopByHop(headers) {
@@ -103,8 +122,11 @@ function stripHopByHop(headers) {
 
 function forwardRequestHeaders(req) {
   const headers = stripHopByHop(req.headers);
-  headers.host = `${UPSTREAM_HOST}:${UPSTREAM_PORT}`;
-  // Force identity so we can safely rewrite text bodies.
+  // Keep HA's forwarded host when present so absolute URLs stay on the
+  // public origin; fall back to upstream only if missing.
+  if (!headers["x-forwarded-host"] && !headers["x-forwarded-proto"]) {
+    headers.host = `${UPSTREAM_HOST}:${UPSTREAM_PORT}`;
+  }
   headers["accept-encoding"] = "identity";
   return headers;
 }
@@ -155,8 +177,8 @@ const server = http.createServer((req, res) => {
         }
 
         const outHeaders = stripHopByHop(proxyRes.headers);
-        if (outHeaders.location && ingressPath) {
-          outHeaders.location = rewriteText(String(outHeaders.location), ingressPath);
+        if (outHeaders.location) {
+          outHeaders.location = rewriteLocation(String(outHeaders.location), ingressPath);
         }
         if (outHeaders["set-cookie"] && ingressPath) {
           const cookies = Array.isArray(outHeaders["set-cookie"])
@@ -196,6 +218,7 @@ if (require.main === module) {
 
 module.exports = {
   rewriteText,
+  rewriteLocation,
   shouldRewrite,
   upstreamPath,
   PLACEHOLDER,
