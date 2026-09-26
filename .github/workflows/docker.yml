@@ -1,5 +1,10 @@
 name: Build & Push Docker
 
+# Speed strategy:
+# - main pushes: amd64 only (no QEMU) — typically a few minutes
+# - version tags: amd64 + native arm64 runners, then merge app multi-arch manifests
+# Addon images stay per-arch paths (HA expects .../addon/{arch}:version)
+
 on:
   push:
     branches: [main]
@@ -12,27 +17,13 @@ env:
   ADDON_IMAGE_NAME: hiddevanbrussel/dashboard-home-assistant-addon
 
 jobs:
-  build:
+  version:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: app
-            dockerfile: Dockerfile
-            # Regular Docker / Unraid image (no basePath)
-            base_path: ""
-          - target: addon
-            dockerfile: Dockerfile.addon
-            base_path: "/__ha_ingress__"
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
       - name: Determine version
         id: version
         run: |
@@ -42,8 +33,18 @@ jobs:
             echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+  # ---------------------------------------------------------------------------
+  # App image (Docker / Unraid)
+  # ---------------------------------------------------------------------------
+  build-app-amd64:
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -55,9 +56,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker meta (app)
-        if: matrix.target == 'app'
-        id: meta_app
+      - name: Docker meta
+        id: meta
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -65,26 +65,180 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=${{ needs.version.outputs.version }}
 
-      - name: Build and push (app)
-        if: matrix.target == 'app'
+      # main: push tagged amd64 image directly (fast path).
+      - name: Build and push (amd64 tagged)
+        if: github.ref_type != 'tag'
         uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta_app.outputs.tags }}
-          labels: ${{ steps.meta_app.outputs.labels }}
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VERSION=${{ steps.version.outputs.version }}
-          cache-from: type=gha,scope=app
-          cache-to: type=gha,mode=max,scope=app
+            VERSION=${{ needs.version.outputs.version }}
+          cache-from: type=gha,scope=app-amd64
+          cache-to: type=gha,mode=max,scope=app-amd64
 
-      # Home Assistant expects: ghcr.io/.../addon/<arch>:<version from config.yaml>
+      # tags: push by digest; merge-app creates the multi-arch tag.
+      - name: Build and push (amd64 by digest)
+        if: github.ref_type == 'tag'
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ needs.version.outputs.version }}
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=app-amd64
+          cache-to: type=gha,mode=max,scope=app-amd64
+
+      - name: Export digest
+        if: github.ref_type == 'tag'
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-digests-amd64
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  build-app-arm64:
+    if: github.ref_type == 'tag'
+    needs: version
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ needs.version.outputs.version }}
+
+      - name: Build and push (arm64 by digest)
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/arm64
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ needs.version.outputs.version }}
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=app-arm64
+          cache-to: type=gha,mode=max,scope=app-arm64
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-digests-arm64
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge-app:
+    if: github.ref_type == 'tag'
+    needs: [version, build-app-amd64, build-app-arm64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: app-digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ needs.version.outputs.version }}
+
+      - name: Create multi-arch manifest
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+
+  # ---------------------------------------------------------------------------
+  # Addon images — HA pulls ghcr.io/.../addon/{arch}:version
+  # ---------------------------------------------------------------------------
+  build-addon-amd64:
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build and push (addon amd64)
-        if: matrix.target == 'addon'
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -92,17 +246,37 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: |
-            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/amd64:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/amd64:${{ needs.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/amd64:latest
           build-args: |
-            VERSION=${{ steps.version.outputs.version }}
+            VERSION=${{ needs.version.outputs.version }}
             BUILD_ARCH=amd64
             NEXT_BASE_PATH=/__ha_ingress__
           cache-from: type=gha,scope=addon-amd64
           cache-to: type=gha,mode=max,scope=addon-amd64
 
+  build-addon-arm64:
+    if: github.ref_type == 'tag'
+    needs: version
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build and push (addon aarch64)
-        if: matrix.target == 'addon'
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -110,10 +284,10 @@ jobs:
           push: true
           platforms: linux/arm64
           tags: |
-            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/aarch64:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/aarch64:${{ needs.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/aarch64:latest
           build-args: |
-            VERSION=${{ steps.version.outputs.version }}
+            VERSION=${{ needs.version.outputs.version }}
             BUILD_ARCH=aarch64
             NEXT_BASE_PATH=/__ha_ingress__
           cache-from: type=gha,scope=addon-arm64
