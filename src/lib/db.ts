@@ -11,6 +11,7 @@ import {
   isSupervisorBaseUrl,
   type AddonHaConfig,
 } from "./ha/addon";
+import { resolveOAuthAccessToken, tryParseOAuthBundle } from "./ha/oauth-token";
 
 export type HaConfigFromDb = { baseUrl: string; token: string };
 
@@ -45,6 +46,42 @@ function ensureAddonSeeded(addon: AddonHaConfig): void {
   }
 }
 
+async function resolveStoredToken(
+  connectionId: string,
+  baseUrl: string,
+  encryptedToken: string
+): Promise<string | null> {
+  let raw: string;
+  try {
+    raw = decrypt(encryptedToken);
+  } catch {
+    return null;
+  }
+
+  if (!tryParseOAuthBundle(raw)) {
+    return raw;
+  }
+
+  try {
+    const resolved = await resolveOAuthAccessToken({ haBaseUrl: baseUrl, encoded: raw });
+    if (!resolved) return null;
+    if (resolved.encodedToPersist && process.env.APP_SECRET && process.env.APP_SECRET.length >= 16) {
+      await prisma.connection
+        .update({
+          where: { id: connectionId },
+          data: { encryptedToken: encrypt(resolved.encodedToPersist) },
+        })
+        .catch((err) => {
+          console.error("[ha] failed to persist refreshed oauth token:", err);
+        });
+    }
+    return resolved.accessToken;
+  } catch (err) {
+    console.error("[ha] oauth token refresh failed:", err);
+    return null;
+  }
+}
+
 export async function getHaConnection(connectionId?: string): Promise<HaConfigFromDb | null> {
   const addon = getAddonHaConfig();
   if (addon) ensureAddonSeeded(addon);
@@ -58,12 +95,8 @@ export async function getHaConnection(connectionId?: string): Promise<HaConfigFr
     if (addon && isSupervisorBaseUrl(conn.baseUrl)) {
       return { baseUrl: addon.baseUrl, token: addon.token };
     }
-    try {
-      const token = decrypt(conn.encryptedToken);
-      return { baseUrl: conn.baseUrl, token };
-    } catch {
-      // fall through to addon
-    }
+    const token = await resolveStoredToken(conn.id, conn.baseUrl, conn.encryptedToken);
+    if (token) return { baseUrl: conn.baseUrl, token };
   }
 
   // No usable DB row: auto-link via Supervisor when available

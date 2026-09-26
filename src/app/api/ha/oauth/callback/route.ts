@@ -9,6 +9,7 @@ import {
   getAppClientId,
   sanitizeReturnTo,
 } from "@/lib/ha/oauth";
+import { buildOAuthBundle, encodeOAuthBundle } from "@/lib/ha/oauth-token";
 
 const COOKIE_NAME = "ha_oauth";
 
@@ -29,7 +30,8 @@ function redirectToApp(
 
 /**
  * GET /api/ha/oauth/callback?code=...&state=...
- * Exchanges the IndieAuth code, creates a long-lived token, saves Connection.
+ * Exchanges the IndieAuth code, prefers a long-lived token, otherwise stores
+ * a refreshable OAuth bundle (never a bare short-lived access token alone).
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -79,24 +81,37 @@ export async function GET(request: Request) {
       clientId: cookieClientId,
     });
 
-    let longLived: string;
+    let secretToStore: string;
     try {
-      longLived = await createLongLivedAccessToken({
+      secretToStore = await createLongLivedAccessToken({
         haBaseUrl: state.ha,
         accessToken: tokens.access_token,
         clientName: "Dashboard Builder",
         lifespanDays: 3650,
       });
     } catch (err) {
-      console.error("[api/ha/oauth/callback] LLAT failed, falling back to access token:", err);
-      longLived = tokens.access_token;
+      console.warn(
+        "[api/ha/oauth/callback] LLAT unavailable; storing refreshable OAuth bundle:",
+        err instanceof Error ? err.message : err
+      );
+      if (!tokens.refresh_token) {
+        throw new Error("Home Assistant did not return a refresh token.");
+      }
+      secretToStore = encodeOAuthBundle(
+        buildOAuthBundle({
+          refreshToken: tokens.refresh_token,
+          clientId: cookieClientId,
+          accessToken: tokens.access_token,
+          expiresInSec: tokens.expires_in ?? 1800,
+        })
+      );
     }
 
     await prisma.connection.deleteMany({});
     await prisma.connection.create({
       data: {
         baseUrl: state.ha,
-        encryptedToken: encrypt(longLived),
+        encryptedToken: encrypt(secretToStore),
       },
     });
 
