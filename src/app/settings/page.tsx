@@ -334,6 +334,37 @@ export default function SettingsPage() {
     loadEntities();
   }, [saveMessage]);
 
+  // Soft-discover HA when opening Connection (self-hosted only).
+  useEffect(() => {
+    if (section !== "connection") return;
+    if (isAddon || connectionSource === "supervisor") return;
+    let cancelled = false;
+    (async () => {
+      setDiscovering(true);
+      try {
+        const res = await fetch("/api/ha/discover");
+        const data = (await res.json()) as {
+          instances?: { baseUrl: string; name: string }[];
+          skipped?: boolean;
+        };
+        if (cancelled || data.skipped) return;
+        setDiscoveredInstances(data.instances ?? []);
+        if ((data.instances?.length ?? 0) === 1 && !baseUrl.trim()) {
+          setBaseUrl(data.instances![0].baseUrl);
+        }
+      } catch {
+        /* ignore — user can still search manually */
+      } finally {
+        if (!cancelled) setDiscovering(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Only re-run when opening connection / addon status changes — not on every baseUrl edit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, isAddon, connectionSource]);
+
   useEffect(() => {
     fetch("/api/version")
       .then((r) => r.json())
@@ -1187,32 +1218,58 @@ export default function SettingsPage() {
               ) : null}
               {connectionSource !== "supervisor" ? (
                 <>
-                  {!isAddon && discoveredInstances.length > 0 ? (
+                  {!isAddon ? (
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("settings.connection.discovered")}
-                      </p>
-                      <ul className="space-y-1">
-                        {discoveredInstances.map((inst) => (
-                          <li key={inst.baseUrl}>
-                            <button
-                              type="button"
-                              onClick={() => setBaseUrl(inst.baseUrl)}
-                              className={cn(
-                                "w-full rounded-lg border px-3 py-2 text-left text-sm transition",
-                                baseUrl === inst.baseUrl
-                                  ? "border-accent-yellow/60 bg-accent-yellow/10 dark:border-accent-green/40 dark:bg-accent-green/10"
-                                  : "border-gray-200 hover:bg-black/[0.03] dark:border-white/10 dark:hover:bg-white/5"
-                              )}
-                            >
-                              <span className="font-medium text-gray-900 dark:text-white">{inst.name}</span>
-                              <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
-                                {inst.baseUrl}
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          {t("settings.connection.discovered")}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void handleDiscover()}
+                          disabled={discovering}
+                          className="text-xs font-medium text-gray-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-gray-300"
+                        >
+                          {discovering
+                            ? t("settings.connection.discovering")
+                            : t("settings.connection.rediscover")}
+                        </button>
+                      </div>
+                      {discovering && discoveredInstances.length === 0 ? (
+                        <p className="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-sm text-gray-500 dark:border-white/15 dark:text-gray-400">
+                          {t("settings.connection.discovering")}
+                        </p>
+                      ) : null}
+                      {discoveredInstances.length > 0 ? (
+                        <ul className="space-y-1">
+                          {discoveredInstances.map((inst) => (
+                            <li key={inst.baseUrl}>
+                              <button
+                                type="button"
+                                onClick={() => setBaseUrl(inst.baseUrl)}
+                                className={cn(
+                                  "w-full rounded-lg border px-3 py-2 text-left text-sm transition",
+                                  baseUrl === inst.baseUrl
+                                    ? "border-accent-yellow/60 bg-accent-yellow/10 dark:border-accent-green/40 dark:bg-accent-green/10"
+                                    : "border-gray-200 hover:bg-black/[0.03] dark:border-white/10 dark:hover:bg-white/5"
+                                )}
+                              >
+                                <span className="font-medium text-gray-900 dark:text-white">{inst.name}</span>
+                                <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                                  {inst.baseUrl}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : !discovering ? (
+                        <p className="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-sm text-gray-500 dark:border-white/15 dark:text-gray-400">
+                          {t("settings.connection.discoverEmpty")}
+                        </p>
+                      ) : null}
+                      <SettingsPrimaryButton onClick={handleOauthLogin} disabled={!baseUrl.trim()}>
+                        {t("settings.connection.oauthLogin")}
+                      </SettingsPrimaryButton>
                     </div>
                   ) : null}
                   <SettingsField label={t("settings.connection.baseUrl")} htmlFor="ha-baseUrl">
@@ -1245,18 +1302,6 @@ export default function SettingsPage() {
                 <p className="text-sm text-emerald-700 dark:text-emerald-300">{t("settings.connection.saved")}</p>
               ) : null}
               <div className="flex flex-wrap gap-2">
-                {!isAddon && connectionSource !== "supervisor" ? (
-                  <>
-                    <SettingsSecondaryButton onClick={() => void handleDiscover()} disabled={discovering}>
-                      {discovering
-                        ? t("settings.connection.discovering")
-                        : t("settings.connection.discover")}
-                    </SettingsSecondaryButton>
-                    <SettingsPrimaryButton onClick={handleOauthLogin} disabled={!baseUrl.trim()}>
-                      {t("settings.connection.oauthLogin")}
-                    </SettingsPrimaryButton>
-                  </>
-                ) : null}
                 <SettingsPrimaryButton onClick={handleTest} disabled={testing}>
                   {testing ? t("settings.connection.testing") : t("settings.connection.test")}
                 </SettingsPrimaryButton>
