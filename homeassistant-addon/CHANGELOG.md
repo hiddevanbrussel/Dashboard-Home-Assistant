@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.20
+
+- Climate card 2 compact mode: restore edit (⋮) control so entity, display mode, and title can be changed in dashboard edit mode
+
 ## 0.4.19
 
 - Climate card 2 compact mode: 250×250 mockup layout, clearer status line / stepper contrast, softer border and aligned radii
