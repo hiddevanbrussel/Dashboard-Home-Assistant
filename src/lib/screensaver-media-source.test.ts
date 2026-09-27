@@ -23,6 +23,22 @@ describe("migrateScreensaverMediaSource", () => {
     ).toBe("pexels");
   });
 
+  it("upgrades custom→pexels when Pexels is enabled and no custom image is set", () => {
+    expect(
+      migrateScreensaverMediaSource({ stored: "custom", customUrl: "", pexelsEnabled: true })
+    ).toBe("pexels");
+  });
+
+  it("keeps custom when a background image is uploaded", () => {
+    expect(
+      migrateScreensaverMediaSource({
+        stored: "custom",
+        customUrl: "/uploads/bg.png",
+        pexelsEnabled: true,
+      })
+    ).toBe("custom");
+  });
+
   it("defaults to custom", () => {
     expect(
       migrateScreensaverMediaSource({ stored: "nope", customUrl: "", pexelsEnabled: false })
@@ -83,6 +99,18 @@ describe("resolveScreensaverPlayback", () => {
         customUrl: "/uploads/bg.png",
         pexelsEnabled: true,
         pexelsKey: "abc",
+      })
+    ).toEqual({ mode: "pexels-photo" });
+  });
+
+  it("uses Pexels when enabled with a Docker/env API key and no browser key", () => {
+    expect(
+      resolveScreensaverPlayback({
+        ...base,
+        source: "pexels",
+        pexelsEnabled: true,
+        pexelsKey: "",
+        pexelsEnvConfigured: true,
       })
     ).toEqual({ mode: "pexels-photo" });
   });

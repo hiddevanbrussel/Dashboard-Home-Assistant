@@ -109,9 +109,14 @@ export function parsePercent(value: unknown): number | null {
     if (trimmed === "unknown" || trimmed === "unavailable" || trimmed === "none") return null;
     const n = Number(trimmed.replace("%", "").trim());
     if (!Number.isFinite(n)) return null;
+    // Some integrations report 0–1 fractions (not integer percents).
+    if (n > 0 && n < 1) return clampPercent(n * 100);
     return clampPercent(n);
   }
-  if (typeof value === "number" && Number.isFinite(value)) return clampPercent(value);
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (value > 0 && value < 1) return clampPercent(value * 100);
+    return clampPercent(value);
+  }
   return null;
 }
 
@@ -119,9 +124,46 @@ function clampPercent(n: number): number {
   return Math.round(Math.min(100, Math.max(0, n)));
 }
 
+const BATTERY_ATTR_KEYS = [
+  "battery_level",
+  "battery",
+  "battery_percent",
+  "battery_percentage",
+  "batteryLevel",
+  "battery_soc",
+  "soc",
+  "charge_level",
+  "charge",
+] as const;
+
 export function batteryFromAttributes(attrs: Record<string, unknown> | undefined): number | null {
   if (!attrs) return null;
-  return parsePercent(attrs.battery_level ?? attrs.battery ?? attrs.battery_percent);
+  for (const key of BATTERY_ATTR_KEYS) {
+    const n = parsePercent(attrs[key]);
+    if (n != null) return n;
+  }
+  return null;
+}
+
+/**
+ * Prefer vacuum attributes, then common sibling battery sensors
+ * (many HA integrations expose battery as `sensor.<vacuum>_battery`).
+ */
+export function resolveVacuumBattery(input: {
+  entityId: string | undefined | null;
+  attributes: Record<string, unknown> | undefined;
+  entities?: Iterable<VacuumRelatedEntity>;
+}): number | null {
+  const fromAttrs = batteryFromAttributes(input.attributes);
+  if (fromAttrs != null) return fromAttrs;
+
+  const related = findRelatedVacuumSensor(
+    input.entities ?? [],
+    input.entityId,
+    VACUUM_BATTERY_SENSOR_HINTS
+  );
+  if (!related) return null;
+  return parsePercent(related.state) ?? batteryFromAttributes(related.attributes);
 }
 
 export function progressFromAttributes(attrs: Record<string, unknown> | undefined): number | null {
@@ -392,6 +434,13 @@ export const VACUUM_AREA_SENSOR_HINTS = [
   "cleaning_area",
   "clean_area",
   "current_statistics_area",
+] as const;
+
+export const VACUUM_BATTERY_SENSOR_HINTS = [
+  "battery_level",
+  "battery_percent",
+  "battery_percentage",
+  "battery",
 ] as const;
 
 export function findRelatedVacuumSensor(

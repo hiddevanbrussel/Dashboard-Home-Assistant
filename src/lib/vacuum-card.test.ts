@@ -28,6 +28,7 @@ import {
   vacuumCard2ShowModes,
   vacuumHeadlineKind,
   humanizeVacuumState,
+  resolveVacuumBattery,
   resolveVacuumDisplayState,
   vacuumRelativeTimeKind,
   vacuumSessionStatusKey,
@@ -48,10 +49,37 @@ describe("vacuum-card helpers", () => {
   it("reads battery and progress from vacuum attributes", () => {
     expect(batteryFromAttributes({ battery_level: 100 })).toBe(100);
     expect(batteryFromAttributes({ battery: "54%" })).toBe(54);
+    expect(batteryFromAttributes({ battery_percentage: 12 })).toBe(12);
+    expect(batteryFromAttributes({ battery_soc: 0.42 })).toBe(42);
     expect(batteryFromAttributes({})).toBeNull();
     expect(progressFromAttributes({ cleaning_progress: 92 })).toBe(92);
     expect(progressFromAttributes({ progress: "12" })).toBe(12);
     expect(progressFromAttributes({ cleaned_percent: 3 })).toBe(3);
+  });
+
+  it("resolves battery from sibling battery sensors", () => {
+    const entities = [
+      { entity_id: "vacuum.roborock", state: "docked", attributes: {} },
+      {
+        entity_id: "sensor.roborock_battery",
+        state: "76",
+        attributes: { device_class: "battery" },
+      },
+    ];
+    expect(
+      resolveVacuumBattery({
+        entityId: "vacuum.roborock",
+        attributes: {},
+        entities,
+      })
+    ).toBe(76);
+    expect(
+      resolveVacuumBattery({
+        entityId: "vacuum.roborock",
+        attributes: { battery_level: 10 },
+        entities: [],
+      })
+    ).toBe(10);
   });
 
   it("maps HA fan speeds onto Eco / Standard / Turbo", () => {

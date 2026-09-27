@@ -16,7 +16,6 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
-  batteryFromAttributes,
   clampVacuumCard2Height,
   clampVacuumCard2Width,
   currentFanSpeedFromAttributes,
@@ -27,6 +26,7 @@ import {
   parsePercent,
   progressFromAttributes,
   resolveFanSpeedForMode,
+  resolveVacuumBattery,
   resolveVacuumDisplayState,
   vacuumCard2ArtSrc,
   vacuumCard2Density,
@@ -90,7 +90,16 @@ export function VacuumCard2Widget({
   const state = (entity?.state as string | undefined) ?? "";
   const attrs = entity?.attributes ?? {};
   const displayState = resolveVacuumDisplayState(state, attrs);
-  const battery = batteryFromAttributes(attrs);
+  const allStates = useEntityStateStore((s) => s.states);
+  const battery = resolveVacuumBattery({
+    entityId: entity_id,
+    attributes: attrs,
+    entities: Object.values(allStates).map((e) => ({
+      entity_id: e.entity_id,
+      state: String(e.state ?? ""),
+      attributes: e.attributes,
+    })),
+  });
   const progress = parsePercent(progressEntity?.state) ?? progressFromAttributes(attrs);
   const fanList = fanSpeedListFromAttributes(attrs);
   const fanSpeed = currentFanSpeedFromAttributes(attrs);

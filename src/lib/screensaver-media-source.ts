@@ -12,7 +12,14 @@ export function migrateScreensaverMediaSource(input: {
   customUrl: string;
   pexelsEnabled: boolean;
 }): ScreensaverMediaSource {
-  if (isScreensaverMediaSource(input.stored)) return input.stored;
+  if (isScreensaverMediaSource(input.stored)) {
+    // Soft upgrade: Pexels app enabled, no custom image, source still "custom"
+    // (common after Docker PEXELS_API_KEY + Apps toggle without picking a source).
+    if (input.stored === "custom" && input.pexelsEnabled && !input.customUrl.trim()) {
+      return "pexels";
+    }
+    return input.stored;
+  }
   if (input.customUrl.trim()) return "custom";
   if (input.pexelsEnabled) return "pexels";
   return "custom";
@@ -26,8 +33,12 @@ export type ScreensaverPlayback =
   | { mode: "immich-video" }
   | { mode: "default" };
 
-export function isPexelsSourceReady(enabled: boolean, apiKey: string): boolean {
-  return enabled && apiKey.trim().length > 0;
+export function isPexelsSourceReady(
+  enabled: boolean,
+  apiKey: string,
+  envConfigured = false
+): boolean {
+  return enabled && (apiKey.trim().length > 0 || envConfigured);
 }
 
 export function isImmichSourceReady(enabled: boolean, baseUrl: string, apiKey: string): boolean {
@@ -40,6 +51,8 @@ export function resolveScreensaverPlayback(input: {
   pexelsEnabled: boolean;
   pexelsKey: string;
   pexelsType: "photo" | "video";
+  /** True when Docker/server has PEXELS_API_KEY (client key optional). */
+  pexelsEnvConfigured?: boolean;
   immichEnabled: boolean;
   immichUrl: string;
   immichKey: string;
@@ -50,7 +63,9 @@ export function resolveScreensaverPlayback(input: {
     return url ? { mode: "custom", url } : { mode: "default" };
   }
   if (input.source === "pexels") {
-    if (!isPexelsSourceReady(input.pexelsEnabled, input.pexelsKey)) return { mode: "default" };
+    if (!isPexelsSourceReady(input.pexelsEnabled, input.pexelsKey, input.pexelsEnvConfigured)) {
+      return { mode: "default" };
+    }
     return input.pexelsType === "video" ? { mode: "pexels-video" } : { mode: "pexels-photo" };
   }
   if (input.source === "immich") {

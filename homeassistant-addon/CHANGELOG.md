@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.17
+
+- Screensaver: honor Docker `PEXELS_API_KEY` without a browser-stored key; enabling Pexels selects it as media source when no custom image is set
+- Vacuum card 2: show battery % from more attributes and sibling `sensor.*_battery` entities (not only the Lucide placeholder icon)
+
 ## 0.4.16
 
 - Soft onboarding works on first run for HA add-on and Docker: no auto-created empty Home dashboard that skipped the wizard; pristine Home/Thuis still counts as needing onboarding

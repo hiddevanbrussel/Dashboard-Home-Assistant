@@ -146,6 +146,15 @@ export function getScreensaverPexelsEnabled(): boolean {
 export function setScreensaverPexelsEnabled(enabled: boolean): void {
   try {
     localStorage.setItem(STORAGE_KEY_PEXELS_ENABLED, enabled ? "true" : "false");
+    // When turning Pexels on, prefer it as the screensaver media source unless a
+    // custom background image is already set.
+    if (enabled) {
+      const custom = getScreensaverBackgroundImage().trim();
+      const stored = localStorage.getItem(STORAGE_KEY_MEDIA_SOURCE);
+      if (!custom && (stored == null || stored === "custom")) {
+        localStorage.setItem(STORAGE_KEY_MEDIA_SOURCE, "pexels");
+      }
+    }
     window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
   } catch {
     // ignore
