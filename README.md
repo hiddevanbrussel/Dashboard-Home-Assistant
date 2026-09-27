@@ -226,6 +226,48 @@ The current version is shown in **Settings → System**.
 
 ---
 
+## Reverse proxy (Docker / Unraid)
+
+The published Docker image (`ghcr.io/hiddevanbrussel/dashboard-home-assistant`) serves at **root `/` on port 3000**. Recent Home Assistant **addon Ingress** fixes (`/__ha_ingress__`, basePath rewrites) apply only to the separate addon image — they are **not** baked into the normal Docker image.
+
+**Supported:** host-based / subdomain proxies (recommended):
+
+- `https://dashboard.yourdomain.com/` → `http://container:3000/`
+- Nginx Proxy Manager, Traefik, Caddy, etc. with a dedicated hostname
+
+Forward these headers so HTTPS and IndieAuth redirects stay correct:
+
+- `Host` (or `X-Forwarded-Host`)
+- `X-Forwarded-Proto` (`https` when the public URL is HTTPS)
+- `X-Forwarded-For` (optional)
+
+Example Nginx (subdomain):
+
+```nginx
+location / {
+  proxy_pass http://127.0.0.1:3000;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Forwarded-Host $host;
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  # App Router / RSC streams; buffering can blank the page behind some proxies
+  proxy_buffering off;
+}
+```
+
+**Not supported out of the box:** path-based proxies such as `https://yourdomain.com/dashboard/` → container. Next.js `basePath` is a **build-time** setting. The Docker image is built without it, so `/_next/...` and `/api/...` stay absolute from `/` and break under a URL subpath.
+
+**Do not** set `NEXT_BASE_PATH` or `NEXT_PUBLIC_BASE_PATH` at container runtime — that does not change the already-built routes. The addon image is a different build (`…-addon`) that uses `/__ha_ingress__` only for Supervisor Ingress.
+
+Quick checks:
+
+1. Direct: `http://HOST:3000/` returns the app (not a redirect to `/__ha_ingress__`).
+2. Via proxy: open the public URL and confirm network requests go to `/_next/...` and `/api/...` on the **same** host (no missing subpath, no `/__ha_ingress__`).
+3. Confirm **Settings → System** shows the expected version after `docker compose pull` + recreate (or Unraid Force update).
+
+---
+
 ## Troubleshooting
 
 **Invalid token** — Create a new Long-Lived Access Token in Home Assistant and enter it in Settings → HA Connection.
@@ -233,6 +275,8 @@ The current version is shown in **Settings → System**.
 **Mixed content warning** — If the dashboard runs on HTTPS, the Home Assistant URL must also be HTTPS (or use a reverse proxy).
 
 **Can't reach Home Assistant** — All HA API calls are made server-side. The HA URL must be reachable from the Docker container, not just from your browser.
+
+**Dashboard unreachable via reverse proxy** — Use a subdomain (not a `/subpath`). See [Reverse proxy (Docker / Unraid)](#reverse-proxy-docker--unraid). Path-based proxies and confusing the Docker image with the HA addon image are the usual causes — not the recent Ingress-only updates.
 
 **Uploads not persisting** — Make sure the `/data` volume is mounted. Without it, uploaded images and the database are lost when the container restarts.
 
