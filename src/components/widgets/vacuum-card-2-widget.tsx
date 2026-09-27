@@ -22,10 +22,12 @@ import {
   currentFanSpeedFromAttributes,
   fanModeFromSpeed,
   fanSpeedListFromAttributes,
+  humanizeVacuumState,
   isVacuumOn,
   parsePercent,
   progressFromAttributes,
   resolveFanSpeedForMode,
+  resolveVacuumDisplayState,
   vacuumCard2ArtSrc,
   vacuumCard2Density,
   vacuumHeadlineKind,
@@ -56,7 +58,7 @@ function BatteryPill({ percent }: { percent: number }) {
 }
 
 export function VacuumCard2Widget({
-  title,
+  title: _title,
   entity_id,
   progress_entity_id,
   background_image,
@@ -87,18 +89,20 @@ export function VacuumCard2Widget({
 
   const state = (entity?.state as string | undefined) ?? "";
   const attrs = entity?.attributes ?? {};
+  const displayState = resolveVacuumDisplayState(state, attrs);
   const battery = batteryFromAttributes(attrs);
   const progress = parsePercent(progressEntity?.state) ?? progressFromAttributes(attrs);
   const fanList = fanSpeedListFromAttributes(attrs);
   const fanSpeed = currentFanSpeedFromAttributes(attrs);
   const activeMode = fanModeFromSpeed(fanSpeed, fanList);
-  const isOn = isVacuumOn(state);
-  const headlineKind = vacuumHeadlineKind(state, progress);
+  const isOn = isVacuumOn(state) || isVacuumOn(displayState);
+  const headlineKind = vacuumHeadlineKind(displayState, progress);
   const headline =
     headlineKind === "cleaningProgress"
       ? t("vacuumCard.cleaningProgress").replace("{n}", String(progress ?? 0))
       : headlineKind === "unknown"
-        ? title?.trim() || t("cardType.vacuum_card_2")
+        ? humanizeVacuumState(displayState) ||
+          (entity ? t("vacuumCard.ready") : t("vacuumCard.unavailable"))
         : t(`vacuumCard.${headlineKind}`);
   const artSrc = vacuumCard2ArtSrc({ backgroundImage: background_image, isDark });
   const cardWidth = clampVacuumCard2Width(width);
@@ -106,8 +110,8 @@ export function VacuumCard2Widget({
   const density = vacuumCard2Density(cardHeight);
   const isDense = density === "dense";
   const isCompact = density === "compact" || isDense;
-  const showModes = !isDense;
-  const showModeLabels = density === "comfortable";
+  // Always show mode controls while resizing; only tighten padding/type.
+  const showModeLabels = true;
 
   async function callVacuum(service: string, serviceData?: Record<string, unknown>) {
     const res = await fetch("/api/ha/call-service", {
@@ -158,7 +162,7 @@ export function VacuumCard2Widget({
   return (
     <div
       className={cn(
-        "relative flex w-full flex-col overflow-hidden rounded-[28px] border-0 bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] outline-none dark:bg-zinc-950 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.65)]",
+        "relative flex w-full flex-col overflow-hidden rounded-2xl border-0 bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] outline-none dark:bg-zinc-950 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.65)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         interactive && "cursor-pointer",
@@ -222,50 +226,50 @@ export function VacuumCard2Widget({
 
         <h2
           className={cn(
-            "font-semibold leading-snug tracking-tight text-gray-950 dark:text-white",
+            "min-h-[1.25em] font-semibold leading-snug tracking-tight text-gray-950 dark:text-white",
             isDense ? "mt-2 text-base" : isCompact ? "mt-3 text-xl" : "mt-3 text-[1.65rem]"
           )}
+          title={displayState || state || undefined}
         >
           {headline}
         </h2>
 
-        {showModes ? (
-          <div
-            className={cn(
-              "grid grid-cols-3 rounded-2xl bg-gray-100/90 p-1 dark:bg-white/[0.06]",
-              isCompact ? "mt-3" : "mt-4"
-            )}
-            role="group"
-            aria-label={t("vacuumCard.standard")}
-          >
-            {MODE_UI.map(({ mode, labelKey, Icon }) => {
-              const selected = activeMode === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMode(mode);
-                  }}
-                  disabled={!entity_id || busyMode != null}
-                  className={cn(
-                    "flex min-w-0 flex-col items-center rounded-xl px-1 text-[11px] font-medium transition-colors disabled:opacity-60",
-                    showModeLabels ? "gap-1 py-2.5" : "gap-0 py-2",
-                    selected
-                      ? "bg-white text-gray-900 shadow-sm dark:bg-zinc-800 dark:text-white"
-                      : "bg-transparent text-gray-400 hover:text-gray-600 dark:text-white/40 dark:hover:text-white/70"
-                  )}
-                  aria-label={t(labelKey)}
-                  aria-pressed={selected}
-                >
-                  <Icon className="h-4 w-4" aria-hidden />
-                  {showModeLabels ? <span className="truncate">{t(labelKey)}</span> : null}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
+        <div
+          className={cn(
+            "grid grid-cols-3 rounded-2xl bg-gray-100/90 p-1 dark:bg-white/[0.06]",
+            isCompact ? "mt-3" : "mt-4"
+          )}
+          role="group"
+          aria-label={t("vacuumCard.standard")}
+        >
+          {MODE_UI.map(({ mode, labelKey, Icon }) => {
+            const selected = activeMode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMode(mode);
+                }}
+                disabled={!entity_id || busyMode != null}
+                className={cn(
+                  "flex min-w-0 flex-col items-center rounded-xl px-1 text-[11px] font-medium transition-colors disabled:opacity-60",
+                  showModeLabels ? "gap-1 py-2.5" : "gap-0 py-2",
+                  isDense && "py-2",
+                  selected
+                    ? "bg-white text-gray-900 shadow-sm dark:bg-zinc-800 dark:text-white"
+                    : "bg-transparent text-gray-400 hover:text-gray-600 dark:text-white/40 dark:hover:text-white/70"
+                )}
+                aria-label={t(labelKey)}
+                aria-pressed={selected}
+              >
+                <Icon className="h-4 w-4" aria-hidden />
+                {showModeLabels ? <span className="truncate">{t(labelKey)}</span> : null}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="relative min-h-0 flex-1 overflow-hidden">

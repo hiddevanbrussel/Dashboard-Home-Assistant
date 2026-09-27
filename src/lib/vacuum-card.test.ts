@@ -25,7 +25,10 @@ import {
   resolveVacuumLastCleanAt,
   vacuumCard2ArtSrc,
   vacuumCard2Density,
+  vacuumCard2ShowModes,
   vacuumHeadlineKind,
+  humanizeVacuumState,
+  resolveVacuumDisplayState,
   vacuumRelativeTimeKind,
   vacuumSessionStatusKey,
 } from "./vacuum-card";
@@ -90,8 +93,31 @@ describe("vacuum-card helpers", () => {
     expect(vacuumHeadlineKind("cleaning", 92)).toBe("cleaningProgress");
     expect(vacuumHeadlineKind("cleaning", null)).toBe("cleaning");
     expect(vacuumHeadlineKind("docked", 92)).toBe("docked");
+    expect(vacuumHeadlineKind("charging", null)).toBe("docked");
     expect(vacuumHeadlineKind("returning", null)).toBe("returning");
+    expect(vacuumHeadlineKind("segment_cleaning", 40)).toBe("cleaningProgress");
     expect(vacuumHeadlineKind("unavailable", null)).toBe("unavailable");
+  });
+
+  it("humanizes unknown vacuum states for the status line", () => {
+    expect(humanizeVacuumState("zone_cleaning")).toBe("Zone Cleaning");
+    expect(humanizeVacuumState("  ")).toBe("");
+    expect(humanizeVacuumState("unknown")).toBe("");
+  });
+
+  it("prefers attributes.status when entity state is generic", () => {
+    expect(resolveVacuumDisplayState("on", { status: "charging" })).toBe("charging");
+    expect(resolveVacuumDisplayState("unknown", { status: "zone_cleaning" })).toBe(
+      "zone_cleaning"
+    );
+    expect(resolveVacuumDisplayState("docked", { status: "charging" })).toBe("docked");
+    expect(resolveVacuumDisplayState("cleaning", {})).toBe("cleaning");
+  });
+
+  it("always shows mode controls regardless of card height", () => {
+    expect(vacuumCard2ShowModes(460)).toBe(true);
+    expect(vacuumCard2ShowModes(320)).toBe(true);
+    expect(vacuumCard2ShowModes(248)).toBe(true);
   });
 
   it("clamps vacuum card 2 width and height", () => {

@@ -8,9 +8,9 @@ export const VACUUM_CARD_2_MAX_HEIGHT = 640;
 export const VACUUM_CARD_2_DEFAULT_IMAGE = "/vacuum-robot-light.webp";
 export const VACUUM_CARD_2_DEFAULT_IMAGE_DARK = "/vacuum-robot-dark.webp";
 export const VACUUM_CARD_2_FOOTER_MIN_HEIGHT = 380;
-/** Below this, hide mode labels (icons only) and tighten chrome. */
+/** Below this, tighten chrome (smaller type / padding). Modes stay visible. */
 export const VACUUM_CARD_2_COMPACT_HEIGHT = 340;
-/** Below this, hide the mode row so the robot art can breathe at media-card sizes. */
+/** Below this, use the densest chrome. Modes stay visible (icons + short labels). */
 export const VACUUM_CARD_2_DENSE_HEIGHT = 280;
 
 export type VacuumCard2Density = "comfortable" | "compact" | "dense";
@@ -19,6 +19,11 @@ export function vacuumCard2Density(height: number): VacuumCard2Density {
   if (height < VACUUM_CARD_2_DENSE_HEIGHT) return "dense";
   if (height < VACUUM_CARD_2_COMPACT_HEIGHT) return "compact";
   return "comfortable";
+}
+
+/** Modes (Eco / Standard / Turbo) are always shown; density only changes chrome size. */
+export function vacuumCard2ShowModes(_height: number): boolean {
+  return true;
 }
 
 export function clampVacuumCard2Width(n: unknown): number {
@@ -69,7 +74,33 @@ const MODE_ALIASES: Record<VacuumFanMode, string[]> = {
   turbo: ["turbo", "max", "high", "strong", "max+", "turbo_mode", "turbo mode", "max_fan"],
 };
 
-const ON_STATES = new Set(["cleaning", "paused", "returning", "on"]);
+const ON_STATES = new Set([
+  "cleaning",
+  "paused",
+  "returning",
+  "on",
+  "auto",
+  "spot",
+  "segment_cleaning",
+  "zone_cleaning",
+  "room_cleaning",
+  "mopping",
+]);
+
+const CLEANING_STATES = new Set([
+  "cleaning",
+  "on",
+  "auto",
+  "spot",
+  "segment_cleaning",
+  "zone_cleaning",
+  "room_cleaning",
+  "mopping",
+  "clean",
+]);
+
+const DOCKED_STATES = new Set(["docked", "charging", "charger_charging", "home"]);
+const RETURNING_STATES = new Set(["returning", "returning_home", "goto_charge", "going_home"]);
 
 export function parsePercent(value: unknown): number | null {
   if (value == null || value === "") return null;
@@ -157,17 +188,60 @@ export function vacuumHeadlineKind(
   state: string | undefined | null,
   progress: number | null
 ): VacuumHeadlineKind {
-  const normalized = (state ?? "").toLowerCase();
+  const normalized = (state ?? "").toLowerCase().trim().replace(/\s+/g, "_");
+  if (!normalized || normalized === "unknown" || normalized === "none") return "unknown";
   if (normalized === "unavailable") return "unavailable";
   if (normalized === "error") return "error";
-  if (normalized === "returning") return "returning";
+  if (RETURNING_STATES.has(normalized)) return "returning";
   if (normalized === "paused") return "paused";
-  if (normalized === "docked") return "docked";
+  if (DOCKED_STATES.has(normalized)) return "docked";
   if (normalized === "idle") return "idle";
-  if (normalized === "cleaning" || normalized === "on") {
+  if (CLEANING_STATES.has(normalized)) {
     return progress != null ? "cleaningProgress" : "cleaning";
   }
   return "unknown";
+}
+
+/** Humanize a raw HA vacuum state for display when we have no i18n kind. */
+export function humanizeVacuumState(state: string | undefined | null): string {
+  const raw = (state ?? "").trim();
+  if (!raw || raw.toLowerCase() === "unknown" || raw.toLowerCase() === "none") return "";
+  return raw
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Prefer a descriptive `status` / `status_code` attribute when the entity
+ * state alone is empty or generic (common on Xiaomi / Roborock integrations).
+ */
+export function resolveVacuumDisplayState(
+  state: string | undefined | null,
+  attrs: Record<string, unknown> | undefined
+): string {
+  const entityState = (state ?? "").trim();
+  const attrStatus =
+    typeof attrs?.status === "string"
+      ? attrs.status.trim()
+      : typeof attrs?.status_code === "string"
+        ? attrs.status_code.trim()
+        : "";
+  const entityNorm = entityState.toLowerCase().replace(/\s+/g, "_");
+  const generic =
+    !entityNorm ||
+    entityNorm === "unknown" ||
+    entityNorm === "none" ||
+    entityNorm === "on" ||
+    entityNorm === "off";
+  if (attrStatus && (generic || vacuumHeadlineKind(attrStatus, null) !== "unknown")) {
+    if (generic) return attrStatus;
+    // Prefer attribute when it is more specific than a bare on/off-ish state,
+    // otherwise keep entity state (already mapped by vacuumHeadlineKind).
+    if (vacuumHeadlineKind(entityState, null) === "unknown") return attrStatus;
+  }
+  return entityState;
 }
 
 /** True when a tap on the vacuum card should open the control sheet. */
