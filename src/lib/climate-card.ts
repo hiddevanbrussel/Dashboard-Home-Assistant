@@ -1,11 +1,14 @@
 export const CLIMATE_CARD_DEFAULT_WIDTH = 300;
 export const CLIMATE_CARD_DEFAULT_HEIGHT = 340;
+/** Square default for the compact (mockup) display mode. */
+export const CLIMATE_CARD_COMPACT_DEFAULT_WIDTH = 250;
+export const CLIMATE_CARD_COMPACT_DEFAULT_HEIGHT = 250;
 export const CLIMATE_CARD_MIN_WIDTH = 240;
 export const CLIMATE_CARD_MAX_WIDTH = 500;
 /** Matches media-card min height so climate can sit at ~248px beside media. */
 export const CLIMATE_CARD_MIN_HEIGHT = 240;
 export const CLIMATE_CARD_MAX_HEIGHT = 480;
-/** Below this, icon-only mode tiles and a smaller gauge. */
+/** Below this, icon-only mode tiles and a smaller gauge (standard mode). */
 export const CLIMATE_CARD_COMPACT_HEIGHT = 300;
 /** Below this, denser chrome so the gauge still fits at media-card sizes. */
 export const CLIMATE_CARD_DENSE_HEIGHT = 270;
@@ -27,13 +30,33 @@ export function climateCardDensity(height: number): ClimateCardDensity {
   return "comfortable";
 }
 
-/** Effective density: compact display mode always uses dense chrome. */
+/**
+ * Effective density for the standard gauge layout.
+ * Compact display mode uses its own mockup layout (not density chrome).
+ */
 export function climateCardEffectiveDensity(
   height: number,
   displayMode: ClimateDisplayMode = "standard"
 ): ClimateCardDensity {
   if (displayMode === "compact") return "dense";
   return climateCardDensity(height);
+}
+
+/** Preferred width/height when the user picks a display mode. */
+export function climateCardDefaultSizeForMode(mode: ClimateDisplayMode): {
+  width: number;
+  height: number;
+} {
+  if (mode === "compact") {
+    return {
+      width: CLIMATE_CARD_COMPACT_DEFAULT_WIDTH,
+      height: CLIMATE_CARD_COMPACT_DEFAULT_HEIGHT,
+    };
+  }
+  return {
+    width: CLIMATE_CARD_DEFAULT_WIDTH,
+    height: CLIMATE_CARD_DEFAULT_HEIGHT,
+  };
 }
 
 export type ClimateHistoryPoint = { hour: string; value: number };
@@ -136,6 +159,25 @@ export const CLIMATE_MODE_TILES: ClimateModeTile[] = ["auto", "heat", "cool"];
 export type ClimateStatusKind = "heating" | "cooling" | "idle" | "off" | "heat" | "cool" | "auto";
 
 export type ClimateRingTone = "sky" | "amber" | "teal" | "gray";
+
+/** Accent family for compact power / thermometer / mode tiles. */
+export type ClimateCompactAccent = "off" | "heat" | "cool";
+
+export function climateCompactAccent(input: {
+  isOn: boolean;
+  statusKind: ClimateStatusKind;
+  activeTile: ClimateModeTile | null;
+}): ClimateCompactAccent {
+  if (!input.isOn) return "off";
+  if (
+    input.statusKind === "cooling" ||
+    input.statusKind === "cool" ||
+    input.activeTile === "cool"
+  ) {
+    return "cool";
+  }
+  return "heat";
+}
 
 const AUTO_ALIASES = ["auto", "heat_cool"];
 

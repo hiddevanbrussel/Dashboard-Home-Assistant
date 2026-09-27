@@ -3,6 +3,7 @@ import {
   clampClimateCardHeight,
   clampClimateCardWidth,
   climateHvacModesFromAttributes,
+  climateCompactAccent,
   climateGaugeColor,
   climateGaugeProgress,
   climateGaugeTickFilled,
@@ -13,11 +14,14 @@ import {
   climateTileEnabled,
   climateTileFromHvacMode,
   climateCardDensity,
+  climateCardDefaultSizeForMode,
   climateCardEffectiveDensity,
   climateHistoryPointsFromAttributeStates,
   climateHistoryYTicks,
   climatePreviewHistoryPoints,
   normalizeClimateDisplayMode,
+  CLIMATE_CARD_COMPACT_DEFAULT_HEIGHT,
+  CLIMATE_CARD_COMPACT_DEFAULT_WIDTH,
   CLIMATE_CARD_DEFAULT_HEIGHT,
   CLIMATE_CARD_DEFAULT_WIDTH,
   CLIMATE_CARD_MIN_HEIGHT,
@@ -37,6 +41,24 @@ describe("climate-card helpers", () => {
     expect(normalizeClimateDisplayMode("nope")).toBe("standard");
     expect(climateCardEffectiveDensity(340, "compact")).toBe("dense");
     expect(climateCardEffectiveDensity(340, "standard")).toBe("comfortable");
+    expect(climateCardDefaultSizeForMode("compact")).toEqual({
+      width: CLIMATE_CARD_COMPACT_DEFAULT_WIDTH,
+      height: CLIMATE_CARD_COMPACT_DEFAULT_HEIGHT,
+    });
+    expect(climateCardDefaultSizeForMode("standard")).toEqual({
+      width: CLIMATE_CARD_DEFAULT_WIDTH,
+      height: CLIMATE_CARD_DEFAULT_HEIGHT,
+    });
+    expect(CLIMATE_CARD_COMPACT_DEFAULT_WIDTH).toBe(250);
+    expect(CLIMATE_CARD_COMPACT_DEFAULT_HEIGHT).toBe(250);
+  });
+
+  it("maps compact accents for power / thermometer colour", () => {
+    expect(climateCompactAccent({ isOn: false, statusKind: "off", activeTile: "auto" })).toBe("off");
+    expect(climateCompactAccent({ isOn: true, statusKind: "heating", activeTile: "heat" })).toBe("heat");
+    expect(climateCompactAccent({ isOn: true, statusKind: "idle", activeTile: "auto" })).toBe("heat");
+    expect(climateCompactAccent({ isOn: true, statusKind: "cooling", activeTile: "cool" })).toBe("cool");
+    expect(climateCompactAccent({ isOn: true, statusKind: "idle", activeTile: "cool" })).toBe("cool");
   });
 
   it("builds hourly points from climate attribute history", () => {
