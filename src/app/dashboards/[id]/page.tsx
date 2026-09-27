@@ -99,6 +99,7 @@ import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
   clampClimateCardHeight,
   clampClimateCardWidth,
+  climateCardDefaultSizeForMode,
   CLIMATE_CARD_DEFAULT_HEIGHT,
   CLIMATE_CARD_DEFAULT_WIDTH,
   CLIMATE_CARD_MAX_HEIGHT,
@@ -3528,7 +3529,22 @@ export default function DashboardEditPage() {
                             <button
                               key={option.value}
                               type="button"
-                              onClick={() => setEditForm((prev) => ({ ...prev, display_mode: option.value }))}
+                              onClick={() =>
+                                setEditForm((prev) => {
+                                  const nextMode = option.value;
+                                  const prevMode = normalizeClimateDisplayMode(prev.display_mode);
+                                  if (nextMode === prevMode) {
+                                    return { ...prev, display_mode: nextMode };
+                                  }
+                                  const size = climateCardDefaultSizeForMode(nextMode);
+                                  return {
+                                    ...prev,
+                                    display_mode: nextMode,
+                                    width: size.width,
+                                    height: size.height,
+                                  };
+                                })
+                              }
                               className={cn(
                                 "rounded-xl border px-2 py-2.5 text-center text-xs font-medium transition-colors",
                                 selected
