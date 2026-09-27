@@ -489,23 +489,38 @@ export function ClimateCard2Widget({
                 {t("climateCard.climate")}
               </h2>
             </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePower();
-              }}
-              disabled={!entity_id && !previewing}
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-0.5 py-0.5 text-[13px] font-semibold transition-colors disabled:opacity-40",
-                compactAccentTextClass(compactAccent)
-              )}
-              aria-label={isOn ? t("climateCard.powerOff") : t("climateCard.powerOn")}
-              aria-pressed={isOn}
-            >
-              <Power className="h-[17px] w-[17px]" strokeWidth={2} aria-hidden />
-              {isOn ? t("climateCard.on") : t("climateCard.off")}
-            </button>
+            <div className="flex shrink-0 items-center gap-0.5 pt-0.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePower();
+                }}
+                disabled={!entity_id && !previewing}
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-full px-0.5 py-0.5 text-[13px] font-semibold transition-colors disabled:opacity-40",
+                  compactAccentTextClass(compactAccent)
+                )}
+                aria-label={isOn ? t("climateCard.powerOff") : t("climateCard.powerOn")}
+                aria-pressed={isOn}
+              >
+                <Power className="h-[17px] w-[17px]" strokeWidth={2} aria-hidden />
+                {isOn ? t("climateCard.on") : t("climateCard.off")}
+              </button>
+              {onMoreClick ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMoreClick();
+                  }}
+                  className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+                  aria-label={t("climateCard.moreOptions")}
+                >
+                  <MoreVertical className="h-4 w-4" aria-hidden />
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex min-h-0 flex-1 items-center gap-3 px-4 py-2">
