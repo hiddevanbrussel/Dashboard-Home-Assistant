@@ -242,9 +242,9 @@ function compactAccentTextClass(accent: ClimateCompactAccent): string {
 
 function compactModeSelectedClass(mode: ClimateModeTile): string {
   if (mode === "cool") {
-    return "bg-sky-500 text-white shadow-[0_0_0_1.5px_rgba(56,189,248,0.65),0_0_18px_rgba(56,189,248,0.45)]";
+    return "bg-sky-500 text-white shadow-[0_8px_18px_rgba(56,189,248,0.28)]";
   }
-  return "bg-orange-500 text-white shadow-[0_0_0_1.5px_rgba(249,115,22,0.65),0_0_18px_rgba(249,115,22,0.45)]";
+  return "bg-orange-500 text-white shadow-[0_8px_18px_rgba(249,115,22,0.28)]";
 }
 
 export function ClimateCard2Widget({
@@ -470,7 +470,7 @@ export function ClimateCard2Widget({
       className={cn(
         "flex w-full flex-col overflow-hidden outline-none isolate",
         isCompactLayout
-          ? "rounded-[1.65rem] border border-white/50 bg-white/80 text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-950/75 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
+          ? "rounded-2xl border-0 bg-white/80 text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:bg-zinc-950/80 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.65)]"
           : "rounded-2xl border-0 bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:bg-zinc-950 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.65)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
@@ -538,7 +538,7 @@ export function ClimateCard2Widget({
             </div>
 
             <div
-              className="flex h-[5.75rem] w-11 shrink-0 flex-col overflow-hidden rounded-full bg-gray-900/[0.12] shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)] dark:bg-black/50 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
+              className="flex h-[5.75rem] w-11 shrink-0 flex-col overflow-hidden rounded-full bg-gray-900/[0.1] dark:bg-black/45"
               role="group"
               aria-label={t("climateCard.unit")}
             >
@@ -588,10 +588,10 @@ export function ClimateCard2Widget({
                     busyMode != null
                   }
                   className={cn(
-                    "flex min-w-0 flex-col items-center justify-center gap-1 rounded-[1.05rem] px-1 py-2.5 text-[11px] font-medium transition-colors disabled:opacity-50",
+                    "flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2.5 text-[11px] font-medium transition-colors disabled:opacity-50",
                     selected
                       ? compactModeSelectedClass(tile)
-                      : "bg-gray-100/90 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:bg-white/[0.07] dark:text-white/45 dark:hover:bg-white/10 dark:hover:text-white/75"
+                      : "bg-gray-100/80 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:bg-white/[0.06] dark:text-white/45 dark:hover:bg-white/10 dark:hover:text-white/75"
                   )}
                   aria-label={t(labelKey)}
                   aria-pressed={selected}
