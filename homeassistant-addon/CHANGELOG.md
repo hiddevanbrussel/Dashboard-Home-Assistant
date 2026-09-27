@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.21
+
+- Nuts card: redesigned to weekly Verbruik/Opbrengst mockup (accent styles, today value, month trend, bar chart); re-enabled in add-tile picker
+
 ## 0.4.20
 
 - Climate card 2 compact mode: restore edit (⋮) control so entity, display mode, and title can be changed in dashboard edit mode

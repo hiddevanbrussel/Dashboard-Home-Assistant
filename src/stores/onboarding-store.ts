@@ -82,15 +82,19 @@ export type WidgetConfig = {
   background_image?: string;
   /** Afbeeldingskaart: achtergrond voor dark mode. */
   background_image_dark?: string;
-  /** Nuts card: entity voor huidig verbruik (optioneel). */
+  /** Nuts card: accent consumption | production. */
+  accent?: "consumption" | "production";
+  /** Nuts card: entity voor hoofstwaarde vandaag (optioneel). */
+  today_entity_id?: string;
+  /** Nuts card: entity voor huidig verbruik (optioneel, deprecated). */
   current_entity_id?: string;
-  /** Nuts card: max voor verticale bar-schaal (optioneel). */
+  /** Nuts card: max voor verticale bar-schaal (optioneel, deprecated). */
   max_value?: number;
   /** Nuts card: kleur icoon (hex). */
   icon_background_color?: string;
-  /** Nuts card: breedte kaart in px (standaard 250). */
+  /** Nuts card: breedte kaart in px (standaard 320). */
   width?: number;
-  /** Nuts card: hoogte kaart in px (standaard 130). */
+  /** Nuts card: hoogte kaart in px (standaard 300). */
   height?: number;
   /** Energy monitor: entity voor teruglevering aan het net. */
   grid_entity_id?: string;

@@ -1,118 +1,247 @@
 "use client";
 
-import { MoreVertical } from "lucide-react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowDownRight, ArrowUpRight, MoreVertical } from "lucide-react";
 import type { NutsCardProps } from "./widget-types";
 import { CARD_ICONS } from "./card-icons";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-import { useEnergyStore } from "@/stores/energy-store";
 import { useTranslation } from "@/hooks/use-translation";
+import {
+  NUTS_ACCENT_PRESETS,
+  buildNutsWeekBars,
+  computeNutsMonthTrend,
+  formatNutsValue,
+  normalizeNutsAccent,
+  nutsChartScale,
+  nutsDemoTodayValue,
+  nutsDemoTrend,
+  nutsDemoWeekBars,
+  type NutsDayPoint,
+} from "@/lib/nuts-card";
 
-function useEntityValue(entityId: string) {
-  const entity = useEntityStateStore((s) => s.getState(entityId));
-  if (!entity) return { value: undefined, unit: "" };
+const WEEKDAY_KEYS = [
+  "nutsCard.weekday.mon",
+  "nutsCard.weekday.tue",
+  "nutsCard.weekday.wed",
+  "nutsCard.weekday.thu",
+  "nutsCard.weekday.fri",
+  "nutsCard.weekday.sat",
+  "nutsCard.weekday.sun",
+] as const;
+
+function useEntityValue(entityId: string | undefined) {
+  const entity = useEntityStateStore((s) => (entityId ? s.getState(entityId) : undefined));
+  if (!entityId || !entity) return { value: undefined as number | undefined, unit: "" };
   const raw = entity.state;
   const value =
-    raw != null && raw !== "unavailable" && raw !== "unknown"
-      ? Number(raw)
-      : undefined;
+    raw != null && raw !== "unavailable" && raw !== "unknown" ? Number(raw) : undefined;
   const unit = (entity.attributes?.unit_of_measurement as string) ?? "";
-  return { value, unit };
+  return {
+    value: value != null && !Number.isNaN(value) ? value : undefined,
+    unit,
+  };
 }
-
-function formatValue(value: number | undefined, unit: string): string {
-  if (value == null || Number.isNaN(value)) return "—";
-  const rounded = Math.round(value * 100) / 100;
-  return unit ? `${rounded} ${unit}` : String(rounded);
-}
-
-const DEFAULT_ICON_COLOR = "#3B82F6";
 
 export function NutsCardWidget({
-  title = "Gas",
+  title,
   entity_id,
+  today_entity_id,
   current_entity_id,
-  icon = "Fuel",
+  icon,
   icon_background_color,
-  max_value = 10,
+  accent: accentProp,
   className,
   onMoreClick,
 }: NutsCardProps & { className?: string; onMoreClick?: () => void }) {
   const { t } = useTranslation();
-  const dailyData = useEntityValue(entity_id);
-  const currentData = useEntityValue(current_entity_id ?? "");
-  const energyConfig = useEnergyStore();
+  const accent = normalizeNutsAccent(accentProp);
+  const preset = NUTS_ACCENT_PRESETS[accent];
+  const iconName = icon || preset.icon;
+  const IconComponent = CARD_ICONS[iconName] ?? CARD_ICONS.Zap ?? CARD_ICONS.Fuel;
+  const iconColor =
+    icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(icon_background_color)
+      ? icon_background_color
+      : preset.iconColor;
 
-  const currentVal = currentData.value ?? 0;
-  const dailyVal = dailyData.value ?? 0;
-  const unit = dailyData.unit || currentData.unit || "";
+  const todayEntity = today_entity_id || current_entity_id;
+  const todayLive = useEntityValue(todayEntity);
+  const primaryLive = useEntityValue(entity_id);
 
-  const barPercent = max_value > 0 ? Math.min(100, (currentVal / max_value) * 100) : 0;
+  const { data: historyData, isLoading } = useQuery({
+    queryKey: ["ha-history-nuts", entity_id, "35"],
+    enabled: !!entity_id,
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/ha/history?entity_ids=${encodeURIComponent(entity_id)}&days=35`
+      );
+      if (!res.ok) throw new Error("Failed to fetch history");
+      return res.json() as Promise<Record<string, NutsDayPoint[]>>;
+    },
+    staleTime: 60_000,
+  });
 
-  const isGasUnit = /m³|m3|m\^3/i.test(unit);
-  const gasCostPerM3 = energyConfig.gasCostPerM3;
-  let gasExpense: number | null = null;
-  if (isGasUnit && gasCostPerM3 != null && gasCostPerM3 >= 0 && dailyVal != null && !Number.isNaN(dailyVal)) {
-    gasExpense = dailyVal * gasCostPerM3;
-    gasExpense += energyConfig.gasNetbeheerkostenPerDag ?? 0;
-    const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-    gasExpense += (energyConfig.gasVasteLeveringskostenPerMaand ?? 0) / daysInMonth;
-  }
+  const points = historyData?.[entity_id];
+  const hasHistory = (points?.length ?? 0) > 0;
 
-  const IconComponent = CARD_ICONS[icon] ?? CARD_ICONS.Fuel;
-  const iconBg = icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(icon_background_color) ? icon_background_color : DEFAULT_ICON_COLOR;
+  const weekBars = useMemo(() => {
+    if (hasHistory && points) return buildNutsWeekBars(points);
+    return nutsDemoWeekBars(accent);
+  }, [hasHistory, points, accent]);
+
+  const trend = useMemo(() => {
+    if (hasHistory && points) return computeNutsMonthTrend(points, accent);
+    return nutsDemoTrend(accent);
+  }, [hasHistory, points, accent]);
+
+  const todayFromHistory = hasHistory
+    ? weekBars.find((b) => b.date === new Date().toISOString().slice(0, 10))?.value
+    : undefined;
+
+  const mainValue =
+    todayLive.value ??
+    todayFromHistory ??
+    (hasHistory ? undefined : nutsDemoTodayValue(accent)) ??
+    primaryLive.value;
+
+  const unit =
+    todayLive.unit ||
+    primaryLive.unit ||
+    (hasHistory || !entity_id ? "kWh" : "");
+
+  const scale = nutsChartScale(weekBars.map((b) => b.value));
+  const displayTitle =
+    title?.trim() ||
+    (accent === "production" ? t("nutsCard.productionTitle") : t("nutsCard.consumptionTitle"));
+
+  const trendColor = !trend
+    ? "text-white/50"
+    : trend.favorable
+      ? "text-emerald-400"
+      : "text-rose-400";
+  const TrendArrow =
+    trend?.direction === "down" ? ArrowDownRight : ArrowUpRight;
 
   return (
     <div
       className={cn(
-        "flex w-full flex-1 min-h-0 overflow-hidden rounded-2xl min-h-[130px]",
-        "bg-white/10 dark:bg-black/50 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl",
+        "bg-zinc-900/90 text-white shadow-xl backdrop-blur-2xl",
+        "dark:bg-zinc-950/85",
         className
       )}
     >
-      <div className="flex flex-1 min-w-0 flex-col p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col items-start gap-2">
-            <div
-              className="flex shrink-0 items-center justify-center h-10 w-10 rounded-xl"
-              style={{ backgroundColor: `${iconBg}20`, color: iconBg }}
-            >
-              <IconComponent className="h-5 w-5" aria-hidden />
-            </div>
-            <p className="font-semibold text-gray-900 dark:text-white truncate max-w-full">{title}</p>
-          </div>
-          {onMoreClick && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onMoreClick();
-            }}
-            className="p-1.5 rounded-lg shrink-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
-            aria-label={t("common.options")}
-          >
-            <MoreVertical className="h-5 w-5" aria-hidden />
-          </button>
-        )}
-        </div>
-        <p className="text-sm text-gray-600 dark:text-white/70 tabular-nums mt-1">
-          {formatValue(currentVal, unit)} • {formatValue(dailyVal, unit)}
-        </p>
-        {gasExpense != null && (
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
-            {t("powerUsage.costToday")}: €{gasExpense.toFixed(2)}
-          </p>
-        )}
-      </div>
-      <div className="relative shrink-0 self-center w-5 h-[110px] my-3 mx-2 bg-white/20 dark:bg-white/10 rounded-full overflow-hidden">
+      <div className="flex shrink-0 items-start gap-3 px-4 pt-4">
         <div
-          className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-300"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full"
           style={{
-            height: `${barPercent}%`,
-            minHeight: barPercent > 0 ? 4 : 0,
-            backgroundColor: iconBg,
+            backgroundColor: "rgba(255,255,255,0.06)",
+            boxShadow: `0 0 20px ${preset.glow}`,
+            color: iconColor,
           }}
-        />
+        >
+          <IconComponent className="h-6 w-6" aria-hidden />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-white/80">{displayTitle}</p>
+          <p className="mt-0.5 text-2xl font-bold tabular-nums tracking-tight text-white sm:text-[1.75rem]">
+            {formatNutsValue(mainValue, unit)}
+          </p>
+          <p className="text-xs text-white/45">{t("nutsCard.today")}</p>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {onMoreClick && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoreClick();
+              }}
+              className="rounded-lg p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label={t("common.options")}
+            >
+              <MoreVertical className="h-4 w-4" aria-hidden />
+            </button>
+          )}
+          {trend && (
+            <div className="flex flex-col items-end">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-0.5 rounded-full bg-white/5 px-2 py-0.5 text-sm font-semibold tabular-nums",
+                  trendColor
+                )}
+              >
+                <TrendArrow className="h-3.5 w-3.5" aria-hidden />
+                {trend.percent}%
+              </span>
+              <span className="mt-1 max-w-[5.5rem] text-right text-[10px] leading-tight text-white/40">
+                {t("nutsCard.vsLastMonth")}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="relative mt-3 flex min-h-0 flex-1 flex-col px-3 pb-3 pt-1">
+        {isLoading && entity_id && !hasHistory ? (
+          <div className="flex flex-1 items-center justify-center text-xs text-white/40">
+            {t("nutsCard.loading")}
+          </div>
+        ) : (
+          <>
+            <div className="relative flex min-h-[7.5rem] flex-1 flex-col">
+              <span className="mb-0.5 ml-0.5 text-[9px] text-white/35">{unit || "kWh"}</span>
+              <div className="relative flex min-h-0 flex-1">
+              <div className="pointer-events-none absolute inset-0 flex flex-col justify-between py-0.5 pr-1">
+                {[...scale.ticks].reverse().map((tick, i) => (
+                  <div key={`${tick}-${i}`} className="flex items-center gap-1.5">
+                    <span className="w-6 shrink-0 text-right text-[9px] tabular-nums text-white/35">
+                      {tick}
+                    </span>
+                    <div className="h-px flex-1 bg-white/[0.06]" />
+                  </div>
+                ))}
+              </div>
+
+              <div className="ml-8 flex flex-1 items-end justify-between gap-1.5 pb-5 pt-1">
+                {weekBars.map((bar) => {
+                  const pct = scale.max > 0 ? Math.min(100, (bar.value / scale.max) * 100) : 0;
+                  return (
+                    <div
+                      key={bar.date}
+                      className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                    >
+                      <div
+                        className="w-full max-w-[28px] rounded-t-md"
+                        style={{
+                          height: `${Math.max(pct, bar.value > 0 ? 4 : 0)}%`,
+                          background: `linear-gradient(to top, ${preset.barTo}, ${preset.barFrom})`,
+                          minHeight: bar.value > 0 ? 4 : 0,
+                        }}
+                        title={`${formatNutsValue(bar.value, unit)}`}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              </div>
+            </div>
+
+            <div className="ml-8 flex justify-between gap-1.5">
+              {weekBars.map((bar) => (
+                <span
+                  key={`lbl-${bar.date}`}
+                  className="min-w-0 flex-1 text-center text-[10px] text-white/40"
+                >
+                  {t(WEEKDAY_KEYS[bar.weekday])}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

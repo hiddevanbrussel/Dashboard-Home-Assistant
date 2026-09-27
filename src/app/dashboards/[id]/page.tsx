@@ -109,6 +109,17 @@ import {
   normalizeClimateDisplayMode,
 } from "@/lib/climate-card";
 import {
+  NUTS_CARD_DEFAULT_HEIGHT,
+  NUTS_CARD_DEFAULT_WIDTH,
+  NUTS_CARD_MAX_HEIGHT,
+  NUTS_CARD_MAX_WIDTH,
+  NUTS_CARD_MIN_HEIGHT,
+  NUTS_CARD_MIN_WIDTH,
+  clampNutsCardHeight,
+  clampNutsCardWidth,
+  normalizeNutsAccent,
+} from "@/lib/nuts-card";
+import {
   clampVacuumCard2Height,
   clampVacuumCard2Width,
   VACUUM_CARD_2_DEFAULT_HEIGHT,
@@ -197,7 +208,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "teamtracker_card", labelKey: "cardType.teamtracker_card", Icon: Trophy },
   { type: "pill_card", labelKey: "cardType.pill_card", Icon: CircleDot },
   { type: "room_card", labelKey: "cardType.room_card", Icon: Home },
-  { type: "nuts_card", labelKey: "cardType.nuts_card", Icon: Fuel },
+  { type: "nuts_card", labelKey: "cardType.nuts_card", Icon: Zap },
   { type: "card_group", labelKey: "cardType.card_group", Icon: LayoutGrid },
   { type: "chore_card", labelKey: "cardType.chore_card", Icon: ListTodo },
   { type: "calendar_card", labelKey: "cardType.calendar_card", Icon: CalendarDays },
@@ -441,6 +452,8 @@ function WidgetByType({
   size,
   conditions,
   current_entity_id,
+  today_entity_id,
+  accent,
   max_value,
   grid_entity_id,
   minimal,
@@ -450,6 +463,7 @@ function WidgetByType({
   device_names,
   cost_per_kwh,
   textMode,
+  icon_background_color,
   onMoreClick,
 }: {
   type: string;
@@ -476,6 +490,9 @@ function WidgetByType({
   size?: string;
   conditions?: { operator: string; value: string; color: string }[];
   current_entity_id?: string;
+  today_entity_id?: string;
+  accent?: "consumption" | "production";
+  icon_background_color?: string;
   max_value?: number;
   grid_entity_id?: string;
   minimal?: boolean;
@@ -681,9 +698,11 @@ function WidgetByType({
         <NutsCardWidget
           title={title}
           entity_id={entity_id}
-          current_entity_id={current_entity_id as string | undefined}
+          today_entity_id={today_entity_id}
+          current_entity_id={current_entity_id}
           icon={icon}
-          max_value={max_value as number | undefined}
+          icon_background_color={icon_background_color}
+          accent={normalizeNutsAccent(accent)}
         />
       );
     case "chore_card":
@@ -803,6 +822,8 @@ export default function DashboardEditPage() {
     conditions?: { operator: string; value: string; color: string }[];
     image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
     current_entity_id?: string;
+    today_entity_id?: string;
+    accent?: "consumption" | "production";
     max_value?: number;
     minimal?: boolean;
     scale?: number;
@@ -830,6 +851,8 @@ export default function DashboardEditPage() {
     cleaned_area_entity_id: "",
     progress_entity_id: "",
     current_entity_id: "",
+    today_entity_id: "",
+    accent: "consumption",
     light_entity_id: "",
     modal_light_entity_ids: [],
     media_player_entity_id: "",
@@ -1016,6 +1039,8 @@ export default function DashboardEditPage() {
         image_conditions: editingWidget.image_conditions ?? [],
         show_state: editingWidget.show_state !== false,
         current_entity_id: editingWidget.current_entity_id ?? "",
+        today_entity_id: editingWidget.today_entity_id ?? "",
+        accent: normalizeNutsAccent(editingWidget.accent),
         max_value: editingWidget.max_value ?? undefined,
         minimal: editingWidget.minimal ?? false,
         scale: editingWidget.scale ?? 1,
@@ -1243,6 +1268,12 @@ export default function DashboardEditPage() {
       ...(type === "calendar_card" && { width: CALENDAR_CARD_DEFAULT_WIDTH, height: CALENDAR_CARD_DEFAULT_HEIGHT }),
       ...(type === "room_card" && { width: ROOM_CARD_DEFAULT_WIDTH, height: ROOM_CARD_DEFAULT_HEIGHT }),
       ...((type === "climate_card" || type === "climate_card_2") && { width: CLIMATE_CARD_DEFAULT_WIDTH, height: CLIMATE_CARD_DEFAULT_HEIGHT }),
+      ...(type === "nuts_card" && {
+        width: NUTS_CARD_DEFAULT_WIDTH,
+        height: NUTS_CARD_DEFAULT_HEIGHT,
+        accent: "consumption" as const,
+        icon: "Zap",
+      }),
       page: dashboardPageRef.current,
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
@@ -1340,7 +1371,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; display_mode?: "standard" | "compact" | "graph"; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; media_player_entity_id?: string; climate_entity_id?: string; area_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; page?: number }
+    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; display_mode?: "standard" | "compact" | "graph"; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; media_player_entity_id?: string; climate_entity_id?: string; area_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; today_entity_id?: string; accent?: "consumption" | "production"; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; page?: number }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -2400,14 +2431,15 @@ export default function DashboardEditPage() {
               key={w.id}
               widget={{
                 id: w.id,
-                title: w.title ?? "Gas",
+                title: w.title ?? t("cardType.nuts_card"),
                 entity_id: w.entity_id,
+                today_entity_id: w.today_entity_id,
                 current_entity_id: w.current_entity_id,
                 icon: w.icon,
                 icon_background_color: w.icon_background_color,
-                max_value: w.max_value,
-                width: w.width ?? 250,
-                height: w.height ?? 130,
+                accent: w.accent,
+                width: w.width ?? NUTS_CARD_DEFAULT_WIDTH,
+                height: w.height ?? NUTS_CARD_DEFAULT_HEIGHT,
               }}
               widgetIndex={i}
               editMode={editMode}
@@ -5319,10 +5351,47 @@ aria-label={t("editPanel.removeCondition")}
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.nutsAccent")}
+                      </label>
+                      <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5">
+                        {([
+                          { id: "consumption" as const, label: t("editPanel.nutsAccentConsumption") },
+                          { id: "production" as const, label: t("editPanel.nutsAccentProduction") },
+                        ]).map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                accent: opt.id,
+                                icon:
+                                  prev.icon && prev.icon !== "Zap" && prev.icon !== "Leaf" && prev.icon !== "Fuel"
+                                    ? prev.icon
+                                    : opt.id === "production"
+                                      ? "Leaf"
+                                      : "Zap",
+                              }))
+                            }
+                            className={cn(
+                              "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                              (editForm.accent ?? "consumption") === opt.id
+                                ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                                : "text-gray-600 dark:text-gray-400"
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.nutsAccentHint")}</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         {t("editPanel.icon")}
                       </label>
                       <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto">
-                        {(["Fuel", "Droplets", "Zap", "Gauge", "Thermometer"].filter((n) => CARD_ICON_OPTIONS.includes(n)) as string[]).map((name) => (
+                        {(["Zap", "Leaf", "Sun", "Fuel", "Droplets", "Gauge"].filter((n) => CARD_ICON_OPTIONS.includes(n)) as string[]).map((name) => (
                           <button
                             key={name}
                             type="button"
@@ -5331,7 +5400,7 @@ aria-label={t("editPanel.removeCondition")}
                             }
                             className={cn(
                               "rounded-md px-2 py-1 text-xs",
-                              (editForm.icon ?? "Fuel") === name
+                              (editForm.icon ?? ((editForm.accent ?? "consumption") === "production" ? "Leaf" : "Zap")) === name
                                 ? "bg-[#4700B5] text-white"
                                 : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
                             )}
@@ -5348,7 +5417,7 @@ aria-label={t("editPanel.removeCondition")}
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
-                          value={editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : "#3B82F6"}
+                          value={editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : ((editForm.accent ?? "consumption") === "production" ? "#3DDC97" : "#F5C518")}
                           onChange={(e) =>
                             setEditForm((prev) => ({
                               ...prev,
@@ -5359,14 +5428,14 @@ aria-label={t("editPanel.removeCondition")}
                         />
                         <input
                           type="text"
-                          value={editForm.icon_background_color ?? "#3B82F6"}
+                          value={editForm.icon_background_color ?? ""}
                           onChange={(e) =>
                             setEditForm((prev) => ({
                               ...prev,
                               icon_background_color: e.target.value || undefined,
                             }))
                           }
-                          placeholder="#3B82F6"
+                          placeholder="#F5C518"
                           className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                         />
                       </div>
@@ -5382,36 +5451,15 @@ aria-label={t("editPanel.removeCondition")}
                     />
                     <EntitySelectWithSearch
                       entities={entities}
-                      value={editForm.current_entity_id ?? ""}
+                      value={editForm.today_entity_id || editForm.current_entity_id || ""}
                       onChange={(v) =>
-                        setEditForm((prev) => ({ ...prev, current_entity_id: v || undefined }))
+                        setEditForm((prev) => ({ ...prev, today_entity_id: v || undefined, current_entity_id: undefined }))
                       }
                       filter={(e) => e.entity_id.startsWith("sensor.")}
-                      label={t("editPanel.nutsCurrentEntity")}
+                      label={t("editPanel.nutsTodayEntity")}
                       placeholder={t("editPanel.searchSensor")}
                       emptyOption={t("editPanel.noneShowsZero")}
                     />
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("editPanel.maxBarValue")}
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        step={0.1}
-                        value={editForm.max_value ?? 10}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? undefined : Number(e.target.value);
-                          setEditForm((prev) => ({
-                            ...prev,
-                            max_value: v != null && !Number.isNaN(v) && v > 0 ? v : undefined,
-                          }));
-                        }}
-                        placeholder="10"
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                      />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.barScaleHint")}</p>
-                    </div>
                     </>
                     )}
                     {editTab === "weergave" && (
@@ -5423,15 +5471,15 @@ aria-label={t("editPanel.removeCondition")}
                         <div className="flex-1">
                           <input
                             type="number"
-                            min={150}
-                            max={400}
+                            min={NUTS_CARD_MIN_WIDTH}
+                            max={NUTS_CARD_MAX_WIDTH}
                             step={10}
-                            value={editForm.width ?? 250}
+                            value={editForm.width ?? NUTS_CARD_DEFAULT_WIDTH}
                             onChange={(e) => {
                               const v = e.target.value === "" ? undefined : Number(e.target.value);
                               setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
                             }}
-                            placeholder="250"
+                            placeholder={String(NUTS_CARD_DEFAULT_WIDTH)}
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                           />
                           <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.width")}</p>
@@ -5439,15 +5487,15 @@ aria-label={t("editPanel.removeCondition")}
                         <div className="flex-1">
                           <input
                             type="number"
-                            min={80}
-                            max={300}
+                            min={NUTS_CARD_MIN_HEIGHT}
+                            max={NUTS_CARD_MAX_HEIGHT}
                             step={10}
-                            value={editForm.height ?? 130}
+                            value={editForm.height ?? NUTS_CARD_DEFAULT_HEIGHT}
                             onChange={(e) => {
                               const v = e.target.value === "" ? undefined : Number(e.target.value);
                               setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
                             }}
-                            placeholder="130"
+                            placeholder={String(NUTS_CARD_DEFAULT_HEIGHT)}
                             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                           />
                           <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.height")}</p>
@@ -5519,6 +5567,24 @@ aria-label={t("editPanel.removeCondition")}
                       cleaned_area_entity_id={editForm.cleaned_area_entity_id}
                       icon={editForm.icon}
                     />
+                  ) : editingWidget.type === "nuts_card" ? (
+                    <div
+                      style={{
+                        width: clampNutsCardWidth(editForm.width ?? NUTS_CARD_DEFAULT_WIDTH),
+                        height: clampNutsCardHeight(editForm.height ?? NUTS_CARD_DEFAULT_HEIGHT),
+                        maxWidth: "100%",
+                      }}
+                    >
+                      <NutsCardWidget
+                        title={editForm.title || t("cardType.nuts_card")}
+                        entity_id={editForm.entity_id}
+                        today_entity_id={editForm.today_entity_id || editForm.current_entity_id}
+                        icon={editForm.icon}
+                        icon_background_color={editForm.icon_background_color}
+                        accent={normalizeNutsAccent(editForm.accent)}
+                        className="h-full"
+                      />
+                    </div>
                   ) : (
                     <div className="max-w-xs text-center">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -5790,10 +5856,11 @@ aria-label={t("editPanel.removeCondition")}
                           icon: editForm.icon || undefined,
                           icon_background_color: editForm.icon_background_color || undefined,
                           entity_id: editForm.entity_id || undefined,
-                          current_entity_id: editForm.current_entity_id || undefined,
-                          max_value: editForm.max_value != null && editForm.max_value > 0 ? editForm.max_value : undefined,
-                          width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined,
-                          height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
+                          today_entity_id: editForm.today_entity_id || undefined,
+                          current_entity_id: undefined,
+                          accent: normalizeNutsAccent(editForm.accent),
+                          width: editForm.width != null && editForm.width > 0 ? clampNutsCardWidth(editForm.width) : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? clampNutsCardHeight(editForm.height) : undefined,
                         }),
                         ...(editingWidget.type === "room_card" && {
                           icon: editForm.icon || undefined,
