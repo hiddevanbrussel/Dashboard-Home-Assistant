@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.22
+
+- Nuts card: proper light and dark theme styling (glass surfaces, text, trend pill, chart grid)
+
 ## 0.4.21
 
 - Nuts card: redesigned to weekly Verbruik/Opbrengst mockup (accent styles, today value, month trend, bar chart); re-enabled in add-tile picker

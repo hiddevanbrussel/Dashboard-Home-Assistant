@@ -7,6 +7,7 @@ import type { NutsCardProps } from "./widget-types";
 import { CARD_ICONS } from "./card-icons";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   NUTS_ACCENT_PRESETS,
@@ -56,6 +57,7 @@ export function NutsCardWidget({
   onMoreClick,
 }: NutsCardProps & { className?: string; onMoreClick?: () => void }) {
   const { t } = useTranslation();
+  const isDark = useThemeStore((s) => s.resolved) === "dark";
   const accent = normalizeNutsAccent(accentProp);
   const preset = NUTS_ACCENT_PRESETS[accent];
   const iconName = icon || preset.icon;
@@ -116,19 +118,19 @@ export function NutsCardWidget({
     (accent === "production" ? t("nutsCard.productionTitle") : t("nutsCard.consumptionTitle"));
 
   const trendColor = !trend
-    ? "text-white/50"
+    ? "text-gray-400 dark:text-white/50"
     : trend.favorable
-      ? "text-emerald-400"
-      : "text-rose-400";
+      ? "text-emerald-600 dark:text-emerald-400"
+      : "text-rose-600 dark:text-rose-400";
   const TrendArrow =
     trend?.direction === "down" ? ArrowDownRight : ArrowUpRight;
 
   return (
     <div
       className={cn(
-        "flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl",
-        "bg-zinc-900/90 text-white shadow-xl backdrop-blur-2xl",
-        "dark:bg-zinc-950/85",
+        "flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl shadow-xl backdrop-blur-2xl",
+        "bg-white/85 text-gray-900 border border-black/5",
+        "dark:bg-zinc-950/85 dark:text-white dark:border-white/10",
         className
       )}
     >
@@ -136,8 +138,8 @@ export function NutsCardWidget({
         <div
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full"
           style={{
-            backgroundColor: "rgba(255,255,255,0.06)",
-            boxShadow: `0 0 20px ${preset.glow}`,
+            backgroundColor: isDark ? "rgba(255,255,255,0.06)" : `${iconColor}18`,
+            boxShadow: isDark ? `0 0 20px ${preset.glow}` : `0 0 16px ${iconColor}33`,
             color: iconColor,
           }}
         >
@@ -145,11 +147,11 @@ export function NutsCardWidget({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-white/80">{displayTitle}</p>
-          <p className="mt-0.5 text-2xl font-bold tabular-nums tracking-tight text-white sm:text-[1.75rem]">
+          <p className="truncate text-sm font-medium text-gray-600 dark:text-white/80">{displayTitle}</p>
+          <p className="mt-0.5 text-2xl font-bold tabular-nums tracking-tight text-gray-950 dark:text-white sm:text-[1.75rem]">
             {formatNutsValue(mainValue, unit)}
           </p>
-          <p className="text-xs text-white/45">{t("nutsCard.today")}</p>
+          <p className="text-xs text-gray-400 dark:text-white/45">{t("nutsCard.today")}</p>
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-1">
@@ -160,7 +162,7 @@ export function NutsCardWidget({
                 e.stopPropagation();
                 onMoreClick();
               }}
-              className="rounded-lg p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+              className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-black/5 hover:text-gray-700 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
               aria-label={t("common.options")}
             >
               <MoreVertical className="h-4 w-4" aria-hidden />
@@ -170,14 +172,15 @@ export function NutsCardWidget({
             <div className="flex flex-col items-end">
               <span
                 className={cn(
-                  "inline-flex items-center gap-0.5 rounded-full bg-white/5 px-2 py-0.5 text-sm font-semibold tabular-nums",
+                  "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-sm font-semibold tabular-nums",
+                  "bg-black/[0.04] dark:bg-white/5",
                   trendColor
                 )}
               >
                 <TrendArrow className="h-3.5 w-3.5" aria-hidden />
                 {trend.percent}%
               </span>
-              <span className="mt-1 max-w-[5.5rem] text-right text-[10px] leading-tight text-white/40">
+              <span className="mt-1 max-w-[5.5rem] text-right text-[10px] leading-tight text-gray-400 dark:text-white/40">
                 {t("nutsCard.vsLastMonth")}
               </span>
             </div>
@@ -187,21 +190,21 @@ export function NutsCardWidget({
 
       <div className="relative mt-3 flex min-h-0 flex-1 flex-col px-3 pb-3 pt-1">
         {isLoading && entity_id && !hasHistory ? (
-          <div className="flex flex-1 items-center justify-center text-xs text-white/40">
+          <div className="flex flex-1 items-center justify-center text-xs text-gray-400 dark:text-white/40">
             {t("nutsCard.loading")}
           </div>
         ) : (
           <>
             <div className="relative flex min-h-[7.5rem] flex-1 flex-col">
-              <span className="mb-0.5 ml-0.5 text-[9px] text-white/35">{unit || "kWh"}</span>
+              <span className="mb-0.5 ml-0.5 text-[9px] text-gray-400 dark:text-white/35">{unit || "kWh"}</span>
               <div className="relative flex min-h-0 flex-1">
               <div className="pointer-events-none absolute inset-0 flex flex-col justify-between py-0.5 pr-1">
                 {[...scale.ticks].reverse().map((tick, i) => (
                   <div key={`${tick}-${i}`} className="flex items-center gap-1.5">
-                    <span className="w-6 shrink-0 text-right text-[9px] tabular-nums text-white/35">
+                    <span className="w-6 shrink-0 text-right text-[9px] tabular-nums text-gray-400 dark:text-white/35">
                       {tick}
                     </span>
-                    <div className="h-px flex-1 bg-white/[0.06]" />
+                    <div className="h-px flex-1 bg-black/[0.06] dark:bg-white/[0.06]" />
                   </div>
                 ))}
               </div>
@@ -234,7 +237,7 @@ export function NutsCardWidget({
               {weekBars.map((bar) => (
                 <span
                   key={`lbl-${bar.date}`}
-                  className="min-w-0 flex-1 text-center text-[10px] text-white/40"
+                  className="min-w-0 flex-1 text-center text-[10px] text-gray-400 dark:text-white/40"
                 >
                   {t(WEEKDAY_KEYS[bar.weekday])}
                 </span>
