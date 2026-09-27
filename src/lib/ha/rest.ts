@@ -109,11 +109,14 @@ export async function getHistory(
   config: HaRestConfig,
   entityIds: string[],
   startTime: string,
-  endTime?: string
+  endTime?: string,
+  options?: { minimalResponse?: boolean }
 ): Promise<HaHistoryState[][]> {
   const params = new URLSearchParams();
   params.set("filter_entity_id", entityIds.join(","));
-  params.set("minimal_response", "1");
+  if (options?.minimalResponse !== false) {
+    params.set("minimal_response", "1");
+  }
   params.set("end_time", endTime ?? new Date().toISOString());
   const path = `/api/history/period/${encodeURIComponent(startTime)}?${params.toString()}`;
   const res = await haFetch(config.baseUrl, config.token, path);

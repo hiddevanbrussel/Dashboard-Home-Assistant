@@ -1,13 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  Crosshair,
   Flame,
   Minus,
   MoreVertical,
   Plus,
   Power,
   Snowflake,
+  Thermometer,
   Wind,
 } from "lucide-react";
 import type { ClimateProps } from "./widget-types";
@@ -17,23 +19,28 @@ import { useTranslation } from "@/hooks/use-translation";
 import {
   clampClimateCardHeight,
   clampClimateCardWidth,
+  climateCardEffectiveDensity,
   climateGaugeColor,
   climateGaugeProgress,
   climateGaugeTickFilled,
+  climateHistoryYTicks,
   climateHvacModesFromAttributes,
+  climatePreviewHistoryPoints,
   climateStatusKind,
   climateStatusLabelKey,
   climateTempsDiffer,
   climateTileEnabled,
   climateTileFromHvacMode,
-  climateCardDensity,
   CLIMATE_GAUGE_MAX,
   CLIMATE_GAUGE_MIN,
   CLIMATE_GAUGE_TICK_COUNT,
   isClimateOn,
+  normalizeClimateDisplayMode,
   parseClimateTemp,
   preferredClimateOnMode,
   resolveHvacModeForTile,
+  type ClimateDisplayMode,
+  type ClimateHistoryPoint,
   type ClimateModeTile,
 } from "@/lib/climate-card";
 
@@ -106,6 +113,112 @@ function ClimateTempGauge({
   );
 }
 
+function ClimateTempHistoryChart({ points }: { points: ClimateHistoryPoint[] }) {
+  const yTicks = climateHistoryYTicks(points);
+  const yMin = yTicks[0] ?? 16;
+  const yMax = yTicks[yTicks.length - 1] ?? 24;
+  const span = Math.max(1, yMax - yMin);
+  const pad = { l: 28, r: 8, t: 10, b: 22 };
+  const w = 280;
+  const h = 140;
+  const innerW = w - pad.l - pad.r;
+  const innerH = h - pad.t - pad.b;
+  const series =
+    points.length > 0
+      ? points
+      : climatePreviewHistoryPoints().filter((_, i) => i % 2 === 0);
+
+  const coords = series.map((p, i) => {
+    const x = pad.l + (series.length <= 1 ? innerW / 2 : (i / (series.length - 1)) * innerW);
+    const y = pad.t + (1 - (p.value - yMin) / span) * innerH;
+    return { x, y, ...p };
+  });
+  const line = coords.map((c, i) => `${i === 0 ? "M" : "L"}${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(" ");
+  const area =
+    coords.length > 0
+      ? `${line} L${coords[coords.length - 1].x.toFixed(1)} ${(pad.t + innerH).toFixed(1)} L${coords[0].x.toFixed(1)} ${(pad.t + innerH).toFixed(1)} Z`
+      : "";
+  const last = coords[coords.length - 1];
+  const xLabels = ["06:00", "12:00", "18:00", "00:00"];
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-full w-full" role="img" aria-label="Temperature history">
+      {yTicks.map((tick) => {
+        const y = pad.t + (1 - (tick - yMin) / span) * innerH;
+        return (
+          <g key={tick}>
+            <line
+              x1={pad.l}
+              x2={w - pad.r}
+              y1={y}
+              y2={y}
+              className="stroke-gray-200 dark:stroke-white/10"
+              strokeWidth="1"
+            />
+            <text
+              x={pad.l - 6}
+              y={y + 3}
+              textAnchor="end"
+              className="fill-gray-400 text-[9px] dark:fill-white/40"
+            >
+              {tick}°
+            </text>
+          </g>
+        );
+      })}
+      {area ? (
+        <path d={area} fill="url(#climateTempFill)" opacity="0.55" />
+      ) : null}
+      {line ? (
+        <path
+          d={line}
+          fill="none"
+          stroke="#F97316"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : null}
+      {last ? (
+        <>
+          <line
+            x1={last.x}
+            x2={last.x}
+            y1={pad.t}
+            y2={pad.t + innerH}
+            stroke="currentColor"
+            strokeDasharray="3 4"
+            className="text-white/50 dark:text-white/35"
+            strokeWidth="1.2"
+          />
+          <circle cx={last.x} cy={last.y} r="4.5" fill="#F97316" />
+          <circle cx={last.x} cy={last.y} r="2" fill="#fff" />
+        </>
+      ) : null}
+      {xLabels.map((label, i) => {
+        const x = pad.l + (i / (xLabels.length - 1)) * innerW;
+        return (
+          <text
+            key={label}
+            x={x}
+            y={h - 6}
+            textAnchor="middle"
+            className="fill-gray-400 text-[9px] dark:fill-white/40"
+          >
+            {label}
+          </text>
+        );
+      })}
+      <defs>
+        <linearGradient id="climateTempFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#F97316" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#F97316" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
 function formatTempParts(value: number | undefined): { int: number; dec: string | null; empty?: boolean } {
   if (value == null || Number.isNaN(value)) return { int: 0, dec: null, empty: true };
   const rounded = Math.round(value * 2) / 2;
@@ -118,6 +231,7 @@ export function ClimateCard2Widget({
   title = "Climate",
   entity_id,
   humidity_entity_id,
+  display_mode,
   size = "md",
   width,
   height,
@@ -135,6 +249,8 @@ export function ClimateCard2Widget({
   const pendingRef = useRef(false);
   const [busyMode, setBusyMode] = useState<ClimateModeTile | null>(null);
   const [previewTemp, setPreviewTemp] = useState(21);
+  const [historyPoints, setHistoryPoints] = useState<ClimateHistoryPoint[]>([]);
+  const mode: ClimateDisplayMode = normalizeClimateDisplayMode(display_mode);
 
   const attrs = entity?.attributes ?? {};
   const state = (entity?.state as string | undefined) ?? "";
@@ -165,11 +281,36 @@ export function ClimateCard2Widget({
 
   const cardWidth = clampClimateCardWidth(width);
   const cardHeight = clampClimateCardHeight(height);
-  const density = climateCardDensity(cardHeight);
+  const density = climateCardEffectiveDensity(cardHeight, mode);
   const isDense = density === "dense";
   const isCompact = density === "compact" || isDense;
-  const showModeLabels = density === "comfortable";
+  const showModeLabels = density === "comfortable" || mode === "graph";
   const subtitle = title?.trim() || (attrs.friendly_name as string | undefined) || entity_id;
+
+  useEffect(() => {
+    if (mode !== "graph") return;
+    if (!entity_id) {
+      setHistoryPoints(climatePreviewHistoryPoints());
+      return;
+    }
+    let cancelled = false;
+    fetch(
+      `/api/ha/history?entity_ids=${encodeURIComponent(entity_id)}&granularity=hourly&mode=attribute&attribute=current_temperature`,
+      { cache: "no-store" }
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const points = (data?.[entity_id] as ClimateHistoryPoint[] | undefined) ?? [];
+        setHistoryPoints(points.length > 0 ? points : climatePreviewHistoryPoints());
+      })
+      .catch(() => {
+        if (!cancelled) setHistoryPoints(climatePreviewHistoryPoints());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, entity_id]);
 
   async function callClimate(service: string, serviceData?: Record<string, unknown>) {
     const res = await fetch("/api/ha/call-service", {
@@ -324,6 +465,29 @@ export function ClimateCard2Widget({
         </div>
       </div>
 
+      {mode === "graph" ? (
+        <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-1 pt-2">
+          <div className="mb-2 flex shrink-0 items-center justify-between gap-3 text-[13px] font-medium text-gray-500 dark:text-white/55">
+            <span className="inline-flex items-center gap-1.5">
+              <Thermometer className="h-3.5 w-3.5 text-orange-400" aria-hidden />
+              {t("climateCard.currentNow").replace(
+                "{n}",
+                String(Math.round((currentTemperature ?? setpoint ?? 0) * 2) / 2)
+              )}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Crosshair className="h-3.5 w-3.5 text-orange-400" aria-hidden />
+              {t("climateCard.targetSet").replace(
+                "{n}",
+                String(Math.round((targetTemperature ?? setpoint ?? 0) * 2) / 2)
+              )}
+            </span>
+          </div>
+          <div className="min-h-0 flex-1">
+            <ClimateTempHistoryChart points={historyPoints} />
+          </div>
+        </div>
+      ) : (
       <div className="relative flex min-h-0 flex-1 items-center justify-center px-3" style={{ containerType: "size" }}>
         <div
           className="relative aspect-square"
@@ -441,6 +605,7 @@ export function ClimateCard2Widget({
           </div>
         </div>
       </div>
+      )}
 
       <div
         className={cn(

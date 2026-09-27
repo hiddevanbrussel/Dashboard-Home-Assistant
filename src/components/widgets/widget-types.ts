@@ -40,6 +40,11 @@ export type ClimateProps = WidgetBaseProps & {
   state?: string;
   /** Optioneel: sensor entity voor luchtvochtigheid (bijv. sensor.x_humidity). */
   humidity_entity_id?: string;
+  /**
+   * Weergave: standard (huidige gauge), compact (dichter), of graph (temperatuurhistorie).
+   * Default: standard.
+   */
+  display_mode?: "standard" | "compact" | "graph";
   /** Breedte kaart in px (standaard 300). */
   width?: number;
   /** Hoogte kaart in px (standaard 340). */
