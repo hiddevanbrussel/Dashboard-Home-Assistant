@@ -450,13 +450,14 @@ export function ClimateCard2Widget({
       if (currentTemperature != null) {
         return t("climateCard.currentNow").replace("{n}", formatTempLabel(currentTemperature));
       }
-      if (targetTemperature != null) {
-        return t("climateCard.targetSet").replace("{n}", formatTempLabel(targetTemperature));
-      }
-      return showHumidity ? `${Math.round(humidity!)}%` : t("climateCard.unit");
+      // Preview / missing current: still show a "Now" line under the large setpoint.
+      return t("climateCard.currentNow").replace("{n}", formatTempLabel(setpoint));
     }
-    if (targetTemperature != null) {
-      return t("climateCard.targetSet").replace("{n}", formatTempLabel(targetTemperature));
+    if (targetTemperature != null || previewing) {
+      return t("climateCard.targetSet").replace(
+        "{n}",
+        formatTempLabel(targetTemperature ?? setpoint)
+      );
     }
     if (currentTemperature != null) {
       return t("climateCard.currentNow").replace("{n}", formatTempLabel(currentTemperature));
@@ -537,7 +538,7 @@ export function ClimateCard2Widget({
             </div>
 
             <div
-              className="flex h-[5.75rem] w-11 shrink-0 flex-col overflow-hidden rounded-full bg-gray-900/[0.06] shadow-[inset_0_0_0_1px_rgba(15,23,42,0.06)] dark:bg-black/45 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+              className="flex h-[5.75rem] w-11 shrink-0 flex-col overflow-hidden rounded-full bg-gray-900/[0.12] shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)] dark:bg-black/50 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
               role="group"
               aria-label={t("climateCard.unit")}
             >
