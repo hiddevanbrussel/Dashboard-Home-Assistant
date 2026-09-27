@@ -5582,6 +5582,8 @@ aria-label={t("editPanel.removeCondition")}
                         icon={editForm.icon}
                         icon_background_color={editForm.icon_background_color}
                         accent={normalizeNutsAccent(editForm.accent)}
+                        width={clampNutsCardWidth(editForm.width ?? NUTS_CARD_DEFAULT_WIDTH)}
+                        height={clampNutsCardHeight(editForm.height ?? NUTS_CARD_DEFAULT_HEIGHT)}
                         className="h-full"
                       />
                     </div>

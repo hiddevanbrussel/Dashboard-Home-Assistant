@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.23
+
+- Nuts card: denser layout at 250×250 (smaller value, reserved chart space); min size 250×250
+
 ## 0.4.22
 
 - Nuts card: proper light and dark theme styling (glass surfaces, text, trend pill, chart grid)
