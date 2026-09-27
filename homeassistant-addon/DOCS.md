@@ -25,7 +25,7 @@ The first start pulls the pre-built image from GitHub Container Registry and may
 
 ## Connecting Home Assistant
 
-When installed as a Home Assistant app, the dashboard **links automatically** via the Supervisor (`homeassistant_api`). Onboarding shows “Connected via Home Assistant” — no URL or long-lived token is required.
+When installed as a Home Assistant app, soft onboarding still runs (welcome, dashboard name, integrations). Home Assistant **links automatically** via the Supervisor (`homeassistant_api`) on the connect step — no URL or long-lived token is required (LAN discovery is skipped in add-on mode).
 
 You can still set a custom URL + token under **Settings → Connection** if you need to override the Supervisor link (for example to point at a remote instance).
 

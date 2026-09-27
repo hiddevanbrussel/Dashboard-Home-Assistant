@@ -96,7 +96,7 @@ Install from Supervisor for Ingress (Open Web UI / sidebar), no separate Docker 
 2. Add `https://github.com/hiddevanbrussel/Dashboard-Home-Assistant`
 3. Install **Dashboard Builder**, start it, then open **Open Web UI**
 
-During onboarding the app **links automatically** via the Supervisor (no long-lived token). Full steps: [`homeassistant-addon/DOCS.md`](homeassistant-addon/DOCS.md).
+During soft onboarding the app **links automatically** via the Supervisor (no URL or long-lived token). You still pick a dashboard name and optional integrations. Full steps: [`homeassistant-addon/DOCS.md`](homeassistant-addon/DOCS.md).
 
 ---
 
@@ -114,7 +114,7 @@ docker run -d \
   ghcr.io/hiddevanbrussel/dashboard-home-assistant:latest
 ```
 
-Open **http://your-server-ip:3000** and follow the onboarding to connect Home Assistant.
+Open **http://your-server-ip:3000** and follow soft onboarding. Docker installs scan your LAN for Home Assistant, then let you log in (IndieAuth) or paste a long-lived token.
 
 ---
 
@@ -163,13 +163,17 @@ You can also import the template from the repository: [`unraid-template.xml`](un
 
 ## Connecting Home Assistant
 
-You need a **Long-Lived Access Token** from Home Assistant:
+**Docker / self-hosted:** soft onboarding searches your network for Home Assistant, then you can **Log in with Home Assistant** (IndieAuth) or paste a long-lived access token.
+
+**Home Assistant App (Addon):** connection is automatic via the Supervisor — no token needed.
+
+To create a long-lived token manually:
 
 1. Open Home Assistant → click your **Profile** (bottom-left avatar).
 2. Scroll to **Long-Lived Access Tokens** → click **Create token**.
 3. Give it a name (e.g. "Dashboard") and copy the token — it is shown only once.
 
-Enter the token and your Home Assistant base URL during onboarding:
+Base URL examples:
 
 | Setup | URL example |
 |---|---|
