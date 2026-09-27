@@ -553,13 +553,33 @@ function ScreensaverOverlay({
   const pexelsQuery = getScreensaverPexelsQuery();
   const pexelsApiKey = getScreensaverPexelsApiKey();
   const pexelsType = getScreensaverPexelsType();
+  const [pexelsEnvConfigured, setPexelsEnvConfigured] = useState(false);
   const immich = useImmichStore();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/pexels/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.envConfigured === "boolean") {
+          setPexelsEnvConfigured(data.envConfigured);
+        }
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const playback = resolveScreensaverPlayback({
     source: mediaSource,
     customUrl: customBg,
     pexelsEnabled,
     pexelsKey: pexelsApiKey,
     pexelsType,
+    pexelsEnvConfigured,
     immichEnabled: immich.enabled,
     immichUrl: immich.baseUrl,
     immichKey: immich.apiKey,
@@ -659,11 +679,12 @@ function ScreensaverOverlay({
   }, []);
 
   const fetchPexelsPhoto = useCallback(() => {
-    if (!pexelsApiKey) return;
     setMediaError(false);
+    const headers: HeadersInit = {};
+    if (pexelsApiKey.trim()) headers["X-Pexels-Api-Key"] = pexelsApiKey.trim();
     fetch(`/api/pexels/photo?query=${encodeURIComponent(pexelsQuery)}&_t=${Date.now()}`, {
       cache: "no-store",
-      headers: { "X-Pexels-Api-Key": pexelsApiKey },
+      headers,
     })
       .then((r) => r.json())
       .then(async (data) => {
@@ -754,11 +775,12 @@ function ScreensaverOverlay({
 
   // ── Video logic ──────────────────────────────────────────────────────────────
   const fetchPexelsVideo = useCallback(() => {
-    if (!pexelsApiKey) return;
     if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current);
+    const headers: HeadersInit = {};
+    if (pexelsApiKey.trim()) headers["X-Pexels-Api-Key"] = pexelsApiKey.trim();
     fetch(`/api/pexels/video?query=${encodeURIComponent(pexelsQuery)}&_t=${Date.now()}`, {
       cache: "no-store",
-      headers: { "X-Pexels-Api-Key": pexelsApiKey },
+      headers,
     })
       .then((r) => r.json())
       .then((data) => {

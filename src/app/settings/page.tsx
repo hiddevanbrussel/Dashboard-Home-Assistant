@@ -216,6 +216,7 @@ export default function SettingsPage() {
   const voiceSatellite = useVoiceSatelliteStore();
   const immich = useImmichStore();
   const [pexelsEnabled, setPexelsEnabled] = useState(false);
+  const [pexelsEnvConfigured, setPexelsEnvConfigured] = useState(false);
   const [newsFeedDraft, setNewsFeedDraft] = useState<string[]>([]);
   const [newsFeedInput, setNewsFeedInput] = useState("");
   const [calendarEntities, setCalendarEntities] = useState<HaEntity[]>([]);
@@ -231,6 +232,20 @@ export default function SettingsPage() {
     hydrateImmichStore();
     const next = new URLSearchParams(window.location.search).get("section");
     if (next && next in SECTION_KEYS) setSection(next as SettingsSection);
+    let cancelled = false;
+    fetch("/api/pexels/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.envConfigured === "boolean") {
+          setPexelsEnvConfigured(data.envConfigured);
+        }
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -721,7 +736,11 @@ export default function SettingsPage() {
     immich: immich.enabled,
     "voice-satellite": voiceSatellite.enabled,
   };
-  const pexelsReady = isPexelsSourceReady(pexelsEnabled, getScreensaverPexelsApiKey());
+  const pexelsReady = isPexelsSourceReady(
+    pexelsEnabled,
+    getScreensaverPexelsApiKey(),
+    pexelsEnvConfigured
+  );
   const immichReady = isImmichSourceReady(immich.enabled, immich.baseUrl, immich.apiKey);
 
   return (
