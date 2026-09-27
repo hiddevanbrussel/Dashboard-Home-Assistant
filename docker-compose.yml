@@ -1,6 +1,9 @@
 services:
   app:
-    build: .
+    image: ghcr.io/hiddevanbrussel/dashboard-home-assistant:latest
+    # For local development from source, comment `image:` and uncomment:
+    # build: .
+    pull_policy: always
     ports:
       - "3000:3000"
     environment:
@@ -9,6 +12,7 @@ services:
       - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME:-Home Assistant Dashboard Builder}
     volumes:
       - app-data:/data
+    restart: unless-stopped
 
 volumes:
   app-data:

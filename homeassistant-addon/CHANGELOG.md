@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.15
+
+- Soft LAN discovery + log in with Home Assistant (IndieAuth) for self-hosted installs; Settings → Connection auto-scans
+- Keep OAuth connections alive via refresh tokens when a long-lived token cannot be created
+- Vacuum card 2 restyle (battery / status / Eco·Standard·Turbo / robot art)
+- Faster Docker CI on `main` (amd64-only; ARM builds on version tags)
+
 ## 0.4.14
 
 - Fix Ingress-only blank page (`Connection closed`): Next splits Flight `T` rows across multiple `self.__next_f.push` chunks (length header in one script, body in the next). Per-chunk rewrite never updated the length. Now concatenate Flight pushes, rewrite length-aware, emit a single push.
