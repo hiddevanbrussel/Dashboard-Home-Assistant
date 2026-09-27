@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.16
+
+- Soft onboarding works on first run for HA add-on and Docker: no auto-created empty Home dashboard that skipped the wizard; pristine Home/Thuis still counts as needing onboarding
+- Add-on docs clarify Supervisor auto-link inside soft onboarding; Docker connect keeps LAN discovery
+- Vacuum card 2: always show fan modes while resizing, real status line, corner radius aligned with other floating cards
+
 ## 0.4.15
 
 - Soft LAN discovery + log in with Home Assistant (IndieAuth) for self-hosted installs; Settings → Connection auto-scans
