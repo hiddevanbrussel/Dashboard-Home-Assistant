@@ -233,6 +233,8 @@ export function FloatingNutsCard({
           icon={widget.icon}
           icon_background_color={widget.icon_background_color}
           accent={normalizeNutsAccent(widget.accent)}
+          width={totalWidth}
+          height={totalHeight}
           onMoreClick={editMode ? onEdit : undefined}
         />
       </div>

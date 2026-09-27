@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownRight, ArrowUpRight, MoreVertical } from "lucide-react";
 import type { NutsCardProps } from "./widget-types";
@@ -11,10 +11,16 @@ import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   NUTS_ACCENT_PRESETS,
+  NUTS_CARD_DEFAULT_HEIGHT,
+  NUTS_CARD_DEFAULT_WIDTH,
   buildNutsWeekBars,
+  clampNutsCardHeight,
+  clampNutsCardWidth,
   computeNutsMonthTrend,
+  formatNutsParts,
   formatNutsValue,
   normalizeNutsAccent,
+  nutsCardDensity,
   nutsChartScale,
   nutsDemoTodayValue,
   nutsDemoTrend,
@@ -53,11 +59,38 @@ export function NutsCardWidget({
   icon,
   icon_background_color,
   accent: accentProp,
+  width,
+  height,
   className,
   onMoreClick,
 }: NutsCardProps & { className?: string; onMoreClick?: () => void }) {
   const { t } = useTranslation();
   const isDark = useThemeStore((s) => s.resolved) === "dark";
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState({
+    w: clampNutsCardWidth(width ?? NUTS_CARD_DEFAULT_WIDTH),
+    h: clampNutsCardHeight(height ?? NUTS_CARD_DEFAULT_HEIGHT),
+  });
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width: w, height: h } = entry.contentRect;
+      if (w > 0 && h > 0) setMeasured({ w: Math.round(w), h: Math.round(h) });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const density = nutsCardDensity(
+    width != null ? clampNutsCardWidth(width) : measured.w,
+    height != null ? clampNutsCardHeight(height) : measured.h
+  );
+  const compact = density === "compact";
+
   const accent = normalizeNutsAccent(accentProp);
   const preset = NUTS_ACCENT_PRESETS[accent];
   const iconName = icon || preset.icon;
@@ -112,6 +145,7 @@ export function NutsCardWidget({
     primaryLive.unit ||
     (hasHistory || !entity_id ? "kWh" : "");
 
+  const valueParts = formatNutsParts(mainValue, unit);
   const scale = nutsChartScale(weekBars.map((b) => b.value));
   const displayTitle =
     title?.trim() ||
@@ -125,8 +159,12 @@ export function NutsCardWidget({
   const TrendArrow =
     trend?.direction === "down" ? ArrowDownRight : ArrowUpRight;
 
+  const iconBox = compact ? "h-9 w-9" : "h-12 w-12";
+  const iconGlyph = compact ? "h-4 w-4" : "h-6 w-6";
+
   return (
     <div
+      ref={rootRef}
       className={cn(
         "flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl shadow-xl backdrop-blur-2xl",
         "bg-white/85 text-gray-900 border border-black/5",
@@ -134,27 +172,56 @@ export function NutsCardWidget({
         className
       )}
     >
-      <div className="flex shrink-0 items-start gap-3 px-4 pt-4">
+      <div
+        className={cn(
+          "flex shrink-0 items-start gap-2",
+          compact ? "px-3 pt-3" : "gap-3 px-4 pt-4"
+        )}
+      >
         <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full"
+          className={cn("flex shrink-0 items-center justify-center rounded-full", iconBox)}
           style={{
             backgroundColor: isDark ? "rgba(255,255,255,0.06)" : `${iconColor}18`,
             boxShadow: isDark ? `0 0 20px ${preset.glow}` : `0 0 16px ${iconColor}33`,
             color: iconColor,
           }}
         >
-          <IconComponent className="h-6 w-6" aria-hidden />
+          <IconComponent className={iconGlyph} aria-hidden />
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-gray-600 dark:text-white/80">{displayTitle}</p>
-          <p className="mt-0.5 text-2xl font-bold tabular-nums tracking-tight text-gray-950 dark:text-white sm:text-[1.75rem]">
-            {formatNutsValue(mainValue, unit)}
+          <p
+            className={cn(
+              "truncate font-medium text-gray-600 dark:text-white/80",
+              compact ? "text-xs" : "text-sm"
+            )}
+          >
+            {displayTitle}
           </p>
-          <p className="text-xs text-gray-400 dark:text-white/45">{t("nutsCard.today")}</p>
+          <div
+            className={cn(
+              "mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 font-bold tabular-nums tracking-tight text-gray-950 dark:text-white",
+              compact ? "text-xl leading-tight" : "text-2xl sm:text-[1.75rem]"
+            )}
+          >
+            <span className="min-w-0 truncate">{valueParts.value}</span>
+            {valueParts.unit ? (
+              <span
+                className={cn(
+                  "font-semibold text-gray-500 dark:text-white/55",
+                  compact ? "text-xs" : "text-base"
+                )}
+              >
+                {valueParts.unit}
+              </span>
+            ) : null}
+          </div>
+          <p className={cn("text-gray-400 dark:text-white/45", compact ? "text-[10px]" : "text-xs")}>
+            {t("nutsCard.today")}
+          </p>
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="flex max-w-[38%] shrink-0 flex-col items-end gap-0.5">
           {onMoreClick && (
             <button
               type="button"
@@ -165,79 +232,102 @@ export function NutsCardWidget({
               className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-black/5 hover:text-gray-700 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
               aria-label={t("common.options")}
             >
-              <MoreVertical className="h-4 w-4" aria-hidden />
+              <MoreVertical className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />
             </button>
           )}
           {trend && (
             <div className="flex flex-col items-end">
               <span
                 className={cn(
-                  "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-sm font-semibold tabular-nums",
+                  "inline-flex items-center gap-0.5 whitespace-nowrap rounded-full font-semibold tabular-nums",
                   "bg-black/[0.04] dark:bg-white/5",
+                  compact ? "px-1.5 py-0.5 text-xs" : "px-2 py-0.5 text-sm",
                   trendColor
                 )}
               >
-                <TrendArrow className="h-3.5 w-3.5" aria-hidden />
+                <TrendArrow className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
                 {trend.percent}%
               </span>
-              <span className="mt-1 max-w-[5.5rem] text-right text-[10px] leading-tight text-gray-400 dark:text-white/40">
-                {t("nutsCard.vsLastMonth")}
-              </span>
+              {!compact && (
+                <span className="mt-1 whitespace-nowrap text-right text-[10px] leading-tight text-gray-400 dark:text-white/40">
+                  {t("nutsCard.vsLastMonth")}
+                </span>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      <div className="relative mt-3 flex min-h-0 flex-1 flex-col px-3 pb-3 pt-1">
+      <div
+        className={cn(
+          "relative flex min-h-0 flex-1 flex-col",
+          compact ? "mt-2 px-2.5 pb-2 pt-0.5" : "mt-3 px-3 pb-3 pt-1"
+        )}
+      >
         {isLoading && entity_id && !hasHistory ? (
           <div className="flex flex-1 items-center justify-center text-xs text-gray-400 dark:text-white/40">
             {t("nutsCard.loading")}
           </div>
         ) : (
           <>
-            <div className="relative flex min-h-[7.5rem] flex-1 flex-col">
-              <span className="mb-0.5 ml-0.5 text-[9px] text-gray-400 dark:text-white/35">{unit || "kWh"}</span>
+            <div className="relative flex min-h-0 flex-1 flex-col">
+              <span className="mb-0.5 ml-0.5 text-[9px] text-gray-400 dark:text-white/35">
+                {unit || "kWh"}
+              </span>
               <div className="relative flex min-h-0 flex-1">
-              <div className="pointer-events-none absolute inset-0 flex flex-col justify-between py-0.5 pr-1">
-                {[...scale.ticks].reverse().map((tick, i) => (
-                  <div key={`${tick}-${i}`} className="flex items-center gap-1.5">
-                    <span className="w-6 shrink-0 text-right text-[9px] tabular-nums text-gray-400 dark:text-white/35">
-                      {tick}
-                    </span>
-                    <div className="h-px flex-1 bg-black/[0.06] dark:bg-white/[0.06]" />
-                  </div>
-                ))}
-              </div>
-
-              <div className="ml-8 flex flex-1 items-end justify-between gap-1.5 pb-5 pt-1">
-                {weekBars.map((bar) => {
-                  const pct = scale.max > 0 ? Math.min(100, (bar.value / scale.max) * 100) : 0;
-                  return (
-                    <div
-                      key={bar.date}
-                      className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
-                    >
-                      <div
-                        className="w-full max-w-[28px] rounded-t-md"
-                        style={{
-                          height: `${Math.max(pct, bar.value > 0 ? 4 : 0)}%`,
-                          background: `linear-gradient(to top, ${preset.barTo}, ${preset.barFrom})`,
-                          minHeight: bar.value > 0 ? 4 : 0,
-                        }}
-                        title={`${formatNutsValue(bar.value, unit)}`}
-                      />
+                <div className="pointer-events-none absolute inset-0 flex flex-col justify-between py-0.5 pr-1">
+                  {[...scale.ticks].reverse().map((tick, i) => (
+                    <div key={`${tick}-${i}`} className="flex items-center gap-1">
+                      <span
+                        className={cn(
+                          "shrink-0 text-right tabular-nums text-gray-400 dark:text-white/35",
+                          compact ? "w-5 text-[8px]" : "w-6 text-[9px]"
+                        )}
+                      >
+                        {tick}
+                      </span>
+                      <div className="h-px flex-1 bg-black/[0.06] dark:bg-white/[0.06]" />
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+
+                <div
+                  className={cn(
+                    "flex flex-1 items-end justify-between",
+                    compact ? "ml-6 gap-1 pb-4 pt-0.5" : "ml-8 gap-1.5 pb-5 pt-1"
+                  )}
+                >
+                  {weekBars.map((bar) => {
+                    const pct = scale.max > 0 ? Math.min(100, (bar.value / scale.max) * 100) : 0;
+                    return (
+                      <div
+                        key={bar.date}
+                        className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                      >
+                        <div
+                          className={cn("w-full rounded-t-md", compact ? "max-w-[18px]" : "max-w-[28px]")}
+                          style={{
+                            height: `${Math.max(pct, bar.value > 0 ? 4 : 0)}%`,
+                            background: `linear-gradient(to top, ${preset.barTo}, ${preset.barFrom})`,
+                            minHeight: bar.value > 0 ? 4 : 0,
+                          }}
+                          title={formatNutsValue(bar.value, unit)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <div className="ml-8 flex justify-between gap-1.5">
+            <div className={cn("flex justify-between", compact ? "ml-6 gap-1" : "ml-8 gap-1.5")}>
               {weekBars.map((bar) => (
                 <span
                   key={`lbl-${bar.date}`}
-                  className="min-w-0 flex-1 text-center text-[10px] text-gray-400 dark:text-white/40"
+                  className={cn(
+                    "min-w-0 flex-1 text-center text-gray-400 dark:text-white/40",
+                    compact ? "text-[9px]" : "text-[10px]"
+                  )}
                 >
                   {t(WEEKDAY_KEYS[bar.weekday])}
                 </span>

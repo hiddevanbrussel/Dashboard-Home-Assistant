@@ -22,10 +22,21 @@ export type NutsTrend = {
 
 export const NUTS_CARD_DEFAULT_WIDTH = 320;
 export const NUTS_CARD_DEFAULT_HEIGHT = 300;
-export const NUTS_CARD_MIN_WIDTH = 260;
+/** Allow square 250×250 dashboards next to climate compact cards. */
+export const NUTS_CARD_MIN_WIDTH = 250;
 export const NUTS_CARD_MAX_WIDTH = 480;
-export const NUTS_CARD_MIN_HEIGHT = 240;
+export const NUTS_CARD_MIN_HEIGHT = 250;
 export const NUTS_CARD_MAX_HEIGHT = 420;
+
+/** Below this (width or height), use denser chrome so the chart still fits. */
+export const NUTS_CARD_COMPACT_SIZE = 280;
+
+export type NutsCardDensity = "comfortable" | "compact";
+
+export function nutsCardDensity(width: number, height: number): NutsCardDensity {
+  if (width <= NUTS_CARD_COMPACT_SIZE || height <= NUTS_CARD_COMPACT_SIZE) return "compact";
+  return "comfortable";
+}
 
 export const NUTS_ACCENT_PRESETS: Record<
   NutsCardAccent,
@@ -181,13 +192,24 @@ export function nutsChartScale(values: number[]): { max: number; ticks: number[]
 }
 
 export function formatNutsValue(value: number | undefined, unit: string, digits = 1): string {
-  if (value == null || Number.isNaN(value)) return "—";
+  const parts = formatNutsParts(value, unit, digits);
+  if (parts.value === "—") return "—";
+  return parts.unit ? `${parts.value} ${parts.unit}` : parts.value;
+}
+
+/** Split number + unit so compact layouts can stack or shrink independently. */
+export function formatNutsParts(
+  value: number | undefined,
+  unit: string,
+  digits = 1
+): { value: string; unit: string } {
+  if (value == null || Number.isNaN(value)) return { value: "—", unit: "" };
   const factor = 10 ** digits;
   const rounded = Math.round(value * factor) / factor;
   const text = Number.isInteger(rounded)
     ? String(rounded)
     : rounded.toFixed(digits).replace(".", ",");
-  return unit ? `${text} ${unit}` : text;
+  return { value: text, unit: unit.trim() };
 }
 
 /** Demo series matching the mockup look when HA history is unavailable. */

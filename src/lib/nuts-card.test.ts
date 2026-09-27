@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
 import {
   buildNutsWeekBars,
   computeNutsMonthTrend,
+  formatNutsParts,
   formatNutsValue,
   normalizeNutsAccent,
+  nutsCardDensity,
   nutsChartScale,
   startOfWeekMonday,
   sumNutsMonth,
@@ -14,6 +15,11 @@ describe("nuts-card helpers", () => {
     expect(normalizeNutsAccent("production")).toBe("production");
     expect(normalizeNutsAccent("consumption")).toBe("consumption");
     expect(normalizeNutsAccent("nope")).toBe("consumption");
+  });
+
+  it("uses compact density at 250×250", () => {
+    expect(nutsCardDensity(250, 250)).toBe("compact");
+    expect(nutsCardDensity(320, 300)).toBe("comfortable");
   });
 
   it("builds Mon–Sun week bars from daily history", () => {
@@ -69,5 +75,6 @@ describe("nuts-card helpers", () => {
     expect(formatNutsValue(8.4, "kWh")).toBe("8,4 kWh");
     expect(formatNutsValue(14, "kWh")).toBe("14 kWh");
     expect(formatNutsValue(undefined, "kWh")).toBe("—");
+    expect(formatNutsParts(18.2, "kWh")).toEqual({ value: "18,2", unit: "kWh" });
   });
 });
