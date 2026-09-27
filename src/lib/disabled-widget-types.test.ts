@@ -10,7 +10,6 @@ describe("temporarily disabled widget types", () => {
     expect(isWidgetTypeTemporarilyDisabled("sensor_card")).toBe(true);
     expect(isWidgetTypeTemporarilyDisabled("vacuum_card")).toBe(true);
     expect(isWidgetTypeTemporarilyDisabled("alarm_card")).toBe(true);
-    expect(isWidgetTypeTemporarilyDisabled("nuts_card")).toBe(true);
     expect(isWidgetTypeTemporarilyDisabled("card_group")).toBe(true);
   });
 
@@ -27,5 +26,6 @@ describe("temporarily disabled widget types", () => {
     expect(isWidgetTypeTemporarilyDisabled("chore_card")).toBe(false);
     expect(isWidgetTypeTemporarilyDisabled("vacuum_card_2")).toBe(false);
     expect(isWidgetTypeTemporarilyDisabled("camera_card")).toBe(false);
+    expect(isWidgetTypeTemporarilyDisabled("nuts_card")).toBe(false);
   });
 });

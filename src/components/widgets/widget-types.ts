@@ -210,21 +210,25 @@ export type CardGroupProps = {
   children?: WidgetConfig[];
 };
 
-/** Nuts/utility card: gas, water, etc. met icoon, naam, huidig verbruik, dagtotaal en verticale bar. */
+/** Nuts/utility card: weekly bar chart with today value and month-over-month trend. */
 export type NutsCardProps = WidgetBaseProps & {
-  /** Optioneel icoon (Lucide-naam); default Fuel. */
+  /** Accent style: consumption (orange) or production (green). */
+  accent?: "consumption" | "production";
+  /** Optioneel icoon (Lucide-naam); default Zap/Leaf based on accent. */
   icon?: string;
-  /** Achtergrondkleur van het icoon (hex, bijv. #3B82F6). */
+  /** Accentkleur van het icoon (hex). */
   icon_background_color?: string;
-  /** Entity voor dagverbruik (totaal over de dag). */
+  /** Entity voor energiehistorie (dagelijkse deltas / weekgrafiek). */
   entity_id: string;
-  /** Optioneel: entity voor huidig/actueel verbruik. Zonder: toont 0 voor huidig. */
+  /** Optioneel: sensor voor de hoofstwaarde "vandaag". */
+  today_entity_id?: string;
+  /** @deprecated Gebruik today_entity_id. */
   current_entity_id?: string;
-  /** Maxwaarde voor schaal van de verticale bar (optioneel). */
+  /** @deprecated Niet meer gebruikt (oude verticale bar). */
   max_value?: number;
-  /** Breedte kaart in px (standaard 250). */
+  /** Breedte kaart in px (standaard 320). */
   width?: number;
-  /** Hoogte kaart in px (standaard 130). */
+  /** Hoogte kaart in px (standaard 300). */
   height?: number;
 };
 

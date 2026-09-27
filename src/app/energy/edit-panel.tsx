@@ -11,6 +11,17 @@ import {
   SENSOR_CONDITION_OPERATOR_LABELS,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
+import {
+  NUTS_CARD_DEFAULT_HEIGHT,
+  NUTS_CARD_DEFAULT_WIDTH,
+  NUTS_CARD_MAX_HEIGHT,
+  NUTS_CARD_MAX_WIDTH,
+  NUTS_CARD_MIN_HEIGHT,
+  NUTS_CARD_MIN_WIDTH,
+  clampNutsCardHeight,
+  clampNutsCardWidth,
+  normalizeNutsAccent,
+} from "@/lib/nuts-card";
 import ReactGridLayout from "react-grid-layout";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -35,6 +46,8 @@ type EditForm = {
   conditions?: { operator: string; value: string; color: string }[];
   image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
   current_entity_id?: string;
+  today_entity_id?: string;
+  accent?: "consumption" | "production";
   max_value?: number;
   minimal?: boolean;
   scale?: number;
@@ -128,7 +141,7 @@ export function EditPanelModal(props: EditPanelModalProps) {
     }
     if (editingWidget.type === "stat_pill_card") Object.assign(base, { entity_id: editForm.entity_id, label: editForm.label || undefined, icon: editForm.icon || undefined, color: editForm.color || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "sensor_card") Object.assign(base, { entity_id: editForm.entity_id, icon: editForm.icon || undefined, show_icon: editForm.show_icon !== false, size: editForm.size || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
-    if (editingWidget.type === "nuts_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, icon: editForm.icon || undefined, icon_background_color: editForm.icon_background_color || undefined, current_entity_id: editForm.current_entity_id || undefined, max_value: editForm.max_value != null && editForm.max_value > 0 ? editForm.max_value : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
+    if (editingWidget.type === "nuts_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, icon: editForm.icon || undefined, icon_background_color: editForm.icon_background_color || undefined, today_entity_id: editForm.today_entity_id || undefined, current_entity_id: undefined, accent: normalizeNutsAccent(editForm.accent), width: editForm.width != null && editForm.width > 0 ? clampNutsCardWidth(editForm.width) : undefined, height: editForm.height != null && editForm.height > 0 ? clampNutsCardHeight(editForm.height) : undefined });
     return base;
   };
 
@@ -427,19 +440,30 @@ export function EditPanelModal(props: EditPanelModalProps) {
               {editTab === "algemeen" && (
                 <>
                   <div><label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.name")}</label><input type="text" value={editForm.title} onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))} placeholder={t("editPanel.tileNamePlaceholder")} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500" /></div>
-                  <div><label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.icon")}</label><div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto">{(["Fuel", "Droplets", "Zap", "Gauge", "Thermometer"].filter((n) => CARD_ICON_OPTIONS.includes(n)) as string[]).map((name) => <button key={name} type="button" onClick={() => setEditForm((prev) => ({ ...prev, icon: name }))} className={cn("rounded-md px-2 py-1 text-xs", (editForm.icon ?? "Fuel") === name ? "bg-[#4700B5] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20")}>{name}</button>)}</div></div>
-                  <div><label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.iconColor")}</label><div className="flex items-center gap-2"><input type="color" value={editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : "#3B82F6"} onChange={(e) => setEditForm((prev) => ({ ...prev, icon_background_color: e.target.value }))} className="h-8 w-12 cursor-pointer rounded border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5" /><input type="text" value={editForm.icon_background_color ?? "#3B82F6"} onChange={(e) => setEditForm((prev) => ({ ...prev, icon_background_color: e.target.value || undefined }))} placeholder="#3B82F6" className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" /></div></div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.nutsAccent")}</label>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5">
+                      {([
+                        { id: "consumption" as const, label: t("editPanel.nutsAccentConsumption") },
+                        { id: "production" as const, label: t("editPanel.nutsAccentProduction") },
+                      ]).map((opt) => (
+                        <button key={opt.id} type="button" onClick={() => setEditForm((prev) => ({ ...prev, accent: opt.id, icon: prev.icon && prev.icon !== "Zap" && prev.icon !== "Leaf" && prev.icon !== "Fuel" ? prev.icon : opt.id === "production" ? "Leaf" : "Zap" }))} className={cn("flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors", (editForm.accent ?? "consumption") === opt.id ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-600 dark:text-gray-400")}>{opt.label}</button>
+                      ))}
+                    </div>
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.nutsAccentHint")}</p>
+                  </div>
+                  <div><label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.icon")}</label><div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto">{(["Zap", "Leaf", "Sun", "Fuel", "Droplets", "Gauge"].filter((n) => CARD_ICON_OPTIONS.includes(n)) as string[]).map((name) => <button key={name} type="button" onClick={() => setEditForm((prev) => ({ ...prev, icon: name }))} className={cn("rounded-md px-2 py-1 text-xs", (editForm.icon ?? ((editForm.accent ?? "consumption") === "production" ? "Leaf" : "Zap")) === name ? "bg-[#4700B5] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20")}>{name}</button>)}</div></div>
+                  <div><label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.iconColor")}</label><div className="flex items-center gap-2"><input type="color" value={editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : ((editForm.accent ?? "consumption") === "production" ? "#3DDC97" : "#F5C518")} onChange={(e) => setEditForm((prev) => ({ ...prev, icon_background_color: e.target.value }))} className="h-8 w-12 cursor-pointer rounded border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5" /><input type="text" value={editForm.icon_background_color ?? ""} onChange={(e) => setEditForm((prev) => ({ ...prev, icon_background_color: e.target.value || undefined }))} placeholder="#F5C518" className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" /></div></div>
                   <EntitySelectWithSearch entities={entities} value={editForm.entity_id ?? ""} onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))} filter={(e) => e.entity_id.startsWith("sensor.")} label={t("editPanel.nutsDailyEntity")} placeholder={t("editPanel.searchSensor")} emptyOption={t("editPanel.chooseEntityEllipsis")} />
-                  <EntitySelectWithSearch entities={entities} value={editForm.current_entity_id ?? ""} onChange={(v) => setEditForm((prev) => ({ ...prev, current_entity_id: v || undefined }))} filter={(e) => e.entity_id.startsWith("sensor.")} label={t("editPanel.nutsCurrentEntity")} placeholder={t("editPanel.searchSensor")} emptyOption={t("editPanel.none")} />
-                  <div><label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.maxBarValue")}</label><input type="number" min={1} step={0.1} value={editForm.max_value ?? 10} onChange={(e) => { const v = e.target.value === "" ? undefined : Number(e.target.value); setEditForm((prev) => ({ ...prev, max_value: v != null && !Number.isNaN(v) && v > 0 ? v : undefined })); }} placeholder="10" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" /><p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.barScaleHint")}</p></div>
+                  <EntitySelectWithSearch entities={entities} value={editForm.today_entity_id || editForm.current_entity_id || ""} onChange={(v) => setEditForm((prev) => ({ ...prev, today_entity_id: v || undefined, current_entity_id: undefined }))} filter={(e) => e.entity_id.startsWith("sensor.")} label={t("editPanel.nutsTodayEntity")} placeholder={t("editPanel.searchSensor")} emptyOption={t("editPanel.noneShowsZero")} />
                 </>
               )}
               {editTab === "weergave" && (
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.widthHeightPx")}</label>
                   <div className="flex gap-2">
-                    <div className="flex-1"><input type="number" min={150} max={400} step={10} value={editForm.width ?? 250} onChange={(e) => { const v = e.target.value === "" ? undefined : Number(e.target.value); setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined })); }} placeholder="250" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200" /><p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.width")}</p></div>
-                    <div className="flex-1"><input type="number" min={80} max={300} step={10} value={editForm.height ?? 130} onChange={(e) => { const v = e.target.value === "" ? undefined : Number(e.target.value); setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined })); }} placeholder="130" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200" /><p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.height")}</p></div>
+                    <div className="flex-1"><input type="number" min={NUTS_CARD_MIN_WIDTH} max={NUTS_CARD_MAX_WIDTH} step={10} value={editForm.width ?? NUTS_CARD_DEFAULT_WIDTH} onChange={(e) => { const v = e.target.value === "" ? undefined : Number(e.target.value); setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined })); }} placeholder={String(NUTS_CARD_DEFAULT_WIDTH)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200" /><p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.width")}</p></div>
+                    <div className="flex-1"><input type="number" min={NUTS_CARD_MIN_HEIGHT} max={NUTS_CARD_MAX_HEIGHT} step={10} value={editForm.height ?? NUTS_CARD_DEFAULT_HEIGHT} onChange={(e) => { const v = e.target.value === "" ? undefined : Number(e.target.value); setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined })); }} placeholder={String(NUTS_CARD_DEFAULT_HEIGHT)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200" /><p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.height")}</p></div>
                   </div>
                 </div>
               )}

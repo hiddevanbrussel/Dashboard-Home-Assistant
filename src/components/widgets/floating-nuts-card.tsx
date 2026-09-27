@@ -4,27 +4,17 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { NutsCardWidget } from "./nuts-card-widget";
+import {
+  NUTS_CARD_DEFAULT_HEIGHT,
+  NUTS_CARD_DEFAULT_WIDTH,
+  clampNutsCardHeight,
+  clampNutsCardWidth,
+  normalizeNutsAccent,
+  type NutsCardAccent,
+} from "@/lib/nuts-card";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingNutsCardPosition.";
 const DEFAULT_OFFSET = 24;
-const DEFAULT_CARD_WIDTH = 250;
-const MIN_WIDTH = 150;
-const MAX_WIDTH = 400;
-const DEFAULT_CARD_HEIGHT = 130;
-const MIN_HEIGHT = 80;
-const MAX_HEIGHT = 300;
-
-function clampWidth(w: unknown): number {
-  const n = Number(w);
-  if (!Number.isFinite(n)) return DEFAULT_CARD_WIDTH;
-  return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n)));
-}
-
-function clampHeight(w: unknown): number {
-  const n = Number(w);
-  if (!Number.isFinite(n)) return DEFAULT_CARD_HEIGHT;
-  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Math.round(n)));
-}
 
 type Position = { left: number; bottom: number };
 
@@ -57,11 +47,13 @@ function savePosition(scope: string | undefined, widgetId: string, p: Position) 
   }
 }
 
-function defaultPosition(cardWidth: number, cardHeight: number): Position {
-  if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  const maxLeft = window.innerWidth - cardWidth;
-  const maxBottom = window.innerHeight - cardHeight - 24;
-  return { left: maxLeft / 2, bottom: maxBottom / 2 };
+function defaultPosition(widgetIndex: number, cardWidth: number, cardHeight: number): Position {
+  if (typeof window === "undefined") return { left: 100 + widgetIndex * 40, bottom: DEFAULT_OFFSET };
+  const maxLeft = Math.max(0, window.innerWidth - cardWidth);
+  const maxBottom = Math.max(0, window.innerHeight - cardHeight - 24);
+  const left = Math.min(maxLeft, 24 + widgetIndex * (cardWidth + 24));
+  const bottom = Math.min(maxBottom, 48 + (widgetIndex % 2) * 24);
+  return { left, bottom };
 }
 
 const LONG_PRESS_MS = 500;
@@ -79,10 +71,11 @@ export function FloatingNutsCard({
     id: string;
     title: string;
     entity_id: string;
+    today_entity_id?: string;
     current_entity_id?: string;
     icon?: string;
     icon_background_color?: string;
-    max_value?: number;
+    accent?: NutsCardAccent | string;
     width?: number;
     height?: number;
   };
@@ -94,8 +87,9 @@ export function FloatingNutsCard({
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
-  const totalWidth = clampWidth(widget.width);
-  const totalHeight = clampHeight(widget.height);
+  void onRemove;
+  const totalWidth = clampNutsCardWidth(widget.width ?? NUTS_CARD_DEFAULT_WIDTH);
+  const totalHeight = clampNutsCardHeight(widget.height ?? NUTS_CARD_DEFAULT_HEIGHT);
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widget.id) ?? { left: 0, bottom: DEFAULT_OFFSET });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
@@ -141,10 +135,10 @@ export function FloatingNutsCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
+    const p = snapToGrid(defaultPosition(widgetIndex, totalWidth, totalHeight), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
-  }, [widget.id, totalWidth, totalHeight, storageScope]);
+  }, [widget.id, widgetIndex, totalWidth, totalHeight, storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -162,7 +156,7 @@ export function FloatingNutsCard({
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [position, editMode]
+    [editMode]
   );
 
   const handlePointerMove = useCallback(
@@ -205,7 +199,7 @@ export function FloatingNutsCard({
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "card-plot-in fixed z-30 shadow-xl rounded-2xl overflow-hidden",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}
@@ -234,10 +228,11 @@ export function FloatingNutsCard({
         <NutsCardWidget
           title={widget.title}
           entity_id={widget.entity_id}
+          today_entity_id={widget.today_entity_id}
           current_entity_id={widget.current_entity_id}
           icon={widget.icon}
           icon_background_color={widget.icon_background_color}
-          max_value={widget.max_value}
+          accent={normalizeNutsAccent(widget.accent)}
           onMoreClick={editMode ? onEdit : undefined}
         />
       </div>

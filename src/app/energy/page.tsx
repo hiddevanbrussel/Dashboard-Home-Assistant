@@ -28,6 +28,13 @@ import {
   FloatingNutsCard,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
+import {
+  NUTS_CARD_DEFAULT_HEIGHT,
+  NUTS_CARD_DEFAULT_WIDTH,
+  clampNutsCardHeight,
+  clampNutsCardWidth,
+  normalizeNutsAccent,
+} from "@/lib/nuts-card";
 import type { SensorCondition, ImageCondition } from "@/components/widgets";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
@@ -52,7 +59,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; Icon:
   { type: "energy_monitor_card", Icon: ImageIcon },
   { type: "stat_pill_card", Icon: CircleDot },
   { type: "sensor_card", Icon: Gauge },
-  { type: "nuts_card", Icon: Fuel },
+  { type: "nuts_card", Icon: Zap },
 ];
 
 const WIDGET_TYPE_DOMAIN: Record<string, string> = {
@@ -116,6 +123,9 @@ function WidgetByType({
   size,
   conditions,
   current_entity_id,
+  today_entity_id,
+  accent,
+  icon_background_color,
   max_value,
   minimal,
   label,
@@ -140,6 +150,9 @@ function WidgetByType({
   size?: string;
   conditions?: { operator: string; value: string; color: string }[];
   current_entity_id?: string;
+  today_entity_id?: string;
+  accent?: "consumption" | "production";
+  icon_background_color?: string;
   max_value?: number;
   minimal?: boolean;
   label?: string;
@@ -229,9 +242,11 @@ function WidgetByType({
         <NutsCardWidget
           title={title}
           entity_id={entity_id}
-          current_entity_id={current_entity_id as string | undefined}
+          today_entity_id={today_entity_id}
+          current_entity_id={current_entity_id}
           icon={icon}
-          max_value={max_value as number | undefined}
+          icon_background_color={icon_background_color}
+          accent={normalizeNutsAccent(accent)}
         />
       );
     default:
@@ -285,6 +300,8 @@ export default function EnergyPage() {
     conditions?: { operator: string; value: string; color: string }[];
     image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
     current_entity_id?: string;
+    today_entity_id?: string;
+    accent?: "consumption" | "production";
     max_value?: number;
     minimal?: boolean;
     scale?: number;
@@ -435,6 +452,12 @@ export default function EnergyPage() {
       entity_id: entityId,
       ...(type === "text_card" && { textMode: "title" as const, show_icon: false, icon: "Type" }),
       ...(type === "device_consumption_card" && { device_entity_ids: entityId ? [entityId] : [], device_names: {} }),
+      ...(type === "nuts_card" && {
+        width: NUTS_CARD_DEFAULT_WIDTH,
+        height: NUTS_CARD_DEFAULT_HEIGHT,
+        accent: "consumption" as const,
+        icon: "Zap",
+      }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
     const isTextCard = type === "text_card";
@@ -504,6 +527,8 @@ export default function EnergyPage() {
       conditions: editingWidget.conditions ?? [],
       image_conditions: editingWidget.image_conditions ?? [],
       current_entity_id: editingWidget.current_entity_id ?? "",
+      today_entity_id: editingWidget.today_entity_id ?? "",
+      accent: normalizeNutsAccent(editingWidget.accent),
       max_value: editingWidget.max_value ?? undefined,
       minimal: editingWidget.minimal ?? false,
       scale: editingWidget.scale ?? 1,
@@ -726,6 +751,9 @@ export default function EnergyPage() {
                         size={w.size}
                         conditions={w.conditions}
                         current_entity_id={w.current_entity_id}
+                        today_entity_id={w.today_entity_id}
+                        accent={w.accent}
+                        icon_background_color={w.icon_background_color}
                         max_value={w.max_value}
                         minimal={w.minimal}
                         label={w.label}
@@ -877,7 +905,18 @@ export default function EnergyPage() {
         {widgets.filter((w) => w.type === "nuts_card").map((w, i) => (
           <FloatingNutsCard
             key={w.id}
-            widget={{ id: w.id, title: w.title ?? "Gas", entity_id: w.entity_id, current_entity_id: w.current_entity_id, icon: w.icon, icon_background_color: w.icon_background_color, max_value: w.max_value, width: w.width ?? 250, height: w.height ?? 130 }}
+            widget={{
+              id: w.id,
+              title: w.title ?? t("cardType.nuts_card"),
+              entity_id: w.entity_id,
+              today_entity_id: w.today_entity_id,
+              current_entity_id: w.current_entity_id,
+              icon: w.icon,
+              icon_background_color: w.icon_background_color,
+              accent: w.accent,
+              width: w.width ?? NUTS_CARD_DEFAULT_WIDTH,
+              height: w.height ?? NUTS_CARD_DEFAULT_HEIGHT,
+            }}
             widgetIndex={i}
             editMode={editMode}
             storageScope={STORAGE_SCOPE}
