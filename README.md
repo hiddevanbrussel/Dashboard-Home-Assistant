@@ -193,12 +193,30 @@ Enter the token and your Home Assistant base URL during onboarding:
 
 ## Automatic updates
 
-The Docker image is rebuilt automatically on every push to `main` and on every version tag (`v*.*.*`). To update:
+The Docker image is rebuilt automatically on every push to `main` (amd64) and on every version tag (`v*.*.*`, amd64 + arm64). The version in **Settings → System** matches `package.json` / the addon `config.yaml`.
+
+### Docker / Docker Compose
 
 ```bash
 docker pull ghcr.io/hiddevanbrussel/dashboard-home-assistant:latest
-docker compose up -d   # or restart the container in Unraid
+docker compose pull
+docker compose up -d --force-recreate
 ```
+
+A plain `docker pull` is not enough — the container must be recreated to run the new image.
+
+### Unraid
+
+1. Open the container → **Force update** (or apply update if shown).
+2. Confirm **Settings → System** shows the new version (e.g. `0.4.15`).
+
+### Home Assistant addon
+
+Supervisor only offers an update when the addon **version** in `config.yaml` increases. After a release:
+
+1. **Settings → Add-ons → Add-on store** → ⋮ → **Check for updates** (or refresh your custom repository).
+2. Update **Dashboard Builder** when `0.4.15` (or newer) appears.
+3. Confirm the version under the addon info / in-app **Settings → System**.
 
 The current version is shown in **Settings → System**.
 
