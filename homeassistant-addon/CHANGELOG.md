@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.19
+
+- Climate card 2 compact mode: 250×250 mockup layout, clearer status line / stepper contrast, softer border and aligned radii
+
 ## 0.4.18
 
 - Climate card 2: choose display style in the edit dialog — standard (gauge), compact, or graph (today's temperature history)
