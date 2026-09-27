@@ -59,9 +59,10 @@ describe("nuts-card helpers", () => {
 
   it("builds a nice chart scale", () => {
     const scale = nutsChartScale([12, 26, 9]);
-    expect(scale.max).toBeGreaterThanOrEqual(26);
+    expect(scale.max).toBe(30);
     expect(scale.ticks[0]).toBe(0);
-    expect(scale.ticks.at(-1)).toBe(scale.max);
+    expect(scale.ticks.at(-1)).toBe(30);
+    expect(scale.ticks).toEqual([0, 10, 20, 30]);
   });
 
   it("formats values with Dutch decimal comma", () => {

@@ -47,11 +47,13 @@ function savePosition(scope: string | undefined, widgetId: string, p: Position) 
   }
 }
 
-function defaultPosition(cardWidth: number, cardHeight: number): Position {
-  if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  const maxLeft = window.innerWidth - cardWidth;
-  const maxBottom = window.innerHeight - cardHeight - 24;
-  return { left: maxLeft / 2, bottom: maxBottom / 2 };
+function defaultPosition(widgetIndex: number, cardWidth: number, cardHeight: number): Position {
+  if (typeof window === "undefined") return { left: 100 + widgetIndex * 40, bottom: DEFAULT_OFFSET };
+  const maxLeft = Math.max(0, window.innerWidth - cardWidth);
+  const maxBottom = Math.max(0, window.innerHeight - cardHeight - 24);
+  const left = Math.min(maxLeft, 24 + widgetIndex * (cardWidth + 24));
+  const bottom = Math.min(maxBottom, 48 + (widgetIndex % 2) * 24);
+  return { left, bottom };
 }
 
 const LONG_PRESS_MS = 500;
@@ -85,7 +87,6 @@ export function FloatingNutsCard({
   onEdit?: () => void;
   onEnterEditMode?: () => void;
 }) {
-  void widgetIndex;
   void onRemove;
   const totalWidth = clampNutsCardWidth(widget.width ?? NUTS_CARD_DEFAULT_WIDTH);
   const totalHeight = clampNutsCardHeight(widget.height ?? NUTS_CARD_DEFAULT_HEIGHT);
@@ -134,10 +135,10 @@ export function FloatingNutsCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
+    const p = snapToGrid(defaultPosition(widgetIndex, totalWidth, totalHeight), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
-  }, [widget.id, totalWidth, totalHeight, storageScope]);
+  }, [widget.id, widgetIndex, totalWidth, totalHeight, storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {

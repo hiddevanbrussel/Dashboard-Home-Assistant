@@ -155,14 +155,29 @@ export function computeNutsMonthTrend(
 export function nutsChartScale(values: number[]): { max: number; ticks: number[] } {
   const dataMax = Math.max(0, ...values.filter((v) => Number.isFinite(v)));
   if (dataMax <= 0) return { max: 30, ticks: [0, 10, 20, 30] };
-  const raw = dataMax * 1.15;
-  const magnitude = 10 ** Math.floor(Math.log10(raw));
-  const normalized = raw / magnitude;
-  const nice =
-    normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
-  const max = nice * magnitude;
-  const step = max / 3;
-  return { max, ticks: [0, step, step * 2, max].map((n) => Math.round(n * 10) / 10) };
+  const target = dataMax * 1.08;
+  const magnitude = 10 ** Math.floor(Math.log10(target));
+  const normalized = target / magnitude;
+  const niceNorm =
+    normalized <= 1
+      ? 1
+      : normalized <= 1.5
+        ? 1.5
+        : normalized <= 2
+          ? 2
+          : normalized <= 3
+            ? 3
+            : normalized <= 5
+              ? 5
+              : 10;
+  const max = niceNorm * magnitude;
+  const divisions = max % 3 === 0 || niceNorm === 3 || niceNorm === 1.5 ? 3 : 2;
+  const step = max / divisions;
+  const ticks: number[] = [];
+  for (let i = 0; i <= divisions; i++) {
+    ticks.push(Math.round(step * i * 10) / 10);
+  }
+  return { max, ticks };
 }
 
 export function formatNutsValue(value: number | undefined, unit: string, digits = 1): string {
