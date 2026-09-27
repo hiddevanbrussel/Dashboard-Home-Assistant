@@ -27,6 +27,19 @@ export function StepReady() {
         router.push(`/dashboards/${d.id}`);
         return;
       }
+      const createRes = await fetch("/api/dashboards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: dashboardName || t("onboarding.name.default"),
+          theme: "auto",
+        }),
+      });
+      const created = await createRes.json().catch(() => ({}));
+      if (created?.id) {
+        router.push(`/dashboards/${created.id}`);
+        return;
+      }
     } catch {
       // fall through
     }

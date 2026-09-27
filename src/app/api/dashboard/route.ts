@@ -2,18 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 /**
- * GET /api/dashboard – Het enige dashboard. Maakt er desnoods één aan als die ontbreekt
- * (bijv. na per ongeluk verwijderen), zodat je niet zonder dashboard komt te zitten.
+ * GET /api/dashboard – The primary dashboard, or `null` when none exists.
+ * Does not auto-create: soft onboarding (and /api/dashboards POST) owns first-run creation
+ * so add-on / Docker installs still see the wizard (including LAN discovery for Docker).
  */
 export async function GET() {
   try {
-    let dashboard = await prisma.dashboard.findFirst({
+    const dashboard = await prisma.dashboard.findFirst({
       orderBy: { createdAt: "asc" },
     });
     if (!dashboard) {
-      dashboard = await prisma.dashboard.create({
-        data: { name: "Home", theme: "auto" },
-      });
+      return NextResponse.json(null);
     }
     return NextResponse.json({
       id: dashboard.id,

@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getOnboardingCompleted, setOnboardingCompleted } from "@/lib/onboarding-completed";
+import { needsSoftOnboarding } from "@/lib/onboarding-needed";
 
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -19,12 +20,18 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Geen onboarding-flag in localStorage: check of er al een dashboard is (bijv. eerste start na deploy met bestaande data)
+    // No localStorage flag yet: open soft onboarding for fresh / pristine installs.
+    // Existing installs (customized dashboard) are marked completed.
     fetch("/api/dashboard")
       .then((r) => (r.ok ? r.json() : Promise.resolve({ _fetchError: true })))
       .then((d) => {
         if (d && typeof d === "object" && (d as { _fetchError?: boolean })._fetchError) {
           setAllowed(true);
+          return;
+        }
+        if (needsSoftOnboarding(d)) {
+          setAllowed(false);
+          router.replace("/onboarding");
           return;
         }
         if (d?.id) {
@@ -33,12 +40,9 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
           if (pathname === "/" || pathname === "/dashboards") {
             router.replace(`/dashboards/${d.id}`);
           }
-        } else if (d === null) {
-          setAllowed(false);
-          router.replace("/onboarding");
-        } else {
-          setAllowed(true);
+          return;
         }
+        setAllowed(true);
       })
       .catch(() => {
         setAllowed(true);

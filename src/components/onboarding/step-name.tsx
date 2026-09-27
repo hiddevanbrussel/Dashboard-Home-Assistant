@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SoftOnboardingLayout } from "./soft-onboarding-layout";
 import { useOnboardingStore, ONBOARDING_TOTAL_STEPS } from "@/stores/onboarding-store";
 import { useTranslation } from "@/hooks/use-translation";
+import { isPristineDashboard } from "@/lib/onboarding-needed";
 
 export function StepName() {
   const { t } = useTranslation();
@@ -21,6 +22,22 @@ export function StepName() {
     setCreating(true);
     setError(null);
     try {
+      // Reuse a pristine auto-seeded Home instead of creating a second empty dashboard.
+      const existingRes = await fetch("/api/dashboard");
+      const existing = existingRes.ok ? await existingRes.json() : null;
+      if (isPristineDashboard(existing)) {
+        const put = await fetch(`/api/dashboards/${existing.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        });
+        if (put.ok) {
+          setDashboard(existing.id, name);
+          nextStep();
+          return;
+        }
+      }
+
       const res = await fetch("/api/dashboards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
