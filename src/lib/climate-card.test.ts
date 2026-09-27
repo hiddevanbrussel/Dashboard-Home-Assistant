@@ -13,6 +13,11 @@ import {
   climateTileEnabled,
   climateTileFromHvacMode,
   climateCardDensity,
+  climateCardEffectiveDensity,
+  climateHistoryPointsFromAttributeStates,
+  climateHistoryYTicks,
+  climatePreviewHistoryPoints,
+  normalizeClimateDisplayMode,
   CLIMATE_CARD_DEFAULT_HEIGHT,
   CLIMATE_CARD_DEFAULT_WIDTH,
   CLIMATE_CARD_MIN_HEIGHT,
@@ -26,6 +31,25 @@ import {
 } from "./climate-card";
 
 describe("climate-card helpers", () => {
+  it("normalizes display modes", () => {
+    expect(normalizeClimateDisplayMode("graph")).toBe("graph");
+    expect(normalizeClimateDisplayMode("compact")).toBe("compact");
+    expect(normalizeClimateDisplayMode("nope")).toBe("standard");
+    expect(climateCardEffectiveDensity(340, "compact")).toBe("dense");
+    expect(climateCardEffectiveDensity(340, "standard")).toBe("comfortable");
+  });
+
+  it("builds hourly points from climate attribute history", () => {
+    const points = climateHistoryPointsFromAttributeStates([
+      { last_changed: "2026-09-27T10:15:00.000Z", attributes: { current_temperature: 20 } },
+      { last_changed: "2026-09-27T10:45:00.000Z", attributes: { current_temperature: 22 } },
+      { last_changed: "2026-09-27T11:10:00.000Z", attributes: { current_temperature: 21 } },
+    ]);
+    expect(points.length).toBeGreaterThanOrEqual(2);
+    expect(climateHistoryYTicks(points).length).toBe(3);
+    expect(climatePreviewHistoryPoints()).toHaveLength(24);
+  });
+
   it("clamps width and height onto the air-quality-sized card", () => {
     expect(clampClimateCardWidth(undefined)).toBe(CLIMATE_CARD_DEFAULT_WIDTH);
     expect(clampClimateCardWidth("nope")).toBe(CLIMATE_CARD_DEFAULT_WIDTH);

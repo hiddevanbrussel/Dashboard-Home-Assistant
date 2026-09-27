@@ -105,6 +105,7 @@ import {
   CLIMATE_CARD_MAX_WIDTH,
   CLIMATE_CARD_MIN_HEIGHT,
   CLIMATE_CARD_MIN_WIDTH,
+  normalizeClimateDisplayMode,
 } from "@/lib/climate-card";
 import {
   clampVacuumCard2Height,
@@ -423,6 +424,7 @@ function WidgetByType({
   yield_entity_id_today,
   yield_entity_id_month,
   humidity_entity_id,
+  display_mode,
   show_icon,
   script_ids,
   script_names,
@@ -457,6 +459,7 @@ function WidgetByType({
   yield_entity_id_today?: string;
   yield_entity_id_month?: string;
   humidity_entity_id?: string;
+  display_mode?: "standard" | "compact" | "graph";
   show_icon?: boolean;
   script_ids?: string[];
   script_names?: Record<string, string>;
@@ -535,6 +538,7 @@ function WidgetByType({
           title={title}
           entity_id={entity_id}
           humidity_entity_id={humidity_entity_id}
+          display_mode={display_mode}
           size={sizeProp}
         />
       );
@@ -544,6 +548,7 @@ function WidgetByType({
           title={title}
           entity_id={entity_id}
           humidity_entity_id={humidity_entity_id}
+          display_mode={display_mode}
           size={sizeProp}
         />
       );
@@ -774,6 +779,7 @@ export default function DashboardEditPage() {
     yield_entity_id_month?: string;
     grid_entity_id?: string;
     humidity_entity_id?: string;
+    display_mode?: "standard" | "compact" | "graph";
     show_icon?: boolean;
     show_state?: boolean;
     script_ids?: string[];
@@ -815,6 +821,7 @@ export default function DashboardEditPage() {
     consumption_entity_id: "",
     grid_entity_id: "",
     humidity_entity_id: "",
+    display_mode: "standard",
     show_icon: true,
     show_state: true,
     script_ids: [],
@@ -986,6 +993,7 @@ export default function DashboardEditPage() {
         yield_entity_id_month: (editingWidget as { yield_entity_id_month?: string }).yield_entity_id_month ?? "",
         grid_entity_id: editingWidget.grid_entity_id ?? "",
         humidity_entity_id: editingWidget.humidity_entity_id ?? "",
+        display_mode: editingWidget.display_mode ?? "standard",
         show_icon: isCategoryCard ? ((editingWidget as { show_icon?: boolean }).show_icon ?? false) : (editingWidget.show_icon !== false),
         script_ids: editingWidget.script_ids ?? [],
         script_names: editingWidget.script_names ?? {},
@@ -1331,7 +1339,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; media_player_entity_id?: string; climate_entity_id?: string; area_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; page?: number }
+    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; display_mode?: "standard" | "compact" | "graph"; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; media_player_entity_id?: string; climate_entity_id?: string; area_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; page?: number }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -1890,6 +1898,7 @@ export default function DashboardEditPage() {
                       yield_entity_id_today={(w as { yield_entity_id_today?: string }).yield_entity_id_today}
                       yield_entity_id_month={(w as { yield_entity_id_month?: string }).yield_entity_id_month}
                       humidity_entity_id={w.humidity_entity_id}
+                      display_mode={w.display_mode}
                       show_icon={w.show_icon}
                       script_ids={w.script_ids}
                       script_names={w.script_names}
@@ -1973,6 +1982,7 @@ export default function DashboardEditPage() {
                 title: w.title ?? "Climate",
                 entity_id: w.entity_id,
                 humidity_entity_id: w.humidity_entity_id,
+                display_mode: w.display_mode,
                 icon: w.icon,
                 type: w.type === "climate_card_2" ? "climate_card_2" : "climate_card",
                 width: w.width,
@@ -3503,6 +3513,36 @@ export default function DashboardEditPage() {
                     )}
                     {editTab === "weergave" && (
                     <>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.climateDisplayMode")}
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {([
+                          { value: "standard" as const, label: t("editPanel.climateDisplayModeStandard") },
+                          { value: "compact" as const, label: t("editPanel.climateDisplayModeCompact") },
+                          { value: "graph" as const, label: t("editPanel.climateDisplayModeGraph") },
+                        ]).map((option) => {
+                          const selected = (editForm.display_mode ?? "standard") === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setEditForm((prev) => ({ ...prev, display_mode: option.value }))}
+                              className={cn(
+                                "rounded-xl border px-2 py-2.5 text-center text-xs font-medium transition-colors",
+                                selected
+                                  ? "border-[#4700B5] bg-[#4700B5]/10 text-gray-900 dark:border-[#8357BE] dark:bg-[#8357BE]/15 dark:text-white"
+                                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:border-white/20"
+                              )}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.climateDisplayModeHint")}</p>
+                    </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         {t("editPanel.cardWidthPx")}
@@ -5440,6 +5480,7 @@ aria-label={t("editPanel.removeCondition")}
                       title={editForm.title || t("cardType.climate_card_2")}
                       entity_id={editForm.entity_id}
                       humidity_entity_id={editForm.humidity_entity_id}
+                      display_mode={editForm.display_mode}
                       icon={editForm.icon}
                       width={clampClimateCardWidth(editForm.width ?? CLIMATE_CARD_DEFAULT_WIDTH)}
                       height={clampClimateCardHeight(editForm.height ?? CLIMATE_CARD_DEFAULT_HEIGHT)}
@@ -5678,6 +5719,7 @@ aria-label={t("editPanel.removeCondition")}
                         }),
                         ...((editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && {
                           humidity_entity_id: editForm.humidity_entity_id || undefined,
+                          display_mode: normalizeClimateDisplayMode(editForm.display_mode),
                           icon: editForm.icon || undefined,
                           width: editForm.width != null && editForm.width > 0 ? clampClimateCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampClimateCardHeight(editForm.height) : undefined,

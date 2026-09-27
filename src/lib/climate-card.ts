@@ -12,10 +12,83 @@ export const CLIMATE_CARD_DENSE_HEIGHT = 270;
 
 export type ClimateCardDensity = "comfortable" | "compact" | "dense";
 
+/** User-selectable climate card layouts (edit dialog). */
+export const CLIMATE_DISPLAY_MODES = ["standard", "compact", "graph"] as const;
+export type ClimateDisplayMode = (typeof CLIMATE_DISPLAY_MODES)[number];
+
+export function normalizeClimateDisplayMode(value: unknown): ClimateDisplayMode {
+  if (value === "compact" || value === "graph" || value === "standard") return value;
+  return "standard";
+}
+
 export function climateCardDensity(height: number): ClimateCardDensity {
   if (height < CLIMATE_CARD_DENSE_HEIGHT) return "dense";
   if (height < CLIMATE_CARD_COMPACT_HEIGHT) return "compact";
   return "comfortable";
+}
+
+/** Effective density: compact display mode always uses dense chrome. */
+export function climateCardEffectiveDensity(
+  height: number,
+  displayMode: ClimateDisplayMode = "standard"
+): ClimateCardDensity {
+  if (displayMode === "compact") return "dense";
+  return climateCardDensity(height);
+}
+
+export type ClimateHistoryPoint = { hour: string; value: number };
+
+/** Build chart points from HA history states using a numeric attribute (e.g. current_temperature). */
+export function climateHistoryPointsFromAttributeStates(
+  states: Array<{ last_changed: string; attributes?: Record<string, unknown> }>,
+  attribute = "current_temperature"
+): ClimateHistoryPoint[] {
+  const byHour = new Map<string, number[]>();
+  for (const s of states) {
+    const raw = s.attributes?.[attribute];
+    const n =
+      typeof raw === "number"
+        ? raw
+        : typeof raw === "string"
+          ? Number(raw)
+          : Number.NaN;
+    if (!Number.isFinite(n)) continue;
+    const d = new Date(s.last_changed);
+    if (Number.isNaN(d.getTime())) continue;
+    const hour = `${String(d.getHours()).padStart(2, "0")}:00`;
+    const bucket = byHour.get(hour) ?? [];
+    bucket.push(n);
+    byHour.set(hour, bucket);
+  }
+  const points: ClimateHistoryPoint[] = [];
+  for (let h = 0; h < 24; h++) {
+    const hour = `${String(h).padStart(2, "0")}:00`;
+    const vals = byHour.get(hour);
+    if (!vals?.length) continue;
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    points.push({ hour, value: Math.round(mean * 10) / 10 });
+  }
+  return points;
+}
+
+/** Demo series for edit preview when no history is available. */
+export function climatePreviewHistoryPoints(): ClimateHistoryPoint[] {
+  const base = [18.2, 18.0, 17.8, 17.6, 17.5, 17.6, 18.1, 19.0, 20.2, 21.0, 21.4, 21.6, 21.8, 21.5, 21.2, 20.8, 20.5, 20.3, 20.1, 20.0, 19.8, 19.6, 19.2, 18.8];
+  return base.map((value, h) => ({
+    hour: `${String(h).padStart(2, "0")}:00`,
+    value,
+  }));
+}
+
+export function climateHistoryYTicks(points: ClimateHistoryPoint[]): number[] {
+  if (points.length === 0) return [16, 20, 24];
+  const vals = points.map((p) => p.value);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const mid = (min + max) / 2;
+  const low = Math.floor(min - 1);
+  const high = Math.ceil(max + 1);
+  return [low, Math.round(mid), high];
 }
 
 export function clampClimateCardWidth(n: unknown): number {

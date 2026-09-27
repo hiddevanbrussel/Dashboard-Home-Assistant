@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.18
+
+- Climate card 2: choose display style in the edit dialog — standard (gauge), compact, or graph (today's temperature history)
+
 ## 0.4.17
 
 - Screensaver: honor Docker `PEXELS_API_KEY` without a browser-stored key; enabling Pexels selects it as media source when no custom image is set

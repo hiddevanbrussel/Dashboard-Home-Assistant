@@ -63,6 +63,7 @@ export type ClimateCardWidgetItem = {
   title: string;
   entity_id: string;
   humidity_entity_id?: string;
+  display_mode?: "standard" | "compact" | "graph";
   icon?: string;
   type?: "climate_card" | "climate_card_2";
   width?: number;
@@ -428,6 +429,7 @@ export function FloatingClimateCard({
                     title={w.title}
                     entity_id={w.entity_id}
                     humidity_entity_id={w.humidity_entity_id}
+                    display_mode={w.display_mode}
                     icon={w.icon}
                     width={totalWidth}
                     height={totalHeight}

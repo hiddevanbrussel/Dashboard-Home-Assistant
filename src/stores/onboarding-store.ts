@@ -56,6 +56,8 @@ export type WidgetConfig = {
   progress_entity_id?: string;
   /** Climate card 2: optionele sensor entity_id voor luchtvochtigheid. */
   humidity_entity_id?: string;
+  /** Climate card 2: weergave standard | compact | graph. */
+  display_mode?: "standard" | "compact" | "graph";
   icon?: string;
   size?: string;
   /** Light card: "horizontal" (default bar) or "square" (HomeKit tile). */
