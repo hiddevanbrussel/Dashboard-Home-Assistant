@@ -1508,6 +1508,15 @@ export default function DashboardEditPage() {
     saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
+  function handleNutsPeriodChange(widgetId: string, period: "week" | "month") {
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, period } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, period }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
   function handleClimateCardResize(pageIndex: number, size: { width: number; height: number }) {
     const width = clampClimateCardWidth(size.width);
     const height = clampClimateCardHeight(size.height);
@@ -2506,6 +2515,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+              onPeriodChange={(period) => handleNutsPeriodChange(w.id, period)}
             />
           ))}
 
@@ -6018,6 +6028,7 @@ aria-label={t("editPanel.removeCondition")}
                         width={clampNutsCardWidth(editForm.width ?? NUTS_CARD_DEFAULT_WIDTH)}
                         height={clampNutsCardHeight(editForm.height ?? NUTS_CARD_DEFAULT_HEIGHT)}
                         className="h-full"
+                        onPeriodChange={(period) => setEditForm((prev) => ({ ...prev, period }))}
                       />
                     </div>
                   ) : editingWidget.type === "smart_stack" ? (

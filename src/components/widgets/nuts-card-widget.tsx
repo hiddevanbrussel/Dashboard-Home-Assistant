@@ -67,7 +67,16 @@ export function NutsCardWidget({
   height,
   className,
   onMoreClick,
-}: NutsCardProps & { className?: string; onMoreClick?: () => void }) {
+  onPeriodChange,
+  periodInteractive = true,
+}: NutsCardProps & {
+  className?: string;
+  onMoreClick?: () => void;
+  /** Persist week/month when the on-card switch is used. */
+  onPeriodChange?: (period: "week" | "month") => void;
+  /** When false (e.g. edit/drag mode), switch is visible but not clickable. */
+  periodInteractive?: boolean;
+}) {
   const { t } = useTranslation();
   const isDark = useThemeStore((s) => s.resolved) === "dark";
   const rootRef = useRef<HTMLDivElement>(null);
@@ -269,9 +278,58 @@ export function NutsCardWidget({
       </div>
 
       <div
+        role="group"
+        aria-label={t("nutsCard.periodSwitch")}
+        className={cn(
+          "flex shrink-0 self-stretch rounded-lg p-0.5",
+          "bg-black/[0.05] dark:bg-white/[0.06]",
+          compact ? "mx-3 mt-1.5" : "mx-4 mt-2"
+        )}
+      >
+        {(["week", "month"] as const).map((opt) => {
+          const active = period === opt;
+          const canSwitch = !!onPeriodChange && periodInteractive;
+          return (
+            <button
+              key={opt}
+              type="button"
+              disabled={!canSwitch}
+              aria-pressed={active}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!canSwitch || period === opt) return;
+                onPeriodChange(opt);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className={cn(
+                "flex-1 rounded-md font-semibold tracking-wide transition-[background-color,color,box-shadow]",
+                compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs",
+                active
+                  ? "text-gray-950 shadow-sm dark:text-white"
+                  : "text-gray-500 dark:text-white/45",
+                canSwitch
+                  ? "cursor-pointer hover:text-gray-800 dark:hover:text-white/80"
+                  : "cursor-default"
+              )}
+              style={
+                active
+                  ? {
+                      backgroundColor: isDark ? `${iconColor}40` : `${iconColor}30`,
+                      boxShadow: isDark ? `0 0 12px ${preset.glow}` : undefined,
+                    }
+                  : undefined
+              }
+            >
+              {opt === "week" ? t("nutsCard.periodWeek") : t("nutsCard.periodMonth")}
+            </button>
+          );
+        })}
+      </div>
+
+      <div
         className={cn(
           "relative flex min-h-0 flex-1 flex-col",
-          compact ? "mt-2 px-2.5 pb-2 pt-0.5" : "mt-3 px-3 pb-3 pt-1"
+          compact ? "mt-1.5 px-2.5 pb-2 pt-0.5" : "mt-2 px-3 pb-3 pt-1"
         )}
       >
         {isLoading && entity_id && !hasHistory ? (

@@ -16,6 +16,7 @@ import {
   startOfWeekMonday,
   sumNutsMonth,
   sumNutsWeek,
+  toggleNutsPeriod,
 } from "./nuts-card";
 
 describe("nuts-card helpers", () => {
@@ -27,6 +28,11 @@ describe("nuts-card helpers", () => {
     expect(normalizeNutsPeriod("week")).toBe("week");
     expect(normalizeNutsPeriod("nope")).toBe("week");
     expect(normalizeNutsPeriod(undefined)).toBe("week");
+  });
+
+  it("toggles period between week and month", () => {
+    expect(toggleNutsPeriod("week")).toBe("month");
+    expect(toggleNutsPeriod("month")).toBe("week");
   });
 
   it("picks history window by period", () => {

@@ -89,6 +89,11 @@ export function normalizeNutsPeriod(raw: unknown): NutsCardPeriod {
   return raw === "month" ? "month" : "week";
 }
 
+/** Flip between week and month overview. */
+export function toggleNutsPeriod(period: NutsCardPeriod): NutsCardPeriod {
+  return period === "week" ? "month" : "week";
+}
+
 export function nutsHistoryDays(period: NutsCardPeriod): number {
   return period === "month" ? NUTS_HISTORY_DAYS_MONTH : NUTS_HISTORY_DAYS_WEEK;
 }

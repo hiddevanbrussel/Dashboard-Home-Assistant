@@ -506,6 +506,15 @@ export default function EnergyPage() {
     setEditingWidgetId(null);
   }
 
+  function handleNutsPeriodChange(widgetId: string, period: "week" | "month") {
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, period } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, period }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
   useEffect(() => {
     if (!editingWidget) return;
     const isCategoryCard = editingWidget.type === "text_card";
@@ -932,6 +941,7 @@ export default function EnergyPage() {
             onEnterEditMode={() => setEditMode(true)}
             onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
             onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            onPeriodChange={(period) => handleNutsPeriodChange(w.id, period)}
           />
         ))}
 
