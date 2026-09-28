@@ -13,7 +13,7 @@ import { EnergyMonitorCardWidget } from "./energy-monitor-card-widget";
 import { TeamtrackerCardWidget } from "./teamtracker-card-widget";
 import { CameraCardWidget } from "./camera-card-widget";
 import { CalendarCardWidget } from "./calendar-card-widget";
-import type { SensorCondition } from "./widget-types";
+import type { ImageCondition, SensorCondition } from "./widget-types";
 import { normalizeClimateDisplayMode } from "@/lib/climate-card";
 import { normalizeNutsAccent } from "@/lib/nuts-card";
 import { isSmartStackChildType } from "@/lib/smart-stack";
@@ -148,7 +148,7 @@ export function SmartStackChild({
           entity_id={child.entity_id}
           background_image={child.background_image}
           background_image_dark={child.background_image_dark}
-          image_conditions={child.image_conditions}
+          image_conditions={child.image_conditions as ImageCondition[] | undefined}
           minimal={child.minimal}
           className={fill}
         />
