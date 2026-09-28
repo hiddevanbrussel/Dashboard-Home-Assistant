@@ -13,18 +13,21 @@ import {
   NUTS_ACCENT_PRESETS,
   NUTS_CARD_DEFAULT_HEIGHT,
   NUTS_CARD_DEFAULT_WIDTH,
-  buildNutsWeekBars,
+  buildNutsChartBars,
   clampNutsCardHeight,
   clampNutsCardWidth,
-  computeNutsMonthTrend,
+  computeNutsTrend,
   formatNutsParts,
   formatNutsValue,
   normalizeNutsAccent,
+  normalizeNutsPeriod,
   nutsCardDensity,
   nutsChartScale,
+  nutsDemoChartBars,
   nutsDemoTodayValue,
   nutsDemoTrend,
-  nutsDemoWeekBars,
+  nutsHistoryDays,
+  shouldShowNutsMonthTick,
   type NutsDayPoint,
 } from "@/lib/nuts-card";
 
@@ -59,6 +62,7 @@ export function NutsCardWidget({
   icon,
   icon_background_color,
   accent: accentProp,
+  period: periodProp,
   width,
   height,
   className,
@@ -92,6 +96,8 @@ export function NutsCardWidget({
   const compact = density === "compact";
 
   const accent = normalizeNutsAccent(accentProp);
+  const period = normalizeNutsPeriod(periodProp);
+  const historyDays = nutsHistoryDays(period);
   const preset = NUTS_ACCENT_PRESETS[accent];
   const iconName = icon || preset.icon;
   const IconComponent = CARD_ICONS[iconName] ?? CARD_ICONS.Zap ?? CARD_ICONS.Fuel;
@@ -105,11 +111,11 @@ export function NutsCardWidget({
   const primaryLive = useEntityValue(entity_id);
 
   const { data: historyData, isLoading } = useQuery({
-    queryKey: ["ha-history-nuts", entity_id, "35"],
+    queryKey: ["ha-history-nuts", entity_id, String(historyDays)],
     enabled: !!entity_id,
     queryFn: async () => {
       const res = await fetch(
-        `/api/ha/history?entity_ids=${encodeURIComponent(entity_id)}&days=35`
+        `/api/ha/history?entity_ids=${encodeURIComponent(entity_id)}&days=${historyDays}`
       );
       if (!res.ok) throw new Error("Failed to fetch history");
       return res.json() as Promise<Record<string, NutsDayPoint[]>>;
@@ -120,18 +126,19 @@ export function NutsCardWidget({
   const points = historyData?.[entity_id];
   const hasHistory = (points?.length ?? 0) > 0;
 
-  const weekBars = useMemo(() => {
-    if (hasHistory && points) return buildNutsWeekBars(points);
-    return nutsDemoWeekBars(accent);
-  }, [hasHistory, points, accent]);
+  const chartBars = useMemo(() => {
+    if (hasHistory && points) return buildNutsChartBars(points, period);
+    return nutsDemoChartBars(accent, period);
+  }, [hasHistory, points, accent, period]);
 
   const trend = useMemo(() => {
-    if (hasHistory && points) return computeNutsMonthTrend(points, accent);
-    return nutsDemoTrend(accent);
-  }, [hasHistory, points, accent]);
+    if (hasHistory && points) return computeNutsTrend(points, accent, period);
+    return nutsDemoTrend(accent, period);
+  }, [hasHistory, points, accent, period]);
 
+  const todayKey = new Date().toISOString().slice(0, 10);
   const todayFromHistory = hasHistory
-    ? weekBars.find((b) => b.date === new Date().toISOString().slice(0, 10))?.value
+    ? chartBars.find((b) => b.date === todayKey)?.value
     : undefined;
 
   const mainValue =
@@ -146,7 +153,7 @@ export function NutsCardWidget({
     (hasHistory || !entity_id ? "kWh" : "");
 
   const valueParts = formatNutsParts(mainValue, unit);
-  const scale = nutsChartScale(weekBars.map((b) => b.value));
+  const scale = nutsChartScale(chartBars.map((b) => b.value));
   const displayTitle =
     title?.trim() ||
     (accent === "production" ? t("nutsCard.productionTitle") : t("nutsCard.consumptionTitle"));
@@ -158,7 +165,10 @@ export function NutsCardWidget({
       : "text-rose-600 dark:text-rose-400";
   const TrendArrow =
     trend?.direction === "down" ? ArrowDownRight : ArrowUpRight;
+  const trendLabel =
+    period === "month" ? t("nutsCard.vsLastMonth") : t("nutsCard.vsLastWeek");
 
+  const monthDense = period === "month";
   const iconBox = compact ? "h-9 w-9" : "h-12 w-12";
   const iconGlyph = compact ? "h-4 w-4" : "h-6 w-6";
 
@@ -250,7 +260,7 @@ export function NutsCardWidget({
               </span>
               {!compact && (
                 <span className="mt-1 whitespace-nowrap text-right text-[10px] leading-tight text-gray-400 dark:text-white/40">
-                  {t("nutsCard.vsLastMonth")}
+                  {trendLabel}
                 </span>
               )}
             </div>
@@ -294,10 +304,16 @@ export function NutsCardWidget({
                 <div
                   className={cn(
                     "flex flex-1 items-end justify-between",
-                    compact ? "ml-6 gap-1 pb-4 pt-0.5" : "ml-8 gap-1.5 pb-5 pt-1"
+                    compact
+                      ? monthDense
+                        ? "ml-6 gap-px pb-4 pt-0.5"
+                        : "ml-6 gap-1 pb-4 pt-0.5"
+                      : monthDense
+                        ? "ml-8 gap-0.5 pb-5 pt-1"
+                        : "ml-8 gap-1.5 pb-5 pt-1"
                   )}
                 >
-                  {weekBars.map((bar) => {
+                  {chartBars.map((bar) => {
                     const pct = scale.max > 0 ? Math.min(100, (bar.value / scale.max) * 100) : 0;
                     return (
                       <div
@@ -305,7 +321,16 @@ export function NutsCardWidget({
                         className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
                       >
                         <div
-                          className={cn("w-full rounded-t-md", compact ? "max-w-[18px]" : "max-w-[28px]")}
+                          className={cn(
+                            "w-full rounded-t-md",
+                            monthDense
+                              ? compact
+                                ? "max-w-[6px]"
+                                : "max-w-[10px]"
+                              : compact
+                                ? "max-w-[18px]"
+                                : "max-w-[28px]"
+                          )}
                           style={{
                             height: `${Math.max(pct, bar.value > 0 ? 4 : 0)}%`,
                             background: `linear-gradient(to top, ${preset.barTo}, ${preset.barFrom})`,
@@ -320,18 +345,43 @@ export function NutsCardWidget({
               </div>
             </div>
 
-            <div className={cn("flex justify-between", compact ? "ml-6 gap-1" : "ml-8 gap-1.5")}>
-              {weekBars.map((bar) => (
-                <span
-                  key={`lbl-${bar.date}`}
-                  className={cn(
-                    "min-w-0 flex-1 text-center text-gray-400 dark:text-white/40",
-                    compact ? "text-[9px]" : "text-[10px]"
-                  )}
-                >
-                  {t(WEEKDAY_KEYS[bar.weekday])}
-                </span>
-              ))}
+            <div
+              className={cn(
+                "flex justify-between",
+                compact
+                  ? monthDense
+                    ? "ml-6 gap-px"
+                    : "ml-6 gap-1"
+                  : monthDense
+                    ? "ml-8 gap-0.5"
+                    : "ml-8 gap-1.5"
+              )}
+            >
+              {chartBars.map((bar) => {
+                const label =
+                  period === "week"
+                    ? t(WEEKDAY_KEYS[bar.tick] ?? WEEKDAY_KEYS[0])
+                    : shouldShowNutsMonthTick(bar.tick, chartBars.length)
+                      ? String(bar.tick)
+                      : "";
+                return (
+                  <span
+                    key={`lbl-${bar.date}`}
+                    className={cn(
+                      "min-w-0 flex-1 text-center text-gray-400 dark:text-white/40",
+                      monthDense
+                        ? compact
+                          ? "text-[7px]"
+                          : "text-[8px]"
+                        : compact
+                          ? "text-[9px]"
+                          : "text-[10px]"
+                    )}
+                  >
+                    {label}
+                  </span>
+                );
+              })}
             </div>
           </>
         )}

@@ -19,7 +19,8 @@ export async function GET(request: Request) {
   const granularity = searchParams.get("granularity");
   const mode = searchParams.get("mode");
   const attribute = searchParams.get("attribute")?.trim() || "current_temperature";
-  const days = Math.min(31, Math.max(1, parseInt(searchParams.get("days") ?? "7", 10)));
+  // Allow up to 70 days so nuts monthly overview can compare vs previous month.
+  const days = Math.min(70, Math.max(1, parseInt(searchParams.get("days") ?? "7", 10)));
   const connectionId = searchParams.get("connectionId") ?? undefined;
 
   if (!entityIdsParam?.trim()) {

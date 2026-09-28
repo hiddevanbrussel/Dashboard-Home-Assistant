@@ -15,7 +15,7 @@ import { CameraCardWidget } from "./camera-card-widget";
 import { CalendarCardWidget } from "./calendar-card-widget";
 import type { ImageCondition, SensorCondition } from "./widget-types";
 import { normalizeClimateDisplayMode } from "@/lib/climate-card";
-import { normalizeNutsAccent } from "@/lib/nuts-card";
+import { normalizeNutsAccent, normalizeNutsPeriod } from "@/lib/nuts-card";
 import { isSmartStackChildType } from "@/lib/smart-stack";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -74,6 +74,7 @@ export function SmartStackChild({
           icon={child.icon}
           icon_background_color={child.icon_background_color}
           accent={normalizeNutsAccent(child.accent)}
+          period={normalizeNutsPeriod(child.period)}
           width={width}
           height={height}
           className={fill}

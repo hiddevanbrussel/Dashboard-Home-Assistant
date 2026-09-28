@@ -120,6 +120,7 @@ import {
   clampNutsCardHeight,
   clampNutsCardWidth,
   normalizeNutsAccent,
+  normalizeNutsPeriod,
 } from "@/lib/nuts-card";
 import {
   SMART_STACK_CHILD_TYPES,
@@ -474,6 +475,7 @@ function WidgetByType({
   current_entity_id,
   today_entity_id,
   accent,
+  period,
   max_value,
   grid_entity_id,
   minimal,
@@ -512,6 +514,7 @@ function WidgetByType({
   current_entity_id?: string;
   today_entity_id?: string;
   accent?: "consumption" | "production";
+  period?: "week" | "month";
   icon_background_color?: string;
   max_value?: number;
   grid_entity_id?: string;
@@ -723,6 +726,7 @@ function WidgetByType({
           icon={icon}
           icon_background_color={icon_background_color}
           accent={normalizeNutsAccent(accent)}
+          period={normalizeNutsPeriod(period)}
         />
       );
     case "chore_card":
@@ -844,6 +848,7 @@ export default function DashboardEditPage() {
     current_entity_id?: string;
     today_entity_id?: string;
     accent?: "consumption" | "production";
+    period?: "week" | "month";
     max_value?: number;
     minimal?: boolean;
     scale?: number;
@@ -874,6 +879,7 @@ export default function DashboardEditPage() {
     current_entity_id: "",
     today_entity_id: "",
     accent: "consumption",
+    period: "week",
     light_entity_id: "",
     modal_light_entity_ids: [],
     media_player_entity_id: "",
@@ -1071,6 +1077,7 @@ export default function DashboardEditPage() {
         current_entity_id: editingWidget.current_entity_id ?? "",
         today_entity_id: editingWidget.today_entity_id ?? "",
         accent: normalizeNutsAccent(editingWidget.accent),
+        period: normalizeNutsPeriod(editingWidget.period),
         max_value: editingWidget.max_value ?? undefined,
         minimal: editingWidget.minimal ?? false,
         scale: editingWidget.scale ?? 1,
@@ -1316,6 +1323,7 @@ export default function DashboardEditPage() {
         width: NUTS_CARD_DEFAULT_WIDTH,
         height: NUTS_CARD_DEFAULT_HEIGHT,
         accent: "consumption" as const,
+        period: "week" as const,
         icon: "Zap",
       }),
       page: dashboardPageRef.current,
@@ -1415,7 +1423,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; display_mode?: "standard" | "compact" | "graph"; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; media_player_entity_id?: string; climate_entity_id?: string; area_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; today_entity_id?: string; accent?: "consumption" | "production"; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; page?: number }
+    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; display_mode?: "standard" | "compact" | "graph"; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; media_player_entity_id?: string; climate_entity_id?: string; area_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; today_entity_id?: string; accent?: "consumption" | "production"; period?: "week" | "month"; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; page?: number }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -2488,6 +2496,7 @@ export default function DashboardEditPage() {
                 icon: w.icon,
                 icon_background_color: w.icon_background_color,
                 accent: w.accent,
+                period: w.period,
                 width: w.width ?? NUTS_CARD_DEFAULT_WIDTH,
                 height: w.height ?? NUTS_CARD_DEFAULT_HEIGHT,
               }}
@@ -3068,7 +3077,7 @@ export default function DashboardEditPage() {
                                             title: name,
                                             entity_id: e.entity_id,
                                             ...(stackAddChildType === "light_card" && { card_layout: "horizontal" as const }),
-                                            ...(stackAddChildType === "nuts_card" && { accent: "consumption" as const, icon: "Zap" }),
+                                            ...(stackAddChildType === "nuts_card" && { accent: "consumption" as const, period: "week" as const, icon: "Zap" }),
                                             ...(stackAddChildType === "climate_card_2" && { display_mode: "standard" as const }),
                                             ...(stackAddChildType === "camera_card" && { refresh: 10, show_title: true }),
                                           };
@@ -5780,6 +5789,37 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.nutsPeriod")}
+                      </label>
+                      <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5">
+                        {([
+                          { id: "week" as const, label: t("editPanel.nutsPeriodWeek") },
+                          { id: "month" as const, label: t("editPanel.nutsPeriodMonth") },
+                        ]).map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                period: opt.id,
+                              }))
+                            }
+                            className={cn(
+                              "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                              normalizeNutsPeriod(editForm.period) === opt.id
+                                ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                                : "text-gray-600 dark:text-gray-400"
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.nutsPeriodHint")}</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         {t("editPanel.icon")}
                       </label>
                       <div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto">
@@ -5974,6 +6014,7 @@ aria-label={t("editPanel.removeCondition")}
                         icon={editForm.icon}
                         icon_background_color={editForm.icon_background_color}
                         accent={normalizeNutsAccent(editForm.accent)}
+                        period={normalizeNutsPeriod(editForm.period)}
                         width={clampNutsCardWidth(editForm.width ?? NUTS_CARD_DEFAULT_WIDTH)}
                         height={clampNutsCardHeight(editForm.height ?? NUTS_CARD_DEFAULT_HEIGHT)}
                         className="h-full"
@@ -6307,6 +6348,7 @@ aria-label={t("editPanel.removeCondition")}
                           today_entity_id: editForm.today_entity_id || undefined,
                           current_entity_id: undefined,
                           accent: normalizeNutsAccent(editForm.accent),
+                          period: normalizeNutsPeriod(editForm.period),
                           width: editForm.width != null && editForm.width > 0 ? clampNutsCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampNutsCardHeight(editForm.height) : undefined,
                         }),

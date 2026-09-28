@@ -86,6 +86,8 @@ export type WidgetConfig = {
   background_image_dark?: string;
   /** Nuts card: accent consumption | production. */
   accent?: "consumption" | "production";
+  /** Nuts card: overview period week | month (default week). */
+  period?: "week" | "month";
   /** Nuts card: entity voor hoofstwaarde vandaag (optioneel). */
   today_entity_id?: string;
   /** Nuts card: entity voor huidig verbruik (optioneel, deprecated). */

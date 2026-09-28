@@ -10,7 +10,9 @@ import {
   clampNutsCardHeight,
   clampNutsCardWidth,
   normalizeNutsAccent,
+  normalizeNutsPeriod,
   type NutsCardAccent,
+  type NutsCardPeriod,
 } from "@/lib/nuts-card";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingNutsCardPosition.";
@@ -76,6 +78,7 @@ export function FloatingNutsCard({
     icon?: string;
     icon_background_color?: string;
     accent?: NutsCardAccent | string;
+    period?: NutsCardPeriod | string;
     width?: number;
     height?: number;
   };
@@ -233,6 +236,7 @@ export function FloatingNutsCard({
           icon={widget.icon}
           icon_background_color={widget.icon_background_color}
           accent={normalizeNutsAccent(widget.accent)}
+          period={normalizeNutsPeriod(widget.period)}
           width={totalWidth}
           height={totalHeight}
           onMoreClick={editMode ? onEdit : undefined}

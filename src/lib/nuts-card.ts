@@ -1,6 +1,9 @@
-/** Nuts (utilities) card: weekly bar chart + month trend for consumption/production. */
+/** Nuts (utilities) card: weekly/monthly bar chart + period trend for consumption/production. */
 
 export type NutsCardAccent = "consumption" | "production";
+
+/** Overview period for the chart + comparison trend. Default: week. */
+export type NutsCardPeriod = "week" | "month";
 
 export type NutsDayPoint = { date: string; consumption: number };
 
@@ -12,9 +15,18 @@ export type NutsWeekBar = {
   value: number;
 };
 
+/** Chart bar for either week (weekday) or month (day-of-month) overview. */
+export type NutsChartBar = {
+  /** ISO date YYYY-MM-DD */
+  date: string;
+  value: number;
+  /** Week: Mon=0…Sun=6. Month: day of month 1…31. */
+  tick: number;
+};
+
 export type NutsTrend = {
   percent: number;
-  /** Raw change direction: positive = this month higher than last */
+  /** Raw change direction: positive = this period higher than previous */
   direction: "up" | "down" | "flat";
   /** Whether the change is favorable for this accent */
   favorable: boolean;
@@ -30,6 +42,11 @@ export const NUTS_CARD_MAX_HEIGHT = 420;
 
 /** Below this (width or height), use denser chrome so the chart still fits. */
 export const NUTS_CARD_COMPACT_SIZE = 280;
+
+/** History window for week overview (this + previous week). */
+export const NUTS_HISTORY_DAYS_WEEK = 21;
+/** History window for month overview (this + previous month). */
+export const NUTS_HISTORY_DAYS_MONTH = 65;
 
 export type NutsCardDensity = "comfortable" | "compact";
 
@@ -68,6 +85,14 @@ export function normalizeNutsAccent(raw: unknown): NutsCardAccent {
   return raw === "production" ? "production" : "consumption";
 }
 
+export function normalizeNutsPeriod(raw: unknown): NutsCardPeriod {
+  return raw === "month" ? "month" : "week";
+}
+
+export function nutsHistoryDays(period: NutsCardPeriod): number {
+  return period === "month" ? NUTS_HISTORY_DAYS_MONTH : NUTS_HISTORY_DAYS_WEEK;
+}
+
 export function clampNutsCardWidth(w: unknown): number {
   const n = Number(w);
   if (!Number.isFinite(n)) return NUTS_CARD_DEFAULT_WIDTH;
@@ -97,16 +122,21 @@ function toDateKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** Build Mon–Sun bars for the current week from HA daily history. */
-export function buildNutsWeekBars(
-  points: NutsDayPoint[],
-  ref: Date = new Date()
-): NutsWeekBar[] {
+function dayPointMap(points: NutsDayPoint[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const p of points) {
     if (!p?.date || !Number.isFinite(p.consumption)) continue;
     map.set(p.date.slice(0, 10), Math.max(0, p.consumption));
   }
+  return map;
+}
+
+/** Build Mon–Sun bars for the current week from HA daily history. */
+export function buildNutsWeekBars(
+  points: NutsDayPoint[],
+  ref: Date = new Date()
+): NutsWeekBar[] {
+  const map = dayPointMap(points);
   const monday = startOfWeekMonday(ref);
   const bars: NutsWeekBar[] = [];
   for (let i = 0; i < 7; i++) {
@@ -116,6 +146,44 @@ export function buildNutsWeekBars(
     bars.push({ date: key, weekday: i, value: map.get(key) ?? 0 });
   }
   return bars;
+}
+
+/** Build day-of-month bars for the current calendar month (1…last day). */
+export function buildNutsMonthBars(
+  points: NutsDayPoint[],
+  ref: Date = new Date()
+): NutsChartBar[] {
+  const map = dayPointMap(points);
+  const year = ref.getFullYear();
+  const month = ref.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const bars: NutsChartBar[] = [];
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const key = toDateKey(d);
+    bars.push({ date: key, tick: day, value: map.get(key) ?? 0 });
+  }
+  return bars;
+}
+
+/** Chart bars for the selected overview period. */
+export function buildNutsChartBars(
+  points: NutsDayPoint[],
+  period: NutsCardPeriod,
+  ref: Date = new Date()
+): NutsChartBar[] {
+  if (period === "month") return buildNutsMonthBars(points, ref);
+  return buildNutsWeekBars(points, ref).map((b) => ({
+    date: b.date,
+    tick: b.weekday,
+    value: b.value,
+  }));
+}
+
+/** Whether a month-axis day label should be shown (keeps dense charts readable). */
+export function shouldShowNutsMonthTick(day: number, daysInMonth: number): boolean {
+  if (day === 1 || day === daysInMonth) return true;
+  return day % 5 === 0;
 }
 
 /** Sum points whose date falls in year/month (0-based month). */
@@ -131,16 +199,23 @@ export function sumNutsMonth(points: NutsDayPoint[], year: number, month: number
   return sum;
 }
 
-export function computeNutsMonthTrend(
-  points: NutsDayPoint[],
-  accent: NutsCardAccent,
-  ref: Date = new Date()
+/** Sum daily points for a Mon–Sun week starting at `monday`. */
+export function sumNutsWeek(points: NutsDayPoint[], monday: Date): number {
+  const map = dayPointMap(points);
+  let sum = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    sum += map.get(toDateKey(d)) ?? 0;
+  }
+  return sum;
+}
+
+function trendFromTotals(
+  current: number,
+  previous: number,
+  accent: NutsCardAccent
 ): NutsTrend | null {
-  const year = ref.getFullYear();
-  const month = ref.getMonth();
-  const prev = new Date(year, month - 1, 1);
-  const current = sumNutsMonth(points, year, month);
-  const previous = sumNutsMonth(points, prev.getFullYear(), prev.getMonth());
   if (previous <= 0 && current <= 0) return null;
   if (previous <= 0) {
     return {
@@ -160,6 +235,43 @@ export function computeNutsMonthTrend(
         ? direction === "up"
         : direction === "down";
   return { percent, direction, favorable };
+}
+
+export function computeNutsMonthTrend(
+  points: NutsDayPoint[],
+  accent: NutsCardAccent,
+  ref: Date = new Date()
+): NutsTrend | null {
+  const year = ref.getFullYear();
+  const month = ref.getMonth();
+  const prev = new Date(year, month - 1, 1);
+  const current = sumNutsMonth(points, year, month);
+  const previous = sumNutsMonth(points, prev.getFullYear(), prev.getMonth());
+  return trendFromTotals(current, previous, accent);
+}
+
+export function computeNutsWeekTrend(
+  points: NutsDayPoint[],
+  accent: NutsCardAccent,
+  ref: Date = new Date()
+): NutsTrend | null {
+  const monday = startOfWeekMonday(ref);
+  const prevMonday = new Date(monday);
+  prevMonday.setDate(monday.getDate() - 7);
+  const current = sumNutsWeek(points, monday);
+  const previous = sumNutsWeek(points, prevMonday);
+  return trendFromTotals(current, previous, accent);
+}
+
+export function computeNutsTrend(
+  points: NutsDayPoint[],
+  accent: NutsCardAccent,
+  period: NutsCardPeriod,
+  ref: Date = new Date()
+): NutsTrend | null {
+  return period === "month"
+    ? computeNutsMonthTrend(points, accent, ref)
+    : computeNutsWeekTrend(points, accent, ref);
 }
 
 /** Nice Y-axis max (≥ data max) with ~3 ticks. */
@@ -225,12 +337,48 @@ export function nutsDemoWeekBars(accent: NutsCardAccent): NutsWeekBar[] {
   });
 }
 
+export function nutsDemoMonthBars(accent: NutsCardAccent, ref: Date = new Date()): NutsChartBar[] {
+  const year = ref.getFullYear();
+  const month = ref.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const base = accent === "production" ? 18 : 14;
+  const bars: NutsChartBar[] = [];
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    // Gentle wave so demo chart has shape without looking random.
+    const value = Math.max(
+      2,
+      Math.round((base + Math.sin(day / 2.2) * 8 + (day % 7) * 0.6) * 10) / 10
+    );
+    bars.push({ date: toDateKey(d), tick: day, value });
+  }
+  return bars;
+}
+
+export function nutsDemoChartBars(
+  accent: NutsCardAccent,
+  period: NutsCardPeriod,
+  ref: Date = new Date()
+): NutsChartBar[] {
+  if (period === "month") return nutsDemoMonthBars(accent, ref);
+  return nutsDemoWeekBars(accent).map((b) => ({
+    date: b.date,
+    tick: b.weekday,
+    value: b.value,
+  }));
+}
+
 export function nutsDemoTodayValue(accent: NutsCardAccent): number {
   return accent === "production" ? 14.7 : 8.4;
 }
 
-export function nutsDemoTrend(accent: NutsCardAccent): NutsTrend {
+export function nutsDemoTrend(accent: NutsCardAccent, period: NutsCardPeriod = "week"): NutsTrend {
+  if (period === "month") {
+    return accent === "production"
+      ? { percent: 54, direction: "up", favorable: true }
+      : { percent: 24, direction: "up", favorable: false };
+  }
   return accent === "production"
-    ? { percent: 54, direction: "up", favorable: true }
-    : { percent: 24, direction: "up", favorable: false };
+    ? { percent: 18, direction: "up", favorable: true }
+    : { percent: 12, direction: "up", favorable: false };
 }

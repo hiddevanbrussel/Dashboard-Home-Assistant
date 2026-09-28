@@ -1,20 +1,37 @@
 import {
+  buildNutsChartBars,
+  buildNutsMonthBars,
   buildNutsWeekBars,
   computeNutsMonthTrend,
+  computeNutsTrend,
+  computeNutsWeekTrend,
   formatNutsParts,
   formatNutsValue,
   normalizeNutsAccent,
+  normalizeNutsPeriod,
   nutsCardDensity,
   nutsChartScale,
+  nutsHistoryDays,
+  shouldShowNutsMonthTick,
   startOfWeekMonday,
   sumNutsMonth,
+  sumNutsWeek,
 } from "./nuts-card";
 
 describe("nuts-card helpers", () => {
-  it("normalizes accent", () => {
+  it("normalizes accent and period", () => {
     expect(normalizeNutsAccent("production")).toBe("production");
     expect(normalizeNutsAccent("consumption")).toBe("consumption");
     expect(normalizeNutsAccent("nope")).toBe("consumption");
+    expect(normalizeNutsPeriod("month")).toBe("month");
+    expect(normalizeNutsPeriod("week")).toBe("week");
+    expect(normalizeNutsPeriod("nope")).toBe("week");
+    expect(normalizeNutsPeriod(undefined)).toBe("week");
+  });
+
+  it("picks history window by period", () => {
+    expect(nutsHistoryDays("week")).toBe(21);
+    expect(nutsHistoryDays("month")).toBe(65);
   });
 
   it("uses compact density at 250×250", () => {
@@ -41,6 +58,31 @@ describe("nuts-card helpers", () => {
     expect(bars[2].value).toBe(5);
     expect(bars[3].value).toBe(0);
     expect(bars[4].value).toBe(15);
+
+    const chart = buildNutsChartBars(points, "week", ref);
+    expect(chart).toHaveLength(7);
+    expect(chart[0].tick).toBe(0);
+    expect(chart[0].value).toBe(10);
+  });
+
+  it("builds month bars for every day of the month", () => {
+    const ref = new Date("2026-09-15T12:00:00");
+    const points = [
+      { date: "2026-09-01", consumption: 3 },
+      { date: "2026-09-15", consumption: 9 },
+      { date: "2026-09-30", consumption: 4 },
+    ];
+    const bars = buildNutsMonthBars(points, ref);
+    expect(bars).toHaveLength(30);
+    expect(bars[0]).toMatchObject({ tick: 1, value: 3 });
+    expect(bars[14]).toMatchObject({ tick: 15, value: 9 });
+    expect(bars[29]).toMatchObject({ tick: 30, value: 4 });
+    expect(bars[1].value).toBe(0);
+
+    expect(shouldShowNutsMonthTick(1, 30)).toBe(true);
+    expect(shouldShowNutsMonthTick(5, 30)).toBe(true);
+    expect(shouldShowNutsMonthTick(6, 30)).toBe(false);
+    expect(shouldShowNutsMonthTick(30, 30)).toBe(true);
   });
 
   it("sums month totals and computes trend favorability", () => {
@@ -61,6 +103,41 @@ describe("nuts-card helpers", () => {
 
     const productionTrend = computeNutsMonthTrend(points, "production", ref);
     expect(productionTrend?.favorable).toBe(true);
+
+    expect(computeNutsTrend(points, "consumption", "month", ref)?.percent).toBe(24);
+  });
+
+  it("sums week totals and computes week-over-week trend", () => {
+    // Week of Mon 2026-09-21 … Sun 2026-09-27 vs previous week
+    const points = [
+      { date: "2026-09-14", consumption: 10 },
+      { date: "2026-09-15", consumption: 10 },
+      { date: "2026-09-16", consumption: 10 },
+      { date: "2026-09-17", consumption: 10 },
+      { date: "2026-09-18", consumption: 10 },
+      { date: "2026-09-19", consumption: 10 },
+      { date: "2026-09-20", consumption: 10 }, // prev week = 70
+      { date: "2026-09-21", consumption: 20 },
+      { date: "2026-09-22", consumption: 20 },
+      { date: "2026-09-23", consumption: 20 },
+      { date: "2026-09-24", consumption: 10 },
+      { date: "2026-09-25", consumption: 10 },
+      { date: "2026-09-26", consumption: 10 },
+      { date: "2026-09-27", consumption: 10 }, // this week = 100
+    ];
+    const ref = new Date("2026-09-23T12:00:00");
+    const monday = startOfWeekMonday(ref);
+    expect(sumNutsWeek(points, monday)).toBe(100);
+    const prev = new Date(monday);
+    prev.setDate(monday.getDate() - 7);
+    expect(sumNutsWeek(points, prev)).toBe(70);
+
+    const trend = computeNutsWeekTrend(points, "consumption", ref);
+    expect(trend?.direction).toBe("up");
+    expect(trend?.percent).toBe(43); // (100-70)/70 ≈ 42.8
+    expect(trend?.favorable).toBe(false);
+
+    expect(computeNutsTrend(points, "production", "week", ref)?.favorable).toBe(true);
   });
 
   it("builds a nice chart scale", () => {
