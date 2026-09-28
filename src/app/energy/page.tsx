@@ -33,8 +33,6 @@ import type { WidgetConfig } from "@/stores/onboarding-store";
 import {
   NUTS_CARD_DEFAULT_HEIGHT,
   NUTS_CARD_DEFAULT_WIDTH,
-  clampNutsCardHeight,
-  clampNutsCardWidth,
   normalizeNutsAccent,
   normalizeNutsPeriod,
 } from "@/lib/nuts-card";
@@ -562,17 +560,6 @@ export default function EnergyPage() {
     setEditingWidgetId(null);
   }
 
-  function handleNutsCardResize(widgetId: string, size: { width: number; height: number }) {
-    const width = clampNutsCardWidth(size.width);
-    const height = clampNutsCardHeight(size.height);
-    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
-    setWidgets(newWidgets);
-    if (editingWidgetId === widgetId) {
-      setEditForm((prev) => ({ ...prev, width, height }));
-    }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
-  }
-
   useEffect(() => {
     if (!editingWidget) return;
     const isCategoryCard = editingWidget.type === "text_card";
@@ -1015,7 +1002,6 @@ export default function EnergyPage() {
             onEnterEditMode={() => setEditMode(true)}
             onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
             onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-            onResize={editMode ? (size) => handleNutsCardResize(w.id, size) : undefined}
           />
         ))}
 
