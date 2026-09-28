@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.26
+
+- Media card: show the player name on the card (custom title, otherwise HA friendly name)
+
 ## 0.4.25
 
 - Smart stack: on the live dashboard, show only the rotating card (no stack title, slide counter, or dots)
