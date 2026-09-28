@@ -86,34 +86,44 @@ export function FloatingSmartStack({
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressOrigin = useRef<{ x: number; y: number } | null>(null);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
+    longPressOrigin.current = null;
   }, []);
 
   const startLongPress = useCallback(
     (e: React.PointerEvent) => {
       if (editMode || !onEnterEditMode) return;
+      // Do not setPointerCapture — that steals events from SmartStackWidget swipe handlers.
       clearLongPress();
-      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      longPressOrigin.current = { x: e.clientX, y: e.clientY };
       longPressTimerRef.current = setTimeout(() => {
         longPressTimerRef.current = null;
+        longPressOrigin.current = null;
         onEnterEditMode();
       }, LONG_PRESS_MS);
     },
     [editMode, onEnterEditMode, clearLongPress]
   );
 
-  const endLongPress = useCallback(
+  const moveLongPress = useCallback(
     (e: React.PointerEvent) => {
-      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
-      clearLongPress();
+      if (!longPressOrigin.current) return;
+      const dx = e.clientX - longPressOrigin.current.x;
+      const dy = e.clientY - longPressOrigin.current.y;
+      if (Math.abs(dx) > 12 || Math.abs(dy) > 12) clearLongPress();
     },
     [clearLongPress]
   );
+
+  const endLongPress = useCallback(() => {
+    clearLongPress();
+  }, [clearLongPress]);
 
   useEffect(() => {
     if (initialized.current) return;
@@ -204,6 +214,7 @@ export function FloatingSmartStack({
       {...(!editMode &&
         onEnterEditMode && {
           onPointerDown: startLongPress,
+          onPointerMove: moveLongPress,
           onPointerUp: endLongPress,
           onPointerLeave: endLongPress,
           onPointerCancel: endLongPress,
