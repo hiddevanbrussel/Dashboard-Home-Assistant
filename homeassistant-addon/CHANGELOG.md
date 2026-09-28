@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.25
+
+- Smart stack: on the live dashboard, show only the rotating card (no stack title, slide counter, or dots)
+
 ## 0.4.24
 
 - Smart stack (slimme stapel): floating slideshow card that cycles through nested existing cards with configurable interval
