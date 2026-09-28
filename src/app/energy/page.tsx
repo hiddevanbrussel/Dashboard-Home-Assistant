@@ -359,6 +359,10 @@ export default function EnergyPage() {
     device_names?: Record<string, string>;
     cost_per_kwh?: number;
     grid_entity_id?: string;
+    unit?: string;
+    manual_value?: string;
+    secondary?: string;
+    unit_as_prefix?: boolean;
   }>({
     title: "",
     entity_id: "",
