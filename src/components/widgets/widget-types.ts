@@ -222,15 +222,17 @@ export type SmartStackProps = {
   height?: number;
 };
 
-/** Nuts/utility card: weekly bar chart with today value and month-over-month trend. */
+/** Nuts/utility card: weekly/monthly bar chart with today value and period trend. */
 export type NutsCardProps = WidgetBaseProps & {
   /** Accent style: consumption (orange) or production (green). */
   accent?: "consumption" | "production";
+  /** Overview period: week (default) or month. */
+  period?: "week" | "month";
   /** Optioneel icoon (Lucide-naam); default Zap/Leaf based on accent. */
   icon?: string;
   /** Accentkleur van het icoon (hex). */
   icon_background_color?: string;
-  /** Entity voor energiehistorie (dagelijkse deltas / weekgrafiek). */
+  /** Entity voor energiehistorie (dagelijkse deltas / grafiek). */
   entity_id: string;
   /** Optioneel: sensor voor de hoofstwaarde "vandaag". */
   today_entity_id?: string;

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.29
+
+- Nuts card: choose weekly or monthly overview (chart + period trend); default remains weekly
+- Nuts card: week/month switch on the live card (persists); edit dialog control kept in sync
+
 ## 0.4.28
 
 - Smart stack: nested media card now fills the stack frame size (width + height)

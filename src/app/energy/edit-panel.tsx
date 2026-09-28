@@ -21,6 +21,7 @@ import {
   clampNutsCardHeight,
   clampNutsCardWidth,
   normalizeNutsAccent,
+  normalizeNutsPeriod,
 } from "@/lib/nuts-card";
 import ReactGridLayout from "react-grid-layout";
 import type { UseMutationResult } from "@tanstack/react-query";
@@ -48,6 +49,7 @@ type EditForm = {
   current_entity_id?: string;
   today_entity_id?: string;
   accent?: "consumption" | "production";
+  period?: "week" | "month";
   max_value?: number;
   minimal?: boolean;
   scale?: number;
@@ -141,7 +143,7 @@ export function EditPanelModal(props: EditPanelModalProps) {
     }
     if (editingWidget.type === "stat_pill_card") Object.assign(base, { entity_id: editForm.entity_id, label: editForm.label || undefined, icon: editForm.icon || undefined, color: editForm.color || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "sensor_card") Object.assign(base, { entity_id: editForm.entity_id, icon: editForm.icon || undefined, show_icon: editForm.show_icon !== false, size: editForm.size || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
-    if (editingWidget.type === "nuts_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, icon: editForm.icon || undefined, icon_background_color: editForm.icon_background_color || undefined, today_entity_id: editForm.today_entity_id || undefined, current_entity_id: undefined, accent: normalizeNutsAccent(editForm.accent), width: editForm.width != null && editForm.width > 0 ? clampNutsCardWidth(editForm.width) : undefined, height: editForm.height != null && editForm.height > 0 ? clampNutsCardHeight(editForm.height) : undefined });
+    if (editingWidget.type === "nuts_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, icon: editForm.icon || undefined, icon_background_color: editForm.icon_background_color || undefined, today_entity_id: editForm.today_entity_id || undefined, current_entity_id: undefined, accent: normalizeNutsAccent(editForm.accent), period: normalizeNutsPeriod(editForm.period), width: editForm.width != null && editForm.width > 0 ? clampNutsCardWidth(editForm.width) : undefined, height: editForm.height != null && editForm.height > 0 ? clampNutsCardHeight(editForm.height) : undefined });
     return base;
   };
 
@@ -451,6 +453,18 @@ export function EditPanelModal(props: EditPanelModalProps) {
                       ))}
                     </div>
                     <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.nutsAccentHint")}</p>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.nutsPeriod")}</label>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5">
+                      {([
+                        { id: "week" as const, label: t("editPanel.nutsPeriodWeek") },
+                        { id: "month" as const, label: t("editPanel.nutsPeriodMonth") },
+                      ]).map((opt) => (
+                        <button key={opt.id} type="button" onClick={() => setEditForm((prev) => ({ ...prev, period: opt.id }))} className={cn("flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors", normalizeNutsPeriod(editForm.period) === opt.id ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm" : "text-gray-600 dark:text-gray-400")}>{opt.label}</button>
+                      ))}
+                    </div>
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.nutsPeriodHint")}</p>
                   </div>
                   <div><label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.icon")}</label><div className="flex flex-wrap gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-1.5 max-h-32 overflow-auto">{(["Zap", "Leaf", "Sun", "Fuel", "Droplets", "Gauge"].filter((n) => CARD_ICON_OPTIONS.includes(n)) as string[]).map((name) => <button key={name} type="button" onClick={() => setEditForm((prev) => ({ ...prev, icon: name }))} className={cn("rounded-md px-2 py-1 text-xs", (editForm.icon ?? ((editForm.accent ?? "consumption") === "production" ? "Leaf" : "Zap")) === name ? "bg-[#4700B5] text-white" : "bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20")}>{name}</button>)}</div></div>
                   <div><label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.iconColor")}</label><div className="flex items-center gap-2"><input type="color" value={editForm.icon_background_color && /^#[0-9A-Fa-f]{6}$/.test(editForm.icon_background_color) ? editForm.icon_background_color : ((editForm.accent ?? "consumption") === "production" ? "#3DDC97" : "#F5C518")} onChange={(e) => setEditForm((prev) => ({ ...prev, icon_background_color: e.target.value }))} className="h-8 w-12 cursor-pointer rounded border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5" /><input type="text" value={editForm.icon_background_color ?? ""} onChange={(e) => setEditForm((prev) => ({ ...prev, icon_background_color: e.target.value || undefined }))} placeholder="#F5C518" className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200" /></div></div>

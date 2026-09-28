@@ -10,7 +10,9 @@ import {
   clampNutsCardHeight,
   clampNutsCardWidth,
   normalizeNutsAccent,
+  normalizeNutsPeriod,
   type NutsCardAccent,
+  type NutsCardPeriod,
 } from "@/lib/nuts-card";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingNutsCardPosition.";
@@ -66,6 +68,7 @@ export function FloatingNutsCard({
   onRemove,
   onEdit,
   onEnterEditMode,
+  onPeriodChange,
 }: {
   widget: {
     id: string;
@@ -76,6 +79,7 @@ export function FloatingNutsCard({
     icon?: string;
     icon_background_color?: string;
     accent?: NutsCardAccent | string;
+    period?: NutsCardPeriod | string;
     width?: number;
     height?: number;
   };
@@ -86,6 +90,8 @@ export function FloatingNutsCard({
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
+  /** Persist week/month from the on-card switch (view mode). */
+  onPeriodChange?: (period: NutsCardPeriod) => void;
 }) {
   void onRemove;
   const totalWidth = clampNutsCardWidth(widget.width ?? NUTS_CARD_DEFAULT_WIDTH);
@@ -233,9 +239,12 @@ export function FloatingNutsCard({
           icon={widget.icon}
           icon_background_color={widget.icon_background_color}
           accent={normalizeNutsAccent(widget.accent)}
+          period={normalizeNutsPeriod(widget.period)}
           width={totalWidth}
           height={totalHeight}
           onMoreClick={editMode ? onEdit : undefined}
+          onPeriodChange={onPeriodChange}
+          periodInteractive={!editMode}
         />
       </div>
     </div>

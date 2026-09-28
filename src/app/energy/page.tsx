@@ -34,6 +34,7 @@ import {
   clampNutsCardHeight,
   clampNutsCardWidth,
   normalizeNutsAccent,
+  normalizeNutsPeriod,
 } from "@/lib/nuts-card";
 import type { SensorCondition, ImageCondition } from "@/components/widgets";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -125,6 +126,7 @@ function WidgetByType({
   current_entity_id,
   today_entity_id,
   accent,
+  period,
   icon_background_color,
   max_value,
   minimal,
@@ -152,6 +154,7 @@ function WidgetByType({
   current_entity_id?: string;
   today_entity_id?: string;
   accent?: "consumption" | "production";
+  period?: "week" | "month";
   icon_background_color?: string;
   max_value?: number;
   minimal?: boolean;
@@ -247,6 +250,7 @@ function WidgetByType({
           icon={icon}
           icon_background_color={icon_background_color}
           accent={normalizeNutsAccent(accent)}
+          period={normalizeNutsPeriod(period)}
         />
       );
     default:
@@ -302,6 +306,7 @@ export default function EnergyPage() {
     current_entity_id?: string;
     today_entity_id?: string;
     accent?: "consumption" | "production";
+    period?: "week" | "month";
     max_value?: number;
     minimal?: boolean;
     scale?: number;
@@ -456,6 +461,7 @@ export default function EnergyPage() {
         width: NUTS_CARD_DEFAULT_WIDTH,
         height: NUTS_CARD_DEFAULT_HEIGHT,
         accent: "consumption" as const,
+        period: "week" as const,
         icon: "Zap",
       }),
     };
@@ -500,6 +506,15 @@ export default function EnergyPage() {
     setEditingWidgetId(null);
   }
 
+  function handleNutsPeriodChange(widgetId: string, period: "week" | "month") {
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, period } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, period }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
   useEffect(() => {
     if (!editingWidget) return;
     const isCategoryCard = editingWidget.type === "text_card";
@@ -529,6 +544,7 @@ export default function EnergyPage() {
       current_entity_id: editingWidget.current_entity_id ?? "",
       today_entity_id: editingWidget.today_entity_id ?? "",
       accent: normalizeNutsAccent(editingWidget.accent),
+      period: normalizeNutsPeriod(editingWidget.period),
       max_value: editingWidget.max_value ?? undefined,
       minimal: editingWidget.minimal ?? false,
       scale: editingWidget.scale ?? 1,
@@ -753,6 +769,7 @@ export default function EnergyPage() {
                         current_entity_id={w.current_entity_id}
                         today_entity_id={w.today_entity_id}
                         accent={w.accent}
+                        period={w.period}
                         icon_background_color={w.icon_background_color}
                         max_value={w.max_value}
                         minimal={w.minimal}
@@ -914,6 +931,7 @@ export default function EnergyPage() {
               icon: w.icon,
               icon_background_color: w.icon_background_color,
               accent: w.accent,
+              period: w.period,
               width: w.width ?? NUTS_CARD_DEFAULT_WIDTH,
               height: w.height ?? NUTS_CARD_DEFAULT_HEIGHT,
             }}
@@ -923,6 +941,7 @@ export default function EnergyPage() {
             onEnterEditMode={() => setEditMode(true)}
             onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
             onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            onPeriodChange={(period) => handleNutsPeriodChange(w.id, period)}
           />
         ))}
 
