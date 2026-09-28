@@ -319,7 +319,7 @@ export function FloatingNutsCard({
       draggable={false}
       onDragStart={(event) => event.preventDefault()}
       className={cn(
-        "card-plot-in fixed z-30 [-webkit-user-drag:none]",
+        "card-plot-in fixed z-30 outline-none [-webkit-user-drag:none]",
         editMode && !isResizing && "cursor-grab touch-none select-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}
