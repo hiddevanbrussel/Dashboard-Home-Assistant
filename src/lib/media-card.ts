@@ -27,7 +27,7 @@ export function resolveMediaCardPlayerName(input: {
     GENERIC_MEDIA_CARD_TITLES.has(custom.toLowerCase()) ||
     custom.toLowerCase() === fallback.toLowerCase();
   if (!isGeneric) return custom;
-  return friendly || custom || entityId || fallback;
+  return friendly || entityId || fallback;
 }
 
 export function clampMediaCardWidth(n: unknown): number {

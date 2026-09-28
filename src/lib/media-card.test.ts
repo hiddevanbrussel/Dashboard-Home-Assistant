@@ -48,6 +48,14 @@ describe("resolveMediaCardPlayerName", () => {
         fallback: "Media",
       })
     ).toBe("media_player.office");
+    expect(
+      resolveMediaCardPlayerName({
+        title: "Media",
+        friendlyName: "",
+        entityId: "media_player.office",
+        fallback: "Media",
+      })
+    ).toBe("media_player.office");
   });
 });
 
