@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.33
+## 0.4.34
 
 - Nuts card: remove week/month switch from the live card; period stays editable in properties only
 
