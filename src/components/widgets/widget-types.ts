@@ -224,6 +224,25 @@ export type SmartStackProps = {
   height?: number;
 };
 
+/**
+ * Energy metric: loose floating title + value/unit (Opwek / Net / Kosten style).
+ * No card chrome — sits on the energy illustration background.
+ */
+export type EnergyMetricProps = Omit<WidgetBaseProps, "entity_id"> & {
+  /** Optional HA sensor; when empty, `manual_value` is shown. */
+  entity_id?: string;
+  /** Unit override (e.g. kWh, €). Falls back to entity unit_of_measurement. */
+  unit?: string;
+  /** Static value when no entity is linked (or as fallback). */
+  manual_value?: string;
+  /** Optional trailing text on the value line (e.g. "82%"). */
+  secondary?: string;
+  /** Text color (default white). */
+  color?: string;
+  /** Force unit before the number (auto for €/$/£). */
+  unit_as_prefix?: boolean;
+};
+
 /** Nuts/utility card: weekly/monthly bar chart with today value and period trend. */
 export type NutsCardProps = WidgetBaseProps & {
   /** Accent style: consumption (orange) or production (green). */

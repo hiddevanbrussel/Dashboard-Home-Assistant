@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.40
+
+- Energy dashboard: new **Metric / Waarde** floating text (`energy_metric`) — small title above, large value + unit below (Opwek / Net / Kosten style); freely placeable on the energy board with optional HA sensor or manual value
+- Energy dashboard: full-page floating board so cards can be dragged across the viewport (from #188)
+
 ## 0.4.39
 
 - Energy dashboard: always force bundled vector light/dark illustrations (ignore patio / custom / global wallpaper URLs); clear stored energy backgrounds on API load; soften bottom fade; stronger cache-bust
