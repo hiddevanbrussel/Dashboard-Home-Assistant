@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   ENERGY_OVERVIEW_HOUSE_IMAGE,
+  ENERGY_PAGE_BG_DARK,
+  ENERGY_PAGE_BG_LIGHT,
+  resolveEnergyPageBackground,
   displayUnitForEnergy,
   displayUnitForPower,
   energyAlerts,
@@ -36,6 +39,39 @@ import {
 describe("energy overview house", () => {
   it("uses the bundled house cutout by default", () => {
     expect(ENERGY_OVERVIEW_HOUSE_IMAGE).toBe("/energy-overview-house.webp");
+  });
+});
+
+describe("energy page backgrounds", () => {
+  it("uses bundled light and dark page-wide art by default", () => {
+    expect(ENERGY_PAGE_BG_LIGHT).toBe("/energy/energy-bg-light.png");
+    expect(ENERGY_PAGE_BG_DARK).toBe("/energy/energy-bg-dark.png");
+    expect(resolveEnergyPageBackground("light")).toBe(ENERGY_PAGE_BG_LIGHT);
+    expect(resolveEnergyPageBackground("dark")).toBe(ENERGY_PAGE_BG_DARK);
+  });
+
+  it("prefers stored light/dark URLs when set", () => {
+    expect(
+      resolveEnergyPageBackground("light", {
+        backgroundLight: "/uploads/custom-light.png",
+        backgroundDark: "/uploads/custom-dark.png",
+      })
+    ).toBe("/uploads/custom-light.png");
+    expect(
+      resolveEnergyPageBackground("dark", {
+        backgroundLight: "/uploads/custom-light.png",
+        backgroundDark: "/uploads/custom-dark.png",
+      })
+    ).toBe("/uploads/custom-dark.png");
+  });
+
+  it("falls back to legacy background when theme-specific is missing", () => {
+    expect(resolveEnergyPageBackground("light", { background: "/uploads/legacy.png" })).toBe(
+      "/uploads/legacy.png"
+    );
+    expect(resolveEnergyPageBackground("dark", { background: "/uploads/legacy.png" })).toBe(
+      "/uploads/legacy.png"
+    );
   });
 });
 

@@ -1,4 +1,22 @@
+/** Legacy cutout used when an energy_monitor_card supplies a custom inset house image. */
 export const ENERGY_OVERVIEW_HOUSE_IMAGE = "/energy-overview-house.webp";
+
+/** Page-wide Energy dashboard backgrounds (light / dark). */
+export const ENERGY_PAGE_BG_LIGHT = "/energy/energy-bg-light.png";
+export const ENERGY_PAGE_BG_DARK = "/energy/energy-bg-dark.png";
+
+export function resolveEnergyPageBackground(
+  resolvedTheme: "light" | "dark",
+  options?: {
+    background?: string | null;
+    backgroundLight?: string | null;
+    backgroundDark?: string | null;
+  }
+): string {
+  const light = options?.backgroundLight?.trim() || options?.background?.trim() || ENERGY_PAGE_BG_LIGHT;
+  const dark = options?.backgroundDark?.trim() || options?.background?.trim() || ENERGY_PAGE_BG_DARK;
+  return resolvedTheme === "dark" ? dark : light;
+}
 
 export type EnergyEntityKey =
   | "solarYieldTodayEntityId"

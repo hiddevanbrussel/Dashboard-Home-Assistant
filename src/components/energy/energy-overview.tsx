@@ -2,12 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Battery, Home, PlugZap, Sun, type LucideIcon } from "lucide-react";
+import { Sun } from "lucide-react";
 import { EnergyEntityBindModal, type EnergyBindEntity } from "@/components/energy/energy-entity-bind-modal";
 import { useTranslation } from "@/hooks/use-translation";
 import {
-  ALL_HOUSE_CALLOUTS,
-  ENERGY_OVERVIEW_HOUSE_IMAGE,
   bestSolarWindow,
   clampPercent,
   displayUnitForEnergy,
@@ -16,52 +14,18 @@ import {
   hasEnergyReading,
   hasLinkedEnergyEntities,
   heatmapTones,
-  houseCalloutEntityKey,
   parseHaNumber,
   shouldShowBatteryCard,
   shouldShowHeatmap,
   toKilowatts,
   toKwh,
-  visibleHouseCallouts,
   type EnergyEntityKey,
   type HeatmapTone,
-  type HouseCalloutId,
   type HourlyPoint,
 } from "@/lib/energy-dashboard";
-import { withBasePath } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-
-const HOUSE_CALLOUT_META: Record<
-  HouseCalloutId,
-  { icon: LucideIcon; labelKey: string; box: string; line: { x1: string; y1: string; x2: string; y2: string } }
-> = {
-  solar: {
-    icon: Sun,
-    labelKey: "energy.overview.houseSolar",
-    box: "left-0 top-[6%]",
-    line: { x1: "18%", y1: "14%", x2: "48%", y2: "20%" },
-  },
-  home: {
-    icon: Home,
-    labelKey: "energy.overview.houseHome",
-    box: "right-0 top-[20%]",
-    line: { x1: "82%", y1: "28%", x2: "72%", y2: "38%" },
-  },
-  battery: {
-    icon: Battery,
-    labelKey: "energy.overview.houseBattery",
-    box: "left-0 bottom-[28%]",
-    line: { x1: "20%", y1: "70%", x2: "34%", y2: "76%" },
-  },
-  grid: {
-    icon: PlugZap,
-    labelKey: "energy.overview.houseGrid",
-    box: "right-0 bottom-[6%]",
-    line: { x1: "82%", y1: "84%", x2: "74%", y2: "78%" },
-  },
-};
 
 function Stat({
   label,
@@ -114,107 +78,6 @@ function Stat({
     );
   }
   return <div className="min-w-0">{body}</div>;
-}
-
-function HouseCallout({
-  id,
-  label,
-  value,
-  editMode,
-  linked,
-  onBind,
-}: {
-  id: HouseCalloutId;
-  label: string;
-  value: string;
-  editMode?: boolean;
-  linked?: boolean;
-  onBind?: () => void;
-}) {
-  const meta = HOUSE_CALLOUT_META[id];
-  const Icon = meta.icon;
-  const pill = (
-    <div
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full bg-white/55 px-2.5 py-1.5 shadow-sm ring-1 backdrop-blur-md dark:bg-black/40",
-        editMode && !linked ? "ring-dashed ring-brand/50" : "ring-black/5 dark:ring-white/10",
-        editMode && "hover:ring-brand"
-      )}
-    >
-      <Icon className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
-      <div className="min-w-0">
-        <p className="text-[10px] font-medium leading-none text-gray-500 dark:text-white/50">{label}</p>
-        <p className="mt-0.5 text-sm font-semibold tabular-nums text-gray-900 dark:text-white">{value}</p>
-      </div>
-    </div>
-  );
-  return (
-    <div className={cn("absolute z-10 max-w-[10rem]", editMode ? "pointer-events-auto" : "pointer-events-none", meta.box)}>
-      {editMode && onBind ? (
-        <button type="button" onClick={onBind} className="text-left">
-          {pill}
-        </button>
-      ) : (
-        pill
-      )}
-    </div>
-  );
-}
-
-function HouseScene({
-  image,
-  callouts,
-}: {
-  image?: string | null;
-  callouts: Array<{
-    id: HouseCalloutId;
-    label: string;
-    value: string;
-    editMode?: boolean;
-    linked?: boolean;
-    onBind?: () => void;
-  }>;
-}) {
-  const custom = Boolean(image?.trim());
-  const src = withBasePath(image?.trim() || ENERGY_OVERVIEW_HOUSE_IMAGE);
-  return (
-    <div className="relative px-1 sm:px-8">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt=""
-        className={cn(
-          "relative z-0 mx-auto h-auto w-full",
-          custom ? "min-h-[28rem] object-cover object-top" : "max-h-[42rem] object-contain object-center"
-        )}
-      />
-      {custom ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent dark:from-black" />
-      ) : null}
-      {callouts.length > 0 ? (
-        <svg className="pointer-events-none absolute inset-0 z-[1] h-full w-full" aria-hidden>
-          {callouts.map((callout) => {
-            const line = HOUSE_CALLOUT_META[callout.id].line;
-            return (
-              <line
-                key={callout.id}
-                x1={line.x1}
-                y1={line.y1}
-                x2={line.x2}
-                y2={line.y2}
-                className="stroke-brand/45 dark:stroke-white/35"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            );
-          })}
-        </svg>
-      ) : null}
-      {callouts.map((callout) => (
-        <HouseCallout key={callout.id} {...callout} />
-      ))}
-    </div>
-  );
 }
 
 function BatteryRow({
@@ -286,12 +149,12 @@ function useEntityReading(entityId: string) {
 export function EnergyOverview({
   title,
   subtitle,
-  houseImage,
   editMode = false,
   haEntities = [],
 }: {
   title?: string | null;
   subtitle?: string | null;
+  /** @deprecated Page-wide light/dark art replaced the inset house image. */
   houseImage?: string | null;
   editMode?: boolean;
   haEntities?: EnergyBindEntity[];
@@ -344,75 +207,6 @@ export function EnergyOverview({
   const heatmapRows = Math.max(1, Math.ceil(heatmap.length / 12));
   const resolvedSubtitle = subtitle?.trim()
     || (editMode ? t("energy.overview.bindHint") : linked ? t("energy.overview.liveSubtitle") : t("energy.overview.subtitle"));
-  const calloutIds = editMode
-    ? ALL_HOUSE_CALLOUTS
-    : visibleHouseCallouts({
-        solar: yieldKwh,
-        homeKw,
-        gridValue: exportValue,
-        batterySoc: batterySoc.value,
-        batteryKw,
-      });
-  const houseCallouts = calloutIds.map((id) => {
-    const entityKey = houseCalloutEntityKey(id);
-    const slotLinked = id === "battery"
-      ? Boolean(entities.batterySocEntityId || entities.batteryPowerEntityId)
-      : Boolean(entities[entityKey]);
-    if (id === "solar") {
-      return {
-        id,
-        label: t("energy.overview.houseSolar"),
-        value: hasEnergyReading(yieldKwh)
-          ? `${formatEnergyValue(yieldKwh)} kWh`
-          : editMode
-            ? t("energy.overview.tapToLink")
-            : `${formatEnergyValue(yieldKwh)} kWh`,
-        editMode,
-        linked: slotLinked,
-        onBind: editMode ? () => setBindKey("solarYieldTodayEntityId") : undefined,
-      };
-    }
-    if (id === "home") {
-      return {
-        id,
-        label: t("energy.overview.houseHome"),
-        value: hasEnergyReading(homeKw)
-          ? `${formatEnergyValue(homeKw)} kW`
-          : editMode
-            ? t("energy.overview.tapToLink")
-            : `${formatEnergyValue(homeKw)} kW`,
-        editMode,
-        linked: slotLinked,
-        onBind: editMode ? () => setBindKey("consumptionEntityId") : undefined,
-      };
-    }
-    if (id === "grid") {
-      return {
-        id,
-        label: t("energy.overview.houseGrid"),
-        value: hasEnergyReading(exportValue)
-          ? `${formatEnergyValue(exportValue)} ${exportUnit}`
-          : editMode
-            ? t("energy.overview.tapToLink")
-            : `${formatEnergyValue(exportValue)} ${exportUnit}`,
-        editMode,
-        linked: slotLinked,
-        onBind: editMode ? () => setBindKey("gridExportEntityId") : undefined,
-      };
-    }
-    const soc = hasEnergyReading(batterySoc.value) ? `${formatEnergyValue(batterySoc.value, 0)}%` : "";
-    const flow = hasEnergyReading(batteryKw)
-      ? `${batteryKw >= 0 ? "+" : "−"}${formatEnergyValue(Math.abs(batteryKw))} kW`
-      : "";
-    return {
-      id,
-      label: t("energy.overview.houseBattery"),
-      value: [soc, flow].filter(Boolean).join(" · ") || (editMode ? t("energy.overview.tapToLink") : "—"),
-      editMode,
-      linked: slotLinked,
-      onBind: editMode ? () => setBindKey("batterySocEntityId") : undefined,
-    };
-  });
 
   const generationId = entities.solarPowerEntityId || entities.solarYieldTodayEntityId;
   const generationIsPower = Boolean(entities.solarPowerEntityId);
@@ -428,84 +222,80 @@ export function EnergyOverview({
   const showSmartMoment = Boolean(generationId);
 
   return (
-    <div className="mx-auto w-full max-w-[88rem] pb-8">
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(26rem,1.3fr)]">
-        <div className="card-plot-in">
-          {title?.trim() ? (
-            <h1 className="max-w-xl text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-white">
-              {title}
-            </h1>
-          ) : (
-            <h1 className="max-w-xl text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-white">
-              <span className="block">{t("energy.overview.titleLine1")}</span>
-              <span className="block">{t("energy.overview.titleLine2")}</span>
-            </h1>
-          )}
-          <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-white/40">
-            {resolvedSubtitle}
-          </p>
+    <div className="relative z-[1] mx-auto w-full max-w-[88rem] pb-8">
+      <div className="card-plot-in max-w-3xl">
+        {title?.trim() ? (
+          <h1 className="max-w-xl text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-white">
+            {title}
+          </h1>
+        ) : (
+          <h1 className="max-w-xl text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-gray-900 dark:text-white">
+            <span className="block">{t("energy.overview.titleLine1")}</span>
+            <span className="block">{t("energy.overview.titleLine2")}</span>
+          </h1>
+        )}
+        <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-white/40">
+          {resolvedSubtitle}
+        </p>
 
-          <div className="mt-8 grid grid-cols-3 gap-6 border-b border-gray-100 pb-6 dark:border-white/10">
-            <Stat
-              label={t("energy.overview.totalGenerated")}
-              value={formatEnergyValue(yieldKwh)}
-              unit="kWh"
-              hint={editMode && !entities.solarYieldTodayEntityId ? t("energy.overview.tapToLink") : undefined}
-              editMode={editMode}
-              linked={Boolean(entities.solarYieldTodayEntityId)}
-              onBind={() => setBindKey("solarYieldTodayEntityId")}
-            />
-            <Stat
-              label={t("energy.overview.gridUse")}
-              value={formatEnergyValue(homeKw)}
-              unit="kW"
-              hint={editMode && !entities.consumptionEntityId ? t("energy.overview.tapToLink") : undefined}
-              editMode={editMode}
-              linked={Boolean(entities.consumptionEntityId)}
-              onBind={() => setBindKey("consumptionEntityId")}
-            />
-            <Stat
-              label={t("energy.overview.gridExport")}
-              value={formatEnergyValue(exportValue)}
-              unit={exportUnit}
-              hint={editMode && !entities.gridExportEntityId ? t("energy.overview.tapToLink") : undefined}
-              editMode={editMode}
-              linked={Boolean(entities.gridExportEntityId)}
-              onBind={() => setBindKey("gridExportEntityId")}
-            />
-          </div>
-        </div>
-        <div className="card-plot-in">
-          <HouseScene image={houseImage} callouts={houseCallouts} />
-          {showSmartMoment ? (
-            <section className="mt-6 px-1 sm:px-8">
-              <div className="rounded-[1.75rem] bg-white/80 px-6 py-5 shadow-sm ring-1 ring-black/[0.06] dark:bg-white/10 dark:ring-white/10">
-                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-400 dark:text-white/45">
-                  <Sun className="h-3.5 w-3.5 text-brand" aria-hidden />
-                  {t("energy.overview.smartMoment")}
-                </p>
-                {solarWindow ? (
-                  <>
-                    <p className="mt-3 text-[2rem] font-semibold tracking-tight text-gray-900 dark:text-white">
-                      {formatHourRange(solarWindow.startHour, solarWindow.endHour)}
-                    </p>
-                    <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-white/55">
-                      {t("energy.overview.smartMomentHint")}
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-3 text-sm leading-relaxed text-gray-400 dark:text-white/40">
-                    {t("energy.overview.smartMomentEmpty")}
-                  </p>
-                )}
-              </div>
-            </section>
-          ) : null}
+        <div className="mt-8 grid grid-cols-3 gap-6 border-b border-black/5 pb-6 dark:border-white/10">
+          <Stat
+            label={t("energy.overview.totalGenerated")}
+            value={formatEnergyValue(yieldKwh)}
+            unit="kWh"
+            hint={editMode && !entities.solarYieldTodayEntityId ? t("energy.overview.tapToLink") : undefined}
+            editMode={editMode}
+            linked={Boolean(entities.solarYieldTodayEntityId)}
+            onBind={() => setBindKey("solarYieldTodayEntityId")}
+          />
+          <Stat
+            label={t("energy.overview.gridUse")}
+            value={formatEnergyValue(homeKw)}
+            unit="kW"
+            hint={editMode && !entities.consumptionEntityId ? t("energy.overview.tapToLink") : undefined}
+            editMode={editMode}
+            linked={Boolean(entities.consumptionEntityId)}
+            onBind={() => setBindKey("consumptionEntityId")}
+          />
+          <Stat
+            label={t("energy.overview.gridExport")}
+            value={formatEnergyValue(exportValue)}
+            unit={exportUnit}
+            hint={editMode && !entities.gridExportEntityId ? t("energy.overview.tapToLink") : undefined}
+            editMode={editMode}
+            linked={Boolean(entities.gridExportEntityId)}
+            onBind={() => setBindKey("gridExportEntityId")}
+          />
         </div>
       </div>
 
-      {showBattery ? (
+      {showSmartMoment ? (
         <section className="card-plot-in mt-6 max-w-md">
+          <div className="rounded-[1.75rem] bg-white/70 px-6 py-5 shadow-sm ring-1 ring-black/[0.06] backdrop-blur-md dark:bg-black/35 dark:ring-white/10">
+            <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-400 dark:text-white/45">
+              <Sun className="h-3.5 w-3.5 text-brand" aria-hidden />
+              {t("energy.overview.smartMoment")}
+            </p>
+            {solarWindow ? (
+              <>
+                <p className="mt-3 text-[2rem] font-semibold tracking-tight text-gray-900 dark:text-white">
+                  {formatHourRange(solarWindow.startHour, solarWindow.endHour)}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-white/55">
+                  {t("energy.overview.smartMomentHint")}
+                </p>
+              </>
+            ) : (
+              <p className="mt-3 text-sm leading-relaxed text-gray-400 dark:text-white/40">
+                {t("energy.overview.smartMomentEmpty")}
+              </p>
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      {showBattery ? (
+        <section className="card-plot-in mt-6 max-w-md rounded-[1.75rem] bg-white/70 px-5 py-4 shadow-sm ring-1 ring-black/[0.06] backdrop-blur-md dark:bg-black/35 dark:ring-white/10">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.battery")}</h2>
             {hasEnergyReading(batterySoc.value) ? (
@@ -572,7 +362,7 @@ export function EnergyOverview({
       ) : null}
 
       {showHeatmap ? (
-        <section className="card-plot-in mt-8 border-t border-gray-100 pt-6 dark:border-white/10">
+        <section className="card-plot-in mt-8 max-w-3xl rounded-[1.75rem] border border-black/5 bg-white/70 px-5 py-5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/35">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-800 dark:text-white">{t("energy.overview.heatmap")}</h2>
             <span className="text-[11px] text-gray-400">
