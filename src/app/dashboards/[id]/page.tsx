@@ -1502,6 +1502,17 @@ export default function DashboardEditPage() {
     saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
+  function handleNutsCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampNutsCardWidth(size.width);
+    const height = clampNutsCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
   function handleRoomCardResize(widgetId: string, size: { width: number; height: number }) {
     const width = clampRoomCardWidth(size.width);
     const height = clampRoomCardHeight(size.height);
@@ -2511,6 +2522,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+              onResize={editMode ? (size) => handleNutsCardResize(w.id, size) : undefined}
             />
           ))}
 

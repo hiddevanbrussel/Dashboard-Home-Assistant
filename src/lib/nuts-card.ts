@@ -107,6 +107,32 @@ export function clampNutsCardHeight(h: unknown): number {
   return Math.min(NUTS_CARD_MAX_HEIGHT, Math.max(NUTS_CARD_MIN_HEIGHT, Math.round(n)));
 }
 
+/** Bottom-right resize: grow width rightward, height upward (bottom stays put when possible). */
+export function resizeNutsCardFromBottomRight(input: {
+  startWidth: number;
+  startHeight: number;
+  startLeft: number;
+  startBottom: number;
+  dx: number;
+  dy: number;
+  viewportWidth: number;
+  viewportHeight: number;
+}): { width: number; height: number; left: number; bottom: number } {
+  const top = input.viewportHeight - input.startBottom - input.startHeight;
+  const maxWidth = Math.max(
+    NUTS_CARD_MIN_WIDTH,
+    Math.min(NUTS_CARD_MAX_WIDTH, Math.floor(input.viewportWidth - input.startLeft))
+  );
+  const maxHeight = Math.max(
+    NUTS_CARD_MIN_HEIGHT,
+    Math.min(NUTS_CARD_MAX_HEIGHT, Math.floor(input.viewportHeight - Math.max(0, top)))
+  );
+  const width = Math.min(maxWidth, clampNutsCardWidth(input.startWidth + input.dx));
+  const height = Math.min(maxHeight, clampNutsCardHeight(input.startHeight + input.dy));
+  const bottom = Math.max(0, input.viewportHeight - Math.max(0, top) - height);
+  return { width, height, left: input.startLeft, bottom };
+}
+
 /** Monday-start ISO date string for the week containing `ref`. */
 export function startOfWeekMonday(ref: Date = new Date()): Date {
   const d = new Date(ref);
