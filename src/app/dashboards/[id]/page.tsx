@@ -136,6 +136,7 @@ import {
   clampSmartStackHeight,
   clampSmartStackIntervalSec,
   clampSmartStackWidth,
+  isSmartStackAutoplayEnabled,
   isSmartStackChildType,
 } from "@/lib/smart-stack";
 import {
@@ -863,6 +864,7 @@ export default function DashboardEditPage() {
     show_chore_points?: boolean;
     page?: number;
     interval_seconds?: number;
+    autoplay?: boolean;
   }>({
     title: "",
     entity_id: "",
@@ -908,6 +910,7 @@ export default function DashboardEditPage() {
     show_chore_points: true,
     page: 0,
     interval_seconds: SMART_STACK_DEFAULT_INTERVAL_SEC,
+    autoplay: true,
   });
   const [iconSearch, setIconSearch] = useState("");
   const [vacuumIconSearch, setVacuumIconSearch] = useState("");
@@ -1094,6 +1097,7 @@ export default function DashboardEditPage() {
         interval_seconds: clampSmartStackIntervalSec(
           editingWidget.interval_seconds ?? SMART_STACK_DEFAULT_INTERVAL_SEC
         ),
+        autoplay: isSmartStackAutoplayEnabled(editingWidget.autoplay),
       });
       setIconSearch("");
       setVacuumIconSearch(editingWidget.type === "vacuum_card" ? (editingWidget.icon ?? "") : "");
@@ -1299,6 +1303,7 @@ export default function DashboardEditPage() {
       ...(type === "smart_stack" && {
         children: [] as WidgetConfig[],
         interval_seconds: SMART_STACK_DEFAULT_INTERVAL_SEC,
+        autoplay: true,
         width: SMART_STACK_DEFAULT_WIDTH,
         height: SMART_STACK_DEFAULT_HEIGHT,
       }),
@@ -2911,6 +2916,33 @@ export default function DashboardEditPage() {
                             />
                           </div>
                           <div>
+                            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.smartStackAutoplay")}</label>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={editForm.autoplay !== false}
+                              onClick={() =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  autoplay: prev.autoplay === false,
+                                }))
+                              }
+                              className={cn(
+                                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4700B5]",
+                                editForm.autoplay !== false ? "bg-[#4700B5] border-transparent" : "bg-gray-200 dark:bg-gray-600 border-transparent"
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition",
+                                  editForm.autoplay !== false ? "translate-x-5" : "translate-x-1"
+                                )}
+                              />
+                            </button>
+                            <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.smartStackAutoplayHint")}</p>
+                          </div>
+                          {editForm.autoplay !== false && (
+                          <div>
                             <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.smartStackInterval")}</label>
                             <input
                               type="number"
@@ -2929,6 +2961,7 @@ export default function DashboardEditPage() {
                             />
                             <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.smartStackIntervalHint")}</p>
                           </div>
+                          )}
                         </div>
                       )}
                       {editTab === "kaarten" && (
@@ -6036,6 +6069,7 @@ aria-label={t("editPanel.removeCondition")}
                       title={editForm.title || t("cardType.smart_stack")}
                       slides={editingWidget.children ?? []}
                       interval_seconds={editForm.interval_seconds}
+                      autoplay={editForm.autoplay}
                       width={clampSmartStackWidth(editForm.width ?? SMART_STACK_DEFAULT_WIDTH)}
                       height={clampSmartStackHeight(editForm.height ?? SMART_STACK_DEFAULT_HEIGHT)}
                       paused
@@ -6368,6 +6402,7 @@ aria-label={t("editPanel.removeCondition")}
                           interval_seconds: clampSmartStackIntervalSec(
                             editForm.interval_seconds ?? SMART_STACK_DEFAULT_INTERVAL_SEC
                           ),
+                          autoplay: isSmartStackAutoplayEnabled(editForm.autoplay),
                           width:
                             editForm.width != null && editForm.width > 0
                               ? clampSmartStackWidth(editForm.width)

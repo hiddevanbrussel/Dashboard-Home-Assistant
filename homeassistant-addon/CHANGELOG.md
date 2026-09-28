@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.31
+
+- Energy dashboard: show light/dark hero illustrations with a soft gradient fade (not full-page wallpaper); fix near-opaque theme wash that hid the art
+- Smart stack: toggle automatic swipe on/off; when off, swipe the stack manually
+
 ## 0.4.30
 
 - Energy dashboard: page-wide light/dark background illustrations with a soft theme gradient; floating cards still placeable

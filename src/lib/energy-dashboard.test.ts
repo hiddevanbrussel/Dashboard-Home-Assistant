@@ -43,7 +43,7 @@ describe("energy overview house", () => {
 });
 
 describe("energy page backgrounds", () => {
-  it("uses bundled light and dark page-wide art by default", () => {
+  it("uses bundled light and dark hero art by default", () => {
     expect(ENERGY_PAGE_BG_LIGHT).toBe("/energy/energy-bg-light.png");
     expect(ENERGY_PAGE_BG_DARK).toBe("/energy/energy-bg-dark.png");
     expect(resolveEnergyPageBackground("light")).toBe(ENERGY_PAGE_BG_LIGHT);

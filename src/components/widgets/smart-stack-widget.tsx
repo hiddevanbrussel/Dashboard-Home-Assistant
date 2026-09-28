@@ -11,6 +11,7 @@ import {
   clampSmartStackHeight,
   clampSmartStackIntervalSec,
   clampSmartStackWidth,
+  isSmartStackAutoplayEnabled,
   normalizeSmartStackIndex,
 } from "@/lib/smart-stack";
 import { SmartStackChild } from "./smart-stack-child";
@@ -20,6 +21,7 @@ type SlidePhase = "idle" | "enter";
 export function SmartStackWidget({
   slides = [],
   interval_seconds,
+  autoplay,
   width,
   height,
   className,
@@ -30,6 +32,8 @@ export function SmartStackWidget({
   /** Nested cards shown in the slideshow (stored as widget.children). */
   slides?: WidgetConfig[];
   interval_seconds?: number;
+  /** When false, only manual swipe advances slides. Default true. */
+  autoplay?: boolean;
   width?: number;
   height?: number;
   className?: string;
@@ -48,6 +52,7 @@ export function SmartStackWidget({
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const indexRef = useRef(index);
   const intervalSec = clampSmartStackIntervalSec(interval_seconds ?? SMART_STACK_DEFAULT_INTERVAL_SEC);
+  const autoplayOn = isSmartStackAutoplayEnabled(autoplay);
   const cardW = clampSmartStackWidth(width);
   const cardH = clampSmartStackHeight(height);
   const isEmpty = count === 0;
@@ -109,13 +114,13 @@ export function SmartStackWidget({
   );
 
   useEffect(() => {
-    if (paused || count <= 1) return;
+    if (paused || !autoplayOn || count <= 1) return;
     const id = window.setInterval(() => {
       if (Date.now() < pausedUntil) return;
       go(indexRef.current + 1, 1);
     }, intervalSec * 1000);
     return () => window.clearInterval(id);
-  }, [paused, count, intervalSec, pausedUntil, go]);
+  }, [paused, autoplayOn, count, intervalSec, pausedUntil, go]);
 
   const active = count > 0 ? slides[normalizeSmartStackIndex(index, count)] : null;
   const outgoing =

@@ -72,6 +72,8 @@ export type WidgetConfig = {
   children?: WidgetConfig[];
   /** Smart stack: auto-advance interval in seconds. */
   interval_seconds?: number;
+  /** Smart stack: auto-rotate slides (default true); false = manual swipe only. */
+  autoplay?: boolean;
   /** Room card: entity_id voor lichtstatus (bijv. light.groep). */
   light_entity_id?: string;
   /** Room card: entity_id voor mediaplayer (bijv. media_player.woonkamer). */

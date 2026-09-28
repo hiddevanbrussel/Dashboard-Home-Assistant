@@ -3,8 +3,10 @@ import {
   clampSmartStackHeight,
   clampSmartStackIntervalSec,
   clampSmartStackWidth,
+  isSmartStackAutoplayEnabled,
   isSmartStackChildType,
   normalizeSmartStackIndex,
+  SMART_STACK_DEFAULT_AUTOPLAY,
   SMART_STACK_DEFAULT_INTERVAL_SEC,
   SMART_STACK_MIN_HEIGHT,
   SMART_STACK_MIN_WIDTH,
@@ -25,6 +27,15 @@ describe("smart-stack helpers", () => {
     expect(clampSmartStackIntervalSec(1)).toBe(3);
     expect(clampSmartStackIntervalSec(8)).toBe(8);
     expect(clampSmartStackIntervalSec(120)).toBe(60);
+  });
+
+  it("treats autoplay as on by default and off only when explicit", () => {
+    expect(SMART_STACK_DEFAULT_AUTOPLAY).toBe(true);
+    expect(isSmartStackAutoplayEnabled(undefined)).toBe(true);
+    expect(isSmartStackAutoplayEnabled(true)).toBe(true);
+    expect(isSmartStackAutoplayEnabled(false)).toBe(false);
+    expect(isSmartStackAutoplayEnabled(0)).toBe(false);
+    expect(isSmartStackAutoplayEnabled("false")).toBe(false);
   });
 
   it("normalizes slide index wrapping", () => {

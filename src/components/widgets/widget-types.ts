@@ -218,6 +218,8 @@ export type SmartStackProps = {
   children?: WidgetConfig[];
   /** Auto-advance interval in seconds. */
   interval_seconds?: number;
+  /** When false, only manual swipe; default true. */
+  autoplay?: boolean;
   width?: number;
   height?: number;
 };
