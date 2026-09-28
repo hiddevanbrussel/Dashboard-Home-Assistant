@@ -6031,7 +6031,7 @@ aria-label={t("editPanel.removeCondition")}
                           onClick={() => {
                             const updates = {
                               title: editForm.title,
-                              entity_id: editForm.entity_id || undefined,
+                              entity_id: editForm.entity_id ?? "",
                             };
                             const nextChildren = (editingWidget.children ?? []).map((c) =>
                               c.id === editingGroupChildId ? { ...c, ...updates } : c
