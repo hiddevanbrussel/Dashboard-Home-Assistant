@@ -195,7 +195,6 @@ export function NutsCardWidget({
           className={cn("flex shrink-0 items-center justify-center rounded-full", iconBox)}
           style={{
             backgroundColor: isDark ? "rgba(255,255,255,0.06)" : `${iconColor}18`,
-            boxShadow: isDark ? `0 0 20px ${preset.glow}` : `0 0 16px ${iconColor}33`,
             color: iconColor,
           }}
         >

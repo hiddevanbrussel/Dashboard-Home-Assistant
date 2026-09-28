@@ -62,7 +62,6 @@ export const NUTS_ACCENT_PRESETS: Record<
     iconColor: string;
     barFrom: string;
     barTo: string;
-    glow: string;
   }
 > = {
   consumption: {
@@ -70,14 +69,12 @@ export const NUTS_ACCENT_PRESETS: Record<
     iconColor: "#F5C518",
     barFrom: "#F5C518",
     barTo: "#E85D04",
-    glow: "rgba(245, 197, 24, 0.35)",
   },
   production: {
     icon: "Leaf",
     iconColor: "#3DDC97",
     barFrom: "#7CFFB2",
     barTo: "#0D9488",
-    glow: "rgba(61, 220, 151, 0.35)",
   },
 };
 
