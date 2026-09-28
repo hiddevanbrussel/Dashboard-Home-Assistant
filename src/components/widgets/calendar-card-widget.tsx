@@ -1,35 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MoreVertical } from "lucide-react";
+import { CalendarDays, MoreVertical } from "lucide-react";
 import type { CalendarEvent } from "@/app/api/ha/calendar/route";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatCalendarTitle, subjectCodesFor } from "@/lib/calendar-titles";
 import {
-  addDays,
-  currentOrNextActivity,
-  eventsFromNowOnDay,
-  eventsOnDay,
-  eventEnd,
+  calendarVisibleEventCount,
+  clampCalendarCardHeight,
+  clampCalendarCardWidth,
+} from "@/lib/calendar-card";
+import {
   eventStart,
+  eventsFromNowOnDay,
   formatTime,
-  highlightedEventIndex,
-  isSameDay,
   localeOf,
-  startOfWeek,
   toDateKey,
-  weekDayNames,
 } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
 import { hydrateCalendarStore, useCalendarStore } from "@/stores/calendar-store";
 
-const CAL_COLORS = [
-  "bg-brand",
+const CAL_DOT_COLORS = [
+  "bg-rose-500",
+  "bg-emerald-500",
   "bg-accent-orange",
-  "bg-accent-green",
-  "bg-accent-yellow",
+  "bg-brand",
   "bg-cyan-400",
   "bg-pink-400",
 ] as const;
@@ -48,20 +45,6 @@ function EventTitle({ summary, empty }: { summary: string; empty: string }) {
   return <>{formatted.title || empty || summary}</>;
 }
 
-function EventTitleDetail({ summary }: { summary: string }) {
-  const formatted = useFormattedEventTitle(summary);
-  if (!formatted.detail) return null;
-  return <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-gray-400">{formatted.detail}</p>;
-}
-
-function timeParts(date: Date, locale: string): { time: string; period?: string } {
-  const parts = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).formatToParts(date);
-  const hour = parts.find((p) => p.type === "hour")?.value ?? "00";
-  const minute = parts.find((p) => p.type === "minute")?.value ?? "00";
-  const period = parts.find((p) => p.type === "dayPeriod")?.value;
-  return { time: `${hour}:${minute}`, period };
-}
-
 async function fetchRangeEvents(entityIds: string[], start: Date, end: Date): Promise<CalendarEvent[]> {
   const res = await fetch(
     `/api/ha/calendar?entityIds=${encodeURIComponent(entityIds.join(","))}&start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`
@@ -69,6 +52,14 @@ async function fetchRangeEvents(entityIds: string[], start: Date, end: Date): Pr
   if (!res.ok) return [];
   const data = await res.json();
   return Array.isArray(data.events) ? (data.events as CalendarEvent[]) : [];
+}
+
+function formatWeekday(date: Date, locale: string): string {
+  return date.toLocaleDateString(locale, { weekday: "long" }).toUpperCase();
+}
+
+function formatMonth(date: Date, locale: string): string {
+  return date.toLocaleDateString(locale, { month: "long" }).toUpperCase();
 }
 
 export function CalendarCardWidget({
@@ -84,11 +75,8 @@ export function CalendarCardWidget({
   const { t, language } = useTranslation();
   const locale = localeOf(language);
   const calendarEntityIds = useCalendarStore((s) => s.calendarEntityIds);
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
+  const cardW = clampCalendarCardWidth(width);
+  const cardH = clampCalendarCardHeight(height);
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -96,25 +84,25 @@ export function CalendarCardWidget({
   }, []);
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1_000);
+    const id = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(id);
   }, []);
 
-  const weekStart = startOfWeek(selectedDate);
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const weekdayLabels = useMemo(() => weekDayNames(locale, "short"), [locale]);
   const today = useMemo(() => {
     const d = new Date(now);
     d.setHours(0, 0, 0, 0);
     return d;
   }, [now]);
 
-  const rangeStart = weekStart.getTime() <= startOfWeek(today).getTime() ? weekStart : startOfWeek(today);
-  const rangeEnd = addDays(weekStart.getTime() >= startOfWeek(today).getTime() ? weekStart : startOfWeek(today), 7);
+  const rangeEnd = useMemo(() => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + 1);
+    return d;
+  }, [today]);
 
   const { data: events = [], isLoading } = useQuery({
-    queryKey: ["dashboard-calendar", calendarEntityIds, toDateKey(rangeStart), toDateKey(rangeEnd)],
-    queryFn: () => fetchRangeEvents(calendarEntityIds, rangeStart, rangeEnd),
+    queryKey: ["dashboard-calendar-card", calendarEntityIds, toDateKey(today)],
+    queryFn: () => fetchRangeEvents(calendarEntityIds, today, rangeEnd),
     enabled: calendarEntityIds.length > 0,
     refetchInterval: 60_000,
   });
@@ -122,152 +110,62 @@ export function CalendarCardWidget({
   const colorMap = useMemo(() => {
     const map: Record<string, string> = {};
     calendarEntityIds.forEach((id, i) => {
-      map[id] = CAL_COLORS[i % CAL_COLORS.length];
+      map[id] = CAL_DOT_COLORS[i % CAL_DOT_COLORS.length];
     });
     return map;
   }, [calendarEntityIds]);
 
   const dayEvents = useMemo(
-    () => eventsFromNowOnDay(events, selectedDate, now),
-    [events, selectedDate, now]
-  );
-  const highlightIndex = useMemo(
-    () => highlightedEventIndex(dayEvents, selectedDate, now),
-    [dayEvents, selectedDate, now]
-  );
-  const nowActivity = useMemo(
-    () => currentOrNextActivity(events, today, now),
+    () => eventsFromNowOnDay(events, today, now),
     [events, today, now]
   );
-  const daysWithEvents = useMemo(() => {
-    const keys = new Set<string>();
-    for (const day of weekDays) {
-      if (eventsOnDay(events, day).length > 0) keys.add(toDateKey(day));
-    }
-    return keys;
-  }, [events, weekDays]);
 
-  const viewingToday = isSameDay(selectedDate, today);
-  const liveActivity =
-    nowActivity && (nowActivity.status === "current" || nowActivity.status === "next") ? nowActivity : null;
-  const highlightRef = useRef<HTMLLIElement | null>(null);
-
-  const shiftWeek = useCallback((delta: number) => {
-    setSelectedDate((prev) => addDays(prev, delta * 7));
-  }, []);
-
-  useEffect(() => {
-    const item = highlightRef.current;
-    if (!item || highlightIndex < 0) return;
-    const root = item.closest("[data-calendar-card-list]");
-    if (!(root instanceof HTMLElement)) return;
-    const itemTop = item.offsetTop;
-    const itemBottom = itemTop + item.offsetHeight;
-    if (itemTop < root.scrollTop) root.scrollTop = itemTop;
-    else if (itemBottom > root.scrollTop + root.clientHeight) {
-      root.scrollTop = itemBottom - root.clientHeight;
-    }
-  }, [highlightIndex, selectedDate]);
+  const visibleLimit = calendarVisibleEventCount(cardH);
+  const visibleEvents = dayEvents.slice(0, visibleLimit);
+  const overflowCount = Math.max(0, dayEvents.length - visibleEvents.length);
 
   return (
     <div
-      className="flex h-full min-h-0 w-full flex-col overflow-hidden"
-      style={{
-        ...(width != null && width > 0 ? { width } : {}),
-        ...(height != null && height > 0 ? { height } : {}),
-      }}
+      className="relative flex h-full min-h-0 w-full overflow-hidden"
+      style={{ width: cardW, height: cardH }}
     >
-      <div className={cn("flex items-center gap-1 px-3 pb-3", onMoreClick ? "pt-3" : "pt-5")}>
+      {onMoreClick ? (
         <button
           type="button"
-          disabled={Boolean(onMoreClick)}
-          onClick={() => shiftWeek(-1)}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200 disabled:pointer-events-none"
-          aria-label={t("calendar.prevWeek")}
+          data-no-drag
+          onClick={onMoreClick}
+          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
+          aria-label={t("editPanel.editTile")}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <MoreVertical className="h-4 w-4" />
         </button>
-        <div className="grid min-w-0 flex-1 grid-cols-7 gap-0.5" role="tablist" aria-label={t("calendar.week")}>
-          {weekDays.map((day, i) => {
-            const selected = isSameDay(day, selectedDate);
-            const isToday = isSameDay(day, today);
-            const hasEvents = daysWithEvents.has(toDateKey(day));
-            return (
-              <button
-                key={toDateKey(day)}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                disabled={Boolean(onMoreClick)}
-                onClick={() => setSelectedDate(day)}
-                className={cn(
-                  "flex flex-col items-center rounded-xl px-0.5 py-1.5 transition-colors",
-                  selected ? "text-gray-900 dark:text-white" : "text-gray-400 hover:bg-black/5 dark:text-gray-500 dark:hover:bg-white/10",
-                  isToday && !selected && "text-gray-700 dark:text-gray-200",
-                  onMoreClick && "pointer-events-none"
-                )}
-              >
-                <span className={cn("text-sm font-semibold tabular-nums leading-none", selected && "text-gray-900 dark:text-white")}>
-                  {day.getDate()}
-                </span>
-                <span className="mt-1 text-[10px] font-medium capitalize leading-none">
-                  {weekdayLabels[i]}
-                </span>
-                <span
-                  className={cn(
-                    "mt-1.5 h-1.5 w-1.5 rounded-full",
-                    selected ? "bg-accent-green" : hasEvents ? "bg-gray-300 dark:bg-white/25" : "bg-transparent"
-                  )}
-                />
-              </button>
-            );
-          })}
-        </div>
-        <button
-          type="button"
-          disabled={Boolean(onMoreClick)}
-          onClick={() => shiftWeek(1)}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200 disabled:pointer-events-none"
-          aria-label={t("calendar.nextWeek")}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-        {onMoreClick ? (
-          <button
-            type="button"
-            data-no-drag
-            onClick={onMoreClick}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
-            aria-label={t("editPanel.editTile")}
-          >
-            <MoreVertical className="h-4 w-4" />
-          </button>
-        ) : null}
+      ) : null}
+
+      <div className="flex w-[38%] max-w-[9.5rem] shrink-0 flex-col justify-center px-5 py-4 sm:px-6">
+        <p className="text-[2.75rem] font-bold leading-none tracking-tight text-gray-900 tabular-nums dark:text-white">
+          {today.getDate()}
+        </p>
+        <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-gray-400 dark:text-gray-500">
+          {formatWeekday(today, locale)}
+        </p>
+        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#E06B5C]">
+          {formatMonth(today, locale)}
+        </p>
       </div>
 
-      {!isSameDay(selectedDate, today) && (
-        <div className="px-5 pb-2">
-          <button
-            type="button"
-            disabled={Boolean(onMoreClick)}
-            onClick={() => setSelectedDate(today)}
-            className="rounded-full bg-black/[0.04] px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:bg-black/[0.07] dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/15 disabled:pointer-events-none"
-          >
-            {t("calendar.today")}
-          </button>
-        </div>
-      )}
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 scrollbar-hide" data-calendar-card-list>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-3 py-4 pr-5 sm:pr-6">
         {calendarEntityIds.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 px-2 py-10 text-center text-gray-400 dark:text-white/30">
-            <CalendarDays className="h-8 w-8 opacity-40" />
-            <p className="text-sm">{t("calendar.noCalendars")}</p>
+          <div className="flex flex-col gap-1.5 text-gray-400 dark:text-white/35">
+            <CalendarDays className="h-5 w-5 opacity-50" aria-hidden />
+            <p className="text-sm font-medium text-gray-600 dark:text-white/70">{t("calendar.noCalendars")}</p>
             <p className="text-xs">{t("calendar.noCalendarsHint")}</p>
             <Link
               href="/settings"
               draggable={false}
-              className={cn("mt-1 text-xs font-medium text-brand hover:underline", onMoreClick && "pointer-events-none")}
+              className={cn(
+                "mt-0.5 text-xs font-medium text-brand hover:underline",
+                onMoreClick && "pointer-events-none"
+              )}
               onPointerDown={(e) => e.stopPropagation()}
               onDragStart={(e) => e.preventDefault()}
             >
@@ -275,103 +173,43 @@ export function CalendarCardWidget({
             </Link>
           </div>
         ) : isLoading ? (
-          <div className="flex items-center justify-center py-10">
+          <div className="flex items-center py-2">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand border-t-transparent" />
           </div>
-        ) : dayEvents.length === 0 && !viewingToday ? (
-          <div className="flex flex-col items-center justify-center gap-2 px-2 py-10 text-center text-gray-400 dark:text-white/30">
-            <Clock className="h-8 w-8 opacity-40" />
-            <p className="text-sm">{t("calendar.noEvents")}</p>
-          </div>
-        ) : dayEvents.length === 0 ? null : (
-          <ol className="relative space-y-3 pt-1">
-            <span className="absolute bottom-2 left-[3.1rem] top-2 w-px bg-gray-200/80 dark:bg-white/10" aria-hidden />
-            {dayEvents.map((ev, i) => {
-              const colorBar = colorMap[ev.entityId] ?? CAL_COLORS[0];
-              const start = eventStart(ev);
-              const end = eventEnd(ev);
-              const highlighted = i === highlightIndex;
-              const parts = ev.allDay ? null : timeParts(start, locale);
-              return (
-                <li
-                  key={`${ev.entityId}-${ev.start}-${i}`}
-                  ref={highlighted ? highlightRef : undefined}
-                  className="relative flex gap-3"
-                >
-                  <div className="w-12 shrink-0 pt-2 text-right">
-                    {ev.allDay ? (
-                      <p className="text-[10px] font-medium leading-tight text-gray-400">{t("calendar.allDay")}</p>
-                    ) : (
-                      <>
-                        <p className="text-xs font-semibold tabular-nums leading-none text-gray-700 dark:text-gray-200">
-                          {parts?.time}
-                        </p>
-                        {parts?.period && (
-                          <p className="mt-0.5 text-[10px] capitalize leading-none text-gray-400">{parts.period}</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="relative min-w-0 flex-1">
-                    {highlighted && (
-                      <span className="absolute -left-[calc(0.75rem+5px)] top-5 z-10 h-2.5 w-2.5 rounded-full bg-brand" />
-                    )}
-                    <div
-                      className={cn(
-                        "overflow-hidden rounded-2xl border text-left shadow-sm",
-                        highlighted
-                          ? "border-brand/30 bg-[repeating-linear-gradient(-45deg,rgba(71,0,181,0.18),rgba(71,0,181,0.18)_10px,rgba(71,0,181,0.06)_10px,rgba(71,0,181,0.06)_20px)] dark:border-brand/40 dark:bg-[repeating-linear-gradient(-45deg,rgba(71,0,181,0.28),rgba(71,0,181,0.28)_10px,rgba(71,0,181,0.10)_10px,rgba(71,0,181,0.10)_20px)]"
-                          : "border-black/[0.06] bg-white/80 dark:border-white/10 dark:bg-white/[0.06]"
-                      )}
-                    >
-                      <span className={cn("block h-1 w-full", colorBar)} />
-                      <div className="px-3 py-2.5">
-                        <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                          <EventTitle summary={ev.summary} empty={t("calendar.emptyTitle")} />
-                        </p>
-                        <EventTitleDetail summary={ev.summary} />
-                        {!ev.allDay && (
-                          <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-gray-400">
-                            {formatTime(start, locale)} – {formatTime(end, locale)}
-                          </p>
-                        )}
-                        {ev.location && !/^https?:\/\//i.test(ev.location) && (
-                          <p className="mt-0.5 truncate text-[11px] text-gray-400">{ev.location}</p>
-                        )}
-                      </div>
+        ) : dayEvents.length === 0 ? (
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t("calendar.noEvents")}</p>
+        ) : (
+          <>
+            <ul className="flex min-h-0 flex-col gap-3">
+              {visibleEvents.map((ev, i) => {
+                  const start = eventStart(ev);
+                  const dot = colorMap[ev.entityId] ?? CAL_DOT_COLORS[0];
+                return (
+                  <li key={`${ev.entityId}-${ev.start}-${i}`} className="flex min-w-0 items-start gap-2.5">
+                    <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", dot)} aria-hidden />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold leading-snug text-gray-900 dark:text-white">
+                        <EventTitle summary={ev.summary} empty={t("calendar.emptyTitle")} />
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500">
+                        {ev.allDay ? t("calendar.allDay") : formatTime(start, locale)}
+                      </p>
                     </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+                  </li>
+                );
+              })}
+            </ul>
+            {overflowCount > 0 ? (
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-300 dark:text-gray-600">
+                {t(overflowCount === 1 ? "calendar.moreEvent" : "calendar.moreEvents").replace(
+                  "{n}",
+                  String(overflowCount)
+                )}
+              </p>
+            ) : null}
+          </>
         )}
       </div>
-
-      {viewingToday && !isLoading && (
-        <div className="shrink-0 border-t border-black/[0.06] px-5 py-4 dark:border-white/10">
-          {liveActivity ? (
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                {t(liveActivity.status === "current" ? "calendar.now" : "calendar.upNext")}
-              </p>
-              <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                <EventTitle summary={liveActivity.event.summary} empty={t("calendar.emptyTitle")} />
-              </p>
-              <EventTitleDetail summary={liveActivity.event.summary} />
-              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                {liveActivity.event.allDay
-                  ? t("calendar.allDay")
-                  : `${formatTime(eventStart(liveActivity.event), locale)} – ${formatTime(eventEnd(liveActivity.event), locale)}`}
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400 dark:text-gray-500">
-              {t(nowActivity?.status === "done" ? "calendar.noMoreActivities" : "calendar.noCurrentActivity")}
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 }

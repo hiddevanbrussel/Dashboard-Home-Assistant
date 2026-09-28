@@ -189,7 +189,7 @@ export function FloatingSmartStack({
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30 rounded-2xl",
+        "card-plot-in fixed z-30 overflow-hidden rounded-2xl",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

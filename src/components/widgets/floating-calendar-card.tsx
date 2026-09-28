@@ -333,7 +333,8 @@ export function FloatingCalendarCard({
     >
       <div
         className={cn(
-          "h-full w-full overflow-hidden rounded-3xl border shadow-2xl bg-white/90 dark:bg-gray-950/90 border-black/[0.06] dark:border-white/10 backdrop-blur-2xl",
+          // Match sibling floating cards (climate / nuts / media): rounded-2xl + soft elevation.
+          "h-full w-full overflow-hidden rounded-2xl border border-black/[0.06] bg-white/95 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-950/90",
           editMode && !isDragging && !isResizing && "animate-edit-wiggle"
         )}
       >

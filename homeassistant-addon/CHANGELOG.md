@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.27
+
+- Calendar card: horizontal mockup layout (large date + event list with overflow), shared card radius, still resizable
+- Smart stack: smoother slide crossfade (soft fade/slide instead of hard overflow cut)
+
 ## 0.4.26
 
 - Media card: show the player name on the card (custom title, otherwise HA friendly name)

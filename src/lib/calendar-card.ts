@@ -1,9 +1,14 @@
-export const CALENDAR_CARD_DEFAULT_WIDTH = 340;
-export const CALENDAR_CARD_DEFAULT_HEIGHT = 480;
-export const CALENDAR_CARD_MIN_WIDTH = 280;
-export const CALENDAR_CARD_MAX_WIDTH = 560;
-export const CALENDAR_CARD_MIN_HEIGHT = 340;
-export const CALENDAR_CARD_MAX_HEIGHT = 780;
+export const CALENDAR_CARD_DEFAULT_WIDTH = 420;
+export const CALENDAR_CARD_DEFAULT_HEIGHT = 200;
+export const CALENDAR_CARD_MIN_WIDTH = 320;
+export const CALENDAR_CARD_MAX_WIDTH = 640;
+export const CALENDAR_CARD_MIN_HEIGHT = 160;
+export const CALENDAR_CARD_MAX_HEIGHT = 420;
+
+/** Approximate vertical budget for each event row + the overflow footer. */
+const EVENT_ROW_PX = 52;
+const CARD_VERTICAL_PAD_PX = 40;
+const OVERFLOW_FOOTER_PX = 22;
 
 export function clampCalendarCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
@@ -15,6 +20,13 @@ export function clampCalendarCardHeight(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
   if (!Number.isFinite(v)) return CALENDAR_CARD_DEFAULT_HEIGHT;
   return Math.min(CALENDAR_CARD_MAX_HEIGHT, Math.max(CALENDAR_CARD_MIN_HEIGHT, Math.round(v)));
+}
+
+/** How many event rows fit in the card before showing an overflow footer. */
+export function calendarVisibleEventCount(height: unknown): number {
+  const h = clampCalendarCardHeight(height);
+  const available = Math.max(EVENT_ROW_PX, h - CARD_VERTICAL_PAD_PX - OVERFLOW_FOOTER_PX);
+  return Math.max(1, Math.floor(available / EVENT_ROW_PX));
 }
 
 /** Resize from the bottom-right corner while keeping the top-left of the card fixed. */
