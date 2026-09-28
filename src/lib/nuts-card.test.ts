@@ -2,6 +2,8 @@ import {
   buildNutsChartBars,
   buildNutsMonthBars,
   buildNutsWeekBars,
+  clampNutsCardHeight,
+  clampNutsCardWidth,
   computeNutsMonthTrend,
   computeNutsTrend,
   computeNutsWeekTrend,
@@ -12,6 +14,7 @@ import {
   nutsCardDensity,
   nutsChartScale,
   nutsHistoryDays,
+  resizeNutsCardFromBottomRight,
   shouldShowNutsMonthTick,
   startOfWeekMonday,
   sumNutsMonth,
@@ -159,5 +162,46 @@ describe("nuts-card helpers", () => {
     expect(formatNutsValue(14, "kWh")).toBe("14 kWh");
     expect(formatNutsValue(undefined, "kWh")).toBe("—");
     expect(formatNutsParts(18.2, "kWh")).toEqual({ value: "18,2", unit: "kWh" });
+  });
+
+  it("clamps width/height to card bounds", () => {
+    expect(clampNutsCardWidth(100)).toBe(250);
+    expect(clampNutsCardWidth(999)).toBe(480);
+    expect(clampNutsCardHeight(100)).toBe(250);
+    expect(clampNutsCardHeight(999)).toBe(420);
+  });
+
+  it("resizes from bottom-right within viewport and card clamps", () => {
+    const next = resizeNutsCardFromBottomRight({
+      startWidth: 320,
+      startHeight: 300,
+      startLeft: 40,
+      startBottom: 200,
+      dx: 80,
+      dy: 60,
+      viewportWidth: 1200,
+      viewportHeight: 800,
+    });
+    expect(next.width).toBe(400);
+    expect(next.height).toBe(360);
+    expect(next.left).toBe(40);
+    // top stays put: bottom = viewportHeight - top - height
+    expect(next.bottom).toBe(800 - (800 - 200 - 300) - 360);
+  });
+
+  it("clamps resize height to remaining viewport space", () => {
+    const next = resizeNutsCardFromBottomRight({
+      startWidth: 320,
+      startHeight: 300,
+      startLeft: 40,
+      startBottom: 40,
+      dx: 0,
+      dy: 200,
+      viewportWidth: 1200,
+      viewportHeight: 800,
+    });
+    // top=460 → maxHeight = min(420, 340) = 340
+    expect(next.height).toBe(340);
+    expect(next.bottom).toBe(0);
   });
 });
