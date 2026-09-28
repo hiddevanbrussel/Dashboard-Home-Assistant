@@ -12,6 +12,9 @@ export const SMART_STACK_DEFAULT_INTERVAL_SEC = 8;
 export const SMART_STACK_MIN_INTERVAL_SEC = 3;
 export const SMART_STACK_MAX_INTERVAL_SEC = 60;
 
+/** Auto-rotate slides; `undefined` / missing means on (backward compatible). */
+export const SMART_STACK_DEFAULT_AUTOPLAY = true;
+
 /** Crossfade / soft-slide duration between stacked cards (ms). */
 export const SMART_STACK_TRANSITION_MS = 520;
 
@@ -56,6 +59,12 @@ export function clampSmartStackIntervalSec(raw: unknown): number {
     SMART_STACK_MAX_INTERVAL_SEC,
     Math.max(SMART_STACK_MIN_INTERVAL_SEC, Math.round(n))
   );
+}
+
+/** Whether the stack should auto-advance. Explicit `false` disables; otherwise on. */
+export function isSmartStackAutoplayEnabled(raw: unknown): boolean {
+  if (raw === false || raw === 0 || raw === "false" || raw === "0") return false;
+  return SMART_STACK_DEFAULT_AUTOPLAY;
 }
 
 export function normalizeSmartStackIndex(index: number, length: number): number {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.31
+
+- Energy dashboard: show light/dark hero illustrations with soft gradient fade (not full-page wallpaper)
+- Smart stack: toggle automatic slide rotation; when off, swipe manually through the stack
+
 ## 0.4.30
 
 - Energy dashboard: page-wide light/dark background illustrations with a soft theme gradient; floating cards still placeable

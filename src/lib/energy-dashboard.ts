@@ -1,7 +1,7 @@
 /** Legacy cutout used when an energy_monitor_card supplies a custom inset house image. */
 export const ENERGY_OVERVIEW_HOUSE_IMAGE = "/energy-overview-house.webp";
 
-/** Page-wide Energy dashboard backgrounds (light / dark). */
+/** Energy dashboard hero illustrations (light / dark) — soft gradient panel, not wallpaper. */
 export const ENERGY_PAGE_BG_LIGHT = "/energy/energy-bg-light.png";
 export const ENERGY_PAGE_BG_DARK = "/energy/energy-bg-dark.png";
 

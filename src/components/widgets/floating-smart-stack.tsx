@@ -67,6 +67,7 @@ export function FloatingSmartStack({
   widget: WidgetConfig & {
     children?: WidgetConfig[];
     interval_seconds?: number;
+    autoplay?: boolean;
     width?: number;
     height?: number;
   };
@@ -218,6 +219,7 @@ export function FloatingSmartStack({
         title={widget.title}
         slides={widget.children ?? []}
         interval_seconds={widget.interval_seconds}
+        autoplay={widget.autoplay}
         width={totalWidth}
         height={totalHeight}
         paused={editMode}
