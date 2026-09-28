@@ -176,7 +176,7 @@ describe("nuts-card helpers", () => {
       startWidth: 320,
       startHeight: 300,
       startLeft: 40,
-      startBottom: 40,
+      startBottom: 200,
       dx: 80,
       dy: 60,
       viewportWidth: 1200,
@@ -185,6 +185,23 @@ describe("nuts-card helpers", () => {
     expect(next.width).toBe(400);
     expect(next.height).toBe(360);
     expect(next.left).toBe(40);
-    expect(next.bottom).toBe(800 - (800 - 40 - 300) - 360);
+    // top stays put: bottom = viewportHeight - top - height
+    expect(next.bottom).toBe(800 - (800 - 200 - 300) - 360);
+  });
+
+  it("clamps resize height to remaining viewport space", () => {
+    const next = resizeNutsCardFromBottomRight({
+      startWidth: 320,
+      startHeight: 300,
+      startLeft: 40,
+      startBottom: 40,
+      dx: 0,
+      dy: 200,
+      viewportWidth: 1200,
+      viewportHeight: 800,
+    });
+    // top=460 → maxHeight = min(420, 340) = 340
+    expect(next.height).toBe(340);
+    expect(next.bottom).toBe(0);
   });
 });
