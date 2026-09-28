@@ -14,6 +14,7 @@ import {
   clampMediaCardWidth,
   MEDIA_CARD_DEFAULT_HEIGHT,
   MEDIA_CARD_DEFAULT_WIDTH,
+  resolveMediaCardPlayerName,
 } from "@/lib/media-card";
 
 export { MEDIA_CARD_DEFAULT_HEIGHT, MEDIA_CARD_DEFAULT_WIDTH };
@@ -73,8 +74,16 @@ export function MediaCardWidget({
     (entity?.attributes?.entity_picture as string | undefined) ??
     (entity?.attributes?.entity_picture_local as string | undefined);
   const mediaContentId = (entity?.attributes?.media_content_id as string | undefined) ?? "";
-  const displayTitle = mediaTitle || title || t("cardType.media_card");
-  const displayArtist = mediaArtist || (isOn ? "" : t("mediaCard.idle"));
+  const friendlyName = (entity?.attributes?.friendly_name as string | undefined) ?? "";
+  const playerName = resolveMediaCardPlayerName({
+    title,
+    friendlyName,
+    entityId: entity_id,
+    fallback: t("cardType.media_card"),
+  });
+  // Track line stays separate from the player name shown at the top of the card.
+  const displayTitle = mediaTitle || t("mediaCard.idle");
+  const displayArtist = mediaTitle ? mediaArtist : "";
 
   const artworkKey = mediaArtworkCacheKey({
     entityPicture,
@@ -171,21 +180,30 @@ export function MediaCardWidget({
 
       <div className="relative flex h-full flex-col justify-between p-5">
         <div className="flex items-start justify-between gap-3">
-          {onMoreClick ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onMoreClick();
-              }}
-              className="rounded-lg p-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-              aria-label={t("common.options")}
+          <div className="flex min-w-0 flex-1 items-start gap-1">
+            {onMoreClick ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMoreClick();
+                }}
+                className="shrink-0 rounded-lg p-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                aria-label={t("common.options")}
+              >
+                <MoreVertical className="h-5 w-5" aria-hidden />
+              </button>
+            ) : null}
+            <p
+              className={cn(
+                "min-w-0 flex-1 truncate text-sm font-medium text-white/70",
+                onMoreClick ? "pt-1.5" : "pt-0.5"
+              )}
+              title={playerName}
             >
-              <MoreVertical className="h-5 w-5" aria-hidden />
-            </button>
-          ) : (
-            <span />
-          )}
+              {playerName}
+            </p>
+          </div>
           <Waveform playing={isPlaying} />
         </div>
 

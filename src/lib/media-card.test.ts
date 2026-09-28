@@ -7,7 +7,49 @@ import {
   MEDIA_CARD_MIN_HEIGHT,
   MEDIA_CARD_MIN_WIDTH,
   resizeMediaCardFromBottomRight,
+  resolveMediaCardPlayerName,
 } from "./media-card";
+
+describe("resolveMediaCardPlayerName", () => {
+  it("prefers a custom widget title over the friendly name", () => {
+    expect(
+      resolveMediaCardPlayerName({
+        title: "Woonkamer",
+        friendlyName: "Sonos Beam",
+        entityId: "media_player.woonkamer",
+      })
+    ).toBe("Woonkamer");
+  });
+
+  it("falls back to friendly name when the title is a generic media default", () => {
+    expect(
+      resolveMediaCardPlayerName({
+        title: "Media",
+        friendlyName: "Keuken speaker",
+        entityId: "media_player.keuken",
+        fallback: "Media",
+      })
+    ).toBe("Keuken speaker");
+    expect(
+      resolveMediaCardPlayerName({
+        title: "media card",
+        friendlyName: "Nest Hub",
+        entityId: "media_player.nest",
+      })
+    ).toBe("Nest Hub");
+  });
+
+  it("falls back to entity id when no friendly name is available", () => {
+    expect(
+      resolveMediaCardPlayerName({
+        title: "",
+        friendlyName: "",
+        entityId: "media_player.office",
+        fallback: "Media",
+      })
+    ).toBe("media_player.office");
+  });
+});
 
 describe("media-card helpers", () => {
   it("clamps width and height onto the media card", () => {

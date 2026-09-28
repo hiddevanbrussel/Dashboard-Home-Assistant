@@ -5,6 +5,31 @@ export const MEDIA_CARD_MAX_WIDTH = 500;
 export const MEDIA_CARD_MIN_HEIGHT = 240;
 export const MEDIA_CARD_MAX_HEIGHT = 520;
 
+/** Default / auto-generated titles that should not override the HA friendly name. */
+const GENERIC_MEDIA_CARD_TITLES = new Set(["media", "media card", "mediakaart"]);
+
+/**
+ * Player label on the media card: custom widget title if set (and not a generic
+ * default), otherwise the entity friendly name, then entity_id / fallback.
+ */
+export function resolveMediaCardPlayerName(input: {
+  title?: string | null;
+  friendlyName?: string | null;
+  entityId?: string | null;
+  fallback?: string;
+}): string {
+  const custom = input.title?.trim() ?? "";
+  const friendly = input.friendlyName?.trim() ?? "";
+  const entityId = input.entityId?.trim() ?? "";
+  const fallback = input.fallback?.trim() || "Media";
+  const isGeneric =
+    !custom ||
+    GENERIC_MEDIA_CARD_TITLES.has(custom.toLowerCase()) ||
+    custom.toLowerCase() === fallback.toLowerCase();
+  if (!isGeneric) return custom;
+  return friendly || custom || entityId || fallback;
+}
+
 export function clampMediaCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
   if (!Number.isFinite(v)) return MEDIA_CARD_DEFAULT_WIDTH;
