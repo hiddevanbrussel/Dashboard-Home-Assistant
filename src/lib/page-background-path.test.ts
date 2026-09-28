@@ -7,9 +7,12 @@ describe("hidesDashboardWallpaper", () => {
     expect(hidesDashboardWallpaper("/music/")).toBe(true);
   });
 
-  it("keeps the photo on Energy, home, and other dashboard pages", () => {
-    expect(hidesDashboardWallpaper("/energy")).toBe(false);
-    expect(hidesDashboardWallpaper("/energy/")).toBe(false);
+  it("hides the dashboard photo on Energy (uses its own page-wide art)", () => {
+    expect(hidesDashboardWallpaper("/energy")).toBe(true);
+    expect(hidesDashboardWallpaper("/energy/")).toBe(true);
+  });
+
+  it("keeps the photo on home and other dashboard pages", () => {
     expect(hidesDashboardWallpaper("/")).toBe(false);
     expect(hidesDashboardWallpaper("/dashboards")).toBe(false);
     expect(hidesDashboardWallpaper("/rooms")).toBe(false);

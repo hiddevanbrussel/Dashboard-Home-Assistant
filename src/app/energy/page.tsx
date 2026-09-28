@@ -45,6 +45,7 @@ import { useDashboardEditFlag } from "@/hooks/use-dashboard-edit-flag";
 import { cn, generateId } from "@/lib/utils";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import { EnergyOverview } from "@/components/energy/energy-overview";
+import { EnergyPageBackground } from "@/components/energy/energy-page-background";
 import { EditPanelModal } from "./edit-panel";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -652,8 +653,9 @@ export default function EnergyPage() {
 
   if (isLoading || error) {
     return (
-      <AppShell activeTab="/energy">
-        <div className="flex flex-col items-center justify-center gap-4 py-12 px-4">
+      <AppShell activeTab="/energy" className="bg-transparent dark:bg-transparent">
+        <EnergyPageBackground />
+        <div className="relative z-[1] flex flex-col items-center justify-center gap-4 py-12 px-4">
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
             {error ? (error.message || t("editPanel.dashboardNotFound")) : t("editPanel.loading")}
           </p>
@@ -680,9 +682,15 @@ export default function EnergyPage() {
       hideWelcome={!editMode}
       welcomeEditable={editMode}
       onWelcomeChange={editMode ? ({ title, subtitle }) => { setWelcomeTitle(title); setWelcomeSubtitle(subtitle); } : undefined}
+      className="bg-transparent dark:bg-transparent"
     >
+      <EnergyPageBackground
+        background={data?.background}
+        backgroundLight={data?.backgroundLight}
+        backgroundDark={data?.backgroundDark}
+      />
       <div
-        className={cn("min-h-0", editMode ? "space-y-6 overflow-x-hidden" : "relative")}
+        className={cn("relative z-[1] min-h-[calc(100dvh-5rem)]", editMode ? "space-y-6 overflow-x-hidden" : "relative")}
         {...(!editMode && getEditModeAllowed() && {
           onPointerDown: (e: React.PointerEvent) => { if ((e.target as HTMLElement).closest?.("button, a, [role=button]")) return; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); clearLongPressTimer(); longPressTimerRef.current = setTimeout(() => { longPressTimerRef.current = null; setEditMode(true); }, LONG_PRESS_MS); },
           onPointerUp: (e: React.PointerEvent) => { (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId); clearLongPressTimer(); },
@@ -700,11 +708,6 @@ export default function EnergyPage() {
         <EnergyOverview
           title={welcomeTitle}
           subtitle={welcomeSubtitle}
-          houseImage={
-            widgets.find((w) => w.type === "energy_monitor_card")?.background_image ??
-            widgets.find((w) => w.type === "energy_monitor_card")?.background_image_dark ??
-            null
-          }
           editMode={editMode}
           haEntities={entities}
         />

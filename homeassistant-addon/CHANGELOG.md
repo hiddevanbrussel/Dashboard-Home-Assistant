@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.30
+
+- Energy dashboard: page-wide light/dark background illustrations with a soft theme gradient; floating cards still placeable
+
 ## 0.4.29
 
 - Nuts card: choose weekly or monthly overview (chart + period trend); default remains weekly
