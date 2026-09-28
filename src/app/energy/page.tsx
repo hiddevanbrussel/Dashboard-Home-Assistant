@@ -685,7 +685,7 @@ export default function EnergyPage() {
       onWelcomeChange={editMode ? ({ title, subtitle }) => { setWelcomeTitle(title); setWelcomeSubtitle(subtitle); } : undefined}
     >
       <div
-        className={cn("relative min-h-[calc(100dvh-5rem)]", editMode ? "space-y-6 overflow-x-hidden" : "")}
+        className={cn("relative min-h-[calc(100dvh-5rem)]", editMode ? "space-y-6" : "")}
         {...(!editMode && getEditModeAllowed() && {
           onPointerDown: (e: React.PointerEvent) => { if ((e.target as HTMLElement).closest?.("button, a, [role=button]")) return; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); clearLongPressTimer(); longPressTimerRef.current = setTimeout(() => { longPressTimerRef.current = null; setEditMode(true); }, LONG_PRESS_MS); },
           onPointerUp: (e: React.PointerEvent) => { (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId); clearLongPressTimer(); },
@@ -806,160 +806,157 @@ export default function EnergyPage() {
         </div>
         ) : null}
 
-        {widgets.filter((w) => w.type === "text_card").map((w, i) => (
-          <FloatingTextCard
-            key={w.id}
-            widget={{ id: w.id, title: w.title ?? t("editPanel.newText"), textMode: (w as { textMode?: "title" | "subtitle" | "text" }).textMode ?? "title", show_icon: w.show_icon ?? false, icon: w.icon ?? "Type", width: (w as { width?: number }).width, entity_id: (w as { entity_id?: string }).entity_id }}
-            widgetIndex={i}
-            editMode={editMode}
-            storageScope={STORAGE_SCOPE}
-            onEnterEditMode={() => setEditMode(true)}
-            onEdit={() => { setEditMode(true); setEditingWidgetId(w.id); }}
-            onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-          />
-        ))}
-
-        {widgets.filter((w) => w.type === "solar_card").map((w) => (
-          <FloatingSolarCard
-            key={w.id}
-            title={w.title ?? t("cardType.solar_card")}
-            entity_id={w.entity_id}
-            yield_entity_id_today={(w as { yield_entity_id_today?: string }).yield_entity_id_today}
-            yield_entity_id_month={(w as { yield_entity_id_month?: string }).yield_entity_id_month}
-            editMode={editMode}
-            storageScope={`${STORAGE_SCOPE}-${w.id}`}
-            onEnterEditMode={() => setEditMode(true)}
-            onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-            onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-          />
-        ))}
-
-        {widgets.filter((w) => w.type === "power_usage_card").map((w, i) => (
-          <FloatingPowerUsageCard
-            key={w.id}
-            title={w.title ?? t("cardType.power_usage_card")}
-            entity_id={w.entity_id}
-            cost_per_kwh={w.cost_per_kwh}
-            width={w.width}
-            height={w.height}
-            editMode={editMode}
-            storageScope={`${STORAGE_SCOPE}-${w.id}`}
-            onEnterEditMode={() => setEditMode(true)}
-            onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-            onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-          />
-        ))}
-
+        {/* Full-viewport board (same idea as dashboard pager pages): absolute cards
+            can be placed anywhere on the page, not only inside the padded content column. */}
         {typeof document !== "undefined" &&
-          widgets.some((w) => w.type === "device_consumption_card") &&
           createPortal(
-            widgets
-              .filter((w) => w.type === "device_consumption_card")
-              .map((w) => (
-                <FloatingDeviceConsumptionCard
-                  key={w.id}
-                  title={w.title ?? t("cardType.device_consumption_card")}
-                  device_entity_ids={w.device_entity_ids}
-                  device_names={w.device_names}
-                  width={w.width}
-                  height={w.height}
-                  editMode={editMode}
-                  storageScope={`${STORAGE_SCOPE}-${w.id}`}
-                  onEnterEditMode={() => setEditMode(true)}
-                  onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-                  onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-                />
-              )),
+            <div className="pointer-events-none fixed inset-0 z-30">
+              <section data-energy-board className="relative h-full w-full min-h-0">
+                {widgets.filter((w) => w.type === "text_card").map((w, i) => (
+                  <FloatingTextCard
+                    key={w.id}
+                    widget={{ id: w.id, title: w.title ?? t("editPanel.newText"), textMode: (w as { textMode?: "title" | "subtitle" | "text" }).textMode ?? "title", show_icon: w.show_icon ?? false, icon: w.icon ?? "Type", width: (w as { width?: number }).width, entity_id: (w as { entity_id?: string }).entity_id }}
+                    widgetIndex={i}
+                    editMode={editMode}
+                    storageScope={STORAGE_SCOPE}
+                    onEnterEditMode={() => setEditMode(true)}
+                    onEdit={() => { setEditMode(true); setEditingWidgetId(w.id); }}
+                    onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                  />
+                ))}
+
+                {widgets.filter((w) => w.type === "solar_card").map((w) => (
+                  <FloatingSolarCard
+                    key={w.id}
+                    title={w.title ?? t("cardType.solar_card")}
+                    entity_id={w.entity_id}
+                    yield_entity_id_today={(w as { yield_entity_id_today?: string }).yield_entity_id_today}
+                    yield_entity_id_month={(w as { yield_entity_id_month?: string }).yield_entity_id_month}
+                    editMode={editMode}
+                    storageScope={`${STORAGE_SCOPE}-${w.id}`}
+                    onEnterEditMode={() => setEditMode(true)}
+                    onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                    onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                  />
+                ))}
+
+                {widgets.filter((w) => w.type === "power_usage_card").map((w) => (
+                  <FloatingPowerUsageCard
+                    key={w.id}
+                    title={w.title ?? t("cardType.power_usage_card")}
+                    entity_id={w.entity_id}
+                    cost_per_kwh={w.cost_per_kwh}
+                    width={w.width}
+                    height={w.height}
+                    editMode={editMode}
+                    storageScope={`${STORAGE_SCOPE}-${w.id}`}
+                    onEnterEditMode={() => setEditMode(true)}
+                    onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                    onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                  />
+                ))}
+
+                {widgets.filter((w) => w.type === "device_consumption_card").map((w) => (
+                  <FloatingDeviceConsumptionCard
+                    key={w.id}
+                    title={w.title ?? t("cardType.device_consumption_card")}
+                    device_entity_ids={w.device_entity_ids}
+                    device_names={w.device_names}
+                    width={w.width}
+                    height={w.height}
+                    editMode={editMode}
+                    storageScope={`${STORAGE_SCOPE}-${w.id}`}
+                    onEnterEditMode={() => setEditMode(true)}
+                    onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                    onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                  />
+                ))}
+
+                {widgets.filter((w) => w.type === "energy_monitor_card").map((w) => (
+                  <FloatingEnergyMonitorCard
+                    key={w.id}
+                    title={w.title ?? t("cardType.energy_monitor_card")}
+                    entity_id={w.entity_id}
+                    background_image={w.background_image}
+                    background_image_dark={w.background_image_dark}
+                    image_conditions={w.image_conditions as ImageCondition[] | undefined}
+                    minimal={w.minimal}
+                    scale={w.scale}
+                    editMode={editMode}
+                    storageScope={`${STORAGE_SCOPE}-${w.id}`}
+                    onEnterEditMode={() => setEditMode(true)}
+                    onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                    onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                  />
+                ))}
+
+                {widgets.filter((w) => w.type === "stat_pill_card").map((w, i) => (
+                  <FloatingStatPillCard
+                    key={w.id}
+                    widgetId={w.id}
+                    widgetIndex={i}
+                    title={w.title ?? "Stat"}
+                    entity_id={w.entity_id}
+                    label={w.label}
+                    icon={w.icon}
+                    color={(w.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
+                    conditions={w.conditions as SensorCondition[] | undefined}
+                    size={(w.size as "sm" | "md" | "lg") ?? "md"}
+                    editMode={editMode}
+                    storageScope={STORAGE_SCOPE}
+                    onEnterEditMode={() => setEditMode(true)}
+                    onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                    onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                  />
+                ))}
+
+                {widgets.filter((w) => w.type === "sensor_card").map((w, i) => (
+                  <FloatingSensorCard
+                    key={w.id}
+                    widgetId={w.id}
+                    widgetIndex={i}
+                    title={w.title ?? "Sensor"}
+                    entity_id={w.entity_id}
+                    icon={w.icon}
+                    show_icon={w.show_icon !== false}
+                    size={(w.size as "sm" | "md" | "lg") ?? "md"}
+                    conditions={w.conditions as SensorCondition[] | undefined}
+                    editMode={editMode}
+                    storageScope={STORAGE_SCOPE}
+                    onEnterEditMode={() => setEditMode(true)}
+                    onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                    onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                  />
+                ))}
+
+                {widgets.filter((w) => w.type === "nuts_card").map((w, i) => (
+                  <FloatingNutsCard
+                    key={w.id}
+                    widget={{
+                      id: w.id,
+                      title: w.title ?? t("cardType.nuts_card"),
+                      entity_id: w.entity_id,
+                      today_entity_id: w.today_entity_id,
+                      current_entity_id: w.current_entity_id,
+                      icon: w.icon,
+                      icon_background_color: w.icon_background_color,
+                      accent: w.accent,
+                      period: w.period,
+                      width: w.width ?? NUTS_CARD_DEFAULT_WIDTH,
+                      height: w.height ?? NUTS_CARD_DEFAULT_HEIGHT,
+                    }}
+                    widgetIndex={i}
+                    editMode={editMode}
+                    storageScope={STORAGE_SCOPE}
+                    onEnterEditMode={() => setEditMode(true)}
+                    onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                    onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                  />
+                ))}
+              </section>
+            </div>,
             document.body
           )}
-
-        {widgets.filter((w) => w.type === "energy_monitor_card").map((w) => (
-          <FloatingEnergyMonitorCard
-            key={w.id}
-            title={w.title ?? t("cardType.energy_monitor_card")}
-            entity_id={w.entity_id}
-            background_image={w.background_image}
-            background_image_dark={w.background_image_dark}
-            image_conditions={w.image_conditions as ImageCondition[] | undefined}
-            minimal={w.minimal}
-            scale={w.scale}
-            editMode={editMode}
-            storageScope={`${STORAGE_SCOPE}-${w.id}`}
-            onEnterEditMode={() => setEditMode(true)}
-            onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-            onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-          />
-        ))}
-
-        {typeof document !== "undefined" && widgets.some((w) => w.type === "stat_pill_card") && createPortal(
-          widgets.filter((w) => w.type === "stat_pill_card").map((w, i) => (
-            <FloatingStatPillCard
-              key={w.id}
-              widgetId={w.id}
-              widgetIndex={i}
-              title={w.title ?? "Stat"}
-              entity_id={w.entity_id}
-              label={w.label}
-              icon={w.icon}
-              color={(w.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
-              conditions={w.conditions as SensorCondition[] | undefined}
-              size={(w.size as "sm" | "md" | "lg") ?? "md"}
-              editMode={editMode}
-              storageScope={STORAGE_SCOPE}
-              onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-            />
-          )),
-          document.body
-        )}
-
-        {typeof document !== "undefined" && widgets.some((w) => w.type === "sensor_card") && createPortal(
-          widgets.filter((w) => w.type === "sensor_card").map((w, i) => (
-            <FloatingSensorCard
-              key={w.id}
-              widgetId={w.id}
-              widgetIndex={i}
-              title={w.title ?? "Sensor"}
-              entity_id={w.entity_id}
-              icon={w.icon}
-              show_icon={w.show_icon !== false}
-              size={(w.size as "sm" | "md" | "lg") ?? "md"}
-              conditions={w.conditions as SensorCondition[] | undefined}
-              editMode={editMode}
-              storageScope={STORAGE_SCOPE}
-              onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-            />
-          )),
-          document.body
-        )}
-
-        {widgets.filter((w) => w.type === "nuts_card").map((w, i) => (
-          <FloatingNutsCard
-            key={w.id}
-            widget={{
-              id: w.id,
-              title: w.title ?? t("cardType.nuts_card"),
-              entity_id: w.entity_id,
-              today_entity_id: w.today_entity_id,
-              current_entity_id: w.current_entity_id,
-              icon: w.icon,
-              icon_background_color: w.icon_background_color,
-              accent: w.accent,
-              period: w.period,
-              width: w.width ?? NUTS_CARD_DEFAULT_WIDTH,
-              height: w.height ?? NUTS_CARD_DEFAULT_HEIGHT,
-            }}
-            widgetIndex={i}
-            editMode={editMode}
-            storageScope={STORAGE_SCOPE}
-            onEnterEditMode={() => setEditMode(true)}
-            onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-            onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-          />
-        ))}
 
         {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
           <EditPanelModal
