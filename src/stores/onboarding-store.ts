@@ -68,8 +68,10 @@ export type WidgetConfig = {
   show_state?: boolean;
   /** Card group: uitlijning van kaarten (flex justify). */
   alignment?: "start" | "center" | "end" | "between";
-  /** Card group: geneste kaarten (bijv. pill cards). */
+  /** Card group / smart stack: geneste kaarten. */
   children?: WidgetConfig[];
+  /** Smart stack: auto-advance interval in seconds. */
+  interval_seconds?: number;
   /** Room card: entity_id voor lichtstatus (bijv. light.groep). */
   light_entity_id?: string;
   /** Room card: entity_id voor mediaplayer (bijv. media_player.woonkamer). */

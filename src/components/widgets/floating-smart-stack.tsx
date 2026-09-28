@@ -1,0 +1,228 @@
+"use client";
+
+import { useState, useRef, useCallback, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import type { WidgetConfig } from "@/stores/onboarding-store";
+import { SmartStackWidget } from "./smart-stack-widget";
+import {
+  SMART_STACK_DEFAULT_HEIGHT,
+  SMART_STACK_DEFAULT_WIDTH,
+  clampSmartStackHeight,
+  clampSmartStackWidth,
+} from "@/lib/smart-stack";
+
+const STORAGE_KEY_PREFIX = "dashboard.floatingSmartStackPosition.";
+const DEFAULT_OFFSET = 24;
+const LONG_PRESS_MS = 500;
+
+type Position = { left: number; bottom: number };
+
+function storageKey(scope: string | undefined, widgetId: string): string {
+  return scope ? `${STORAGE_KEY_PREFIX}${scope}.${widgetId}` : `${STORAGE_KEY_PREFIX}${widgetId}`;
+}
+
+function loadPosition(scope: string | undefined, widgetId: string): Position | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const s = localStorage.getItem(storageKey(scope, widgetId));
+    if (!s) return null;
+    const p = JSON.parse(s) as Position & { top?: number };
+    if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
+    if (typeof p?.left === "number" && typeof p?.top === "number") {
+      return { left: p.left, bottom: window.innerHeight - p.top - 200 };
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function savePosition(scope: string | undefined, widgetId: string, p: Position) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(storageKey(scope, widgetId), JSON.stringify(p));
+  } catch {
+    // ignore
+  }
+}
+
+function defaultPosition(widgetIndex: number, cardWidth: number, cardHeight: number): Position {
+  if (typeof window === "undefined") return { left: 100 + widgetIndex * 40, bottom: DEFAULT_OFFSET };
+  const maxLeft = Math.max(0, window.innerWidth - cardWidth);
+  const maxBottom = Math.max(0, window.innerHeight - cardHeight - 24);
+  const left = Math.min(maxLeft, 24 + widgetIndex * (cardWidth + 24));
+  const bottom = Math.min(maxBottom, 48);
+  return { left, bottom };
+}
+
+export function FloatingSmartStack({
+  widget,
+  widgetIndex = 0,
+  editMode = false,
+  storageScope,
+  onEdit,
+  onEnterEditMode,
+}: {
+  widget: WidgetConfig & {
+    children?: WidgetConfig[];
+    interval_seconds?: number;
+    width?: number;
+    height?: number;
+  };
+  widgetIndex?: number;
+  editMode?: boolean;
+  storageScope?: string;
+  onEdit?: () => void;
+  onEnterEditMode?: () => void;
+}) {
+  const totalWidth = clampSmartStackWidth(widget.width ?? SMART_STACK_DEFAULT_WIDTH);
+  const totalHeight = clampSmartStackHeight(widget.height ?? SMART_STACK_DEFAULT_HEIGHT);
+  const [position, setPosition] = useState<Position>(
+    () => loadPosition(storageScope, widget.id) ?? { left: 0, bottom: DEFAULT_OFFSET }
+  );
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
+  const initialized = useRef(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current != null) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const startLongPress = useCallback(
+    (e: React.PointerEvent) => {
+      if (editMode || !onEnterEditMode) return;
+      clearLongPress();
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      longPressTimerRef.current = setTimeout(() => {
+        longPressTimerRef.current = null;
+        onEnterEditMode();
+      }, LONG_PRESS_MS);
+    },
+    [editMode, onEnterEditMode, clearLongPress]
+  );
+
+  const endLongPress = useCallback(
+    (e: React.PointerEvent) => {
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+      clearLongPress();
+    },
+    [clearLongPress]
+  );
+
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
+    const bounds = { maxLeft, maxBottom };
+    const saved = loadPosition(storageScope, widget.id);
+    if (saved) {
+      setPosition(snapToGrid(saved, bounds));
+      return;
+    }
+    const p = snapToGrid(defaultPosition(widgetIndex, totalWidth, totalHeight), bounds);
+    setPosition(p);
+    savePosition(storageScope, widget.id, p);
+  }, [widget.id, widgetIndex, totalWidth, totalHeight, storageScope]);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!editMode) return;
+      if ((e.target as HTMLElement).closest?.("button")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+      const measured = floatingPositionFromElement(e.currentTarget as HTMLElement);
+      dragStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        left: measured.left,
+        bottom: measured.bottom,
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    [editMode]
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+      const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
+      const raw = {
+        left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
+        bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
+      };
+      setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
+    },
+    [isDragging, totalWidth, totalHeight]
+  );
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (isDragging) {
+        setIsDragging(false);
+        const dx = e.clientX - dragStart.current.x;
+        const dy = e.clientY - dragStart.current.y;
+        const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+        const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight - 24 : 400;
+        const raw = {
+          left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
+          bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
+        };
+        const next = snapToGrid(raw, { maxLeft, maxBottom });
+        setPosition(next);
+        savePosition(storageScope, widget.id, next);
+      }
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    },
+    [isDragging, widget.id, totalWidth, totalHeight, storageScope]
+  );
+
+  return (
+    <div
+      className={cn(
+        "card-plot-in fixed z-30 rounded-2xl",
+        editMode && "cursor-grab touch-none active:cursor-grabbing",
+        editMode && !isDragging && "animate-edit-wiggle"
+      )}
+      style={{
+        left: position.left,
+        bottom: position.bottom,
+        width: totalWidth,
+        height: totalHeight,
+        ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
+      }}
+      {...(!editMode &&
+        onEnterEditMode && {
+          onPointerDown: startLongPress,
+          onPointerUp: endLongPress,
+          onPointerLeave: endLongPress,
+          onPointerCancel: endLongPress,
+        })}
+      {...(editMode && {
+        onPointerDown: handlePointerDown,
+        onPointerMove: handlePointerMove,
+        onPointerUp: handlePointerUp,
+        onPointerCancel: handlePointerUp,
+      })}
+    >
+      <SmartStackWidget
+        title={widget.title}
+        slides={widget.children ?? []}
+        interval_seconds={widget.interval_seconds}
+        width={totalWidth}
+        height={totalHeight}
+        paused={editMode}
+        onMoreClick={editMode ? onEdit : undefined}
+      />
+    </div>
+  );
+}

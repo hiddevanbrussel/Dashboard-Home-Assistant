@@ -10,7 +10,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { RobotVacuum, CalendarDays, Check, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
+import { RobotVacuum, CalendarDays, Check, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
 import { ArrowRightLeft } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -52,6 +52,8 @@ import {
   SENSOR_CONDITION_OPERATOR_LABELS,
   FloatingPillCard,
   FloatingCardGroup,
+  FloatingSmartStack,
+  SmartStackWidget,
   RoomCardWidget,
   FloatingRoomCard,
   NutsCardWidget,
@@ -120,6 +122,22 @@ import {
   normalizeNutsAccent,
 } from "@/lib/nuts-card";
 import {
+  SMART_STACK_CHILD_TYPES,
+  SMART_STACK_DEFAULT_HEIGHT,
+  SMART_STACK_DEFAULT_INTERVAL_SEC,
+  SMART_STACK_DEFAULT_WIDTH,
+  SMART_STACK_MAX_HEIGHT,
+  SMART_STACK_MAX_INTERVAL_SEC,
+  SMART_STACK_MAX_WIDTH,
+  SMART_STACK_MIN_HEIGHT,
+  SMART_STACK_MIN_INTERVAL_SEC,
+  SMART_STACK_MIN_WIDTH,
+  clampSmartStackHeight,
+  clampSmartStackIntervalSec,
+  clampSmartStackWidth,
+  isSmartStackChildType,
+} from "@/lib/smart-stack";
+import {
   clampVacuumCard2Height,
   clampVacuumCard2Width,
   VACUUM_CARD_2_DEFAULT_HEIGHT,
@@ -187,7 +205,7 @@ import {
 } from "@/lib/weather-card";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card"] as const;
+const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "smart_stack", "card_group", "chore_card", "calendar_card"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; labelKey: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "text_card", labelKey: "cardType.text_card", Icon: Type },
@@ -209,6 +227,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "pill_card", labelKey: "cardType.pill_card", Icon: CircleDot },
   { type: "room_card", labelKey: "cardType.room_card", Icon: Home },
   { type: "nuts_card", labelKey: "cardType.nuts_card", Icon: Zap },
+  { type: "smart_stack", labelKey: "cardType.smart_stack", Icon: Layers },
   { type: "card_group", labelKey: "cardType.card_group", Icon: LayoutGrid },
   { type: "chore_card", labelKey: "cardType.chore_card", Icon: ListTodo },
   { type: "calendar_card", labelKey: "cardType.calendar_card", Icon: CalendarDays },
@@ -242,6 +261,7 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   pill_card: "switch",
   room_card: "",
   nuts_card: "sensor",
+  smart_stack: "",
   card_group: "",
   calendar_card: "",
   timer_card: "",
@@ -252,7 +272,7 @@ const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor", "binary
 const FLOATING_WIDGET_TYPES = new Set([
   "text_card", "title_card", "title_only_card", "subtitle_card", "media_card", "climate_card", "climate_card_2", "light_card", "solar_card",
   "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card",
-  "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "card_group", "chore_card", "calendar_card", "timer_card",
+  "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "smart_stack", "card_group", "chore_card", "calendar_card", "timer_card",
 ]);
 
 type DashboardData = {
@@ -837,6 +857,7 @@ export default function DashboardEditPage() {
     child_id?: string | null;
     show_chore_points?: boolean;
     page?: number;
+    interval_seconds?: number;
   }>({
     title: "",
     entity_id: "",
@@ -880,12 +901,15 @@ export default function DashboardEditPage() {
     child_id: null as string | null,
     show_chore_points: true,
     page: 0,
+    interval_seconds: SMART_STACK_DEFAULT_INTERVAL_SEC,
   });
   const [iconSearch, setIconSearch] = useState("");
   const [vacuumIconSearch, setVacuumIconSearch] = useState("");
   const [sensorIconSearch, setSensorIconSearch] = useState("");
   const [pillIconSearch, setPillIconSearch] = useState("");
   const [editTab, setEditTab] = useState<string>("algemeen");
+  /** When adding a card to a smart stack: selected child type before entity pick. */
+  const [stackAddChildType, setStackAddChildType] = useState<string | null>(null);
   const [uploadingRoomBg, setUploadingRoomBg] = useState(false);
   const [uploadingEnergyBg, setUploadingEnergyBg] = useState(false);
   const [uploadingEnergyBgDark, setUploadingEnergyBgDark] = useState(false);
@@ -969,11 +993,17 @@ export default function DashboardEditPage() {
     : null;
 
   useEffect(() => {
-    if (!editingWidgetId) setEditingGroupChildId(null);
+    if (!editingWidgetId) {
+      setEditingGroupChildId(null);
+      setStackAddChildType(null);
+    }
   }, [editingWidgetId]);
 
   useEffect(() => {
-    if (editingWidget?.type === "card_group" && editingGroupChildId) {
+    if (
+      (editingWidget?.type === "card_group" || editingWidget?.type === "smart_stack") &&
+      editingGroupChildId
+    ) {
       const child = (editingWidget.children ?? []).find((c) => c.id === editingGroupChildId);
       if (child) {
         setEditForm({
@@ -1054,12 +1084,16 @@ export default function DashboardEditPage() {
         child_id: editingWidget.child_id ?? null,
         show_chore_points: editingWidget.show_chore_points !== false,
         page: widgetPage(editingWidget),
+        interval_seconds: clampSmartStackIntervalSec(
+          editingWidget.interval_seconds ?? SMART_STACK_DEFAULT_INTERVAL_SEC
+        ),
       });
       setIconSearch("");
       setVacuumIconSearch(editingWidget.type === "vacuum_card" ? (editingWidget.icon ?? "") : "");
       setSensorIconSearch(editingWidget.type === "sensor_card" ? (editingWidget.icon ?? "") : "");
       setPillIconSearch(editingWidget.type === "pill_card" ? (editingWidget.icon ?? "") : "");
       setGroupAddEntitySearch("");
+      setStackAddChildType(null);
       setPowerUsageDeviceSearch("");
       if (editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "vacuum_card_2" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "teamtracker_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") {
         setEditTab(editingWidget.type === "room_card" ? "entiteiten" : editingWidget.type === "media_card" ? "weergave" : "algemeen");
@@ -1068,6 +1102,9 @@ export default function DashboardEditPage() {
         setEditTab("achtergrond");
       }
       if (editingWidget.type === "card_group") {
+        setEditTab(editingGroupChildId ? "algemeen" : "weergave");
+      }
+      if (editingWidget.type === "smart_stack") {
         setEditTab(editingGroupChildId ? "algemeen" : "weergave");
       }
     }
@@ -1116,6 +1153,7 @@ export default function DashboardEditPage() {
           widget.type !== "pill_card" &&
           widget.type !== "room_card" &&
           widget.type !== "nuts_card" &&
+          widget.type !== "smart_stack" &&
           widget.type !== "card_group" &&
           widget.type !== "chore_card" &&
           widget.type !== "calendar_card" &&
@@ -1221,7 +1259,7 @@ export default function DashboardEditPage() {
     setLayout((prev) => {
       const floatingItems = prev.filter((item) => {
         const type = widgets.find((w) => w.id === item.i)?.type;
-        return type === "text_card" || type === "title_card" || type === "title_only_card" || type === "subtitle_card" || type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "power_usage_card" || type === "card_group";
+        return type === "text_card" || type === "title_card" || type === "title_only_card" || type === "subtitle_card" || type === "media_card" || type === "climate_card" || type === "climate_card_2" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "power_usage_card" || type === "smart_stack" || type === "card_group";
       });
       return [...newLayout, ...floatingItems];
     });
@@ -1229,7 +1267,7 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "text_card" && type !== "title_card" && type !== "title_only_card" && type !== "subtitle_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "device_consumption_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "vacuum_card_2" && type !== "alarm_card" && type !== "camera_card" && type !== "teamtracker_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "card_group" && type !== "chore_card" && type !== "calendar_card" && type !== "timer_card";
+    return type !== "text_card" && type !== "title_card" && type !== "title_only_card" && type !== "subtitle_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "device_consumption_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "vacuum_card_2" && type !== "alarm_card" && type !== "camera_card" && type !== "teamtracker_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "smart_stack" && type !== "card_group" && type !== "chore_card" && type !== "calendar_card" && type !== "timer_card";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
@@ -1251,6 +1289,12 @@ export default function DashboardEditPage() {
       ...(type === "text_card" && { textMode: "title" as const, show_icon: false, icon: "Type" }),
       ...(type === "light_card" && { card_layout: "horizontal" as const }),
       ...(type === "card_group" && { children: [], alignment: "start" as const }),
+      ...(type === "smart_stack" && {
+        children: [] as WidgetConfig[],
+        interval_seconds: SMART_STACK_DEFAULT_INTERVAL_SEC,
+        width: SMART_STACK_DEFAULT_WIDTH,
+        height: SMART_STACK_DEFAULT_HEIGHT,
+      }),
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
       ...(type === "camera_card" && {
@@ -1286,7 +1330,7 @@ export default function DashboardEditPage() {
       h: isTextCard ? 1 : 2,
     };
     const newWidgets = [...widgets, newWidget];
-    const isFloatingOnly = type === "text_card" || type === "media_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "vacuum_card_2" || type === "alarm_card" || type === "camera_card" || type === "teamtracker_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card";
+    const isFloatingOnly = type === "text_card" || type === "media_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "vacuum_card_2" || type === "alarm_card" || type === "camera_card" || type === "teamtracker_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "smart_stack" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card";
     const newLayout = isFloatingOnly ? layout : [...layout, newLayoutItem];
 
     // Optimistisch query-cache updaten zodat de widget direct beschikbaar is bij remount/refetch
@@ -1314,7 +1358,7 @@ export default function DashboardEditPage() {
       welcomeSubtitle,
       pageCount: pageCountRef.current,
     });
-    return type === "text_card" || type === "room_card" || type === "nuts_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" ? newId : undefined;
+    return type === "text_card" || type === "room_card" || type === "nuts_card" || type === "smart_stack" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" ? newId : undefined;
   }
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
@@ -1342,7 +1386,7 @@ export default function DashboardEditPage() {
       ...original,
       id: newId,
       title: `${original.title ?? ""} (kopie)`.trim() || original.title,
-      ...(original.type === "card_group" &&
+      ...((original.type === "card_group" || original.type === "smart_stack") &&
         original.children && {
           children: original.children.map((c) => ({
             ...c,
@@ -1615,6 +1659,12 @@ export default function DashboardEditPage() {
                               setAddTileOpen(false);
                               return;
                             }
+                            if (type === "smart_stack") {
+                              const newId = handleAddTile("smart_stack", "", t("cardType.smart_stack"));
+                              if (newId) setEditingWidgetId(newId);
+                              setAddTileOpen(false);
+                              return;
+                            }
                             if (type === "room_card") {
                               const newId = handleAddTile("room_card", "", t("cardType.room_card"));
                               if (newId) setEditingWidgetId(newId);
@@ -1883,7 +1933,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "text_card" && w.type !== "title_card" && w.type !== "title_only_card" && w.type !== "subtitle_card" && w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "vacuum_card_2" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "teamtracker_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "card_group" && w.type !== "chore_card" && w.type !== "calendar_card" && w.type !== "timer_card")
+            .filter((w) => w.type !== "text_card" && w.type !== "title_card" && w.type !== "title_only_card" && w.type !== "subtitle_card" && w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "vacuum_card_2" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "teamtracker_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "smart_stack" && w.type !== "card_group" && w.type !== "chore_card" && w.type !== "calendar_card" && w.type !== "timer_card")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -2509,6 +2559,28 @@ export default function DashboardEditPage() {
           ))}
 
         {widgets
+          .filter((w) => w.type === "smart_stack" && widgetPage(w) === pageIndex)
+          .map((w, i) => (
+            <FloatingSmartStack
+              key={w.id}
+              widget={{
+                id: w.id,
+                type: "smart_stack",
+                title: w.title,
+                children: w.children,
+                interval_seconds: w.interval_seconds,
+                width: w.width,
+                height: w.height,
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              storageScope={id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+            />
+          ))}
+
+        {widgets
           .filter((w) => w.type === "calendar_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingCalendarCard
@@ -2539,7 +2611,10 @@ export default function DashboardEditPage() {
               aria-hidden
               data-no-page-swipe
               onClick={() => {
-                if (editingWidget?.type === "card_group" && editingGroupChildId) {
+                if (
+                  (editingWidget?.type === "card_group" || editingWidget?.type === "smart_stack") &&
+                  editingGroupChildId
+                ) {
                   setEditingGroupChildId(null);
                 } else {
                   setEditingWidgetId(null);
@@ -2551,6 +2626,10 @@ export default function DashboardEditPage() {
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {(editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card")
                   ? t("editPanel.editText")
+                  : editingWidget.type === "smart_stack"
+                    ? editingGroupChildId
+                      ? t("editPanel.editCardInStack")
+                      : t("editPanel.editSmartStack")
                   : editingWidget.type === "card_group"
                     ? editingGroupChildId
                       ? t("editPanel.editCardInGroup")
@@ -2566,7 +2645,10 @@ export default function DashboardEditPage() {
               <button
                 type="button"
                 onClick={() => {
-                  if (editingWidget?.type === "card_group" && editingGroupChildId) {
+                  if (
+                    (editingWidget?.type === "card_group" || editingWidget?.type === "smart_stack") &&
+                    editingGroupChildId
+                  ) {
                     setEditingGroupChildId(null);
                   } else {
                     setEditingWidgetId(null);
@@ -2700,6 +2782,323 @@ export default function DashboardEditPage() {
                       </>
                     )}
                   </>
+                ) : editingWidget.type === "smart_stack" ? (
+                  editingGroupChildId ? (
+                    <>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.name")}</label>
+                        <input
+                          type="text"
+                          value={editForm.title}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                          placeholder={t("editPanel.tileNamePlaceholder")}
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                        />
+                      </div>
+                      {(() => {
+                        const child = (editingWidget.children ?? []).find((c) => c.id === editingGroupChildId);
+                        if (!child || child.type === "calendar_card") return null;
+                        const childDomain = WIDGET_TYPE_DOMAIN[child.type] ?? "sensor";
+                        return (
+                          <EntitySelectWithSearch
+                            entities={entities}
+                            value={editForm.entity_id}
+                            onChange={(v) => {
+                              const picked = entities.find((e) => e.entity_id === v);
+                              const friendlyName = (picked?.attributes as { friendly_name?: string })?.friendly_name?.trim();
+                              setEditForm((prev) => ({
+                                ...prev,
+                                entity_id: v,
+                                ...(friendlyName && { title: friendlyName }),
+                              }));
+                            }}
+                            filter={
+                              child.type === "teamtracker_card"
+                                ? (e) => isTeamtrackerEntityId(e.entity_id)
+                                : child.type === "sensor_card" || child.type === "stat_pill_card"
+                                  ? (e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor.")
+                                  : child.type === "energy_monitor_card"
+                                    ? (e) =>
+                                        e.entity_id.startsWith("weather.") ||
+                                        e.entity_id.startsWith("sensor.") ||
+                                        e.entity_id.startsWith("binary_sensor.")
+                                    : (e) => e.entity_id.startsWith(childDomain + ".")
+                            }
+                            label={t("editPanel.entity")}
+                            placeholder={t("editPanel.searchEntity")}
+                            emptyOption={child.type === "energy_monitor_card" ? t("editPanel.noEntityImageOnly") : t("editPanel.none")}
+                          />
+                        );
+                      })()}
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {t(`cardType.${(editingWidget.children ?? []).find((c) => c.id === editingGroupChildId)?.type ?? "smart_stack"}`)}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                        {(["weergave", "kaarten"] as const).map((tab) => (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={() => {
+                              setEditTab(tab);
+                              setStackAddChildType(null);
+                            }}
+                            className={cn(
+                              "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                              editTab === tab
+                                ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                            )}
+                          >
+                            {tab === "weergave" ? t("editPanel.display") : t("editPanel.cards")}
+                          </button>
+                        ))}
+                      </div>
+                      {editTab === "weergave" && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.name")}</label>
+                            <input
+                              type="text"
+                              value={editForm.title}
+                              onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                              placeholder={t("cardType.smart_stack")}
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardWidthPx")}</label>
+                            <input
+                              type="number"
+                              min={SMART_STACK_MIN_WIDTH}
+                              max={SMART_STACK_MAX_WIDTH}
+                              step={10}
+                              value={editForm.width ?? SMART_STACK_DEFAULT_WIDTH}
+                              onChange={(e) => {
+                                const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
+                              }}
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                            />
+                            <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.smartStackSizeHint")}</p>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardHeightPx")}</label>
+                            <input
+                              type="number"
+                              min={SMART_STACK_MIN_HEIGHT}
+                              max={SMART_STACK_MAX_HEIGHT}
+                              step={10}
+                              value={editForm.height ?? SMART_STACK_DEFAULT_HEIGHT}
+                              onChange={(e) => {
+                                const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
+                              }}
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.smartStackInterval")}</label>
+                            <input
+                              type="number"
+                              min={SMART_STACK_MIN_INTERVAL_SEC}
+                              max={SMART_STACK_MAX_INTERVAL_SEC}
+                              step={1}
+                              value={editForm.interval_seconds ?? SMART_STACK_DEFAULT_INTERVAL_SEC}
+                              onChange={(e) => {
+                                const v = e.target.value === "" ? undefined : Number(e.target.value);
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  interval_seconds: v != null && !Number.isNaN(v) ? v : undefined,
+                                }));
+                              }}
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                            />
+                            <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.smartStackIntervalHint")}</p>
+                          </div>
+                        </div>
+                      )}
+                      {editTab === "kaarten" && (
+                        <div className="space-y-3">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardsInStack")}</p>
+                          <ul className="space-y-1 max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
+                            {(editingWidget.children ?? []).map((c, idx) => (
+                              <li key={c.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                                <div className="min-w-0 flex-1">
+                                  <span className="block truncate text-gray-900 dark:text-gray-100">{c.title || c.entity_id || t(`cardType.${c.type}`)}</span>
+                                  <span className="block truncate text-[10px] text-gray-500 dark:text-gray-400">{t(`cardType.${c.type}`)}</span>
+                                </div>
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    disabled={idx === 0}
+                                    onClick={() => {
+                                      const kids = [...(editingWidget.children ?? [])];
+                                      if (idx <= 0) return;
+                                      [kids[idx - 1], kids[idx]] = [kids[idx], kids[idx - 1]];
+                                      const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: kids } : w));
+                                      setWidgets(nextWidgets);
+                                      saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                    }}
+                                    className="p-1 rounded text-gray-600 hover:bg-gray-100 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-white/10"
+                                    aria-label={t("editPanel.moveUp")}
+                                  >
+                                    <ChevronUp className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={idx >= (editingWidget.children ?? []).length - 1}
+                                    onClick={() => {
+                                      const kids = [...(editingWidget.children ?? [])];
+                                      if (idx >= kids.length - 1) return;
+                                      [kids[idx], kids[idx + 1]] = [kids[idx + 1], kids[idx]];
+                                      const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: kids } : w));
+                                      setWidgets(nextWidgets);
+                                      saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                    }}
+                                    className="p-1 rounded text-gray-600 hover:bg-gray-100 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-white/10"
+                                    aria-label={t("editPanel.moveDown")}
+                                  >
+                                    <ChevronDown className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingGroupChildId(c.id)}
+                                    className="p-1 rounded text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
+                                    aria-label={t("editPanel.edit")}
+                                    title={t("editPanel.editCard")}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const nextChildren = (editingWidget.children ?? []).filter((x) => x.id !== c.id);
+                                      const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
+                                      setWidgets(nextWidgets);
+                                      saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                    }}
+                                    className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    aria-label={t("editPanel.remove")}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </li>
+                            ))}
+                            {(editingWidget.children ?? []).length === 0 && (
+                              <li className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">{t("smartStack.emptyHint")}</li>
+                            )}
+                          </ul>
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.addCard")}</p>
+                          {!stackAddChildType ? (
+                            <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-auto">
+                              {SMART_STACK_CHILD_TYPES.map((childType) => (
+                                <button
+                                  key={childType}
+                                  type="button"
+                                  onClick={() => {
+                                    if (childType === "calendar_card") {
+                                      const newChild: WidgetConfig = {
+                                        id: generateId(),
+                                        type: childType,
+                                        title: t(`cardType.${childType}`),
+                                      };
+                                      const nextChildren = [...(editingWidget.children ?? []), newChild];
+                                      const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
+                                      setWidgets(nextWidgets);
+                                      saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                      return;
+                                    }
+                                    setStackAddChildType(childType);
+                                    setGroupAddEntitySearch("");
+                                  }}
+                                  className="rounded-lg border border-gray-200 bg-gray-50/80 px-2 py-2 text-left text-xs font-medium text-gray-700 hover:border-[#4700B5]/40 hover:bg-[#4700B5]/5 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:border-[#4700B5]/50"
+                                >
+                                  {t(`cardType.${childType}`)}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <button
+                                type="button"
+                                onClick={() => setStackAddChildType(null)}
+                                className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                              >
+                                ← {t("editPanel.back")} ({t(`cardType.${stackAddChildType}`)})
+                              </button>
+                              <input
+                                type="text"
+                                value={groupAddEntitySearch}
+                                onChange={(e) => setGroupAddEntitySearch(e.target.value)}
+                                placeholder={t("editPanel.searchEntityPlaceholder")}
+                                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                              />
+                              <div className="max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
+                                {entities
+                                  .filter((e) => {
+                                    if (stackAddChildType === "teamtracker_card") return isTeamtrackerEntityId(e.entity_id);
+                                    if (stackAddChildType === "sensor_card" || stackAddChildType === "stat_pill_card") {
+                                      return e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor.");
+                                    }
+                                    if (stackAddChildType === "energy_monitor_card") {
+                                      return (
+                                        e.entity_id.startsWith("weather.") ||
+                                        e.entity_id.startsWith("sensor.") ||
+                                        e.entity_id.startsWith("binary_sensor.")
+                                      );
+                                    }
+                                    const d = WIDGET_TYPE_DOMAIN[stackAddChildType] ?? "sensor";
+                                    return e.entity_id.startsWith(d + ".");
+                                  })
+                                  .filter((e) => {
+                                    const q = groupAddEntitySearch.trim().toLowerCase();
+                                    if (!q) return true;
+                                    const name = ((e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id).toLowerCase();
+                                    return name.includes(q) || e.entity_id.toLowerCase().includes(q);
+                                  })
+                                  .slice(0, 80)
+                                  .map((e) => {
+                                    const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                                    return (
+                                      <button
+                                        key={e.entity_id}
+                                        type="button"
+                                        onClick={() => {
+                                          if (!stackAddChildType || !isSmartStackChildType(stackAddChildType)) return;
+                                          const newChild: WidgetConfig = {
+                                            id: generateId(),
+                                            type: stackAddChildType,
+                                            title: name,
+                                            entity_id: e.entity_id,
+                                            ...(stackAddChildType === "light_card" && { card_layout: "horizontal" as const }),
+                                            ...(stackAddChildType === "nuts_card" && { accent: "consumption" as const, icon: "Zap" }),
+                                            ...(stackAddChildType === "climate_card_2" && { display_mode: "standard" as const }),
+                                            ...(stackAddChildType === "camera_card" && { refresh: 10, show_title: true }),
+                                          };
+                                          const nextChildren = [...(editingWidget.children ?? []), newChild];
+                                          const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
+                                          setWidgets(nextWidgets);
+                                          saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                          setStackAddChildType(null);
+                                          setGroupAddEntitySearch("");
+                                        }}
+                                        className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate"
+                                      >
+                                        {name}
+                                      </button>
+                                    );
+                                  })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )
                 ) : editingWidget.type === "card_group" ? (
                   editingGroupChildId ? (
                     <>
@@ -5587,6 +5986,15 @@ aria-label={t("editPanel.removeCondition")}
                         className="h-full"
                       />
                     </div>
+                  ) : editingWidget.type === "smart_stack" ? (
+                    <SmartStackWidget
+                      title={editForm.title || t("cardType.smart_stack")}
+                      slides={editingWidget.children ?? []}
+                      interval_seconds={editForm.interval_seconds}
+                      width={clampSmartStackWidth(editForm.width ?? SMART_STACK_DEFAULT_WIDTH)}
+                      height={clampSmartStackHeight(editForm.height ?? SMART_STACK_DEFAULT_HEIGHT)}
+                      paused
+                    />
                   ) : (
                     <div className="max-w-xs text-center">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -5601,7 +6009,52 @@ aria-label={t("editPanel.removeCondition")}
               </div>
               </div>
                 <div className="flex shrink-0 justify-between gap-2 border-t border-gray-200 bg-white p-5 pb-6 pt-4 dark:border-white/10 dark:bg-zinc-950">
-                  {editingWidget.type === "card_group" && editingGroupChildId ? (
+                  {editingWidget.type === "smart_stack" && editingGroupChildId ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setEditingGroupChildId(null)}
+                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300"
+                      >
+                        {t("editPanel.back")}
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextChildren = (editingWidget.children ?? []).filter((c) => c.id !== editingGroupChildId);
+                            const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
+                            setWidgets(nextWidgets);
+                            setEditingGroupChildId(null);
+                            saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                          }}
+                          className="rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          aria-label={t("editPanel.removeCardFromStack")}
+                        >
+                          {t("editPanel.remove")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updates = {
+                              title: editForm.title,
+                              entity_id: editForm.entity_id || undefined,
+                            };
+                            const nextChildren = (editingWidget.children ?? []).map((c) =>
+                              c.id === editingGroupChildId ? { ...c, ...updates } : c
+                            );
+                            const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
+                            setWidgets(nextWidgets);
+                            setEditingGroupChildId(null);
+                            saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                          }}
+                          className="rounded-lg bg-[#4700B5] px-3 py-1.5 text-sm text-white hover:opacity-90"
+                        >
+                          {t("editPanel.save")}
+                        </button>
+                      </div>
+                    </>
+                  ) : editingWidget.type === "card_group" && editingGroupChildId ? (
                     <>
                       <button
                         type="button"
@@ -5863,6 +6316,20 @@ aria-label={t("editPanel.removeCondition")}
                           accent: normalizeNutsAccent(editForm.accent),
                           width: editForm.width != null && editForm.width > 0 ? clampNutsCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampNutsCardHeight(editForm.height) : undefined,
+                        }),
+                        ...(editingWidget.type === "smart_stack" && {
+                          title: editForm.title,
+                          interval_seconds: clampSmartStackIntervalSec(
+                            editForm.interval_seconds ?? SMART_STACK_DEFAULT_INTERVAL_SEC
+                          ),
+                          width:
+                            editForm.width != null && editForm.width > 0
+                              ? clampSmartStackWidth(editForm.width)
+                              : SMART_STACK_DEFAULT_WIDTH,
+                          height:
+                            editForm.height != null && editForm.height > 0
+                              ? clampSmartStackHeight(editForm.height)
+                              : SMART_STACK_DEFAULT_HEIGHT,
                         }),
                         ...(editingWidget.type === "room_card" && {
                           icon: editForm.icon || undefined,

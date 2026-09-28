@@ -210,6 +210,18 @@ export type CardGroupProps = {
   children?: WidgetConfig[];
 };
 
+/** Smart stack: slideshow of nested existing card types (slimme stapel). */
+export type SmartStackProps = {
+  id: string;
+  type: "smart_stack";
+  title?: string;
+  children?: WidgetConfig[];
+  /** Auto-advance interval in seconds. */
+  interval_seconds?: number;
+  width?: number;
+  height?: number;
+};
+
 /** Nuts/utility card: weekly bar chart with today value and month-over-month trend. */
 export type NutsCardProps = WidgetBaseProps & {
   /** Accent style: consumption (orange) or production (green). */

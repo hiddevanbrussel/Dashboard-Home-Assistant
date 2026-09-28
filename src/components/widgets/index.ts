@@ -28,6 +28,8 @@ export { FloatingSensorCard } from "./floating-sensor-card";
 export { PillCardWidget, PILL_CONDITION_COLORS, PILL_CONDITION_OPERATORS } from "./pill-card-widget";
 export { FloatingPillCard } from "./floating-pill-card";
 export { FloatingCardGroup } from "./floating-card-group";
+export { SmartStackWidget } from "./smart-stack-widget";
+export { FloatingSmartStack } from "./floating-smart-stack";
 export { FloatingClimateCard, CLIMATE_ICON_OPTIONS } from "./floating-climate-card";
 export { TitleCardWidget } from "./title-card-widget";
 export { TextCardWidget } from "./text-card-widget";

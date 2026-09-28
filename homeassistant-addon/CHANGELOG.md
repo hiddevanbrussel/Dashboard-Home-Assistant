@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.24
+
+- Smart stack (slimme stapel): floating slideshow card that cycles through nested existing cards with configurable interval
+
 ## 0.4.23
 
 - Nuts card: denser layout at 250×250 (smaller value, reserved chart space); min size 250×250
