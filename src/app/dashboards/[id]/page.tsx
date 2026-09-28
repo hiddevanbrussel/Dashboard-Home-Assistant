@@ -2997,6 +2997,7 @@ export default function DashboardEditPage() {
                                         id: generateId(),
                                         type: childType,
                                         title: t(`cardType.${childType}`),
+                                        entity_id: "",
                                       };
                                       const nextChildren = [...(editingWidget.children ?? []), newChild];
                                       const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
