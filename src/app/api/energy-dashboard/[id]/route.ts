@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  sanitizeEnergyDashboardBackgrounds,
+  usableEnergyBackground,
+} from "@/lib/energy-dashboard";
 
 /**
  * PUT /api/energy-dashboard/[id] – Update energy dashboard.
+ * Rejects legacy / bundled default background URLs so they are stored as null.
  */
 export async function PUT(
   request: Request,
@@ -27,9 +32,15 @@ export async function PUT(
   const data = {
     ...(body.layout !== undefined && { layout: body.layout }),
     ...(body.widgets !== undefined && { widgets: body.widgets }),
-    ...(body.background !== undefined && { background: body.background }),
-    ...(body.backgroundLight !== undefined && { backgroundLight: body.backgroundLight }),
-    ...(body.backgroundDark !== undefined && { backgroundDark: body.backgroundDark }),
+    ...(body.background !== undefined && {
+      background: usableEnergyBackground(body.background) ?? null,
+    }),
+    ...(body.backgroundLight !== undefined && {
+      backgroundLight: usableEnergyBackground(body.backgroundLight) ?? null,
+    }),
+    ...(body.backgroundDark !== undefined && {
+      backgroundDark: usableEnergyBackground(body.backgroundDark) ?? null,
+    }),
     ...(body.welcomeTitle !== undefined && { welcomeTitle: body.welcomeTitle }),
     ...(body.welcomeSubtitle !== undefined && { welcomeSubtitle: body.welcomeSubtitle }),
   };
@@ -39,13 +50,18 @@ export async function PUT(
       where: { id },
       data,
     });
+    const backgrounds = sanitizeEnergyDashboardBackgrounds({
+      background: dashboard.background,
+      backgroundLight: dashboard.backgroundLight,
+      backgroundDark: dashboard.backgroundDark,
+    });
     return NextResponse.json({
       id: dashboard.id,
       layout: dashboard.layout,
       widgets: dashboard.widgets,
-      background: dashboard.background,
-      backgroundLight: dashboard.backgroundLight ?? null,
-      backgroundDark: dashboard.backgroundDark ?? null,
+      background: backgrounds.background,
+      backgroundLight: backgrounds.backgroundLight,
+      backgroundDark: backgrounds.backgroundDark,
       welcomeTitle: dashboard.welcomeTitle ?? null,
       welcomeSubtitle: dashboard.welcomeSubtitle ?? null,
     });

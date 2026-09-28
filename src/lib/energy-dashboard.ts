@@ -2,27 +2,83 @@
  * Bust browser / ingress caches when the bundled PNGs change but keep the same path.
  * Bump when replacing `public/energy/energy-bg-*.png`.
  */
-export const ENERGY_PAGE_BG_CACHE_BUST = "20260928c";
+export const ENERGY_PAGE_BG_CACHE_BUST = "20260928e";
 
 /** Energy dashboard hero illustrations (light / dark) — soft gradient panel, not wallpaper. */
 export const ENERGY_PAGE_BG_LIGHT = `/energy/energy-bg-light.png?v=${ENERGY_PAGE_BG_CACHE_BUST}`;
 export const ENERGY_PAGE_BG_DARK = `/energy/energy-bg-dark.png?v=${ENERGY_PAGE_BG_CACHE_BUST}`;
 
-/** Photoreal / pre-illustration house assets — never use these as the page hero. */
-const LEGACY_ENERGY_PAGE_ART = new Set([
-  "/energy-house.png",
-  "/energy-house_snow.png",
-  "/energy-house-night-snow.png",
-  "/energy-overview-house.webp",
-  "/house_cloudy_day.png",
+const BUNDLED_ENERGY_BG_LIGHT_PATH = "/energy/energy-bg-light.png";
+const BUNDLED_ENERGY_BG_DARK_PATH = "/energy/energy-bg-dark.png";
+
+/** Photoreal / pre-illustration house basenames — never use these as the page hero. */
+const LEGACY_ENERGY_PAGE_ART_NAMES = new Set([
+  "energy-house.png",
+  "energy-house_snow.png",
+  "energy-house-night-snow.png",
+  "energy-overview-house.webp",
+  "house_cloudy_day.png",
 ]);
 
-function usableEnergyBackground(url: string | null | undefined): string | undefined {
+/** Normalize a stored background URL to a comparable pathname (no query / basePath / origin). */
+export function energyBackgroundPathname(url: string): string {
+  let raw = url.trim();
+  if (!raw) return "";
+  try {
+    if (/^https?:\/\//i.test(raw) || raw.startsWith("//")) {
+      raw = new URL(raw.startsWith("//") ? `https:${raw}` : raw).pathname;
+    }
+  } catch {
+    /* keep raw */
+  }
+  const withoutQuery = (raw.split("?")[0] ?? raw).split("#")[0] ?? raw;
+  // Strip HA ingress / Next basePath prefixes so `/__ha_ingress__/energy/...` matches.
+  return withoutQuery.replace(/^\/__ha_ingress__(?=\/|$)/, "") || "/";
+}
+
+function isBundledEnergyBackgroundPath(pathname: string): boolean {
+  return pathname === BUNDLED_ENERGY_BG_LIGHT_PATH || pathname === BUNDLED_ENERGY_BG_DARK_PATH;
+}
+
+function isLegacyEnergyBackgroundPath(pathname: string): boolean {
+  const base = pathname.split("/").filter(Boolean).pop() ?? "";
+  return LEGACY_ENERGY_PAGE_ART_NAMES.has(base);
+}
+
+/**
+ * Custom page backgrounds only — ignores empty, legacy photoreal art, and any URL that
+ * points at the bundled light/dark PNGs (with or without an old `?v=`). Those must always
+ * resolve to the current cache-busted constants so hydration/API cannot flash old art.
+ */
+export function usableEnergyBackground(url: string | null | undefined): string | undefined {
   const trimmed = url?.trim();
   if (!trimmed) return undefined;
-  const path = trimmed.split("?")[0] ?? trimmed;
-  if (LEGACY_ENERGY_PAGE_ART.has(path)) return undefined;
+  const pathname = energyBackgroundPathname(trimmed);
+  if (!pathname || pathname === "/") return undefined;
+  if (isLegacyEnergyBackgroundPath(pathname)) return undefined;
+  if (isBundledEnergyBackgroundPath(pathname)) return undefined;
   return trimmed;
+}
+
+/** Strip persisted energy backgrounds that would override the current bundled art. */
+export function sanitizeEnergyDashboardBackgrounds(input: {
+  background?: string | null;
+  backgroundLight?: string | null;
+  backgroundDark?: string | null;
+}): {
+  background: string | null;
+  backgroundLight: string | null;
+  backgroundDark: string | null;
+  changed: boolean;
+} {
+  const background = usableEnergyBackground(input.background) ?? null;
+  const backgroundLight = usableEnergyBackground(input.backgroundLight) ?? null;
+  const backgroundDark = usableEnergyBackground(input.backgroundDark) ?? null;
+  const changed =
+    background !== (input.background ?? null) ||
+    backgroundLight !== (input.backgroundLight ?? null) ||
+    backgroundDark !== (input.backgroundDark ?? null);
+  return { background, backgroundLight, backgroundDark, changed };
 }
 
 export function resolveEnergyPageBackground(
