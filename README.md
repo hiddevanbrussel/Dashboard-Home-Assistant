@@ -212,14 +212,14 @@ A plain `docker pull` is not enough — the container must be recreated to run t
 ### Unraid
 
 1. Open the container → **Force update** (or apply update if shown).
-2. Confirm **Settings → System** shows the new version (e.g. `0.4.27`).
+2. Confirm **Settings → System** shows the new version (e.g. `0.4.28`).
 
 ### Home Assistant addon
 
 Supervisor only offers an update when the addon **version** in `config.yaml` increases. After a release:
 
 1. **Settings → Add-ons → Add-on store** → ⋮ → **Check for updates** (or refresh your custom repository).
-2. Update **Dashboard Builder** when `0.4.27` (or newer) appears.
+2. Update **Dashboard Builder** when `0.4.28` (or newer) appears.
 3. Confirm the version under the addon info / in-app **Settings → System**.
 
 The current version is shown in **Settings → System**.

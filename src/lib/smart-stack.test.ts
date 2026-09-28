@@ -37,6 +37,7 @@ describe("smart-stack helpers", () => {
   it("validates allowed child types", () => {
     expect(isSmartStackChildType("climate_card_2")).toBe(true);
     expect(isSmartStackChildType("nuts_card")).toBe(true);
+    expect(isSmartStackChildType("media_card")).toBe(true);
     expect(isSmartStackChildType("card_group")).toBe(false);
     expect(isSmartStackChildType("smart_stack")).toBe(false);
   });

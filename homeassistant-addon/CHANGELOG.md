@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.28
+
+- Smart stack: nested media card now fills the stack frame size (width + height)
+
 ## 0.4.27
 
 - Calendar card: horizontal mockup layout (large date + event list with overflow), shared card radius, still resizable

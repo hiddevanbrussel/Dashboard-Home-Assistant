@@ -115,6 +115,8 @@ export function SmartStackChild({
         <MediaCardWidget
           title={title}
           entity_id={child.entity_id ?? ""}
+          width={width}
+          height={height}
           className={fill}
         />
       );
