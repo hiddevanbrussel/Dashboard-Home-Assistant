@@ -176,15 +176,33 @@ export function SmartStackWidget({
           </div>
         ) : (
           <>
+            {/* Incoming (or sole) slide stays fully opaque underneath so the soft fade
+                never punches a hole through to dashboard chrome behind the stack. */}
+            <div
+              key={active.id}
+              className="absolute inset-0 overflow-hidden rounded-2xl will-change-transform"
+              style={{
+                zIndex: 1,
+                opacity: 1,
+                transform: entering
+                  ? `translateX(${direction * 10}px) scale(0.992)`
+                  : "translateX(0) scale(1)",
+                transition: entering
+                  ? "none"
+                  : `transform ${SMART_STACK_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+              }}
+            >
+              <SmartStackChild child={active} width={cardW} height={cardH} />
+            </div>
             {outgoing && outgoing.id !== active.id && (
               <div
                 className="absolute inset-0 overflow-hidden rounded-2xl will-change-transform"
                 style={{
-                  zIndex: 1,
+                  zIndex: 2,
                   opacity: entering ? 1 : 0,
                   transform: entering
                     ? "translateX(0) scale(1)"
-                    : `translateX(${direction * -12}px) scale(0.985)`,
+                    : `translateX(${direction * -14}px) scale(0.988)`,
                   transition: `opacity ${SMART_STACK_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1), transform ${SMART_STACK_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
                   pointerEvents: "none",
                 }}
@@ -193,22 +211,6 @@ export function SmartStackWidget({
                 <SmartStackChild child={outgoing} width={cardW} height={cardH} />
               </div>
             )}
-            <div
-              key={active.id}
-              className="absolute inset-0 overflow-hidden rounded-2xl will-change-transform"
-              style={{
-                zIndex: 2,
-                opacity: entering ? 0 : 1,
-                transform: entering
-                  ? `translateX(${direction * 16}px) scale(0.985)`
-                  : "translateX(0) scale(1)",
-                transition: entering
-                  ? "none"
-                  : `opacity ${SMART_STACK_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1), transform ${SMART_STACK_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
-              }}
-            >
-              <SmartStackChild child={active} width={cardW} height={cardH} />
-            </div>
           </>
         )}
       </div>
