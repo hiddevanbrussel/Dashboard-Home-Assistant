@@ -10,6 +10,8 @@ describe("hidesDashboardWallpaper", () => {
   it("hides the dashboard photo on Energy (uses its own page-wide art)", () => {
     expect(hidesDashboardWallpaper("/energy")).toBe(true);
     expect(hidesDashboardWallpaper("/energy/")).toBe(true);
+    expect(hidesDashboardWallpaper("/__ha_ingress__/energy")).toBe(true);
+    expect(hidesDashboardWallpaper("/__ha_ingress__/energy/")).toBe(true);
   });
 
   it("keeps the photo on home and other dashboard pages", () => {

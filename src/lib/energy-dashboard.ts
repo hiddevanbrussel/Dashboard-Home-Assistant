@@ -2,23 +2,11 @@
  * Bust browser / ingress caches when the bundled PNGs change but keep the same path.
  * Bump when replacing `public/energy/energy-bg-*.png`.
  */
-export const ENERGY_PAGE_BG_CACHE_BUST = "20260928e";
+export const ENERGY_PAGE_BG_CACHE_BUST = "20260928f";
 
 /** Energy dashboard hero illustrations (light / dark) — soft gradient panel, not wallpaper. */
 export const ENERGY_PAGE_BG_LIGHT = `/energy/energy-bg-light.png?v=${ENERGY_PAGE_BG_CACHE_BUST}`;
 export const ENERGY_PAGE_BG_DARK = `/energy/energy-bg-dark.png?v=${ENERGY_PAGE_BG_CACHE_BUST}`;
-
-const BUNDLED_ENERGY_BG_LIGHT_PATH = "/energy/energy-bg-light.png";
-const BUNDLED_ENERGY_BG_DARK_PATH = "/energy/energy-bg-dark.png";
-
-/** Photoreal / pre-illustration house basenames — never use these as the page hero. */
-const LEGACY_ENERGY_PAGE_ART_NAMES = new Set([
-  "energy-house.png",
-  "energy-house_snow.png",
-  "energy-house-night-snow.png",
-  "energy-overview-house.webp",
-  "house_cloudy_day.png",
-]);
 
 /** Normalize a stored background URL to a comparable pathname (no query / basePath / origin). */
 export function energyBackgroundPathname(url: string): string {
@@ -36,31 +24,16 @@ export function energyBackgroundPathname(url: string): string {
   return withoutQuery.replace(/^\/__ha_ingress__(?=\/|$)/, "") || "/";
 }
 
-function isBundledEnergyBackgroundPath(pathname: string): boolean {
-  return pathname === BUNDLED_ENERGY_BG_LIGHT_PATH || pathname === BUNDLED_ENERGY_BG_DARK_PATH;
-}
-
-function isLegacyEnergyBackgroundPath(pathname: string): boolean {
-  const base = pathname.split("/").filter(Boolean).pop() ?? "";
-  return LEGACY_ENERGY_PAGE_ART_NAMES.has(base);
-}
-
 /**
- * Custom page backgrounds only — ignores empty, legacy photoreal art, and any URL that
- * points at the bundled light/dark PNGs (with or without an old `?v=`). Those must always
- * resolve to the current cache-busted constants so hydration/API cannot flash old art.
+ * Energy page backgrounds are never customizable: patio uploads, legacy photoreal art,
+ * stale bundled `?v=` URLs, and any other stored path are rejected so they cannot
+ * override the current cache-busted illustrations.
  */
-export function usableEnergyBackground(url: string | null | undefined): string | undefined {
-  const trimmed = url?.trim();
-  if (!trimmed) return undefined;
-  const pathname = energyBackgroundPathname(trimmed);
-  if (!pathname || pathname === "/") return undefined;
-  if (isLegacyEnergyBackgroundPath(pathname)) return undefined;
-  if (isBundledEnergyBackgroundPath(pathname)) return undefined;
-  return trimmed;
+export function usableEnergyBackground(_url: string | null | undefined): string | undefined {
+  return undefined;
 }
 
-/** Strip persisted energy backgrounds that would override the current bundled art. */
+/** Clear every persisted energy page background (migrate away from patio / custom / stale art). */
 export function sanitizeEnergyDashboardBackgrounds(input: {
   background?: string | null;
   backgroundLight?: string | null;
@@ -71,28 +44,31 @@ export function sanitizeEnergyDashboardBackgrounds(input: {
   backgroundDark: string | null;
   changed: boolean;
 } {
-  const background = usableEnergyBackground(input.background) ?? null;
-  const backgroundLight = usableEnergyBackground(input.backgroundLight) ?? null;
-  const backgroundDark = usableEnergyBackground(input.backgroundDark) ?? null;
   const changed =
-    background !== (input.background ?? null) ||
-    backgroundLight !== (input.backgroundLight ?? null) ||
-    backgroundDark !== (input.backgroundDark ?? null);
-  return { background, backgroundLight, backgroundDark, changed };
+    (input.background ?? null) !== null ||
+    (input.backgroundLight ?? null) !== null ||
+    (input.backgroundDark ?? null) !== null;
+  return {
+    background: null,
+    backgroundLight: null,
+    backgroundDark: null,
+    changed,
+  };
 }
 
+/**
+ * Always the bundled light/dark vector illustrations. Stored DB / upload URLs are
+ * ignored (see `usableEnergyBackground` / `sanitizeEnergyDashboardBackgrounds`).
+ */
 export function resolveEnergyPageBackground(
   resolvedTheme: "light" | "dark",
-  options?: {
+  _options?: {
     background?: string | null;
     backgroundLight?: string | null;
     backgroundDark?: string | null;
   }
 ): string {
-  const legacy = usableEnergyBackground(options?.background);
-  const light = usableEnergyBackground(options?.backgroundLight) || legacy || ENERGY_PAGE_BG_LIGHT;
-  const dark = usableEnergyBackground(options?.backgroundDark) || legacy || ENERGY_PAGE_BG_DARK;
-  return resolvedTheme === "dark" ? dark : light;
+  return resolvedTheme === "dark" ? ENERGY_PAGE_BG_DARK : ENERGY_PAGE_BG_LIGHT;
 }
 
 export type EnergyEntityKey =

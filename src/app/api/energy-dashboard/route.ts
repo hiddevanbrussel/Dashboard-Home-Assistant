@@ -4,7 +4,7 @@ import { sanitizeEnergyDashboardBackgrounds } from "@/lib/energy-dashboard";
 
 /**
  * GET /api/energy-dashboard – Get the energy dashboard (singleton). Creates one if none exists.
- * Clears persisted legacy / stale bundled background URLs so they cannot replace current art.
+ * Clears every persisted page background (patio / custom / stale) so only bundled art is used.
  */
 export async function GET() {
   try {

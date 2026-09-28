@@ -47,28 +47,24 @@ describe("energy page backgrounds", () => {
     expect(resolveEnergyPageBackground("dark")).toBe(ENERGY_PAGE_BG_DARK);
   });
 
-  it("prefers stored light/dark URLs when set", () => {
+  it("always prefers bundled illustrations over patio / custom uploads", () => {
     expect(
       resolveEnergyPageBackground("light", {
-        backgroundLight: "/uploads/custom-light.png",
-        backgroundDark: "/uploads/custom-dark.png",
+        backgroundLight: "/uploads/patio-photo.jpg",
+        backgroundDark: "/uploads/patio-night.jpg",
       })
-    ).toBe("/uploads/custom-light.png");
+    ).toBe(ENERGY_PAGE_BG_LIGHT);
     expect(
       resolveEnergyPageBackground("dark", {
-        backgroundLight: "/uploads/custom-light.png",
-        backgroundDark: "/uploads/custom-dark.png",
+        backgroundLight: "/uploads/patio-photo.jpg",
+        backgroundDark: "/uploads/patio-night.jpg",
       })
-    ).toBe("/uploads/custom-dark.png");
-  });
-
-  it("falls back to legacy background when theme-specific is missing", () => {
-    expect(resolveEnergyPageBackground("light", { background: "/uploads/legacy.png" })).toBe(
-      "/uploads/legacy.png"
-    );
-    expect(resolveEnergyPageBackground("dark", { background: "/uploads/legacy.png" })).toBe(
-      "/uploads/legacy.png"
-    );
+    ).toBe(ENERGY_PAGE_BG_DARK);
+    expect(
+      resolveEnergyPageBackground("light", { background: "/tmp-test/living-room-ref.jpg" })
+    ).toBe(ENERGY_PAGE_BG_LIGHT);
+    expect(usableEnergyBackground("/uploads/patio-photo.jpg")).toBeUndefined();
+    expect(usableEnergyBackground("/uploads/ok.png")).toBeUndefined();
   });
 
   it("ignores photoreal legacy house paths so the new illustrations win", () => {
@@ -107,26 +103,25 @@ describe("energy page backgrounds", () => {
       })
     ).toBe(ENERGY_PAGE_BG_LIGHT);
     expect(usableEnergyBackground("/energy/energy-bg-light.png")).toBeUndefined();
-    expect(usableEnergyBackground("/uploads/ok.png")).toBe("/uploads/ok.png");
   });
 
   it("sanitizes persisted energy dashboard backgrounds for API migration", () => {
     const cleaned = sanitizeEnergyDashboardBackgrounds({
       background: "/energy-house.png",
       backgroundLight: "/energy/energy-bg-light.png?v=stale",
-      backgroundDark: "/uploads/keep-dark.png",
+      backgroundDark: "/uploads/patio-photo.jpg",
     });
     expect(cleaned).toEqual({
       background: null,
       backgroundLight: null,
-      backgroundDark: "/uploads/keep-dark.png",
+      backgroundDark: null,
       changed: true,
     });
     expect(
       sanitizeEnergyDashboardBackgrounds({
         background: null,
-        backgroundLight: "/uploads/a.png",
-        backgroundDark: "/uploads/b.png",
+        backgroundLight: null,
+        backgroundDark: null,
       }).changed
     ).toBe(false);
   });
