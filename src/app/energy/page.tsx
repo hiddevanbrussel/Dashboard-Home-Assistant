@@ -33,8 +33,6 @@ import type { WidgetConfig } from "@/stores/onboarding-store";
 import {
   NUTS_CARD_DEFAULT_HEIGHT,
   NUTS_CARD_DEFAULT_WIDTH,
-  clampNutsCardHeight,
-  clampNutsCardWidth,
   normalizeNutsAccent,
   normalizeNutsPeriod,
 } from "@/lib/nuts-card";
@@ -359,6 +357,10 @@ export default function EnergyPage() {
     device_names?: Record<string, string>;
     cost_per_kwh?: number;
     grid_entity_id?: string;
+    unit?: string;
+    manual_value?: string;
+    secondary?: string;
+    unit_as_prefix?: boolean;
   }>({
     title: "",
     entity_id: "",
@@ -556,28 +558,6 @@ export default function EnergyPage() {
   function handleUpdateTile(widgetId: string, updates: Partial<WidgetConfig>) {
     setWidgets((prev) => prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w)));
     setEditingWidgetId(null);
-  }
-
-  function handleNutsCardResize(widgetId: string, size: { width: number; height: number }) {
-    const width = clampNutsCardWidth(size.width);
-    const height = clampNutsCardHeight(size.height);
-    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
-    setWidgets(newWidgets);
-    if (editingWidgetId === widgetId) {
-      setEditForm((prev) => ({ ...prev, width, height }));
-    }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
-  }
-
-  function handleNutsCardResize(widgetId: string, size: { width: number; height: number }) {
-    const width = clampNutsCardWidth(size.width);
-    const height = clampNutsCardHeight(size.height);
-    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
-    setWidgets(newWidgets);
-    if (editingWidgetId === widgetId) {
-      setEditForm((prev) => ({ ...prev, width, height }));
-    }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   useEffect(() => {
@@ -1022,7 +1002,6 @@ export default function EnergyPage() {
             onEnterEditMode={() => setEditMode(true)}
             onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
             onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-            onResize={editMode ? (size) => handleNutsCardResize(w.id, size) : undefined}
           />
         ))}
 
