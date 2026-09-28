@@ -653,10 +653,10 @@ export default function EnergyPage() {
 
   if (isLoading || error) {
     return (
-      <AppShell activeTab="/energy">
+      <AppShell activeTab="/energy" headerFixed>
         <div className="relative min-h-[calc(100dvh-5rem)]">
           <EnergyPageBackground />
-          <div className="relative z-[1] flex flex-col items-center justify-center gap-4 py-12 px-4">
+          <div className="relative z-[1] flex flex-col items-center justify-center gap-4 pt-14 py-12 px-4">
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
               {error ? (error.message || t("editPanel.dashboardNotFound")) : t("editPanel.loading")}
             </p>
@@ -678,6 +678,7 @@ export default function EnergyPage() {
   return (
     <AppShell
       activeTab="/energy"
+      headerFixed
       headerEndAction={headerEndAction}
       welcomeTitle={welcomeTitle || undefined}
       welcomeSubtitle={welcomeSubtitle || undefined}
@@ -700,8 +701,8 @@ export default function EnergyPage() {
         backgroundLight={data?.backgroundLight}
         backgroundDark={data?.backgroundDark}
       />
-      <div className="relative z-[1]">
-        <div className={cn("flex items-center justify-end", !editMode && "pointer-events-none absolute right-0 top-0 z-20")}>
+      <div className="relative z-[1] pt-14">
+        <div className={cn("flex items-center justify-end", !editMode && "pointer-events-none absolute right-0 top-14 z-20")}>
           <div className={cn(!editMode && "pointer-events-auto")}>
             <OfflinePill />
           </div>

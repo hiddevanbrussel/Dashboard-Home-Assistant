@@ -13,9 +13,9 @@ type EnergyPageBackgroundProps = {
 };
 
 /**
- * Energy hero illustration (light/dark) — decorative panel, not a full-viewport
- * wallpaper. Keep the full house in frame (`object-contain`) so bike / bolt /
- * battery stay visible; soft fade into `--page-bg` so cards stay readable.
+ * Page-wide Energy illustration (light/dark): edge-to-edge under the topbar,
+ * soft fade only at the bottom into `--page-bg`. Keep the full house in frame
+ * (`object-contain`) so bike / bolt / battery stay visible — no heavy washes.
  */
 export function EnergyPageBackground({
   background,
@@ -35,8 +35,11 @@ export function EnergyPageBackground({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 top-0 z-0 overflow-hidden",
-        "h-[min(58vh,36rem)] sm:h-[min(62vh,40rem)]",
+        "pointer-events-none absolute z-0 overflow-hidden",
+        // Break out of main px/py so art is page-wide and sits behind the topbar
+        "inset-x-0 top-0 -mx-4 -mt-4 sm:-mx-6",
+        "w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)]",
+        "h-[min(62vh,40rem)] sm:h-[min(68vh,44rem)]",
         className
       )}
       aria-hidden
@@ -49,25 +52,12 @@ export function EnergyPageBackground({
         decoding="async"
         fetchPriority="low"
       />
-      {/* Soft vertical verloop into page background — keep art readable */}
+      {/* Soft verloop alleen onderaan — geen zijfades, geen dichte top-wash */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to bottom, color-mix(in srgb, var(--page-bg) 28%, transparent) 0%, transparent 18%, transparent 55%, color-mix(in srgb, var(--page-bg) 35%, transparent) 78%, var(--page-bg) 100%)",
-        }}
-      />
-      {/* Side fades so the panel doesn’t read edge-to-edge */}
-      <div
-        className="absolute inset-y-0 left-0 w-[8%] max-w-20"
-        style={{
-          background: "linear-gradient(to right, var(--page-bg), transparent)",
-        }}
-      />
-      <div
-        className="absolute inset-y-0 right-0 w-[8%] max-w-20"
-        style={{
-          background: "linear-gradient(to left, var(--page-bg), transparent)",
+            "linear-gradient(to bottom, transparent 0%, transparent 48%, color-mix(in srgb, var(--page-bg) 28%, transparent) 72%, color-mix(in srgb, var(--page-bg) 72%, transparent) 88%, var(--page-bg) 100%)",
         }}
       />
     </div>
