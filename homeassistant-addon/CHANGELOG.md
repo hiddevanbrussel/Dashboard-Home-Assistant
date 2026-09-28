@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.37
+
+- Energy dashboard: floating cards can be dragged/placed across the full page board (matching dashboard boards), not only inside the short content column
+
 ## 0.4.36
 
 - Energy dashboard: fresh blank canvas (remove fixed overview/stats); add Pills, Text, and Nuts cards freely over the light/dark hero art
