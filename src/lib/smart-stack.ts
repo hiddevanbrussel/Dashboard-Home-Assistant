@@ -12,6 +12,9 @@ export const SMART_STACK_DEFAULT_INTERVAL_SEC = 8;
 export const SMART_STACK_MIN_INTERVAL_SEC = 3;
 export const SMART_STACK_MAX_INTERVAL_SEC = 60;
 
+/** Crossfade / soft-slide duration between stacked cards (ms). */
+export const SMART_STACK_TRANSITION_MS = 520;
+
 /** Card types that can be nested inside a smart stack. */
 export const SMART_STACK_CHILD_TYPES = [
   "climate_card_2",
