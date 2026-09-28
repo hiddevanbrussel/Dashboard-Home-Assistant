@@ -30,7 +30,8 @@ export function EnergyPageBackground({ className }: EnergyPageBackgroundProps) {
       className={cn(
         // fixed + inset-x-0 = true page width (under sidebar); z-0 under chrome (sidebar z-60, header z-70)
         "pointer-events-none fixed inset-x-0 top-0 z-0 overflow-hidden",
-        "h-[min(72vh,46rem)] sm:h-[min(78vh,50rem)]",
+        // Nearly full viewport so the illustration stays visible; only a thin bottom fade
+        "h-[100dvh]",
         className
       )}
       aria-hidden
@@ -45,12 +46,12 @@ export function EnergyPageBackground({ className }: EnergyPageBackgroundProps) {
         fetchPriority="high"
         data-energy-bg-src={src}
       />
-      {/* Subtle bottom fade only — keep most of the illustration visible */}
+      {/* Thin bottom fade only — do not white-out half the page */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-x-0 bottom-0 h-[28%]"
         style={{
           background:
-            "linear-gradient(to bottom, transparent 0%, transparent 68%, color-mix(in srgb, var(--page-bg) 18%, transparent) 84%, color-mix(in srgb, var(--page-bg) 55%, transparent) 94%, var(--page-bg) 100%)",
+            "linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--page-bg) 22%, transparent) 55%, color-mix(in srgb, var(--page-bg) 70%, transparent) 82%, var(--page-bg) 100%)",
         }}
       />
     </div>
