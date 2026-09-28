@@ -45,7 +45,7 @@ export function EnergyPageBackground({
       <img
         src={src}
         alt=""
-        className="absolute inset-0 h-full w-full object-contain object-center"
+        className="absolute inset-0 h-full w-full object-contain object-[center_bottom]"
         decoding="async"
         fetchPriority="low"
       />
