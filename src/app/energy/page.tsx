@@ -573,17 +573,6 @@ export default function EnergyPage() {
     saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
-  function handleNutsCardResize(widgetId: string, size: { width: number; height: number }) {
-    const width = clampNutsCardWidth(size.width);
-    const height = clampNutsCardHeight(size.height);
-    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
-    setWidgets(newWidgets);
-    if (editingWidgetId === widgetId) {
-      setEditForm((prev) => ({ ...prev, width, height }));
-    }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
-  }
-
   useEffect(() => {
     if (!editingWidget) return;
     const isCategoryCard = editingWidget.type === "text_card";
