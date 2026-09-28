@@ -1,11 +1,8 @@
-/** Legacy cutout used when an energy_monitor_card supplies a custom inset house image. */
-export const ENERGY_OVERVIEW_HOUSE_IMAGE = "/energy-overview-house.webp";
-
 /**
  * Bust browser / ingress caches when the bundled PNGs change but keep the same path.
  * Bump when replacing `public/energy/energy-bg-*.png`.
  */
-export const ENERGY_PAGE_BG_CACHE_BUST = "20260928b";
+export const ENERGY_PAGE_BG_CACHE_BUST = "20260928c";
 
 /** Energy dashboard hero illustrations (light / dark) — soft gradient panel, not wallpaper. */
 export const ENERGY_PAGE_BG_LIGHT = `/energy/energy-bg-light.png?v=${ENERGY_PAGE_BG_CACHE_BUST}`;

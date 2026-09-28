@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.36
+
+- Energy dashboard: fresh blank canvas (remove fixed overview/stats); add Pills, Text, and Nuts cards freely over the light/dark hero art
+- Nuts card: remove glow/shadow around the icon
+- Remove unused legacy photoreal energy house image assets
+
+
 ## 0.4.35
 
 - Energy dashboard: full-viewport light/dark illustrations (behind sidebar + topbar) with a soft bottom fade only (no side washes); show the full hero art (no upper crop), cache-bust bundled PNGs, and ignore legacy photoreal house paths as page backgrounds
