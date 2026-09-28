@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.37
+## 0.4.38
 
 - Energy dashboard: floating cards can be dragged/placed across the full page board (matching dashboard boards), not only inside the short content column
 
