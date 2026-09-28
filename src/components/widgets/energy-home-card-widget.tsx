@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { MoreVertical, Zap } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { withBasePath } from "@/lib/base-path";
 import {
   ENERGY_PAGE_BG_DARK,
@@ -49,16 +49,14 @@ function Metric({
   return (
     <div
       className={cn(
-        "pointer-events-none select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]",
+        "pointer-events-none select-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.55)]",
         align === "right" && "text-right",
         align === "center" && "text-center",
         className
       )}
     >
-      <p className="text-[10px] font-medium uppercase tracking-[0.04em] text-white/75 sm:text-[11px]">
-        {label}
-      </p>
-      <p className="mt-0.5 text-[1.15rem] font-semibold leading-tight tracking-tight text-white sm:text-[1.35rem]">
+      <p className="text-[11px] font-medium text-white/80 sm:text-xs">{label}</p>
+      <p className="mt-0.5 text-[1.2rem] font-semibold leading-tight tracking-tight text-white sm:text-[1.4rem]">
         {value}
       </p>
     </div>
@@ -134,70 +132,19 @@ export function EnergyHomeCardWidget({
       <img
         src={bgSrc}
         alt=""
-        className="absolute inset-0 h-full w-full object-cover object-[center_55%]"
+        className="absolute inset-0 h-full w-full object-cover object-[center_48%]"
         decoding="async"
         draggable={false}
       />
 
-      {/* Soft vignette so white labels stay readable on bright sky / dark ground */}
+      {/* Soft edge wash so white labels stay readable without hiding the house */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 70% 55% at 50% 45%, transparent 40%, rgba(0,0,0,0.28) 100%), linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, transparent 28%, transparent 62%, rgba(0,0,0,0.35) 100%)",
+            "linear-gradient(to bottom, rgba(0,0,0,0.28) 0%, transparent 22%, transparent 68%, rgba(0,0,0,0.32) 100%)",
         }}
       />
-
-      {/* Decorative flow hub (green bolt) — mockup accent, not purple glow */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-[48%] flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-950/90 ring-1 ring-white/15 sm:h-11 sm:w-11"
-        aria-hidden
-      >
-        <Zap className="h-4 w-4 fill-[#3DDC97] text-[#3DDC97] sm:h-5 sm:w-5" strokeWidth={1.5} />
-      </div>
-
-      {/* Subtle flow lines: green (solar) + violet (grid) */}
-      <svg
-        className="pointer-events-none absolute inset-0 h-full w-full"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        aria-hidden
-      >
-        <path
-          d="M50 28 V46"
-          fill="none"
-          stroke="#3DDC97"
-          strokeWidth="0.7"
-          strokeLinecap="round"
-          opacity="0.85"
-        />
-        <path
-          d="M50 50 H62"
-          fill="none"
-          stroke="#3DDC97"
-          strokeWidth="0.55"
-          strokeLinecap="round"
-          opacity="0.7"
-        />
-        <path
-          d="M18 52 H46"
-          fill="none"
-          stroke="#8B5CF6"
-          strokeWidth="0.55"
-          strokeLinecap="round"
-          strokeDasharray="1.4 1.1"
-          opacity="0.75"
-        />
-        <path
-          d="M50 54 C48 68 36 74 22 78"
-          fill="none"
-          stroke="#8B5CF6"
-          strokeWidth="0.55"
-          strokeLinecap="round"
-          strokeDasharray="1.4 1.1"
-          opacity="0.7"
-        />
-      </svg>
 
       {/* Metrics — positions match mockup */}
       <div className="absolute inset-0 p-3 sm:p-4">
