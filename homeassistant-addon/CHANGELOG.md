@@ -2,7 +2,7 @@
 
 ## 0.4.40
 
-- Energy dashboard: new **Energy home** card (`energy_home_card`) with house illustration and floating day metrics (Opwek / Zelfvoorzienend / Net / Kosten / Teruglevering); addable, draggable, and resizable on the energy board
+- Energy dashboard: new **Metric / Waarde** floating text (`energy_metric`) — small title above, large value + unit below (Opwek / Net / Kosten style); freely placeable on the energy board with optional HA sensor or manual value
 - Energy dashboard: full-page floating board so cards can be dragged across the viewport (from #188)
 
 ## 0.4.39

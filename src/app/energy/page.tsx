@@ -8,7 +8,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Check, CircleDot, Gauge, Home, Image as ImageIcon, Pencil, Plus, Sun, Type, X, Zap } from "lucide-react";
+import { Check, CircleDot, Gauge, Hash, Image as ImageIcon, Pencil, Plus, Sun, Type, X, Zap } from "lucide-react";
 import {
   TextCardWidget,
   SolarCardWidget,
@@ -18,7 +18,7 @@ import {
   StatPillCardWidget,
   SensorCardWidget,
   NutsCardWidget,
-  EnergyHomeCardWidget,
+  EnergyMetricWidget,
   FloatingTextCard,
   FloatingSolarCard,
   FloatingPowerUsageCard,
@@ -27,21 +27,17 @@ import {
   FloatingStatPillCard,
   FloatingSensorCard,
   FloatingNutsCard,
-  FloatingEnergyHomeCard,
+  FloatingEnergyMetric,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import {
   NUTS_CARD_DEFAULT_HEIGHT,
   NUTS_CARD_DEFAULT_WIDTH,
+  clampNutsCardHeight,
+  clampNutsCardWidth,
   normalizeNutsAccent,
   normalizeNutsPeriod,
 } from "@/lib/nuts-card";
-import {
-  ENERGY_HOME_CARD_DEFAULT_HEIGHT,
-  ENERGY_HOME_CARD_DEFAULT_WIDTH,
-  clampEnergyHomeCardHeight,
-  clampEnergyHomeCardWidth,
-} from "@/lib/energy-home-card";
 import type { SensorCondition, ImageCondition } from "@/components/widgets";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
@@ -56,12 +52,12 @@ import { EditPanelModal } from "./edit-panel";
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
 
-/** Primary canvas tiles: Pills, Text, Nuts, Energy home — plus optional energy cards. */
+/** Primary canvas tiles: Pills, Text, Metric, Nuts — plus optional energy cards. */
 const ADDABLE_WIDGET_TYPES = [
   "stat_pill_card",
   "text_card",
+  "energy_metric",
   "nuts_card",
-  "energy_home_card",
   "solar_card",
   "power_usage_card",
   "device_consumption_card",
@@ -72,8 +68,8 @@ const ADDABLE_WIDGET_TYPES = [
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "stat_pill_card", Icon: CircleDot },
   { type: "text_card", Icon: Type },
+  { type: "energy_metric", Icon: Hash },
   { type: "nuts_card", Icon: Zap },
-  { type: "energy_home_card", Icon: Home },
   { type: "solar_card", Icon: Sun },
   { type: "power_usage_card", Icon: Zap },
   { type: "device_consumption_card", Icon: Zap },
@@ -83,7 +79,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; Icon:
 
 const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   text_card: "",
-  energy_home_card: "",
+  energy_metric: "",
   solar_card: "sensor",
   energy_monitor_card: "sensor",
   power_usage_card: "sensor",
@@ -94,7 +90,7 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
 };
 
 const FLOATING_WIDGET_TYPES = new Set([
-  "text_card", "solar_card", "power_usage_card", "device_consumption_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "nuts_card", "energy_home_card",
+  "text_card", "solar_card", "power_usage_card", "device_consumption_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "nuts_card", "energy_metric",
 ]);
 
 type EnergyDashboardData = {
@@ -158,6 +154,10 @@ function WidgetByType({
   grid_entity_id,
   width,
   height,
+  unit,
+  manual_value,
+  secondary,
+  unit_as_prefix,
   onMoreClick,
 }: {
   type: string;
@@ -189,6 +189,10 @@ function WidgetByType({
   grid_entity_id?: string;
   width?: number;
   height?: number;
+  unit?: string;
+  manual_value?: string;
+  secondary?: string;
+  unit_as_prefix?: boolean;
   onMoreClick?: () => void;
 }) {
   const sizeProp = (size as "sm" | "md" | "lg") ?? "md";
@@ -203,17 +207,16 @@ function WidgetByType({
           icon={icon ?? "Type"}
         />
       );
-    case "energy_home_card":
+    case "energy_metric":
       return (
-        <EnergyHomeCardWidget
+        <EnergyMetricWidget
           title={title}
           entity_id={entity_id}
-          yield_entity_id_today={yield_entity_id_today}
-          grid_entity_id={grid_entity_id}
-          consumption_entity_id={consumption_entity_id}
-          cost_per_kwh={cost_per_kwh}
-          width={width}
-          height={height}
+          unit={unit}
+          manual_value={manual_value}
+          secondary={secondary}
+          color={color}
+          unit_as_prefix={unit_as_prefix}
           onMoreClick={onMoreClick}
         />
       );
@@ -377,6 +380,10 @@ export default function EnergyPage() {
     device_entity_ids: [],
     device_names: {},
     cost_per_kwh: undefined,
+    unit: "",
+    manual_value: "",
+    secondary: "",
+    unit_as_prefix: false,
   });
   const [iconSearch, setIconSearch] = useState("");
   const [sensorIconSearch, setSensorIconSearch] = useState("");
@@ -504,9 +511,10 @@ export default function EnergyPage() {
         period: "week" as const,
         icon: "Zap",
       }),
-      ...(type === "energy_home_card" && {
-        width: ENERGY_HOME_CARD_DEFAULT_WIDTH,
-        height: ENERGY_HOME_CARD_DEFAULT_HEIGHT,
+      ...(type === "energy_metric" && {
+        unit: "kWh",
+        manual_value: "0",
+        color: "#FFFFFF",
       }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
@@ -534,7 +542,7 @@ export default function EnergyPage() {
     setAddTileStep("type");
     setAddTileSelectedType(null);
     saveMutation.mutate({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
-    return type === "nuts_card" || type === "energy_home_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" || type === "text_card" ? newId : undefined;
+    return type === "nuts_card" || type === "energy_metric" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" || type === "text_card" ? newId : undefined;
   }
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
@@ -548,6 +556,28 @@ export default function EnergyPage() {
   function handleUpdateTile(widgetId: string, updates: Partial<WidgetConfig>) {
     setWidgets((prev) => prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w)));
     setEditingWidgetId(null);
+  }
+
+  function handleNutsCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampNutsCardWidth(size.width);
+    const height = clampNutsCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleNutsCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampNutsCardWidth(size.width);
+    const height = clampNutsCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   useEffect(() => {
@@ -584,13 +614,17 @@ export default function EnergyPage() {
       minimal: editingWidget.minimal ?? false,
       scale: editingWidget.scale ?? 1,
       label: editingWidget.label ?? "",
-      color: editingWidget.color ?? "amber",
+      color: editingWidget.type === "energy_metric" ? (editingWidget.color ?? "#FFFFFF") : (editingWidget.color ?? "amber"),
       icon_background_color: editingWidget.icon_background_color ?? "",
       device_entity_ids: editingWidget.device_entity_ids ?? [],
       device_names: editingWidget.device_names ?? {},
       cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
       grid_entity_id: editingWidget.grid_entity_id ?? "",
       textMode: isCategoryCard ? deriveTextMode() : undefined,
+      unit: editingWidget.unit ?? "",
+      manual_value: editingWidget.manual_value ?? "",
+      secondary: editingWidget.secondary ?? "",
+      unit_as_prefix: editingWidget.unit_as_prefix ?? false,
     });
     setSensorIconSearch(editingWidget.type === "sensor_card" ? (editingWidget.icon ?? "") : "");
     if (editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") setPowerUsageDeviceSearch("");
@@ -966,44 +1000,44 @@ export default function EnergyPage() {
                   />
                 ))}
 
-                {widgets.filter((w) => w.type === "nuts_card").map((w, i) => (
-                  <FloatingNutsCard
-                    key={w.id}
-                    widget={{
-                      id: w.id,
-                      title: w.title ?? t("cardType.nuts_card"),
-                      entity_id: w.entity_id,
-                      today_entity_id: w.today_entity_id,
-                      current_entity_id: w.current_entity_id,
-                      icon: w.icon,
-                      icon_background_color: w.icon_background_color,
-                      accent: w.accent,
-                      period: w.period,
-                      width: w.width ?? NUTS_CARD_DEFAULT_WIDTH,
-                      height: w.height ?? NUTS_CARD_DEFAULT_HEIGHT,
-                    }}
-                    widgetIndex={i}
-                    editMode={editMode}
-                    storageScope={STORAGE_SCOPE}
-                    onEnterEditMode={() => setEditMode(true)}
-                    onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
-                    onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-                  />
-                ))}
+        {widgets.filter((w) => w.type === "nuts_card").map((w, i) => (
+          <FloatingNutsCard
+            key={w.id}
+            widget={{
+              id: w.id,
+              title: w.title ?? t("cardType.nuts_card"),
+              entity_id: w.entity_id,
+              today_entity_id: w.today_entity_id,
+              current_entity_id: w.current_entity_id,
+              icon: w.icon,
+              icon_background_color: w.icon_background_color,
+              accent: w.accent,
+              period: w.period,
+              width: w.width ?? NUTS_CARD_DEFAULT_WIDTH,
+              height: w.height ?? NUTS_CARD_DEFAULT_HEIGHT,
+            }}
+            widgetIndex={i}
+            editMode={editMode}
+            storageScope={STORAGE_SCOPE}
+            onEnterEditMode={() => setEditMode(true)}
+            onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+            onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+            onResize={editMode ? (size) => handleNutsCardResize(w.id, size) : undefined}
+          />
+        ))}
 
-                {widgets.filter((w) => w.type === "energy_home_card").map((w, i) => (
-                  <FloatingEnergyHomeCard
+                {widgets.filter((w) => w.type === "energy_metric").map((w, i) => (
+                  <FloatingEnergyMetric
                     key={w.id}
                     widget={{
                       id: w.id,
-                      title: w.title ?? t("cardType.energy_home_card"),
+                      title: w.title ?? t("cardType.energy_metric"),
                       entity_id: w.entity_id,
-                      yield_entity_id_today: (w as { yield_entity_id_today?: string }).yield_entity_id_today,
-                      grid_entity_id: w.grid_entity_id,
-                      consumption_entity_id: w.consumption_entity_id,
-                      cost_per_kwh: w.cost_per_kwh,
-                      width: clampEnergyHomeCardWidth(w.width ?? ENERGY_HOME_CARD_DEFAULT_WIDTH),
-                      height: clampEnergyHomeCardHeight(w.height ?? ENERGY_HOME_CARD_DEFAULT_HEIGHT),
+                      unit: w.unit,
+                      manual_value: w.manual_value,
+                      secondary: w.secondary,
+                      color: w.color,
+                      unit_as_prefix: w.unit_as_prefix,
                     }}
                     widgetIndex={i}
                     editMode={editMode}
@@ -1011,22 +1045,6 @@ export default function EnergyPage() {
                     onEnterEditMode={() => setEditMode(true)}
                     onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
                     onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
-                    onResize={(size) => {
-                      const width = clampEnergyHomeCardWidth(size.width);
-                      const height = clampEnergyHomeCardHeight(size.height);
-                      setWidgets((prev) => {
-                        const nextWidgets = prev.map((x) =>
-                          x.id === w.id ? { ...x, width, height } : x
-                        );
-                        saveMutation.mutate({
-                          layout,
-                          widgets: nextWidgets,
-                          welcomeTitle,
-                          welcomeSubtitle,
-                        });
-                        return nextWidgets;
-                      });
-                    }}
                   />
                 ))}
               </section>
@@ -1082,7 +1100,7 @@ export default function EnergyPage() {
                         type="button"
                         onClick={() => {
                           if (type === "text_card") { const newId = handleAddTile("text_card", "", t("editPanel.newText")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
-                          if (type === "energy_home_card") { const newId = handleAddTile("energy_home_card", "", t("cardType.energy_home_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
+                          if (type === "energy_metric") { const newId = handleAddTile("energy_metric", "", t("cardType.energy_metric")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           if (type === "energy_monitor_card") { const newId = handleAddTile("energy_monitor_card", "", t("cardType.energy_monitor_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           if (type === "power_usage_card") { const newId = handleAddTile("power_usage_card", "", t("cardType.power_usage_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           if (type === "device_consumption_card") { const newId = handleAddTile("device_consumption_card", "", t("cardType.device_consumption_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
