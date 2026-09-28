@@ -15,7 +15,6 @@ import {
 import { SmartStackChild } from "./smart-stack-child";
 
 export function SmartStackWidget({
-  title,
   slides = [],
   interval_seconds,
   width,
@@ -43,6 +42,7 @@ export function SmartStackWidget({
   const intervalSec = clampSmartStackIntervalSec(interval_seconds ?? SMART_STACK_DEFAULT_INTERVAL_SEC);
   const cardW = clampSmartStackWidth(width);
   const cardH = clampSmartStackHeight(height);
+  const isEmpty = count === 0;
 
   useEffect(() => {
     setIndex((i) => normalizeSmartStackIndex(i, count));
@@ -70,9 +70,10 @@ export function SmartStackWidget({
   return (
     <div
       className={cn(
-        "relative flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl",
-        "bg-white/70 shadow-xl backdrop-blur-2xl border border-black/5",
-        "dark:bg-zinc-950/70 dark:border-white/10",
+        "relative h-full w-full min-h-0 overflow-hidden",
+        // Empty / edit placeholder only: light frame. With slides, the nested card is the visual.
+        isEmpty &&
+          "flex flex-col rounded-2xl border border-black/5 bg-white/70 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-950/70",
         className
       )}
       style={{ width: cardW, height: cardH }}
@@ -91,33 +92,24 @@ export function SmartStackWidget({
         touchStartX.current = null;
       }}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-2 px-3 pt-2">
-        <div className="pointer-events-none flex items-center gap-1.5 rounded-full bg-black/35 px-2 py-0.5 text-[10px] font-medium text-white/90 backdrop-blur-sm dark:bg-black/50">
-          <Layers className="h-3 w-3" aria-hidden />
-          <span className="max-w-[9rem] truncate">{title?.trim() || t("cardType.smart_stack")}</span>
-          {count > 0 && (
-            <span className="tabular-nums text-white/70">
-              {normalizeSmartStackIndex(index, count) + 1}/{count}
-            </span>
-          )}
-        </div>
-        {onMoreClick && (
+      {onMoreClick && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-end px-2 pt-2">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               onMoreClick();
             }}
-            className="pointer-events-auto rounded-lg p-1 text-white/80 hover:bg-white/15 hover:text-white"
+            className="pointer-events-auto rounded-lg bg-black/35 p-1 text-white/80 backdrop-blur-sm hover:bg-black/50 hover:text-white dark:bg-black/50"
             aria-label={t("common.options")}
           >
             <MoreVertical className="h-4 w-4" aria-hidden />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="relative min-h-0 flex-1">
-        {count === 0 || !active ? (
+      <div className="relative h-full min-h-0 w-full">
+        {isEmpty || !active ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
             <Layers className="h-8 w-8 text-gray-400 dark:text-white/35" aria-hidden />
             <p className="text-sm font-medium text-gray-700 dark:text-white/80">
@@ -131,29 +123,6 @@ export function SmartStackWidget({
           </div>
         )}
       </div>
-
-      {count > 1 && (
-        <div className="absolute inset-x-0 bottom-2 z-20 flex justify-center gap-1.5">
-          {slides.map((slide, i) => {
-            const activeDot = i === normalizeSmartStackIndex(index, count);
-            return (
-              <button
-                key={slide.id}
-                type="button"
-                aria-label={`${i + 1}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  go(i);
-                }}
-                className={cn(
-                  "h-1.5 rounded-full transition-all",
-                  activeDot ? "w-4 bg-white shadow" : "w-1.5 bg-white/45 hover:bg-white/70"
-                )}
-              />
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
