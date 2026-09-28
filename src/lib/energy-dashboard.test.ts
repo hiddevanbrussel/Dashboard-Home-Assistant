@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  ENERGY_PAGE_BG_CACHE_BUST,
   ENERGY_PAGE_BG_DARK,
   ENERGY_PAGE_BG_LIGHT,
   resolveEnergyPageBackground,
+  sanitizeEnergyDashboardBackgrounds,
+  usableEnergyBackground,
   displayUnitForEnergy,
   displayUnitForPower,
   energyAlerts,
@@ -39,6 +42,7 @@ describe("energy page backgrounds", () => {
   it("uses bundled light and dark hero art by default", () => {
     expect(ENERGY_PAGE_BG_LIGHT).toMatch(/^\/energy\/energy-bg-light\.png\?v=/);
     expect(ENERGY_PAGE_BG_DARK).toMatch(/^\/energy\/energy-bg-dark\.png\?v=/);
+    expect(ENERGY_PAGE_BG_CACHE_BUST.length).toBeGreaterThan(0);
     expect(resolveEnergyPageBackground("light")).toBe(ENERGY_PAGE_BG_LIGHT);
     expect(resolveEnergyPageBackground("dark")).toBe(ENERGY_PAGE_BG_DARK);
   });
@@ -77,6 +81,54 @@ describe("energy page backgrounds", () => {
         backgroundDark: "/energy-house-night-snow.png",
       })
     ).toBe(ENERGY_PAGE_BG_DARK);
+    expect(
+      resolveEnergyPageBackground("light", {
+        backgroundLight: "/__ha_ingress__/house_cloudy_day.png",
+      })
+    ).toBe(ENERGY_PAGE_BG_LIGHT);
+  });
+
+  it("ignores stored bundled energy-bg paths so stale cache-bust cannot win after load", () => {
+    expect(
+      resolveEnergyPageBackground("light", {
+        backgroundLight: "/energy/energy-bg-light.png",
+        backgroundDark: "/energy/energy-bg-dark.png",
+      })
+    ).toBe(ENERGY_PAGE_BG_LIGHT);
+    expect(
+      resolveEnergyPageBackground("dark", {
+        backgroundLight: "/energy/energy-bg-light.png?v=20260928a",
+        backgroundDark: "/energy/energy-bg-dark.png?v=20260928b",
+      })
+    ).toBe(ENERGY_PAGE_BG_DARK);
+    expect(
+      resolveEnergyPageBackground("light", {
+        backgroundLight: "/__ha_ingress__/energy/energy-bg-light.png?v=old",
+      })
+    ).toBe(ENERGY_PAGE_BG_LIGHT);
+    expect(usableEnergyBackground("/energy/energy-bg-light.png")).toBeUndefined();
+    expect(usableEnergyBackground("/uploads/ok.png")).toBe("/uploads/ok.png");
+  });
+
+  it("sanitizes persisted energy dashboard backgrounds for API migration", () => {
+    const cleaned = sanitizeEnergyDashboardBackgrounds({
+      background: "/energy-house.png",
+      backgroundLight: "/energy/energy-bg-light.png?v=stale",
+      backgroundDark: "/uploads/keep-dark.png",
+    });
+    expect(cleaned).toEqual({
+      background: null,
+      backgroundLight: null,
+      backgroundDark: "/uploads/keep-dark.png",
+      changed: true,
+    });
+    expect(
+      sanitizeEnergyDashboardBackgrounds({
+        background: null,
+        backgroundLight: "/uploads/a.png",
+        backgroundDark: "/uploads/b.png",
+      }).changed
+    ).toBe(false);
   });
 });
 

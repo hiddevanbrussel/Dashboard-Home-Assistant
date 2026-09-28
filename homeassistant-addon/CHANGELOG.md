@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.37
+
+- Energy dashboard: stop persisted/stale light/dark background URLs from replacing the current bundled art after first load; bump PNG cache-bust; clear legacy backgrounds on API load; remove leftover `house_cloudy_day.png`
+
 ## 0.4.36
 
 - Energy dashboard: fresh blank canvas (remove fixed overview/stats); add Pills, Text, and Nuts cards freely over the light/dark hero art
