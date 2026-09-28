@@ -224,6 +224,22 @@ export type SmartStackProps = {
   height?: number;
 };
 
+/** Energy home card: house illustration with day metrics (generation, self-sufficiency, grid, cost, export). */
+export type EnergyHomeCardProps = Omit<WidgetBaseProps, "entity_id"> & {
+  /** Optional override for generation (Opwek). Falls back to Settings → Energy solar yield. */
+  entity_id?: string;
+  /** Preferred generation entity (today yield). */
+  yield_entity_id_today?: string;
+  /** Grid export / teruglevering entity. Falls back to Settings → Energy. */
+  grid_entity_id?: string;
+  /** Grid import / Net entity (kWh). */
+  consumption_entity_id?: string;
+  /** Optional cost-per-kWh override; else Settings → Energy. */
+  cost_per_kwh?: number;
+  width?: number;
+  height?: number;
+};
+
 /** Nuts/utility card: weekly/monthly bar chart with today value and period trend. */
 export type NutsCardProps = WidgetBaseProps & {
   /** Accent style: consumption (orange) or production (green). */

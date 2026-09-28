@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.40
+
+- Energy dashboard: new **Energy home** card (`energy_home_card`) with house illustration and floating day metrics (Opwek / Zelfvoorzienend / Net / Kosten / Teruglevering); addable, draggable, and resizable on the energy board
+- Energy dashboard: full-page floating board so cards can be dragged across the viewport (from #188)
+
 ## 0.4.39
 
 - Energy dashboard: always force bundled vector light/dark illustrations (ignore patio / custom / global wallpaper URLs); clear stored energy backgrounds on API load; soften bottom fade; stronger cache-bust

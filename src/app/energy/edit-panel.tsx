@@ -23,6 +23,16 @@ import {
   normalizeNutsAccent,
   normalizeNutsPeriod,
 } from "@/lib/nuts-card";
+import {
+  ENERGY_HOME_CARD_DEFAULT_HEIGHT,
+  ENERGY_HOME_CARD_DEFAULT_WIDTH,
+  ENERGY_HOME_CARD_MAX_HEIGHT,
+  ENERGY_HOME_CARD_MAX_WIDTH,
+  ENERGY_HOME_CARD_MIN_HEIGHT,
+  ENERGY_HOME_CARD_MIN_WIDTH,
+  clampEnergyHomeCardHeight,
+  clampEnergyHomeCardWidth,
+} from "@/lib/energy-home-card";
 import ReactGridLayout from "react-grid-layout";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -59,6 +69,7 @@ type EditForm = {
   device_entity_ids?: string[];
   device_names?: Record<string, string>;
   cost_per_kwh?: number;
+  grid_entity_id?: string;
 };
 
 type HaEntity = { entity_id: string; attributes?: Record<string, unknown> };
@@ -144,6 +155,17 @@ export function EditPanelModal(props: EditPanelModalProps) {
     if (editingWidget.type === "stat_pill_card") Object.assign(base, { entity_id: editForm.entity_id, label: editForm.label || undefined, icon: editForm.icon || undefined, color: editForm.color || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "sensor_card") Object.assign(base, { entity_id: editForm.entity_id, icon: editForm.icon || undefined, show_icon: editForm.show_icon !== false, size: editForm.size || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "nuts_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, icon: editForm.icon || undefined, icon_background_color: editForm.icon_background_color || undefined, today_entity_id: editForm.today_entity_id || undefined, current_entity_id: undefined, accent: normalizeNutsAccent(editForm.accent), period: normalizeNutsPeriod(editForm.period), width: editForm.width != null && editForm.width > 0 ? clampNutsCardWidth(editForm.width) : undefined, height: editForm.height != null && editForm.height > 0 ? clampNutsCardHeight(editForm.height) : undefined });
+    if (editingWidget.type === "energy_home_card") {
+      Object.assign(base, {
+        entity_id: editForm.entity_id || "",
+        yield_entity_id_today: editForm.yield_entity_id_today || undefined,
+        grid_entity_id: editForm.grid_entity_id || undefined,
+        consumption_entity_id: editForm.consumption_entity_id || undefined,
+        cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined,
+        width: editForm.width != null && editForm.width > 0 ? clampEnergyHomeCardWidth(editForm.width) : ENERGY_HOME_CARD_DEFAULT_WIDTH,
+        height: editForm.height != null && editForm.height > 0 ? clampEnergyHomeCardHeight(editForm.height) : ENERGY_HOME_CARD_DEFAULT_HEIGHT,
+      });
+    }
     return base;
   };
 
@@ -481,6 +503,96 @@ export function EditPanelModal(props: EditPanelModalProps) {
                   </div>
                 </div>
               )}
+            </>
+          ) : editingWidget.type === "energy_home_card" ? (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.name")}</label>
+                <input type="text" value={editForm.title} onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))} placeholder={t("editPanel.tileNamePlaceholder")} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500" />
+              </div>
+              <EntitySelectWithSearch
+                entities={entities}
+                value={editForm.yield_entity_id_today || editForm.entity_id || ""}
+                onChange={(v) => setEditForm((prev) => ({ ...prev, yield_entity_id_today: v || undefined, entity_id: v || "" }))}
+                filter={(e) => e.entity_id.startsWith("sensor.")}
+                label={t("editPanel.energyHomeGeneration")}
+                placeholder={t("editPanel.searchSensor")}
+                emptyOption={t("editPanel.none")}
+              />
+              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.energyHomeGenerationHint")}</p>
+              <EntitySelectWithSearch
+                entities={entities}
+                value={editForm.grid_entity_id ?? ""}
+                onChange={(v) => setEditForm((prev) => ({ ...prev, grid_entity_id: v || undefined }))}
+                filter={(e) => e.entity_id.startsWith("sensor.")}
+                label={t("editPanel.energyHomeExport")}
+                placeholder={t("editPanel.searchSensor")}
+                emptyOption={t("editPanel.none")}
+              />
+              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.energyHomeExportHint")}</p>
+              <EntitySelectWithSearch
+                entities={entities}
+                value={editForm.consumption_entity_id ?? ""}
+                onChange={(v) => setEditForm((prev) => ({ ...prev, consumption_entity_id: v || undefined }))}
+                filter={(e) => e.entity_id.startsWith("sensor.")}
+                label={t("editPanel.energyHomeImport")}
+                placeholder={t("editPanel.searchSensor")}
+                emptyOption={t("editPanel.none")}
+              />
+              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.energyHomeImportHint")}</p>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.costPerKwh")}</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={editForm.cost_per_kwh ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value === "" ? undefined : Number(e.target.value);
+                    setEditForm((prev) => ({ ...prev, cost_per_kwh: v != null && !Number.isNaN(v) ? v : undefined }));
+                  }}
+                  placeholder="0.30"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                />
+                <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.costPerKwhOverrideHint")}</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.widthHeightPx")}</label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <input
+                      type="number"
+                      min={ENERGY_HOME_CARD_MIN_WIDTH}
+                      max={ENERGY_HOME_CARD_MAX_WIDTH}
+                      step={10}
+                      value={editForm.width ?? ENERGY_HOME_CARD_DEFAULT_WIDTH}
+                      onChange={(e) => {
+                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                        setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined }));
+                      }}
+                      placeholder={String(ENERGY_HOME_CARD_DEFAULT_WIDTH)}
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                    />
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.width")}</p>
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="number"
+                      min={ENERGY_HOME_CARD_MIN_HEIGHT}
+                      max={ENERGY_HOME_CARD_MAX_HEIGHT}
+                      step={10}
+                      value={editForm.height ?? ENERGY_HOME_CARD_DEFAULT_HEIGHT}
+                      onChange={(e) => {
+                        const v = e.target.value === "" ? undefined : Number(e.target.value);
+                        setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined }));
+                      }}
+                      placeholder={String(ENERGY_HOME_CARD_DEFAULT_HEIGHT)}
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                    />
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.height")}</p>
+                  </div>
+                </div>
+              </div>
             </>
           ) : null}
         </div>

@@ -40,6 +40,8 @@ export { FloatingRoomCard } from "./floating-room-card";
 export { clampRoomCardWidth, clampRoomCardHeight } from "@/lib/room-card";
 export { NutsCardWidget } from "./nuts-card-widget";
 export { FloatingNutsCard } from "./floating-nuts-card";
+export { EnergyHomeCardWidget } from "./energy-home-card-widget";
+export { FloatingEnergyHomeCard } from "./floating-energy-home-card";
 export { StatPillCardWidget } from "./stat-pill-card-widget";
 export { FloatingStatPillCard } from "./floating-stat-pill-card";
 export { CameraCardWidget } from "./camera-card-widget";

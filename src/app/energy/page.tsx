@@ -8,7 +8,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Check, CircleDot, Gauge, Image as ImageIcon, Pencil, Plus, Sun, Type, X, Zap } from "lucide-react";
+import { Check, CircleDot, Gauge, Home, Image as ImageIcon, Pencil, Plus, Sun, Type, X, Zap } from "lucide-react";
 import {
   TextCardWidget,
   SolarCardWidget,
@@ -18,6 +18,7 @@ import {
   StatPillCardWidget,
   SensorCardWidget,
   NutsCardWidget,
+  EnergyHomeCardWidget,
   FloatingTextCard,
   FloatingSolarCard,
   FloatingPowerUsageCard,
@@ -26,6 +27,7 @@ import {
   FloatingStatPillCard,
   FloatingSensorCard,
   FloatingNutsCard,
+  FloatingEnergyHomeCard,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import {
@@ -34,6 +36,12 @@ import {
   normalizeNutsAccent,
   normalizeNutsPeriod,
 } from "@/lib/nuts-card";
+import {
+  ENERGY_HOME_CARD_DEFAULT_HEIGHT,
+  ENERGY_HOME_CARD_DEFAULT_WIDTH,
+  clampEnergyHomeCardHeight,
+  clampEnergyHomeCardWidth,
+} from "@/lib/energy-home-card";
 import type { SensorCondition, ImageCondition } from "@/components/widgets";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
@@ -48,11 +56,12 @@ import { EditPanelModal } from "./edit-panel";
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
 
-/** Primary canvas tiles: Pills, Text, Nuts — plus optional energy cards. */
+/** Primary canvas tiles: Pills, Text, Nuts, Energy home — plus optional energy cards. */
 const ADDABLE_WIDGET_TYPES = [
   "stat_pill_card",
   "text_card",
   "nuts_card",
+  "energy_home_card",
   "solar_card",
   "power_usage_card",
   "device_consumption_card",
@@ -64,6 +73,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; Icon:
   { type: "stat_pill_card", Icon: CircleDot },
   { type: "text_card", Icon: Type },
   { type: "nuts_card", Icon: Zap },
+  { type: "energy_home_card", Icon: Home },
   { type: "solar_card", Icon: Sun },
   { type: "power_usage_card", Icon: Zap },
   { type: "device_consumption_card", Icon: Zap },
@@ -73,6 +83,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; Icon:
 
 const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   text_card: "",
+  energy_home_card: "",
   solar_card: "sensor",
   energy_monitor_card: "sensor",
   power_usage_card: "sensor",
@@ -83,7 +94,7 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
 };
 
 const FLOATING_WIDGET_TYPES = new Set([
-  "text_card", "solar_card", "power_usage_card", "device_consumption_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "nuts_card",
+  "text_card", "solar_card", "power_usage_card", "device_consumption_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "nuts_card", "energy_home_card",
 ]);
 
 type EnergyDashboardData = {
@@ -144,6 +155,9 @@ function WidgetByType({
   device_names,
   cost_per_kwh,
   textMode,
+  grid_entity_id,
+  width,
+  height,
   onMoreClick,
 }: {
   type: string;
@@ -172,6 +186,9 @@ function WidgetByType({
   device_names?: Record<string, string>;
   cost_per_kwh?: number;
   textMode?: "title" | "subtitle" | "text";
+  grid_entity_id?: string;
+  width?: number;
+  height?: number;
   onMoreClick?: () => void;
 }) {
   const sizeProp = (size as "sm" | "md" | "lg") ?? "md";
@@ -184,6 +201,20 @@ function WidgetByType({
           type={textMode === "title" || textMode === "subtitle" || textMode === "text" ? textMode : "title"}
           show_icon={show_icon ?? false}
           icon={icon ?? "Type"}
+        />
+      );
+    case "energy_home_card":
+      return (
+        <EnergyHomeCardWidget
+          title={title}
+          entity_id={entity_id}
+          yield_entity_id_today={yield_entity_id_today}
+          grid_entity_id={grid_entity_id}
+          consumption_entity_id={consumption_entity_id}
+          cost_per_kwh={cost_per_kwh}
+          width={width}
+          height={height}
+          onMoreClick={onMoreClick}
         />
       );
     case "solar_card":
@@ -324,6 +355,7 @@ export default function EnergyPage() {
     device_entity_ids?: string[];
     device_names?: Record<string, string>;
     cost_per_kwh?: number;
+    grid_entity_id?: string;
   }>({
     title: "",
     entity_id: "",
@@ -472,6 +504,10 @@ export default function EnergyPage() {
         period: "week" as const,
         icon: "Zap",
       }),
+      ...(type === "energy_home_card" && {
+        width: ENERGY_HOME_CARD_DEFAULT_WIDTH,
+        height: ENERGY_HOME_CARD_DEFAULT_HEIGHT,
+      }),
     };
     const maxY = layout.length === 0 ? 0 : Math.max(...layout.map((item) => item.y + item.h));
     const isTextCard = type === "text_card";
@@ -498,7 +534,7 @@ export default function EnergyPage() {
     setAddTileStep("type");
     setAddTileSelectedType(null);
     saveMutation.mutate({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
-    return type === "nuts_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" || type === "text_card" ? newId : undefined;
+    return type === "nuts_card" || type === "energy_home_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" || type === "text_card" ? newId : undefined;
   }
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
@@ -553,6 +589,7 @@ export default function EnergyPage() {
       device_entity_ids: editingWidget.device_entity_ids ?? [],
       device_names: editingWidget.device_names ?? {},
       cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
+      grid_entity_id: editingWidget.grid_entity_id ?? "",
       textMode: isCategoryCard ? deriveTextMode() : undefined,
     });
     setSensorIconSearch(editingWidget.type === "sensor_card" ? (editingWidget.icon ?? "") : "");
@@ -953,6 +990,45 @@ export default function EnergyPage() {
                     onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
                   />
                 ))}
+
+                {widgets.filter((w) => w.type === "energy_home_card").map((w, i) => (
+                  <FloatingEnergyHomeCard
+                    key={w.id}
+                    widget={{
+                      id: w.id,
+                      title: w.title ?? t("cardType.energy_home_card"),
+                      entity_id: w.entity_id,
+                      yield_entity_id_today: (w as { yield_entity_id_today?: string }).yield_entity_id_today,
+                      grid_entity_id: w.grid_entity_id,
+                      consumption_entity_id: w.consumption_entity_id,
+                      cost_per_kwh: w.cost_per_kwh,
+                      width: clampEnergyHomeCardWidth(w.width ?? ENERGY_HOME_CARD_DEFAULT_WIDTH),
+                      height: clampEnergyHomeCardHeight(w.height ?? ENERGY_HOME_CARD_DEFAULT_HEIGHT),
+                    }}
+                    widgetIndex={i}
+                    editMode={editMode}
+                    storageScope={STORAGE_SCOPE}
+                    onEnterEditMode={() => setEditMode(true)}
+                    onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                    onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                    onResize={(size) => {
+                      const width = clampEnergyHomeCardWidth(size.width);
+                      const height = clampEnergyHomeCardHeight(size.height);
+                      setWidgets((prev) => {
+                        const nextWidgets = prev.map((x) =>
+                          x.id === w.id ? { ...x, width, height } : x
+                        );
+                        saveMutation.mutate({
+                          layout,
+                          widgets: nextWidgets,
+                          welcomeTitle,
+                          welcomeSubtitle,
+                        });
+                        return nextWidgets;
+                      });
+                    }}
+                  />
+                ))}
               </section>
             </div>,
             document.body
@@ -1006,6 +1082,7 @@ export default function EnergyPage() {
                         type="button"
                         onClick={() => {
                           if (type === "text_card") { const newId = handleAddTile("text_card", "", t("editPanel.newText")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
+                          if (type === "energy_home_card") { const newId = handleAddTile("energy_home_card", "", t("cardType.energy_home_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           if (type === "energy_monitor_card") { const newId = handleAddTile("energy_monitor_card", "", t("cardType.energy_monitor_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           if (type === "power_usage_card") { const newId = handleAddTile("power_usage_card", "", t("cardType.power_usage_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
                           if (type === "device_consumption_card") { const newId = handleAddTile("device_consumption_card", "", t("cardType.device_consumption_card")); if (newId) setEditingWidgetId(newId); setAddTileOpen(false); return; }
