@@ -44,8 +44,8 @@ describe("energy overview house", () => {
 
 describe("energy page backgrounds", () => {
   it("uses bundled light and dark hero art by default", () => {
-    expect(ENERGY_PAGE_BG_LIGHT).toBe("/energy/energy-bg-light.png");
-    expect(ENERGY_PAGE_BG_DARK).toBe("/energy/energy-bg-dark.png");
+    expect(ENERGY_PAGE_BG_LIGHT).toMatch(/^\/energy\/energy-bg-light\.png\?v=/);
+    expect(ENERGY_PAGE_BG_DARK).toMatch(/^\/energy\/energy-bg-dark\.png\?v=/);
     expect(resolveEnergyPageBackground("light")).toBe(ENERGY_PAGE_BG_LIGHT);
     expect(resolveEnergyPageBackground("dark")).toBe(ENERGY_PAGE_BG_DARK);
   });
@@ -72,6 +72,18 @@ describe("energy page backgrounds", () => {
     expect(resolveEnergyPageBackground("dark", { background: "/uploads/legacy.png" })).toBe(
       "/uploads/legacy.png"
     );
+  });
+
+  it("ignores photoreal legacy house paths so the new illustrations win", () => {
+    expect(
+      resolveEnergyPageBackground("light", { background: "/energy-house.png" })
+    ).toBe(ENERGY_PAGE_BG_LIGHT);
+    expect(
+      resolveEnergyPageBackground("dark", {
+        backgroundLight: "/energy-overview-house.webp",
+        backgroundDark: "/energy-house-night-snow.png",
+      })
+    ).toBe(ENERGY_PAGE_BG_DARK);
   });
 });
 

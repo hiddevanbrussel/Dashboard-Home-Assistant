@@ -1,9 +1,32 @@
 /** Legacy cutout used when an energy_monitor_card supplies a custom inset house image. */
 export const ENERGY_OVERVIEW_HOUSE_IMAGE = "/energy-overview-house.webp";
 
+/**
+ * Bust browser / ingress caches when the bundled PNGs change but keep the same path.
+ * Bump when replacing `public/energy/energy-bg-*.png`.
+ */
+export const ENERGY_PAGE_BG_CACHE_BUST = "20260928b";
+
 /** Energy dashboard hero illustrations (light / dark) — soft gradient panel, not wallpaper. */
-export const ENERGY_PAGE_BG_LIGHT = "/energy/energy-bg-light.png";
-export const ENERGY_PAGE_BG_DARK = "/energy/energy-bg-dark.png";
+export const ENERGY_PAGE_BG_LIGHT = `/energy/energy-bg-light.png?v=${ENERGY_PAGE_BG_CACHE_BUST}`;
+export const ENERGY_PAGE_BG_DARK = `/energy/energy-bg-dark.png?v=${ENERGY_PAGE_BG_CACHE_BUST}`;
+
+/** Photoreal / pre-illustration house assets — never use these as the page hero. */
+const LEGACY_ENERGY_PAGE_ART = new Set([
+  "/energy-house.png",
+  "/energy-house_snow.png",
+  "/energy-house-night-snow.png",
+  "/energy-overview-house.webp",
+  "/house_cloudy_day.png",
+]);
+
+function usableEnergyBackground(url: string | null | undefined): string | undefined {
+  const trimmed = url?.trim();
+  if (!trimmed) return undefined;
+  const path = trimmed.split("?")[0] ?? trimmed;
+  if (LEGACY_ENERGY_PAGE_ART.has(path)) return undefined;
+  return trimmed;
+}
 
 export function resolveEnergyPageBackground(
   resolvedTheme: "light" | "dark",
@@ -13,8 +36,9 @@ export function resolveEnergyPageBackground(
     backgroundDark?: string | null;
   }
 ): string {
-  const light = options?.backgroundLight?.trim() || options?.background?.trim() || ENERGY_PAGE_BG_LIGHT;
-  const dark = options?.backgroundDark?.trim() || options?.background?.trim() || ENERGY_PAGE_BG_DARK;
+  const legacy = usableEnergyBackground(options?.background);
+  const light = usableEnergyBackground(options?.backgroundLight) || legacy || ENERGY_PAGE_BG_LIGHT;
+  const dark = usableEnergyBackground(options?.backgroundDark) || legacy || ENERGY_PAGE_BG_DARK;
   return resolvedTheme === "dark" ? dark : light;
 }
 
