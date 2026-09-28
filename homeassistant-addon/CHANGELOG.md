@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.32
+
+- Energy dashboard: show the full light/dark hero illustrations (no upper crop), cache-bust bundled PNGs, and ignore legacy photoreal house paths as page backgrounds
+
 ## 0.4.31
 
 - Energy dashboard: show light/dark hero illustrations with a soft gradient fade (not full-page wallpaper); fix near-opaque theme wash that hid the art
