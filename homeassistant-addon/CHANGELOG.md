@@ -1,12 +1,12 @@
 # Changelog
 
-## 0.4.33
+## 0.4.35
 
-- Energy dashboard: full-viewport light/dark illustrations (behind sidebar + topbar) with a soft bottom fade only (no side washes)
+- Energy dashboard: full-viewport light/dark illustrations (behind sidebar + topbar) with a soft bottom fade only (no side washes); show the full hero art (no upper crop), cache-bust bundled PNGs, and ignore legacy photoreal house paths as page backgrounds
 
-## 0.4.32
+## 0.4.34
 
-- Energy dashboard: show the full light/dark hero illustrations (no upper crop), cache-bust bundled PNGs, and ignore legacy photoreal house paths as page backgrounds
+- Nuts card: remove week/month switch from the live card; period stays editable in properties only
 
 ## 0.4.31
 

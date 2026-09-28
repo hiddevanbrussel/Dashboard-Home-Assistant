@@ -68,7 +68,6 @@ export function FloatingNutsCard({
   onRemove,
   onEdit,
   onEnterEditMode,
-  onPeriodChange,
 }: {
   widget: {
     id: string;
@@ -90,8 +89,6 @@ export function FloatingNutsCard({
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
-  /** Persist week/month from the on-card switch (view mode). */
-  onPeriodChange?: (period: NutsCardPeriod) => void;
 }) {
   void onRemove;
   const totalWidth = clampNutsCardWidth(widget.width ?? NUTS_CARD_DEFAULT_WIDTH);
@@ -243,8 +240,6 @@ export function FloatingNutsCard({
           width={totalWidth}
           height={totalHeight}
           onMoreClick={editMode ? onEdit : undefined}
-          onPeriodChange={onPeriodChange}
-          periodInteractive={!editMode}
         />
       </div>
     </div>
