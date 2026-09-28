@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.32
+
+- Nuts card: remove week/month switch from the live card; period stays editable in properties only
+
 ## 0.4.31
 
 - Energy dashboard: show light/dark hero illustrations with a soft gradient fade (not full-page wallpaper); fix near-opaque theme wash that hid the art
