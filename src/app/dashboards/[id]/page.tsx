@@ -2563,15 +2563,7 @@ export default function DashboardEditPage() {
           .map((w, i) => (
             <FloatingSmartStack
               key={w.id}
-              widget={{
-                id: w.id,
-                type: "smart_stack",
-                title: w.title,
-                children: w.children,
-                interval_seconds: w.interval_seconds,
-                width: w.width,
-                height: w.height,
-              }}
+              widget={w}
               widgetIndex={i}
               editMode={editMode}
               storageScope={id}
