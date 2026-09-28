@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  ENERGY_OVERVIEW_HOUSE_IMAGE,
   ENERGY_PAGE_BG_DARK,
   ENERGY_PAGE_BG_LIGHT,
   resolveEnergyPageBackground,
@@ -35,12 +34,6 @@ import {
   polylinePoints,
   visibleHouseCallouts,
 } from "./energy-dashboard";
-
-describe("energy overview house", () => {
-  it("uses the bundled house cutout by default", () => {
-    expect(ENERGY_OVERVIEW_HOUSE_IMAGE).toBe("/energy-overview-house.webp");
-  });
-});
 
 describe("energy page backgrounds", () => {
   it("uses bundled light and dark hero art by default", () => {

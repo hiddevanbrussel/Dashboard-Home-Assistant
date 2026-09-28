@@ -18,8 +18,8 @@ describe("base-path", () => {
 
   it("prefixes absolute same-origin paths", () => {
     process.env.NEXT_PUBLIC_BASE_PATH = "/__ha_ingress__";
-    expect(withBasePath("/energy-overview-house.webp")).toBe(
-      "/__ha_ingress__/energy-overview-house.webp"
+    expect(withBasePath("/energy/energy-bg-light.png")).toBe(
+      "/__ha_ingress__/energy/energy-bg-light.png"
     );
     expect(withBasePath("/api/immich/asset?id=1")).toBe("/__ha_ingress__/api/immich/asset?id=1");
     expect(cssUrl("/uploads/x.png")).toBe("url(/__ha_ingress__/uploads/x.png)");

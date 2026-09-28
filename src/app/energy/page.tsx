@@ -8,7 +8,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { Check, CircleDot, Fuel, Gauge, Image as ImageIcon, Pencil, Plug, Plus, Sun, Type, X, Zap } from "lucide-react";
+import { Check, CircleDot, Gauge, Image as ImageIcon, Pencil, Plus, Sun, Type, X, Zap } from "lucide-react";
 import {
   TextCardWidget,
   SolarCardWidget,
@@ -31,8 +31,6 @@ import type { WidgetConfig } from "@/stores/onboarding-store";
 import {
   NUTS_CARD_DEFAULT_HEIGHT,
   NUTS_CARD_DEFAULT_WIDTH,
-  clampNutsCardHeight,
-  clampNutsCardWidth,
   normalizeNutsAccent,
   normalizeNutsPeriod,
 } from "@/lib/nuts-card";
@@ -44,24 +42,33 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useDashboardEditFlag } from "@/hooks/use-dashboard-edit-flag";
 import { cn, generateId } from "@/lib/utils";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
-import { EnergyOverview } from "@/components/energy/energy-overview";
 import { EnergyPageBackground } from "@/components/energy/energy-page-background";
 import { EditPanelModal } from "./edit-panel";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
 
-const ADDABLE_WIDGET_TYPES = ["text_card", "solar_card", "power_usage_card", "device_consumption_card", "energy_monitor_card", "stat_pill_card", "sensor_card", "nuts_card"] as const;
+/** Primary canvas tiles: Pills, Text, Nuts — plus optional energy cards. */
+const ADDABLE_WIDGET_TYPES = [
+  "stat_pill_card",
+  "text_card",
+  "nuts_card",
+  "solar_card",
+  "power_usage_card",
+  "device_consumption_card",
+  "energy_monitor_card",
+  "sensor_card",
+] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; Icon: React.ComponentType<{ className?: string }> }[] = [
+  { type: "stat_pill_card", Icon: CircleDot },
   { type: "text_card", Icon: Type },
+  { type: "nuts_card", Icon: Zap },
   { type: "solar_card", Icon: Sun },
   { type: "power_usage_card", Icon: Zap },
   { type: "device_consumption_card", Icon: Zap },
   { type: "energy_monitor_card", Icon: ImageIcon },
-  { type: "stat_pill_card", Icon: CircleDot },
   { type: "sensor_card", Icon: Gauge },
-  { type: "nuts_card", Icon: Zap },
 ];
 
 const WIDGET_TYPE_DOMAIN: Record<string, string> = {
@@ -699,12 +706,25 @@ export default function EnergyPage() {
           </div>
         </div>
 
-        <EnergyOverview
-          title={welcomeTitle}
-          subtitle={welcomeSubtitle}
-          editMode={editMode}
-          haEntities={entities}
-        />
+        {editMode && widgets.length === 0 ? (
+          <div className="mx-auto max-w-md px-4 py-16 text-center">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              {t("energy.canvas.emptyTitle")}
+            </p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {t("energy.canvas.emptyHint")}
+            </p>
+            <button
+              type="button"
+              onClick={() => setAddTileOpen(true)}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#4700B5] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              {t("editPanel.addTile")}
+            </button>
+          </div>
+        ) : null}
+
         {editMode ? (
         <div className={cn("rounded-card overflow-hidden", "grid-edit-touch")}>
           <ReactGridLayout

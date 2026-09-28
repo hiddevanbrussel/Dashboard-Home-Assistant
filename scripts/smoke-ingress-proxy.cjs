@@ -63,11 +63,11 @@ assert(stray.includes(`poster="${INGRESS}/default-screensaver.png"`), "poster pr
 assert(!stray.includes(`href="/manifest.json"`), "no stray manifest");
 
 const cssUrl = rewriteText(
-  `background:url(/uploads/a.png);background-image:url("/energy-overview-house.webp")`,
+  `background:url(/uploads/a.png);background-image:url("/default-screensaver.png")`,
   INGRESS
 );
 assert(cssUrl.includes(`url(${INGRESS}/uploads/a.png)`), "css url uploads");
-assert(cssUrl.includes(`url("${INGRESS}/energy-overview-house.webp")`), "css url static image");
+assert(cssUrl.includes(`url("${INGRESS}/default-screensaver.png")`), "css url static image");
 assert(!cssUrl.includes("url(/uploads/"), "no bare css upload url");
 
 // Flight T-row: path expansion must update hex byte-length or clients get Connection closed.
