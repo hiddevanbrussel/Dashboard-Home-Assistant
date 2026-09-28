@@ -23,6 +23,7 @@ import {
   normalizeNutsAccent,
   normalizeNutsPeriod,
 } from "@/lib/nuts-card";
+import { ENERGY_METRIC_DEFAULT_COLOR } from "@/lib/energy-metric";
 import ReactGridLayout from "react-grid-layout";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,11 @@ type EditForm = {
   device_entity_ids?: string[];
   device_names?: Record<string, string>;
   cost_per_kwh?: number;
+  grid_entity_id?: string;
+  unit?: string;
+  manual_value?: string;
+  secondary?: string;
+  unit_as_prefix?: boolean;
 };
 
 type HaEntity = { entity_id: string; attributes?: Record<string, unknown> };
@@ -144,6 +150,16 @@ export function EditPanelModal(props: EditPanelModalProps) {
     if (editingWidget.type === "stat_pill_card") Object.assign(base, { entity_id: editForm.entity_id, label: editForm.label || undefined, icon: editForm.icon || undefined, color: editForm.color || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "sensor_card") Object.assign(base, { entity_id: editForm.entity_id, icon: editForm.icon || undefined, show_icon: editForm.show_icon !== false, size: editForm.size || undefined, conditions: (editForm.conditions ?? []).length > 0 ? editForm.conditions : undefined });
     if (editingWidget.type === "nuts_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, icon: editForm.icon || undefined, icon_background_color: editForm.icon_background_color || undefined, today_entity_id: editForm.today_entity_id || undefined, current_entity_id: undefined, accent: normalizeNutsAccent(editForm.accent), period: normalizeNutsPeriod(editForm.period), width: editForm.width != null && editForm.width > 0 ? clampNutsCardWidth(editForm.width) : undefined, height: editForm.height != null && editForm.height > 0 ? clampNutsCardHeight(editForm.height) : undefined });
+    if (editingWidget.type === "energy_metric") {
+      Object.assign(base, {
+        entity_id: editForm.entity_id || "",
+        unit: editForm.unit?.trim() || undefined,
+        manual_value: editForm.manual_value?.trim() || undefined,
+        secondary: editForm.secondary?.trim() || undefined,
+        color: editForm.color?.trim() || ENERGY_METRIC_DEFAULT_COLOR,
+        unit_as_prefix: editForm.unit_as_prefix === true ? true : undefined,
+      });
+    }
     return base;
   };
 
@@ -481,6 +497,90 @@ export function EditPanelModal(props: EditPanelModalProps) {
                   </div>
                 </div>
               )}
+            </>
+          ) : editingWidget.type === "energy_metric" ? (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.metricTitle")}</label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                  placeholder={t("editPanel.metricTitlePlaceholder")}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                />
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.metricTitleHint")}</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.metricManualValue")}</label>
+                <input
+                  type="text"
+                  value={editForm.manual_value ?? ""}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, manual_value: e.target.value }))}
+                  placeholder="13"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                />
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.metricManualValueHint")}</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.metricUnit")}</label>
+                <input
+                  type="text"
+                  value={editForm.unit ?? ""}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, unit: e.target.value }))}
+                  placeholder="kWh"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                />
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.metricUnitHint")}</p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editForm.unit_as_prefix === true}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, unit_as_prefix: e.target.checked }))}
+                  className="rounded border-gray-300 dark:border-gray-600"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t("editPanel.metricUnitAsPrefix")}</span>
+              </label>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.metricSecondary")}</label>
+                <input
+                  type="text"
+                  value={editForm.secondary ?? ""}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, secondary: e.target.value }))}
+                  placeholder="82%"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                />
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.metricSecondaryHint")}</p>
+              </div>
+              <EntitySelectWithSearch
+                entities={entities}
+                value={editForm.entity_id ?? ""}
+                onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))}
+                filter={(e) => e.entity_id.startsWith("sensor.")}
+                label={t("editPanel.metricEntity")}
+                placeholder={t("editPanel.searchSensor")}
+                emptyOption={t("editPanel.none")}
+              />
+              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.metricEntityHint")}</p>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.metricColor")}</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={editForm.color && /^#[0-9A-Fa-f]{6}$/.test(editForm.color) ? editForm.color : ENERGY_METRIC_DEFAULT_COLOR}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, color: e.target.value }))}
+                    className="h-8 w-12 cursor-pointer rounded border border-gray-200 dark:border-white/20 bg-white dark:bg-white/5"
+                  />
+                  <input
+                    type="text"
+                    value={editForm.color ?? ENERGY_METRIC_DEFAULT_COLOR}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, color: e.target.value || ENERGY_METRIC_DEFAULT_COLOR }))}
+                    placeholder="#FFFFFF"
+                    className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                  />
+                </div>
+              </div>
             </>
           ) : null}
         </div>

@@ -112,10 +112,16 @@ export type WidgetConfig = {
   image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
   /** Stat pill card: label onder de waarde (bijv. "Opbrengst"). */
   label?: string;
-  /** Stat pill card: kleurthema (amber, purple, emerald, red). */
+  /** Stat pill card: kleurthema (amber, purple, emerald, red). Energy metric: text color. */
   color?: string;
   thresholds?: string;
   unit?: string;
+  /** Energy metric: static value when no entity is linked. */
+  manual_value?: string;
+  /** Energy metric: optional trailing text on the value line (e.g. "82%"). */
+  secondary?: string;
+  /** Energy metric: force unit before the number. */
+  unit_as_prefix?: boolean;
   /** Camera card: vernieuwinterval in seconden. */
   refresh?: number;
   /** Camera card: toon titelbalk (default true). */
