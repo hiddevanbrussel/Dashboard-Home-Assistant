@@ -14,8 +14,9 @@ type EnergyPageBackgroundProps = {
 
 /**
  * Page-wide Energy illustration (light/dark): edge-to-edge under the topbar,
- * soft fade only at the bottom into `--page-bg`. Keep the full house in frame
- * (`object-contain`) so bike / bolt / battery stay visible — no heavy washes.
+ * soft fade only at the bottom into `--page-bg`. `object-cover` fills the
+ * content column width; bottom-anchored so house / bike / bolt / battery stay
+ * in frame — no side fades, no near-opaque washes.
  */
 export function EnergyPageBackground({
   background,
@@ -48,7 +49,7 @@ export function EnergyPageBackground({
       <img
         src={src}
         alt=""
-        className="absolute inset-0 h-full w-full object-contain object-[center_bottom]"
+        className="absolute inset-0 h-full w-full object-cover object-[center_bottom]"
         decoding="async"
         fetchPriority="low"
       />
