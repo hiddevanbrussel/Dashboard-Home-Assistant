@@ -5989,7 +5989,7 @@ aria-label={t("editPanel.removeCondition")}
                   ) : editingWidget.type === "smart_stack" ? (
                     <SmartStackWidget
                       title={editForm.title || t("cardType.smart_stack")}
-                      children={editingWidget.children ?? []}
+                      slides={editingWidget.children ?? []}
                       interval_seconds={editForm.interval_seconds}
                       width={clampSmartStackWidth(editForm.width ?? SMART_STACK_DEFAULT_WIDTH)}
                       height={clampSmartStackHeight(editForm.height ?? SMART_STACK_DEFAULT_HEIGHT)}

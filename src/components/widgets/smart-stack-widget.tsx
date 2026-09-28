@@ -16,7 +16,7 @@ import { SmartStackChild } from "./smart-stack-child";
 
 export function SmartStackWidget({
   title,
-  children = [],
+  slides = [],
   interval_seconds,
   width,
   height,
@@ -25,7 +25,8 @@ export function SmartStackWidget({
   paused = false,
 }: {
   title?: string;
-  children?: WidgetConfig[];
+  /** Nested cards shown in the slideshow (stored as widget.children). */
+  slides?: WidgetConfig[];
   interval_seconds?: number;
   width?: number;
   height?: number;
@@ -35,7 +36,6 @@ export function SmartStackWidget({
   paused?: boolean;
 }) {
   const { t } = useTranslation();
-  const slides = children;
   const count = slides.length;
   const [index, setIndex] = useState(0);
   const [pausedUntil, setPausedUntil] = useState(0);

@@ -216,7 +216,7 @@ export function FloatingSmartStack({
     >
       <SmartStackWidget
         title={widget.title}
-        children={widget.children ?? []}
+        slides={widget.children ?? []}
         interval_seconds={widget.interval_seconds}
         width={totalWidth}
         height={totalHeight}
