@@ -7,7 +7,7 @@ import {
 
 /**
  * PUT /api/energy-dashboard/[id] – Update energy dashboard.
- * Rejects legacy / bundled default background URLs so they are stored as null.
+ * Rejects all page background URLs (patio / custom / bundled) — energy always uses bundled art.
  */
 export async function PUT(
   request: Request,

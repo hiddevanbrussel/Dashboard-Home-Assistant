@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.39
+
+- Energy dashboard: always force bundled vector light/dark illustrations (ignore patio / custom / global wallpaper URLs); clear stored energy backgrounds on API load; soften bottom fade; stronger cache-bust
+
 ## 0.4.37
 
 - Energy dashboard: stop persisted/stale light/dark background URLs from replacing the current bundled art after first load; bump PNG cache-bust; clear legacy backgrounds on API load; remove leftover `house_cloudy_day.png`

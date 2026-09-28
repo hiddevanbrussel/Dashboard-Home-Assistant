@@ -249,7 +249,8 @@ export function AppShell({
   const hasWelcomeText = Boolean(welcomeTitle || welcomeSubtitle);
   const showWelcomeInHeader = hasWelcomeText && !hideWelcome;
   const pageBackground = usePageBackground();
-  const hideWallpaper = hidesDashboardWallpaper(pathname) || activeTab === "/music";
+  const hideWallpaper =
+    hidesDashboardWallpaper(pathname) || activeTab === "/music" || activeTab === "/energy";
   const showPhotoWash = Boolean(pageBackground) && !hideWallpaper;
   const headerTime = useHeaderClock();
   const [temperatureModalOpen, setTemperatureModalOpen] = useState(false);
