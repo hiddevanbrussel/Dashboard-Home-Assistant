@@ -13,10 +13,10 @@ type EnergyPageBackgroundProps = {
 };
 
 /**
- * Page-wide Energy illustration (light/dark): edge-to-edge under the topbar,
- * soft fade only at the bottom into `--page-bg`. `object-cover` fills the
- * content column width; bottom-anchored so house / bike / bolt / battery stay
- * in frame — no side fades, no near-opaque washes.
+ * Full-viewport Energy illustration (light/dark): spans left→right edge
+ * (including behind the sidebar) and sits under the topbar, with a soft
+ * bottom-only fade into `--page-bg`. Bottom-anchored cover keeps house /
+ * bike / bolt / battery visible — no side fades, no near-opaque washes.
  */
 export function EnergyPageBackground({
   background,
@@ -36,10 +36,8 @@ export function EnergyPageBackground({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute z-0 overflow-hidden",
-        // Break out of main px/py so art is page-wide and sits behind the topbar
-        "inset-x-0 top-0 -mx-4 -mt-4 sm:-mx-6",
-        "w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)]",
+        // fixed + inset-x-0 = true page width (under sidebar); z-0 under chrome (sidebar z-60, header z-70)
+        "pointer-events-none fixed inset-x-0 top-0 z-0 overflow-hidden",
         "h-[min(62vh,40rem)] sm:h-[min(68vh,44rem)]",
         className
       )}
@@ -53,7 +51,7 @@ export function EnergyPageBackground({
         decoding="async"
         fetchPriority="low"
       />
-      {/* Soft verloop alleen onderaan — geen zijfades, geen dichte top-wash */}
+      {/* Soft verloop alleen onderaan */}
       <div
         className="absolute inset-0"
         style={{

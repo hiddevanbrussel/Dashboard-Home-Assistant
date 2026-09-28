@@ -2,7 +2,7 @@
 
 ## 0.4.33
 
-- Energy dashboard: page-wide light/dark illustrations behind the topbar with a soft bottom fade only (no side washes)
+- Energy dashboard: full-viewport light/dark illustrations (behind sidebar + topbar) with a soft bottom fade only (no side washes)
 
 ## 0.4.32
 
