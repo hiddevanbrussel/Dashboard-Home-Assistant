@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildSmartStackChildUpdates,
   clampSmartStackHeight,
   clampSmartStackIntervalSec,
   clampSmartStackWidth,
@@ -10,6 +11,7 @@ import {
   SMART_STACK_DEFAULT_INTERVAL_SEC,
   SMART_STACK_MIN_HEIGHT,
   SMART_STACK_MIN_WIDTH,
+  stripSmartStackChildSize,
 } from "./smart-stack";
 
 describe("smart-stack helpers", () => {
@@ -51,5 +53,56 @@ describe("smart-stack helpers", () => {
     expect(isSmartStackChildType("media_card")).toBe(true);
     expect(isSmartStackChildType("card_group")).toBe(false);
     expect(isSmartStackChildType("smart_stack")).toBe(false);
+  });
+
+  it("builds nested child updates without width/height", () => {
+    const climate = buildSmartStackChildUpdates("climate_card_2", {
+      title: "Living",
+      entity_id: "climate.living",
+      humidity_entity_id: "sensor.humidity",
+      display_mode: "compact",
+      icon: "Thermometer",
+    });
+    expect(climate).toMatchObject({
+      title: "Living",
+      entity_id: "climate.living",
+      humidity_entity_id: "sensor.humidity",
+      display_mode: "compact",
+      icon: "Thermometer",
+    });
+    expect(climate).not.toHaveProperty("width");
+    expect(climate).not.toHaveProperty("height");
+
+    const nuts = buildSmartStackChildUpdates("nuts_card", {
+      title: "Gas",
+      entity_id: "sensor.gas",
+      today_entity_id: "sensor.gas_today",
+      accent: "consumption",
+      period: "month",
+      icon: "Fuel",
+    });
+    expect(nuts).toMatchObject({
+      title: "Gas",
+      entity_id: "sensor.gas",
+      today_entity_id: "sensor.gas_today",
+      accent: "consumption",
+      period: "month",
+      icon: "Fuel",
+    });
+    expect(nuts).not.toHaveProperty("width");
+    expect(nuts).not.toHaveProperty("height");
+
+    const media = buildSmartStackChildUpdates("media_card", {
+      title: "Speaker",
+      entity_id: "media_player.kitchen",
+    });
+    expect(media).toEqual({ title: "Speaker", entity_id: "media_player.kitchen" });
+  });
+
+  it("strips width and height from nested child patches", () => {
+    expect(stripSmartStackChildSize({ title: "A", width: 400, height: 300, icon: "Zap" })).toEqual({
+      title: "A",
+      icon: "Zap",
+    });
   });
 });

@@ -133,12 +133,15 @@ import {
   SMART_STACK_MIN_HEIGHT,
   SMART_STACK_MIN_INTERVAL_SEC,
   SMART_STACK_MIN_WIDTH,
+  buildSmartStackChildUpdates,
   clampSmartStackHeight,
   clampSmartStackIntervalSec,
   clampSmartStackWidth,
   isSmartStackAutoplayEnabled,
   isSmartStackChildType,
+  stripSmartStackChildSize,
 } from "@/lib/smart-stack";
+import { SmartStackChild } from "@/components/widgets/smart-stack-child";
 import {
   clampVacuumCard2Height,
   clampVacuumCard2Width,
@@ -1001,6 +1004,14 @@ export default function DashboardEditPage() {
     ? widgets.find((w) => w.id === editingWidgetId)
     : null;
 
+  const editingStackChild =
+    editingWidget?.type === "smart_stack" && editingGroupChildId
+      ? (editingWidget.children ?? []).find((c) => c.id === editingGroupChildId) ?? null
+      : null;
+  const isEditingSmartStackChild = editingStackChild != null;
+  const editFormType = editingStackChild?.type ?? editingWidget?.type ?? "";
+  const editFormTarget = editingStackChild ?? editingWidget;
+
   useEffect(() => {
     if (!editingWidgetId) {
       setEditingGroupChildId(null);
@@ -1009,10 +1020,7 @@ export default function DashboardEditPage() {
   }, [editingWidgetId]);
 
   useEffect(() => {
-    if (
-      (editingWidget?.type === "card_group" || editingWidget?.type === "smart_stack") &&
-      editingGroupChildId
-    ) {
+    if (editingWidget?.type === "card_group" && editingGroupChildId) {
       const child = (editingWidget.children ?? []).find((c) => c.id === editingGroupChildId);
       if (child) {
         setEditForm({
@@ -1032,6 +1040,85 @@ export default function DashboardEditPage() {
           show_state: child.show_state !== false,
         });
         setPillIconSearch(child.icon ?? "");
+      }
+      return;
+    }
+    if (editingWidget?.type === "smart_stack" && editingGroupChildId) {
+      const child = (editingWidget.children ?? []).find((c) => c.id === editingGroupChildId);
+      if (child) {
+        setEditForm({
+          title: child.title ?? "",
+          entity_id: child.entity_id ?? "",
+          consumption_entity_id: child.consumption_entity_id ?? "",
+          yield_entity_id_today: child.yield_entity_id_today ?? "",
+          yield_entity_id_month: child.yield_entity_id_month ?? "",
+          grid_entity_id: child.grid_entity_id ?? "",
+          humidity_entity_id: child.humidity_entity_id ?? "",
+          display_mode: child.display_mode ?? "standard",
+          show_icon: child.show_icon !== false,
+          script_ids: child.script_ids ?? [],
+          script_names: child.script_names ?? {},
+          cleaned_area_entity_id: child.cleaned_area_entity_id ?? "",
+          progress_entity_id: child.progress_entity_id ?? "",
+          light_entity_id: child.light_entity_id ?? "",
+          media_player_entity_id: child.media_player_entity_id ?? "",
+          climate_entity_id: child.climate_entity_id ?? "",
+          area_id: child.area_id ?? "",
+          background_image: child.background_image ?? "",
+          background_image_dark: child.background_image_dark ?? "",
+          icon_background_color: child.icon_background_color ?? "",
+          // Nested cards fill the stack frame — do not load independent size.
+          width: undefined,
+          height: undefined,
+          icon: child.icon ?? "",
+          size: child.size ?? "md",
+          card_layout: child.card_layout === "square" ? "square" : "horizontal",
+          conditions: child.conditions ?? [],
+          image_conditions: child.image_conditions ?? [],
+          show_state: child.show_state !== false,
+          current_entity_id: child.current_entity_id ?? "",
+          today_entity_id: child.today_entity_id ?? "",
+          accent: normalizeNutsAccent(child.accent),
+          period: normalizeNutsPeriod(child.period),
+          max_value: child.max_value ?? undefined,
+          minimal: child.minimal ?? false,
+          scale: child.scale ?? 1,
+          label: child.label ?? "",
+          color: child.color ?? "amber",
+          refresh: child.refresh ?? 10,
+          show_title: child.show_title !== false,
+          device_entity_ids: child.device_entity_ids ?? [],
+          device_names: child.device_names ?? {},
+          cost_per_kwh: child.cost_per_kwh ?? undefined,
+          child_id: child.child_id ?? null,
+          show_chore_points: child.show_chore_points !== false,
+          page: widgetPage(editingWidget),
+        });
+        setIconSearch("");
+        setVacuumIconSearch(child.type === "vacuum_card" ? (child.icon ?? "") : "");
+        setSensorIconSearch(child.type === "sensor_card" ? (child.icon ?? "") : "");
+        setPillIconSearch(child.type === "pill_card" || child.type === "stat_pill_card" ? (child.icon ?? "") : "");
+        setGroupAddEntitySearch("");
+        setStackAddChildType(null);
+        setPowerUsageDeviceSearch("");
+        if (
+          child.type === "light_card" ||
+          child.type === "media_card" ||
+          child.type === "sensor_card" ||
+          child.type === "climate_card" ||
+          child.type === "climate_card_2" ||
+          child.type === "stat_pill_card" ||
+          child.type === "vacuum_card_2" ||
+          child.type === "camera_card" ||
+          child.type === "teamtracker_card" ||
+          child.type === "weather_card" ||
+          child.type === "nuts_card"
+        ) {
+          setEditTab(child.type === "media_card" ? "algemeen" : "algemeen");
+        }
+        if (child.type === "energy_monitor_card") {
+          setEditTab("achtergrond");
+        }
       }
       return;
     }
@@ -2680,7 +2767,7 @@ export default function DashboardEditPage() {
               </div>
               <div className="flex min-h-0 flex-1 flex-col md:flex-row">
               <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5 pt-4 md:max-w-[440px] md:shrink-0 md:border-r md:border-gray-200 dark:md:border-white/10">
-                {pageCount > 1 && (
+                {pageCount > 1 && !isEditingSmartStackChild && (
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                       {t("editPanel.dashboardPage")}
@@ -2800,59 +2887,7 @@ export default function DashboardEditPage() {
                       </>
                     )}
                   </>
-                ) : editingWidget.type === "smart_stack" ? (
-                  editingGroupChildId ? (
-                    <>
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.name")}</label>
-                        <input
-                          type="text"
-                          value={editForm.title}
-                          onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
-                          placeholder={t("editPanel.tileNamePlaceholder")}
-                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                        />
-                      </div>
-                      {(() => {
-                        const child = (editingWidget.children ?? []).find((c) => c.id === editingGroupChildId);
-                        if (!child || child.type === "calendar_card") return null;
-                        const childDomain = WIDGET_TYPE_DOMAIN[child.type] ?? "sensor";
-                        return (
-                          <EntitySelectWithSearch
-                            entities={entities}
-                            value={editForm.entity_id}
-                            onChange={(v) => {
-                              const picked = entities.find((e) => e.entity_id === v);
-                              const friendlyName = (picked?.attributes as { friendly_name?: string })?.friendly_name?.trim();
-                              setEditForm((prev) => ({
-                                ...prev,
-                                entity_id: v,
-                                ...(friendlyName && { title: friendlyName }),
-                              }));
-                            }}
-                            filter={
-                              child.type === "teamtracker_card"
-                                ? (e) => isTeamtrackerEntityId(e.entity_id)
-                                : child.type === "sensor_card" || child.type === "stat_pill_card"
-                                  ? (e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor.")
-                                  : child.type === "energy_monitor_card"
-                                    ? (e) =>
-                                        e.entity_id.startsWith("weather.") ||
-                                        e.entity_id.startsWith("sensor.") ||
-                                        e.entity_id.startsWith("binary_sensor.")
-                                    : (e) => e.entity_id.startsWith(childDomain + ".")
-                            }
-                            label={t("editPanel.entity")}
-                            placeholder={t("editPanel.searchEntity")}
-                            emptyOption={child.type === "energy_monitor_card" ? t("editPanel.noEntityImageOnly") : t("editPanel.none")}
-                          />
-                        );
-                      })()}
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t(`cardType.${(editingWidget.children ?? []).find((c) => c.id === editingGroupChildId)?.type ?? "smart_stack"}`)}
-                      </p>
-                    </>
-                  ) : (
+                ) : editingWidget.type === "smart_stack" && !editingGroupChildId ? (
                     <>
                       <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                         {(["weergave", "kaarten"] as const).map((tab) => (
@@ -3145,7 +3180,6 @@ export default function DashboardEditPage() {
                         </div>
                       )}
                     </>
-                  )
                 ) : editingWidget.type === "card_group" ? (
                   editingGroupChildId ? (
                     <>
@@ -3472,7 +3506,12 @@ export default function DashboardEditPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
                   />
                 </div>
-                {(editingWidget.entity_id != null || editingWidget.type === "energy_monitor_card" || editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") && editingWidget.type !== "text_card" && editingWidget.type !== "title_card" && editingWidget.type !== "title_only_card" && editingWidget.type !== "subtitle_card" && editingWidget.type !== "room_card" && editingWidget.type !== "device_consumption_card" && editingWidget.type !== "calendar_card" && editingWidget.type !== "chore_card" && editingWidget.type !== "timer_card" && (
+                {isEditingSmartStackChild && (
+                  <p className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-400">
+                    {t("editPanel.smartStackChildSizeLocked")}
+                  </p>
+                )}
+                {(editFormTarget?.entity_id != null || editFormType === "energy_monitor_card" || editFormType === "power_usage_card" || editFormType === "device_consumption_card") && editFormType !== "text_card" && editFormType !== "title_card" && editFormType !== "title_only_card" && editFormType !== "subtitle_card" && editFormType !== "room_card" && editFormType !== "device_consumption_card" && editFormType !== "calendar_card" && editFormType !== "chore_card" && editFormType !== "timer_card" && (
                   <EntitySelectWithSearch
                     entities={entities}
                     value={editForm.entity_id}
@@ -3486,32 +3525,32 @@ export default function DashboardEditPage() {
                       }));
                     }}
                     filter={
-                      editingWidget.type === "pill_card"
+                      editFormType === "pill_card"
                         ? (e) => PILL_CARD_DOMAINS.some((d) => e.entity_id.startsWith(d + "."))
-                        : editingWidget.type === "teamtracker_card"
+                        : editFormType === "teamtracker_card"
                           ? (e) => isTeamtrackerEntityId(e.entity_id)
-                        : editingWidget.type === "energy_monitor_card"
+                        : editFormType === "energy_monitor_card"
                           ? (e) => e.entity_id.startsWith("weather.") || e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor.")
-                          : (editingWidget.type === "sensor_card" || editingWidget.type === "stat_pill_card")
+                          : (editFormType === "sensor_card" || editFormType === "stat_pill_card")
                             ? (e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("binary_sensor.")
-                            : (e) => e.entity_id.startsWith((WIDGET_TYPE_DOMAIN[editingWidget.type] ?? "sensor") + ".")
+                            : (e) => e.entity_id.startsWith((WIDGET_TYPE_DOMAIN[editFormType] ?? "sensor") + ".")
                     }
                     label={
-                      editingWidget.type === "solar_card"
+                      editFormType === "solar_card"
                         ? t("editPanel.yieldEntity")
-                        : editingWidget.type === "energy_monitor_card"
+                        : editFormType === "energy_monitor_card"
                           ? t("editPanel.entityForConditions")
-                          : editingWidget.type === "power_usage_card"
+                          : editFormType === "power_usage_card"
                             ? t("editPanel.totalUsage")
-                            : editingWidget.type === "stat_pill_card"
+                            : editFormType === "stat_pill_card"
                               ? t("editPanel.sensor")
                               : t("editPanel.entity")
                     }
                     placeholder={t("editPanel.searchEntity")}
-                    emptyOption={editingWidget.type === "energy_monitor_card" ? t("editPanel.noEntityImageOnly") : t("editPanel.none")}
+                    emptyOption={editFormType === "energy_monitor_card" ? t("editPanel.noEntityImageOnly") : t("editPanel.none")}
                   />
                 )}
-                {editingWidget.type === "media_card" && (
+                {editFormType === "media_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["algemeen", "weergave"] as const).map((tab) => (
@@ -3533,7 +3572,7 @@ export default function DashboardEditPage() {
                     {editTab === "algemeen" && (
                       <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.mediaPlayerSelectedAbove")}</p>
                     )}
-                    {editTab === "weergave" && (
+                    {editTab === "weergave" && !isEditingSmartStackChild && (
                       <div className="space-y-3">
                         <div>
                           <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardWidthPx")}</label>
@@ -3571,9 +3610,12 @@ export default function DashboardEditPage() {
                         </div>
                       </div>
                     )}
+                    {editTab === "weergave" && isEditingSmartStackChild && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
+                    )}
                   </>
                 )}
-                {editingWidget.type === "light_card" && (
+                {editFormType === "light_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       <button
@@ -3678,7 +3720,7 @@ export default function DashboardEditPage() {
                     )}
                   </>
                 )}
-                {editingWidget.type === "room_card" && (
+                {editFormType === "room_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["entiteiten", "algemeen", "achtergrond", "weergave", "verplaats"] as const).map((tab) => (
@@ -3935,7 +3977,7 @@ export default function DashboardEditPage() {
                     )}
                   </>
                 )}
-                {(editingWidget.type === "climate_card_2" || editingWidget.type === "climate_card") && (
+                {(editFormType === "climate_card_2" || editFormType === "climate_card") && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["algemeen", "weergave"] as const).map((tab) => (
@@ -4014,6 +4056,9 @@ export default function DashboardEditPage() {
                                   if (nextMode === prevMode) {
                                     return { ...prev, display_mode: nextMode };
                                   }
+                                  if (isEditingSmartStackChild) {
+                                    return { ...prev, display_mode: nextMode };
+                                  }
                                   const size = climateCardDefaultSizeForMode(nextMode);
                                   return {
                                     ...prev,
@@ -4037,6 +4082,8 @@ export default function DashboardEditPage() {
                       </div>
                       <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.climateDisplayModeHint")}</p>
                     </div>
+{!isEditingSmartStackChild && (
+                    <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         {t("editPanel.cardWidthPx")}
@@ -4083,9 +4130,11 @@ export default function DashboardEditPage() {
                     </div>
                     </>
                     )}
+                    </>
+                    )}
                   </>
                 )}
-                {editingWidget.type === "solar_card" && (
+                {editFormType === "solar_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       <button
@@ -4134,7 +4183,7 @@ export default function DashboardEditPage() {
                     )}
                   </>
                 )}
-                {editingWidget.type === "energy_monitor_card" && (
+                {editFormType === "energy_monitor_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["achtergrond", "weergave", "voorwaarden"] as const).map((tab) => (
@@ -4488,7 +4537,7 @@ export default function DashboardEditPage() {
                     )}
                   </>
                 )}
-                {editingWidget.type === "power_usage_card" && (
+                {editFormType === "power_usage_card" && (
                   <>
                     <EntitySelectWithSearch entities={entities} value={editForm.entity_id} onChange={(v) => setEditForm((prev) => ({ ...prev, entity_id: v }))} filter={(e) => e.entity_id.startsWith("sensor.")} label={t("editPanel.totalUsage")} placeholder={t("editPanel.searchEntity")} emptyOption={t("editPanel.none")} />
                     <div>
@@ -4533,7 +4582,7 @@ export default function DashboardEditPage() {
                     </div>
                   </>
                 )}
-                {editingWidget.type === "device_consumption_card" && (
+                {editFormType === "device_consumption_card" && (
                   <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.devices")}</label>
@@ -4585,7 +4634,7 @@ export default function DashboardEditPage() {
                     </div>
                   </>
                 )}
-                {editingWidget.type === "stat_pill_card" && (
+                {editFormType === "stat_pill_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["algemeen", "voorwaarden"] as const).map((tab) => (
@@ -4754,7 +4803,7 @@ aria-label={t("editPanel.removeCondition")}
                     )}
                   </>
                 )}
-                {editingWidget.type === "vacuum_card" && (
+                {editFormType === "vacuum_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["algemeen", "weergave"] as const).map((tab) => (
@@ -4920,7 +4969,7 @@ aria-label={t("editPanel.removeCondition")}
                     )}
                   </>
                 )}
-                {editingWidget.type === "vacuum_card_2" && (
+                {editFormType === "vacuum_card_2" && (
                   <div className="space-y-3">
                     <EntitySelectWithSearch
                       entities={entities}
@@ -4986,6 +5035,8 @@ aria-label={t("editPanel.removeCondition")}
                         ) : null}
                       </div>
                     </div>
+{!isEditingSmartStackChild && (
+                    <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         {t("editPanel.cardWidthPx")}
@@ -5030,9 +5081,11 @@ aria-label={t("editPanel.removeCondition")}
                       />
                       <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRange330")}</p>
                     </div>
+                    </>
+                    )}
                   </div>
                 )}
-                {editingWidget.type === "sensor_card" && (
+                {editFormType === "sensor_card" && (
                   <div>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["algemeen", "voorwaarden"] as const).map((tab) => (
@@ -5224,7 +5277,7 @@ aria-label={t("editPanel.removeCondition")}
                     )}
                   </div>
                 )}
-                {editingWidget.type === "pill_card" && (
+                {editFormType === "pill_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["algemeen", "voorwaarden"] as const).map((tab) => (
@@ -5420,7 +5473,7 @@ aria-label={t("editPanel.removeCondition")}
                     )}
                   </>
                 )}
-                {editingWidget.type === "camera_card" && (
+                {editFormType === "camera_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["algemeen", "weergave"] as const).map((tab) => (
@@ -5491,7 +5544,7 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                     </>
                     )}
-                    {editTab === "weergave" && (
+                    {editTab === "weergave" && !isEditingSmartStackChild && (
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -5543,9 +5596,12 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                     </>
                     )}
+                    {editTab === "weergave" && isEditingSmartStackChild && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
+                    )}
                   </>
                 )}
-                {editingWidget.type === "teamtracker_card" && (
+                {editFormType === "teamtracker_card" && !isEditingSmartStackChild && (
                   <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -5597,7 +5653,10 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                   </>
                 )}
-                {editingWidget.type === "weather_card" && (
+                {editFormType === "teamtracker_card" && isEditingSmartStackChild && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
+                )}
+                {editFormType === "weather_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["algemeen", "weergave"] as const).map((tab) => (
@@ -5644,7 +5703,7 @@ aria-label={t("editPanel.removeCondition")}
                       </button>
                     </div>
                     )}
-                    {editTab === "weergave" && (
+                    {editTab === "weergave" && !isEditingSmartStackChild && (
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -5692,9 +5751,12 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                     </>
                     )}
+                    {editTab === "weergave" && isEditingSmartStackChild && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
+                    )}
                   </>
                 )}
-                {editingWidget.type === "chore_card" && (
+                {editFormType === "chore_card" && (
                   <div className="flex flex-col gap-3">
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -5730,7 +5792,7 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                   </div>
                 )}
-                {editingWidget.type === "calendar_card" && (
+                {editFormType === "calendar_card" && !isEditingSmartStackChild && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -5774,7 +5836,10 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                   </div>
                 )}
-                {editingWidget.type === "nuts_card" && (
+                {editFormType === "calendar_card" && isEditingSmartStackChild && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
+                )}
+                {editFormType === "nuts_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
                       {(["algemeen", "weergave"] as const).map((tab) => (
@@ -5939,7 +6004,7 @@ aria-label={t("editPanel.removeCondition")}
                     />
                     </>
                     )}
-                    {editTab === "weergave" && (
+                    {editTab === "weergave" && !isEditingSmartStackChild && (
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         {t("editPanel.widthHeightPx")}
@@ -5980,6 +6045,9 @@ aria-label={t("editPanel.removeCondition")}
                       </div>
                     </div>
                     )}
+                    {editTab === "weergave" && isEditingSmartStackChild && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
+                    )}
                   </>
                 )}
                 </>
@@ -5992,7 +6060,29 @@ aria-label={t("editPanel.removeCondition")}
                 </p>
                 <p className="mb-4 text-xs text-gray-400 dark:text-zinc-500">{t("editPanel.previewHint")}</p>
                 <div className="flex flex-1 items-center justify-center overflow-auto rounded-xl border border-dashed border-gray-200 bg-[radial-gradient(circle_at_top,_#f8fafc,_#eef2f7)] p-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,_#18181b,_#09090b)]">
-                  {!editForm.entity_id &&
+                  {isEditingSmartStackChild && editingStackChild ? (
+                    <div
+                      className="overflow-hidden rounded-2xl"
+                      style={{
+                        width: clampSmartStackWidth(editingWidget.width ?? SMART_STACK_DEFAULT_WIDTH),
+                        height: clampSmartStackHeight(editingWidget.height ?? SMART_STACK_DEFAULT_HEIGHT),
+                        maxWidth: "100%",
+                      }}
+                    >
+                      <SmartStackChild
+                        child={{
+                          ...editingStackChild,
+                          ...stripSmartStackChildSize(
+                            buildSmartStackChildUpdates(editingStackChild.type, editForm)
+                          ),
+                          id: editingStackChild.id,
+                          type: editingStackChild.type,
+                        }}
+                        width={clampSmartStackWidth(editingWidget.width ?? SMART_STACK_DEFAULT_WIDTH)}
+                        height={clampSmartStackHeight(editingWidget.height ?? SMART_STACK_DEFAULT_HEIGHT)}
+                      />
+                    </div>
+                  ) : !editForm.entity_id &&
                   (editingWidget.type === "teamtracker_card" ||
                     editingWidget.type === "climate_card" ||
                     editingWidget.type === "climate_card_2" ||
@@ -6116,12 +6206,15 @@ aria-label={t("editPanel.removeCondition")}
                         <button
                           type="button"
                           onClick={() => {
-                            const updates = {
-                              title: editForm.title,
-                              entity_id: editForm.entity_id ?? "",
-                            };
+                            const child = (editingWidget.children ?? []).find((c) => c.id === editingGroupChildId);
+                            if (!child) return;
+                            const updates = stripSmartStackChildSize(
+                              buildSmartStackChildUpdates(child.type, editForm)
+                            );
                             const nextChildren = (editingWidget.children ?? []).map((c) =>
-                              c.id === editingGroupChildId ? { ...c, ...updates } : c
+                              c.id === editingGroupChildId
+                                ? ({ ...c, ...updates, width: undefined, height: undefined } as WidgetConfig)
+                                : c
                             );
                             const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                             setWidgets(nextWidgets);
