@@ -340,6 +340,35 @@ export function formatTeamtrackerKickoffDayLabel(
   );
 }
 
+/**
+ * Full kickoff date for PRE cards, e.g. "4 oktober 2026" / "4 October 2026".
+ */
+export function formatTeamtrackerKickoffDate(
+  kickoffAt: Date | null | undefined,
+  language: string
+): string | null {
+  if (!kickoffAt) return null;
+  const locale = language === "nl" ? "nl-NL" : "en-GB";
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(kickoffAt);
+}
+
+/**
+ * Single-line PRE kickoff: date then time, e.g. "4 oktober 2026 20:45".
+ */
+export function formatTeamtrackerKickoffDateTime(
+  kickoffAt: Date | null | undefined,
+  language: string
+): string | null {
+  const date = formatTeamtrackerKickoffDate(kickoffAt, language);
+  if (!date) return null;
+  const time = formatTeamtrackerKickoffTime(kickoffAt, language);
+  return time ? `${date} ${time}` : date;
+}
+
 export function readTeamtrackerMatch(entity: {
   state?: string;
   attributes?: Record<string, unknown>;

@@ -8,6 +8,8 @@ import {
   clampTeamtrackerCardWidth,
   estimateTeamtrackerProgress,
   formatTeamtrackerFormLine,
+  formatTeamtrackerKickoffDate,
+  formatTeamtrackerKickoffDateTime,
   formatTeamtrackerKickoffDayLabel,
   formatTeamtrackerKickoffTime,
   formatTeamtrackerPeriodLabel,
@@ -120,6 +122,15 @@ describe("teamtracker-card helpers", () => {
     expect(formatTeamtrackerKickoffDayLabel(kickoff, t, "nl", new Date(2026, 8, 22, 12, 0, 0))).toBe(
       "Morgen"
     );
+  });
+
+  it("formats PRE kickoff as date then time on one line", () => {
+    const kickoff = new Date(2026, 9, 4, 20, 45, 0);
+    expect(formatTeamtrackerKickoffDate(kickoff, "nl")).toMatch(/4 oktober 2026/i);
+    expect(formatTeamtrackerKickoffDate(kickoff, "en")).toMatch(/4 October 2026/i);
+    expect(formatTeamtrackerKickoffDateTime(kickoff, "nl")).toMatch(/^4 oktober 2026 20:45$/i);
+    expect(formatTeamtrackerKickoffDateTime(kickoff, "en")).toMatch(/^4 October 2026 20:45$/i);
+    expect(formatTeamtrackerKickoffDateTime(null, "nl")).toBe(null);
   });
 
   it("formats form lines and falls back to season record", () => {

@@ -9,8 +9,7 @@ import {
   estimateTeamtrackerProgress,
   footballMatchHasContent,
   formatTeamtrackerFormLine,
-  formatTeamtrackerKickoffDayLabel,
-  formatTeamtrackerKickoffTime,
+  formatTeamtrackerKickoffDateTime,
   readTeamtrackerMatch,
   teamtrackerStatusLabel,
   type TeamtrackerMatch,
@@ -34,7 +33,7 @@ function StatusBadge({
   }
   if (status === "PRE") {
     return (
-      <span className="inline-flex items-center rounded-full bg-[#EEF8F1] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#2F7A4A] dark:bg-emerald-500/12 dark:text-emerald-300">
+      <span className="inline-flex items-center rounded-full bg-[#E8F1FB] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#2F6FED] dark:bg-blue-500/15 dark:text-blue-300">
         {label}
       </span>
     );
@@ -124,22 +123,19 @@ function TeamLogo({ src, alt }: { src?: string | null; alt: string }) {
 
 function ScoreHeadline({
   match,
-  language,
   t,
 }: {
   match: TeamtrackerMatch;
-  language: string;
   t: (key: string) => string;
 }) {
-  const scores = venueScores(match);
   if (match.status === "PRE") {
-    const kickoffTime = formatTeamtrackerKickoffTime(match.kickoffAt, language);
     return (
-      <span className="text-[1.85rem] font-bold tabular-nums leading-none tracking-tight text-[#2A2D37] dark:text-white/90 sm:text-[2.15rem]">
-        {kickoffTime ?? match.kickoffIn ?? "—"}
+      <span className="text-[1.85rem] font-bold leading-none tracking-tight text-[#2A2D37] dark:text-white/90 sm:text-[2.15rem]">
+        VS
       </span>
     );
   }
+  const scores = venueScores(match);
   const left = match.showScores ? scores.left : "—";
   const right = match.showScores ? scores.right : "—";
   return (
@@ -188,8 +184,8 @@ export function TeamtrackerCardWidget({
   const sides = match ? venueSides(match) : null;
   const progress = match ? estimateTeamtrackerProgress(match) : null;
   const isUpcoming = status === "PRE";
-  const kickoffDay = isUpcoming
-    ? formatTeamtrackerKickoffDayLabel(match?.kickoffAt, t, language)
+  const kickoffDateTime = isUpcoming
+    ? formatTeamtrackerKickoffDateTime(match?.kickoffAt, language)
     : null;
 
   return (
@@ -221,7 +217,7 @@ export function TeamtrackerCardWidget({
             className={cn(
               "relative z-10 flex min-h-0 flex-1 flex-col px-4 sm:px-5",
               isUpcoming
-                ? "justify-center gap-3.5 py-4"
+                ? "justify-center gap-4 py-4"
                 : "justify-between gap-3 pb-3.5 pt-4 sm:pt-5"
             )}
           >
@@ -253,12 +249,7 @@ export function TeamtrackerCardWidget({
                   isUpcoming ? "justify-center" : "justify-start pt-2 sm:pt-3"
                 )}
               >
-                <ScoreHeadline match={match} language={language} t={t} />
-                {kickoffDay ? (
-                  <span className="mt-1.5 text-[11px] font-medium text-[#A0A4AB] dark:text-white/40">
-                    {kickoffDay}
-                  </span>
-                ) : null}
+                <ScoreHeadline match={match} t={t} />
               </div>
 
               <div className="flex min-w-0 flex-col items-end gap-2">
@@ -278,8 +269,13 @@ export function TeamtrackerCardWidget({
               </div>
             </div>
 
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-2">
               <StatusBadge label={statusLabel} status={status} />
+              {kickoffDateTime ? (
+                <p className="text-center text-[13px] font-medium text-[#8B909A] dark:text-white/45">
+                  {kickoffDateTime}
+                </p>
+              ) : null}
               {/* Empty PRE bar adds bottom weight without info — only show during/after play */}
               <ProgressBar progress={isUpcoming ? null : progress} />
             </div>
