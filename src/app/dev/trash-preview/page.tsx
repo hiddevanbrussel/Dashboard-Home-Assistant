@@ -76,6 +76,7 @@ export default function TrashPreviewPage() {
                 demo_theme={theme}
                 width={size.w}
                 height={size.h}
+                onMoreClick={() => undefined}
               />
             </div>
           </div>
