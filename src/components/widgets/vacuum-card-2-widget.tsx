@@ -15,6 +15,7 @@ import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
+import { playUiClick } from "@/lib/ui-click";
 import {
   clampVacuumCard2Height,
   clampVacuumCard2Width,
@@ -138,6 +139,7 @@ export function VacuumCard2Widget({
 
   function handlePower() {
     if (!entity_id || pendingRef.current) return;
+    playUiClick();
     pendingRef.current = true;
     const previous = entity;
     const nextState = isOn ? "returning" : "cleaning";

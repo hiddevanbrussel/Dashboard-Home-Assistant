@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { isPlayingMediaPlayerState } from "@/lib/media-player-state";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
+import { playUiClick } from "@/lib/ui-click";
 import { CARD_ICONS } from "./card-icons";
 import type { RoomCardProps } from "./widget-types";
 
@@ -69,6 +70,7 @@ export function RoomCardWidget({
 
   const toggleLight = useCallback(async () => {
     if (!light_entity_id) return;
+    playUiClick();
     updateEntityState(light_entity_id, { state: isLightOn ? "off" : "on" });
     setLoading(true);
     try {

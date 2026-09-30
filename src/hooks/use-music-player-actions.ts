@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { callMusicAssistant } from "@/lib/music-assistant";
+import { playUiClick } from "@/lib/ui-click";
 
 export function useMusicPlayerActions() {
   const musicAssistant = useMusicAssistantStore();
@@ -36,6 +37,7 @@ export function useMusicPlayerActions() {
   const queueControl = useCallback(
     (action: "previous" | "play" | "pause" | "next") => {
       if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+      playUiClick();
       const cmd =
         action === "play"
           ? "player_queues/play"

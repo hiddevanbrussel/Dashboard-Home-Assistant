@@ -21,6 +21,7 @@ import { fetchMusicAssistantHome } from "@/lib/music-assistant";
 import { getMaItemParams } from "@/lib/ma-item-params";
 import { generatedCoverDataUri } from "@/lib/generated-cover";
 import { useTranslation } from "@/hooks/use-translation";
+import { playUiClick } from "@/lib/ui-click";
 import { cn } from "@/lib/utils";
 import {
   getItemImageUrl,
@@ -1109,6 +1110,7 @@ export default function MusicPage() {
         if (!trimmedUri) setError(t("music.noTrackToPlay"));
         return;
       }
+      playUiClick();
       setPlayPending(trimmedUri);
       const baseUrl = musicAssistant.baseUrl;
       const token = musicAssistant.token;
