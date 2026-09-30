@@ -126,6 +126,12 @@ export type WidgetConfig = {
   refresh?: number;
   /** Camera card: toon titelbalk (default true). */
   show_title?: boolean;
+  /** Team Tracker card: toon teamnamen onder logo's (default true). */
+  show_team_names?: boolean;
+  /** Team Tracker card: toon vorm/record (L | D | W | W) onder namen (default true). */
+  show_form?: boolean;
+  /** Team Tracker card: toon voortgangsbalk (default true). */
+  show_progress?: boolean;
   /** Chore card: specifiek kind (null = alle kinderen). */
   child_id?: string | null;
   /** Chore card: puntenbadge tonen. */

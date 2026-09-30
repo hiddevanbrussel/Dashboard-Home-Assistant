@@ -88,6 +88,9 @@ export type SmartStackChildEditFields = {
   show_icon?: boolean;
   show_state?: boolean;
   show_title?: boolean;
+  show_team_names?: boolean;
+  show_form?: boolean;
+  show_progress?: boolean;
   size?: string;
   label?: string;
   color?: string;
@@ -193,7 +196,12 @@ export function buildSmartStackChildUpdates(
         scale: form.scale ?? 1,
       };
     case "teamtracker_card":
-      return base;
+      return {
+        ...base,
+        show_team_names: form.show_team_names !== false,
+        show_form: form.show_form !== false,
+        show_progress: form.show_progress !== false,
+      };
     case "camera_card":
       return {
         ...base,

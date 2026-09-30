@@ -140,6 +140,12 @@ export type TeamtrackerCardProps = WidgetBaseProps & {
   width?: number;
   /** Hoogte kaart in px. */
   height?: number;
+  /** Toon teamnamen onder logo's (default true). */
+  show_team_names?: boolean;
+  /** Toon vorm/record regels (L | D | W | W) onder namen (default true). */
+  show_form?: boolean;
+  /** Toon voortgangsbalk onderaan (default true; PRE toont hem toch niet). */
+  show_progress?: boolean;
 };
 
 export type MediaCardProps = WidgetBaseProps & {

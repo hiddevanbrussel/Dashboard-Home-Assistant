@@ -97,6 +97,22 @@ describe("smart-stack helpers", () => {
       entity_id: "media_player.kitchen",
     });
     expect(media).toEqual({ title: "Speaker", entity_id: "media_player.kitchen" });
+
+    const match = buildSmartStackChildUpdates("teamtracker_card", {
+      title: "Chelsea",
+      entity_id: "sensor.team_chelsea",
+      show_team_names: false,
+      show_form: false,
+      show_progress: true,
+    });
+    expect(match).toEqual({
+      title: "Chelsea",
+      entity_id: "sensor.team_chelsea",
+      show_team_names: false,
+      show_form: false,
+      show_progress: true,
+    });
+    expect(match).not.toHaveProperty("width");
   });
 
   it("strips width and height from nested child patches", () => {

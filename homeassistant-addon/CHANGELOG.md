@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.46
+
+- Team Tracker match card: center team names under logos; edit toggles for team names, form (W/D/L), and progress bar (`show_team_names`, `show_form`, `show_progress`)
+
 ## 0.4.45
 
 - Team Tracker PRE card: large **VS** between teams, soft blue **AANKOMEND** / UPCOMING pill, kickoff as date then time on one line (e.g. `4 oktober 2026 20:45`)

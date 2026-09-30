@@ -10,6 +10,9 @@ import {
   footballMatchHasContent,
   formatTeamtrackerFormLine,
   formatTeamtrackerKickoffDateTime,
+  isTeamtrackerShowForm,
+  isTeamtrackerShowProgress,
+  isTeamtrackerShowTeamNames,
   readTeamtrackerMatch,
   teamtrackerStatusLabel,
   type TeamtrackerMatch,
@@ -121,6 +124,58 @@ function TeamLogo({ src, alt }: { src?: string | null; alt: string }) {
   );
 }
 
+function TeamColumn({
+  logo,
+  name,
+  form,
+  showName,
+  showForm,
+  align,
+}: {
+  logo: string | null;
+  name: string;
+  form: string | null;
+  showName: boolean;
+  showForm: boolean;
+  align: "start" | "end";
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-w-0",
+        align === "start" ? "justify-start" : "justify-end"
+      )}
+    >
+      <div className="flex min-w-0 max-w-full flex-col items-center gap-2">
+        <TeamLogo src={logo} alt={name} />
+        {showName || showForm ? (
+          <div className="min-w-0 max-w-full text-center">
+            {showName ? (
+              <p className="truncate text-sm font-semibold tracking-tight text-[#2A2D37] dark:text-white/90 sm:text-[15px]">
+                {name}
+              </p>
+            ) : null}
+            {showForm ? (
+              form ? (
+                <p
+                  className={cn(
+                    "truncate text-[11px] font-medium tracking-wide text-[#A0A4AB] dark:text-white/40",
+                    showName ? "mt-0.5" : null
+                  )}
+                >
+                  {form}
+                </p>
+              ) : showName ? (
+                <p className="mt-0.5 h-[15px]" aria-hidden />
+              ) : null
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function ScoreHeadline({
   match,
   t,
@@ -172,6 +227,9 @@ function ProgressBar({ progress }: { progress: number | null }) {
 export function TeamtrackerCardWidget({
   title,
   entity_id,
+  show_team_names,
+  show_form,
+  show_progress,
   className,
   onMoreClick,
 }: TeamtrackerCardProps & { className?: string; onMoreClick?: () => void }) {
@@ -187,6 +245,9 @@ export function TeamtrackerCardWidget({
   const kickoffDateTime = isUpcoming
     ? formatTeamtrackerKickoffDateTime(match?.kickoffAt, language)
     : null;
+  const showNames = isTeamtrackerShowTeamNames(show_team_names);
+  const showForm = isTeamtrackerShowForm(show_form);
+  const showProgress = isTeamtrackerShowProgress(show_progress);
 
   return (
     <div className={cn("relative flex h-full min-h-0 w-full flex-col", className)}>
@@ -227,21 +288,14 @@ export function TeamtrackerCardWidget({
                 isUpcoming ? "items-center" : "items-start"
               )}
             >
-              <div className="flex min-w-0 flex-col items-start gap-2">
-                <TeamLogo src={sides.left.logo} alt={sides.left.name} />
-                <div className="min-w-0 max-w-full">
-                  <p className="truncate text-sm font-semibold tracking-tight text-[#2A2D37] dark:text-white/90 sm:text-[15px]">
-                    {sides.left.name}
-                  </p>
-                  {sides.left.form ? (
-                    <p className="mt-0.5 truncate text-[11px] font-medium tracking-wide text-[#A0A4AB] dark:text-white/40">
-                      {sides.left.form}
-                    </p>
-                  ) : (
-                    <p className="mt-0.5 h-[15px]" aria-hidden />
-                  )}
-                </div>
-              </div>
+              <TeamColumn
+                logo={sides.left.logo}
+                name={sides.left.name}
+                form={sides.left.form}
+                showName={showNames}
+                showForm={showForm}
+                align="start"
+              />
 
               <div
                 className={cn(
@@ -252,21 +306,14 @@ export function TeamtrackerCardWidget({
                 <ScoreHeadline match={match} t={t} />
               </div>
 
-              <div className="flex min-w-0 flex-col items-end gap-2">
-                <TeamLogo src={sides.right.logo} alt={sides.right.name} />
-                <div className="min-w-0 max-w-full text-right">
-                  <p className="truncate text-sm font-semibold tracking-tight text-[#2A2D37] dark:text-white/90 sm:text-[15px]">
-                    {sides.right.name}
-                  </p>
-                  {sides.right.form ? (
-                    <p className="mt-0.5 truncate text-[11px] font-medium tracking-wide text-[#A0A4AB] dark:text-white/40">
-                      {sides.right.form}
-                    </p>
-                  ) : (
-                    <p className="mt-0.5 h-[15px]" aria-hidden />
-                  )}
-                </div>
-              </div>
+              <TeamColumn
+                logo={sides.right.logo}
+                name={sides.right.name}
+                form={sides.right.form}
+                showName={showNames}
+                showForm={showForm}
+                align="end"
+              />
             </div>
 
             <div className="flex flex-col items-center gap-2">
@@ -277,7 +324,9 @@ export function TeamtrackerCardWidget({
                 </p>
               ) : null}
               {/* Empty PRE bar adds bottom weight without info — only show during/after play */}
-              <ProgressBar progress={isUpcoming ? null : progress} />
+              <ProgressBar
+                progress={showProgress && !isUpcoming ? progress : null}
+              />
             </div>
           </div>
         )}

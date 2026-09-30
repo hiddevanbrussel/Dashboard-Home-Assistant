@@ -14,6 +14,9 @@ import {
   formatTeamtrackerKickoffTime,
   formatTeamtrackerPeriodLabel,
   isTeamtrackerEntityId,
+  isTeamtrackerShowForm,
+  isTeamtrackerShowProgress,
+  isTeamtrackerShowTeamNames,
   readTeamtrackerForm,
   readTeamtrackerHomeAway,
   readTeamtrackerMatch,
@@ -49,6 +52,16 @@ describe("teamtracker-card helpers", () => {
   it("detects teamtracker entity ids", () => {
     expect(isTeamtrackerEntityId("sensor.team_chelsea")).toBe(true);
     expect(isTeamtrackerEntityId("sensor.temperature")).toBe(false);
+  });
+
+  it("defaults display toggles to on unless explicitly false", () => {
+    expect(isTeamtrackerShowTeamNames(undefined)).toBe(true);
+    expect(isTeamtrackerShowTeamNames(true)).toBe(true);
+    expect(isTeamtrackerShowTeamNames(false)).toBe(false);
+    expect(isTeamtrackerShowForm(undefined)).toBe(true);
+    expect(isTeamtrackerShowForm(false)).toBe(false);
+    expect(isTeamtrackerShowProgress(undefined)).toBe(true);
+    expect(isTeamtrackerShowProgress(false)).toBe(false);
   });
 
   it("reads period labels from Team Tracker attributes", () => {
