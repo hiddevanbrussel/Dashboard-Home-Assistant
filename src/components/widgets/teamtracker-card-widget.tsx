@@ -187,10 +187,10 @@ export function TeamtrackerCardWidget({
   const statusLabel = teamtrackerStatusLabel(status, t);
   const sides = match ? venueSides(match) : null;
   const progress = match ? estimateTeamtrackerProgress(match) : null;
-  const kickoffDay =
-    match?.status === "PRE"
-      ? formatTeamtrackerKickoffDayLabel(match.kickoffAt, t, language)
-      : null;
+  const isUpcoming = status === "PRE";
+  const kickoffDay = isUpcoming
+    ? formatTeamtrackerKickoffDayLabel(match?.kickoffAt, t, language)
+    : null;
 
   return (
     <div className={cn("relative flex h-full min-h-0 w-full flex-col", className)}>
@@ -217,8 +217,20 @@ export function TeamtrackerCardWidget({
             <p className="text-xs">{t("teamtrackerCard.empty")}</p>
           </div>
         ) : (
-          <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-between gap-3 px-4 pb-3.5 pt-4 sm:px-5 sm:pt-5">
-            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
+          <div
+            className={cn(
+              "relative z-10 flex min-h-0 flex-1 flex-col px-4 sm:px-5",
+              isUpcoming
+                ? "justify-center gap-3.5 py-4"
+                : "justify-between gap-3 pb-3.5 pt-4 sm:pt-5"
+            )}
+          >
+            <div
+              className={cn(
+                "grid grid-cols-[1fr_auto_1fr] gap-2",
+                isUpcoming ? "items-center" : "items-start"
+              )}
+            >
               <div className="flex min-w-0 flex-col items-start gap-2">
                 <TeamLogo src={sides.left.logo} alt={sides.left.name} />
                 <div className="min-w-0 max-w-full">
@@ -235,7 +247,12 @@ export function TeamtrackerCardWidget({
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-start pt-2 sm:pt-3">
+              <div
+                className={cn(
+                  "flex flex-col items-center",
+                  isUpcoming ? "justify-center" : "justify-start pt-2 sm:pt-3"
+                )}
+              >
                 <ScoreHeadline match={match} language={language} t={t} />
                 {kickoffDay ? (
                   <span className="mt-1.5 text-[11px] font-medium text-[#A0A4AB] dark:text-white/40">
@@ -263,7 +280,8 @@ export function TeamtrackerCardWidget({
 
             <div className="flex flex-col items-center gap-3">
               <StatusBadge label={statusLabel} status={status} />
-              <ProgressBar progress={progress} />
+              {/* Empty PRE bar adds bottom weight without info — only show during/after play */}
+              <ProgressBar progress={isUpcoming ? null : progress} />
             </div>
           </div>
         )}
