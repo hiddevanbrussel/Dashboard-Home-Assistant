@@ -11,6 +11,7 @@ const MIME: Record<string, string> = {
   ".png": "image/png",
   ".webp": "image/webp",
   ".gif": "image/gif",
+  ".svg": "image/svg+xml",
 };
 
 export async function GET(
@@ -30,6 +31,7 @@ export async function GET(
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": mime,
+        "X-Content-Type-Options": "nosniff",
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });

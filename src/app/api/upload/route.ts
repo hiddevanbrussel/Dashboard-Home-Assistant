@@ -2,12 +2,28 @@ import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import {
+  isSvgUploadCandidate,
+  sanitizeSvgBuffer,
+} from "@/lib/sanitize-svg";
 
 const UPLOAD_DIR =
   process.env.UPLOAD_DIR || path.join(process.cwd(), "public", "uploads");
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+  "image/svg",
+]);
 const MAX_WIDTH = 1920;
 const JPEG_QUALITY = 90;
+
+function normalizeUploadMime(type: string | null | undefined): string {
+  if (!type) return "";
+  return type.toLowerCase().trim().split(";")[0]?.trim() ?? "";
+}
 
 export async function POST(request: Request) {
   try {
@@ -19,26 +35,38 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    if (!ALLOWED_TYPES.includes(file.type)) {
+
+    const mime = normalizeUploadMime(file.type);
+    const asSvg = isSvgUploadCandidate(file.name, file.type);
+
+    if (!asSvg && !ALLOWED_TYPES.has(mime)) {
       return NextResponse.json(
-        { error: "Only images (JPEG, PNG, WebP, GIF) are allowed." },
+        { error: "Only images (JPEG, PNG, WebP, GIF, SVG) are allowed." },
         { status: 400 }
       );
     }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const isGif = file.type === "image/gif";
+    const isGif = mime === "image/gif";
 
     let outputBuffer: Buffer;
     let ext: string;
 
-    if (isGif) {
+    if (asSvg) {
+      const sanitized = sanitizeSvgBuffer(buffer);
+      if (!sanitized.ok) {
+        return NextResponse.json({ error: sanitized.error }, { status: 400 });
+      }
+      outputBuffer = Buffer.from(sanitized.svg, "utf8");
+      ext = ".svg";
+    } else if (isGif) {
       outputBuffer = buffer;
       ext = ".gif";
     } else {
       const meta = await sharp(buffer).metadata();
       const hasAlpha = meta.hasAlpha === true;
-      const isPng = file.type === "image/png";
+      const isPng = mime === "image/png";
 
       let pipeline = sharp(buffer)
         .rotate()

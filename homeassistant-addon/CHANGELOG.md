@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.56
+
+- Energy: fix SVG background uploads rejected when browsers send charset MIME (`image/svg+xml;charset=utf-8`) or mislabeled types (`text/xml`, `text/plain`); treat `.svg` filename as SVG and sanitize content
+
+## 0.4.55
+
+- Energy: allow SVG (including SMIL-animated) light/dark page backgrounds; served via `<img>` with server-side sanitization; value pills remain on top
+
 ## 0.4.54
 
 - Energy: customize light/dark page backgrounds in Settings → Energy (upload, replace, reset to bundled art); persists on the energy dashboard and never inherits patio/global wallpaper

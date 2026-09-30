@@ -21,6 +21,10 @@ type EnergyPageBackgroundProps = {
  * bottom-only fade into `--page-bg`. Uses a custom upload when set in
  * Settings → Energy; otherwise the bundled vector art. Never inherits the
  * patio / dashboard page wallpaper.
+ *
+ * Custom uploads (including animated SVG) are rendered via `<img>` so scripts
+ * in SVG never execute. SMIL animations typically run; CSS animations inside
+ * an external SVG often do not when loaded as an image.
  */
 export function EnergyPageBackground({
   backgroundLight,
