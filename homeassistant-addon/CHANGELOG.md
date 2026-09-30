@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.48
+
+- Trash card: background, person art, icon, and accent now follow the resolved waste type (GFT / Restafval / PMD) immediately when the HA entity or demo theme changes; prefer specific fraction tokens over generic “waste” entity ids
+
 ## 0.4.47
 
 - New **Trash / waste collection** floating card (`trash_card`): next pickup day + waste type (GFT / Restafval / PMD) with themed illustrations; bind HA sensors (Afvalwijzer-style or separate type/date); demo preview without HA; resizable; NL/EN

@@ -9,7 +9,6 @@ import { useTranslation } from "@/hooks/use-translation";
 import {
   TRASH_CARD_DEFAULT_HEIGHT,
   TRASH_CARD_DEFAULT_WIDTH,
-  TRASH_THEME_ASSETS,
   clampTrashCardHeight,
   clampTrashCardWidth,
   formatTrashPickupDate,
@@ -17,6 +16,7 @@ import {
   resolveTrashPickup,
   trashCardDensity,
   trashDemoPickup,
+  trashThemeAssets,
   type TrashLocale,
   type TrashTheme,
 } from "@/lib/trash-card";
@@ -26,10 +26,12 @@ function useTrashPickup(
   dateEntityId: string | undefined,
   demoTheme: TrashTheme
 ) {
-  const primary = useEntityStateStore((s) => (entityId ? s.getState(entityId) : undefined));
+  // Read `states[id]` + `updatedAt` so theme art re-renders as soon as HA state changes.
+  const primary = useEntityStateStore((s) => (entityId ? s.states[entityId] : undefined));
   const dateEnt = useEntityStateStore((s) =>
-    dateEntityId ? s.getState(dateEntityId) : undefined
+    dateEntityId ? s.states[dateEntityId] : undefined
   );
+  useEntityStateStore((s) => s.updatedAt);
 
   const hasBinding = Boolean(entityId || dateEntityId);
   const live = resolveTrashPickup({
@@ -43,6 +45,7 @@ function useTrashPickup(
       : dateEntityId
         ? { entity_id: dateEntityId, state: null, attributes: {} }
         : null,
+    fallbackTheme: demoTheme,
   });
 
   if (!hasBinding || !live) {
@@ -72,8 +75,10 @@ export function TrashCardWidget({
   const cardW = clampTrashCardWidth(width ?? TRASH_CARD_DEFAULT_WIDTH);
   const cardH = clampTrashCardHeight(height ?? TRASH_CARD_DEFAULT_HEIGHT);
   const compact = trashCardDensity(cardW, cardH) === "compact";
-  const assets = TRASH_THEME_ASSETS[pickup.theme];
-  const typeLabel = formatTrashTypeLabel(pickup.theme, pickup.typeRaw, locale);
+  // Theme drives background, person art, icon, and accent together.
+  const theme = pickup.theme;
+  const assets = trashThemeAssets(theme);
+  const typeLabel = formatTrashTypeLabel(theme, pickup.typeRaw, locale);
   const dateLabel = formatTrashPickupDate(pickup.date, locale);
   const heading =
     title?.trim() || t("trashCard.nextCollection");
@@ -85,21 +90,26 @@ export function TrashCardWidget({
         className
       )}
       style={{ width: "100%", height: "100%" }}
+      data-trash-theme={theme}
     >
-      {/* Background scene */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${withBasePath(assets.background)})` }}
+      {/* Background scene — <img> so theme swaps apply immediately (CSS bg can stick). */}
+      <img
+        key={`bg-${theme}`}
+        src={withBasePath(assets.background)}
+        alt=""
+        draggable={false}
+        className="pointer-events-none absolute inset-0 z-0 h-full w-full select-none object-cover object-center [-webkit-user-drag:none]"
         aria-hidden
       />
       {/* Soft scrim for dark mode readability */}
       <div
-        className="pointer-events-none absolute inset-0 bg-black/0 dark:bg-black/25"
+        className="pointer-events-none absolute inset-0 z-0 bg-black/0 dark:bg-black/25"
         aria-hidden
       />
 
       {/* Character + bin */}
       <img
+        key={`person-${theme}`}
         src={withBasePath(assets.person)}
         alt=""
         draggable={false}
@@ -153,6 +163,7 @@ export function TrashCardWidget({
         )}
       >
         <img
+          key={`icon-${theme}`}
           src={withBasePath(assets.icon)}
           alt=""
           draggable={false}
@@ -181,9 +192,10 @@ export function TrashCardWidget({
         </div>
         <span
           className={cn(
-            "flex shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500",
+            "flex shrink-0 items-center justify-center rounded-full",
             compact ? "h-6 w-6" : "h-7 w-7"
           )}
+          style={{ backgroundColor: `${assets.accent}22`, color: assets.accent }}
           aria-hidden
         >
           <ChevronRight className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
