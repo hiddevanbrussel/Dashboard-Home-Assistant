@@ -16,6 +16,7 @@ import type { ClimateProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
+import { playUiClick } from "@/lib/ui-click";
 import {
   clampClimateCardHeight,
   clampClimateCardWidth,
@@ -367,10 +368,12 @@ export function ClimateCard2Widget({
 
   function handlePower() {
     if (previewing) {
+      playUiClick();
       setPreviewOn((v) => !v);
       return;
     }
     if (!entity_id || pendingRef.current) return;
+    playUiClick();
     pendingRef.current = true;
     const previous = entity;
     if (isOn) {
@@ -401,12 +404,14 @@ export function ClimateCard2Widget({
 
   function handleMode(tile: ClimateModeTile) {
     if (previewing) {
+      playUiClick();
       setPreviewTile(tile);
       setPreviewOn(true);
       return;
     }
     if (!entity_id || pendingRef.current) return;
     if (!climateTileEnabled(tile, hvacModes)) return;
+    playUiClick();
     const hvac_mode = resolveHvacModeForTile(tile, hvacModes);
     pendingRef.current = true;
     setBusyMode(tile);
@@ -428,10 +433,12 @@ export function ClimateCard2Widget({
     const rounded = Math.round(next * 2) / 2;
     const clamped = Math.min(maxTemp, Math.max(minTemp, rounded));
     if (previewing) {
+      playUiClick();
       setPreviewTemp(clamped);
       return;
     }
     if (!entity_id || pendingRef.current || !isOn) return;
+    playUiClick();
     pendingRef.current = true;
     const previous = entity;
     updateEntityState(entity_id, {

@@ -9,6 +9,7 @@ import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { mediaArtworkCacheKey, mediaImageRequestUrl } from "@/lib/media-image";
+import { playUiClick } from "@/lib/ui-click";
 import {
   clampMediaCardHeight,
   clampMediaCardWidth,
@@ -112,6 +113,7 @@ export function MediaCardWidget({
 
   function handlePlayPause() {
     if (!entity_id || pendingRef.current) return;
+    playUiClick();
     pendingRef.current = true;
     const previous = entity;
     const nextState = isPlaying ? "paused" : "playing";
@@ -126,6 +128,7 @@ export function MediaCardWidget({
 
   function handleSkip(service: "media_previous_track" | "media_next_track") {
     if (!entity_id || pendingRef.current) return;
+    playUiClick();
     pendingRef.current = true;
     callMedia(service)
       .then(() => requestRefresh())

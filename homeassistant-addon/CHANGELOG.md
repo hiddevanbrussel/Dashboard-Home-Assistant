@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.49
+
+- Soft UI click sounds on primary controls (climate temp, music play/pause/skip, light toggle, vacuum start) with Appearance toggle (on by default), throttle, and tab-visibility guard
+
 ## 0.4.48
 
 - Trash card: background, person art, icon, and accent now follow the resolved waste type (GFT / Restafval / PMD) immediately when the HA entity or demo theme changes; prefer specific fraction tokens over generic “waste” entity ids

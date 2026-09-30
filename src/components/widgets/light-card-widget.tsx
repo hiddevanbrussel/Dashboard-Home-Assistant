@@ -17,6 +17,7 @@ import type { LightControlProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
+import { playUiClick } from "@/lib/ui-click";
 
 const LIGHT_ICON_MAP: Record<string, React.ElementType> = {
   lightbulb: Lightbulb,
@@ -225,6 +226,7 @@ export function LightCardWidget({
   // ── Handlers ───────────────────────────────────────────────────────────────
   function handleToggle() {
     if (pendingRef.current) return;
+    playUiClick();
     pendingRef.current = true;
     const nextOn = !isOn;
     const previous = entity;

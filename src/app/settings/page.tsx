@@ -34,7 +34,9 @@ import {
   ThemePreview,
 } from "@/components/settings/settings-choice-cards";
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
+import { useUiSoundStore } from "@/stores/ui-sound-store";
 import type { ThemeAccentId } from "@/lib/theme-accents";
+import { playUiClick } from "@/lib/ui-click";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverMusicEntityId, setScreensaverMusicEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize, getScreensaverClockWeight, setScreensaverClockWeight, getScreensaverMediaSource, setScreensaverMediaSource, type ScreensaverMediaSource } from "@/stores/screensaver-store";
 import { isImmichSourceReady, isPexelsSourceReady } from "@/lib/screensaver-media-source";
@@ -683,6 +685,8 @@ export default function SettingsPage() {
   }
 
   const { mode, setMode, accent, setAccent } = useThemeStore();
+  const uiSoundEnabled = useUiSoundStore((s) => s.enabled);
+  const setUiSoundEnabled = useUiSoundStore((s) => s.setEnabled);
   const { language, setLanguage } = useLanguageStore();
 
   const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: LucideIcon }[] }[] = [
@@ -843,6 +847,15 @@ export default function SettingsPage() {
                 rose: t("settings.theme.color.rose"),
                 fuchsia: t("settings.theme.color.fuchsia"),
               } satisfies Record<ThemeAccentId, string>}
+            />
+            <SettingsToggle
+              checked={uiSoundEnabled}
+              onChange={(v) => {
+                setUiSoundEnabled(v);
+                if (v) playUiClick();
+              }}
+              label={t("settings.uiSounds")}
+              description={t("settings.uiSounds.hint")}
             />
             <div className="space-y-2">
               <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
