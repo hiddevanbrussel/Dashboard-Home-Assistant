@@ -80,6 +80,9 @@ export function FloatingTeamtrackerCard({
   entity_id,
   width,
   height,
+  show_team_names,
+  show_form,
+  show_progress,
   editMode = false,
   storageScope,
   widgetId,
@@ -91,6 +94,9 @@ export function FloatingTeamtrackerCard({
   entity_id: string;
   width?: number;
   height?: number;
+  show_team_names?: boolean;
+  show_form?: boolean;
+  show_progress?: boolean;
   editMode?: boolean;
   storageScope?: string;
   widgetId?: string;
@@ -335,6 +341,9 @@ export function FloatingTeamtrackerCard({
         <TeamtrackerCardWidget
           title={title}
           entity_id={entity_id}
+          show_team_names={show_team_names}
+          show_form={show_form}
+          show_progress={show_progress}
           onMoreClick={editMode ? onEdit : undefined}
           className="h-full min-h-0"
         />

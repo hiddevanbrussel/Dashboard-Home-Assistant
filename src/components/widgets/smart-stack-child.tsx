@@ -161,6 +161,9 @@ export function SmartStackChild({
         <TeamtrackerCardWidget
           title={title}
           entity_id={child.entity_id ?? ""}
+          show_team_names={child.show_team_names}
+          show_form={child.show_form}
+          show_progress={child.show_progress}
           className={fill}
         />
       );

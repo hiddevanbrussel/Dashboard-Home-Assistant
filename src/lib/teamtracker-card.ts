@@ -432,4 +432,19 @@ export function isTeamtrackerEntityId(entityId: string): boolean {
   return entityId.startsWith("sensor.team");
 }
 
+/** WidgetConfig: show team names under logos (default true). */
+export function isTeamtrackerShowTeamNames(value: unknown): boolean {
+  return value !== false;
+}
+
+/** WidgetConfig: show win/loss form lines under team names (default true). */
+export function isTeamtrackerShowForm(value: unknown): boolean {
+  return value !== false;
+}
+
+/** WidgetConfig: show thin match progress bar (default true; hidden for PRE anyway). */
+export function isTeamtrackerShowProgress(value: unknown): boolean {
+  return value !== false;
+}
+
 export { footballMatchHasContent, footballMatchStatus };

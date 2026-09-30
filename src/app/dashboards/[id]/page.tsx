@@ -463,6 +463,9 @@ function WidgetByType({
   humidity_entity_id,
   display_mode,
   show_icon,
+  show_team_names,
+  show_form,
+  show_progress,
   script_ids,
   script_names,
   cleaned_area_entity_id,
@@ -502,6 +505,9 @@ function WidgetByType({
   humidity_entity_id?: string;
   display_mode?: "standard" | "compact" | "graph";
   show_icon?: boolean;
+  show_team_names?: boolean;
+  show_form?: boolean;
+  show_progress?: boolean;
   script_ids?: string[];
   script_names?: Record<string, string>;
   cleaned_area_entity_id?: string;
@@ -759,6 +765,9 @@ function WidgetByType({
         <TeamtrackerCardWidget
           title={title}
           entity_id={entity_id}
+          show_team_names={show_team_names}
+          show_form={show_form}
+          show_progress={show_progress}
           onMoreClick={onMoreClick}
         />
       );
@@ -860,6 +869,9 @@ export default function DashboardEditPage() {
     color?: string;
     refresh?: number;
     show_title?: boolean;
+    show_team_names?: boolean;
+    show_form?: boolean;
+    show_progress?: boolean;
     device_entity_ids?: string[];
     device_names?: Record<string, string>;
     cost_per_kwh?: number;
@@ -906,6 +918,9 @@ export default function DashboardEditPage() {
     color: "amber",
     refresh: 10,
     show_title: true,
+    show_team_names: true,
+    show_form: true,
+    show_progress: true,
     device_entity_ids: [],
     device_names: {},
     cost_per_kwh: undefined as number | undefined,
@@ -1087,6 +1102,9 @@ export default function DashboardEditPage() {
           color: child.color ?? "amber",
           refresh: child.refresh ?? 10,
           show_title: child.show_title !== false,
+          show_team_names: child.show_team_names !== false,
+          show_form: child.show_form !== false,
+          show_progress: child.show_progress !== false,
           device_entity_ids: child.device_entity_ids ?? [],
           device_names: child.device_names ?? {},
           cost_per_kwh: child.cost_per_kwh ?? undefined,
@@ -1175,6 +1193,9 @@ export default function DashboardEditPage() {
         color: editingWidget.color ?? "amber",
         refresh: editingWidget.refresh ?? 10,
         show_title: editingWidget.show_title !== false,
+        show_team_names: editingWidget.show_team_names !== false,
+        show_form: editingWidget.show_form !== false,
+        show_progress: editingWidget.show_progress !== false,
         device_entity_ids: editingWidget.device_entity_ids ?? [],
         device_names: editingWidget.device_names ?? {},
         cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
@@ -1405,6 +1426,9 @@ export default function DashboardEditPage() {
       ...(type === "teamtracker_card" && {
         width: TEAMTRACKER_CARD_DEFAULT_WIDTH,
         height: TEAMTRACKER_CARD_DEFAULT_HEIGHT,
+        show_team_names: true,
+        show_form: true,
+        show_progress: true,
       }),
       ...(type === "weather_card" && { width: WEATHER_CARD_DEFAULT_WIDTH, height: WEATHER_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
@@ -1515,7 +1539,7 @@ export default function DashboardEditPage() {
 
   function handleUpdateTile(
     widgetId: string,
-    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; display_mode?: "standard" | "compact" | "graph"; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; media_player_entity_id?: string; climate_entity_id?: string; area_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; today_entity_id?: string; accent?: "consumption" | "production"; period?: "week" | "month"; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; page?: number }
+    updates: { title?: string; subtitle?: string; textMode?: "title" | "subtitle" | "text"; entity_id?: string; consumption_entity_id?: string; grid_entity_id?: string; humidity_entity_id?: string; display_mode?: "standard" | "compact" | "graph"; show_icon?: boolean; show_state?: boolean; script_ids?: string[]; script_names?: Record<string, string>; cleaned_area_entity_id?: string; progress_entity_id?: string; light_entity_id?: string; media_player_entity_id?: string; climate_entity_id?: string; area_id?: string; background_image?: string; background_image_dark?: string; image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[]; icon_background_color?: string; width?: number; height?: number; icon?: string; size?: string; conditions?: { operator: string; value: string; color: string }[]; alignment?: "start" | "center" | "end" | "between"; children?: WidgetConfig[]; current_entity_id?: string; today_entity_id?: string; accent?: "consumption" | "production"; period?: "week" | "month"; max_value?: number; minimal?: boolean; scale?: number; label?: string; color?: string; refresh?: number; show_title?: boolean; show_team_names?: boolean; show_form?: boolean; show_progress?: boolean; page?: number }
   ) {
     setWidgets((prev) =>
       prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w))
@@ -2454,6 +2478,9 @@ export default function DashboardEditPage() {
               entity_id={w.entity_id}
               width={w.width}
               height={w.height}
+              show_team_names={w.show_team_names}
+              show_form={w.show_form}
+              show_progress={w.show_progress}
               editMode={editMode}
               storageScope={id}
               widgetId={w.id}
@@ -3160,6 +3187,11 @@ export default function DashboardEditPage() {
                                             ...(stackAddChildType === "nuts_card" && { accent: "consumption" as const, period: "week" as const, icon: "Zap" }),
                                             ...(stackAddChildType === "climate_card_2" && { display_mode: "standard" as const }),
                                             ...(stackAddChildType === "camera_card" && { refresh: 10, show_title: true }),
+                                            ...(stackAddChildType === "teamtracker_card" && {
+                                              show_team_names: true,
+                                              show_form: true,
+                                              show_progress: true,
+                                            }),
                                           };
                                           const nextChildren = [...(editingWidget.children ?? []), newChild];
                                           const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
@@ -5601,60 +5633,123 @@ aria-label={t("editPanel.removeCondition")}
                     )}
                   </>
                 )}
-                {editFormType === "teamtracker_card" && !isEditingSmartStackChild && (
+                {editFormType === "teamtracker_card" && (
                   <>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("editPanel.cardWidthPx")}
-                      </label>
-                      <input
-                        type="number"
-                        min={TEAMTRACKER_CARD_MIN_WIDTH}
-                        max={TEAMTRACKER_CARD_MAX_WIDTH}
-                        step={10}
-                        value={editForm.width ?? TEAMTRACKER_CARD_DEFAULT_WIDTH}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? undefined : Number(e.target.value);
-                          setEditForm((prev) => ({
-                            ...prev,
-                            width: v != null && !Number.isNaN(v) ? v : undefined,
-                          }));
-                        }}
-                        placeholder={String(TEAMTRACKER_CARD_DEFAULT_WIDTH)}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                      />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-                        {TEAMTRACKER_CARD_MIN_WIDTH}–{TEAMTRACKER_CARD_MAX_WIDTH} px
-                      </p>
+                    <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
+                      {(["algemeen", "weergave"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEditTab(tab)}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                            editTab === tab
+                              ? "bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                          )}
+                        >
+                          {tab === "algemeen" ? t("editPanel.general") : t("editPanel.display")}
+                        </button>
+                      ))}
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("editPanel.cardHeightPx")}
-                      </label>
-                      <input
-                        type="number"
-                        min={TEAMTRACKER_CARD_MIN_HEIGHT}
-                        max={TEAMTRACKER_CARD_MAX_HEIGHT}
-                        step={10}
-                        value={editForm.height ?? TEAMTRACKER_CARD_DEFAULT_HEIGHT}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? undefined : Number(e.target.value);
-                          setEditForm((prev) => ({
-                            ...prev,
-                            height: v != null && !Number.isNaN(v) ? v : undefined,
-                          }));
-                        }}
-                        placeholder={String(TEAMTRACKER_CARD_DEFAULT_HEIGHT)}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                      />
-                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-                        {TEAMTRACKER_CARD_MIN_HEIGHT}–{TEAMTRACKER_CARD_MAX_HEIGHT} px
-                      </p>
-                    </div>
+                    {editTab === "algemeen" && (
+                      <div className="space-y-3">
+                        {(
+                          [
+                            ["show_team_names", "editPanel.showTeamNames"],
+                            ["show_form", "editPanel.showForm"],
+                            ["show_progress", "editPanel.showProgressBar"],
+                          ] as const
+                        ).map(([key, labelKey]) => {
+                          const on = editForm[key] !== false;
+                          return (
+                            <div key={key} className="flex items-center justify-between gap-3">
+                              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {t(labelKey)}
+                              </label>
+                              <button
+                                type="button"
+                                role="switch"
+                                aria-checked={on}
+                                onClick={() =>
+                                  setEditForm((prev) => ({
+                                    ...prev,
+                                    [key]: !(prev[key] !== false),
+                                  }))
+                                }
+                                className={cn(
+                                  "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4700B5] focus:ring-offset-2",
+                                  on ? "bg-[#4700B5]" : "bg-gray-200 dark:bg-gray-600"
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition",
+                                    on ? "translate-x-5" : "translate-x-1"
+                                  )}
+                                />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {editTab === "weergave" && !isEditingSmartStackChild && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {t("editPanel.cardWidthPx")}
+                          </label>
+                          <input
+                            type="number"
+                            min={TEAMTRACKER_CARD_MIN_WIDTH}
+                            max={TEAMTRACKER_CARD_MAX_WIDTH}
+                            step={10}
+                            value={editForm.width ?? TEAMTRACKER_CARD_DEFAULT_WIDTH}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({
+                                ...prev,
+                                width: v != null && !Number.isNaN(v) ? v : undefined,
+                              }));
+                            }}
+                            placeholder={String(TEAMTRACKER_CARD_DEFAULT_WIDTH)}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                            {TEAMTRACKER_CARD_MIN_WIDTH}–{TEAMTRACKER_CARD_MAX_WIDTH} px
+                          </p>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {t("editPanel.cardHeightPx")}
+                          </label>
+                          <input
+                            type="number"
+                            min={TEAMTRACKER_CARD_MIN_HEIGHT}
+                            max={TEAMTRACKER_CARD_MAX_HEIGHT}
+                            step={10}
+                            value={editForm.height ?? TEAMTRACKER_CARD_DEFAULT_HEIGHT}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({
+                                ...prev,
+                                height: v != null && !Number.isNaN(v) ? v : undefined,
+                              }));
+                            }}
+                            placeholder={String(TEAMTRACKER_CARD_DEFAULT_HEIGHT)}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
+                          />
+                          <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                            {TEAMTRACKER_CARD_MIN_HEIGHT}–{TEAMTRACKER_CARD_MAX_HEIGHT} px
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {editTab === "weergave" && isEditingSmartStackChild && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
+                    )}
                   </>
-                )}
-                {editFormType === "teamtracker_card" && isEditingSmartStackChild && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
                 )}
                 {editFormType === "weather_card" && (
                   <>
@@ -6103,6 +6198,9 @@ aria-label={t("editPanel.removeCondition")}
                       <TeamtrackerCardWidget
                         title={editForm.title || t("cardType.teamtracker_card")}
                         entity_id={editForm.entity_id}
+                        show_team_names={editForm.show_team_names}
+                        show_form={editForm.show_form}
+                        show_progress={editForm.show_progress}
                         className="h-full min-h-0"
                       />
                     </div>
@@ -6456,6 +6554,9 @@ aria-label={t("editPanel.removeCondition")}
                         ...(editingWidget.type === "teamtracker_card" && {
                           width: editForm.width != null && editForm.width > 0 ? clampTeamtrackerCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampTeamtrackerCardHeight(editForm.height) : undefined,
+                          show_team_names: editForm.show_team_names !== false,
+                          show_form: editForm.show_form !== false,
+                          show_progress: editForm.show_progress !== false,
                         }),
                         ...(editingWidget.type === "vacuum_card" && {
                           script_ids: editForm.script_ids ?? [],
