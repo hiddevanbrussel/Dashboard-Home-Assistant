@@ -249,6 +249,18 @@ export type EnergyMetricProps = Omit<WidgetBaseProps, "entity_id"> & {
   unit_as_prefix?: boolean;
 };
 
+/** Trash / waste collection card: next pickup day + waste type. */
+export type TrashCardProps = WidgetBaseProps & {
+  /** Optional separate date sensor (when type and date are different entities). */
+  date_entity_id?: string;
+  /** Demo theme when no HA entities are bound. */
+  demo_theme?: "gft" | "restafval" | "pmd";
+  /** Breedte kaart in px (standaard 320). */
+  width?: number;
+  /** Hoogte kaart in px (standaard 320). */
+  height?: number;
+};
+
 /** Nuts/utility card: weekly/monthly bar chart with today value and period trend. */
 export type NutsCardProps = WidgetBaseProps & {
   /** Accent style: consumption (orange) or production (green). */

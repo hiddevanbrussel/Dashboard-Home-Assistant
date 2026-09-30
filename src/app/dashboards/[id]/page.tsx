@@ -10,7 +10,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { RobotVacuum, CalendarDays, Check, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
+import { RobotVacuum, CalendarDays, Check, Trash2, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
 import { ArrowRightLeft } from "lucide-react";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -77,6 +77,8 @@ import {
   CalendarCardWidget,
   FloatingCalendarCard,
   TimerCardWidget,
+  TrashCardWidget,
+  FloatingTrashCard,
 } from "@/components/widgets";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import type { ImageCondition, SensorCondition } from "@/components/widgets";
@@ -163,6 +165,16 @@ import {
   CALENDAR_CARD_MIN_WIDTH,
 } from "@/lib/calendar-card";
 import {
+  clampTrashCardHeight,
+  clampTrashCardWidth,
+  TRASH_CARD_DEFAULT_HEIGHT,
+  TRASH_CARD_DEFAULT_WIDTH,
+  TRASH_CARD_MAX_HEIGHT,
+  TRASH_CARD_MAX_WIDTH,
+  TRASH_CARD_MIN_HEIGHT,
+  TRASH_CARD_MIN_WIDTH,
+} from "@/lib/trash-card";
+import {
   clampRoomCardHeight,
   clampRoomCardWidth,
   ROOM_CARD_DEFAULT_HEIGHT,
@@ -210,7 +222,7 @@ import {
 } from "@/lib/weather-card";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
-const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "smart_stack", "card_group", "chore_card", "calendar_card"] as const;
+const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "smart_stack", "card_group", "chore_card", "calendar_card", "trash_card"] as const;
 
 const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; labelKey: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { type: "text_card", labelKey: "cardType.text_card", Icon: Type },
@@ -236,6 +248,7 @@ const ADDABLE_WIDGET_TILES: { type: (typeof ADDABLE_WIDGET_TYPES)[number]; label
   { type: "card_group", labelKey: "cardType.card_group", Icon: LayoutGrid },
   { type: "chore_card", labelKey: "cardType.chore_card", Icon: ListTodo },
   { type: "calendar_card", labelKey: "cardType.calendar_card", Icon: CalendarDays },
+  { type: "trash_card", labelKey: "cardType.trash_card", Icon: Trash2 },
 ];
 
 /** Map widget type to HA domain for filtering entities */
@@ -270,6 +283,7 @@ const WIDGET_TYPE_DOMAIN: Record<string, string> = {
   card_group: "",
   calendar_card: "",
   timer_card: "",
+  trash_card: "sensor",
 };
 
 const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor", "binary_sensor"];
@@ -277,7 +291,7 @@ const PILL_CARD_DOMAINS = ["switch", "light", "input_boolean", "sensor", "binary
 const FLOATING_WIDGET_TYPES = new Set([
   "text_card", "title_card", "title_only_card", "subtitle_card", "media_card", "climate_card", "climate_card_2", "light_card", "solar_card",
   "energy_monitor_card", "power_usage_card", "stat_pill_card", "sensor_card", "weather_card",
-  "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "smart_stack", "card_group", "chore_card", "calendar_card", "timer_card",
+  "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "smart_stack", "card_group", "chore_card", "calendar_card", "timer_card", "trash_card",
 ]);
 
 type DashboardData = {
@@ -493,6 +507,10 @@ function WidgetByType({
   cost_per_kwh,
   textMode,
   icon_background_color,
+  date_entity_id,
+  demo_theme,
+  width,
+  height,
   onMoreClick,
 }: {
   type: string;
@@ -535,6 +553,10 @@ function WidgetByType({
   device_names?: Record<string, string>;
   cost_per_kwh?: number;
   textMode?: "title" | "subtitle" | "text" | "both";
+  date_entity_id?: string;
+  demo_theme?: "gft" | "restafval" | "pmd";
+  width?: number;
+  height?: number;
   onMoreClick?: () => void;
 }) {
   const sizeProp = (size as "sm" | "md" | "lg") ?? "md";
@@ -760,6 +782,18 @@ function WidgetByType({
           onMoreClick={onMoreClick}
         />
       );
+    case "trash_card":
+      return (
+        <TrashCardWidget
+          title={title}
+          entity_id={entity_id}
+          date_entity_id={date_entity_id}
+          demo_theme={demo_theme}
+          width={width}
+          height={height}
+          onMoreClick={onMoreClick}
+        />
+      );
     case "teamtracker_card":
       return (
         <TeamtrackerCardWidget
@@ -877,6 +911,8 @@ export default function DashboardEditPage() {
     cost_per_kwh?: number;
     child_id?: string | null;
     show_chore_points?: boolean;
+    date_entity_id?: string;
+    demo_theme?: "gft" | "restafval" | "pmd";
     page?: number;
     interval_seconds?: number;
     autoplay?: boolean;
@@ -926,6 +962,8 @@ export default function DashboardEditPage() {
     cost_per_kwh: undefined as number | undefined,
     child_id: null as string | null,
     show_chore_points: true,
+    date_entity_id: "",
+    demo_theme: "gft" as const,
     page: 0,
     interval_seconds: SMART_STACK_DEFAULT_INTERVAL_SEC,
     autoplay: true,
@@ -1201,6 +1239,8 @@ export default function DashboardEditPage() {
         cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
         child_id: editingWidget.child_id ?? null,
         show_chore_points: editingWidget.show_chore_points !== false,
+        date_entity_id: editingWidget.date_entity_id ?? "",
+        demo_theme: editingWidget.demo_theme === "restafval" || editingWidget.demo_theme === "pmd" ? editingWidget.demo_theme : "gft",
         page: widgetPage(editingWidget),
         interval_seconds: clampSmartStackIntervalSec(
           editingWidget.interval_seconds ?? SMART_STACK_DEFAULT_INTERVAL_SEC
@@ -1214,7 +1254,7 @@ export default function DashboardEditPage() {
       setGroupAddEntitySearch("");
       setStackAddChildType(null);
       setPowerUsageDeviceSearch("");
-      if (editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "vacuum_card_2" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "teamtracker_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card") {
+      if (editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card" || editingWidget.type === "light_card" || editingWidget.type === "media_card" || editingWidget.type === "sensor_card" || editingWidget.type === "room_card" || editingWidget.type === "climate_card" || editingWidget.type === "climate_card_2" || editingWidget.type === "solar_card" || editingWidget.type === "stat_pill_card" || editingWidget.type === "vacuum_card" || editingWidget.type === "vacuum_card_2" || editingWidget.type === "pill_card" || editingWidget.type === "camera_card" || editingWidget.type === "teamtracker_card" || editingWidget.type === "weather_card" || editingWidget.type === "nuts_card" || editingWidget.type === "power_usage_card" || editingWidget.type === "device_consumption_card" || editingWidget.type === "trash_card") {
         setEditTab(editingWidget.type === "room_card" ? "entiteiten" : editingWidget.type === "media_card" ? "weergave" : "algemeen");
       }
       if (editingWidget.type === "energy_monitor_card") {
@@ -1276,7 +1316,8 @@ export default function DashboardEditPage() {
           widget.type !== "card_group" &&
           widget.type !== "chore_card" &&
           widget.type !== "calendar_card" &&
-          widget.type !== "timer_card"
+          widget.type !== "timer_card" &&
+          widget.type !== "trash_card"
       );
       if (gridWidgets.length > 0) {
         setLayout(
@@ -1386,7 +1427,7 @@ export default function DashboardEditPage() {
 
   const layoutForGrid = layout.filter((item) => {
     const type = widgets.find((w) => w.id === item.i)?.type;
-    return type !== "text_card" && type !== "title_card" && type !== "title_only_card" && type !== "subtitle_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "device_consumption_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "vacuum_card_2" && type !== "alarm_card" && type !== "camera_card" && type !== "teamtracker_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "smart_stack" && type !== "card_group" && type !== "chore_card" && type !== "calendar_card" && type !== "timer_card";
+    return type !== "text_card" && type !== "title_card" && type !== "title_only_card" && type !== "subtitle_card" && type !== "media_card" && type !== "climate_card" && type !== "climate_card_2" && type !== "light_card" && type !== "solar_card" && type !== "energy_monitor_card" && type !== "power_usage_card" && type !== "device_consumption_card" && type !== "stat_pill_card" && type !== "sensor_card" && type !== "weather_card" && type !== "vacuum_card" && type !== "vacuum_card_2" && type !== "alarm_card" && type !== "camera_card" && type !== "teamtracker_card" && type !== "pill_card" && type !== "room_card" && type !== "nuts_card" && type !== "smart_stack" && type !== "card_group" && type !== "chore_card" && type !== "calendar_card" && type !== "timer_card" && type !== "trash_card";
   });
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
@@ -1433,6 +1474,11 @@ export default function DashboardEditPage() {
       ...(type === "weather_card" && { width: WEATHER_CARD_DEFAULT_WIDTH, height: WEATHER_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
       ...(type === "calendar_card" && { width: CALENDAR_CARD_DEFAULT_WIDTH, height: CALENDAR_CARD_DEFAULT_HEIGHT }),
+      ...(type === "trash_card" && {
+        width: TRASH_CARD_DEFAULT_WIDTH,
+        height: TRASH_CARD_DEFAULT_HEIGHT,
+        demo_theme: "gft" as const,
+      }),
       ...(type === "room_card" && { width: ROOM_CARD_DEFAULT_WIDTH, height: ROOM_CARD_DEFAULT_HEIGHT }),
       ...((type === "climate_card" || type === "climate_card_2") && { width: CLIMATE_CARD_DEFAULT_WIDTH, height: CLIMATE_CARD_DEFAULT_HEIGHT }),
       ...(type === "nuts_card" && {
@@ -1454,7 +1500,7 @@ export default function DashboardEditPage() {
       h: isTextCard ? 1 : 2,
     };
     const newWidgets = [...widgets, newWidget];
-    const isFloatingOnly = type === "text_card" || type === "media_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "vacuum_card_2" || type === "alarm_card" || type === "camera_card" || type === "teamtracker_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "smart_stack" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card";
+    const isFloatingOnly = type === "text_card" || type === "media_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "vacuum_card_2" || type === "alarm_card" || type === "camera_card" || type === "teamtracker_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "smart_stack" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card" || type === "trash_card";
     const newLayout = isFloatingOnly ? layout : [...layout, newLayoutItem];
 
     // Optimistisch query-cache updaten zodat de widget direct beschikbaar is bij remount/refetch
@@ -1482,7 +1528,7 @@ export default function DashboardEditPage() {
       welcomeSubtitle,
       pageCount: pageCountRef.current,
     });
-    return type === "text_card" || type === "room_card" || type === "nuts_card" || type === "smart_stack" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" ? newId : undefined;
+    return type === "text_card" || type === "room_card" || type === "nuts_card" || type === "smart_stack" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" || type === "trash_card" ? newId : undefined;
   }
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
@@ -1605,6 +1651,17 @@ export default function DashboardEditPage() {
   function handleCalendarCardResize(widgetId: string, size: { width: number; height: number }) {
     const width = clampCalendarCardWidth(size.width);
     const height = clampCalendarCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleTrashCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampTrashCardWidth(size.width);
+    const height = clampTrashCardHeight(size.height);
     const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
     setWidgets(newWidgets);
     if (editingWidgetId === widgetId) {
@@ -1819,6 +1876,12 @@ export default function DashboardEditPage() {
                             }
                             if (type === "calendar_card") {
                               handleAddTile("calendar_card", "", "");
+                              setAddTileOpen(false);
+                              return;
+                            }
+                            if (type === "trash_card") {
+                              const newId = handleAddTile("trash_card", "", t("cardType.trash_card"));
+                              if (newId) setEditingWidgetId(newId);
                               setAddTileOpen(false);
                               return;
                             }
@@ -2068,7 +2131,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
-            .filter((w) => w.type !== "text_card" && w.type !== "title_card" && w.type !== "title_only_card" && w.type !== "subtitle_card" && w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "vacuum_card_2" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "teamtracker_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "smart_stack" && w.type !== "card_group" && w.type !== "chore_card" && w.type !== "calendar_card" && w.type !== "timer_card")
+            .filter((w) => w.type !== "text_card" && w.type !== "title_card" && w.type !== "title_only_card" && w.type !== "subtitle_card" && w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "vacuum_card_2" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "teamtracker_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "smart_stack" && w.type !== "card_group" && w.type !== "chore_card" && w.type !== "calendar_card" && w.type !== "timer_card" && w.type !== "trash_card")
             .map((w) => {
               const item = layoutMap.get(w.id);
               if (!item) return null;
@@ -2140,6 +2203,10 @@ export default function DashboardEditPage() {
                       device_names={w.device_names}
                       cost_per_kwh={w.cost_per_kwh}
                       textMode={w.textMode}
+                      date_entity_id={w.date_entity_id}
+                      demo_theme={w.demo_theme}
+                      width={w.width}
+                      height={w.height}
                       onMoreClick={editMode ? () => setEditingWidgetId(w.id) : undefined}
                     />
                   </div>
@@ -2730,6 +2797,29 @@ export default function DashboardEditPage() {
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleCalendarCardResize(w.id, size) : undefined}
+            />
+          ))}
+        {widgets
+          .filter((w) => w.type === "trash_card" && widgetPage(w) === pageIndex)
+          .map((w, i) => (
+            <FloatingTrashCard
+              key={w.id}
+              widget={{
+                id: w.id,
+                title: w.title ?? t("cardType.trash_card"),
+                entity_id: w.entity_id ?? "",
+                date_entity_id: w.date_entity_id,
+                demo_theme: w.demo_theme,
+                width: w.width,
+                height: w.height,
+              }}
+              widgetIndex={i}
+              editMode={editMode}
+              storageScope={id}
+              onEnterEditMode={() => setEditMode(true)}
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+              onResize={editMode ? (size) => handleTrashCardResize(w.id, size) : undefined}
             />
           ))}
             </>
@@ -5934,6 +6024,84 @@ aria-label={t("editPanel.removeCondition")}
                 {editFormType === "calendar_card" && isEditingSmartStackChild && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
                 )}
+                {editFormType === "trash_card" && (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("trashCard.dateEntity")}
+                      </label>
+                      <EntitySelectWithSearch
+                        value={editForm.date_entity_id ?? ""}
+                        onChange={(v) => setEditForm((prev) => ({ ...prev, date_entity_id: v }))}
+                        entities={entities.filter((e) => e.entity_id.startsWith("sensor."))}
+                        placeholder={t("editPanel.entityPlaceholder")}
+                        emptyOption={t("editPanel.none")}
+                      />
+                      <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{t("trashCard.dateEntityHint")}</p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("trashCard.demoTheme")}
+                      </label>
+                      <select
+                        value={editForm.demo_theme ?? "gft"}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            demo_theme: e.target.value as "gft" | "restafval" | "pmd",
+                          }))
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      >
+                        <option value="gft">{t("trashCard.theme.gft")}</option>
+                        <option value="restafval">{t("trashCard.theme.restafval")}</option>
+                        <option value="pmd">{t("trashCard.theme.pmd")}</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                          {t("editPanel.widthPx")}
+                        </label>
+                        <input
+                          type="number"
+                          min={TRASH_CARD_MIN_WIDTH}
+                          max={TRASH_CARD_MAX_WIDTH}
+                          step={10}
+                          value={editForm.width ?? TRASH_CARD_DEFAULT_WIDTH}
+                          onChange={(e) => {
+                            const v = e.target.value === "" ? undefined : Number(e.target.value);
+                            setEditForm((prev) => ({
+                              ...prev,
+                              width: v != null && !Number.isNaN(v) ? v : undefined,
+                            }));
+                          }}
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                          {t("editPanel.heightPx")}
+                        </label>
+                        <input
+                          type="number"
+                          min={TRASH_CARD_MIN_HEIGHT}
+                          max={TRASH_CARD_MAX_HEIGHT}
+                          step={10}
+                          value={editForm.height ?? TRASH_CARD_DEFAULT_HEIGHT}
+                          onChange={(e) => {
+                            const v = e.target.value === "" ? undefined : Number(e.target.value);
+                            setEditForm((prev) => ({
+                              ...prev,
+                              height: v != null && !Number.isNaN(v) ? v : undefined,
+                            }));
+                          }}
+                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
                 {editFormType === "nuts_card" && (
                   <>
                     <div className="flex gap-1 rounded-lg bg-gray-100 dark:bg-white/5 p-0.5 mb-2">
@@ -6250,6 +6418,24 @@ aria-label={t("editPanel.removeCondition")}
                         period={normalizeNutsPeriod(editForm.period)}
                         width={clampNutsCardWidth(editForm.width ?? NUTS_CARD_DEFAULT_WIDTH)}
                         height={clampNutsCardHeight(editForm.height ?? NUTS_CARD_DEFAULT_HEIGHT)}
+                        className="h-full"
+                      />
+                    </div>
+                  ) : editingWidget.type === "trash_card" ? (
+                    <div
+                      style={{
+                        width: clampTrashCardWidth(editForm.width ?? TRASH_CARD_DEFAULT_WIDTH),
+                        height: clampTrashCardHeight(editForm.height ?? TRASH_CARD_DEFAULT_HEIGHT),
+                        maxWidth: "100%",
+                      }}
+                    >
+                      <TrashCardWidget
+                        title={editForm.title || t("cardType.trash_card")}
+                        entity_id={editForm.entity_id}
+                        date_entity_id={editForm.date_entity_id}
+                        demo_theme={editForm.demo_theme}
+                        width={clampTrashCardWidth(editForm.width ?? TRASH_CARD_DEFAULT_WIDTH)}
+                        height={clampTrashCardHeight(editForm.height ?? TRASH_CARD_DEFAULT_HEIGHT)}
                         className="h-full"
                       />
                     </div>
@@ -6622,6 +6808,13 @@ aria-label={t("editPanel.removeCondition")}
                         ...(editingWidget.type === "calendar_card" && {
                           width: editForm.width != null && editForm.width > 0 ? clampCalendarCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampCalendarCardHeight(editForm.height) : undefined,
+                        }),
+                        ...(editingWidget.type === "trash_card" && {
+                          entity_id: editForm.entity_id || "",
+                          date_entity_id: editForm.date_entity_id || undefined,
+                          demo_theme: editForm.demo_theme === "restafval" || editForm.demo_theme === "pmd" ? editForm.demo_theme : "gft",
+                          width: editForm.width != null && editForm.width > 0 ? clampTrashCardWidth(editForm.width) : undefined,
+                          height: editForm.height != null && editForm.height > 0 ? clampTrashCardHeight(editForm.height) : undefined,
                         }),
                         ...(editingWidget.type === "chore_card" && {
                           child_id: editForm.child_id ?? null,
