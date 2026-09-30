@@ -7,7 +7,8 @@ import {
 
 /**
  * PUT /api/energy-dashboard/[id] – Update energy dashboard.
- * Rejects all page background URLs (patio / custom / bundled) — energy always uses bundled art.
+ * Accepts intentional `/uploads/` light/dark customs; rejects legacy / bundled / non-upload paths.
+ * The shared `background` field is always cleared (never patio/global wallpaper).
  */
 export async function PUT(
   request: Request,
@@ -32,9 +33,10 @@ export async function PUT(
   const data = {
     ...(body.layout !== undefined && { layout: body.layout }),
     ...(body.widgets !== undefined && { widgets: body.widgets }),
-    ...(body.background !== undefined && {
-      background: usableEnergyBackground(body.background) ?? null,
-    }),
+    // Always null out the deprecated shared field when touched (or when any bg is updated).
+    ...((body.background !== undefined ||
+      body.backgroundLight !== undefined ||
+      body.backgroundDark !== undefined) && { background: null }),
     ...(body.backgroundLight !== undefined && {
       backgroundLight: usableEnergyBackground(body.backgroundLight) ?? null,
     }),
@@ -55,6 +57,26 @@ export async function PUT(
       backgroundLight: dashboard.backgroundLight,
       backgroundDark: dashboard.backgroundDark,
     });
+    if (backgrounds.changed) {
+      const cleaned = await prisma.energyDashboard.update({
+        where: { id },
+        data: {
+          background: backgrounds.background,
+          backgroundLight: backgrounds.backgroundLight,
+          backgroundDark: backgrounds.backgroundDark,
+        },
+      });
+      return NextResponse.json({
+        id: cleaned.id,
+        layout: cleaned.layout,
+        widgets: cleaned.widgets,
+        background: backgrounds.background,
+        backgroundLight: backgrounds.backgroundLight,
+        backgroundDark: backgrounds.backgroundDark,
+        welcomeTitle: cleaned.welcomeTitle ?? null,
+        welcomeSubtitle: cleaned.welcomeSubtitle ?? null,
+      });
+    }
     return NextResponse.json({
       id: dashboard.id,
       layout: dashboard.layout,

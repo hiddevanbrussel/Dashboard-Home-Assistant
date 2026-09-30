@@ -8,6 +8,16 @@ export const ENERGY_PAGE_BG_CACHE_BUST = "20260928f";
 export const ENERGY_PAGE_BG_LIGHT = `/energy/energy-bg-light.png?v=${ENERGY_PAGE_BG_CACHE_BUST}`;
 export const ENERGY_PAGE_BG_DARK = `/energy/energy-bg-dark.png?v=${ENERGY_PAGE_BG_CACHE_BUST}`;
 
+/** Legacy photoreal house art that must never override the energy page illustration. */
+const LEGACY_ENERGY_HOUSE_PATHS = new Set([
+  "/energy-house.png",
+  "/energy-house-night.png",
+  "/energy-house-night-snow.png",
+  "/energy-overview-house.webp",
+  "/house_cloudy_day.png",
+  "/house_cloudy_night.png",
+]);
+
 /** Normalize a stored background URL to a comparable pathname (no query / basePath / origin). */
 export function energyBackgroundPathname(url: string): string {
   let raw = url.trim();
@@ -24,16 +34,36 @@ export function energyBackgroundPathname(url: string): string {
   return withoutQuery.replace(/^\/__ha_ingress__(?=\/|$)/, "") || "/";
 }
 
-/**
- * Energy page backgrounds are never customizable: patio uploads, legacy photoreal art,
- * stale bundled `?v=` URLs, and any other stored path are rejected so they cannot
- * override the current cache-busted illustrations.
- */
-export function usableEnergyBackground(_url: string | null | undefined): string | undefined {
-  return undefined;
+function isBundledEnergyIllustrationPath(pathname: string): boolean {
+  return /^\/energy\/energy-bg-(light|dark)\.png$/i.test(pathname);
 }
 
-/** Clear every persisted energy page background (migrate away from patio / custom / stale art). */
+/**
+ * Accept only intentional energy-page custom uploads (`/uploads/...`).
+ * Rejects: empty, legacy photoreal house art, stale bundled `energy-bg` paths,
+ * and any non-upload URL (so patio/global dashboard wallpaper is never reused
+ * unless the user explicitly re-uploads it under Energy settings).
+ */
+export function usableEnergyBackground(url: string | null | undefined): string | undefined {
+  if (url == null) return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  const pathname = energyBackgroundPathname(trimmed);
+  if (!pathname || pathname === "/") return undefined;
+  if (isBundledEnergyIllustrationPath(pathname)) return undefined;
+  if (LEGACY_ENERGY_HOUSE_PATHS.has(pathname)) return undefined;
+  if (/\/house[_-]/i.test(pathname) && !pathname.startsWith("/uploads/")) return undefined;
+  // Only paths under /uploads/ count as intentional energy customs.
+  if (!pathname.startsWith("/uploads/")) return undefined;
+  // Preserve the stored path (without ingress prefix) so the client can apply basePath.
+  const withoutIngress = trimmed.replace(/^\/__ha_ingress__(?=\/|$)/, "");
+  return withoutIngress.startsWith("/") ? withoutIngress : `/${withoutIngress}`;
+}
+
+/**
+ * Keep intentional custom light/dark uploads; always clear the deprecated shared
+ * `background` field and any legacy / bundled / non-upload paths.
+ */
 export function sanitizeEnergyDashboardBackgrounds(input: {
   background?: string | null;
   backgroundLight?: string | null;
@@ -44,30 +74,39 @@ export function sanitizeEnergyDashboardBackgrounds(input: {
   backgroundDark: string | null;
   changed: boolean;
 } {
+  const backgroundLight = usableEnergyBackground(input.backgroundLight) ?? null;
+  const backgroundDark = usableEnergyBackground(input.backgroundDark) ?? null;
+  const background = null;
   const changed =
-    (input.background ?? null) !== null ||
-    (input.backgroundLight ?? null) !== null ||
-    (input.backgroundDark ?? null) !== null;
+    (input.background ?? null) !== background ||
+    (input.backgroundLight ?? null) !== backgroundLight ||
+    (input.backgroundDark ?? null) !== backgroundDark;
   return {
-    background: null,
-    backgroundLight: null,
-    backgroundDark: null,
+    background,
+    backgroundLight,
+    backgroundDark,
     changed,
   };
 }
 
 /**
- * Always the bundled light/dark vector illustrations. Stored DB / upload URLs are
- * ignored (see `usableEnergyBackground` / `sanitizeEnergyDashboardBackgrounds`).
+ * Prefer a theme-specific custom upload when set; otherwise the bundled
+ * light/dark vector illustrations. Never falls back to patio/global wallpaper
+ * or the deprecated shared `background` field.
  */
 export function resolveEnergyPageBackground(
   resolvedTheme: "light" | "dark",
-  _options?: {
+  options?: {
     background?: string | null;
     backgroundLight?: string | null;
     backgroundDark?: string | null;
   }
 ): string {
+  const custom =
+    resolvedTheme === "dark"
+      ? usableEnergyBackground(options?.backgroundDark)
+      : usableEnergyBackground(options?.backgroundLight);
+  if (custom) return custom;
   return resolvedTheme === "dark" ? ENERGY_PAGE_BG_DARK : ENERGY_PAGE_BG_LIGHT;
 }
 

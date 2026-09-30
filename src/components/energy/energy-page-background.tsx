@@ -6,11 +6,11 @@ import { useThemeStore } from "@/stores/theme-store";
 import { cn } from "@/lib/utils";
 
 type EnergyPageBackgroundProps = {
-  /** @deprecated Ignored — energy always uses bundled vector illustrations. */
+  /** @deprecated Ignored — energy never uses the shared patio/global wallpaper field. */
   background?: string | null;
-  /** @deprecated Ignored — energy always uses bundled vector illustrations. */
+  /** Custom light-mode energy page background (`/uploads/...`), else bundled art. */
   backgroundLight?: string | null;
-  /** @deprecated Ignored — energy always uses bundled vector illustrations. */
+  /** Custom dark-mode energy page background (`/uploads/...`), else bundled art. */
   backgroundDark?: string | null;
   className?: string;
 };
@@ -18,12 +18,19 @@ type EnergyPageBackgroundProps = {
 /**
  * Full-viewport Energy illustration (light/dark): spans left→right edge
  * (including behind the sidebar) and sits under the topbar, with a soft
- * bottom-only fade into `--page-bg`. Always the bundled vector art — never
- * patio / photoreal / dashboard wallpaper / custom uploads.
+ * bottom-only fade into `--page-bg`. Uses a custom upload when set in
+ * Settings → Energy; otherwise the bundled vector art. Never inherits the
+ * patio / dashboard page wallpaper.
  */
-export function EnergyPageBackground({ className }: EnergyPageBackgroundProps) {
+export function EnergyPageBackground({
+  backgroundLight,
+  backgroundDark,
+  className,
+}: EnergyPageBackgroundProps) {
   const resolved = useThemeStore((s) => s.resolved);
-  const src = withBasePath(resolveEnergyPageBackground(resolved));
+  const src = withBasePath(
+    resolveEnergyPageBackground(resolved, { backgroundLight, backgroundDark })
+  );
 
   return (
     <div

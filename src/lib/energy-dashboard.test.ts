@@ -47,24 +47,28 @@ describe("energy page backgrounds", () => {
     expect(resolveEnergyPageBackground("dark")).toBe(ENERGY_PAGE_BG_DARK);
   });
 
-  it("always prefers bundled illustrations over patio / custom uploads", () => {
+  it("uses intentional /uploads customs per theme and ignores shared background", () => {
+    expect(usableEnergyBackground("/uploads/energy-custom-light.jpg")).toBe(
+      "/uploads/energy-custom-light.jpg"
+    );
+    expect(usableEnergyBackground("/__ha_ingress__/uploads/ok.png")).toBe("/uploads/ok.png");
     expect(
       resolveEnergyPageBackground("light", {
-        backgroundLight: "/uploads/patio-photo.jpg",
-        backgroundDark: "/uploads/patio-night.jpg",
+        backgroundLight: "/uploads/energy-custom-light.jpg",
+        backgroundDark: "/uploads/energy-custom-dark.jpg",
       })
-    ).toBe(ENERGY_PAGE_BG_LIGHT);
+    ).toBe("/uploads/energy-custom-light.jpg");
     expect(
       resolveEnergyPageBackground("dark", {
-        backgroundLight: "/uploads/patio-photo.jpg",
-        backgroundDark: "/uploads/patio-night.jpg",
+        backgroundLight: "/uploads/energy-custom-light.jpg",
+        backgroundDark: "/uploads/energy-custom-dark.jpg",
       })
-    ).toBe(ENERGY_PAGE_BG_DARK);
+    ).toBe("/uploads/energy-custom-dark.jpg");
+    // Deprecated shared field must never drive the energy page (patio/global wallpaper).
     expect(
-      resolveEnergyPageBackground("light", { background: "/tmp-test/living-room-ref.jpg" })
+      resolveEnergyPageBackground("light", { background: "/uploads/patio-photo.jpg" })
     ).toBe(ENERGY_PAGE_BG_LIGHT);
-    expect(usableEnergyBackground("/uploads/patio-photo.jpg")).toBeUndefined();
-    expect(usableEnergyBackground("/uploads/ok.png")).toBeUndefined();
+    expect(usableEnergyBackground("/tmp-test/living-room-ref.jpg")).toBeUndefined();
   });
 
   it("ignores photoreal legacy house paths so the new illustrations win", () => {
@@ -109,13 +113,25 @@ describe("energy page backgrounds", () => {
     const cleaned = sanitizeEnergyDashboardBackgrounds({
       background: "/energy-house.png",
       backgroundLight: "/energy/energy-bg-light.png?v=stale",
-      backgroundDark: "/uploads/patio-photo.jpg",
+      backgroundDark: "/uploads/energy-custom-dark.jpg",
     });
     expect(cleaned).toEqual({
       background: null,
       backgroundLight: null,
-      backgroundDark: null,
+      backgroundDark: "/uploads/energy-custom-dark.jpg",
       changed: true,
+    });
+    expect(
+      sanitizeEnergyDashboardBackgrounds({
+        background: null,
+        backgroundLight: "/uploads/ok.png",
+        backgroundDark: "/uploads/ok-dark.png",
+      })
+    ).toEqual({
+      background: null,
+      backgroundLight: "/uploads/ok.png",
+      backgroundDark: "/uploads/ok-dark.png",
+      changed: false,
     });
     expect(
       sanitizeEnergyDashboardBackgrounds({
