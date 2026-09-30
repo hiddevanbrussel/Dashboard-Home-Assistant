@@ -1,8 +1,13 @@
 # Changelog
 
-## 0.4.49
+## 0.4.51
 
 - Soft UI click sounds on primary controls (climate temp, music play/pause/skip, light toggle, vacuum start) with Appearance toggle (on by default), throttle, and tab-visibility guard
+
+## 0.4.50
+
+- Trash card: replace GFT / Restafval / PMD widget assets (background, person+container, icon) with higher-res cutouts; cache-bust asset URLs
+- Trash card: move edit (⋮) button to the top-right corner in dashboard edit mode, aligned with other floating cards
 
 ## 0.4.48
 
