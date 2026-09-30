@@ -65,6 +65,12 @@ export type TeamtrackerMatch = FootballMatch & {
   homeAway: TeamtrackerHomeAway;
   /** Kickoff datetime from Team Tracker `date` attribute. */
   kickoffAt: Date | null;
+  /** Season record (e.g. "4-2-1") or recent form when exposed. */
+  teamRecord: string | null;
+  opponentRecord: string | null;
+  /** Recent form letters when Team Tracker / ESPN expose them (e.g. "LDWW"). */
+  teamForm: string | null;
+  opponentForm: string | null;
 };
 
 function asOptionalString(value: unknown): string | null {
@@ -150,6 +156,111 @@ export function readTeamtrackerKickoffAt(attrs: Record<string, unknown>): Date |
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed;
+}
+
+function readNestedOptional(
+  attrs: Record<string, unknown>,
+  keys: string[]
+): string | null {
+  const data = attrs.data as Record<string, unknown> | undefined;
+  for (const key of keys) {
+    const value = asOptionalString(attrs[key]) ?? asOptionalString(data?.[key]);
+    if (value) return value;
+  }
+  return null;
+}
+
+export function readTeamtrackerRecord(
+  attrs: Record<string, unknown>,
+  side: "team" | "opponent"
+): string | null {
+  if (side === "team") {
+    return readNestedOptional(attrs, ["team_record", "team_records", "record"]);
+  }
+  return readNestedOptional(attrs, ["opponent_record", "opponent_records"]);
+}
+
+/** Read recent form (W/D/L sequence) when present on the entity. */
+export function readTeamtrackerForm(
+  attrs: Record<string, unknown>,
+  side: "team" | "opponent"
+): string | null {
+  if (side === "team") {
+    return readNestedOptional(attrs, ["team_form", "form", "team_last_results"]);
+  }
+  return readNestedOptional(attrs, ["opponent_form", "opponent_last_results"]);
+}
+
+/**
+ * Format a form/record line for the quiet card subtitle.
+ * Prefer letter form → `L | D | W | W`; else keep season record as-is.
+ */
+export function formatTeamtrackerFormLine(
+  form: string | null | undefined,
+  record: string | null | undefined
+): string | null {
+  const formText = form?.trim() || null;
+  if (formText) {
+    const letters = formText
+      .toUpperCase()
+      .replace(/[^WDL]/g, "")
+      .split("")
+      .filter((c) => c === "W" || c === "D" || c === "L");
+    if (letters.length >= 2) return letters.slice(-5).join(" | ");
+    // Tokenized form: "L,D,W,W" / "L D W W" / "L-D-W-W"
+    const tokens = formText
+      .toUpperCase()
+      .split(/[\s,|/.-]+/)
+      .map((t) => t.trim())
+      .filter((t) => t === "W" || t === "D" || t === "L");
+    if (tokens.length >= 2) return tokens.slice(-5).join(" | ");
+  }
+  const recordText = record?.trim() || null;
+  if (!recordText) return null;
+  // Letter-only record with separators already → normalize to pipes
+  const letterTokens = recordText
+    .toUpperCase()
+    .split(/[\s,|/.-]+/)
+    .map((t) => t.trim())
+    .filter((t) => t === "W" || t === "D" || t === "L");
+  if (letterTokens.length >= 2) return letterTokens.slice(-5).join(" | ");
+  return recordText;
+}
+
+/** Elapsed match progress 0–1 for the thin bottom bar (soccer-oriented). */
+export function estimateTeamtrackerProgress(match: {
+  status: string;
+  clock?: string | null;
+  period?: string | null;
+}): number | null {
+  const status = String(match.status ?? "").toUpperCase();
+  if (status === "POST") return 1;
+  if (status === "PRE") return 0;
+  if (status !== "IN") return null;
+
+  const clock = match.clock?.trim() ?? "";
+  if (/^HT$/i.test(clock) || match.period?.toUpperCase() === "HT") return 0.5;
+  if (/^FT$/i.test(clock) || match.period?.toUpperCase() === "FT") return 1;
+
+  // "67'", "67", "45'+2", "90+3'"
+  const stoppage = clock.match(/^(\d+)\s*'\s*\+\s*(\d+)/);
+  if (stoppage) {
+    const minutes = Number(stoppage[1]) + Number(stoppage[2]);
+    return Math.min(1, Math.max(0, minutes / 90));
+  }
+  const plain = clock.match(/(\d+)/);
+  if (plain) {
+    const minutes = Number(plain[1]);
+    if (Number.isFinite(minutes)) return Math.min(1, Math.max(0, minutes / 90));
+  }
+
+  const period = match.period?.toUpperCase() ?? "";
+  if (period === "1ST" || period === "1") return 0.25;
+  if (period === "2ND" || period === "2") return 0.75;
+  if (period === "3RD" || period === "3") return 0.6;
+  if (period === "4TH" || period === "4") return 0.85;
+  if (period === "OT") return 0.95;
+  return null;
 }
 
 /** Read period / half label from Team Tracker attributes when present. */
@@ -271,6 +382,10 @@ export function readTeamtrackerMatch(entity: {
     matchDay: readTeamtrackerMatchDay(attrs),
     homeAway: readTeamtrackerHomeAway(attrs),
     kickoffAt: readTeamtrackerKickoffAt(attrs),
+    teamRecord: readTeamtrackerRecord(attrs, "team"),
+    opponentRecord: readTeamtrackerRecord(attrs, "opponent"),
+    teamForm: readTeamtrackerForm(attrs, "team"),
+    opponentForm: readTeamtrackerForm(attrs, "opponent"),
   };
 }
 
