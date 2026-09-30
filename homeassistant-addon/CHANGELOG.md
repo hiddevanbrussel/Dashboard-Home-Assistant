@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.52
+
+- Trash card: larger top-left next-collection title; move waste-type chip toward the bottom of the card
+
 ## 0.4.51
 
 - Soft UI click sounds on primary controls (climate temp, music play/pause/skip, light toggle, vacuum start) with Appearance toggle (on by default), throttle, and tab-visibility guard

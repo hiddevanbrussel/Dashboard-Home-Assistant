@@ -136,17 +136,17 @@ export function TrashCardWidget({
         </button>
       ) : null}
 
-      {/* Title */}
+      {/* Title — top-left; sized up for readability (edit button stays top-right) */}
       <div
         className={cn(
-          "relative z-[2] max-w-[62%]",
+          "relative z-[2] max-w-[72%]",
           compact ? "px-3.5 pt-3.5" : "px-5 pt-5"
         )}
       >
         <p
           className={cn(
             "font-semibold leading-snug text-white drop-shadow-sm",
-            compact ? "text-[13px]" : "text-[15px] sm:text-base"
+            compact ? "text-base" : "text-lg sm:text-xl"
           )}
         >
           {heading}
@@ -158,11 +158,13 @@ export function TrashCardWidget({
         />
       </div>
 
-      {/* Floating info chip */}
+      {/* Floating info chip — anchored near the bottom edge of the card */}
       <div
         className={cn(
           "absolute z-[3] flex max-w-[78%] items-center gap-2 rounded-xl bg-white shadow-lg dark:bg-white",
-          compact ? "left-3 top-[42%] gap-1.5 px-1.5 py-1.5" : "left-4 top-[44%] gap-2.5 px-2 py-2"
+          compact
+            ? "bottom-2 left-3 gap-1.5 px-1.5 py-1.5"
+            : "bottom-2.5 left-4 gap-2.5 px-2 py-2"
         )}
       >
         <img
