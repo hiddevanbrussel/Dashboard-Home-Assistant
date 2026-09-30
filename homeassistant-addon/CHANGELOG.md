@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.53
+
+- Header: show sunrise and sunset next to weather (Lucide icons; HA `sun.sun` `next_rising` / `next_setting`, with weather-attribute fallback)
+
 ## 0.4.52
 
 - Trash card: larger top-left next-collection title; move waste-type chip toward the bottom of the card

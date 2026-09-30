@@ -14,6 +14,8 @@ import {
   Newspaper,
   Moon,
   Sun,
+  Sunrise,
+  Sunset,
   Thermometer,
   Wind,
   X,
@@ -27,6 +29,12 @@ import { hidesDashboardWallpaper } from "@/lib/page-background-path";
 import { useTranslation } from "@/hooks/use-translation";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getScreensaverClock24h } from "@/stores/screensaver-store";
+import {
+  DEFAULT_SUN_ENTITY_ID,
+  formatSunTime,
+  languageToSunLocale,
+  resolveSunTimes,
+} from "@/lib/sun-times";
 import { HeaderMediaPlaying } from "./header-media-playing";
 import { HeaderTimer } from "./header-timer";
 import { HeaderVoice } from "./header-voice";
@@ -242,7 +250,7 @@ export function AppShell({
   hideHeader = false,
   className,
 }: AppShellProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const pathname = usePathname();
   const welcomeTitle = welcomeTitleProp ?? "";
   const welcomeSubtitle = welcomeSubtitleProp ?? "";
@@ -257,10 +265,12 @@ export function AppShell({
   const [chosenTemperatureEntityId, setChosenTemperatureEntityId] = useState<string | null>(null);
   const [newsOpen, setNewsOpen] = useState(false);
   const { enabled: newsEnabled, rssUrls } = useNewsStore();
+  const [clock24h, setClock24h] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setChosenTemperatureEntityId(localStorage.getItem(HEADER_TEMPERATURE_STORAGE_KEY));
+    setClock24h(getScreensaverClock24h());
   }, []);
 
   const effectiveTempEntity =
@@ -272,6 +282,7 @@ export function AppShell({
   const temperatureState = useEntityStateStore((s) =>
     effectiveTempEntity ? s.getState(effectiveTempEntity) : undefined
   );
+  const sunEntityState = useEntityStateStore((s) => s.getState(DEFAULT_SUN_ENTITY_ID));
   const welcomeTempState = useEntityStateStore((s) =>
     welcomeEntityIds?.temperature ? s.getState(welcomeEntityIds.temperature) : undefined
   );
@@ -297,6 +308,29 @@ export function AppShell({
     temperatureRaw != null && !Number.isNaN(temperatureRaw)
       ? `${Math.round(temperatureRaw)}°`
       : null;
+
+  const sunTimes = resolveSunTimes(
+    sunEntityState,
+    effectiveTempEntity?.startsWith("weather.") ? temperatureState : undefined
+  );
+  const sunLocale = languageToSunLocale(language);
+  const sunriseDisplay = formatSunTime(sunTimes.sunriseIso, {
+    locale: sunLocale,
+    hour12: !clock24h,
+  });
+  const sunsetDisplay = formatSunTime(sunTimes.sunsetIso, {
+    locale: sunLocale,
+    hour12: !clock24h,
+  });
+  const showSunTimes = Boolean(sunriseDisplay || sunsetDisplay);
+  const sunIconClass = cn(
+    "h-3.5 w-3.5 shrink-0",
+    headerContentLight ? "text-white/80" : "text-gray-500 dark:text-gray-400"
+  );
+  const sunTextClass = cn(
+    "text-sm font-medium tabular-nums",
+    headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300"
+  );
 
   const saveChosenTemperatureEntity = useCallback((entityId: string) => {
     setChosenTemperatureEntityId(entityId);
@@ -360,6 +394,29 @@ export function AppShell({
               )}
               {temperatureDisplay ?? "—"}
             </button>
+          )}
+          {showSunTimes && (
+            <div
+              className="flex items-center gap-2.5"
+              aria-label={t("appShell.sunTimes")}
+            >
+              <span
+                className={cn("flex items-center gap-1", sunTextClass)}
+                title={t("appShell.sunrise")}
+                aria-label={`${t("appShell.sunrise")}: ${sunriseDisplay ?? "—"}`}
+              >
+                <Sunrise className={sunIconClass} aria-hidden />
+                <span>{sunriseDisplay ?? "—"}</span>
+              </span>
+              <span
+                className={cn("flex items-center gap-1", sunTextClass)}
+                title={t("appShell.sunset")}
+                aria-label={`${t("appShell.sunset")}: ${sunsetDisplay ?? "—"}`}
+              >
+                <Sunset className={sunIconClass} aria-hidden />
+                <span>{sunsetDisplay ?? "—"}</span>
+              </span>
+            </div>
           )}
           <HeaderVoice contentLight={headerContentLight} />
           {headerCenterAction ? (
