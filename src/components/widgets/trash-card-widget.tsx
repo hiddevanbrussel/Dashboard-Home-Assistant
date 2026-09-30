@@ -116,6 +116,26 @@ export function TrashCardWidget({
         className="pointer-events-none absolute bottom-0 right-[-4%] z-[1] h-[78%] w-auto max-w-[70%] select-none object-contain object-bottom [-webkit-user-drag:none]"
       />
 
+      {/* Edit affordance — top-right of the card, same as other floating cards */}
+      {onMoreClick ? (
+        <button
+          type="button"
+          data-no-drag
+          data-no-page-swipe
+          onClick={(e) => {
+            e.stopPropagation();
+            onMoreClick();
+          }}
+          className={cn(
+            "absolute z-[4] rounded-lg p-1.5 text-white/85 transition-colors hover:bg-black/20 hover:text-white",
+            compact ? "right-2 top-2" : "right-2.5 top-2.5"
+          )}
+          aria-label={t("common.options")}
+        >
+          <MoreVertical className={compact ? "h-4 w-4" : "h-5 w-5"} aria-hidden />
+        </button>
+      ) : null}
+
       {/* Title */}
       <div
         className={cn(
@@ -123,36 +143,19 @@ export function TrashCardWidget({
           compact ? "px-3.5 pt-3.5" : "px-5 pt-5"
         )}
       >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p
-              className={cn(
-                "font-semibold leading-snug text-white drop-shadow-sm",
-                compact ? "text-[13px]" : "text-[15px] sm:text-base"
-              )}
-            >
-              {heading}
-            </p>
-            <div
-              className={cn("mt-1.5 rounded-full", compact ? "h-0.5 w-7" : "h-1 w-9")}
-              style={{ backgroundColor: assets.accent }}
-              aria-hidden
-            />
-          </div>
-          {onMoreClick ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onMoreClick();
-              }}
-              className="shrink-0 rounded-lg p-1 text-white/80 transition-colors hover:bg-black/15 hover:text-white"
-              aria-label={t("common.options")}
-            >
-              <MoreVertical className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />
-            </button>
-          ) : null}
-        </div>
+        <p
+          className={cn(
+            "font-semibold leading-snug text-white drop-shadow-sm",
+            compact ? "text-[13px]" : "text-[15px] sm:text-base"
+          )}
+        >
+          {heading}
+        </p>
+        <div
+          className={cn("mt-1.5 rounded-full", compact ? "h-0.5 w-7" : "h-1 w-9")}
+          style={{ backgroundColor: assets.accent }}
+          aria-hidden
+        />
       </div>
 
       {/* Floating info chip */}
