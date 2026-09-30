@@ -2,10 +2,22 @@ import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import {
+  isSvgFileName,
+  isSvgMimeType,
+  sanitizeSvgBuffer,
+} from "@/lib/sanitize-svg";
 
 const UPLOAD_DIR =
   process.env.UPLOAD_DIR || path.join(process.cwd(), "public", "uploads");
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+  "image/svg",
+];
 const MAX_WIDTH = 1920;
 const JPEG_QUALITY = 90;
 
@@ -19,12 +31,19 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    if (!ALLOWED_TYPES.includes(file.type)) {
+
+    const asSvg =
+      isSvgMimeType(file.type) ||
+      (!file.type && isSvgFileName(file.name)) ||
+      (isSvgFileName(file.name) && file.type === "application/octet-stream");
+
+    if (!asSvg && !ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: "Only images (JPEG, PNG, WebP, GIF) are allowed." },
+        { error: "Only images (JPEG, PNG, WebP, GIF, SVG) are allowed." },
         { status: 400 }
       );
     }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const isGif = file.type === "image/gif";
@@ -32,7 +51,14 @@ export async function POST(request: Request) {
     let outputBuffer: Buffer;
     let ext: string;
 
-    if (isGif) {
+    if (asSvg) {
+      const sanitized = sanitizeSvgBuffer(buffer);
+      if (!sanitized.ok) {
+        return NextResponse.json({ error: sanitized.error }, { status: 400 });
+      }
+      outputBuffer = Buffer.from(sanitized.svg, "utf8");
+      ext = ".svg";
+    } else if (isGif) {
       outputBuffer = buffer;
       ext = ".gif";
     } else {

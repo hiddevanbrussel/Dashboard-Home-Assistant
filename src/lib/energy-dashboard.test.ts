@@ -51,6 +51,9 @@ describe("energy page backgrounds", () => {
     expect(usableEnergyBackground("/uploads/energy-custom-light.jpg")).toBe(
       "/uploads/energy-custom-light.jpg"
     );
+    expect(usableEnergyBackground("/uploads/energy-animated.svg")).toBe(
+      "/uploads/energy-animated.svg"
+    );
     expect(usableEnergyBackground("/__ha_ingress__/uploads/ok.png")).toBe("/uploads/ok.png");
     expect(
       resolveEnergyPageBackground("light", {
@@ -64,6 +67,11 @@ describe("energy page backgrounds", () => {
         backgroundDark: "/uploads/energy-custom-dark.jpg",
       })
     ).toBe("/uploads/energy-custom-dark.jpg");
+    expect(
+      resolveEnergyPageBackground("light", {
+        backgroundLight: "/uploads/energy-animated.svg",
+      })
+    ).toBe("/uploads/energy-animated.svg");
     // Deprecated shared field must never drive the energy page (patio/global wallpaper).
     expect(
       resolveEnergyPageBackground("light", { background: "/uploads/patio-photo.jpg" })

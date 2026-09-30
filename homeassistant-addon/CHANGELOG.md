@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.55
+
+- Energy: allow SVG (including SMIL-animated) light/dark page backgrounds; served via `<img>` with server-side sanitization; value pills remain on top
+
 ## 0.4.54
 
 - Energy: customize light/dark page backgrounds in Settings → Energy (upload, replace, reset to bundled art); persists on the energy dashboard and never inherits patio/global wallpaper

@@ -3,7 +3,7 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { Check, ImagePlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { cssUrl } from "@/lib/base-path";
+import { cssUrl, withBasePath } from "@/lib/base-path";
 import {
   SCREENSAVER_CLOCK_POSITIONS,
   type ScreensaverClockPosition,
@@ -344,6 +344,14 @@ export function SettingsAccentDots({
   );
 }
 
+const IMAGE_PICK_ACCEPT =
+  "image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg";
+
+function isSvgUploadUrl(url: string): boolean {
+  const path = url.split("?")[0]?.split("#")[0] ?? url;
+  return /\.svg$/i.test(path);
+}
+
 export function SettingsImagePick({
   label,
   description,
@@ -381,10 +389,21 @@ export function SettingsImagePick({
         )}
       >
         {url ? (
-          <span
-            className="block h-[4.75rem] bg-cover bg-center"
-            style={{ backgroundImage: cssUrl(url) }}
-          />
+          isSvgUploadUrl(url) ? (
+            // Prefer <img> for SVG so SMIL animations preview; never inline SVG HTML.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={withBasePath(url)}
+              alt=""
+              className="block h-[4.75rem] w-full object-cover object-center"
+              decoding="async"
+            />
+          ) : (
+            <span
+              className="block h-[4.75rem] bg-cover bg-center"
+              style={{ backgroundImage: cssUrl(url) }}
+            />
+          )
         ) : (
           <span className="flex h-[4.75rem] flex-col items-center justify-center gap-1.5 bg-white/70 dark:bg-white/5">
             <ImagePlus className="h-5 w-5 text-brand" aria-hidden />
@@ -395,7 +414,7 @@ export function SettingsImagePick({
         )}
         <input
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
+          accept={IMAGE_PICK_ACCEPT}
           className="sr-only"
           onChange={onUpload}
           disabled={uploading}
