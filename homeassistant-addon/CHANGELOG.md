@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.44
+
+- Team Tracker match card: vertically center teams + kickoff time/date for upcoming (PRE) matches so content is not stuck at the top
+
 ## 0.4.43
 
 - Team Tracker match card: quieter light layout — plain white surface, thin border, logos + centered score, muted form/record line, soft LIVE pill, thin progress bar (no pitch fade or watermark logos)
