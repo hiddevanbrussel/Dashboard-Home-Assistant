@@ -130,39 +130,48 @@ function TeamColumn({
   form,
   showName,
   showForm,
+  align,
 }: {
   logo: string | null;
   name: string;
   form: string | null;
   showName: boolean;
   showForm: boolean;
+  align: "start" | "end";
 }) {
   return (
-    <div className="flex min-w-0 flex-col items-center gap-2">
-      <TeamLogo src={logo} alt={name} />
-      {showName || showForm ? (
-        <div className="min-w-0 max-w-full text-center">
-          {showName ? (
-            <p className="truncate text-sm font-semibold tracking-tight text-[#2A2D37] dark:text-white/90 sm:text-[15px]">
-              {name}
-            </p>
-          ) : null}
-          {showForm ? (
-            form ? (
-              <p
-                className={cn(
-                  "truncate text-[11px] font-medium tracking-wide text-[#A0A4AB] dark:text-white/40",
-                  showName ? "mt-0.5" : null
-                )}
-              >
-                {form}
+    <div
+      className={cn(
+        "flex min-w-0",
+        align === "start" ? "justify-start" : "justify-end"
+      )}
+    >
+      <div className="flex min-w-0 max-w-full flex-col items-center gap-2">
+        <TeamLogo src={logo} alt={name} />
+        {showName || showForm ? (
+          <div className="min-w-0 max-w-full text-center">
+            {showName ? (
+              <p className="truncate text-sm font-semibold tracking-tight text-[#2A2D37] dark:text-white/90 sm:text-[15px]">
+                {name}
               </p>
-            ) : showName ? (
-              <p className="mt-0.5 h-[15px]" aria-hidden />
-            ) : null
-          ) : null}
-        </div>
-      ) : null}
+            ) : null}
+            {showForm ? (
+              form ? (
+                <p
+                  className={cn(
+                    "truncate text-[11px] font-medium tracking-wide text-[#A0A4AB] dark:text-white/40",
+                    showName ? "mt-0.5" : null
+                  )}
+                >
+                  {form}
+                </p>
+              ) : showName ? (
+                <p className="mt-0.5 h-[15px]" aria-hidden />
+              ) : null
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -285,6 +294,7 @@ export function TeamtrackerCardWidget({
                 form={sides.left.form}
                 showName={showNames}
                 showForm={showForm}
+                align="start"
               />
 
               <div
@@ -302,6 +312,7 @@ export function TeamtrackerCardWidget({
                 form={sides.right.form}
                 showName={showNames}
                 showForm={showForm}
+                align="end"
               />
             </div>
 
