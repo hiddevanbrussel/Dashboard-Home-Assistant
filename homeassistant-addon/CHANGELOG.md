@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.50
+
+- Trash card: replace GFT / Restafval / PMD widget assets (background, person+container, icon) with higher-res cutouts; cache-bust asset URLs
+- Trash card: move edit (⋮) button to the top-right corner in dashboard edit mode, aligned with other floating cards
+
 ## 0.4.48
 
 - Trash card: background, person art, icon, and accent now follow the resolved waste type (GFT / Restafval / PMD) immediately when the HA entity or demo theme changes; prefer specific fraction tokens over generic “waste” entity ids
