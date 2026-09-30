@@ -1,4 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  PEXELS_DEFAULT_QUERY,
+  PEXELS_VIDEO_PER_PAGE,
+  fetchPexelsRandomPage,
+  pexelsErrorMessage,
+  pickRandomItem,
+  resolvePexelsApiKey,
+} from "@/lib/pexels";
 
 type PexelsVideoFile = {
   id: number;
@@ -16,61 +24,80 @@ type PexelsVideo = {
   video_files?: PexelsVideoFile[];
 };
 
+function preferHttps(url: string): string {
+  if (url.startsWith("http://")) return `https://${url.slice("http://".length)}`;
+  return url;
+}
+
+function pickVideoFile(files: PexelsVideoFile[]): PexelsVideoFile | null {
+  if (!files.length) return null;
+  return (
+    files.find((f) => f.quality === "hd" && f.width >= 1280) ??
+    files.find((f) => f.quality === "hd") ??
+    files.find((f) => f.quality === "sd") ??
+    files[0] ??
+    null
+  );
+}
+
 /** Haalt een willekeurige video op van Pexels voor de screensaver. */
 export async function GET(request: NextRequest) {
-  const headerKey = request.headers.get("x-pexels-api-key")?.trim();
-  const envKey = process.env.PEXELS_API_KEY?.trim();
-  const apiKey = headerKey || envKey;
+  const { apiKey } = resolvePexelsApiKey({
+    envKey: process.env.PEXELS_API_KEY,
+    headerKey: request.headers.get("x-pexels-api-key"),
+  });
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Geen Pexels API-key. Vul de API-key in bij Instellingen → Apps → Pexels, of voeg PEXELS_API_KEY toe aan .env" },
+      {
+        error:
+          "Geen Pexels API-key. Vul de API-key in bij Instellingen → Apps → Pexels, of voeg PEXELS_API_KEY toe aan .env / de add-on opties.",
+        code: "missing_key",
+      },
       { status: 503 }
     );
   }
 
   const { searchParams } = new URL(request.url);
-  const query = searchParams.get("query")?.trim() || "nature landscape";
-  const page = Math.floor(Math.random() * 10) + 1;
-  const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=20&page=${page}&orientation=landscape`;
+  const query = searchParams.get("query")?.trim() || PEXELS_DEFAULT_QUERY;
 
   try {
-    const res = await fetch(url, {
-      headers: { Authorization: apiKey },
-      cache: "no-store",
+    const result = await fetchPexelsRandomPage({
+      kind: "video",
+      apiKey,
+      query,
+      perPage: PEXELS_VIDEO_PER_PAGE,
     });
 
-    if (!res.ok) {
-      const text = await res.text();
+    if (!result.ok) {
+      const status =
+        result.kind === "unauthorized" ? 401 : result.kind === "rate_limited" ? 429 : result.kind === "empty" ? 404 : 502;
       return NextResponse.json(
-        { error: `Pexels API error: ${res.status}`, details: text },
-        { status: 502 }
+        {
+          error: pexelsErrorMessage(result.kind, result.status),
+          code: result.kind,
+          details: result.details,
+        },
+        { status }
       );
     }
 
-    const data = (await res.json()) as { videos?: PexelsVideo[] };
-    const videos = data.videos ?? [];
-
-    if (videos.length === 0) {
-      return NextResponse.json({ error: "Geen video's gevonden" }, { status: 404 });
+    const videos = (result.data.videos as PexelsVideo[] | undefined) ?? [];
+    const video = pickRandomItem(videos);
+    if (!video) {
+      return NextResponse.json(
+        { error: pexelsErrorMessage("empty"), code: "empty" },
+        { status: 404 }
+      );
     }
 
-    const video = videos[Math.floor(Math.random() * videos.length)];
-    const files = video.video_files ?? [];
-
-    // Kies voorkeur: HD ≥ 1280px → HD → SD → eerste beschikbare
-    const preferred =
-      files.find((f) => f.quality === "hd" && f.width >= 1280) ??
-      files.find((f) => f.quality === "hd") ??
-      files.find((f) => f.quality === "sd") ??
-      files[0];
-
+    const preferred = pickVideoFile(video.video_files ?? []);
     if (!preferred?.link) {
-      return NextResponse.json({ error: "Geen video-URL gevonden" }, { status: 502 });
+      return NextResponse.json({ error: "Geen video-URL gevonden", code: "upstream" }, { status: 502 });
     }
 
     return NextResponse.json(
       {
-        videoUrl: preferred.link,
+        videoUrl: preferHttps(preferred.link),
         videoType: preferred.file_type,
         pexelsUrl: video.url,
         photographer: video.user?.name ?? null,
@@ -79,6 +106,9 @@ export async function GET(request: NextRequest) {
     );
   } catch (err) {
     console.error("[Pexels Video API]", err);
-    return NextResponse.json({ error: "Kon geen video ophalen van Pexels" }, { status: 500 });
+    return NextResponse.json(
+      { error: pexelsErrorMessage("network"), code: "network" },
+      { status: 500 }
+    );
   }
 }

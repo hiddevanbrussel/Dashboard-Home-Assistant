@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  SettingsAlert,
   SettingsField,
   SettingsGroup,
   SettingsInput,
+  SettingsPrimaryButton,
   SettingsToggle,
 } from "@/components/settings/settings-panel";
 import { SettingsChipSelect } from "@/components/settings/settings-choice-cards";
@@ -26,13 +28,64 @@ export function PexelsSettings() {
   const [apiKey, setApiKey] = useState("");
   const [query, setQuery] = useState("nature landscape");
   const [mediaType, setMediaType] = useState<"photo" | "video">("photo");
+  const [envConfigured, setEnvConfigured] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<"ok" | string | null>(null);
 
   useEffect(() => {
     setEnabled(getScreensaverPexelsEnabled());
     setApiKey(getScreensaverPexelsApiKey());
     setQuery(getScreensaverPexelsQuery());
     setMediaType(getScreensaverPexelsType());
+
+    let cancelled = false;
+    fetch("/api/pexels/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.envConfigured === "boolean") {
+          setEnvConfigured(data.envConfigured);
+        }
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  async function testConnection() {
+    setTestResult(null);
+    const key = apiKey.trim();
+    if (!key && !envConfigured) {
+      setTestResult(t("settings.pexels.keyRequired"));
+      return;
+    }
+    setTesting(true);
+    try {
+      const headers: HeadersInit = {};
+      if (key) headers["X-Pexels-Api-Key"] = key;
+      const path = mediaType === "video" ? "/api/pexels/video" : "/api/pexels/photo";
+      const res = await fetch(
+        `${path}?query=${encodeURIComponent(query.trim() || "nature landscape")}&_t=${Date.now()}`,
+        { cache: "no-store", headers }
+      );
+      const data = (await res.json().catch(() => null)) as
+        | { imageUrl?: string; videoUrl?: string; error?: string; code?: string }
+        | null;
+      if (!res.ok || (!data?.imageUrl && !data?.videoUrl)) {
+        setTestResult(data?.error || t("settings.pexels.testError"));
+        return;
+      }
+      setScreensaverPexelsEnabled(true);
+      setEnabled(true);
+      setTestResult("ok");
+    } catch {
+      setTestResult(t("settings.pexels.testError"));
+    } finally {
+      setTesting(false);
+    }
+  }
 
   return (
     <>
@@ -57,7 +110,14 @@ export function PexelsSettings() {
           </>
         }
       >
-        <SettingsField label={t("settings.screensaver.pexelsKey")} htmlFor="pexels-key">
+        {envConfigured ? (
+          <SettingsAlert tone="ok">{t("settings.pexels.envConfigured")}</SettingsAlert>
+        ) : null}
+        <SettingsField
+          label={t("settings.screensaver.pexelsKey")}
+          hint={envConfigured ? t("settings.pexels.keyOptionalHint") : undefined}
+          htmlFor="pexels-key"
+        >
           <SettingsInput
             id="pexels-key"
             type="password"
@@ -96,6 +156,11 @@ export function PexelsSettings() {
             setScreensaverPexelsType(type);
           }}
         />
+        <SettingsPrimaryButton onClick={testConnection} disabled={testing}>
+          {testing ? t("settings.pexels.testing") : t("settings.pexels.test")}
+        </SettingsPrimaryButton>
+        {testResult === "ok" ? <SettingsAlert tone="ok">{t("settings.pexels.testSuccess")}</SettingsAlert> : null}
+        {testResult && testResult !== "ok" ? <SettingsAlert tone="error">{testResult}</SettingsAlert> : null}
       </SettingsGroup>
     </>
   );

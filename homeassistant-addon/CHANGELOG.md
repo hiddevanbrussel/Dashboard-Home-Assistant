@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.57
+
+- Pexels: fix intermittent empty screensaver media by paging within `total_results` (was randomly requesting pages 1–10)
+- Pexels: prefer server/Docker `PEXELS_API_KEY` over a stale browser-stored key; clearer missing/invalid-key errors
+- Pexels: Apps settings shows env-key status and a Test connection button; force HTTPS on video CDN links
+
 ## 0.4.56
 
 - Energy: fix SVG background uploads rejected when browsers send charset MIME (`image/svg+xml;charset=utf-8`) or mislabeled types (`text/xml`, `text/plain`); treat `.svg` filename as SVG and sanitize content
