@@ -10,6 +10,7 @@ import {
   resolveTrashTheme,
   trashCardDensity,
   trashDemoPickup,
+  trashThemeAssets,
 } from "./trash-card";
 
 describe("trash-card helpers", () => {
@@ -17,19 +18,96 @@ describe("trash-card helpers", () => {
     expect(mapWasteTypeToTheme("Gft")).toBe("gft");
     expect(mapWasteTypeToTheme("GROEN")).toBe("gft");
     expect(mapWasteTypeToTheme("organic")).toBe("gft");
+    expect(mapWasteTypeToTheme("GFT-afval")).toBe("gft");
     expect(mapWasteTypeToTheme("sensor.afvalwijzer_gft")).toBe("gft");
     expect(mapWasteTypeToTheme("Restafval")).toBe("restafval");
     expect(mapWasteTypeToTheme("rest")).toBe("restafval");
     expect(mapWasteTypeToTheme("PMD")).toBe("pmd");
+    expect(mapWasteTypeToTheme("pmd-afval")).toBe("pmd");
+    expect(mapWasteTypeToTheme("PBD")).toBe("pmd");
     expect(mapWasteTypeToTheme("plastic")).toBe("pmd");
     expect(mapWasteTypeToTheme("drankenkartons")).toBe("pmd");
     expect(mapWasteTypeToTheme("unknown-fraction")).toBeNull();
+  });
+
+  it("prefers specific fraction tokens over generic waste words in entity ids", () => {
+    expect(mapWasteTypeToTheme("sensor.waste_gft")).toBe("gft");
+    expect(mapWasteTypeToTheme("sensor.waste_pmd")).toBe("pmd");
+    expect(mapWasteTypeToTheme("sensor.afvalwijzer_pmd_waste")).toBe("pmd");
+    expect(mapWasteTypeToTheme("sensor.next_waste")).toBe("restafval");
   });
 
   it("resolves theme with fallbacks", () => {
     expect(resolveTrashTheme("nope", "gft")).toBe("gft");
     expect(resolveTrashTheme(null, undefined, "PMD")).toBe("pmd");
     expect(resolveTrashTheme()).toBe("gft");
+  });
+
+  it("uses fallbackTheme when date is known but type is not", () => {
+    const pickup = resolveTrashPickup({
+      primaryEntity: {
+        entity_id: "sensor.next_pickup",
+        state: "2026-10-09",
+        attributes: {},
+      },
+      fallbackTheme: "pmd",
+      ref: new Date("2026-09-30T12:00:00"),
+    });
+    expect(pickup?.theme).toBe("pmd");
+    expect(pickup?.date?.toISOString().slice(0, 10)).toBe("2026-10-09");
+  });
+
+  it("switches theme when HA type state changes", () => {
+    const gft = resolveTrashPickup({
+      typeEntity: {
+        entity_id: "sensor.next_waste_type",
+        state: "Gft",
+        attributes: {},
+      },
+      dateEntity: {
+        entity_id: "sensor.next_waste_date",
+        state: "2026-10-02",
+        attributes: {},
+      },
+    });
+    const rest = resolveTrashPickup({
+      typeEntity: {
+        entity_id: "sensor.next_waste_type",
+        state: "Restafval",
+        attributes: {},
+      },
+      dateEntity: {
+        entity_id: "sensor.next_waste_date",
+        state: "2026-10-09",
+        attributes: {},
+      },
+    });
+    const pmd = resolveTrashPickup({
+      typeEntity: {
+        entity_id: "sensor.next_waste_type",
+        state: "PMD",
+        attributes: {},
+      },
+      dateEntity: {
+        entity_id: "sensor.next_waste_date",
+        state: "2026-10-16",
+        attributes: {},
+      },
+    });
+    expect(gft?.theme).toBe("gft");
+    expect(rest?.theme).toBe("restafval");
+    expect(pmd?.theme).toBe("pmd");
+  });
+
+  it("exposes distinct background assets per theme", () => {
+    expect(trashThemeAssets("gft").background).toContain("gft_achtergrond");
+    expect(trashThemeAssets("restafval").background).toContain("restafval_achtergrond");
+    expect(trashThemeAssets("pmd").background).toContain("pmd_achtergrond");
+    expect(new Set([
+      trashThemeAssets("gft").background,
+      trashThemeAssets("restafval").background,
+      trashThemeAssets("pmd").background,
+    ]).size).toBe(3);
   });
 
   it("parses common date formats and relative words", () => {

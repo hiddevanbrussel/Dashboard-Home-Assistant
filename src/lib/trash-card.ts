@@ -92,57 +92,75 @@ export const TRASH_THEME_ASSETS: Record<
   },
 };
 
-const THEME_SYNONYMS: Record<TrashTheme, string[]> = {
+/** Specific fraction tokens — always win over generic words like "waste"/"trash". */
+const SPECIFIC_THEME_SYNONYMS: Record<TrashTheme, string[]> = {
   gft: [
-    "gft",
-    "g.f.t",
+    "gft afval",
+    "gft-afval",
     "g.f.t.",
-    "groen",
+    "g.f.t",
+    "gft",
+    "groente fruit tuinafval",
+    "groente fruit",
+    "tuinafval",
+    "groenafval",
     "groente",
     "fruit",
-    "tuinafval",
-    "organic",
     "organisch",
-    "bio",
+    "organic",
     "biodegradable",
-    "green",
-    "garden",
     "compost",
+    "garden waste",
+    "green waste",
+    "groen",
+    "garden",
+    "bio",
     "apple",
   ],
   restafval: [
     "restafval",
-    "rest",
-    "residual",
+    "rest afval",
+    "residual waste",
     "huisvuil",
+    "residual",
+    "general waste",
+    "grey bin",
+    "gray bin",
+    "grijs",
     "grey",
     "gray",
-    "grijs",
-    "general",
     "mixed",
-    "trash",
-    "garbage",
     "refuse",
-    "waste",
-    "bag",
+    "rest",
   ],
   pmd: [
-    "pmd",
-    "p.m.d",
+    "pmd afval",
+    "pmd-afval",
     "p.m.d.",
-    "plastic",
-    "plastics",
-    "metaal",
-    "metal",
+    "p.m.d",
+    "pbd",
+    "pmd",
     "drankenkartons",
     "drinkkarton",
-    "carton",
+    "plastic metal",
+    "plastics",
+    "plastic",
+    "metaal",
+    "metal",
     "packaging",
     "verpakking",
+    "carton",
     "recycling",
     "orange",
     "oranje",
   ],
+};
+
+/** Generic words that often appear in entity ids; only used when no specific token matches. */
+const GENERIC_THEME_SYNONYMS: Record<TrashTheme, string[]> = {
+  gft: [],
+  restafval: ["trash", "garbage", "waste", "bag", "general"],
+  pmd: [],
 };
 
 function normalizeToken(raw: string): string {
@@ -156,30 +174,40 @@ function normalizeToken(raw: string): string {
     .trim();
 }
 
-/** Map a free-form waste type string (or entity id / friendly name) to a theme. */
-export function mapWasteTypeToTheme(raw: unknown): TrashTheme | null {
-  if (raw == null) return null;
-  const text = normalizeToken(String(raw));
-  if (!text) return null;
-
-  // Prefer longer / more specific matches first (e.g. restafval before rest).
+function matchSynonymList(
+  text: string,
+  synonymsByTheme: Record<TrashTheme, string[]>
+): TrashTheme | null {
   const ranked: { theme: TrashTheme; synonym: string }[] = [];
-  for (const theme of Object.keys(THEME_SYNONYMS) as TrashTheme[]) {
-    for (const synonym of THEME_SYNONYMS[theme]) {
+  for (const theme of Object.keys(synonymsByTheme) as TrashTheme[]) {
+    for (const synonym of synonymsByTheme[theme]) {
       ranked.push({ theme, synonym });
     }
   }
+  // Prefer longer / more specific matches first (e.g. restafval before rest).
   ranked.sort((a, b) => b.synonym.length - a.synonym.length);
 
   for (const { theme, synonym } of ranked) {
     const syn = normalizeToken(synonym);
     if (!syn) continue;
     if (text === syn) return theme;
-    if (text.includes(syn)) return theme;
-    // Entity ids like sensor.afvalwijzer_gft_morgen
+    // Entity ids like sensor.afvalwijzer_gft_morgen — token boundary match
     if (text.split(" ").includes(syn)) return theme;
+    if (text.includes(syn)) return theme;
   }
   return null;
+}
+
+/** Map a free-form waste type string (or entity id / friendly name) to a theme. */
+export function mapWasteTypeToTheme(raw: unknown): TrashTheme | null {
+  if (raw == null) return null;
+  const text = normalizeToken(String(raw));
+  if (!text) return null;
+
+  // Specific fraction tokens beat generic entity-id words ("waste", "trash", …).
+  const specific = matchSynonymList(text, SPECIFIC_THEME_SYNONYMS);
+  if (specific) return specific;
+  return matchSynonymList(text, GENERIC_THEME_SYNONYMS);
 }
 
 /** Resolve theme with fallbacks from multiple candidate strings. */
@@ -189,6 +217,11 @@ export function resolveTrashTheme(...candidates: unknown[]): TrashTheme {
     if (theme) return theme;
   }
   return "gft";
+}
+
+/** Assets + accent for a resolved waste theme (background, person, icon). */
+export function trashThemeAssets(theme: TrashTheme) {
+  return TRASH_THEME_ASSETS[theme];
 }
 
 const DATE_ATTR_KEYS = [
@@ -337,9 +370,12 @@ export function resolveTrashPickup(input: {
   dateEntity?: HaEntitySnapshot | null;
   /** When only one entity is bound, pass it here (also used as typeEntity fallback). */
   primaryEntity?: HaEntitySnapshot | null;
+  /** Used when HA data has a date but no recognizable waste type. */
+  fallbackTheme?: TrashTheme;
   ref?: Date;
 }): TrashPickup | null {
   const ref = input.ref ?? new Date();
+  const fallbackTheme = input.fallbackTheme ?? "gft";
   const primary = input.primaryEntity ?? input.typeEntity ?? null;
   const typeEnt = input.typeEntity ?? primary;
   const dateEnt = input.dateEntity ?? null;
@@ -409,7 +445,7 @@ export function resolveTrashPickup(input: {
 
   if (!theme && !date && !typeRaw) return null;
 
-  const resolvedTheme = theme ?? resolveTrashTheme(...typeCandidates, "gft");
+  const resolvedTheme = theme ?? resolveTrashTheme(...typeCandidates, fallbackTheme);
   if (!typeRaw) {
     typeRaw = resolvedTheme;
   }
