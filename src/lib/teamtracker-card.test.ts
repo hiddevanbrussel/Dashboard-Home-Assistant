@@ -6,13 +6,17 @@ import {
   TEAMTRACKER_CARD_MIN_WIDTH,
   clampTeamtrackerCardHeight,
   clampTeamtrackerCardWidth,
+  estimateTeamtrackerProgress,
+  formatTeamtrackerFormLine,
   formatTeamtrackerKickoffDayLabel,
   formatTeamtrackerKickoffTime,
   formatTeamtrackerPeriodLabel,
   isTeamtrackerEntityId,
+  readTeamtrackerForm,
   readTeamtrackerHomeAway,
   readTeamtrackerMatch,
   readTeamtrackerPeriod,
+  readTeamtrackerRecord,
   resizeTeamtrackerCardFromBottomRight,
 } from "./teamtracker-card";
 
@@ -85,6 +89,10 @@ describe("teamtracker-card helpers", () => {
         date: "2026-09-23T18:00:00+00:00",
         team_logo: "https://example.com/psv.png",
         opponent_logo: "https://example.com/ajax.png",
+        team_record: "4-2-1",
+        opponent_record: "5-1-1",
+        team_form: "LDWW",
+        opponent_form: "WDWW",
       },
     });
     expect(match?.teamShortName).toBe("PSV");
@@ -92,6 +100,10 @@ describe("teamtracker-card helpers", () => {
     expect(match?.homeAway).toBe("home");
     expect(match?.period).toBe("2ND");
     expect(match?.kickoffAt?.toISOString()).toBe("2026-09-23T18:00:00.000Z");
+    expect(match?.teamRecord).toBe("4-2-1");
+    expect(match?.opponentRecord).toBe("5-1-1");
+    expect(match?.teamForm).toBe("LDWW");
+    expect(match?.opponentForm).toBe("WDWW");
   });
 
   it("formats kickoff time and day labels", () => {
@@ -108,5 +120,23 @@ describe("teamtracker-card helpers", () => {
     expect(formatTeamtrackerKickoffDayLabel(kickoff, t, "nl", new Date(2026, 8, 22, 12, 0, 0))).toBe(
       "Morgen"
     );
+  });
+
+  it("formats form lines and falls back to season record", () => {
+    expect(formatTeamtrackerFormLine("LDWW", null)).toBe("L | D | W | W");
+    expect(formatTeamtrackerFormLine("W,D,W,W", null)).toBe("W | D | W | W");
+    expect(formatTeamtrackerFormLine(null, "4-2-1")).toBe("4-2-1");
+    expect(formatTeamtrackerFormLine(null, null)).toBe(null);
+    expect(readTeamtrackerRecord({ team_record: "3-1-2" }, "team")).toBe("3-1-2");
+    expect(readTeamtrackerForm({ team_form: "WWDL" }, "team")).toBe("WWDL");
+  });
+
+  it("estimates match progress from clock and status", () => {
+    expect(estimateTeamtrackerProgress({ status: "PRE" })).toBe(0);
+    expect(estimateTeamtrackerProgress({ status: "POST" })).toBe(1);
+    expect(estimateTeamtrackerProgress({ status: "IN", clock: "HT" })).toBe(0.5);
+    expect(estimateTeamtrackerProgress({ status: "IN", clock: "67'" })).toBeCloseTo(67 / 90);
+    expect(estimateTeamtrackerProgress({ status: "IN", clock: "45'+2" })).toBeCloseTo(47 / 90);
+    expect(estimateTeamtrackerProgress({ status: "IN", period: "2ND" })).toBe(0.75);
   });
 });

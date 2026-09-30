@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.43
+
+- Team Tracker match card: quieter light layout — plain white surface, thin border, logos + centered score, muted form/record line, soft LIVE pill, thin progress bar (no pitch fade or watermark logos)
+
 ## 0.4.40
 
 - Energy dashboard: new **Metric / Waarde** floating text (`energy_metric`) — small title above, large value + unit below (Opwek / Net / Kosten style); freely placeable on the energy board with optional HA sensor or manual value
