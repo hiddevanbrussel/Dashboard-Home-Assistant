@@ -2,7 +2,7 @@
 
 ## 0.4.52
 
-- Trash card: slightly larger next-collection title; move waste-type chip toward the bottom of the card
+- Trash card: larger top-left next-collection title; move waste-type chip toward the bottom of the card
 
 ## 0.4.51
 
