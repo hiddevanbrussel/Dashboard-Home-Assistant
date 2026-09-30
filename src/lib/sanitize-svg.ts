@@ -14,23 +14,41 @@ const DANGEROUS_TAG =
 const EVENT_HANDLER_ATTR = /\bon[a-z]+\s*=/i;
 const JAVASCRIPT_URI = /(?:href|xlink:href|src)\s*=\s*["']?\s*javascript:/i;
 const EXTERNAL_HREF =
-  /(?:href|xlink:href)\s*=\s*["']\s*(?:https?:|\/\/|data:(?!image\/))/i;
+  /(?:href|xlink:href)\s*=\s*["']\s*(?:https?:|\/\/|file:|data:(?!image\/))/i;
 const EXTERNAL_ENTITY = /<!ENTITY/i;
-const XML_STYLESHEET = /<\?xml-stylesheet\b/i;
+const XML_STYLESHEET = /<\?xml-stylesheet\b[^?]*\?>/gi;
 
 export type SanitizeSvgResult =
   | { ok: true; svg: string }
   | { ok: false; error: string };
 
+/** Strip MIME parameters (`image/svg+xml;charset=utf-8` → `image/svg+xml`). */
+export function normalizeMimeType(type: string | null | undefined): string {
+  if (!type) return "";
+  return type.toLowerCase().trim().split(";")[0]?.trim() ?? "";
+}
+
 export function isSvgMimeType(type: string | null | undefined): boolean {
-  if (!type) return false;
-  const t = type.toLowerCase().trim();
+  const t = normalizeMimeType(type);
   return t === "image/svg+xml" || t === "image/svg";
 }
 
 export function isSvgFileName(name: string | null | undefined): boolean {
   if (!name) return false;
   return /\.svg$/i.test(name.trim());
+}
+
+/**
+ * Browsers/OS often mislabel SVG uploads (`text/xml`, `text/plain`,
+ * `application/octet-stream`, empty, or `image/svg+xml;charset=utf-8`).
+ * Prefer filename + SVG MIME; content is validated by sanitizeSvgBuffer.
+ */
+export function isSvgUploadCandidate(
+  name: string | null | undefined,
+  type: string | null | undefined
+): boolean {
+  if (isSvgMimeType(type)) return true;
+  return isSvgFileName(name);
 }
 
 export function sanitizeSvgBuffer(buffer: Buffer): SanitizeSvgResult {
@@ -51,13 +69,15 @@ export function sanitizeSvgBuffer(buffer: Buffer): SanitizeSvgResult {
   // Strip BOM
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
 
-  const trimmed = text.trim();
+  // Illustrator / design tools sometimes inject xml-stylesheet PIs — drop them.
+  let trimmed = text.trim().replace(XML_STYLESHEET, "").trim();
+
   if (!/<svg\b/i.test(trimmed)) {
     return { ok: false, error: "File does not look like an SVG." };
   }
 
-  if (EXTERNAL_ENTITY.test(trimmed) || XML_STYLESHEET.test(trimmed)) {
-    return { ok: false, error: "SVG with external entities or stylesheets is not allowed." };
+  if (EXTERNAL_ENTITY.test(trimmed)) {
+    return { ok: false, error: "SVG with external entities is not allowed." };
   }
   if (DANGEROUS_TAG.test(trimmed)) {
     return {

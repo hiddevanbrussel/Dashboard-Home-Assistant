@@ -3984,7 +3984,7 @@ export default function DashboardEditPage() {
                             {uploadingRoomBg ? t("editPanel.uploading") : t("editPanel.uploadImage")}
                             <input
                               type="file"
-                              accept="image/jpeg,image/png,image/webp,image/gif"
+                              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
                               className="sr-only"
                               onChange={async (e) => {
                                 const file = e.target.files?.[0];
@@ -4341,7 +4341,7 @@ export default function DashboardEditPage() {
                           {uploadingEnergyBg ? t("editPanel.uploading") : t("editPanel.uploadImage")}
                           <input
                             type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
                             className="sr-only"
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
@@ -4400,7 +4400,7 @@ export default function DashboardEditPage() {
                           {uploadingEnergyBgDark ? t("editPanel.uploading") : t("editPanel.uploadImage")}
                           <input
                             type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
                             className="sr-only"
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
@@ -4535,7 +4535,7 @@ export default function DashboardEditPage() {
                               {uploadingConditionImage?.idx === idx && uploadingConditionImage?.field === "image" ? t("editPanel.uploading") : t("editPanel.uploadImage")}
                               <input
                                 type="file"
-                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
                                 className="sr-only"
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
@@ -4588,7 +4588,7 @@ export default function DashboardEditPage() {
                               {uploadingConditionImage?.idx === idx && uploadingConditionImage?.field === "image_dark" ? t("editPanel.uploading") : t("editPanel.uploadImage") + " (dark)"}
                               <input
                                 type="file"
-                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
                                 className="sr-only"
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
@@ -5125,7 +5125,7 @@ aria-label={t("editPanel.removeCondition")}
                           {uploadingEnergyBg ? t("editPanel.uploading") : t("editPanel.uploadImage")}
                           <input
                             type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
                             className="sr-only"
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
