@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.47
+
+- New **Trash / waste collection** floating card (`trash_card`): next pickup day + waste type (GFT / Restafval / PMD) with themed illustrations; bind HA sensors (Afvalwijzer-style or separate type/date); demo preview without HA; resizable; NL/EN
+
 ## 0.4.46
 
 - Team Tracker match card: center team names under logos; edit toggles for team names, form (W/D/L), and progress bar (`show_team_names`, `show_form`, `show_progress`)

@@ -58,3 +58,5 @@ export { CalendarCardWidget } from "./calendar-card-widget";
 export { FloatingCalendarCard } from "./floating-calendar-card";
 export { TimerCardWidget } from "./timer-card-widget";
 export { FloatingTimerCard } from "./floating-timer-card";
+export { TrashCardWidget } from "./trash-card-widget";
+export { FloatingTrashCard } from "./floating-trash-card";

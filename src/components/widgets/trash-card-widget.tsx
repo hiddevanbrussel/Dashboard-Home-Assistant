@@ -1,0 +1,194 @@
+"use client";
+
+import { ChevronRight, MoreVertical } from "lucide-react";
+import type { TrashCardProps } from "./widget-types";
+import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
+import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useTranslation } from "@/hooks/use-translation";
+import {
+  TRASH_CARD_DEFAULT_HEIGHT,
+  TRASH_CARD_DEFAULT_WIDTH,
+  TRASH_THEME_ASSETS,
+  clampTrashCardHeight,
+  clampTrashCardWidth,
+  formatTrashPickupDate,
+  formatTrashTypeLabel,
+  resolveTrashPickup,
+  trashCardDensity,
+  trashDemoPickup,
+  type TrashLocale,
+  type TrashTheme,
+} from "@/lib/trash-card";
+
+function useTrashPickup(
+  entityId: string | undefined,
+  dateEntityId: string | undefined,
+  demoTheme: TrashTheme
+) {
+  const primary = useEntityStateStore((s) => (entityId ? s.getState(entityId) : undefined));
+  const dateEnt = useEntityStateStore((s) =>
+    dateEntityId ? s.getState(dateEntityId) : undefined
+  );
+
+  const hasBinding = Boolean(entityId || dateEntityId);
+  const live = resolveTrashPickup({
+    primaryEntity: primary
+      ? { entity_id: entityId, state: primary.state, attributes: primary.attributes }
+      : entityId
+        ? { entity_id: entityId, state: null, attributes: {} }
+        : null,
+    dateEntity: dateEnt
+      ? { entity_id: dateEntityId, state: dateEnt.state, attributes: dateEnt.attributes }
+      : dateEntityId
+        ? { entity_id: dateEntityId, state: null, attributes: {} }
+        : null,
+  });
+
+  if (!hasBinding || !live) {
+    return { pickup: trashDemoPickup(demoTheme), isDemo: true };
+  }
+  return { pickup: live, isDemo: false };
+}
+
+export function TrashCardWidget({
+  title,
+  entity_id,
+  date_entity_id,
+  demo_theme,
+  width,
+  height,
+  className,
+  onMoreClick,
+}: TrashCardProps & {
+  className?: string;
+  onMoreClick?: () => void;
+}) {
+  const { t, language } = useTranslation();
+  const locale: TrashLocale = language === "nl" ? "nl" : "en";
+  const demoTheme = (demo_theme === "restafval" || demo_theme === "pmd" ? demo_theme : "gft") as TrashTheme;
+  const { pickup } = useTrashPickup(entity_id, date_entity_id, demoTheme);
+
+  const cardW = clampTrashCardWidth(width ?? TRASH_CARD_DEFAULT_WIDTH);
+  const cardH = clampTrashCardHeight(height ?? TRASH_CARD_DEFAULT_HEIGHT);
+  const compact = trashCardDensity(cardW, cardH) === "compact";
+  const assets = TRASH_THEME_ASSETS[pickup.theme];
+  const typeLabel = formatTrashTypeLabel(pickup.theme, pickup.typeRaw, locale);
+  const dateLabel = formatTrashPickupDate(pickup.date, locale);
+  const heading =
+    title?.trim() || t("trashCard.nextCollection");
+
+  return (
+    <div
+      className={cn(
+        "relative h-full w-full min-h-0 overflow-hidden rounded-2xl shadow-xl",
+        className
+      )}
+      style={{ width: "100%", height: "100%" }}
+    >
+      {/* Background scene */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${withBasePath(assets.background)})` }}
+        aria-hidden
+      />
+      {/* Soft scrim for dark mode readability */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-black/0 dark:bg-black/25"
+        aria-hidden
+      />
+
+      {/* Character + bin */}
+      <img
+        src={withBasePath(assets.person)}
+        alt=""
+        draggable={false}
+        className="pointer-events-none absolute bottom-0 right-[-4%] z-[1] h-[78%] w-auto max-w-[70%] select-none object-contain object-bottom [-webkit-user-drag:none]"
+      />
+
+      {/* Title */}
+      <div
+        className={cn(
+          "relative z-[2] max-w-[62%]",
+          compact ? "px-3.5 pt-3.5" : "px-5 pt-5"
+        )}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "font-semibold leading-snug text-white drop-shadow-sm",
+                compact ? "text-[13px]" : "text-[15px] sm:text-base"
+              )}
+            >
+              {heading}
+            </p>
+            <div
+              className={cn("mt-1.5 rounded-full", compact ? "h-0.5 w-7" : "h-1 w-9")}
+              style={{ backgroundColor: assets.accent }}
+              aria-hidden
+            />
+          </div>
+          {onMoreClick ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoreClick();
+              }}
+              className="shrink-0 rounded-lg p-1 text-white/80 transition-colors hover:bg-black/15 hover:text-white"
+              aria-label={t("common.options")}
+            >
+              <MoreVertical className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Floating info chip */}
+      <div
+        className={cn(
+          "absolute z-[3] flex max-w-[78%] items-center gap-2 rounded-xl bg-white shadow-lg dark:bg-white",
+          compact ? "left-3 top-[42%] gap-1.5 px-1.5 py-1.5" : "left-4 top-[44%] gap-2.5 px-2 py-2"
+        )}
+      >
+        <img
+          src={withBasePath(assets.icon)}
+          alt=""
+          draggable={false}
+          className={cn(
+            "shrink-0 rounded-lg object-cover [-webkit-user-drag:none]",
+            compact ? "h-9 w-9" : "h-11 w-11"
+          )}
+        />
+        <div className="min-w-0 flex-1 pr-0.5">
+          <p
+            className={cn(
+              "truncate font-semibold leading-tight text-zinc-900",
+              compact ? "text-sm" : "text-[15px]"
+            )}
+          >
+            {typeLabel}
+          </p>
+          <p
+            className={cn(
+              "truncate leading-tight text-zinc-500",
+              compact ? "text-[11px]" : "text-xs"
+            )}
+          >
+            {dateLabel}
+          </p>
+        </div>
+        <span
+          className={cn(
+            "flex shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500",
+            compact ? "h-6 w-6" : "h-7 w-7"
+          )}
+          aria-hidden
+        >
+          <ChevronRight className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+        </span>
+      </div>
+    </div>
+  );
+}

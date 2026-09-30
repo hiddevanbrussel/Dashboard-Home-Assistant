@@ -98,10 +98,14 @@ export type WidgetConfig = {
   max_value?: number;
   /** Nuts card: kleur icoon (hex). */
   icon_background_color?: string;
-  /** Nuts card: breedte kaart in px (standaard 320). */
+  /** Nuts / trash / calendar / etc.: breedte kaart in px. */
   width?: number;
-  /** Nuts card: hoogte kaart in px (standaard 300). */
+  /** Nuts / trash / calendar / etc.: hoogte kaart in px. */
   height?: number;
+  /** Trash card: optionele aparte datum-sensor. */
+  date_entity_id?: string;
+  /** Trash card: demo-thema wanneer geen HA-entities gekoppeld zijn. */
+  demo_theme?: "gft" | "restafval" | "pmd";
   /** Energy monitor: entity voor teruglevering aan het net. */
   grid_entity_id?: string;
   /** Energy monitor: minimal (geen achtergrond/rand om floating card). */
