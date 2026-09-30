@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.54
+
+- Energy: customize light/dark page backgrounds in Settings → Energy (upload, replace, reset to bundled art); persists on the energy dashboard and never inherits patio/global wallpaper
+
 ## 0.4.53
 
 - Header: show sunrise and sunset next to weather (Lucide icons; HA `sun.sun` `next_rising` / `next_setting`, with weather-attribute fallback)

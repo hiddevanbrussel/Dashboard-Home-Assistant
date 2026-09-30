@@ -192,6 +192,11 @@ export default function SettingsPage() {
   const [uploadingBg, setUploadingBg] = useState(false);
   const [uploadingBgLight, setUploadingBgLight] = useState(false);
   const [uploadingBgDark, setUploadingBgDark] = useState(false);
+  const [energyDashboardId, setEnergyDashboardId] = useState<string | null>(null);
+  const [energyBackgroundLight, setEnergyBackgroundLight] = useState<string | null>(null);
+  const [energyBackgroundDark, setEnergyBackgroundDark] = useState<string | null>(null);
+  const [uploadingEnergyBgLight, setUploadingEnergyBgLight] = useState(false);
+  const [uploadingEnergyBgDark, setUploadingEnergyBgDark] = useState(false);
   const [section, setSection] = useState<SettingsSection>("appearance");
   const [selectedApp, setSelectedApp] = useState<SettingsAppId | null>(null);
   const [editModeAllowed, setEditModeAllowedState] = useState(true);
@@ -320,6 +325,17 @@ export default function SettingsPage() {
         if (d?.background != null) setPageBackground(d.background);
         if (d?.backgroundLight != null) setPageBackgroundLight(d.backgroundLight);
         if (d?.backgroundDark != null) setPageBackgroundDark(d.backgroundDark);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/energy-dashboard")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.id) setEnergyDashboardId(d.id);
+        setEnergyBackgroundLight(d?.backgroundLight ?? null);
+        setEnergyBackgroundDark(d?.backgroundDark ?? null);
       })
       .catch(() => {});
   }, []);
@@ -681,6 +697,88 @@ export default function SettingsPage() {
       window.dispatchEvent(new Event("page-background-changed"));
     } finally {
       setUploadingBgDark(false);
+    }
+  }
+
+  async function handleEnergyBackgroundLightUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !energyDashboardId) return;
+    e.target.value = "";
+    setUploadingEnergyBgLight(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Upload failed");
+      const put = await fetch(`/api/energy-dashboard/${energyDashboardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backgroundLight: json.url }),
+      });
+      const saved = await put.json();
+      if (!put.ok) throw new Error(saved.error || "Save failed");
+      setEnergyBackgroundLight(saved.backgroundLight ?? json.url);
+    } catch {
+      // error could be shown in UI
+    } finally {
+      setUploadingEnergyBgLight(false);
+    }
+  }
+
+  async function handleEnergyBackgroundLightReset() {
+    if (!energyDashboardId) return;
+    try {
+      const put = await fetch(`/api/energy-dashboard/${energyDashboardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backgroundLight: null }),
+      });
+      if (!put.ok) throw new Error("Save failed");
+      setEnergyBackgroundLight(null);
+    } finally {
+      setUploadingEnergyBgLight(false);
+    }
+  }
+
+  async function handleEnergyBackgroundDarkUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !energyDashboardId) return;
+    e.target.value = "";
+    setUploadingEnergyBgDark(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Upload failed");
+      const put = await fetch(`/api/energy-dashboard/${energyDashboardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backgroundDark: json.url }),
+      });
+      const saved = await put.json();
+      if (!put.ok) throw new Error(saved.error || "Save failed");
+      setEnergyBackgroundDark(saved.backgroundDark ?? json.url);
+    } catch {
+      // error could be shown in UI
+    } finally {
+      setUploadingEnergyBgDark(false);
+    }
+  }
+
+  async function handleEnergyBackgroundDarkReset() {
+    if (!energyDashboardId) return;
+    try {
+      const put = await fetch(`/api/energy-dashboard/${energyDashboardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backgroundDark: null }),
+      });
+      if (!put.ok) throw new Error("Save failed");
+      setEnergyBackgroundDark(null);
+    } finally {
+      setUploadingEnergyBgDark(false);
     }
   }
 
@@ -1460,6 +1558,34 @@ export default function SettingsPage() {
               {energyStore.enabled ? (
                 <>
                   <EnergyEntitySettings entities={entities} />
+                  <SettingsGroup title={t("settings.energy.backgrounds")} description={t("settings.energy.backgroundsHint")}>
+                    {energyDashboardId ? (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <SettingsImagePick
+                          label={t("settings.energy.backgroundLight")}
+                          url={energyBackgroundLight}
+                          uploading={uploadingEnergyBgLight}
+                          onUpload={handleEnergyBackgroundLightUpload}
+                          onRemove={handleEnergyBackgroundLightReset}
+                          addLabel={t("settings.energy.backgroundAdd")}
+                          uploadingLabel={t("settings.screensaver.uploading")}
+                          removeLabel={t("settings.energy.backgroundReset")}
+                        />
+                        <SettingsImagePick
+                          label={t("settings.energy.backgroundDark")}
+                          url={energyBackgroundDark}
+                          uploading={uploadingEnergyBgDark}
+                          onUpload={handleEnergyBackgroundDarkUpload}
+                          onRemove={handleEnergyBackgroundDarkReset}
+                          addLabel={t("settings.energy.backgroundAdd")}
+                          uploadingLabel={t("settings.screensaver.uploading")}
+                          removeLabel={t("settings.energy.backgroundReset")}
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{t("editPanel.loading")}</p>
+                    )}
+                  </SettingsGroup>
                   <SettingsGroup title={t("settings.energy.contract")}>
                     <SettingsField label={t("settings.energy.costPerKwh")} hint={t("settings.energy.costPerKwhHint")}>
                       <SettingsInput
