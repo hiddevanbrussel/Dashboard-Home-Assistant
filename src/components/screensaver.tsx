@@ -686,14 +686,17 @@ function ScreensaverOverlay({
       cache: "no-store",
       headers,
     })
-      .then((r) => r.json())
-      .then(async (data) => {
-        if (!data?.imageUrl) {
+      .then(async (r) => {
+        const data = (await r.json().catch(() => null)) as
+          | { imageUrl?: string; pexelsUrl?: string; photographer?: string; error?: string }
+          | null;
+        if (!r.ok || !data?.imageUrl) {
+          if (data?.error) console.warn("[screensaver] Pexels photo:", data.error);
           setMediaError(true);
           return;
         }
         const attr = data.pexelsUrl && data.photographer
-          ? { url: data.pexelsUrl as string, photographer: data.photographer as string, provider: "pexels" as const }
+          ? { url: data.pexelsUrl, photographer: data.photographer, provider: "pexels" as const }
           : { photographer: "Pexels", provider: "pexels" as const };
         await preloadImage(data.imageUrl);
         applyPhoto(data.imageUrl, attr);
@@ -782,16 +785,19 @@ function ScreensaverOverlay({
       cache: "no-store",
       headers,
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.videoUrl) {
-          const attr = data.pexelsUrl && data.photographer
-            ? { url: data.pexelsUrl as string, photographer: data.photographer as string, provider: "pexels" as const }
-            : { photographer: "Pexels", provider: "pexels" as const };
-          applyVideo(data.videoUrl, attr);
-        } else {
+      .then(async (r) => {
+        const data = (await r.json().catch(() => null)) as
+          | { videoUrl?: string; pexelsUrl?: string; photographer?: string; error?: string }
+          | null;
+        if (!r.ok || !data?.videoUrl) {
+          if (data?.error) console.warn("[screensaver] Pexels video:", data.error);
           setMediaError(true);
+          return;
         }
+        const attr = data.pexelsUrl && data.photographer
+          ? { url: data.pexelsUrl, photographer: data.photographer, provider: "pexels" as const }
+          : { photographer: "Pexels", provider: "pexels" as const };
+        applyVideo(data.videoUrl, attr);
       })
       .catch(() => setMediaError(true));
   }, [pexelsApiKey, pexelsQuery, applyVideo]);
