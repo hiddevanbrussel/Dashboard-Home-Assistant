@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.58
+## 0.4.59
 
 - Calendar week view: overlapping timed events render side-by-side so titles stay readable
 - Calendar week view: all-day / multi-day events use a dedicated equal-width lane (no more skewed day columns)
