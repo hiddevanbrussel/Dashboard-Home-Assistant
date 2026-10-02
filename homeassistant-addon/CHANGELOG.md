@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.61
+
+- Doorbell settings moved under Settings → Apps (alongside Pexels and other integrations); removed the standalone sidebar item
+
 ## 0.4.60
 
 - Doorbell: when a configured HA visitor/doorbell binary sensor rings, play a chime and open a camera popup (Reolink-friendly via Home Assistant)
