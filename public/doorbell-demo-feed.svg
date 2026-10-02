@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#sky)"/>
+  <rect x="420" y="180" width="440" height="420" rx="12" fill="#334155"/>
+  <rect x="460" y="220" width="360" height="280" rx="4" fill="#64748b"/>
+  <circle cx="640" cy="360" r="48" fill="#94a3b8" opacity="0.5"/>
+  <text x="640" y="560" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="28">Demo doorbell camera</text>
+  <text x="640" y="600" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="18">Mock feed (no Home Assistant)</text>
+</svg>

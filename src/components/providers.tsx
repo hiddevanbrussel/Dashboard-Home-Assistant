@@ -12,6 +12,8 @@ import { VoiceWakeWordListener } from "./voice/voice-wake-word-listener";
 import { useEntityStatePolling } from "@/hooks/use-entity-state";
 import { NotificationWatcher } from "@/components/notifications/notification-watcher";
 import { NotificationToasts } from "@/components/notifications/notification-toasts";
+import { DoorbellWatcher } from "@/components/doorbell/doorbell-watcher";
+import { DoorbellPopup } from "@/components/doorbell/doorbell-popup";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -29,6 +31,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <EntityStatePoller />
         <NotificationWatcher />
         <NotificationToasts />
+        <DoorbellWatcher />
+        <DoorbellPopup />
         <CardPlotController />
         <TimerSound />
         <VoiceWakeWordListener />

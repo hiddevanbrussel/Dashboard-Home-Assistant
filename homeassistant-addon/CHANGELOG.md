@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.60
+
+- Doorbell: when a configured HA visitor/doorbell binary sensor rings, play a chime and open a camera popup (Reolink-friendly via Home Assistant)
+- Doorbell settings: pick sensor + camera, enable/disable, cooldown, optional go2rtc WebRTC URL for live audio / talkback (EN + NL)
+- Without go2rtc: live HA camera snapshots + chime still work; a separate Reolink app is not required for video + sound
+
 ## 0.4.59
 
 - Calendar week view: overlapping timed events render side-by-side so titles stay readable
