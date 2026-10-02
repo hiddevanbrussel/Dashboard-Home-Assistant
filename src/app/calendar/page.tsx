@@ -19,6 +19,7 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import type { CalendarEvent } from "@/app/api/ha/calendar/route";
 import {
   addDays,
+  ALL_DAY_ROW_H,
   allDayOnDay,
   DEFAULT_HOUR_H,
   durationLabel,
@@ -31,6 +32,8 @@ import {
   hoursFromFocus,
   gridHours,
   isSameDay,
+  layoutAllDayWeek,
+  layoutTimedOverlaps,
   localeOf,
   looksLikeMeet,
   monthGridDays,
@@ -272,12 +275,16 @@ function MonthGrid({
   );
 }
 
+/** Shared week column track: fixed gutter + 7 equal `minmax(0,1fr)` day columns. */
+const WEEK_GRID_COLS = "grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]";
+
 function WeekGrid({
   weekDays,
   selectedDate,
   events,
   colorMap,
   locale,
+  allDayLabel,
   onSelectDay,
   onSelectEvent,
   scrollRef,
@@ -287,6 +294,7 @@ function WeekGrid({
   events: CalendarEvent[];
   colorMap: Record<string, CalColor>;
   locale: string;
+  allDayLabel: string;
   onSelectDay: (d: Date) => void;
   onSelectEvent: (ev: CalendarEvent) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
@@ -296,6 +304,8 @@ function WeekGrid({
   const nowMinutes = useNowMinutes();
   const labels = weekDayNames(locale, "short");
   const hourH = useHourHeight(scrollRef);
+  const allDayLayout = useMemo(() => layoutAllDayWeek(events, weekDays), [events, weekDays]);
+  const allDayHeight = allDayLayout.rowCount * ALL_DAY_ROW_H;
 
   useLayoutEffect(() => {
     const run = () => scrollTimeGrid(scrollRef.current, CALENDAR_FOCUS_HOUR, hourH);
@@ -311,19 +321,18 @@ function WeekGrid({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border border-white/70 bg-white/40 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
-      <div className="flex shrink-0 border-b border-white/50 dark:border-white/10">
-        <div className="w-14 shrink-0" />
+      <div className={cn("grid shrink-0 border-b border-white/50 dark:border-white/10", WEEK_GRID_COLS)}>
+        <div className="min-w-0" />
         {weekDays.map((day, i) => {
           const isToday = isSameDay(day, now);
           const isSelected = isSameDay(day, selectedDate);
-          const allDay = allDayOnDay(events, day);
           return (
             <button
               key={toDateKey(day)}
               type="button"
               onClick={() => onSelectDay(day)}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 border-l border-white/40 px-1 py-2 dark:border-white/10",
+                "flex min-w-0 flex-col items-center gap-1 border-l border-white/40 px-1 py-2 dark:border-white/10",
                 isSelected && "bg-brand/10"
               )}
             >
@@ -340,20 +349,68 @@ function WeekGrid({
               >
                 {day.getDate()}
               </span>
-              {allDay.slice(0, 2).map((ev, j) => (
-                <span key={j} className="flex w-full min-w-0 items-center gap-1 truncate text-[9px] text-gray-700 dark:text-gray-200">
-                  <span className={cn("h-2 w-0.5 shrink-0 rounded-full", (colorMap[ev.entityId] ?? CAL_COLORS[0]).bar)} />
-                  <span className="truncate"><EventTitle summary={ev.summary} /></span>
-                </span>
-              ))}
             </button>
           );
         })}
       </div>
 
+      {allDayLayout.rowCount > 0 && (
+        <div className={cn("grid shrink-0 border-b border-white/50 dark:border-white/10", WEEK_GRID_COLS)}>
+          <div className="flex min-w-0 items-start justify-end px-1 py-1">
+            <span className="select-none text-[9px] leading-tight text-gray-400 dark:text-gray-500">{allDayLabel}</span>
+          </div>
+          <div
+            className="relative col-span-7 min-w-0 overflow-hidden"
+            style={{ height: Math.max(allDayHeight, ALL_DAY_ROW_H) }}
+          >
+            <div className="pointer-events-none absolute inset-0 grid grid-cols-7">
+              {weekDays.map((day) => (
+                <div
+                  key={`allday-bg-${toDateKey(day)}`}
+                  className={cn(
+                    "min-w-0 border-l border-white/40 dark:border-white/10",
+                    isSameDay(day, selectedDate) && "bg-brand/10",
+                    isSameDay(day, now) && "bg-brand/5"
+                  )}
+                />
+              ))}
+            </div>
+            {allDayLayout.items.map((item, i) => {
+              const color = colorMap[item.event.entityId] ?? CAL_COLORS[0];
+              const dayCount = weekDays.length;
+              const leftPct = (item.startDay / dayCount) * 100;
+              const widthPct = ((item.endDay - item.startDay + 1) / dayCount) * 100;
+              return (
+                <button
+                  key={`${item.event.entityId}-${item.event.start}-${i}`}
+                  type="button"
+                  onClick={() => onSelectEvent(item.event)}
+                  className={cn(
+                    "absolute z-10 overflow-hidden rounded-md text-left shadow-sm",
+                    color.soft
+                  )}
+                  style={{
+                    top: item.row * ALL_DAY_ROW_H + 1,
+                    height: ALL_DAY_ROW_H - 3,
+                    left: `calc(${leftPct}% + 2px)`,
+                    width: `calc(${widthPct}% - 4px)`,
+                  }}
+                  title={item.event.summary}
+                >
+                  <span className={cn("absolute inset-y-0 left-0 w-0.5", color.bar)} />
+                  <span className="block truncate px-1.5 pl-2 text-[9px] font-medium leading-[18px] text-gray-800 dark:text-gray-100">
+                    <EventTitle summary={item.event.summary} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <TimeGridScrollPort scrollRef={scrollRef}>
-        <div className="flex" style={{ minHeight: hours.length * hourH }}>
-          <div className="relative w-14 shrink-0">
+        <div className={cn("grid", WEEK_GRID_COLS)} style={{ minHeight: hours.length * hourH }}>
+          <div className="relative min-w-0">
             {hours.map((h) => (
               <div key={h} data-hour={h} className="relative" style={{ height: hourH }}>
                 <span className={cn("absolute right-2 select-none text-[10px] text-gray-400 dark:text-gray-500", h === hours[0] ? "top-1" : "-top-2.5")}>
@@ -365,10 +422,11 @@ function WeekGrid({
           {weekDays.map((day) => {
             const isToday = isSameDay(day, now);
             const dayEvents = timedOnDay(events, day);
+            const laidOut = layoutTimedOverlaps(dayEvents);
             return (
               <div
                 key={toDateKey(day)}
-                className={cn("relative flex-1 border-l border-white/40 dark:border-white/10", isToday && "bg-brand/5")}
+                className={cn("relative min-w-0 border-l border-white/40 dark:border-white/10", isToday && "bg-brand/5")}
                 style={{ minHeight: hours.length * hourH }}
                 onClick={() => onSelectDay(day)}
               >
@@ -381,21 +439,27 @@ function WeekGrid({
                     <div className="h-px flex-1 bg-accent-orange" />
                   </div>
                 )}
-                {dayEvents.map((ev, ei) => {
+                {laidOut.map((item, ei) => {
+                  const ev = item.event;
                   const start = eventStart(ev);
                   const end = eventEnd(ev);
                   const { top, height } = timedEventFrame(start, end, hourH, 22);
                   const color = colorMap[ev.entityId] ?? CAL_COLORS[0];
                   return (
                     <button
-                      key={ei}
+                      key={`${ev.entityId}-${ev.start}-${ei}`}
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onSelectEvent(ev);
                       }}
-                      className={cn("absolute left-0.5 right-0.5 z-10 overflow-hidden rounded-lg text-left shadow-sm", color.soft)}
-                      style={{ top, height }}
+                      className={cn("absolute z-10 overflow-hidden rounded-lg text-left shadow-sm", color.soft)}
+                      style={{
+                        top,
+                        height,
+                        left: `calc(${item.left * 100}% + 2px)`,
+                        width: `calc(${item.width * 100}% - 4px)`,
+                      }}
                     >
                       <span className={cn("absolute inset-y-0 left-0 w-0.5", color.bar)} />
                       <div className="px-1.5 py-0.5 pl-2">
@@ -492,18 +556,24 @@ function DayGrid({
                 <div className="h-px flex-1 bg-accent-orange" />
               </div>
             )}
-            {dayEvents.map((ev, i) => {
+            {layoutTimedOverlaps(dayEvents).map((item, i) => {
+              const ev = item.event;
               const start = eventStart(ev);
               const end = eventEnd(ev);
               const { top, height } = timedEventFrame(start, end, hourH, 28);
               const color = colorMap[ev.entityId] ?? CAL_COLORS[0];
               return (
                 <button
-                  key={i}
+                  key={`${ev.entityId}-${ev.start}-${i}`}
                   type="button"
                   onClick={() => onSelectEvent(ev)}
-                  className={cn("absolute left-2 right-3 z-10 overflow-hidden rounded-2xl text-left shadow-sm", color.soft)}
-                  style={{ top, height }}
+                  className={cn("absolute z-10 overflow-hidden rounded-2xl text-left shadow-sm", color.soft)}
+                  style={{
+                    top,
+                    height,
+                    left: `calc(${item.left * 100}% + 8px)`,
+                    width: `calc(${item.width * 100}% - 20px)`,
+                  }}
                 >
                   <span className={cn("absolute inset-y-0 left-0 w-1", color.bar)} />
                   <div className="px-3 py-1.5">
@@ -1005,6 +1075,7 @@ export default function CalendarPage() {
               events={visibleEvents}
               colorMap={colorMap}
               locale={locale}
+              allDayLabel={t("calendar.allDay")}
               onSelectDay={selectDay}
               onSelectEvent={setSelectedEvent}
               scrollRef={timeScrollRef}

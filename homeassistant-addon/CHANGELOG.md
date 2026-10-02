@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.59
+
+- Calendar week view: overlapping timed events render side-by-side so titles stay readable
+- Calendar week view: all-day / multi-day events use a dedicated equal-width lane (no more skewed day columns)
+
 ## 0.4.58
 
 - Notifications: in-app alerts when HA entity states change (toast + header bell history), with configurable rules and cooldowns

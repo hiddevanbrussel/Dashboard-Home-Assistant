@@ -9,6 +9,8 @@ import {
   highlightedEventIndex,
   hourHeightForViewport,
   isSameDay,
+  layoutAllDayWeek,
+  layoutTimedOverlaps,
   MIN_HOUR_H,
   monthGridDays,
   startOfWeek,
@@ -76,6 +78,113 @@ describe("calendar-utils", () => {
     const second = timedEventFrame(new Date(2026, 8, 21, 11, 0), new Date(2026, 8, 21, 12, 0), hourH, 22);
     expect(second.top - (first.top + first.height)).toBe(TIMED_EVENT_GAP_PX);
     expect(first.height).toBe(hourH - TIMED_EVENT_GAP_PX);
+  });
+
+  it("places overlapping timed events in side-by-side columns", () => {
+    const events: CalendarEvent[] = [
+      {
+        entityId: "calendar.a",
+        summary: "Marieke training",
+        start: "2026-09-30T09:00:00",
+        end: "2026-09-30T12:00:00",
+        allDay: false,
+      },
+      {
+        entityId: "calendar.a",
+        summary: "Belletje bellen",
+        start: "2026-09-30T10:00:00",
+        end: "2026-09-30T10:30:00",
+        allDay: false,
+      },
+    ];
+    const layout = layoutTimedOverlaps(events);
+    expect(layout).toHaveLength(2);
+    expect(layout.every((item) => item.columns === 2)).toBe(true);
+    const columns = new Set(layout.map((item) => item.column));
+    expect(columns.size).toBe(2);
+    expect(layout[0].left).toBe(0);
+    expect(layout[1].left).toBeCloseTo(0.5);
+    expect(layout[0].width).toBeLessThan(0.5);
+    expect(layout[1].width).toBeLessThan(0.5);
+  });
+
+  it("keeps non-overlapping timed events full width", () => {
+    const events: CalendarEvent[] = [
+      {
+        entityId: "calendar.a",
+        summary: "Morning",
+        start: "2026-09-30T09:00:00",
+        end: "2026-09-30T10:00:00",
+        allDay: false,
+      },
+      {
+        entityId: "calendar.a",
+        summary: "Afternoon",
+        start: "2026-09-30T11:00:00",
+        end: "2026-09-30T12:00:00",
+        allDay: false,
+      },
+    ];
+    const layout = layoutTimedOverlaps(events);
+    expect(layout.every((item) => item.columns === 1 && item.column === 0 && item.left === 0)).toBe(true);
+  });
+
+  it("lays out multi-day all-day events as spanning bars without per-day duplication", () => {
+    const weekStart = startOfWeek(new Date(2026, 8, 28)); // Mon 28 Sep 2026
+    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    const events: CalendarEvent[] = [
+      {
+        entityId: "calendar.a",
+        summary: "Melanie jarig",
+        start: "2026-10-01",
+        end: "2026-10-02",
+        allDay: true,
+      },
+      {
+        entityId: "calendar.a",
+        summary: "Optie weekendje Karin",
+        start: "2026-10-02",
+        end: "2026-10-05",
+        allDay: true,
+      },
+    ];
+    const { items, rowCount } = layoutAllDayWeek(events, weekDays);
+    expect(rowCount).toBe(1);
+    expect(items).toHaveLength(2);
+
+    const birthday = items.find((item) => item.event.summary === "Melanie jarig")!;
+    expect(birthday.startDay).toBe(3); // Thu
+    expect(birthday.endDay).toBe(3);
+
+    const weekend = items.find((item) => item.event.summary === "Optie weekendje Karin")!;
+    expect(weekend.startDay).toBe(4); // Fri
+    expect(weekend.endDay).toBe(6); // Sun
+    expect(weekend.row).toBe(0);
+    expect(birthday.row).toBe(0);
+  });
+
+  it("stacks concurrent all-day events on separate rows", () => {
+    const weekStart = startOfWeek(new Date(2026, 8, 28));
+    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    const events: CalendarEvent[] = [
+      {
+        entityId: "calendar.a",
+        summary: "Trip A",
+        start: "2026-10-01",
+        end: "2026-10-03",
+        allDay: true,
+      },
+      {
+        entityId: "calendar.b",
+        summary: "Trip B",
+        start: "2026-10-01",
+        end: "2026-10-02",
+        allDay: true,
+      },
+    ];
+    const { items, rowCount } = layoutAllDayWeek(events, weekDays);
+    expect(rowCount).toBe(2);
+    expect(new Set(items.map((item) => item.row)).size).toBe(2);
   });
 
   it("highlights the current or next timed event on today", () => {
