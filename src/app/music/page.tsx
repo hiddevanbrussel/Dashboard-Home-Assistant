@@ -1524,62 +1524,63 @@ export default function MusicPage() {
           </button>
         ) : undefined
       }
-      headerCenterAction={
-        <div
+      headerBelowAction={
+        <nav
           className={cn(
-            "flex items-center gap-0.5 rounded-full p-0.5 backdrop-blur-md",
-            headerOverHero ? "bg-white/15" : "bg-black/5 dark:bg-white/10"
+            "border-b border-black/[0.06] bg-page-light/90 px-4 backdrop-blur-md dark:border-white/10 dark:bg-dark-page/90 sm:px-6",
+            headerOverHero && "border-white/15 bg-black/25"
           )}
-          role="navigation"
           aria-label={t("music.title")}
         >
-          {(
-            [
-              { id: "home" as const, label: t("music.menuHome"), icon: Home },
-              { id: "artists" as const, label: t("music.menuArtists"), icon: User },
-              { id: "albums" as const, label: t("music.menuAlbums"), icon: Disc3 },
-              { id: "playlists" as const, label: t("music.menuPlaylists"), icon: ListMusic },
-              { id: "podcasts" as const, label: t("music.menuPodcasts"), icon: Podcast },
-            ] as const
-          ).map(({ id, label, icon: Icon }) => {
-            const active = id === "home" ? !selectedMenu && !selectedCategory && !selectedPodcast : selectedMenu === id;
-            const light = headerOverHero;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => {
-                  setSelectedArtist(null);
-                  setSelectedAlbum(null);
-                  setSelectedPodcast(null);
-                  setPodcastEpisodes([]);
-                  setSelectedCategory(null);
-                  if (id === "home") {
-                    setSelectedMenu(null);
-                  } else {
-                    setSelectedMenu(id);
-                  }
-                }}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3",
-                  light
-                    ? active
-                      ? "bg-white/25 text-white"
-                      : "text-white/80 hover:bg-white/10 hover:text-white"
-                    : active
-                      ? "bg-white text-gray-900 shadow-sm dark:bg-white/15 dark:text-white"
-                      : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-                )}
-                aria-label={label}
-                aria-current={active ? "page" : undefined}
-                title={label}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">{label}</span>
-              </button>
-            );
-          })}
-        </div>
+          <div className="-mx-1 flex items-stretch gap-0.5 overflow-x-auto scrollbar-hide py-1.5">
+            {(
+              [
+                { id: "home" as const, label: t("music.menuHome"), icon: Home },
+                { id: "artists" as const, label: t("music.menuArtists"), icon: User },
+                { id: "albums" as const, label: t("music.menuAlbums"), icon: Disc3 },
+                { id: "playlists" as const, label: t("music.menuPlaylists"), icon: ListMusic },
+                { id: "podcasts" as const, label: t("music.menuPodcasts"), icon: Podcast },
+              ] as const
+            ).map(({ id, label, icon: Icon }) => {
+              const active = id === "home" ? !selectedMenu && !selectedCategory && !selectedPodcast : selectedMenu === id;
+              const light = headerOverHero;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedArtist(null);
+                    setSelectedAlbum(null);
+                    setSelectedPodcast(null);
+                    setPodcastEpisodes([]);
+                    setSelectedCategory(null);
+                    if (id === "home") {
+                      setSelectedMenu(null);
+                    } else {
+                      setSelectedMenu(id);
+                    }
+                  }}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    light
+                      ? active
+                        ? "bg-white/20 text-white"
+                        : "text-white/75 hover:bg-white/10 hover:text-white"
+                      : active
+                        ? "bg-black/[0.06] text-gray-900 dark:bg-white/12 dark:text-white"
+                        : "text-gray-600 hover:bg-black/[0.04] hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/8 dark:hover:text-white"
+                  )}
+                  aria-label={label}
+                  aria-current={active ? "page" : undefined}
+                  title={label}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       }
     >
       {searchOverlay}
@@ -1660,7 +1661,8 @@ export default function MusicPage() {
         <div className="flex flex-wrap items-center justify-end gap-4 pb-2">
           <OfflinePill />
         </div>
-        <div className="h-14 shrink-0" aria-hidden />
+        {/* Spacer for fixed header (h-14) + secondary music nav (~3rem) */}
+        <div className="h-[6.75rem] shrink-0" aria-hidden />
         {error && (
           <div
             className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-200"
