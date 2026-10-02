@@ -61,10 +61,10 @@ import { useTranslation } from "@/hooks/use-translation";
 import { NotificationSettings } from "@/components/settings/notification-settings";
 import { DoorbellSettings } from "@/components/settings/doorbell-settings";
 import { hydrateNotificationRulesStore } from "@/stores/notification-rules-store";
-import { hydrateDoorbellStore } from "@/stores/doorbell-store";
+import { hydrateDoorbellStore, useDoorbellStore } from "@/stores/doorbell-store";
 
-type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "energy" | "tasks" | "apps" | "entities" | "notifications" | "doorbell";
-type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich" | "voice-satellite";
+type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "energy" | "tasks" | "apps" | "entities" | "notifications";
+type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich" | "voice-satellite" | "doorbell";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
@@ -78,7 +78,6 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   apps: "settings.apps",
   entities: "settings.entities",
   notifications: "settings.notifications",
-  doorbell: "settings.doorbell",
 };
 
 const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
@@ -88,6 +87,7 @@ const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string
   pexels: { labelKey: "settings.pexels", descriptionKey: "settings.pexels.description", icon: ImageIcon },
   immich: { labelKey: "settings.immich", descriptionKey: "settings.immich.description", icon: Images },
   "voice-satellite": { labelKey: "settings.voiceSatellite", descriptionKey: "settings.voiceSatellite.description", icon: Mic },
+  doorbell: { labelKey: "settings.doorbell", descriptionKey: "settings.doorbell.description", icon: DoorOpen },
 };
 
 type HaEntity = {
@@ -228,6 +228,7 @@ export default function SettingsPage() {
   const valetudo = useValetudoStore();
   const voiceSatellite = useVoiceSatelliteStore();
   const immich = useImmichStore();
+  const doorbellEnabled = useDoorbellStore((s) => s.settings.enabled);
   const [pexelsEnabled, setPexelsEnabled] = useState(false);
   const [pexelsEnvConfigured, setPexelsEnvConfigured] = useState(false);
   const [newsFeedDraft, setNewsFeedDraft] = useState<string[]>([]);
@@ -806,7 +807,6 @@ export default function SettingsPage() {
       { id: "connection", labelKey: SECTION_KEYS.connection, icon: Link2 },
       { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
       { id: "notifications", labelKey: SECTION_KEYS.notifications, icon: Bell },
-      { id: "doorbell", labelKey: SECTION_KEYS.doorbell, icon: DoorOpen },
     ]},
     { groupKey: "settings.groups.pages", sections: [
       { id: "calendar",  labelKey: SECTION_KEYS.calendar,  icon: CalendarDays },
@@ -836,7 +836,6 @@ export default function SettingsPage() {
     apps: { descriptionKey: "settings.apps.description", icon: LayoutGrid },
     entities: { descriptionKey: "settings.entities.description", icon: List },
     notifications: { descriptionKey: "settings.notifications.description", icon: Bell },
-    doorbell: { descriptionKey: "settings.doorbell.description", icon: DoorOpen },
   };
   const currentApp = selectedApp ? APP_KEYS[selectedApp] : null;
   const panelMeta = currentApp ?? SECTION_META[section];
@@ -849,6 +848,7 @@ export default function SettingsPage() {
     pexels: pexelsEnabled,
     immich: immich.enabled,
     "voice-satellite": voiceSatellite.enabled,
+    doorbell: doorbellEnabled,
   };
   const pexelsReady = isPexelsSourceReady(
     pexelsEnabled,
@@ -1697,8 +1697,9 @@ export default function SettingsPage() {
 
           {selectedApp === "voice-satellite" && <VoiceSatelliteSettings />}
 
+          {selectedApp === "doorbell" && <DoorbellSettings />}
+
           {section === "notifications" && <NotificationSettings />}
-          {section === "doorbell" && <DoorbellSettings />}
 
           {section === "entities" && (
             <>
