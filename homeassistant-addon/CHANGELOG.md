@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.62
+
+- Music: move Home / Artists / Albums / Playlists / Podcasts section tabs out of the main topbar into a full-width secondary nav bar under the header (desktop + mobile)
+
 ## 0.4.61
 
 - Doorbell settings moved under Settings → Apps (alongside Pexels and other integrations); removed the standalone sidebar item

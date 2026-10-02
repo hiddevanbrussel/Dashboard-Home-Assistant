@@ -64,8 +64,13 @@ type AppShellProps = {
   headerEndAction?: React.ReactNode;
   /** Rendered in the header after the clock/temperature (e.g. calendar toggle). */
   headerStartAction?: React.ReactNode;
-  /** Centered in the header (e.g. Music Assistant section menu). */
+  /** Centered in the header (e.g. legacy centered chrome). */
   headerCenterAction?: React.ReactNode;
+  /**
+   * Full-width secondary bar rendered directly under the top header
+   * (e.g. Music section tabs: Home / Artists / Albums / …).
+   */
+  headerBelowAction?: React.ReactNode;
   /** Welcome heading (above main content). */
   welcomeTitle?: string;
   /** Welcome subtitle. */
@@ -234,6 +239,7 @@ export function AppShell({
   headerEndAction,
   headerStartAction,
   headerCenterAction,
+  headerBelowAction,
   welcomeTitle: welcomeTitleProp,
   welcomeSubtitle: welcomeSubtitleProp,
   hideWelcome = false,
@@ -365,89 +371,103 @@ export function AppShell({
         className={cn("relative flex min-h-0 flex-1 flex-col", showSidebar && "pl-[5.5rem]")}
         style={contentRightInset ? { paddingRight: contentRightInset } : undefined}
       >
-        {!hideHeader && <div
-          data-app-header
-          className={cn(
-            "relative z-[70] flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
-            headerFixed && "absolute inset-x-0 top-0",
-            headerContentLight ? "text-white" : "text-gray-700 dark:text-gray-300"
-          )}
-        >
-          {!hideHeaderClock && (
-            <span className={cn("text-sm font-bold tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
-              {headerTime}
-            </span>
-          )}
-          {effectiveTempEntity != null && (
-            <button
-              type="button"
-              onClick={() => setTemperatureModalOpen(true)}
-              className={cn(
-                "flex items-center gap-1.5 text-sm font-medium rounded-lg px-2 py-1 -mx-2 transition-colors",
-                headerContentLight ? "text-white/90 hover:bg-white/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-              )}
-              aria-label="Choose temperature entity"
-            >
-              {effectiveTempEntity?.startsWith("weather.") && temperatureState?.state ? (
-                <WeatherIcon state={temperatureState.state} light={headerContentLight} />
-              ) : (
-                <Thermometer className={cn("h-4 w-4 shrink-0", headerContentLight ? "text-white/80" : "text-gray-500 dark:text-gray-400")} aria-hidden />
-              )}
-              {temperatureDisplay ?? "—"}
-            </button>
-          )}
-          {showSunTimes && (
-            <div
-              className="flex items-center gap-2.5"
-              aria-label={t("appShell.sunTimes")}
-            >
-              <span
-                className={cn("flex items-center gap-1", sunTextClass)}
-                title={t("appShell.sunrise")}
-                aria-label={`${t("appShell.sunrise")}: ${sunriseDisplay ?? "—"}`}
-              >
-                <Sunrise className={sunIconClass} aria-hidden />
-                <span>{sunriseDisplay ?? "—"}</span>
-              </span>
-              <span
-                className={cn("flex items-center gap-1", sunTextClass)}
-                title={t("appShell.sunset")}
-                aria-label={`${t("appShell.sunset")}: ${sunsetDisplay ?? "—"}`}
-              >
-                <Sunset className={sunIconClass} aria-hidden />
-                <span>{sunsetDisplay ?? "—"}</span>
-              </span>
-            </div>
-          )}
-          <HeaderVoice contentLight={headerContentLight} />
-          {headerCenterAction ? (
-            <div className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center">
-              <div className="pointer-events-auto">{headerCenterAction}</div>
-            </div>
-          ) : null}
-          <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
-            {newsEnabled && rssUrls.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setNewsOpen(true)}
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                  headerContentLight
-                    ? "text-white/90 hover:bg-white/10"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-                )}
-                aria-label={t("news.title")}
-              >
-                <Newspaper className="h-5 w-5" />
-              </button>
+        {!hideHeader && (
+          <div
+            data-app-chrome
+            className={cn(
+              "relative z-[70] shrink-0",
+              headerFixed && "absolute inset-x-0 top-0"
             )}
-            {headerStartAction}
-            {headerEndAction}
-            <HeaderTimer contentLight={headerContentLight} />
-            <HeaderNotifications contentLight={headerContentLight} />
-            <HeaderMediaPlaying contentLight={headerContentLight} />
+          >
+            <div
+              data-app-header
+              className={cn(
+                "relative flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
+                headerContentLight ? "text-white" : "text-gray-700 dark:text-gray-300"
+              )}
+            >
+              {!hideHeaderClock && (
+                <span className={cn("text-sm font-bold tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
+                  {headerTime}
+                </span>
+              )}
+              {effectiveTempEntity != null && (
+                <button
+                  type="button"
+                  onClick={() => setTemperatureModalOpen(true)}
+                  className={cn(
+                    "flex items-center gap-1.5 text-sm font-medium rounded-lg px-2 py-1 -mx-2 transition-colors",
+                    headerContentLight ? "text-white/90 hover:bg-white/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                  )}
+                  aria-label="Choose temperature entity"
+                >
+                  {effectiveTempEntity?.startsWith("weather.") && temperatureState?.state ? (
+                    <WeatherIcon state={temperatureState.state} light={headerContentLight} />
+                  ) : (
+                    <Thermometer className={cn("h-4 w-4 shrink-0", headerContentLight ? "text-white/80" : "text-gray-500 dark:text-gray-400")} aria-hidden />
+                  )}
+                  {temperatureDisplay ?? "—"}
+                </button>
+              )}
+              {showSunTimes && (
+                <div
+                  className="flex items-center gap-2.5"
+                  aria-label={t("appShell.sunTimes")}
+                >
+                  <span
+                    className={cn("flex items-center gap-1", sunTextClass)}
+                    title={t("appShell.sunrise")}
+                    aria-label={`${t("appShell.sunrise")}: ${sunriseDisplay ?? "—"}`}
+                  >
+                    <Sunrise className={sunIconClass} aria-hidden />
+                    <span>{sunriseDisplay ?? "—"}</span>
+                  </span>
+                  <span
+                    className={cn("flex items-center gap-1", sunTextClass)}
+                    title={t("appShell.sunset")}
+                    aria-label={`${t("appShell.sunset")}: ${sunsetDisplay ?? "—"}`}
+                  >
+                    <Sunset className={sunIconClass} aria-hidden />
+                    <span>{sunsetDisplay ?? "—"}</span>
+                  </span>
+                </div>
+              )}
+              <HeaderVoice contentLight={headerContentLight} />
+              {headerCenterAction ? (
+                <div className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center">
+                  <div className="pointer-events-auto">{headerCenterAction}</div>
+                </div>
+              ) : null}
+              <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+                {newsEnabled && rssUrls.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setNewsOpen(true)}
+                    className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                      headerContentLight
+                        ? "text-white/90 hover:bg-white/10"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                    )}
+                    aria-label={t("news.title")}
+                  >
+                    <Newspaper className="h-5 w-5" />
+                  </button>
+                )}
+                {headerStartAction}
+                {headerEndAction}
+                <HeaderTimer contentLight={headerContentLight} />
+                <HeaderNotifications contentLight={headerContentLight} />
+                <HeaderMediaPlaying contentLight={headerContentLight} />
+              </div>
+            </div>
+            {headerBelowAction ? (
+              <div data-app-subheader className="relative shrink-0">
+                {headerBelowAction}
+              </div>
+            ) : null}
           </div>
-        </div>}
+        )}
 
         {temperatureModalOpen &&
           typeof document !== "undefined" &&
