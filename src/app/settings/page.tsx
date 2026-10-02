@@ -53,15 +53,17 @@ import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { EnergyEntitySettings } from "@/components/settings/energy-entity-settings";
 import { useNewsStore } from "@/stores/news-store";
-import { RobotVacuum, Bell, CalendarDays, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X, Zap } from "lucide-react";
+import { RobotVacuum, Bell, CalendarDays, DoorOpen, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
 import { useTranslation } from "@/hooks/use-translation";
 import { NotificationSettings } from "@/components/settings/notification-settings";
+import { DoorbellSettings } from "@/components/settings/doorbell-settings";
 import { hydrateNotificationRulesStore } from "@/stores/notification-rules-store";
+import { hydrateDoorbellStore } from "@/stores/doorbell-store";
 
-type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "energy" | "tasks" | "apps" | "entities" | "notifications";
+type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "energy" | "tasks" | "apps" | "entities" | "notifications" | "doorbell";
 type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich" | "voice-satellite";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
@@ -76,6 +78,7 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   apps: "settings.apps",
   entities: "settings.entities",
   notifications: "settings.notifications",
+  doorbell: "settings.doorbell",
 };
 
 const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
@@ -241,6 +244,7 @@ export default function SettingsPage() {
     hydrateVoiceSatelliteStore();
     hydrateImmichStore();
     hydrateNotificationRulesStore();
+    hydrateDoorbellStore();
     const next = new URLSearchParams(window.location.search).get("section");
     if (next && next in SECTION_KEYS) setSection(next as SettingsSection);
     let cancelled = false;
@@ -802,6 +806,7 @@ export default function SettingsPage() {
       { id: "connection", labelKey: SECTION_KEYS.connection, icon: Link2 },
       { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
       { id: "notifications", labelKey: SECTION_KEYS.notifications, icon: Bell },
+      { id: "doorbell", labelKey: SECTION_KEYS.doorbell, icon: DoorOpen },
     ]},
     { groupKey: "settings.groups.pages", sections: [
       { id: "calendar",  labelKey: SECTION_KEYS.calendar,  icon: CalendarDays },
@@ -831,6 +836,7 @@ export default function SettingsPage() {
     apps: { descriptionKey: "settings.apps.description", icon: LayoutGrid },
     entities: { descriptionKey: "settings.entities.description", icon: List },
     notifications: { descriptionKey: "settings.notifications.description", icon: Bell },
+    doorbell: { descriptionKey: "settings.doorbell.description", icon: DoorOpen },
   };
   const currentApp = selectedApp ? APP_KEYS[selectedApp] : null;
   const panelMeta = currentApp ?? SECTION_META[section];
@@ -1692,6 +1698,7 @@ export default function SettingsPage() {
           {selectedApp === "voice-satellite" && <VoiceSatelliteSettings />}
 
           {section === "notifications" && <NotificationSettings />}
+          {section === "doorbell" && <DoorbellSettings />}
 
           {section === "entities" && (
             <>
