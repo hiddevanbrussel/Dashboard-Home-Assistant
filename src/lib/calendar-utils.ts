@@ -199,6 +199,163 @@ export function timedEventFrame(
   return { top, height: Math.max(rawHeight - gap, minHeight) };
 }
 
+/** Horizontal placement for overlapping timed events within a day column. */
+export type TimedOverlapLayout = {
+  event: CalendarEvent;
+  /** 0-based column within the overlap cluster */
+  column: number;
+  /** Total columns in the overlap cluster */
+  columns: number;
+  /** Left edge as a 0–1 fraction of the day column */
+  left: number;
+  /** Width as a 0–1 fraction of the day column */
+  width: number;
+};
+
+/**
+ * Classic calendar overlap layout: concurrent timed events become side-by-side
+ * columns so titles stay readable instead of stacking on top of each other.
+ */
+export function layoutTimedOverlaps(events: CalendarEvent[]): TimedOverlapLayout[] {
+  type Node = {
+    event: CalendarEvent;
+    start: number;
+    end: number;
+    column: number;
+    columns: number;
+  };
+
+  const nodes: Node[] = events.map((event) => ({
+    event,
+    start: eventStart(event).getTime(),
+    end: eventEnd(event).getTime(),
+    column: 0,
+    columns: 1,
+  }));
+
+  nodes.sort((a, b) => a.start - b.start || b.end - a.end || a.end - b.end);
+
+  const active: Node[] = [];
+  for (const node of nodes) {
+    for (let i = active.length - 1; i >= 0; i--) {
+      if (active[i].end <= node.start) active.splice(i, 1);
+    }
+    const used = new Set(active.map((a) => a.column));
+    let column = 0;
+    while (used.has(column)) column++;
+    node.column = column;
+    active.push(node);
+  }
+
+  const parent = nodes.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const union = (i: number, j: number) => {
+    const a = find(i);
+    const b = find(j);
+    if (a !== b) parent[a] = b;
+  };
+
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      if (nodes[i].start < nodes[j].end && nodes[j].start < nodes[i].end) union(i, j);
+    }
+  }
+
+  const groupColumns = new Map<number, number>();
+  for (let i = 0; i < nodes.length; i++) {
+    const root = find(i);
+    groupColumns.set(root, Math.max(groupColumns.get(root) ?? 1, nodes[i].column + 1));
+  }
+  for (let i = 0; i < nodes.length; i++) {
+    nodes[i].columns = groupColumns.get(find(i)) ?? 1;
+  }
+
+  /** Small fractional gap between side-by-side columns. */
+  const colGap = 0.02;
+  return nodes.map((node) => {
+    const slot = 1 / node.columns;
+    const width = Math.max(slot - colGap, slot * 0.85);
+    return {
+      event: node.event,
+      column: node.column,
+      columns: node.columns,
+      left: node.column * slot,
+      width,
+    };
+  });
+}
+
+/** Multi-day / all-day bar placement across equal-width week columns. */
+export type AllDayWeekLayoutItem = {
+  event: CalendarEvent;
+  /** Inclusive day index within the week (0–6) */
+  startDay: number;
+  /** Inclusive day index within the week (0–6) */
+  endDay: number;
+  /** Vertical stack lane */
+  row: number;
+};
+
+export type AllDayWeekLayout = {
+  items: AllDayWeekLayoutItem[];
+  rowCount: number;
+};
+
+/** Pixel height of one all-day lane row (bar + gap). */
+export const ALL_DAY_ROW_H = 22;
+
+/**
+ * Lay out all-day (and multi-day) events into stacked spanning bars for a week.
+ * Uses equal day indices so the time-grid columns can stay `minmax(0, 1fr)`.
+ */
+export function layoutAllDayWeek(events: CalendarEvent[], weekDays: Date[]): AllDayWeekLayout {
+  if (weekDays.length === 0) return { items: [], rowCount: 0 };
+
+  const seen = new Set<string>();
+  const spans: Omit<AllDayWeekLayoutItem, "row">[] = [];
+
+  for (const event of events) {
+    if (!event.allDay) continue;
+    const key = `${event.entityId}|${event.start}|${event.end}|${event.summary}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const start = eventStart(event);
+    const end = eventEnd(event);
+    let startDay = -1;
+    let endDay = -1;
+    for (let i = 0; i < weekDays.length; i++) {
+      const day = weekDays[i];
+      if (day >= start && day < end) {
+        if (startDay < 0) startDay = i;
+        endDay = i;
+      }
+    }
+    if (startDay < 0 || endDay < 0) continue;
+    spans.push({ event, startDay, endDay });
+  }
+
+  // Prefer earlier start, then longer span
+  spans.sort((a, b) => {
+    if (a.startDay !== b.startDay) return a.startDay - b.startDay;
+    return b.endDay - b.startDay - (a.endDay - a.startDay);
+  });
+
+  const rowLastDay: number[] = [];
+  const items: AllDayWeekLayoutItem[] = spans.map((span) => {
+    let row = rowLastDay.findIndex((last) => last < span.startDay);
+    if (row < 0) {
+      row = rowLastDay.length;
+      rowLastDay.push(span.endDay);
+    } else {
+      rowLastDay[row] = span.endDay;
+    }
+    return { ...span, row };
+  });
+
+  return { items, rowCount: rowLastDay.length };
+}
+
 /** Scale hour rows so ~16 hours fit in the visible time-grid viewport. */
 export function hourHeightForViewport(clientHeight: number): number {
   if (clientHeight <= 0) return DEFAULT_HOUR_H;

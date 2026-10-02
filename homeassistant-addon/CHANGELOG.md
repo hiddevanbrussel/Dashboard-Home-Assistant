@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.58
+
+- Calendar week view: overlapping timed events render side-by-side so titles stay readable
+- Calendar week view: all-day / multi-day events use a dedicated equal-width lane (no more skewed day columns)
+
 ## 0.4.57
 
 - Pexels: fix intermittent empty screensaver media by paging within `total_results` (was randomly requesting pages 1–10)
