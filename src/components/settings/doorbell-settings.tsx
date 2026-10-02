@@ -98,20 +98,17 @@ export function DoorbellSettings() {
 
   return (
     <div className="space-y-6">
-      <SettingsGroup title={t("settings.doorbell")}>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          {t("settings.doorbell.intro")}
-        </p>
-        {entitiesError ? <SettingsAlert tone="error">{entitiesError}</SettingsAlert> : null}
+      <SettingsToggle
+        checked={settings.enabled}
+        onChange={(enabled) => setSettings({ enabled })}
+        label={
+          settings.enabled ? t("settings.doorbell.on") : t("settings.doorbell.off")
+        }
+        description={t("settings.doorbell.enabledHint")}
+      />
 
-        <SettingsToggle
-          checked={settings.enabled}
-          onChange={(enabled) => setSettings({ enabled })}
-          label={
-            settings.enabled ? t("settings.doorbell.on") : t("settings.doorbell.off")
-          }
-          description={t("settings.doorbell.enabledHint")}
-        />
+      <SettingsGroup description={t("settings.doorbell.intro")}>
+        {entitiesError ? <SettingsAlert tone="error">{entitiesError}</SettingsAlert> : null}
 
         <SettingsField
           label={t("settings.doorbell.sensor")}
