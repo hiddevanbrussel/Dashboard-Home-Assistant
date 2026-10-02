@@ -36,6 +36,7 @@ import {
   resolveSunTimes,
 } from "@/lib/sun-times";
 import { HeaderMediaPlaying } from "./header-media-playing";
+import { HeaderNotifications } from "./header-notifications";
 import { HeaderTimer } from "./header-timer";
 import { HeaderVoice } from "./header-voice";
 import { useNewsStore } from "@/stores/news-store";
@@ -443,6 +444,7 @@ export function AppShell({
             {headerStartAction}
             {headerEndAction}
             <HeaderTimer contentLight={headerContentLight} />
+            <HeaderNotifications contentLight={headerContentLight} />
             <HeaderMediaPlaying contentLight={headerContentLight} />
           </div>
         </div>}

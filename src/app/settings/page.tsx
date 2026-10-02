@@ -53,13 +53,15 @@ import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { EnergyEntitySettings } from "@/components/settings/energy-entity-settings";
 import { useNewsStore } from "@/stores/news-store";
-import { RobotVacuum, CalendarDays, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X, Zap } from "lucide-react";
+import { RobotVacuum, Bell, CalendarDays, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
 import { useTranslation } from "@/hooks/use-translation";
+import { NotificationSettings } from "@/components/settings/notification-settings";
+import { hydrateNotificationRulesStore } from "@/stores/notification-rules-store";
 
-type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "energy" | "tasks" | "apps" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "energy" | "tasks" | "apps" | "entities" | "notifications";
 type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich" | "voice-satellite";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
@@ -73,6 +75,7 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   tasks: "settings.tasks",
   apps: "settings.apps",
   entities: "settings.entities",
+  notifications: "settings.notifications",
 };
 
 const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
@@ -237,6 +240,7 @@ export default function SettingsPage() {
     hydrateValetudoStore();
     hydrateVoiceSatelliteStore();
     hydrateImmichStore();
+    hydrateNotificationRulesStore();
     const next = new URLSearchParams(window.location.search).get("section");
     if (next && next in SECTION_KEYS) setSection(next as SettingsSection);
     let cancelled = false;
@@ -797,6 +801,7 @@ export default function SettingsPage() {
       { id: "dashboard", labelKey: SECTION_KEYS.dashboard, icon: LayoutDashboard },
       { id: "connection", labelKey: SECTION_KEYS.connection, icon: Link2 },
       { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
+      { id: "notifications", labelKey: SECTION_KEYS.notifications, icon: Bell },
     ]},
     { groupKey: "settings.groups.pages", sections: [
       { id: "calendar",  labelKey: SECTION_KEYS.calendar,  icon: CalendarDays },
@@ -825,6 +830,7 @@ export default function SettingsPage() {
     tasks: { descriptionKey: "settings.tasks.description", icon: ListTodo },
     apps: { descriptionKey: "settings.apps.description", icon: LayoutGrid },
     entities: { descriptionKey: "settings.entities.description", icon: List },
+    notifications: { descriptionKey: "settings.notifications.description", icon: Bell },
   };
   const currentApp = selectedApp ? APP_KEYS[selectedApp] : null;
   const panelMeta = currentApp ?? SECTION_META[section];
@@ -1684,6 +1690,8 @@ export default function SettingsPage() {
           {selectedApp === "immich" && <ImmichSettings />}
 
           {selectedApp === "voice-satellite" && <VoiceSatelliteSettings />}
+
+          {section === "notifications" && <NotificationSettings />}
 
           {section === "entities" && (
             <>

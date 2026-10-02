@@ -10,6 +10,8 @@ import { CardPlotController } from "./card-plot-controller";
 import { VoiceSatelliteOverlay } from "./voice/voice-satellite-overlay";
 import { VoiceWakeWordListener } from "./voice/voice-wake-word-listener";
 import { useEntityStatePolling } from "@/hooks/use-entity-state";
+import { NotificationWatcher } from "@/components/notifications/notification-watcher";
+import { NotificationToasts } from "@/components/notifications/notification-toasts";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -25,6 +27,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <EntityStatePoller />
+        <NotificationWatcher />
+        <NotificationToasts />
         <CardPlotController />
         <TimerSound />
         <VoiceWakeWordListener />
