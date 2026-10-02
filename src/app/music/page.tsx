@@ -1527,8 +1527,8 @@ export default function MusicPage() {
       headerBelowAction={
         <nav
           className={cn(
-            "border-b border-black/[0.06] bg-page-light/90 px-4 backdrop-blur-md dark:border-white/10 dark:bg-dark-page/90 sm:px-6",
-            headerOverHero && "border-white/15 bg-black/25"
+            "border-y border-black/[0.06] bg-page-light/95 px-4 backdrop-blur-md dark:border-white/10 dark:bg-dark-page/95 sm:px-6",
+            headerOverHero && "border-white/15 bg-black/30"
           )}
           aria-label={t("music.title")}
         >
