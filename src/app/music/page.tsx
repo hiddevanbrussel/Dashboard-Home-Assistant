@@ -1661,8 +1661,8 @@ export default function MusicPage() {
         <div className="flex flex-wrap items-center justify-end gap-4 pb-2">
           <OfflinePill />
         </div>
-        {/* Spacer for fixed header (h-14) + secondary music nav (~3rem) */}
-        <div className="h-[6.75rem] shrink-0" aria-hidden />
+        {/* Spacer for fixed chrome: top header + secondary music nav */}
+        <div className="h-[6.85rem] shrink-0" aria-hidden />
         {error && (
           <div
             className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-200"

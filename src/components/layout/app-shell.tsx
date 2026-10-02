@@ -372,12 +372,17 @@ export function AppShell({
         style={contentRightInset ? { paddingRight: contentRightInset } : undefined}
       >
         {!hideHeader && (
-          <>
+          <div
+            data-app-chrome
+            className={cn(
+              "relative z-[70] shrink-0",
+              headerFixed && "absolute inset-x-0 top-0"
+            )}
+          >
             <div
               data-app-header
               className={cn(
-                "relative z-[70] flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
-                headerFixed && "absolute inset-x-0 top-0",
+                "relative flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
                 headerContentLight ? "text-white" : "text-gray-700 dark:text-gray-300"
               )}
             >
@@ -457,17 +462,11 @@ export function AppShell({
               </div>
             </div>
             {headerBelowAction ? (
-              <div
-                data-app-subheader
-                className={cn(
-                  "relative z-[65] shrink-0",
-                  headerFixed && "absolute inset-x-0 top-14"
-                )}
-              >
+              <div data-app-subheader className="relative shrink-0">
                 {headerBelowAction}
               </div>
             ) : null}
-          </>
+          </div>
         )}
 
         {temperatureModalOpen &&
