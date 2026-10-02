@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.58
+
+- Notifications: in-app alerts when HA entity states change (toast + header bell history), with configurable rules and cooldowns
+- Notifications: default “vacuum finished” rule (cleaning/returning/paused → docked/idle/charging)
+- Settings → Notifications: add/edit/enable rules (EN + NL)
+
 ## 0.4.57
 
 - Pexels: fix intermittent empty screensaver media by paging within `total_results` (was randomly requesting pages 1–10)
