@@ -512,3 +512,21 @@ export function formatTrashPickupDate(date: Date | null, locale: TrashLocale): s
   const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
   return `${cap(weekday)} ${day} ${cap(month)}`;
 }
+
+/**
+ * Split the card title into bold (first word) + light (remainder) lines,
+ * matching the mockup ("Eerstvolgende" / "ophaalmoment", "Next" / "collection").
+ */
+export function splitTrashCardHeading(heading: string): {
+  primary: string;
+  secondary: string | null;
+} {
+  const trimmed = heading.trim().replace(/\s+/g, " ");
+  if (!trimmed) return { primary: "", secondary: null };
+  const space = trimmed.indexOf(" ");
+  if (space === -1) return { primary: trimmed, secondary: null };
+  return {
+    primary: trimmed.slice(0, space),
+    secondary: trimmed.slice(space + 1),
+  };
+}

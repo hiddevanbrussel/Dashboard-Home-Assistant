@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, MoreVertical } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import type { TrashCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
@@ -14,6 +14,7 @@ import {
   formatTrashPickupDate,
   formatTrashTypeLabel,
   resolveTrashPickup,
+  splitTrashCardHeading,
   trashCardDensity,
   trashDemoPickup,
   trashThemeAssets,
@@ -82,6 +83,7 @@ export function TrashCardWidget({
   const dateLabel = formatTrashPickupDate(pickup.date, locale);
   const heading =
     title?.trim() || t("trashCard.nextCollection");
+  const { primary: titlePrimary, secondary: titleSecondary } = splitTrashCardHeading(heading);
 
   return (
     <div
@@ -136,35 +138,39 @@ export function TrashCardWidget({
         </button>
       ) : null}
 
-      {/* Title — top-left; sized up for readability (edit button stays top-right) */}
+      {/* Title — top-left; bold first word + light remainder (mockup split) */}
       <div
         className={cn(
           "relative z-[2] max-w-[72%]",
           compact ? "px-3.5 pt-3.5" : "px-5 pt-5"
         )}
       >
-        <p
+        <h2
           className={cn(
-            "font-semibold leading-snug text-white drop-shadow-sm",
-            compact ? "text-base" : "text-lg sm:text-xl"
+            "leading-[1.05] text-white drop-shadow-sm",
+            compact ? "text-[1.35rem]" : "text-[1.65rem] sm:text-[1.85rem]"
           )}
         >
-          {heading}
-        </p>
+          <span className="block font-bold tracking-tight">{titlePrimary}</span>
+          {titleSecondary ? (
+            <span className="block font-light tracking-tight">{titleSecondary}</span>
+          ) : null}
+        </h2>
         <div
-          className={cn("mt-1.5 rounded-full", compact ? "h-0.5 w-7" : "h-1 w-9")}
+          className={cn(
+            "mt-2 rounded-full",
+            compact ? "h-[3px] w-8" : "h-1 w-10"
+          )}
           style={{ backgroundColor: assets.accent }}
           aria-hidden
         />
       </div>
 
-      {/* Floating info chip — anchored near the bottom edge of the card */}
+      {/* Info chip — vertical middle, left-aligned; no trailing action (no navigation) */}
       <div
         className={cn(
-          "absolute z-[3] flex max-w-[78%] items-center gap-2 rounded-xl bg-white shadow-lg dark:bg-white",
-          compact
-            ? "bottom-2 left-3 gap-1.5 px-1.5 py-1.5"
-            : "bottom-2.5 left-4 gap-2.5 px-2 py-2"
+          "absolute top-1/2 z-[3] flex max-w-[78%] -translate-y-1/2 items-center rounded-xl bg-white shadow-lg dark:bg-white",
+          compact ? "left-3 gap-1.5 px-1.5 py-1.5" : "left-4 gap-2.5 px-2 py-2"
         )}
       >
         <img
@@ -177,10 +183,10 @@ export function TrashCardWidget({
             compact ? "h-9 w-9" : "h-11 w-11"
           )}
         />
-        <div className="min-w-0 flex-1 pr-0.5">
+        <div className="min-w-0 flex-1 pr-1">
           <p
             className={cn(
-              "truncate font-semibold leading-tight text-zinc-900",
+              "truncate font-bold leading-tight text-zinc-900",
               compact ? "text-sm" : "text-[15px]"
             )}
           >
@@ -188,23 +194,13 @@ export function TrashCardWidget({
           </p>
           <p
             className={cn(
-              "truncate leading-tight text-zinc-500",
+              "truncate font-light leading-tight text-zinc-500",
               compact ? "text-[11px]" : "text-xs"
             )}
           >
             {dateLabel}
           </p>
         </div>
-        <span
-          className={cn(
-            "flex shrink-0 items-center justify-center rounded-full",
-            compact ? "h-6 w-6" : "h-7 w-7"
-          )}
-          style={{ backgroundColor: `${assets.accent}22`, color: assets.accent }}
-          aria-hidden
-        >
-          <ChevronRight className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
-        </span>
       </div>
     </div>
   );

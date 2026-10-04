@@ -8,6 +8,7 @@ import {
   resizeTrashCardFromBottomRight,
   resolveTrashPickup,
   resolveTrashTheme,
+  splitTrashCardHeading,
   trashCardDensity,
   trashDemoPickup,
   trashThemeAssets,
@@ -181,6 +182,25 @@ describe("trash-card helpers", () => {
     const demo = trashDemoPickup("gft", new Date("2026-09-30T12:00:00"));
     expect(demo.theme).toBe("gft");
     expect(demo.date?.getDay()).toBe(5);
+  });
+
+  it("splits title into bold first word + light remainder", () => {
+    expect(splitTrashCardHeading("Eerstvolgende ophaalmoment")).toEqual({
+      primary: "Eerstvolgende",
+      secondary: "ophaalmoment",
+    });
+    expect(splitTrashCardHeading("Next collection")).toEqual({
+      primary: "Next",
+      secondary: "collection",
+    });
+    expect(splitTrashCardHeading("Afval")).toEqual({
+      primary: "Afval",
+      secondary: null,
+    });
+    expect(splitTrashCardHeading("  Next   pickup day  ")).toEqual({
+      primary: "Next",
+      secondary: "pickup day",
+    });
   });
 
   it("clamps size and resizes from bottom-right", () => {
