@@ -8,6 +8,7 @@ import {
   type TrashTheme,
 } from "@/lib/trash-card";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useLanguageStore } from "@/stores/language-store";
 
 const THEMES: TrashTheme[] = ["gft", "restafval", "pmd"];
 const LIVE_TYPE_ENTITY = "sensor.dev_trash_next_type";
@@ -25,6 +26,12 @@ export default function TrashPreviewPage() {
   const [liveTheme, setLiveTheme] = useState<TrashTheme>("gft");
   const setStates = useEntityStateStore((s) => s.setStates);
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
+  const setLanguage = useLanguageStore((s) => s.setLanguage);
+
+  // Preview matches the NL mockup typography ("Eerstvolgende" / "ophaalmoment").
+  useEffect(() => {
+    setLanguage("nl");
+  }, [setLanguage]);
 
   useEffect(() => {
     const dates: Record<TrashTheme, string> = {

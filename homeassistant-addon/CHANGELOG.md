@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.63
+
+- Trash card: bold/light title split (e.g. “Eerstvolgende” / “ophaalmoment”), accent underline, waste-type chip centered vertically, remove unused chevron on the info chip
+
 ## 0.4.62
 
 - Music: move Home / Artists / Albums / Playlists / Podcasts section tabs out of the main topbar into a full-width secondary nav bar under the header (desktop + mobile)
