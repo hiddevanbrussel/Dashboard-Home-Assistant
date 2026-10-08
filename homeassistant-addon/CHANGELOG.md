@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.75
+
+- Energy dashboard: replace bundled light/dark page backgrounds with updated house illustrations; bump PNG cache-bust
+
 ## 0.4.72
 
 - Docker / add-on: pass Immich and Music Assistant credentials via env (`IMMICH_URL`, `IMMICH_API_KEY`, `MUSIC_ASSISTANT_URL`, `MUSIC_ASSISTANT_TOKEN`) or matching add-on options; server env overrides browser-stored values
