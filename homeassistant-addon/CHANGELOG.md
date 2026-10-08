@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.70
+
+- Image card: lower minimum resize size to 48×48 px (was 120×80) so tiny image cards are possible
+
 ## 0.4.69
 
 - Image card: free resize via bottom-right handle (persists width/height), like media/nuts/calendar

@@ -1,8 +1,8 @@
 export const ENERGY_MONITOR_CARD_DEFAULT_WIDTH = 360;
 export const ENERGY_MONITOR_CARD_DEFAULT_HEIGHT = 260;
-export const ENERGY_MONITOR_CARD_MIN_WIDTH = 120;
+export const ENERGY_MONITOR_CARD_MIN_WIDTH = 48;
 export const ENERGY_MONITOR_CARD_MAX_WIDTH = 960;
-export const ENERGY_MONITOR_CARD_MIN_HEIGHT = 80;
+export const ENERGY_MONITOR_CARD_MIN_HEIGHT = 48;
 export const ENERGY_MONITOR_CARD_MAX_HEIGHT = 720;
 
 export function clampEnergyMonitorCardWidth(n: unknown): number {
