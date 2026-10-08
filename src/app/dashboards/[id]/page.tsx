@@ -44,6 +44,9 @@ import {
   TextCardWidget,
   FloatingTextCard,
   CARD_ICON_OPTIONS,
+  CARD_ICONS,
+  STAT_PILL_ICON_OPTIONS,
+  normalizeStatPillIconKey,
   CLIMATE_ICON_OPTIONS,
   VACUUM_ICON_OPTIONS,
   SENSOR_ICON_OPTIONS,
@@ -4795,19 +4798,36 @@ export default function DashboardEditPage() {
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
                         {t("editPanel.icon")}
                       </label>
-                      <select
-                        value={editForm.icon ?? "Sun"}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({ ...prev, icon: e.target.value || undefined }))
-                        }
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                      <div
+                        className="grid grid-cols-5 gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 p-2"
+                        role="listbox"
+                        aria-label={t("editPanel.icon")}
                       >
-                        {CARD_ICON_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
+                        {STAT_PILL_ICON_OPTIONS.map((key) => {
+                          const Icon = CARD_ICONS[key];
+                          const selected = normalizeStatPillIconKey(editForm.icon) === key;
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              role="option"
+                              aria-selected={selected}
+                              title={key}
+                              onClick={() =>
+                                setEditForm((prev) => ({ ...prev, icon: key }))
+                              }
+                              className={cn(
+                                "flex h-10 w-full items-center justify-center rounded-xl border-2 transition-colors",
+                                selected
+                                  ? "border-brand bg-brand/10 text-brand"
+                                  : "border-gray-200 text-gray-600 hover:border-gray-300 dark:border-white/15 dark:text-gray-300 dark:hover:border-white/30"
+                              )}
+                            >
+                              {Icon && <Icon className="h-5 w-5" aria-hidden />}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
