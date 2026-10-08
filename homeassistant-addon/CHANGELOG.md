@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.69
+
+- Image card: free resize via bottom-right handle (persists width/height), like media/nuts/calendar
+- Image card: always render bare (rounded image only — no title, border, or glass background)
+
 ## 0.4.68
 
 - Fix Docker/CI build: cast stat pill edit-preview `conditions` to `SensorCondition[]` so `npm run build` typechecks
