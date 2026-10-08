@@ -104,17 +104,17 @@ export function EnergyMonitorCardWidget({
       )}
 
       {onMoreClick ? (
-        <div className="absolute right-2 top-2 z-20">
+        <div className="absolute right-0.5 top-0.5 z-20">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               onMoreClick();
             }}
-            className="rounded-lg p-1.5 shrink-0 text-white/80 hover:bg-black/30 hover:text-white transition-colors"
+            className="rounded-md p-0.5 shrink-0 text-white/80 hover:bg-black/30 hover:text-white transition-colors"
             aria-label={t("common.options")}
           >
-            <MoreVertical className="h-5 w-5" aria-hidden />
+            <MoreVertical className="h-4 w-4" aria-hidden />
           </button>
         </div>
       ) : null}

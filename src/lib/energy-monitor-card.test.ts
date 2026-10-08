@@ -13,11 +13,13 @@ describe("energy-monitor-card helpers", () => {
   it("clamps width and height onto the image card", () => {
     expect(clampEnergyMonitorCardWidth(undefined)).toBe(ENERGY_MONITOR_CARD_DEFAULT_WIDTH);
     expect(clampEnergyMonitorCardWidth("nope")).toBe(ENERGY_MONITOR_CARD_DEFAULT_WIDTH);
-    expect(clampEnergyMonitorCardWidth(40)).toBe(ENERGY_MONITOR_CARD_MIN_WIDTH);
+    expect(clampEnergyMonitorCardWidth(20)).toBe(ENERGY_MONITOR_CARD_MIN_WIDTH);
+    expect(clampEnergyMonitorCardWidth(48)).toBe(48);
     expect(clampEnergyMonitorCardWidth(2000)).toBe(960);
     expect(clampEnergyMonitorCardWidth(400)).toBe(400);
     expect(clampEnergyMonitorCardHeight(undefined)).toBe(ENERGY_MONITOR_CARD_DEFAULT_HEIGHT);
     expect(clampEnergyMonitorCardHeight(20)).toBe(ENERGY_MONITOR_CARD_MIN_HEIGHT);
+    expect(clampEnergyMonitorCardHeight(48)).toBe(48);
     expect(clampEnergyMonitorCardHeight(2000)).toBe(720);
     expect(clampEnergyMonitorCardHeight(300)).toBe(300);
   });
@@ -37,7 +39,7 @@ describe("energy-monitor-card helpers", () => {
     expect(shrunk.width).toBe(ENERGY_MONITOR_CARD_MIN_WIDTH);
     expect(shrunk.height).toBe(ENERGY_MONITOR_CARD_MIN_HEIGHT);
     expect(shrunk.left).toBe(80);
-    expect(shrunk.bottom).toBe(220);
+    expect(shrunk.bottom).toBe(252);
     const againstViewport = resizeEnergyMonitorCardFromBottomRight({
       ...start,
       startBottom: 10,

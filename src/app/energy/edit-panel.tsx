@@ -272,12 +272,12 @@ export function EditPanelModal(props: EditPanelModalProps) {
                 <>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardWidthPx")}</label>
-                    <input type="number" min={ENERGY_MONITOR_CARD_MIN_WIDTH} max={ENERGY_MONITOR_CARD_MAX_WIDTH} step={10} value={editForm.width ?? ENERGY_MONITOR_CARD_DEFAULT_WIDTH} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200" />
+                    <input type="number" min={ENERGY_MONITOR_CARD_MIN_WIDTH} max={ENERGY_MONITOR_CARD_MAX_WIDTH} step={1} value={editForm.width ?? ENERGY_MONITOR_CARD_DEFAULT_WIDTH} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200" />
                     <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRangeImage")}</p>
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardHeightPx")}</label>
-                    <input type="number" min={ENERGY_MONITOR_CARD_MIN_HEIGHT} max={ENERGY_MONITOR_CARD_MAX_HEIGHT} step={10} value={editForm.height ?? ENERGY_MONITOR_CARD_DEFAULT_HEIGHT} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200" />
+                    <input type="number" min={ENERGY_MONITOR_CARD_MIN_HEIGHT} max={ENERGY_MONITOR_CARD_MAX_HEIGHT} step={1} value={editForm.height ?? ENERGY_MONITOR_CARD_DEFAULT_HEIGHT} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200" />
                     <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRangeImage")}</p>
                   </div>
                 </>
