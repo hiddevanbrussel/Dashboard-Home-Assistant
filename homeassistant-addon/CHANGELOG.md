@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.68
+
+- Fix Docker/CI build: cast stat pill edit-preview `conditions` to `SensorCondition[]` so `npm run build` typechecks
+
 ## 0.4.67
 
 - Stat pill card: visual icon picker (plug-zap, zap, sun, solar-panel, circle-arrow-up/down, lightbulb, zap-off, air-vent)
