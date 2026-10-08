@@ -464,6 +464,38 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
   animation: energy-pulse-up 1.5s linear infinite;
 }
 
+/* Energy flow scene: animated dashed arrows along SVG paths */
+@keyframes energy-flow-dash {
+  to { stroke-dashoffset: -28; }
+}
+.energy-flow-dash {
+  stroke-dasharray: 7 14;
+  animation: energy-flow-dash 1.1s linear infinite;
+}
+.energy-flow-dash-down {
+  animation-duration: 1.05s;
+}
+.energy-flow-dash-to-hub {
+  animation-duration: 1.2s;
+}
+.energy-flow-dash-from-hub {
+  animation-duration: 1.15s;
+  animation-direction: reverse;
+}
+@keyframes energy-flow-hub-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.08); }
+}
+.energy-flow-hub-pulse {
+  animation: energy-flow-hub-pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .energy-flow-dash,
+  .energy-flow-hub-pulse {
+    animation: none;
+  }
+}
+
 /* Dashboard grid: same spacing horizontal and vertical (controlled by margin prop) */
 .react-grid-layout .react-grid-item {
   margin: 0 !important;

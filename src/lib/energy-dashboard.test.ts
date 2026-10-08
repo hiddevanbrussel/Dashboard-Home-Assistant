@@ -313,7 +313,7 @@ describe("energy dashboard entities", () => {
   it("maps house callouts to the entity you bind on the page", () => {
     expect(ALL_HOUSE_CALLOUTS).toEqual(["solar", "home", "grid", "battery"]);
     expect(houseCalloutEntityKey("solar")).toBe("solarYieldTodayEntityId");
-    expect(houseCalloutEntityKey("home")).toBe("consumptionEntityId");
+    expect(houseCalloutEntityKey("home")).toBe("homeConsumptionEntityId");
     expect(houseCalloutEntityKey("grid")).toBe("gridExportEntityId");
     expect(houseCalloutEntityKey("battery")).toBe("batterySocEntityId");
   });

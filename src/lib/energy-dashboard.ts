@@ -115,6 +115,7 @@ export type EnergyEntityKey =
   | "solarPowerEntityId"
   | "gridExportEntityId"
   | "consumptionEntityId"
+  | "homeConsumptionEntityId"
   | "batterySocEntityId"
   | "batteryPowerEntityId"
   | "batteryTempEntityId";
@@ -126,6 +127,7 @@ export const ENERGY_ENTITY_KEYS: EnergyEntityKey[] = [
   "solarPowerEntityId",
   "gridExportEntityId",
   "consumptionEntityId",
+  "homeConsumptionEntityId",
   "batterySocEntityId",
   "batteryPowerEntityId",
   "batteryTempEntityId",
@@ -136,6 +138,7 @@ export const EMPTY_ENERGY_ENTITIES: EnergyEntities = {
   solarPowerEntityId: "",
   gridExportEntityId: "",
   consumptionEntityId: "",
+  homeConsumptionEntityId: "",
   batterySocEntityId: "",
   batteryPowerEntityId: "",
   batteryTempEntityId: "",
@@ -179,6 +182,13 @@ export const ENERGY_ENTITY_FIELDS: EnergyEntityField[] = [
     group: "grid",
     labelKey: "settings.energy.consumption",
     hintKey: "settings.energy.consumptionHint",
+  },
+  {
+    key: "homeConsumptionEntityId",
+    kind: "power",
+    group: "grid",
+    labelKey: "settings.energy.homeConsumption",
+    hintKey: "settings.energy.homeConsumptionHint",
   },
   {
     key: "batterySocEntityId",
@@ -459,7 +469,7 @@ export function houseCalloutEntityKey(id: HouseCalloutId): EnergyEntityKey {
     case "solar":
       return "solarYieldTodayEntityId";
     case "home":
-      return "consumptionEntityId";
+      return "homeConsumptionEntityId";
     case "grid":
       return "gridExportEntityId";
     case "battery":

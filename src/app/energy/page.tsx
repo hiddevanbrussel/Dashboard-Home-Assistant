@@ -47,6 +47,7 @@ import { useDashboardEditFlag } from "@/hooks/use-dashboard-edit-flag";
 import { cn, generateId } from "@/lib/utils";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import { EnergyPageBackground } from "@/components/energy/energy-page-background";
+import { EnergyFlowOverview } from "@/components/energy/energy-flow-overview";
 import { EditPanelModal } from "./edit-panel";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -770,8 +771,10 @@ export default function EnergyPage() {
           </div>
         </div>
 
+        <EnergyFlowOverview editMode={editMode} haEntities={entities} />
+
         {editMode && widgets.length === 0 ? (
-          <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <div className="mx-auto max-w-md px-4 pb-8 text-center">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
               {t("energy.canvas.emptyTitle")}
             </p>

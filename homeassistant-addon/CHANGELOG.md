@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.66
+
+- Energy: mockup-aligned flow scene with animated solar / import / export arrows over the house illustration
+- Energy: glass KPI cards (solar, consumption, export, self-consumption) plus bottom sparkline charts and energy balance
+- Energy: Settings entity bindings restored (incl. home consumption); demo values when unbound; bind-on-page in edit mode
+
 ## 0.4.65
 
 - Topbar: frosted glass background (backdrop blur + translucent fill) so scrolled content no longer reads through the header; covers main header and music subnav chrome
