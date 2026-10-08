@@ -357,6 +357,16 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
     }
   }
 
+  /* Top chrome: clear at rest; frost classes applied only while scrolled (data-scrolled). */
+  [data-app-chrome] {
+    transition:
+      background 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      -webkit-backdrop-filter 180ms ease,
+      backdrop-filter 180ms ease;
+  }
+
   /* Top chrome (header + optional subnav) — frosted so scrolled content stays readable underneath */
   .header-chrome-glass {
     background: linear-gradient(
