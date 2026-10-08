@@ -1,35 +1,36 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { withBasePath } from "@/lib/base-path";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { EnergyMonitorCardWidget } from "./energy-monitor-card-widget";
 import type { ImageCondition } from "./widget-types";
+import {
+  clampEnergyMonitorCardHeight,
+  clampEnergyMonitorCardWidth,
+  resizeEnergyMonitorCardFromBottomRight,
+} from "@/lib/energy-monitor-card";
 import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY = "dashboard.floatingEnergyMonitorCardPosition";
 const DEFAULT_OFFSET = 24;
-const DEFAULT_WIDTH = 360;
-const DEFAULT_HEIGHT = 260;
-const MAX_WIDTH = 420;
 
 type Position = { left: number; bottom: number };
 
-function storageKeyForScope(scope: string | undefined): string {
+function storageKeyForScope(scope: string | undefined, widgetId?: string): string {
+  if (widgetId) return scope ? `${STORAGE_KEY}.${scope}.${widgetId}` : `${STORAGE_KEY}.${widgetId}`;
   return scope ? `${STORAGE_KEY}.${scope}` : STORAGE_KEY;
 }
 
-function loadPosition(scope: string | undefined, cardHeight: number): Position | null {
+function loadPosition(scope: string | undefined, widgetId?: string): Position | null {
   if (typeof window === "undefined") return null;
   try {
-    const s = localStorage.getItem(storageKeyForScope(scope));
+    const s = localStorage.getItem(storageKeyForScope(scope, widgetId));
     if (!s) return null;
     const p = JSON.parse(s) as Position & { top?: number };
     if (typeof p?.left === "number" && typeof p?.bottom === "number") return { left: p.left, bottom: p.bottom };
     if (typeof p?.left === "number" && typeof p?.top === "number") {
-      return { left: p.left, bottom: window.innerHeight - p.top - cardHeight };
+      return { left: p.left, bottom: window.innerHeight - p.top - 260 };
     }
   } catch {
     // ignore
@@ -37,10 +38,10 @@ function loadPosition(scope: string | undefined, cardHeight: number): Position |
   return null;
 }
 
-function savePosition(scope: string | undefined, p: Position) {
+function savePosition(scope: string | undefined, p: Position, widgetId?: string) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(storageKeyForScope(scope), JSON.stringify(p));
+    localStorage.setItem(storageKeyForScope(scope, widgetId), JSON.stringify(p));
   } catch {
     // ignore
   }
@@ -49,8 +50,8 @@ function savePosition(scope: string | undefined, p: Position) {
 function defaultPosition(cardWidth: number, cardHeight: number): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
   const maxLeft = window.innerWidth - cardWidth;
-  const maxBottom = window.innerHeight - cardHeight - 24;
-  return { left: maxLeft / 2, bottom: maxBottom / 2 };
+  const maxBottom = window.innerHeight - cardHeight;
+  return { left: Math.max(0, maxLeft / 2), bottom: Math.max(DEFAULT_OFFSET, maxBottom / 2) };
 }
 
 const LONG_PRESS_MS = 500;
@@ -61,60 +62,50 @@ export function FloatingEnergyMonitorCard({
   background_image,
   background_image_dark,
   image_conditions,
-  minimal = false,
-  scale: scaleProp,
+  width,
+  height,
   editMode = false,
   storageScope,
+  widgetId,
   onRemove,
   onEdit,
   onEnterEditMode,
+  onResize,
 }: {
   title: string;
   entity_id?: string;
   background_image?: string;
   background_image_dark?: string;
   image_conditions?: { operator: string; value: string; image: string; image_dark?: string }[];
+  width?: number;
+  height?: number;
+  /** @deprecated Always bare — kept for backwards-compatible callers. */
   minimal?: boolean;
+  /** @deprecated Prefer width/height resize — kept for backwards-compatible callers. */
   scale?: number;
   editMode?: boolean;
   storageScope?: string;
+  widgetId?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
+  onResize?: (size: { width: number; height: number }) => void;
 }) {
+  void title;
+  void onRemove;
   const { t } = useTranslation();
-  const [dimensions, setDimensions] = useState<{ width: number; height: number }>({
-    width: DEFAULT_WIDTH,
-    height: DEFAULT_HEIGHT,
-  });
-  const scale = Math.min(1.5, Math.max(0.5, scaleProp ?? 1));
-  const cardWidth = Math.round(dimensions.width * scale);
-  const cardHeight = Math.round(dimensions.height * scale);
-
-  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, DEFAULT_HEIGHT) ?? { left: 0, bottom: 0 });
+  const cardWidth = clampEnergyMonitorCardWidth(width);
+  const cardHeight = clampEnergyMonitorCardHeight(height);
+  const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const totalWidth = liveSize?.width ?? cardWidth;
+  const totalHeight = liveSize?.height ?? cardHeight;
+  const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
+  const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!background_image) {
-      setDimensions({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT });
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      const w = img.naturalWidth;
-      const h = img.naturalHeight;
-      if (w > 0 && h > 0) {
-        const scale = Math.min(1, MAX_WIDTH / w);
-        const width = Math.round(w * scale);
-        const height = Math.round(h * scale);
-        setDimensions({ width, height });
-      }
-    };
-    img.src = withBasePath(background_image);
-  }, [background_image]);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -145,23 +136,44 @@ export function FloatingEnergyMonitorCard({
   );
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!initialized.current) {
-      initialized.current = true;
-      const saved = loadPosition(storageScope, cardHeight);
-      if (saved) {
-        setPosition(snapToGrid(saved));
-        return;
-      }
-      const p = snapToGrid(defaultPosition(cardWidth, cardHeight));
-      setPosition(p);
-      savePosition(storageScope, p);
+    if (initialized.current) return;
+    initialized.current = true;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
+    const bounds = { maxLeft, maxBottom };
+    const saved = loadPosition(storageScope, widgetId);
+    if (saved) {
+      setPosition(snapToGrid(saved, bounds));
+      return;
     }
-  }, [cardWidth, cardHeight, storageScope]);
+    const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
+    setPosition(p);
+    savePosition(storageScope, p, widgetId);
+  }, [totalWidth, totalHeight, storageScope, widgetId]);
+
+  useEffect(() => {
+    if (!initialized.current || isResizing) return;
+    const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
+    setPosition((prev) =>
+      snapToGrid(
+        {
+          left: Math.max(0, Math.min(prev.left, maxLeft)),
+          bottom: Math.max(0, Math.min(prev.bottom, maxBottom)),
+        },
+        { maxLeft, maxBottom }
+      )
+    );
+  }, [cardWidth, cardHeight, totalWidth, totalHeight, isResizing]);
+
+  useEffect(() => {
+    if (!liveSize || isResizing) return;
+    if (cardWidth === liveSize.width && cardHeight === liveSize.height) setLiveSize(null);
+  }, [cardWidth, cardHeight, liveSize, isResizing]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!editMode) return;
+      if (!editMode || isResizing) return;
       if ((e.target as HTMLElement).closest?.("button")) return;
       e.preventDefault();
       e.stopPropagation();
@@ -175,7 +187,7 @@ export function FloatingEnergyMonitorCard({
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [position, editMode]
+    [editMode, isResizing]
   );
 
   const handlePointerMove = useCallback(
@@ -183,13 +195,15 @@ export function FloatingEnergyMonitorCard({
       if (!isDragging) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
+      const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+      const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
       const raw = {
-        left: dragStart.current.left + dx,
-        bottom: dragStart.current.bottom - dy,
+        left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
+        bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
       };
-      setPosition(snapToGrid(raw));
+      setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
     },
-    [isDragging]
+    [isDragging, totalWidth, totalHeight]
   );
 
   const handlePointerUp = useCallback(
@@ -198,34 +212,93 @@ export function FloatingEnergyMonitorCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
+        const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
+        const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
         const raw = {
-          left: dragStart.current.left + dx,
-          bottom: dragStart.current.bottom - dy,
+          left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
+          bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
         };
-        const next = snapToGrid(raw);
+        const next = snapToGrid(raw, { maxLeft, maxBottom });
         setPosition(next);
-        savePosition(storageScope, next);
+        savePosition(storageScope, next, widgetId);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isDragging, storageScope]
+    [isDragging, totalWidth, totalHeight, storageScope, widgetId]
+  );
+
+  const applyResizeDelta = useCallback((clientX: number, clientY: number) => {
+    const start = resizeStart.current;
+    const next = resizeEnergyMonitorCardFromBottomRight({
+      startWidth: start.width,
+      startHeight: start.height,
+      startLeft: start.left,
+      startBottom: start.bottom,
+      dx: clientX - start.x,
+      dy: clientY - start.y,
+      viewportWidth: typeof window !== "undefined" ? window.innerWidth : 1200,
+      viewportHeight: typeof window !== "undefined" ? window.innerHeight : 800,
+    });
+    setLiveSize({ width: next.width, height: next.height });
+    setPosition({ left: next.left, bottom: next.bottom });
+    return next;
+  }, []);
+
+  const handleResizePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!editMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      setIsResizing(true);
+      resizeStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        width: totalWidth,
+        height: totalHeight,
+        left: position.left,
+        bottom: position.bottom,
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    },
+    [editMode, totalWidth, totalHeight, position.left, position.bottom]
+  );
+
+  const handleResizePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isResizing) return;
+      applyResizeDelta(e.clientX, e.clientY);
+    },
+    [isResizing, applyResizeDelta]
+  );
+
+  const handleResizePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (isResizing) {
+        const next = applyResizeDelta(e.clientX, e.clientY);
+        setIsResizing(false);
+        setPosition({ left: next.left, bottom: next.bottom });
+        savePosition(storageScope, { left: next.left, bottom: next.bottom }, widgetId);
+        onResize?.({ width: next.width, height: next.height });
+        if (!onResize) setLiveSize(null);
+      }
+      (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    },
+    [isResizing, applyResizeDelta, storageScope, widgetId, onResize]
   );
 
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-20 rounded-2xl",
-        minimal
-          ? "bg-transparent overflow-visible"
-          : "overflow-hidden shadow-xl bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
-        editMode && "cursor-grab touch-none active:cursor-grabbing",
-        editMode && !isDragging && "animate-edit-wiggle"
+        "card-plot-in fixed z-20 bg-transparent",
+        editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
+        editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}
       style={{
         left: position.left,
         bottom: position.bottom,
-        width: cardWidth,
-        height: cardHeight,
+        width: totalWidth,
+        height: totalHeight,
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -242,33 +315,39 @@ export function FloatingEnergyMonitorCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      {/* Edit-knop rechtsonder: altijd zichtbaar ongeacht schaal */}
-      {editMode && onEdit && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="absolute right-2 bottom-2 z-50 p-1.5 rounded-lg shrink-0 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-          aria-label={t("common.options")}
-        >
-          <MoreVertical className="h-5 w-5" aria-hidden />
-        </button>
-      )}
-      <div className={cn("flex flex-col h-full min-h-0 overflow-hidden rounded-2xl", editMode && "[&>div]:rounded-t-none [&>div]:shadow-none")}>
+      <div className="h-full w-full overflow-hidden rounded-2xl" style={{ width: totalWidth, height: totalHeight }}>
         <EnergyMonitorCardWidget
           title={title}
           entity_id={entity_id}
           background_image={background_image}
           background_image_dark={background_image_dark}
           image_conditions={image_conditions as ImageCondition[] | undefined}
-          minimal={minimal}
           size="md"
-          onMoreClick={undefined}
-          className="flex-1 min-h-0"
+          onMoreClick={editMode ? onEdit : undefined}
+          className="h-full min-h-0"
         />
       </div>
+      {editMode ? (
+        <button
+          type="button"
+          aria-label={t("imageCard.resize")}
+          className="absolute -bottom-0.5 -right-0.5 z-30 flex h-6 w-6 cursor-nwse-resize touch-none items-center justify-center rounded-md bg-white/70 shadow-sm ring-1 ring-black/[0.08] backdrop-blur-sm dark:bg-zinc-800/75 dark:ring-white/15"
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={handleResizePointerMove}
+          onPointerUp={handleResizePointerUp}
+          onPointerCancel={handleResizePointerUp}
+        >
+          <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 text-gray-500/80 dark:text-white/55" aria-hidden>
+            <path
+              d="M3.5 10.5h7M10.5 3.5v7M6 10.5h4.5M10.5 6v4.5"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="1.6"
+            />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }

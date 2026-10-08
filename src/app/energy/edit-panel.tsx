@@ -26,6 +26,16 @@ import {
   normalizeNutsAccent,
   normalizeNutsPeriod,
 } from "@/lib/nuts-card";
+import {
+  ENERGY_MONITOR_CARD_DEFAULT_HEIGHT,
+  ENERGY_MONITOR_CARD_DEFAULT_WIDTH,
+  ENERGY_MONITOR_CARD_MAX_HEIGHT,
+  ENERGY_MONITOR_CARD_MAX_WIDTH,
+  ENERGY_MONITOR_CARD_MIN_HEIGHT,
+  ENERGY_MONITOR_CARD_MIN_WIDTH,
+  clampEnergyMonitorCardHeight,
+  clampEnergyMonitorCardWidth,
+} from "@/lib/energy-monitor-card";
 import { ENERGY_METRIC_DEFAULT_COLOR } from "@/lib/energy-metric";
 import ReactGridLayout from "react-grid-layout";
 import type { UseMutationResult } from "@tanstack/react-query";
@@ -143,7 +153,7 @@ export function EditPanelModal(props: EditPanelModalProps) {
     }
     const base: Partial<WidgetConfig> = { title: editForm.title };
     if (editingWidget.type === "solar_card") Object.assign(base, { entity_id: editForm.entity_id, yield_entity_id_today: editForm.yield_entity_id_today || undefined, yield_entity_id_month: editForm.yield_entity_id_month || undefined });
-    if (editingWidget.type === "energy_monitor_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, background_image: editForm.background_image || undefined, background_image_dark: editForm.background_image_dark || undefined, image_conditions: (editForm.image_conditions ?? []).filter((c) => c.image?.trim()).length > 0 ? (editForm.image_conditions ?? []).filter((c) => c.image?.trim()) : undefined, minimal: editForm.minimal ?? false, scale: editForm.scale ?? 1 });
+    if (editingWidget.type === "energy_monitor_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, background_image: editForm.background_image || undefined, background_image_dark: editForm.background_image_dark || undefined, image_conditions: (editForm.image_conditions ?? []).filter((c) => c.image?.trim()).length > 0 ? (editForm.image_conditions ?? []).filter((c) => c.image?.trim()) : undefined, minimal: true, width: clampEnergyMonitorCardWidth(editForm.width ?? ENERGY_MONITOR_CARD_DEFAULT_WIDTH), height: clampEnergyMonitorCardHeight(editForm.height ?? ENERGY_MONITOR_CARD_DEFAULT_HEIGHT) });
     if (editingWidget.type === "power_usage_card") Object.assign(base, { entity_id: editForm.entity_id || undefined, cost_per_kwh: editForm.cost_per_kwh != null && editForm.cost_per_kwh > 0 ? editForm.cost_per_kwh : undefined, width: editForm.width != null && editForm.width > 0 ? editForm.width : undefined, height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined });
     if (editingWidget.type === "device_consumption_card") {
       const dn = editForm.device_names ?? {};
@@ -260,13 +270,15 @@ export function EditPanelModal(props: EditPanelModalProps) {
               )}
               {editTab === "weergave" && (
                 <>
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" id="energy-minimal" checked={editForm.minimal ?? false} onChange={(e) => setEditForm((prev) => ({ ...prev, minimal: e.target.checked }))} className="rounded border-gray-300 text-amber-600 focus:ring-amber-500" />
-                    <label htmlFor="energy-minimal" className="text-sm text-gray-700 dark:text-gray-300">{t("editPanel.minimal")}</label>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardWidthPx")}</label>
+                    <input type="number" min={ENERGY_MONITOR_CARD_MIN_WIDTH} max={ENERGY_MONITOR_CARD_MAX_WIDTH} step={10} value={editForm.width ?? ENERGY_MONITOR_CARD_DEFAULT_WIDTH} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, width: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200" />
+                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRangeImage")}</p>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.scaleFactor")} ({(editForm.scale ?? 1).toFixed(1)}×)</label>
-                    <input type="range" min="0.5" max="1.5" step="0.1" value={editForm.scale ?? 1} onChange={(e) => setEditForm((prev) => ({ ...prev, scale: parseFloat(e.target.value) }))} className="w-full" />
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("editPanel.cardHeightPx")}</label>
+                    <input type="number" min={ENERGY_MONITOR_CARD_MIN_HEIGHT} max={ENERGY_MONITOR_CARD_MAX_HEIGHT} step={10} value={editForm.height ?? ENERGY_MONITOR_CARD_DEFAULT_HEIGHT} onChange={(e) => { const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10); setEditForm((prev) => ({ ...prev, height: v != null && !Number.isNaN(v) ? v : undefined })); }} className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200" />
+                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRangeImage")}</p>
                   </div>
                 </>
               )}

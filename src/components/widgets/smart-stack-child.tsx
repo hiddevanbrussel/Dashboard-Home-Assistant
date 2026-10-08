@@ -152,7 +152,6 @@ export function SmartStackChild({
           background_image={child.background_image}
           background_image_dark={child.background_image_dark}
           image_conditions={child.image_conditions as ImageCondition[] | undefined}
-          minimal={child.minimal}
           className={fill}
         />
       );

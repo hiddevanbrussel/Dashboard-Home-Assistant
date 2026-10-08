@@ -76,7 +76,7 @@ export type ImageCondition = {
   image_dark?: string;
 };
 
-/** Afbeeldingskaart: alleen een afbeelding, geen entity-overlays. */
+/** Afbeeldingskaart: altijd kaal (geen titel/rand/achtergrond), schaal via width/height. */
 export type EnergyMonitorCardProps = Omit<WidgetBaseProps, "entity_id"> & {
   entity_id?: string;
   /** Optionele achtergrondafbeelding (URL) voor light mode. Valt terug bij geen match. */
@@ -85,9 +85,9 @@ export type EnergyMonitorCardProps = Omit<WidgetBaseProps, "entity_id"> & {
   background_image_dark?: string;
   /** Voorwaarden: eerste match bepaalt getoonde afbeelding (bijv. weer: sunny → zon, rainy → regen). */
   image_conditions?: ImageCondition[];
-  /** Zonder kaart-styling: geen achtergrond en rand om de floating card. */
+  /** @deprecated Always bare — ignored at render time. */
   minimal?: boolean;
-  /** Schaalfactor voor de kaart (0.5–1.5). */
+  /** @deprecated Prefer width/height — ignored at render time. */
   scale?: number;
 };
 
