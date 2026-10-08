@@ -6501,7 +6501,7 @@ aria-label={t("editPanel.removeCondition")}
                       label={editForm.label}
                       icon={editForm.icon || "sun"}
                       color={(editForm.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
-                      conditions={editForm.conditions}
+                      conditions={editForm.conditions as SensorCondition[] | undefined}
                     />
                   ) : (
                     <div className="max-w-xs text-center">
