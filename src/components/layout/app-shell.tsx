@@ -377,8 +377,15 @@ export function AppShell({
             className={cn(
               "relative z-[70] shrink-0",
               headerContentLight ? "header-chrome-glass-over-media" : "header-chrome-glass",
-              headerFixed && "absolute inset-x-0 top-0"
+              // fixed (not absolute) so backdrop-filter samples scrolled page content underneath
+              headerFixed && "fixed inset-x-0 top-0",
+              headerFixed && showSidebar && "left-[5.5rem]"
             )}
+            style={
+              headerFixed && contentRightInset
+                ? { right: contentRightInset }
+                : undefined
+            }
           >
             <div
               data-app-header

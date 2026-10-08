@@ -337,41 +337,46 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
   .header-chrome-glass {
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.78) 0%,
-      rgba(255, 255, 255, 0.62) 100%
+      rgb(255 255 255 / 0.72) 0%,
+      rgb(242 240 254 / 0.58) 100%
     );
-    -webkit-backdrop-filter: blur(22px) saturate(150%);
-    backdrop-filter: blur(22px) saturate(150%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    backdrop-filter: blur(28px) saturate(160%);
+    border-bottom: 1px solid rgb(255 255 255 / 0.55);
     box-shadow:
-      0 8px 24px -16px rgba(15, 10, 40, 0.18),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
+      0 10px 28px -18px rgb(15 10 40 / 0.2),
+      inset 0 1px 0 0 rgb(255 255 255 / 0.9);
+    /* Promote own layer so backdrop sampling works over fixed overlays */
+    transform: translateZ(0);
+    will-change: backdrop-filter;
   }
 
   .dark .header-chrome-glass {
     background: linear-gradient(
       180deg,
-      rgba(12, 8, 22, 0.72) 0%,
-      rgba(12, 8, 22, 0.55) 100%
+      rgb(12 8 22 / 0.78) 0%,
+      rgb(12 8 22 / 0.62) 100%
     );
-    border-bottom-color: rgba(255, 255, 255, 0.1);
+    border-bottom-color: rgb(255 255 255 / 0.12);
     box-shadow:
-      0 10px 28px -16px rgba(0, 0, 0, 0.55),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+      0 12px 32px -18px rgb(0 0 0 / 0.55),
+      inset 0 1px 0 0 rgb(255 255 255 / 0.14);
   }
 
   .header-chrome-glass-over-media {
     background: linear-gradient(
       180deg,
-      rgba(8, 6, 16, 0.55) 0%,
-      rgba(8, 6, 16, 0.35) 100%
+      rgb(8 6 16 / 0.58) 0%,
+      rgb(8 6 16 / 0.4) 100%
     );
-    -webkit-backdrop-filter: blur(22px) saturate(140%);
-    backdrop-filter: blur(22px) saturate(140%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
+    backdrop-filter: blur(28px) saturate(150%);
+    border-bottom: 1px solid rgb(255 255 255 / 0.14);
     box-shadow:
-      0 10px 28px -16px rgba(0, 0, 0, 0.45),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+      0 12px 32px -18px rgb(0 0 0 / 0.5),
+      inset 0 1px 0 0 rgb(255 255 255 / 0.12);
+    transform: translateZ(0);
+    will-change: backdrop-filter;
   }
 
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
