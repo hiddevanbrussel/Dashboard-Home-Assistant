@@ -12,7 +12,11 @@
     --accent-purple: #b59ed8;
     --accent-orange: #f2a654;
     --card-radius: 24px;
-    --glass-blur: 12px;
+    /* Liquid-glass density (overridden by data-glass-density / JS applyGlassDensity) */
+    --glass-blur: 24px;
+    --glass-opacity: 0.7;
+    --glass-opacity-dark: 0.72;
+    --glass-saturation: 140%;
     --glass-border-light: rgba(255, 255, 255, 0.6);
     --glass-border-dark: rgba(255, 255, 255, 0.08);
   }
@@ -262,15 +266,35 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
 
 @layer utilities {
   .glass-card {
-    @apply rounded-card backdrop-blur-2xl shadow-glass;
-    background: rgba(255, 255, 255, 0.2);
+    @apply rounded-card shadow-glass;
+    background: rgba(255, 255, 255, var(--glass-opacity));
     border: 1px solid var(--glass-border-light);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   }
 
   .dark .glass-card {
-    background: var(--card-bg);
+    background: rgb(var(--brand) / calc(0.18 + 0.22 * var(--glass-opacity-dark)));
     border-color: var(--glass-border-dark);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  }
+
+  /*
+   * Remap dashboard/energy frosted card chrome (Tailwind backdrop-blur-xl / 2xl)
+   * to the global liquid-glass density vars. Leaves backdrop-blur-sm/md alone
+   * (resize handles, tiny chrome) and skips non-glass cards.
+   */
+  [data-dashboard-page] :is([class*="backdrop-blur-xl"], [class*="backdrop-blur-2xl"]),
+  [data-energy-board] :is([class*="backdrop-blur-xl"], [class*="backdrop-blur-2xl"]) {
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  }
+
+  html[data-glass-density="off"] [data-dashboard-page] :is([class*="backdrop-blur-xl"], [class*="backdrop-blur-2xl"]),
+  html[data-glass-density="off"] [data-energy-board] :is([class*="backdrop-blur-xl"], [class*="backdrop-blur-2xl"]),
+  html[data-glass-density="off"] .glass-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   /* Floating nav rail — frosted glass that stays readable over page photos */

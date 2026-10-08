@@ -6,6 +6,7 @@ import { ThemeProvider } from "./theme-provider";
 import { ScreensaverProvider } from "./screensaver";
 import { TimerSound } from "./timer-sound";
 import "@/stores/ui-sound-store";
+import "@/stores/glass-density-store";
 import { CardPlotController } from "./card-plot-controller";
 import { VoiceSatelliteOverlay } from "./voice/voice-satellite-overlay";
 import { VoiceWakeWordListener } from "./voice/voice-wake-word-listener";

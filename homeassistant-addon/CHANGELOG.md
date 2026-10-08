@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.64
+
+- Appearance: global card glass density (Off / Low / Medium / High) — frosted blur intensity via CSS variables, like iOS liquid glass
+- Screensaver settings: clearer sections (Behavior → Source & media → Display size & format → On-screen content → Test); preview moved to the bottom Test group
+
 ## 0.4.63
 
 - Trash card: bold/light title split (e.g. “Eerstvolgende” / “ophaalmoment”), accent underline, waste-type chip centered vertically, remove unused chevron on the info chip

@@ -35,6 +35,8 @@ import {
 } from "@/components/settings/settings-choice-cards";
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import { useUiSoundStore } from "@/stores/ui-sound-store";
+import { useGlassDensityStore } from "@/stores/glass-density-store";
+import { GLASS_DENSITIES, type GlassDensity } from "@/lib/glass-density";
 import type { ThemeAccentId } from "@/lib/theme-accents";
 import { playUiClick } from "@/lib/ui-click";
 import { useLanguageStore } from "@/stores/language-store";
@@ -794,6 +796,8 @@ export default function SettingsPage() {
   const { mode, setMode, accent, setAccent } = useThemeStore();
   const uiSoundEnabled = useUiSoundStore((s) => s.enabled);
   const setUiSoundEnabled = useUiSoundStore((s) => s.setEnabled);
+  const glassDensity = useGlassDensityStore((s) => s.density);
+  const setGlassDensity = useGlassDensityStore((s) => s.setDensity);
   const { language, setLanguage } = useLanguageStore();
 
   const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: LucideIcon }[] }[] = [
@@ -958,6 +962,16 @@ export default function SettingsPage() {
                 fuchsia: t("settings.theme.color.fuchsia"),
               } satisfies Record<ThemeAccentId, string>}
             />
+            <SettingsChipSelect
+              label={t("settings.glassDensity")}
+              hint={t("settings.glassDensity.hint")}
+              value={glassDensity}
+              onChange={(id) => setGlassDensity(id as GlassDensity)}
+              items={GLASS_DENSITIES.map((id) => ({
+                id,
+                label: t(`settings.glassDensity.${id}`),
+              }))}
+            />
             <SettingsToggle
               checked={uiSoundEnabled}
               onChange={(v) => {
@@ -1038,278 +1052,303 @@ export default function SettingsPage() {
 
           {section === "screensaver" && (
             <>
-              <SettingsChipSelect
-                label={t("settings.screensaver.delay")}
-                value={String(screensaverDelaySeconds)}
-                onChange={(id) => {
-                  const v = parseInt(id, 10);
-                  setScreensaverDelaySecondsState(v);
-                  setScreensaverDelaySeconds(v);
-                }}
-                items={[
-                  { id: "0", label: t("settings.screensaver.off") },
-                  { id: "10", label: t("settings.screensaver.10s") },
-                  { id: "30", label: t("settings.screensaver.30s") },
-                  { id: "60", label: t("settings.screensaver.1m") },
-                  { id: "120", label: t("settings.screensaver.2m") },
-                  { id: "300", label: t("settings.screensaver.5m") },
-                  { id: "600", label: t("settings.screensaver.10m") },
-                  { id: "900", label: t("settings.screensaver.15m") },
-                  { id: "1800", label: t("settings.screensaver.30m") },
-                ]}
-              />
-
-              <SettingsChoiceCards
-                label={t("settings.screensaver.clockFormat")}
-                columns={2}
-                value={screensaverClock24h ? "24" : "12"}
-                onChange={(id) => {
-                  const v = id === "24";
-                  setScreensaverClock24hState(v);
-                  setScreensaverClock24h(v);
-                }}
-                options={[
-                  {
-                    id: "24",
-                    label: t("settings.screensaver.24h"),
-                    preview: <ClockFormatPreview variant="24" />,
-                  },
-                  {
-                    id: "12",
-                    label: t("settings.screensaver.12h"),
-                    preview: <ClockFormatPreview variant="12" />,
-                  },
-                ]}
-              />
-
-              <SettingsChoiceCards
-                label={t("settings.screensaver.clockSize")}
-                hint={t("settings.screensaver.clockSizeHint")}
-                columns={2}
-                value={screensaverClockSize}
-                onChange={(size) => {
-                  setScreensaverClockSizeState(size);
-                  setScreensaverClockSize(size);
-                }}
-                options={SCREENSAVER_CLOCK_SIZES.map((size) => ({
-                  id: size,
-                  label: t(`settings.screensaver.clockSize.${size}`),
-                  description: t(`settings.screensaver.clockSize.${size}Hint`),
-                  preview: <ClockSizePreview size={size} weight={screensaverClockWeight} />,
-                }))}
-              />
-
-              <SettingsChoiceCards
-                label={t("settings.screensaver.clockWeight")}
-                hint={t("settings.screensaver.clockWeightHint")}
-                columns={2}
-                value={screensaverClockWeight}
-                onChange={(weight) => {
-                  setScreensaverClockWeightState(weight);
-                  setScreensaverClockWeight(weight);
-                }}
-                options={SCREENSAVER_CLOCK_WEIGHTS.map((weight) => ({
-                  id: weight,
-                  label: t(`settings.screensaver.clockWeight.${weight}`),
-                  description: t(`settings.screensaver.clockWeight.${weight}Hint`),
-                  preview: <ClockWeightPreview weight={weight} size={screensaverClockSize} />,
-                }))}
-              />
-
-              <SettingsClockPositionPicker
-                label={t("settings.screensaver.clockPosition")}
-                hint={t("settings.screensaver.clockPositionHint")}
-                value={screensaverClockPosition}
-                onChange={(position) => {
-                  setScreensaverClockPositionState(position);
-                  setScreensaverClockPosition(position);
-                }}
-                names={Object.fromEntries(
-                  SCREENSAVER_CLOCK_POSITIONS.map((position) => [
-                    position,
-                    t(`settings.screensaver.clockPosition.${position}`),
-                  ])
-                ) as Record<ScreensaverClockPosition, string>}
-              />
-
-              <SettingsPrimaryButton
-                onClick={() => window.dispatchEvent(new Event("screensaver-activate"))}
+              <SettingsGroup
+                title={t("settings.screensaver.section.behavior")}
+                description={t("settings.screensaver.section.behaviorHint")}
               >
-                {t("settings.screensaver.preview")}
-              </SettingsPrimaryButton>
-
-              <SettingsChoiceCards
-                label={t("settings.screensaver.mediaSource")}
-                hint={t("settings.screensaver.mediaSourceHint")}
-                value={screensaverMediaSource}
-                onChange={(source) => {
-                  setScreensaverMediaSourceState(source);
-                  setScreensaverMediaSource(source);
-                }}
-                columns={3}
-                options={[
-                  {
-                    id: "custom",
-                    label: t("settings.screensaver.mediaSource.custom"),
-                    description: t("settings.screensaver.mediaSource.customHint"),
-                  },
-                  {
-                    id: "pexels",
-                    label: t("settings.screensaver.mediaSource.pexels"),
-                    description: t("settings.screensaver.mediaSource.pexelsHint"),
-                  },
-                  {
-                    id: "immich",
-                    label: t("settings.screensaver.mediaSource.immich"),
-                    description: t("settings.screensaver.mediaSource.immichHint"),
-                  },
-                ]}
-              />
-              {screensaverMediaSource === "pexels" && !pexelsReady ? (
-                <div className="space-y-2">
-                  <SettingsAlert tone="error">{t("settings.screensaver.mediaSource.pexelsNotReady")}</SettingsAlert>
-                  <SettingsSecondaryButton
-                    onClick={() => {
-                      setSection("apps");
-                      setSelectedApp("pexels");
-                    }}
-                  >
-                    {t("settings.screensaver.openPexelsApp")}
-                  </SettingsSecondaryButton>
-                </div>
-              ) : null}
-              {screensaverMediaSource === "immich" && !immichReady ? (
-                <div className="space-y-2">
-                  <SettingsAlert tone="error">{t("settings.screensaver.mediaSource.immichNotReady")}</SettingsAlert>
-                  <SettingsSecondaryButton
-                    onClick={() => {
-                      setSection("apps");
-                      setSelectedApp("immich");
-                    }}
-                  >
-                    {t("settings.screensaver.openImmichApp")}
-                  </SettingsSecondaryButton>
-                </div>
-              ) : null}
-
-              {screensaverMediaSource === "custom" ? (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  {t("settings.screensaver.bgImage")}
-                </p>
-                <div className="max-w-sm">
-                  <SettingsImagePick
-                    label={t("settings.screensaver.bgImage")}
-                    url={screensaverBackground || null}
-                    uploading={uploadingScreensaverBg}
-                    onUpload={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setUploadingScreensaverBg(true);
-                      try {
-                        const formData = new FormData();
-                        formData.append("file", file);
-                        const res = await fetch("/api/upload", { method: "POST", body: formData });
-                        const json = await res.json();
-                        if (json?.url) {
-                          setScreensaverBackgroundState(json.url);
-                          setScreensaverBackgroundImage(json.url);
-                        }
-                      } finally {
-                        setUploadingScreensaverBg(false);
-                      }
-                    }}
-                    onRemove={() => {
-                      setScreensaverBackgroundState("");
-                      setScreensaverBackgroundImage("");
-                    }}
-                    addLabel={t("settings.screensaver.uploadImage")}
-                    uploadingLabel={t("settings.screensaver.uploading")}
-                    removeLabel={t("settings.screensaver.remove")}
-                  />
-                </div>
-                <SettingsInput
-                  type="url"
-                  value={screensaverBackground}
-                  onChange={(e) => {
-                    const v = e.target.value.trim();
-                    setScreensaverBackgroundState(v);
-                    setScreensaverBackgroundImage(v);
+                <SettingsChipSelect
+                  label={t("settings.screensaver.delay")}
+                  value={String(screensaverDelaySeconds)}
+                  onChange={(id) => {
+                    const v = parseInt(id, 10);
+                    setScreensaverDelaySecondsState(v);
+                    setScreensaverDelaySeconds(v);
                   }}
-                  placeholder={t("settings.screensaver.bgUrlPlaceholder")}
+                  items={[
+                    { id: "0", label: t("settings.screensaver.off") },
+                    { id: "10", label: t("settings.screensaver.10s") },
+                    { id: "30", label: t("settings.screensaver.30s") },
+                    { id: "60", label: t("settings.screensaver.1m") },
+                    { id: "120", label: t("settings.screensaver.2m") },
+                    { id: "300", label: t("settings.screensaver.5m") },
+                    { id: "600", label: t("settings.screensaver.10m") },
+                    { id: "900", label: t("settings.screensaver.15m") },
+                    { id: "1800", label: t("settings.screensaver.30m") },
+                  ]}
                 />
-              </div>
-              ) : null}
+              </SettingsGroup>
 
-              <SettingsField label={t("settings.screensaver.weather")} hint={t("settings.screensaver.weatherHint")}>
-                <SettingsSelect
-                  value={screensaverWeatherEntityId ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value || null;
-                    setScreensaverWeatherEntityIdState(v);
-                    setScreensaverWeatherEntityId(v);
+              <SettingsGroup
+                title={t("settings.screensaver.section.media")}
+                description={t("settings.screensaver.section.mediaHint")}
+              >
+                <SettingsChoiceCards
+                  label={t("settings.screensaver.mediaSource")}
+                  hint={t("settings.screensaver.mediaSourceHint")}
+                  value={screensaverMediaSource}
+                  onChange={(source) => {
+                    setScreensaverMediaSourceState(source);
+                    setScreensaverMediaSource(source);
                   }}
-                >
-                  <option value="">{t("settings.screensaver.weatherDefault")}</option>
-                  {entities
-                    .filter((e) => e.entity_id.startsWith("weather.") || (e.entity_id.startsWith("sensor.") && /temp|weather|graden/i.test(e.entity_id)))
-                    .map((e) => {
-                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
-                      return (
-                        <option key={e.entity_id} value={e.entity_id}>
-                          {name}
-                        </option>
-                      );
-                    })}
-                </SettingsSelect>
-              </SettingsField>
+                  columns={3}
+                  options={[
+                    {
+                      id: "custom",
+                      label: t("settings.screensaver.mediaSource.custom"),
+                      description: t("settings.screensaver.mediaSource.customHint"),
+                    },
+                    {
+                      id: "pexels",
+                      label: t("settings.screensaver.mediaSource.pexels"),
+                      description: t("settings.screensaver.mediaSource.pexelsHint"),
+                    },
+                    {
+                      id: "immich",
+                      label: t("settings.screensaver.mediaSource.immich"),
+                      description: t("settings.screensaver.mediaSource.immichHint"),
+                    },
+                  ]}
+                />
+                {screensaverMediaSource === "pexels" && !pexelsReady ? (
+                  <div className="space-y-2">
+                    <SettingsAlert tone="error">{t("settings.screensaver.mediaSource.pexelsNotReady")}</SettingsAlert>
+                    <SettingsSecondaryButton
+                      onClick={() => {
+                        setSection("apps");
+                        setSelectedApp("pexels");
+                      }}
+                    >
+                      {t("settings.screensaver.openPexelsApp")}
+                    </SettingsSecondaryButton>
+                  </div>
+                ) : null}
+                {screensaverMediaSource === "immich" && !immichReady ? (
+                  <div className="space-y-2">
+                    <SettingsAlert tone="error">{t("settings.screensaver.mediaSource.immichNotReady")}</SettingsAlert>
+                    <SettingsSecondaryButton
+                      onClick={() => {
+                        setSection("apps");
+                        setSelectedApp("immich");
+                      }}
+                    >
+                      {t("settings.screensaver.openImmichApp")}
+                    </SettingsSecondaryButton>
+                  </div>
+                ) : null}
 
-              <SettingsField label={t("settings.screensaver.football")} hint={t("settings.screensaver.footballHint")}>
-                <SettingsSelect
-                  value={screensaverFootballEntityId ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value || null;
-                    setScreensaverFootballEntityIdState(v);
-                    setScreensaverFootballEntityId(v);
-                  }}
-                >
-                  <option value="">{t("settings.screensaver.footballOff")}</option>
-                  {entities
-                    .filter((e) => e.entity_id.startsWith("sensor.team"))
-                    .map((e) => {
-                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
-                      return (
-                        <option key={e.entity_id} value={e.entity_id}>
-                          {name}
-                        </option>
-                      );
-                    })}
-                </SettingsSelect>
-              </SettingsField>
+                {screensaverMediaSource === "custom" ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      {t("settings.screensaver.bgImage")}
+                    </p>
+                    <div className="max-w-sm">
+                      <SettingsImagePick
+                        label={t("settings.screensaver.bgImage")}
+                        url={screensaverBackground || null}
+                        uploading={uploadingScreensaverBg}
+                        onUpload={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingScreensaverBg(true);
+                          try {
+                            const formData = new FormData();
+                            formData.append("file", file);
+                            const res = await fetch("/api/upload", { method: "POST", body: formData });
+                            const json = await res.json();
+                            if (json?.url) {
+                              setScreensaverBackgroundState(json.url);
+                              setScreensaverBackgroundImage(json.url);
+                            }
+                          } finally {
+                            setUploadingScreensaverBg(false);
+                          }
+                        }}
+                        onRemove={() => {
+                          setScreensaverBackgroundState("");
+                          setScreensaverBackgroundImage("");
+                        }}
+                        addLabel={t("settings.screensaver.uploadImage")}
+                        uploadingLabel={t("settings.screensaver.uploading")}
+                        removeLabel={t("settings.screensaver.remove")}
+                      />
+                    </div>
+                    <SettingsInput
+                      type="url"
+                      value={screensaverBackground}
+                      onChange={(e) => {
+                        const v = e.target.value.trim();
+                        setScreensaverBackgroundState(v);
+                        setScreensaverBackgroundImage(v);
+                      }}
+                      placeholder={t("settings.screensaver.bgUrlPlaceholder")}
+                    />
+                  </div>
+                ) : null}
+              </SettingsGroup>
 
-              <SettingsField label={t("settings.screensaver.music")} hint={t("settings.screensaver.musicHint")}>
-                <SettingsSelect
-                  value={screensaverMusicEntityId ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value || null;
-                    setScreensaverMusicEntityIdState(v);
-                    setScreensaverMusicEntityId(v);
+              <SettingsGroup
+                title={t("settings.screensaver.section.display")}
+                description={t("settings.screensaver.section.displayHint")}
+              >
+                <SettingsChoiceCards
+                  label={t("settings.screensaver.clockFormat")}
+                  columns={2}
+                  value={screensaverClock24h ? "24" : "12"}
+                  onChange={(id) => {
+                    const v = id === "24";
+                    setScreensaverClock24hState(v);
+                    setScreensaverClock24h(v);
                   }}
+                  options={[
+                    {
+                      id: "24",
+                      label: t("settings.screensaver.24h"),
+                      preview: <ClockFormatPreview variant="24" />,
+                    },
+                    {
+                      id: "12",
+                      label: t("settings.screensaver.12h"),
+                      preview: <ClockFormatPreview variant="12" />,
+                    },
+                  ]}
+                />
+
+                <SettingsChoiceCards
+                  label={t("settings.screensaver.clockSize")}
+                  hint={t("settings.screensaver.clockSizeHint")}
+                  columns={2}
+                  value={screensaverClockSize}
+                  onChange={(size) => {
+                    setScreensaverClockSizeState(size);
+                    setScreensaverClockSize(size);
+                  }}
+                  options={SCREENSAVER_CLOCK_SIZES.map((size) => ({
+                    id: size,
+                    label: t(`settings.screensaver.clockSize.${size}`),
+                    description: t(`settings.screensaver.clockSize.${size}Hint`),
+                    preview: <ClockSizePreview size={size} weight={screensaverClockWeight} />,
+                  }))}
+                />
+
+                <SettingsChoiceCards
+                  label={t("settings.screensaver.clockWeight")}
+                  hint={t("settings.screensaver.clockWeightHint")}
+                  columns={2}
+                  value={screensaverClockWeight}
+                  onChange={(weight) => {
+                    setScreensaverClockWeightState(weight);
+                    setScreensaverClockWeight(weight);
+                  }}
+                  options={SCREENSAVER_CLOCK_WEIGHTS.map((weight) => ({
+                    id: weight,
+                    label: t(`settings.screensaver.clockWeight.${weight}`),
+                    description: t(`settings.screensaver.clockWeight.${weight}Hint`),
+                    preview: <ClockWeightPreview weight={weight} size={screensaverClockSize} />,
+                  }))}
+                />
+
+                <SettingsClockPositionPicker
+                  label={t("settings.screensaver.clockPosition")}
+                  hint={t("settings.screensaver.clockPositionHint")}
+                  value={screensaverClockPosition}
+                  onChange={(position) => {
+                    setScreensaverClockPositionState(position);
+                    setScreensaverClockPosition(position);
+                  }}
+                  names={Object.fromEntries(
+                    SCREENSAVER_CLOCK_POSITIONS.map((position) => [
+                      position,
+                      t(`settings.screensaver.clockPosition.${position}`),
+                    ])
+                  ) as Record<ScreensaverClockPosition, string>}
+                />
+              </SettingsGroup>
+
+              <SettingsGroup
+                title={t("settings.screensaver.section.content")}
+                description={t("settings.screensaver.section.contentHint")}
+              >
+                <SettingsField label={t("settings.screensaver.weather")} hint={t("settings.screensaver.weatherHint")}>
+                  <SettingsSelect
+                    value={screensaverWeatherEntityId ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value || null;
+                      setScreensaverWeatherEntityIdState(v);
+                      setScreensaverWeatherEntityId(v);
+                    }}
+                  >
+                    <option value="">{t("settings.screensaver.weatherDefault")}</option>
+                    {entities
+                      .filter((e) => e.entity_id.startsWith("weather.") || (e.entity_id.startsWith("sensor.") && /temp|weather|graden/i.test(e.entity_id)))
+                      .map((e) => {
+                        const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
+                        return (
+                          <option key={e.entity_id} value={e.entity_id}>
+                            {name}
+                          </option>
+                        );
+                      })}
+                  </SettingsSelect>
+                </SettingsField>
+
+                <SettingsField label={t("settings.screensaver.football")} hint={t("settings.screensaver.footballHint")}>
+                  <SettingsSelect
+                    value={screensaverFootballEntityId ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value || null;
+                      setScreensaverFootballEntityIdState(v);
+                      setScreensaverFootballEntityId(v);
+                    }}
+                  >
+                    <option value="">{t("settings.screensaver.footballOff")}</option>
+                    {entities
+                      .filter((e) => e.entity_id.startsWith("sensor.team"))
+                      .map((e) => {
+                        const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
+                        return (
+                          <option key={e.entity_id} value={e.entity_id}>
+                            {name}
+                          </option>
+                        );
+                      })}
+                  </SettingsSelect>
+                </SettingsField>
+
+                <SettingsField label={t("settings.screensaver.music")} hint={t("settings.screensaver.musicHint")}>
+                  <SettingsSelect
+                    value={screensaverMusicEntityId ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value || null;
+                      setScreensaverMusicEntityIdState(v);
+                      setScreensaverMusicEntityId(v);
+                    }}
+                  >
+                    <option value="">{t("settings.screensaver.musicAuto")}</option>
+                    <option value="off">{t("settings.screensaver.musicOff")}</option>
+                    {entities
+                      .filter((e) => e.entity_id.startsWith("media_player."))
+                      .map((e) => {
+                        const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
+                        return (
+                          <option key={e.entity_id} value={e.entity_id}>
+                            {name}
+                          </option>
+                        );
+                      })}
+                  </SettingsSelect>
+                </SettingsField>
+              </SettingsGroup>
+
+              <SettingsGroup
+                title={t("settings.screensaver.section.test")}
+                description={t("settings.screensaver.section.testHint")}
+              >
+                <SettingsPrimaryButton
+                  onClick={() => window.dispatchEvent(new Event("screensaver-activate"))}
                 >
-                  <option value="">{t("settings.screensaver.musicAuto")}</option>
-                  <option value="off">{t("settings.screensaver.musicOff")}</option>
-                  {entities
-                    .filter((e) => e.entity_id.startsWith("media_player."))
-                    .map((e) => {
-                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
-                      return (
-                        <option key={e.entity_id} value={e.entity_id}>
-                          {name}
-                        </option>
-                      );
-                    })}
-                </SettingsSelect>
-              </SettingsField>
+                  {t("settings.screensaver.preview")}
+                </SettingsPrimaryButton>
+              </SettingsGroup>
             </>
           )}
 

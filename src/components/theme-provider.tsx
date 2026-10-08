@@ -1,11 +1,14 @@
 "use client";
 
+import { applyGlassDensity, getGlassDensityOrDefault } from "@/lib/glass-density";
 import { applyThemeAccent } from "@/lib/theme-accents";
+import { useGlassDensityStore } from "@/stores/glass-density-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { useCallback, useEffect } from "react";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { mode, resolved, setResolved, accent } = useThemeStore();
+  const glassDensity = useGlassDensityStore((s) => s.density);
 
   const applyTheme = useCallback(() => {
     const root = document.documentElement;
@@ -30,6 +33,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     applyTheme();
   }, [applyTheme]);
+
+  useEffect(() => {
+    applyGlassDensity(getGlassDensityOrDefault(glassDensity));
+  }, [glassDensity]);
 
   useEffect(() => {
     if (mode !== "auto") return;
