@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.66
+## 0.4.67
 
 - Energy: mockup-aligned flow scene with animated solar / import / export arrows over the house illustration
 - Energy: glass KPI cards (solar, consumption, export, self-consumption) plus bottom sparkline charts and energy balance
