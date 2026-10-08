@@ -4475,7 +4475,7 @@ export default function DashboardEditPage() {
                         type="number"
                         min={ENERGY_MONITOR_CARD_MIN_WIDTH}
                         max={ENERGY_MONITOR_CARD_MAX_WIDTH}
-                        step={10}
+                        step={1}
                         value={editForm.width ?? ENERGY_MONITOR_CARD_DEFAULT_WIDTH}
                         onChange={(e) => {
                           const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10);
@@ -4496,7 +4496,7 @@ export default function DashboardEditPage() {
                         type="number"
                         min={ENERGY_MONITOR_CARD_MIN_HEIGHT}
                         max={ENERGY_MONITOR_CARD_MAX_HEIGHT}
-                        step={10}
+                        step={1}
                         value={editForm.height ?? ENERGY_MONITOR_CARD_DEFAULT_HEIGHT}
                         onChange={(e) => {
                           const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10);
