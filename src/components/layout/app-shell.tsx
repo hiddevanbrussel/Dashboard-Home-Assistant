@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
@@ -35,12 +35,14 @@ import {
   languageToSunLocale,
   resolveSunTimes,
 } from "@/lib/sun-times";
-import { HeaderMediaPlaying } from "./header-media-playing";
 import { HeaderNotifications } from "./header-notifications";
 import { HeaderTimer } from "./header-timer";
 import { HeaderVoice } from "./header-voice";
 import { useNewsStore } from "@/stores/news-store";
 import { NewsOverlay } from "@/components/news-overlay";
+
+/** Scroll distance before the top chrome gets frosted glass. */
+const HEADER_SCROLL_FROST_THRESHOLD = 8;
 
 async function fetchAndMergeEntityState(setStates: (entities: { entity_id: string; state: string; attributes: Record<string, unknown> }[]) => void) {
   try {
@@ -273,12 +275,60 @@ export function AppShell({
   const [newsOpen, setNewsOpen] = useState(false);
   const { enabled: newsEnabled, rssUrls } = useNewsStore();
   const [clock24h, setClock24h] = useState(true);
+  const [headerScrolled, setHeaderScrolled] = useState(false);
+  const [chromeHeight, setChromeHeight] = useState(0);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const chromeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setChosenTemperatureEntityId(localStorage.getItem(HEADER_TEMPERATURE_STORAGE_KEY));
     setClock24h(getScreensaverClock24h());
   }, []);
+
+  // Frost only when content scrolls under the topbar (window, main, or nested scrollers e.g. music).
+  useEffect(() => {
+    const root = shellRef.current;
+
+    const onScroll = (event: Event) => {
+      const target = event.target;
+      if (target === document || target === document.documentElement || target === document.body) {
+        const top = window.scrollY || document.documentElement.scrollTop || 0;
+        setHeaderScrolled(top > HEADER_SCROLL_FROST_THRESHOLD);
+        return;
+      }
+      if (!(target instanceof HTMLElement)) return;
+      // Ignore non-vertical scroll containers (e.g. horizontal carousels).
+      if (target.scrollHeight <= target.clientHeight + 1) return;
+      setHeaderScrolled(target.scrollTop > HEADER_SCROLL_FROST_THRESHOLD);
+    };
+
+    root?.addEventListener("scroll", onScroll, true);
+    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    return () => {
+      root?.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, []);
+
+  // Reset frost when navigating; measure chrome for in-flow spacer.
+  useEffect(() => {
+    setHeaderScrolled(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (hideHeader) {
+      setChromeHeight(0);
+      return;
+    }
+    const el = chromeRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const update = () => setChromeHeight(Math.ceil(el.getBoundingClientRect().height));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hideHeader, headerBelowAction, headerContentLight]);
 
   const effectiveTempEntity =
     temperatureEntityId === null
@@ -350,6 +400,7 @@ export function AppShell({
 
   return (
     <div
+      ref={shellRef}
       className={cn(
         "flex flex-col",
         contentNoScroll ? "h-dvh max-h-dvh overflow-hidden" : "min-h-screen",
@@ -360,7 +411,8 @@ export function AppShell({
       )}
     >
       {showSidebar && (
-        <div className="pointer-events-none fixed inset-y-0 left-0 z-[60] flex items-center justify-center" style={{ width: SIDEBAR_INSET }}>
+        // Above full-bleed header chrome so the floating rail stays tappable
+        <div className="pointer-events-none fixed inset-y-0 left-0 z-[80] flex items-center justify-center" style={{ width: SIDEBAR_INSET }}>
           <div className="pointer-events-auto">
             <Sidebar activeHref={activeTab} />
           </div>
@@ -372,109 +424,124 @@ export function AppShell({
         style={contentRightInset ? { paddingRight: contentRightInset } : undefined}
       >
         {!hideHeader && (
-          <div
-            data-app-chrome
-            className={cn(
-              "relative z-[70] shrink-0",
-              headerContentLight ? "header-chrome-glass-over-media" : "header-chrome-glass",
-              // fixed (not absolute) so backdrop-filter samples scrolled page content underneath
-              headerFixed && "fixed inset-x-0 top-0",
-              headerFixed && showSidebar && "left-[5.5rem]"
-            )}
-            style={
-              headerFixed && contentRightInset
-                ? { right: contentRightInset }
-                : undefined
-            }
-          >
+          <>
             <div
-              data-app-header
+              ref={chromeRef}
+              data-app-chrome
+              data-scrolled={headerScrolled ? "true" : "false"}
               className={cn(
-                "relative flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
-                headerContentLight ? "text-white" : "text-gray-700 dark:text-gray-300"
+                // Full viewport width (edge-to-edge, including behind sidebar), like energy bg
+                "fixed inset-x-0 top-0 z-[70]",
+                headerScrolled &&
+                  (headerContentLight ? "header-chrome-glass-over-media" : "header-chrome-glass")
               )}
             >
-              {!hideHeaderClock && (
-                <span className={cn("text-sm font-bold tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
-                  {headerTime}
-                </span>
-              )}
-              {effectiveTempEntity != null && (
-                <button
-                  type="button"
-                  onClick={() => setTemperatureModalOpen(true)}
-                  className={cn(
-                    "flex items-center gap-1.5 text-sm font-medium rounded-lg px-2 py-1 -mx-2 transition-colors",
-                    headerContentLight ? "text-white/90 hover:bg-white/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-                  )}
-                  aria-label="Choose temperature entity"
-                >
-                  {effectiveTempEntity?.startsWith("weather.") && temperatureState?.state ? (
-                    <WeatherIcon state={temperatureState.state} light={headerContentLight} />
-                  ) : (
-                    <Thermometer className={cn("h-4 w-4 shrink-0", headerContentLight ? "text-white/80" : "text-gray-500 dark:text-gray-400")} aria-hidden />
-                  )}
-                  {temperatureDisplay ?? "—"}
-                </button>
-              )}
-              {showSunTimes && (
+              <div
+                className="w-full"
+                style={{
+                  paddingLeft: showSidebar ? SIDEBAR_INSET : undefined,
+                  paddingRight: contentRightInset,
+                }}
+              >
                 <div
-                  className="flex items-center gap-2.5"
-                  aria-label={t("appShell.sunTimes")}
+                  data-app-header
+                  className={cn(
+                    "relative flex shrink-0 items-center gap-3 px-4 py-3 sm:px-6",
+                    headerContentLight ? "text-white" : "text-gray-700 dark:text-gray-300"
+                  )}
                 >
-                  <span
-                    className={cn("flex items-center gap-1", sunTextClass)}
-                    title={t("appShell.sunrise")}
-                    aria-label={`${t("appShell.sunrise")}: ${sunriseDisplay ?? "—"}`}
-                  >
-                    <Sunrise className={sunIconClass} aria-hidden />
-                    <span>{sunriseDisplay ?? "—"}</span>
-                  </span>
-                  <span
-                    className={cn("flex items-center gap-1", sunTextClass)}
-                    title={t("appShell.sunset")}
-                    aria-label={`${t("appShell.sunset")}: ${sunsetDisplay ?? "—"}`}
-                  >
-                    <Sunset className={sunIconClass} aria-hidden />
-                    <span>{sunsetDisplay ?? "—"}</span>
-                  </span>
-                </div>
-              )}
-              <HeaderVoice contentLight={headerContentLight} />
-              {headerCenterAction ? (
-                <div className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center">
-                  <div className="pointer-events-auto">{headerCenterAction}</div>
-                </div>
-              ) : null}
-              <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
-                {newsEnabled && rssUrls.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setNewsOpen(true)}
-                    className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                      headerContentLight
-                        ? "text-white/90 hover:bg-white/10"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                  {!hideHeaderClock && (
+                    <span className={cn("text-sm font-bold tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
+                      {headerTime}
+                    </span>
+                  )}
+                  {effectiveTempEntity != null && (
+                    <button
+                      type="button"
+                      onClick={() => setTemperatureModalOpen(true)}
+                      className={cn(
+                        "flex items-center gap-1.5 text-sm font-medium rounded-lg px-2 py-1 -mx-2 transition-colors",
+                        headerContentLight ? "text-white/90 hover:bg-white/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                      )}
+                      aria-label="Choose temperature entity"
+                    >
+                      {effectiveTempEntity?.startsWith("weather.") && temperatureState?.state ? (
+                        <WeatherIcon state={temperatureState.state} light={headerContentLight} />
+                      ) : (
+                        <Thermometer className={cn("h-4 w-4 shrink-0", headerContentLight ? "text-white/80" : "text-gray-500 dark:text-gray-400")} aria-hidden />
+                      )}
+                      {temperatureDisplay ?? "—"}
+                    </button>
+                  )}
+                  {showSunTimes && (
+                    <div
+                      className="flex items-center gap-2.5"
+                      aria-label={t("appShell.sunTimes")}
+                    >
+                      <span
+                        className={cn("flex items-center gap-1", sunTextClass)}
+                        title={t("appShell.sunrise")}
+                        aria-label={`${t("appShell.sunrise")}: ${sunriseDisplay ?? "—"}`}
+                      >
+                        <Sunrise className={sunIconClass} aria-hidden />
+                        <span>{sunriseDisplay ?? "—"}</span>
+                      </span>
+                      <span
+                        className={cn("flex items-center gap-1", sunTextClass)}
+                        title={t("appShell.sunset")}
+                        aria-label={`${t("appShell.sunset")}: ${sunsetDisplay ?? "—"}`}
+                      >
+                        <Sunset className={sunIconClass} aria-hidden />
+                        <span>{sunsetDisplay ?? "—"}</span>
+                      </span>
+                    </div>
+                  )}
+                  <HeaderVoice contentLight={headerContentLight} />
+                  {headerCenterAction ? (
+                    <div className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center">
+                      <div className="pointer-events-auto">{headerCenterAction}</div>
+                    </div>
+                  ) : null}
+                  <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+                    {newsEnabled && rssUrls.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setNewsOpen(true)}
+                        className={cn(
+                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                          headerContentLight
+                            ? "text-white/90 hover:bg-white/10"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                        )}
+                        aria-label={t("news.title")}
+                      >
+                        <Newspaper className="h-5 w-5" />
+                      </button>
                     )}
-                    aria-label={t("news.title")}
-                  >
-                    <Newspaper className="h-5 w-5" />
-                  </button>
-                )}
-                {headerStartAction}
-                {headerEndAction}
-                <HeaderTimer contentLight={headerContentLight} />
-                <HeaderNotifications contentLight={headerContentLight} />
-                <HeaderMediaPlaying contentLight={headerContentLight} />
+                    {headerStartAction}
+                    {headerEndAction}
+                    <HeaderTimer contentLight={headerContentLight} />
+                    <HeaderNotifications contentLight={headerContentLight} />
+                  </div>
+                </div>
+                {headerBelowAction ? (
+                  <div data-app-subheader className="relative shrink-0">
+                    {headerBelowAction}
+                  </div>
+                ) : null}
               </div>
             </div>
-            {headerBelowAction ? (
-              <div data-app-subheader className="relative shrink-0">
-                {headerBelowAction}
-              </div>
-            ) : null}
-          </div>
+            {/* In-flow spacer so content clears the fixed chrome (headerFixed pages supply their own). */}
+            {!headerFixed && (
+              <div
+                aria-hidden
+                className="shrink-0"
+                style={{
+                  height: chromeHeight || (headerBelowAction ? "6.85rem" : "3.25rem"),
+                }}
+              />
+            )}
+          </>
         )}
 
         {temperatureModalOpen &&

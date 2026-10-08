@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.66
+
+- Topbar: full viewport width again (edge-to-edge, including behind the sidebar)
+- Topbar: frosted glass only after scrolling, when content would show through; clear/transparent at the top
+- Topbar: remove the now-playing disc icon while music is playing (mini player / music page unchanged)
+
 ## 0.4.65
 
 - Topbar: frosted glass background (backdrop blur + translucent fill) so scrolled content no longer reads through the header; covers main header and music subnav chrome
