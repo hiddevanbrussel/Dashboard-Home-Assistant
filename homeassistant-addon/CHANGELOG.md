@@ -1,9 +1,14 @@
 # Changelog
 
-## 0.4.64
+## 0.4.65
 
 - Topbar: frosted glass background (backdrop blur + translucent fill) so scrolled content no longer reads through the header; covers main header and music subnav chrome
 - Music: polish Home / Artists / Albums / Playlists / Podcasts tabs into a segmented pill control matching the rest of the UI
+
+## 0.4.64
+
+- Appearance: global card glass density (Off / Low / Medium / High) — frosted blur intensity via CSS variables, like iOS liquid glass
+- Screensaver settings: clearer sections (Behavior → Source & media → Display size & format → On-screen content → Test); preview moved to the bottom Test group
 
 ## 0.4.63
 
