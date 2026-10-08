@@ -192,8 +192,7 @@ export function buildSmartStackChildUpdates(
           (form.image_conditions ?? []).filter((c) => c.image?.trim()).length > 0
             ? (form.image_conditions ?? []).filter((c) => c.image?.trim())
             : undefined,
-        minimal: form.minimal ?? false,
-        scale: form.scale ?? 1,
+        minimal: true,
       };
     case "teamtracker_card":
       return {

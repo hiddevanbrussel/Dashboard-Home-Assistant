@@ -203,6 +203,16 @@ import {
   clampCameraCardWidth,
 } from "@/lib/camera-card";
 import {
+  ENERGY_MONITOR_CARD_DEFAULT_HEIGHT,
+  ENERGY_MONITOR_CARD_DEFAULT_WIDTH,
+  ENERGY_MONITOR_CARD_MAX_HEIGHT,
+  ENERGY_MONITOR_CARD_MAX_WIDTH,
+  ENERGY_MONITOR_CARD_MIN_HEIGHT,
+  ENERGY_MONITOR_CARD_MIN_WIDTH,
+  clampEnergyMonitorCardHeight,
+  clampEnergyMonitorCardWidth,
+} from "@/lib/energy-monitor-card";
+import {
   TEAMTRACKER_CARD_DEFAULT_HEIGHT,
   TEAMTRACKER_CARD_DEFAULT_WIDTH,
   TEAMTRACKER_CARD_MAX_HEIGHT,
@@ -502,7 +512,6 @@ function WidgetByType({
   period,
   max_value,
   grid_entity_id,
-  minimal,
   label,
   color,
   device_entity_ids,
@@ -549,7 +558,6 @@ function WidgetByType({
   icon_background_color?: string;
   max_value?: number;
   grid_entity_id?: string;
-  minimal?: boolean;
   label?: string;
   color?: string;
   device_entity_ids?: string[];
@@ -655,7 +663,6 @@ function WidgetByType({
           background_image={background_image}
           background_image_dark={background_image_dark}
           image_conditions={image_conditions as ImageCondition[] | undefined}
-          minimal={minimal}
           size={sizeProp}
         />
       );
@@ -1461,6 +1468,11 @@ export default function DashboardEditPage() {
       }),
       ...(type === "device_consumption_card" && { device_entity_ids: [], device_names: {} }),
       ...(type === "media_card" && { width: MEDIA_CARD_DEFAULT_WIDTH, height: MEDIA_CARD_DEFAULT_HEIGHT }),
+      ...(type === "energy_monitor_card" && {
+        width: ENERGY_MONITOR_CARD_DEFAULT_WIDTH,
+        height: ENERGY_MONITOR_CARD_DEFAULT_HEIGHT,
+        minimal: true,
+      }),
       ...(type === "camera_card" && {
         width: CAMERA_CARD_DEFAULT_WIDTH,
         height: CAMERA_CARD_DEFAULT_HEIGHT,
@@ -1599,6 +1611,17 @@ export default function DashboardEditPage() {
   function handleMediaCardResize(widgetId: string, size: { width: number; height: number }) {
     const width = clampMediaCardWidth(size.width);
     const height = clampMediaCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleEnergyMonitorCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampEnergyMonitorCardWidth(size.width);
+    const height = clampEnergyMonitorCardHeight(size.height);
     const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
     setWidgets(newWidgets);
     if (editingWidgetId === widgetId) {
@@ -2199,7 +2222,6 @@ export default function DashboardEditPage() {
                       current_entity_id={w.current_entity_id}
                       max_value={w.max_value}
                       grid_entity_id={w.grid_entity_id}
-                      minimal={w.minimal}
                       label={w.label}
                       color={w.color}
                       device_entity_ids={w.device_entity_ids}
@@ -2368,33 +2390,27 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {(() => {
-          const firstEnergyMonitor = widgets.find((w) => w.type === "energy_monitor_card" && widgetPage(w) === pageIndex);
-          return firstEnergyMonitor ? (
+        {widgets
+          .filter((w) => w.type === "energy_monitor_card" && widgetPage(w) === pageIndex)
+          .map((w) => (
             <FloatingEnergyMonitorCard
-              title={firstEnergyMonitor.title ?? t("cardType.energy_monitor_card")}
-              entity_id={firstEnergyMonitor.entity_id}
-              background_image={firstEnergyMonitor.background_image}
-              background_image_dark={firstEnergyMonitor.background_image_dark}
-              image_conditions={firstEnergyMonitor.image_conditions}
-              minimal={firstEnergyMonitor.minimal}
-              scale={firstEnergyMonitor.scale}
+              key={w.id}
+              title={w.title ?? t("cardType.energy_monitor_card")}
+              entity_id={w.entity_id}
+              background_image={w.background_image}
+              background_image_dark={w.background_image_dark}
+              image_conditions={w.image_conditions}
+              width={w.width}
+              height={w.height}
               editMode={editMode}
               storageScope={id}
+              widgetId={w.id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={
-                editMode
-                  ? () => setEditingWidgetId(firstEnergyMonitor.id)
-                  : undefined
-              }
-              onRemove={
-                editMode
-                  ? () => handleRemoveTile(firstEnergyMonitor.id)
-                  : undefined
-              }
+              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+              onResize={editMode ? (size) => handleEnergyMonitorCardResize(w.id, size) : undefined}
             />
-          ) : null;
-        })()}
+          ))}
 
         {(() => {
           const firstPowerUsage = widgets.find((w) => w.type === "power_usage_card" && widgetPage(w) === pageIndex);
@@ -4451,38 +4467,47 @@ export default function DashboardEditPage() {
                     )}
                     {editTab === "weergave" && (
                     <>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="energy-minimal"
-                        checked={editForm.minimal ?? false}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({ ...prev, minimal: e.target.checked }))
-                        }
-                        className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                      />
-                      <label htmlFor="energy-minimal" className="text-sm text-gray-700 dark:text-gray-300">
-                        {t("editPanel.minimal")}
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("editPanel.cardWidthPx")}
                       </label>
+                      <input
+                        type="number"
+                        min={ENERGY_MONITOR_CARD_MIN_WIDTH}
+                        max={ENERGY_MONITOR_CARD_MAX_WIDTH}
+                        step={10}
+                        value={editForm.width ?? ENERGY_MONITOR_CARD_DEFAULT_WIDTH}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10);
+                          setEditForm((prev) => ({
+                            ...prev,
+                            width: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
+                      />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardWidthRangeImage")}</p>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("editPanel.scaleFactor")} ({(editForm.scale ?? 1).toFixed(1)}×)
+                        {t("editPanel.cardHeightPx")}
                       </label>
                       <input
-                        type="range"
-                        min="0.5"
-                        max="1.5"
-                        step="0.1"
-                        value={editForm.scale ?? 1}
-                        onChange={(e) =>
+                        type="number"
+                        min={ENERGY_MONITOR_CARD_MIN_HEIGHT}
+                        max={ENERGY_MONITOR_CARD_MAX_HEIGHT}
+                        step={10}
+                        value={editForm.height ?? ENERGY_MONITOR_CARD_DEFAULT_HEIGHT}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? undefined : parseInt(e.target.value, 10);
                           setEditForm((prev) => ({
                             ...prev,
-                            scale: parseFloat(e.target.value),
-                          }))
-                        }
-                        className="w-full"
+                            height: v != null && !Number.isNaN(v) ? v : undefined,
+                          }));
+                        }}
+                        className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-900 dark:text-gray-200"
                       />
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{t("editPanel.cardHeightRangeImage")}</p>
                     </div>
                     </>
                     )}
@@ -6719,8 +6744,9 @@ aria-label={t("editPanel.removeCondition")}
                           image_conditions: (editForm.image_conditions ?? []).filter((c) => c.image?.trim()).length > 0
                             ? (editForm.image_conditions ?? []).filter((c) => c.image?.trim())
                             : undefined,
-                          minimal: editForm.minimal ?? false,
-                          scale: editForm.scale ?? 1,
+                          minimal: true,
+                          width: clampEnergyMonitorCardWidth(editForm.width ?? ENERGY_MONITOR_CARD_DEFAULT_WIDTH),
+                          height: clampEnergyMonitorCardHeight(editForm.height ?? ENERGY_MONITOR_CARD_DEFAULT_HEIGHT),
                         }),
                         ...(editingWidget.type === "power_usage_card" && {
                           entity_id: editForm.entity_id || undefined,

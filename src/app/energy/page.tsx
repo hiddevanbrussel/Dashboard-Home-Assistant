@@ -38,6 +38,12 @@ import {
   normalizeNutsAccent,
   normalizeNutsPeriod,
 } from "@/lib/nuts-card";
+import {
+  ENERGY_MONITOR_CARD_DEFAULT_HEIGHT,
+  ENERGY_MONITOR_CARD_DEFAULT_WIDTH,
+  clampEnergyMonitorCardHeight,
+  clampEnergyMonitorCardWidth,
+} from "@/lib/energy-monitor-card";
 import type { SensorCondition, ImageCondition } from "@/components/widgets";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
@@ -144,7 +150,6 @@ function WidgetByType({
   period,
   icon_background_color,
   max_value,
-  minimal,
   label,
   color,
   device_entity_ids,
@@ -179,7 +184,6 @@ function WidgetByType({
   period?: "week" | "month";
   icon_background_color?: string;
   max_value?: number;
-  minimal?: boolean;
   label?: string;
   color?: string;
   device_entity_ids?: string[];
@@ -238,7 +242,6 @@ function WidgetByType({
           background_image={background_image}
           background_image_dark={background_image_dark}
           image_conditions={image_conditions as ImageCondition[] | undefined}
-          minimal={minimal}
           size={sizeProp}
         />
       );
@@ -515,6 +518,11 @@ export default function EnergyPage() {
         period: "week" as const,
         icon: "Zap",
       }),
+      ...(type === "energy_monitor_card" && {
+        width: ENERGY_MONITOR_CARD_DEFAULT_WIDTH,
+        height: ENERGY_MONITOR_CARD_DEFAULT_HEIGHT,
+        minimal: true,
+      }),
       ...(type === "energy_metric" && {
         unit: "kWh",
         manual_value: "0",
@@ -565,6 +573,17 @@ export default function EnergyPage() {
   function handleNutsCardResize(widgetId: string, size: { width: number; height: number }) {
     const width = clampNutsCardWidth(size.width);
     const height = clampNutsCardHeight(size.height);
+    const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
+    setWidgets(newWidgets);
+    if (editingWidgetId === widgetId) {
+      setEditForm((prev) => ({ ...prev, width, height }));
+    }
+    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+  }
+
+  function handleEnergyMonitorCardResize(widgetId: string, size: { width: number; height: number }) {
+    const width = clampEnergyMonitorCardWidth(size.width);
+    const height = clampEnergyMonitorCardHeight(size.height);
     const newWidgets = widgets.map((w) => (w.id === widgetId ? { ...w, width, height } : w));
     setWidgets(newWidgets);
     if (editingWidgetId === widgetId) {
@@ -853,7 +872,6 @@ export default function EnergyPage() {
                         period={w.period}
                         icon_background_color={w.icon_background_color}
                         max_value={w.max_value}
-                        minimal={w.minimal}
                         label={w.label}
                         color={w.color}
                         device_entity_ids={w.device_entity_ids}
@@ -944,13 +962,15 @@ export default function EnergyPage() {
                     background_image={w.background_image}
                     background_image_dark={w.background_image_dark}
                     image_conditions={w.image_conditions as ImageCondition[] | undefined}
-                    minimal={w.minimal}
-                    scale={w.scale}
+                    width={w.width}
+                    height={w.height}
                     editMode={editMode}
                     storageScope={`${STORAGE_SCOPE}-${w.id}`}
+                    widgetId={w.id}
                     onEnterEditMode={() => setEditMode(true)}
                     onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
                     onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
+                    onResize={editMode ? (size) => handleEnergyMonitorCardResize(w.id, size) : undefined}
                   />
                 ))}
 
