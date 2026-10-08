@@ -6469,6 +6469,15 @@ aria-label={t("editPanel.removeCondition")}
                       height={clampSmartStackHeight(editForm.height ?? SMART_STACK_DEFAULT_HEIGHT)}
                       paused
                     />
+                  ) : editingWidget.type === "stat_pill_card" ? (
+                    <StatPillCardWidget
+                      title={editForm.title || t("cardType.stat_pill_card")}
+                      entity_id={editForm.entity_id}
+                      label={editForm.label}
+                      icon={editForm.icon || "sun"}
+                      color={(editForm.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
+                      conditions={editForm.conditions}
+                    />
                   ) : (
                     <div className="max-w-xs text-center">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-200">

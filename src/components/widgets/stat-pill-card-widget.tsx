@@ -10,14 +10,14 @@ import { useTranslation } from "@/hooks/use-translation";
 export { STAT_PILL_ICON_OPTIONS, normalizeStatPillIconKey };
 
 const CONDITION_COLORS: Record<string, string> = {
-  red: "border-red-400/70 dark:border-red-400/55 bg-red-500/55 dark:bg-red-900/70",
-  amber: "border-amber-400/70 dark:border-amber-400/55 bg-amber-500/55 dark:bg-amber-900/70",
-  green: "border-green-400/70 dark:border-green-400/55 bg-green-500/55 dark:bg-green-900/70",
-  emerald: "border-emerald-400/70 dark:border-emerald-400/55 bg-emerald-500/55 dark:bg-emerald-900/70",
-  blue: "border-blue-400/70 dark:border-blue-400/55 bg-blue-500/55 dark:bg-blue-900/70",
-  violet: "border-violet-400/70 dark:border-violet-400/55 bg-violet-500/55 dark:bg-violet-900/70",
-  purple: "border-purple-400/70 dark:border-purple-400/55 bg-purple-500/55 dark:bg-purple-900/70",
-  slate: "border-slate-400/70 dark:border-slate-400/55 bg-slate-500/55 dark:bg-slate-900/70",
+  red: "border-red-400/80 dark:border-red-400/60 bg-red-400/80 dark:bg-red-950/85",
+  amber: "border-amber-400/80 dark:border-amber-400/60 bg-amber-400/80 dark:bg-amber-950/85",
+  green: "border-green-400/80 dark:border-green-400/60 bg-green-400/80 dark:bg-green-950/85",
+  emerald: "border-emerald-400/80 dark:border-emerald-400/60 bg-emerald-400/80 dark:bg-emerald-950/85",
+  blue: "border-blue-400/80 dark:border-blue-400/60 bg-blue-400/80 dark:bg-blue-950/85",
+  violet: "border-violet-400/80 dark:border-violet-400/60 bg-violet-400/80 dark:bg-violet-950/85",
+  purple: "border-purple-400/80 dark:border-purple-400/60 bg-purple-400/80 dark:bg-purple-950/85",
+  slate: "border-slate-400/80 dark:border-slate-400/60 bg-slate-400/80 dark:bg-slate-950/85",
 };
 
 const ICON_COLORS: Record<string, string> = {
@@ -93,15 +93,15 @@ function useEntityValue(entityId: string) {
   return { display: str.charAt(0).toUpperCase() + str.slice(1) };
 }
 
-/** Higher opacity than before (/25→/55, dark /30→/70) so pills stay readable on energy backgrounds. */
+/** Higher opacity than before (/25→/80, dark /30→/85) so pills stay readable on energy backgrounds. */
 const PILL_CLASSES: Record<"amber" | "purple" | "emerald" | "red", string> = {
   amber:
-    "border-amber-400/70 dark:border-amber-400/55 bg-amber-500/55 dark:bg-amber-900/70",
+    "border-amber-400/80 dark:border-amber-400/60 bg-amber-400/80 dark:bg-amber-950/85",
   purple:
-    "border-purple-400/70 dark:border-purple-400/55 bg-purple-500/55 dark:bg-purple-900/70",
+    "border-purple-400/80 dark:border-purple-400/60 bg-purple-400/80 dark:bg-purple-950/85",
   emerald:
-    "border-emerald-400/70 dark:border-emerald-400/55 bg-emerald-500/55 dark:bg-emerald-900/70",
-  red: "border-red-400/70 dark:border-red-400/55 bg-red-500/55 dark:bg-red-900/70",
+    "border-emerald-400/80 dark:border-emerald-400/60 bg-emerald-400/80 dark:bg-emerald-950/85",
+  red: "border-red-400/80 dark:border-red-400/60 bg-red-400/80 dark:bg-red-950/85",
 };
 
 const ICON_CLASSES: Record<"amber" | "purple" | "emerald" | "red", string> = {
