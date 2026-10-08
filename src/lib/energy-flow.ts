@@ -32,7 +32,8 @@ export const ENERGY_FLOW_DEMO = {
   selfConsumedKwh: 13.0,
   selfConsumptionPct: 70,
   solarKw: 3.2,
-  importKw: 0,
+  /** Demo powers keep all three mockup flows animating. */
+  importKw: 0.9,
   exportKw: 1.4,
   homeKw: 1.8,
   solarSpark: [0, 0.2, 1.1, 2.4, 3.8, 4.6, 4.9, 4.5, 3.6, 2.2, 0.8, 0.1],

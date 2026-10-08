@@ -613,100 +613,108 @@ export function EnergyFlowOverview({
 
   return (
     <div className="relative z-[1] mx-auto w-full max-w-[90rem] px-3 pb-10 sm:px-5" data-energy-flow-overview>
-      <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,1.35fr)_minmax(0,1fr)] lg:gap-5">
-        <div className="order-2 flex flex-col gap-4 lg:order-1">
-          <div className="card-plot-in card-plot-played">
-            <KpiCard
-              title={t("energy.flow.solarTitle")}
-              value={formatEnergyValue(solarToday, 1)}
-              unit="kWh"
-              subtitle={t("energy.flow.solarSubtitle")}
-              trend={trends.solar}
-              spark={solarSpark}
-              sparkColor="bg-emerald-400"
+      {/* Tall hero so the flow hub sits over the house in the page background */}
+      <div className="relative min-h-[min(72vh,40rem)] lg:min-h-[min(78vh,44rem)]">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center pt-8 lg:pt-16">
+          <div className="pointer-events-auto w-full max-w-2xl px-2 card-plot-in card-plot-played">
+            <FlowScene
+              solarActive={visibility.solar}
+              importActive={visibility.import}
+              exportActive={visibility.export}
+              hubValue={hubDisplay.value}
+              hubUnit={hubDisplay.unit}
+              importLabel={t("energy.flow.import")}
+              importValue={importPillValue}
+              exportLabel={t("energy.flow.export")}
+              exportValue={exportPillValue}
               editMode={editMode}
-              linked={Boolean(entities.solarYieldTodayEntityId || entities.solarPowerEntityId)}
-              onBind={() => setBindKey("solarYieldTodayEntityId")}
-              icon={<Sun className="h-4 w-4 text-amber-500" aria-hidden />}
-              iconTone="bg-amber-400/15"
+              importLinked={Boolean(entities.consumptionEntityId)}
+              exportLinked={Boolean(entities.gridExportEntityId)}
+              onBindImport={() => setBindKey("consumptionEntityId")}
+              onBindExport={() => setBindKey("gridExportEntityId")}
             />
-          </div>
-          <div className="card-plot-in card-plot-played" style={{ animationDelay: "60ms" }}>
-            <KpiCard
-              title={t("energy.flow.consumptionTitle")}
-              value={formatEnergyValue(consumptionToday, 2)}
-              unit="kWh"
-              subtitle={t("energy.flow.consumptionSubtitle")}
-              trend={trends.consumption}
-              trendPositiveIsGood={false}
-              spark={consumptionSpark}
-              sparkColor="bg-sky-400"
-              editMode={editMode}
-              linked={Boolean(entities.homeConsumptionEntityId || entities.consumptionEntityId)}
-              onBind={() => setBindKey("homeConsumptionEntityId")}
-              icon={<Home className="h-4 w-4 text-sky-500" aria-hidden />}
-              iconTone="bg-sky-400/15"
-            />
+            {!linked && !editMode ? (
+              <p className="mt-1 text-center text-[11px] text-gray-500 dark:text-white/40">
+                {t("energy.flow.demoHint")}
+              </p>
+            ) : null}
           </div>
         </div>
 
-        <div className="order-1 card-plot-in card-plot-played lg:order-2">
-          <FlowScene
-            solarActive={visibility.solar}
-            importActive={visibility.import}
-            exportActive={visibility.export}
-            hubValue={hubDisplay.value}
-            hubUnit={hubDisplay.unit}
-            importLabel={t("energy.flow.import")}
-            importValue={importPillValue}
-            exportLabel={t("energy.flow.export")}
-            exportValue={exportPillValue}
-            editMode={editMode}
-            importLinked={Boolean(entities.consumptionEntityId)}
-            exportLinked={Boolean(entities.gridExportEntityId)}
-            onBindImport={() => setBindKey("consumptionEntityId")}
-            onBindExport={() => setBindKey("gridExportEntityId")}
-          />
-          {!linked && !editMode ? (
-            <p className="mt-2 text-center text-[11px] text-gray-500 dark:text-white/40">
-              {t("energy.flow.demoHint")}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="order-3 flex flex-col gap-4">
-          <div className="card-plot-in card-plot-played" style={{ animationDelay: "80ms" }}>
-            <KpiCard
-              title={t("energy.flow.exportTitle")}
-              value={formatEnergyValue(exportToday, 2)}
-              unit="kWh"
-              subtitle={t("energy.flow.exportSubtitle")}
-              trend={trends.export}
-              trendPositiveIsGood
-              spark={exportSpark}
-              sparkColor="bg-amber-400"
-              editMode={editMode}
-              linked={Boolean(entities.gridExportEntityId)}
-              onBind={() => setBindKey("gridExportEntityId")}
-              icon={<TowerControl className="h-4 w-4 text-amber-500" aria-hidden />}
-              iconTone="bg-amber-400/15"
-            />
+        <div className="relative z-[1] grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,1.2fr)_minmax(0,1fr)] lg:gap-5">
+          <div className="flex flex-col gap-4 lg:col-start-1">
+            <div className="card-plot-in card-plot-played">
+              <KpiCard
+                title={t("energy.flow.solarTitle")}
+                value={formatEnergyValue(solarToday, 1)}
+                unit="kWh"
+                subtitle={t("energy.flow.solarSubtitle")}
+                trend={trends.solar}
+                spark={solarSpark}
+                sparkColor="bg-emerald-400"
+                editMode={editMode}
+                linked={Boolean(entities.solarYieldTodayEntityId || entities.solarPowerEntityId)}
+                onBind={() => setBindKey("solarYieldTodayEntityId")}
+                icon={<Sun className="h-4 w-4 text-amber-500" aria-hidden />}
+                iconTone="bg-amber-400/15"
+              />
+            </div>
+            <div className="card-plot-in card-plot-played" style={{ animationDelay: "60ms" }}>
+              <KpiCard
+                title={t("energy.flow.consumptionTitle")}
+                value={formatEnergyValue(consumptionToday, 2)}
+                unit="kWh"
+                subtitle={t("energy.flow.consumptionSubtitle")}
+                trend={trends.consumption}
+                trendPositiveIsGood={false}
+                spark={consumptionSpark}
+                sparkColor="bg-sky-400"
+                editMode={editMode}
+                linked={Boolean(entities.homeConsumptionEntityId || entities.consumptionEntityId)}
+                onBind={() => setBindKey("homeConsumptionEntityId")}
+                icon={<Home className="h-4 w-4 text-sky-500" aria-hidden />}
+                iconTone="bg-sky-400/15"
+              />
+            </div>
           </div>
-          <div className="card-plot-in card-plot-played" style={{ animationDelay: "120ms" }}>
-            <KpiCard
-              title={t("energy.flow.selfTitle")}
-              value={formatEnergyValue(self.pct ?? ENERGY_FLOW_DEMO.selfConsumptionPct, 0)}
-              unit="%"
-              subtitle={t("energy.flow.selfSubtitle")
-                .replace("{used}", formatEnergyValue(self.selfConsumedKwh ?? ENERGY_FLOW_DEMO.selfConsumedKwh, 1))
-                .replace("{total}", formatEnergyValue(solarToday ?? ENERGY_FLOW_DEMO.solarTodayKwh, 1))}
-              donutPct={self.pct ?? ENERGY_FLOW_DEMO.selfConsumptionPct}
-              editMode={editMode}
-              linked={Boolean(entities.solarYieldTodayEntityId)}
-              onBind={() => setBindKey("solarYieldTodayEntityId")}
-              icon={<Leaf className="h-4 w-4 text-emerald-500" aria-hidden />}
-              iconTone="bg-emerald-400/15"
-            />
+
+          {/* Spacer column on large screens — house + flow sit here via absolute layer */}
+          <div className="hidden min-h-[22rem] lg:col-start-2 lg:block" aria-hidden />
+
+          <div className="flex flex-col gap-4 sm:col-span-2 sm:grid sm:grid-cols-2 lg:col-span-1 lg:col-start-3 lg:flex lg:flex-col">
+            <div className="card-plot-in card-plot-played" style={{ animationDelay: "80ms" }}>
+              <KpiCard
+                title={t("energy.flow.exportTitle")}
+                value={formatEnergyValue(exportToday, 2)}
+                unit="kWh"
+                subtitle={t("energy.flow.exportSubtitle")}
+                trend={trends.export}
+                trendPositiveIsGood
+                spark={exportSpark}
+                sparkColor="bg-amber-400"
+                editMode={editMode}
+                linked={Boolean(entities.gridExportEntityId)}
+                onBind={() => setBindKey("gridExportEntityId")}
+                icon={<TowerControl className="h-4 w-4 text-amber-500" aria-hidden />}
+                iconTone="bg-amber-400/15"
+              />
+            </div>
+            <div className="card-plot-in card-plot-played" style={{ animationDelay: "120ms" }}>
+              <KpiCard
+                title={t("energy.flow.selfTitle")}
+                value={formatEnergyValue(self.pct ?? ENERGY_FLOW_DEMO.selfConsumptionPct, 0)}
+                unit="%"
+                subtitle={t("energy.flow.selfSubtitle")
+                  .replace("{used}", formatEnergyValue(self.selfConsumedKwh ?? ENERGY_FLOW_DEMO.selfConsumedKwh, 1))
+                  .replace("{total}", formatEnergyValue(solarToday ?? ENERGY_FLOW_DEMO.solarTodayKwh, 1))}
+                donutPct={self.pct ?? ENERGY_FLOW_DEMO.selfConsumptionPct}
+                editMode={editMode}
+                linked={Boolean(entities.solarYieldTodayEntityId)}
+                onBind={() => setBindKey("solarYieldTodayEntityId")}
+                icon={<Leaf className="h-4 w-4 text-emerald-500" aria-hidden />}
+                iconTone="bg-emerald-400/15"
+              />
+            </div>
           </div>
         </div>
       </div>
