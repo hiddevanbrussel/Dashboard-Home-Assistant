@@ -2,7 +2,7 @@
  * Bust browser / ingress caches when the bundled PNGs change but keep the same path.
  * Bump when replacing `public/energy/energy-bg-*.png`.
  */
-export const ENERGY_PAGE_BG_CACHE_BUST = "20260928f";
+export const ENERGY_PAGE_BG_CACHE_BUST = "20261008a";
 
 /** Energy dashboard hero illustrations (light / dark) — soft gradient panel, not wallpaper. */
 export const ENERGY_PAGE_BG_LIGHT = `/energy/energy-bg-light.png?v=${ENERGY_PAGE_BG_CACHE_BUST}`;

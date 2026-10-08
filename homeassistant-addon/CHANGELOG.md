@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.71
+
+- Energy dashboard: replace bundled light/dark page backgrounds with updated house illustrations; bump PNG cache-bust
+
 ## 0.4.70
 
 - Image card: lower minimum resize size to 48×48 px (was 120×80) so tiny image cards are possible
