@@ -1526,13 +1526,18 @@ export default function MusicPage() {
       }
       headerBelowAction={
         <nav
-          className={cn(
-            "border-y border-black/[0.06] bg-page-light/95 px-4 backdrop-blur-md dark:border-white/10 dark:bg-dark-page/95 sm:px-6",
-            headerOverHero && "border-white/15 bg-black/30"
-          )}
+          className="px-4 pb-2.5 pt-0.5 sm:px-6"
           aria-label={t("music.title")}
         >
-          <div className="-mx-1 flex items-stretch gap-0.5 overflow-x-auto scrollbar-hide py-1.5">
+          <div
+            className={cn(
+              "flex w-max max-w-full items-center gap-0.5 overflow-x-auto scrollbar-hide rounded-full p-0.5",
+              headerOverHero
+                ? "bg-white/10"
+                : "bg-black/[0.05] dark:bg-white/[0.06]"
+            )}
+            role="tablist"
+          >
             {(
               [
                 { id: "home" as const, label: t("music.menuHome"), icon: Home },
@@ -1548,6 +1553,7 @@ export default function MusicPage() {
                 <button
                   key={id}
                   type="button"
+                  role="tab"
                   onClick={() => {
                     setSelectedArtist(null);
                     setSelectedAlbum(null);
@@ -1561,20 +1567,21 @@ export default function MusicPage() {
                     }
                   }}
                   className={cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "relative flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-150",
                     light
                       ? active
-                        ? "bg-white/20 text-white"
+                        ? "bg-white/20 text-white shadow-sm"
                         : "text-white/75 hover:bg-white/10 hover:text-white"
                       : active
-                        ? "bg-black/[0.06] text-gray-900 dark:bg-white/12 dark:text-white"
-                        : "text-gray-600 hover:bg-black/[0.04] hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/8 dark:hover:text-white"
+                        ? "bg-white text-gray-900 shadow-sm dark:bg-white/95 dark:text-gray-900"
+                        : "text-gray-600 hover:bg-white/50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
                   )}
                   aria-label={label}
+                  aria-selected={active}
                   aria-current={active ? "page" : undefined}
                   title={label}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden />
                   <span>{label}</span>
                 </button>
               );

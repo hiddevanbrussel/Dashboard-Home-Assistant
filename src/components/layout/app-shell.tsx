@@ -376,6 +376,7 @@ export function AppShell({
             data-app-chrome
             className={cn(
               "relative z-[70] shrink-0",
+              headerContentLight ? "header-chrome-glass-over-media" : "header-chrome-glass",
               headerFixed && "absolute inset-x-0 top-0"
             )}
           >

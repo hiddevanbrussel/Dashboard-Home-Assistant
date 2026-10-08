@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.64
+
+- Topbar: frosted glass background (backdrop blur + translucent fill) so scrolled content no longer reads through the header; covers main header and music subnav chrome
+- Music: polish Home / Artists / Albums / Playlists / Podcasts tabs into a segmented pill control matching the rest of the UI
+
 ## 0.4.63
 
 - Trash card: bold/light title split (e.g. “Eerstvolgende” / “ophaalmoment”), accent underline, waste-type chip centered vertically, remove unused chevron on the info chip
