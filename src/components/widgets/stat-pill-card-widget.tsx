@@ -4,29 +4,31 @@ import { MoreVertical } from "lucide-react";
 import type { StatPillCardProps, SensorCondition } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-import { CARD_ICONS } from "./card-icons";
+import { CARD_ICONS, STAT_PILL_ICON_OPTIONS, normalizeStatPillIconKey } from "./card-icons";
 import { useTranslation } from "@/hooks/use-translation";
 
+export { STAT_PILL_ICON_OPTIONS, normalizeStatPillIconKey };
+
 const CONDITION_COLORS: Record<string, string> = {
-  red: "border-red-400/50 dark:border-red-400/40 bg-red-500/25 dark:bg-red-900/30",
-  amber: "border-amber-400/50 dark:border-amber-400/40 bg-amber-500/25 dark:bg-amber-900/30",
-  green: "border-green-400/50 dark:border-green-400/40 bg-green-500/25 dark:bg-green-900/30",
-  emerald: "border-emerald-400/50 dark:border-emerald-400/40 bg-emerald-500/25 dark:bg-emerald-900/30",
-  blue: "border-blue-400/50 dark:border-blue-400/40 bg-blue-500/25 dark:bg-blue-900/30",
-  violet: "border-violet-400/50 dark:border-violet-400/40 bg-violet-500/25 dark:bg-violet-900/30",
-  purple: "border-purple-400/50 dark:border-purple-400/40 bg-purple-500/25 dark:bg-purple-900/30",
-  slate: "border-slate-400/50 dark:border-slate-400/40 bg-slate-500/25 dark:bg-slate-900/30",
+  red: "border-red-400/80 dark:border-red-400/60 bg-red-400/80 dark:bg-red-950/85",
+  amber: "border-amber-400/80 dark:border-amber-400/60 bg-amber-400/80 dark:bg-amber-950/85",
+  green: "border-green-400/80 dark:border-green-400/60 bg-green-400/80 dark:bg-green-950/85",
+  emerald: "border-emerald-400/80 dark:border-emerald-400/60 bg-emerald-400/80 dark:bg-emerald-950/85",
+  blue: "border-blue-400/80 dark:border-blue-400/60 bg-blue-400/80 dark:bg-blue-950/85",
+  violet: "border-violet-400/80 dark:border-violet-400/60 bg-violet-400/80 dark:bg-violet-950/85",
+  purple: "border-purple-400/80 dark:border-purple-400/60 bg-purple-400/80 dark:bg-purple-950/85",
+  slate: "border-slate-400/80 dark:border-slate-400/60 bg-slate-400/80 dark:bg-slate-950/85",
 };
 
 const ICON_COLORS: Record<string, string> = {
-  red: "text-red-600 dark:text-red-300",
-  amber: "text-amber-600 dark:text-amber-400",
-  green: "text-green-600 dark:text-green-300",
-  emerald: "text-emerald-600 dark:text-emerald-300",
-  blue: "text-blue-600 dark:text-blue-300",
-  violet: "text-violet-600 dark:text-violet-300",
-  purple: "text-purple-600 dark:text-purple-300",
-  slate: "text-slate-600 dark:text-slate-300",
+  red: "text-red-700 dark:text-red-200",
+  amber: "text-amber-800 dark:text-amber-200",
+  green: "text-green-700 dark:text-green-200",
+  emerald: "text-emerald-800 dark:text-emerald-200",
+  blue: "text-blue-700 dark:text-blue-200",
+  violet: "text-violet-700 dark:text-violet-200",
+  purple: "text-purple-700 dark:text-purple-200",
+  slate: "text-slate-700 dark:text-slate-200",
 };
 
 function matchCondition(state: string | undefined, conditions: SensorCondition[] | undefined): string | null {
@@ -91,21 +93,22 @@ function useEntityValue(entityId: string) {
   return { display: str.charAt(0).toUpperCase() + str.slice(1) };
 }
 
+/** Higher opacity than before (/25→/80, dark /30→/85) so pills stay readable on energy backgrounds. */
 const PILL_CLASSES: Record<"amber" | "purple" | "emerald" | "red", string> = {
   amber:
-    "border-amber-400/50 dark:border-amber-400/40 bg-amber-500/25 dark:bg-amber-900/30",
+    "border-amber-400/80 dark:border-amber-400/60 bg-amber-400/80 dark:bg-amber-950/85",
   purple:
-    "border-purple-400/50 dark:border-purple-400/40 bg-purple-500/25 dark:bg-purple-900/30",
+    "border-purple-400/80 dark:border-purple-400/60 bg-purple-400/80 dark:bg-purple-950/85",
   emerald:
-    "border-emerald-400/50 dark:border-emerald-400/40 bg-emerald-500/25 dark:bg-emerald-900/30",
-  red: "border-red-400/50 dark:border-red-400/40 bg-red-500/25 dark:bg-red-900/30",
+    "border-emerald-400/80 dark:border-emerald-400/60 bg-emerald-400/80 dark:bg-emerald-950/85",
+  red: "border-red-400/80 dark:border-red-400/60 bg-red-400/80 dark:bg-red-950/85",
 };
 
 const ICON_CLASSES: Record<"amber" | "purple" | "emerald" | "red", string> = {
-  amber: "text-amber-600 dark:text-amber-400",
-  purple: "text-purple-600 dark:text-purple-300",
-  emerald: "text-emerald-600 dark:text-emerald-300",
-  red: "text-red-600 dark:text-red-300",
+  amber: "text-amber-800 dark:text-amber-200",
+  purple: "text-purple-700 dark:text-purple-200",
+  emerald: "text-emerald-800 dark:text-emerald-200",
+  red: "text-red-700 dark:text-red-200",
 };
 
 export const STAT_PILL_CONDITION_COLORS = Object.keys(CONDITION_COLORS);
@@ -128,7 +131,9 @@ export function StatPillCardWidget({
   const state = entity?.state as string | undefined;
   const { display } = useEntityValue(entity_id);
   const IconComponent =
-    iconName && CARD_ICONS[iconName] ? CARD_ICONS[iconName] : CARD_ICONS.Sun;
+    (iconName && CARD_ICONS[iconName]) ||
+    CARD_ICONS[normalizeStatPillIconKey(iconName)] ||
+    CARD_ICONS.sun;
   const matchedColor = matchCondition(state, conditions);
   const pillClass = matchedColor && CONDITION_COLORS[matchedColor]
     ? CONDITION_COLORS[matchedColor]

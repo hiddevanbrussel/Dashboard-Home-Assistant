@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.67
+
+- Stat pill card: visual icon picker (plug-zap, zap, sun, solar-panel, circle-arrow-up/down, lightbulb, zap-off, air-vent)
+- Stat pill card: less transparent background (`/25`→`/80`) for better readability on energy backgrounds
+
 ## 0.4.66
 
 - Topbar: full viewport width again (edge-to-edge, including behind the sidebar)

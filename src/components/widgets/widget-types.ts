@@ -189,7 +189,7 @@ export type TitleCardProps = {
 export type StatPillCardProps = WidgetBaseProps & {
   /** Label onder de waarde (bijv. "Opbrengst", "Verbruik"). */
   label?: string;
-  /** Icoon (Lucide-naam uit card-icons); default Sun. */
+  /** Icoon (kebab-case Lucide key, bijv. "zap", "solar-panel"); default "sun". */
   icon?: string;
   /** Kleurthema: amber, purple, emerald, red. */
   color?: "amber" | "purple" | "emerald" | "red";
