@@ -82,8 +82,19 @@ describe("immich-url", () => {
         kind: "preview",
       })
     ).toBe(
-      "/api/immich/asset?baseUrl=http%3A%2F%2Fphotos.lan%3A2283&apiKey=secret&id=11111111-2222-4333-8444-555555555555&kind=preview"
+      "/api/immich/asset?id=11111111-2222-4333-8444-555555555555&kind=preview&baseUrl=http%3A%2F%2Fphotos.lan%3A2283&apiKey=secret"
     );
+  });
+
+  it("omits empty baseUrl/apiKey so Docker env can supply them", () => {
+    expect(
+      buildImmichAssetProxyUrl({
+        baseUrl: "",
+        apiKey: "",
+        id: "11111111-2222-4333-8444-555555555555",
+        kind: "video",
+      })
+    ).toBe("/api/immich/asset?id=11111111-2222-4333-8444-555555555555&kind=video");
   });
 
   it("picks a random asset from an Immich search payload", () => {
