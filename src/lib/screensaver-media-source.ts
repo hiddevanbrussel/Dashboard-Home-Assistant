@@ -41,8 +41,18 @@ export function isPexelsSourceReady(
   return enabled && (apiKey.trim().length > 0 || envConfigured);
 }
 
-export function isImmichSourceReady(enabled: boolean, baseUrl: string, apiKey: string): boolean {
-  return enabled && baseUrl.trim().length > 0 && apiKey.trim().length > 0;
+export function isImmichSourceReady(
+  enabled: boolean,
+  baseUrl: string,
+  apiKey: string,
+  /** True when Docker/server has IMMICH_API_KEY (client key optional). */
+  envKeyConfigured = false,
+  /** True when Docker/server has IMMICH_URL (client URL optional). */
+  envUrlConfigured = false
+): boolean {
+  const hasUrl = baseUrl.trim().length > 0 || envUrlConfigured;
+  const hasKey = apiKey.trim().length > 0 || envKeyConfigured;
+  return enabled && hasUrl && hasKey;
 }
 
 export function resolveScreensaverPlayback(input: {
@@ -57,6 +67,10 @@ export function resolveScreensaverPlayback(input: {
   immichUrl: string;
   immichKey: string;
   immichType: "photo" | "video";
+  /** True when Docker/server has IMMICH_API_KEY (client key optional). */
+  immichEnvKeyConfigured?: boolean;
+  /** True when Docker/server has IMMICH_URL (client URL optional). */
+  immichEnvUrlConfigured?: boolean;
 }): ScreensaverPlayback {
   if (input.source === "custom") {
     const url = input.customUrl.trim();
@@ -69,7 +83,15 @@ export function resolveScreensaverPlayback(input: {
     return input.pexelsType === "video" ? { mode: "pexels-video" } : { mode: "pexels-photo" };
   }
   if (input.source === "immich") {
-    if (!isImmichSourceReady(input.immichEnabled, input.immichUrl, input.immichKey)) {
+    if (
+      !isImmichSourceReady(
+        input.immichEnabled,
+        input.immichUrl,
+        input.immichKey,
+        input.immichEnvKeyConfigured,
+        input.immichEnvUrlConfigured
+      )
+    ) {
       return { mode: "default" };
     }
     return input.immichType === "video" ? { mode: "immich-video" } : { mode: "immich-photo" };

@@ -554,6 +554,8 @@ function ScreensaverOverlay({
   const pexelsApiKey = getScreensaverPexelsApiKey();
   const pexelsType = getScreensaverPexelsType();
   const [pexelsEnvConfigured, setPexelsEnvConfigured] = useState(false);
+  const [immichEnvKeyConfigured, setImmichEnvKeyConfigured] = useState(false);
+  const [immichEnvUrlConfigured, setImmichEnvUrlConfigured] = useState(false);
   const immich = useImmichStore();
 
   useEffect(() => {
@@ -564,6 +566,16 @@ function ScreensaverOverlay({
         if (!cancelled && data && typeof data.envConfigured === "boolean") {
           setPexelsEnvConfigured(data.envConfigured);
         }
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    fetch("/api/immich/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (typeof data.envKeyConfigured === "boolean") setImmichEnvKeyConfigured(data.envKeyConfigured);
+        if (typeof data.envUrlConfigured === "boolean") setImmichEnvUrlConfigured(data.envUrlConfigured);
       })
       .catch(() => {
         /* ignore */
@@ -584,6 +596,8 @@ function ScreensaverOverlay({
     immichUrl: immich.baseUrl,
     immichKey: immich.apiKey,
     immichType: immich.mediaType,
+    immichEnvKeyConfigured,
+    immichEnvUrlConfigured,
   });
   const clockPosition = getScreensaverClockPosition();
   const clockSize = getScreensaverClockSize();
@@ -705,7 +719,7 @@ function ScreensaverOverlay({
   }, [pexelsApiKey, pexelsQuery, applyPhoto]);
 
   const fetchImmichPhoto = useCallback(() => {
-    if (!immich.baseUrl || !immich.apiKey) return;
+    if ((!immich.baseUrl && !immichEnvUrlConfigured) || (!immich.apiKey && !immichEnvKeyConfigured)) return;
     setMediaError(false);
     immichRequest({
       baseUrl: immich.baseUrl,
@@ -734,7 +748,14 @@ function ScreensaverOverlay({
         applyPhoto(imageUrl, { photographer: "Immich", provider: "immich" });
       })
       .catch(() => setMediaError(true));
-  }, [immich.baseUrl, immich.apiKey, immich.albumId, applyPhoto]);
+  }, [
+    immich.baseUrl,
+    immich.apiKey,
+    immich.albumId,
+    immichEnvKeyConfigured,
+    immichEnvUrlConfigured,
+    applyPhoto,
+  ]);
 
   const fetchRemotePhoto = useCallback(() => {
     if (playback.mode === "pexels-photo") fetchPexelsPhoto();
@@ -803,7 +824,7 @@ function ScreensaverOverlay({
   }, [pexelsApiKey, pexelsQuery, applyVideo]);
 
   const fetchImmichVideo = useCallback(() => {
-    if (!immich.baseUrl || !immich.apiKey) return;
+    if ((!immich.baseUrl && !immichEnvUrlConfigured) || (!immich.apiKey && !immichEnvKeyConfigured)) return;
     if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current);
     immichRequest({
       baseUrl: immich.baseUrl,
@@ -833,7 +854,14 @@ function ScreensaverOverlay({
         );
       })
       .catch(() => setMediaError(true));
-  }, [immich.baseUrl, immich.apiKey, immich.albumId, applyVideo]);
+  }, [
+    immich.baseUrl,
+    immich.apiKey,
+    immich.albumId,
+    immichEnvKeyConfigured,
+    immichEnvUrlConfigured,
+    applyVideo,
+  ]);
 
   const fetchRemoteVideo = useCallback(() => {
     if (playback.mode === "pexels-video") fetchPexelsVideo();

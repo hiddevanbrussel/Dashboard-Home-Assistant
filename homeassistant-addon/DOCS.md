@@ -21,6 +21,10 @@ The first start pulls the pre-built image from GitHub Container Registry and may
 |---|---|
 | `app_secret` | Optional. Encryption secret (min. 32 characters). Leave empty to auto-generate a stable secret stored in the app data. |
 | `pexels_api_key` | Optional. [Pexels](https://www.pexels.com/api/) key for screensaver media. |
+| `immich_url` | Optional. Immich base URL (e.g. `http://192.168.1.50:2283`). Overrides the browser-stored URL when set. |
+| `immich_api_key` | Optional. Immich API key for screensaver media. Overrides the browser-stored key when set. |
+| `music_assistant_url` | Optional. Music Assistant base URL (e.g. `http://192.168.1.50:8095`). Overrides the browser-stored URL when set. |
+| `music_assistant_token` | Optional. Music Assistant API token. Overrides the browser-stored token when set. |
 | `default_language` | UI language: `en` or `nl`. |
 
 ## Connecting Home Assistant

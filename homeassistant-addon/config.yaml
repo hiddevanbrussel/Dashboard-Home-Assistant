@@ -1,5 +1,5 @@
 name: Dashboard Builder
-version: "0.4.70"
+version: "0.4.71"
 slug: dashboard_builder
 description: Touchscreen-friendly Home Assistant dashboard with widgets, rooms, energy, and more.
 url: https://github.com/hiddevanbrussel/Dashboard-Home-Assistant
@@ -21,9 +21,17 @@ ports_description:
 options:
   app_secret: ""
   pexels_api_key: ""
+  immich_url: ""
+  immich_api_key: ""
+  music_assistant_url: ""
+  music_assistant_token: ""
   default_language: en
 schema:
   app_secret: password
   pexels_api_key: str?
+  immich_url: str?
+  immich_api_key: password
+  music_assistant_url: str?
+  music_assistant_token: password
   default_language: list(en|nl)
 image: ghcr.io/hiddevanbrussel/dashboard-home-assistant-addon/{arch}

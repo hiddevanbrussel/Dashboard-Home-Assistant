@@ -6,10 +6,18 @@ OPTIONS_FILE=/data/options.json
 if [ -f "$OPTIONS_FILE" ]; then
   APP_SECRET=$(jq -r '.app_secret // empty' "$OPTIONS_FILE")
   PEXELS_API_KEY=$(jq -r '.pexels_api_key // empty' "$OPTIONS_FILE")
+  IMMICH_URL=$(jq -r '.immich_url // empty' "$OPTIONS_FILE")
+  IMMICH_API_KEY=$(jq -r '.immich_api_key // empty' "$OPTIONS_FILE")
+  MUSIC_ASSISTANT_URL=$(jq -r '.music_assistant_url // empty' "$OPTIONS_FILE")
+  MUSIC_ASSISTANT_TOKEN=$(jq -r '.music_assistant_token // empty' "$OPTIONS_FILE")
   DEFAULT_LANGUAGE=$(jq -r '.default_language // "en"' "$OPTIONS_FILE")
 else
   APP_SECRET=""
   PEXELS_API_KEY=""
+  IMMICH_URL=""
+  IMMICH_API_KEY=""
+  MUSIC_ASSISTANT_URL=""
+  MUSIC_ASSISTANT_TOKEN=""
   DEFAULT_LANGUAGE="en"
 fi
 
@@ -30,6 +38,18 @@ export UPLOAD_DIR="${UPLOAD_DIR:-/data/uploads}"
 export NEXT_PUBLIC_DEFAULT_LANGUAGE="$DEFAULT_LANGUAGE"
 if [ -n "$PEXELS_API_KEY" ] && [ "$PEXELS_API_KEY" != "null" ]; then
   export PEXELS_API_KEY
+fi
+if [ -n "$IMMICH_URL" ] && [ "$IMMICH_URL" != "null" ]; then
+  export IMMICH_URL
+fi
+if [ -n "$IMMICH_API_KEY" ] && [ "$IMMICH_API_KEY" != "null" ]; then
+  export IMMICH_API_KEY
+fi
+if [ -n "$MUSIC_ASSISTANT_URL" ] && [ "$MUSIC_ASSISTANT_URL" != "null" ]; then
+  export MUSIC_ASSISTANT_URL
+fi
+if [ -n "$MUSIC_ASSISTANT_TOKEN" ] && [ "$MUSIC_ASSISTANT_TOKEN" != "null" ]; then
+  export MUSIC_ASSISTANT_TOKEN
 fi
 
 export HA_ADDON="1"

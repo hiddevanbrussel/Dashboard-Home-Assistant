@@ -27,26 +27,47 @@ export function ImmichSettings() {
   const [port, setPort] = useState(parsed.port);
   const [https, setHttps] = useState(parsed.protocol === "https");
   const [apiKey, setApiKey] = useState(store.apiKey);
+  const [envKeyConfigured, setEnvKeyConfigured] = useState(false);
+  const [envUrlConfigured, setEnvUrlConfigured] = useState(false);
+  const [envUrl, setEnvUrl] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<"ok" | string | null>(null);
   const [albums, setAlbums] = useState<ImmichAlbum[]>([]);
 
   useEffect(() => {
-    const next = parseImmichEndpoint(store.baseUrl);
+    const next = parseImmichEndpoint(store.baseUrl || envUrl || "");
     setHost(next.host);
     setPort(next.port);
     setHttps(next.protocol === "https");
-  }, [store.baseUrl]);
+  }, [store.baseUrl, envUrl]);
 
   useEffect(() => {
     setApiKey(store.apiKey);
   }, [store.apiKey]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/immich/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (typeof data.envKeyConfigured === "boolean") setEnvKeyConfigured(data.envKeyConfigured);
+        if (typeof data.envUrlConfigured === "boolean") setEnvUrlConfigured(data.envUrlConfigured);
+        if (typeof data.envUrl === "string" && data.envUrl) setEnvUrl(data.envUrl);
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function applyConnectionFields() {
     const url = buildImmichBaseUrl(host, port, https ? "https" : "http");
     if (url) store.setBaseUrl(url);
     store.setApiKey(apiKey.trim());
-    return url;
+    return url || envUrl || "";
   }
 
   async function loadAlbums(url: string, key: string) {
@@ -63,20 +84,22 @@ export function ImmichSettings() {
   }
 
   useEffect(() => {
-    if (!store.enabled || !store.baseUrl || !store.apiKey) return;
-    void loadAlbums(store.baseUrl, store.apiKey);
+    const effectiveUrl = store.baseUrl || envUrl || "";
+    const hasKey = Boolean(store.apiKey) || envKeyConfigured;
+    if (!store.enabled || !effectiveUrl || !hasKey) return;
+    void loadAlbums(effectiveUrl, store.apiKey);
     // Intentionally load once when the panel opens with an existing connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [envKeyConfigured, envUrl]);
 
   async function testAndConnect() {
     setTestResult(null);
     const url = applyConnectionFields();
-    if (!url) {
+    if (!url && !envUrlConfigured) {
       setTestResult(t("settings.immich.hostRequired"));
       return;
     }
-    if (!apiKey.trim()) {
+    if (!apiKey.trim() && !envKeyConfigured) {
       setTestResult(t("settings.immich.apiKeyRequired"));
       return;
     }
@@ -106,7 +129,14 @@ export function ImmichSettings() {
         description={t("settings.immich.enabledHint")}
       />
       <SettingsGroup title={t("settings.immich.connection")}>
-        <SettingsField label={t("settings.immich.host")} htmlFor="immich-host">
+        {envKeyConfigured || envUrlConfigured ? (
+          <SettingsAlert tone="ok">{t("settings.immich.envConfigured")}</SettingsAlert>
+        ) : null}
+        <SettingsField
+          label={t("settings.immich.host")}
+          hint={envUrlConfigured ? t("settings.immich.hostOptionalHint") : undefined}
+          htmlFor="immich-host"
+        >
           <SettingsInput
             id="immich-host"
             value={host}
@@ -137,7 +167,7 @@ export function ImmichSettings() {
         />
         <SettingsField
           label={t("settings.immich.apiKey")}
-          hint={t("settings.immich.apiKeyHint")}
+          hint={envKeyConfigured ? t("settings.immich.apiKeyOptionalHint") : t("settings.immich.apiKeyHint")}
           htmlFor="immich-key"
         >
           <SettingsInput

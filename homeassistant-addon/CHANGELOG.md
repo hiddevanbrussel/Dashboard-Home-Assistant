@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.71
+
+- Docker / add-on: pass Immich and Music Assistant credentials via env (`IMMICH_URL`, `IMMICH_API_KEY`, `MUSIC_ASSISTANT_URL`, `MUSIC_ASSISTANT_TOKEN`) or matching add-on options; server env overrides browser-stored values
+- Settings → Apps: show when Immich / Music Assistant keys come from the server (same pattern as Pexels)
+
 ## 0.4.70
 
 - Image card: lower minimum resize size to 48×48 px (was 120×80) so tiny image cards are possible

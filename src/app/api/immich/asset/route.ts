@@ -1,22 +1,26 @@
 import { NextResponse } from "next/server";
-import {
-  isSafeImmichAssetId,
-  isSafeImmichBaseUrl,
-  joinImmichUrl,
-} from "@/lib/immich-url";
+import { resolveImmichApiKey, resolveImmichBaseUrl } from "@/lib/immich-env";
+import { isSafeImmichAssetId, joinImmichUrl } from "@/lib/immich-url";
 
 /**
  * Stream an Immich thumbnail or video through this app so the screensaver can
  * use a same-origin URL (and Range requests keep working for video).
+ * Prefers Docker/env `IMMICH_URL` + `IMMICH_API_KEY` over query params.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const baseUrl = (searchParams.get("baseUrl") ?? "").replace(/\/+$/, "");
-  const apiKey = (searchParams.get("apiKey") ?? "").trim();
+  const { baseUrl } = resolveImmichBaseUrl({
+    envUrl: process.env.IMMICH_URL,
+    bodyUrl: searchParams.get("baseUrl"),
+  });
+  const { apiKey } = resolveImmichApiKey({
+    envKey: process.env.IMMICH_API_KEY,
+    bodyKey: searchParams.get("apiKey"),
+  });
   const id = (searchParams.get("id") ?? "").trim();
   const kind = searchParams.get("kind") === "video" ? "video" : "preview";
 
-  if (!isSafeImmichBaseUrl(baseUrl) || !isSafeImmichAssetId(id) || !apiKey) {
+  if (!baseUrl || !isSafeImmichAssetId(id) || !apiKey) {
     return NextResponse.json({ error: "Invalid Immich asset request" }, { status: 400 });
   }
 
