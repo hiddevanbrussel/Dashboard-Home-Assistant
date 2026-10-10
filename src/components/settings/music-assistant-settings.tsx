@@ -34,6 +34,9 @@ export function MusicAssistantSettings() {
   const [port, setPort] = useState(parsed.port);
   const [https, setHttps] = useState(parsed.protocol === "https");
   const [apiKey, setApiKey] = useState(musicAssistant.token);
+  const [envTokenConfigured, setEnvTokenConfigured] = useState(false);
+  const [envUrlConfigured, setEnvUrlConfigured] = useState(false);
+  const [envUrl, setEnvUrl] = useState<string | null>(null);
   const [maTab, setMaTab] = useState<MaTab>(musicAssistant.enabled ? "speakers" : "connection");
   const [maTestResult, setMaTestResult] = useState<"ok" | string | null>(null);
   const [maTesting, setMaTesting] = useState(false);
@@ -42,31 +45,49 @@ export function MusicAssistantSettings() {
   const [newPlaylistId, setNewPlaylistId] = useState("");
 
   useEffect(() => {
-    const next = parseMusicAssistantEndpoint(musicAssistant.baseUrl);
+    const next = parseMusicAssistantEndpoint(musicAssistant.baseUrl || envUrl || "");
     setHost(next.host);
     setPort(next.port);
     setHttps(next.protocol === "https");
-  }, [musicAssistant.baseUrl]);
+  }, [musicAssistant.baseUrl, envUrl]);
 
   useEffect(() => {
     setApiKey(musicAssistant.token);
   }, [musicAssistant.token]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/music-assistant/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (typeof data.envTokenConfigured === "boolean") setEnvTokenConfigured(data.envTokenConfigured);
+        if (typeof data.envUrlConfigured === "boolean") setEnvUrlConfigured(data.envUrlConfigured);
+        if (typeof data.envUrl === "string" && data.envUrl) setEnvUrl(data.envUrl);
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function applyConnectionFields() {
     const url = buildMusicAssistantBaseUrl(host, port, https ? "https" : "http");
     if (url) musicAssistant.setBaseUrl(url);
     musicAssistant.setToken(apiKey.trim());
-    return url;
+    return url || envUrl || "";
   }
 
   async function testAndConnect() {
     setMaTestResult(null);
     const url = applyConnectionFields();
-    if (!url) {
+    if (!url && !envUrlConfigured) {
       setMaTestResult(t("settings.musicAssistant.hostRequired"));
       return;
     }
-    if (!apiKey.trim()) {
+    if (!apiKey.trim() && !envTokenConfigured) {
       setMaTestResult(t("settings.musicAssistant.apiKeyRequired"));
       return;
     }
@@ -104,7 +125,7 @@ export function MusicAssistantSettings() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          baseUrl: musicAssistant.baseUrl,
+          baseUrl: musicAssistant.baseUrl || envUrl || "",
           token: musicAssistant.token,
           command: "player_queues/all",
           args: {},
@@ -121,7 +142,12 @@ export function MusicAssistantSettings() {
     }
   }
 
-  const connected = Boolean(musicAssistant.enabled && musicAssistant.baseUrl && musicAssistant.token);
+  const effectiveBaseUrl = musicAssistant.baseUrl || envUrl || "";
+  const connected = Boolean(
+    musicAssistant.enabled &&
+      effectiveBaseUrl &&
+      (musicAssistant.token || envTokenConfigured)
+  );
 
   return (
     <div className="space-y-5">
@@ -161,8 +187,15 @@ export function MusicAssistantSettings() {
           <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400">
             {t("settings.musicAssistant.connectionHint")}
           </p>
+          {envTokenConfigured || envUrlConfigured ? (
+            <SettingsAlert tone="ok">{t("settings.musicAssistant.envConfigured")}</SettingsAlert>
+          ) : null}
           <div className="grid gap-4 sm:grid-cols-[1fr_7rem]">
-            <SettingsField label={t("settings.musicAssistant.host")} htmlFor="ma-host">
+            <SettingsField
+              label={t("settings.musicAssistant.host")}
+              hint={envUrlConfigured ? t("settings.musicAssistant.hostOptionalHint") : undefined}
+              htmlFor="ma-host"
+            >
               <SettingsInput
                 id="ma-host"
                 type="text"
@@ -190,7 +223,11 @@ export function MusicAssistantSettings() {
           />
           <SettingsField
             label={t("settings.musicAssistant.apiKey")}
-            hint={t("settings.musicAssistant.apiKeyHint")}
+            hint={
+              envTokenConfigured
+                ? t("settings.musicAssistant.apiKeyOptionalHint")
+                : t("settings.musicAssistant.apiKeyHint")
+            }
             htmlFor="ma-key"
           >
             <SettingsInput
@@ -227,7 +264,7 @@ export function MusicAssistantSettings() {
             >
               <SettingsSecondaryButton
                 onClick={loadSpeakers}
-                disabled={maPlayersLoading || !musicAssistant.baseUrl}
+                disabled={maPlayersLoading || !effectiveBaseUrl}
               >
                 {maPlayersLoading ? t("settings.musicAssistant.testing") : t("settings.musicAssistant.loadSpeakers")}
               </SettingsSecondaryButton>

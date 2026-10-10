@@ -134,7 +134,11 @@ services:
       - ha-dashboard-data:/data
     environment:
       - APP_SECRET=change-this-to-a-random-32-char-secret
-      - PEXELS_API_KEY=        # optional — get a free key at pexels.com/api
+      - PEXELS_API_KEY=              # optional — get a free key at pexels.com/api
+      - IMMICH_URL=                 # optional — e.g. http://192.168.1.50:2283
+      - IMMICH_API_KEY=             # optional — Immich API key
+      - MUSIC_ASSISTANT_URL=        # optional — e.g. http://192.168.1.50:8095
+      - MUSIC_ASSISTANT_TOKEN=      # optional — Music Assistant API token
 
 volumes:
   ha-dashboard-data:
@@ -155,7 +159,7 @@ docker compose up -d
    ```
 3. Map port **3000** and set a host path for `/data` (e.g. `/mnt/user/appdata/ha-dashboard`).
 4. Add the environment variable `APP_SECRET` with a random string.
-5. Optionally add `PEXELS_API_KEY` for screensaver photos/videos.
+5. Optionally add `PEXELS_API_KEY` for screensaver photos/videos, and/or `IMMICH_URL` + `IMMICH_API_KEY`, and/or `MUSIC_ASSISTANT_URL` + `MUSIC_ASSISTANT_TOKEN`.
 
 You can also import the template from the repository: [`unraid-template.xml`](unraid-template.xml)
 
@@ -190,6 +194,10 @@ Base URL examples:
 | `APP_SECRET` | Yes | Random secret for session encryption (min. 32 characters) |
 | `DATABASE_URL` | No | SQLite path (default: `file:/data/app.db`) |
 | `PEXELS_API_KEY` | No | Free key from [pexels.com/api](https://www.pexels.com/api/) for screensaver media |
+| `IMMICH_URL` | No | Immich base URL (e.g. `http://192.168.1.50:2283`). Takes priority over Settings → Apps → Immich |
+| `IMMICH_API_KEY` | No | Immich API key for screensaver media. Takes priority over a browser-stored key |
+| `MUSIC_ASSISTANT_URL` | No | Music Assistant base URL (e.g. `http://192.168.1.50:8095`). Takes priority over Settings |
+| `MUSIC_ASSISTANT_TOKEN` | No | Music Assistant API token. Takes priority over a browser-stored token |
 | `NEXT_PUBLIC_APP_NAME` | No | App name shown in the browser title |
 | `NEXT_PUBLIC_DEFAULT_LANGUAGE` | No | Default UI language: `en` (English) or `nl` (Dutch) |
 
@@ -212,14 +220,14 @@ A plain `docker pull` is not enough — the container must be recreated to run t
 ### Unraid
 
 1. Open the container → **Force update** (or apply update if shown).
-2. Confirm **Settings → System** shows the new version (e.g. `0.4.70`).
+2. Confirm **Settings → System** shows the new version (e.g. `0.4.72`).
 
 ### Home Assistant addon
 
 Supervisor only offers an update when the addon **version** in `config.yaml` increases. After a release:
 
 1. **Settings → Add-ons → Add-on store** → ⋮ → **Check for updates** (or refresh your custom repository).
-2. Update **Dashboard Builder** when `0.4.70` (or newer) appears.
+2. Update **Dashboard Builder** when `0.4.72` (or newer) appears.
 3. Confirm the version under the addon info / in-app **Settings → System**.
 
 The current version is shown in **Settings → System**.

@@ -3,6 +3,7 @@ import { createHash } from "crypto";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
+import { resolveMusicAssistantBaseUrl, resolveMusicAssistantToken } from "@/lib/music-assistant-env";
 
 const IMAGE_CACHE_MAX = 350;
 const imageCache = new Map<
@@ -83,13 +84,20 @@ const ALLOWED_IMAGE_HOSTS = new Set([
 /**
  * GET /api/music-assistant-image?baseUrl=...&token=...&url=...
  * Proxies image requests to Music Assistant so auth and CORS work.
+ * Prefers Docker/env `MUSIC_ASSISTANT_URL` + `MUSIC_ASSISTANT_TOKEN` over query params.
  * Also proxies external URLs from allowlisted music CDN domains (Spotify, Apple Music, etc.).
  * Caches in memory + filesystem for fast repeat loads.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const baseUrl = searchParams.get("baseUrl")?.replace(/\/+$/, "") ?? "";
-  const token = searchParams.get("token") ?? "";
+  const { baseUrl } = resolveMusicAssistantBaseUrl({
+    envUrl: process.env.MUSIC_ASSISTANT_URL,
+    bodyUrl: searchParams.get("baseUrl"),
+  });
+  const { token } = resolveMusicAssistantToken({
+    envToken: process.env.MUSIC_ASSISTANT_TOKEN,
+    bodyToken: searchParams.get("token"),
+  });
   const urlParam = searchParams.get("url");
 
   if (!urlParam) {

@@ -42,4 +42,48 @@
     Display="always"
     Required="false"
     Mask="true"></Config>
+
+  <Config
+    Name="Immich URL"
+    Target="IMMICH_URL"
+    Default=""
+    Mode=""
+    Description="Optioneel: Immich basis-URL (bijv. http://192.168.1.50:2283). Heeft voorrang op Instellingen."
+    Type="Variable"
+    Display="always"
+    Required="false"
+    Mask="false"></Config>
+
+  <Config
+    Name="Immich API Key"
+    Target="IMMICH_API_KEY"
+    Default=""
+    Mode=""
+    Description="Optioneel: Immich API-key voor screensaver media. Heeft voorrang op een browser-key."
+    Type="Variable"
+    Display="always"
+    Required="false"
+    Mask="true"></Config>
+
+  <Config
+    Name="Music Assistant URL"
+    Target="MUSIC_ASSISTANT_URL"
+    Default=""
+    Mode=""
+    Description="Optioneel: Music Assistant basis-URL (bijv. http://192.168.1.50:8095). Heeft voorrang op Instellingen."
+    Type="Variable"
+    Display="always"
+    Required="false"
+    Mask="false"></Config>
+
+  <Config
+    Name="Music Assistant Token"
+    Target="MUSIC_ASSISTANT_TOKEN"
+    Default=""
+    Mode=""
+    Description="Optioneel: Music Assistant API-token. Heeft voorrang op een browser-token."
+    Type="Variable"
+    Display="always"
+    Required="false"
+    Mask="true"></Config>
 </Container>

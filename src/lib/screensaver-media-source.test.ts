@@ -131,4 +131,18 @@ describe("resolveScreensaverPlayback", () => {
       })
     ).toEqual({ mode: "immich-video" });
   });
+
+  it("uses Immich when enabled with Docker/env key and URL and no browser credentials", () => {
+    expect(
+      resolveScreensaverPlayback({
+        ...base,
+        source: "immich",
+        immichEnabled: true,
+        immichUrl: "",
+        immichKey: "",
+        immichEnvKeyConfigured: true,
+        immichEnvUrlConfigured: true,
+      })
+    ).toEqual({ mode: "immich-photo" });
+  });
 });

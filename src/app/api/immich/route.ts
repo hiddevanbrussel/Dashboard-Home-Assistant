@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { isSafeImmichApiPath, isSafeImmichBaseUrl, joinImmichUrl } from "@/lib/immich-url";
+import { resolveImmichApiKey, resolveImmichBaseUrl } from "@/lib/immich-env";
+import { isSafeImmichApiPath, joinImmichUrl } from "@/lib/immich-url";
 
 /**
  * Proxy JSON calls to a local Immich instance so the browser does not hit CORS.
- * Client sends connection details; nothing is stored on the server.
+ * Prefers Docker/env `IMMICH_URL` + `IMMICH_API_KEY` over client-supplied values.
  */
 export async function POST(request: Request) {
   let body: {
@@ -19,19 +20,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const baseUrl = typeof body.baseUrl === "string" ? body.baseUrl.replace(/\/+$/, "") : "";
+  const { baseUrl } = resolveImmichBaseUrl({
+    envUrl: process.env.IMMICH_URL,
+    bodyUrl: typeof body.baseUrl === "string" ? body.baseUrl : null,
+  });
   const path = typeof body.path === "string" ? body.path : "";
   const method = (body.method ?? "GET").toUpperCase();
-  const apiKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
+  const { apiKey } = resolveImmichApiKey({
+    envKey: process.env.IMMICH_API_KEY,
+    bodyKey: typeof body.apiKey === "string" ? body.apiKey : null,
+  });
 
-  if (!isSafeImmichBaseUrl(baseUrl) || !isSafeImmichApiPath(path)) {
+  if (!baseUrl || !isSafeImmichApiPath(path)) {
     return NextResponse.json({ error: "Invalid Immich URL" }, { status: 400 });
   }
   if (method !== "GET" && method !== "POST") {
     return NextResponse.json({ error: "Unsupported method" }, { status: 400 });
   }
   if (!apiKey) {
-    return NextResponse.json({ error: "Missing Immich API key" }, { status: 400 });
+    return NextResponse.json(
+      {
+        error:
+          "Missing Immich API key. Set IMMICH_API_KEY on the server (Docker / add-on), or enter a key in Settings → Apps → Immich.",
+      },
+      { status: 400 }
+    );
   }
 
   const headers: Record<string, string> = {

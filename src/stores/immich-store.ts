@@ -91,6 +91,39 @@ export const useImmichStore = create<ImmichStore>((set) => ({
   },
 }));
 
+export type ImmichEnvStatus = {
+  envKeyConfigured: boolean;
+  envUrlConfigured: boolean;
+  envUrl: string | null;
+};
+
+/** Fetch Docker/env Immich status; seed baseUrl into the store when localStorage has none. */
+export async function seedImmichFromEnv(): Promise<ImmichEnvStatus> {
+  const empty: ImmichEnvStatus = {
+    envKeyConfigured: false,
+    envUrlConfigured: false,
+    envUrl: null,
+  };
+  if (typeof window === "undefined") return empty;
+  try {
+    const res = await fetch("/api/immich/status", { cache: "no-store" });
+    if (!res.ok) return empty;
+    const data = (await res.json()) as Partial<ImmichEnvStatus>;
+    const status: ImmichEnvStatus = {
+      envKeyConfigured: data.envKeyConfigured === true,
+      envUrlConfigured: data.envUrlConfigured === true,
+      envUrl: typeof data.envUrl === "string" && data.envUrl ? data.envUrl : null,
+    };
+    const state = useImmichStore.getState();
+    if (!state.baseUrl.trim() && status.envUrl) {
+      state.setBaseUrl(status.envUrl);
+    }
+    return status;
+  } catch {
+    return empty;
+  }
+}
+
 export function hydrateImmichStore() {
   if (typeof window === "undefined") return;
   useImmichStore.setState({
@@ -100,4 +133,5 @@ export function hydrateImmichStore() {
     albumId: getStored(STORAGE_KEY_ALBUM_ID, ""),
     mediaType: getStored(STORAGE_KEY_MEDIA_TYPE, "photo") === "video" ? "video" : "photo",
   });
+  void seedImmichFromEnv();
 }

@@ -233,6 +233,8 @@ export default function SettingsPage() {
   const doorbellEnabled = useDoorbellStore((s) => s.settings.enabled);
   const [pexelsEnabled, setPexelsEnabled] = useState(false);
   const [pexelsEnvConfigured, setPexelsEnvConfigured] = useState(false);
+  const [immichEnvKeyConfigured, setImmichEnvKeyConfigured] = useState(false);
+  const [immichEnvUrlConfigured, setImmichEnvUrlConfigured] = useState(false);
   const [newsFeedDraft, setNewsFeedDraft] = useState<string[]>([]);
   const [newsFeedInput, setNewsFeedInput] = useState("");
   const [calendarEntities, setCalendarEntities] = useState<HaEntity[]>([]);
@@ -257,6 +259,16 @@ export default function SettingsPage() {
         if (!cancelled && data && typeof data.envConfigured === "boolean") {
           setPexelsEnvConfigured(data.envConfigured);
         }
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    fetch("/api/immich/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (typeof data.envKeyConfigured === "boolean") setImmichEnvKeyConfigured(data.envKeyConfigured);
+        if (typeof data.envUrlConfigured === "boolean") setImmichEnvUrlConfigured(data.envUrlConfigured);
       })
       .catch(() => {
         /* ignore */
@@ -859,7 +871,13 @@ export default function SettingsPage() {
     getScreensaverPexelsApiKey(),
     pexelsEnvConfigured
   );
-  const immichReady = isImmichSourceReady(immich.enabled, immich.baseUrl, immich.apiKey);
+  const immichReady = isImmichSourceReady(
+    immich.enabled,
+    immich.baseUrl,
+    immich.apiKey,
+    immichEnvKeyConfigured,
+    immichEnvUrlConfigured
+  );
 
   return (
     <AppShell activeTab="/settings" contentNoScroll>

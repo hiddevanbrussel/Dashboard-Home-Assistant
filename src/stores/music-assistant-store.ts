@@ -222,6 +222,48 @@ export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => 
   },
 }));
 
+export type MusicAssistantEnvStatus = {
+  envTokenConfigured: boolean;
+  envUrlConfigured: boolean;
+  envUrl: string | null;
+};
+
+/** Fetch Docker/env MA status; seed baseUrl into the store when localStorage has none. */
+export async function seedMusicAssistantFromEnv(): Promise<MusicAssistantEnvStatus> {
+  const empty: MusicAssistantEnvStatus = {
+    envTokenConfigured: false,
+    envUrlConfigured: false,
+    envUrl: null,
+  };
+  if (typeof window === "undefined") return empty;
+  try {
+    const res = await fetch("/api/music-assistant/status", { cache: "no-store" });
+    if (!res.ok) return empty;
+    const data = (await res.json()) as Partial<MusicAssistantEnvStatus>;
+    const status: MusicAssistantEnvStatus = {
+      envTokenConfigured: data.envTokenConfigured === true,
+      envUrlConfigured: data.envUrlConfigured === true,
+      envUrl: typeof data.envUrl === "string" && data.envUrl ? data.envUrl : null,
+    };
+    // Default hydrate uses localhost:8095 when nothing was saved — replace that (or empty)
+    // with the Docker/env URL so image proxies and UI show the real server.
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(STORAGE_KEY_BASE_URL);
+    } catch {
+      stored = null;
+    }
+    const state = useMusicAssistantStore.getState();
+    const noSavedUrl = stored === null || stored.trim() === "";
+    if (noSavedUrl && status.envUrl) {
+      state.setBaseUrl(status.envUrl);
+    }
+    return status;
+  } catch {
+    return empty;
+  }
+}
+
 /** Hydrate store from localStorage (call once in client, e.g. in layout or TopTabs). */
 export function hydrateMusicAssistantStore() {
   useMusicAssistantStore.setState({
@@ -238,4 +280,5 @@ export function hydrateMusicAssistantStore() {
     heroSliderIntervalMs: getStored<number>(STORAGE_KEY_HERO_SLIDER_INTERVAL, 5000),
     heroSliderSources: getStored<HeroSliderSourceId[]>(STORAGE_KEY_HERO_SLIDER_SOURCES, [...HERO_SLIDER_SOURCE_IDS]),
   });
+  void seedMusicAssistantFromEnv();
 }
