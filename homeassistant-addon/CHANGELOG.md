@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.71
+## 0.4.72
 
 - Docker / add-on: pass Immich and Music Assistant credentials via env (`IMMICH_URL`, `IMMICH_API_KEY`, `MUSIC_ASSISTANT_URL`, `MUSIC_ASSISTANT_TOKEN`) or matching add-on options; server env overrides browser-stored values
 - Settings → Apps: show when Immich / Music Assistant keys come from the server (same pattern as Pexels)
