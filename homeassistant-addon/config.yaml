@@ -30,8 +30,8 @@ schema:
   app_secret: password
   pexels_api_key: str?
   immich_url: str?
-  immich_api_key: password
+  immich_api_key: password?
   music_assistant_url: str?
-  music_assistant_token: password
+  music_assistant_token: password?
   default_language: list(en|nl)
 image: ghcr.io/hiddevanbrussel/dashboard-home-assistant-addon/{arch}
