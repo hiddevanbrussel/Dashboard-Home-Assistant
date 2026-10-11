@@ -44,10 +44,12 @@ export function SettingsChoiceCards<T extends string>({
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
+      {label ? (
+        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
+      ) : null}
       <div
         role="radiogroup"
-        aria-label={label}
+        aria-label={label || "options"}
         className={cn(
           "grid gap-3",
           columns === 2 ? "max-w-lg grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-3"
@@ -110,17 +112,31 @@ export function SettingsChipSelect<T extends string>({
   items,
   value,
   onChange,
+  variant = "pills",
 }: {
   label: string;
   hint?: string;
   items: { id: T; label: string }[];
   value: T;
   onChange: (id: T) => void;
+  /** `segmented` matches the personalization mockup (track + sliding white chip). */
+  variant?: "pills" | "segmented";
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
-      <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+      {label ? (
+        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
+      ) : null}
+      <div
+        role="radiogroup"
+        aria-label={label || "options"}
+        className={cn(
+          "flex flex-wrap",
+          variant === "segmented"
+            ? "gap-1 rounded-xl bg-black/[0.04] p-1 dark:bg-white/10"
+            : "gap-2"
+        )}
+      >
         {items.map((item) => {
           const selected = value === item.id;
           return (
@@ -131,10 +147,20 @@ export function SettingsChipSelect<T extends string>({
               aria-checked={selected}
               onClick={() => onChange(item.id)}
               className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
-                selected
-                  ? "bg-brand text-white shadow-sm"
-                  : "bg-black/[0.04] text-gray-600 hover:bg-black/[0.07] dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
+                "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
+                variant === "segmented"
+                  ? cn(
+                      "min-h-10 flex-1 rounded-[9px] px-3.5 py-2 text-sm font-semibold whitespace-nowrap",
+                      selected
+                        ? "bg-white text-gray-900 shadow-sm dark:bg-white/90 dark:text-gray-900"
+                        : "bg-transparent text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
+                    )
+                  : cn(
+                      "rounded-full px-3 py-1.5 text-xs font-medium",
+                      selected
+                        ? "bg-brand text-white shadow-sm"
+                        : "bg-black/[0.04] text-gray-600 hover:bg-black/[0.07] dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
+                    )
               )}
             >
               {item.label}
