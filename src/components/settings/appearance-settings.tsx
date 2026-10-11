@@ -276,10 +276,10 @@ export function AppearanceSettings(props: Props) {
   const timeExample = clock24h ? "14:32" : "2:32 PM";
 
   return (
-    <div className="flex flex-wrap items-start gap-6">
+    <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(300px,400px)_minmax(0,1fr)]">
       <section
         aria-label={t("settings.appearance.preview")}
-        className="sticky top-0 flex w-full min-w-0 flex-col gap-3 lg:max-w-[420px] lg:flex-1"
+        className="min-w-0 xl:sticky xl:top-2"
       >
         <AppearanceLivePreview
           mode={mode}
@@ -289,7 +289,7 @@ export function AppearanceSettings(props: Props) {
         />
       </section>
 
-      <div className="flex min-w-0 flex-[999] flex-col gap-4" style={{ flexBasis: 560 }}>
+      <div className="flex min-w-0 flex-col gap-4">
         <div className="space-y-3 rounded-2xl bg-white/70 p-4 ring-1 ring-black/[0.06] dark:bg-white/5 dark:ring-white/10 sm:p-5">
           <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">
             {t("settings.theme.interface")}
