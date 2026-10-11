@@ -927,8 +927,8 @@ export default function SettingsPage() {
 
   return (
     <AppShell activeTab="/settings" contentNoScroll>
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
-        <aside className="shrink-0 lg:flex lg:h-full lg:w-80 lg:flex-col">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 lg:flex-row lg:gap-5">
+        <aside className="shrink-0 lg:flex lg:h-full lg:w-56 lg:flex-col">
           <h1 className="mb-4 shrink-0 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
             {t("settings.title")}
           </h1>
@@ -952,7 +952,7 @@ export default function SettingsPage() {
                           type="button"
                           onClick={() => navigateSection(id)}
                           className={cn(
-                            "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
+                            "flex w-full items-center gap-2.5 rounded-2xl px-2.5 py-2 text-left text-sm font-medium transition-colors",
                             section === id
                               ? "bg-brand text-white shadow-sm"
                               : "text-gray-700 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-white/10"
