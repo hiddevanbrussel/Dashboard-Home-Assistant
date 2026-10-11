@@ -935,50 +935,43 @@ export default function SettingsPage() {
     }
   );
 
+  const NAV_ITEMS = SECTION_GROUPS.flatMap(({ sections }) => sections);
+
   return (
     <AppShell activeTab="/settings" contentNoScroll>
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
-        <aside className="shrink-0 lg:flex lg:h-full lg:w-80 lg:flex-col">
-          <h1 className="mb-4 shrink-0 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-4 sm:gap-5">
+        <nav
+          className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/60 bg-white/55 p-2 shadow-sm dark:border-white/10 dark:bg-white/5 sm:gap-3 sm:rounded-3xl sm:px-3"
+          aria-label={t("settings.title")}
+        >
+          <h1 className="shrink-0 px-2 text-lg font-semibold tracking-tight text-gray-900 dark:text-white sm:px-3 sm:text-xl">
             {t("settings.title")}
           </h1>
-          <nav
-            className="rounded-3xl border border-white/60 bg-white/40 p-2 dark:border-white/10 dark:bg-white/5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
-            aria-label={t("settings.title")}
-          >
-            <div className="flex gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-              {SECTION_GROUPS.map(({ groupKey, sections }, groupIndex) => (
-                <div
-                  key={groupKey}
-                  className={cn(groupIndex > 0 && "lg:mt-1 lg:border-t lg:border-white/50 lg:pt-2 dark:lg:border-white/10")}
-                >
-                  <p className="mb-1 hidden px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 lg:block">
-                    {t(groupKey)}
-                  </p>
-                  <ul className="flex gap-0.5 lg:flex-col">
-                    {sections.map(({ id, labelKey, icon: Icon }) => (
-                      <li key={id}>
-                        <button
-                          type="button"
-                          onClick={() => navigateSection(id)}
-                          className={cn(
-                            "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
-                            section === id || (id === "connection" && section === "entities")
-                              ? "bg-brand text-white shadow-sm"
-                              : "text-gray-700 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-white/10"
-                          )}
-                        >
-                          <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                          {t(labelKey)}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </nav>
-        </aside>
+          <div className="min-w-0 flex-1 overflow-x-auto">
+            <ul className="flex w-max items-center gap-0.5 sm:gap-1">
+              {NAV_ITEMS.map(({ id, labelKey, icon: Icon }) => {
+                const active = section === id || (id === "connection" && section === "entities");
+                return (
+                  <li key={id}>
+                    <button
+                      type="button"
+                      onClick={() => navigateSection(id)}
+                      className={cn(
+                        "flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors sm:px-3.5",
+                        active
+                          ? "bg-brand text-white shadow-sm"
+                          : "text-gray-700 hover:bg-black/[0.05] dark:text-gray-300 dark:hover:bg-white/10"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                      {t(labelKey)}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </nav>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <SettingsPanel
