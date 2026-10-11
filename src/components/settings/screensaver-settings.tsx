@@ -171,7 +171,7 @@ function LivePreview({
   return (
     <section
       aria-label={t("settings.screensaver.previewPanel")}
-      className="sticky top-0 flex min-w-0 flex-[1_1_380px] flex-col gap-3"
+      className="sticky top-0 flex min-w-0 flex-[1_1_280px] flex-col gap-3 lg:max-w-[46%]"
     >
       <div
         className={cn(
@@ -578,7 +578,7 @@ export function ScreensaverSettings({
         onPreview={() => window.dispatchEvent(new Event("screensaver-activate"))}
       />
 
-      <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
+      <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-4">
         {!enabled ? (
           <SettingsCard title={t("settings.screensaver.disabledTitle")}>
             <p className="m-0 text-sm text-gray-500 dark:text-gray-400">
