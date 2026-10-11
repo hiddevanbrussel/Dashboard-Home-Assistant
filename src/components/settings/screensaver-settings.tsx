@@ -171,7 +171,7 @@ function LivePreview({
   return (
     <section
       aria-label={t("settings.screensaver.previewPanel")}
-      className="sticky top-0 flex min-w-0 flex-[1_1_280px] flex-col gap-3 lg:max-w-[46%]"
+      className="relative z-10 order-1 flex min-w-0 flex-col gap-3 lg:sticky lg:top-2 lg:order-2 lg:self-start"
     >
       <div
         className={cn(
@@ -291,9 +291,9 @@ function LivePreview({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/80 px-1 py-1 backdrop-blur-sm dark:bg-zinc-950/70">
         <p className="m-0 text-[13px] text-gray-500 dark:text-gray-400">{caption}</p>
-        <SettingsSecondaryButton onClick={onPreview} className="min-h-11 rounded-xl px-4">
+        <SettingsSecondaryButton onClick={onPreview} className="min-h-11 shrink-0 rounded-xl px-4">
           <Play className="h-4 w-4" aria-hidden />
           {t("settings.screensaver.preview")}
         </SettingsSecondaryButton>
@@ -560,7 +560,7 @@ export function ScreensaverSettings({
   };
 
   return (
-    <div className="flex flex-wrap items-start gap-6">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]">
       <LivePreview
         enabled={enabled}
         backgroundUrl={mediaSource === "custom" ? background.trim() : ""}
@@ -578,7 +578,7 @@ export function ScreensaverSettings({
         onPreview={() => window.dispatchEvent(new Event("screensaver-activate"))}
       />
 
-      <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-4">
+      <div className="order-2 flex min-w-0 flex-col gap-4 lg:order-1">
         {!enabled ? (
           <SettingsCard title={t("settings.screensaver.disabledTitle")}>
             <p className="m-0 text-sm text-gray-500 dark:text-gray-400">
