@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.77
+
+- Settings → Personalization: live preview + card layout (theme, accent, glass, background, language & time, interaction)
+
 ## 0.4.76
 
 - Settings: restore left sidebar navigation (Display / Dashboard / System)

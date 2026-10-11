@@ -18,25 +18,16 @@ import { VoiceSatelliteSettings } from "@/components/settings/voice-satellite-se
 import { ValetudoSettings } from "@/components/settings/valetudo-settings";
 import { PexelsSettings } from "@/components/settings/pexels-settings";
 import { ImmichSettings } from "@/components/settings/immich-settings";
-import {
-  LanguagePreview,
-  SettingsAccentDots,
-  SettingsChipSelect,
-  SettingsChoiceCards,
-  SettingsImagePick,
-  ThemePreview,
-} from "@/components/settings/settings-choice-cards";
+import { SettingsImagePick } from "@/components/settings/settings-choice-cards";
 import {
   ScreensaverEnableToggle,
   ScreensaverSettings,
   useScreensaverEnabledToggle,
 } from "@/components/settings/screensaver-settings";
-import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
+import { AppearanceSettings } from "@/components/settings/appearance-settings";
+import { useThemeStore } from "@/stores/theme-store";
 import { useUiSoundStore } from "@/stores/ui-sound-store";
 import { useGlassDensityStore } from "@/stores/glass-density-store";
-import { GLASS_DENSITIES, type GlassDensity } from "@/lib/glass-density";
-import type { ThemeAccentId } from "@/lib/theme-accents";
-import { playUiClick } from "@/lib/ui-click";
 import { useLanguageStore } from "@/stores/language-store";
 import { getScreensaverDelaySeconds, setScreensaverDelaySeconds, getScreensaverBackgroundImage, setScreensaverBackgroundImage, getScreensaverClock24h, setScreensaverClock24h, getScreensaverWeatherEntityId, setScreensaverWeatherEntityId, getScreensaverPexelsEnabled, getScreensaverPexelsApiKey, getScreensaverFootballEntityId, setScreensaverFootballEntityId, getScreensaverMusicEntityId, setScreensaverMusicEntityId, getScreensaverClockPosition, setScreensaverClockPosition, getScreensaverClockSize, setScreensaverClockSize, getScreensaverClockWeight, setScreensaverClockWeight, getScreensaverMediaSource, setScreensaverMediaSource, type ScreensaverMediaSource } from "@/stores/screensaver-store";
 import { isImmichSourceReady, isPexelsSourceReady } from "@/lib/screensaver-media-source";
@@ -605,9 +596,15 @@ export default function SettingsPage() {
       await fetch(`/api/dashboards/${dashboardId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ background: json.url }),
+        body: JSON.stringify({
+          background: json.url,
+          backgroundLight: null,
+          backgroundDark: null,
+        }),
       });
       setPageBackground(json.url);
+      setPageBackgroundLight(null);
+      setPageBackgroundDark(null);
       window.dispatchEvent(new Event("page-background-changed"));
     } catch {
       // error could be shown in UI
@@ -622,13 +619,48 @@ export default function SettingsPage() {
       await fetch(`/api/dashboards/${dashboardId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ background: null }),
+        body: JSON.stringify({ background: null, backgroundLight: null, backgroundDark: null }),
       });
       setPageBackground(null);
+      setPageBackgroundLight(null);
+      setPageBackgroundDark(null);
       window.dispatchEvent(new Event("page-background-changed"));
     } finally {
       setUploadingBg(false);
     }
+  }
+
+  async function handleSetSameBackground(same: boolean) {
+    if (!dashboardId) return;
+    if (same) {
+      const shared = pageBackgroundLight || pageBackgroundDark || pageBackground;
+      await fetch(`/api/dashboards/${dashboardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          background: shared,
+          backgroundLight: null,
+          backgroundDark: null,
+        }),
+      });
+      setPageBackground(shared);
+      setPageBackgroundLight(null);
+      setPageBackgroundDark(null);
+    } else {
+      const light = pageBackgroundLight || pageBackground;
+      await fetch(`/api/dashboards/${dashboardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          background: null,
+          backgroundLight: light,
+          backgroundDark: pageBackgroundDark,
+        }),
+      });
+      setPageBackground(null);
+      setPageBackgroundLight(light);
+    }
+    window.dispatchEvent(new Event("page-background-changed"));
   }
 
   async function handlePageBackgroundLightUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -962,159 +994,47 @@ export default function SettingsPage() {
             }
           >
           {section === "appearance" && (
-            <>
-            <SettingsChoiceCards
-              label={t("settings.theme.interface")}
-              value={mode}
-              onChange={(id) => setMode(id)}
-              options={[
-                {
-                  id: "light" satisfies ThemeMode,
-                  label: t("settings.theme.light"),
-                  preview: <ThemePreview variant="light" />,
-                },
-                {
-                  id: "dark" satisfies ThemeMode,
-                  label: t("settings.theme.dark"),
-                  preview: <ThemePreview variant="dark" />,
-                },
-                {
-                  id: "auto" satisfies ThemeMode,
-                  label: t("settings.theme.system"),
-                  description: t("settings.theme.systemHint"),
-                  preview: <ThemePreview variant="auto" />,
-                },
-              ]}
+            <AppearanceSettings
+              mode={mode}
+              setMode={setMode}
+              accent={accent}
+              setAccent={setAccent}
+              glassDensity={glassDensity}
+              setGlassDensity={setGlassDensity}
+              language={language}
+              setLanguage={setLanguage}
+              clock24h={screensaverClock24h}
+              setClock24h={(value) => {
+                setScreensaverClock24hState(value);
+                setScreensaverClock24h(value);
+              }}
+              editModeAllowed={editModeAllowed}
+              setEditModeAllowed={(v) => {
+                setEditModeAllowedState(v);
+                setEditModeAllowed(v);
+              }}
+              editModePasscode={editModePasscode}
+              setEditModePasscode={(v) => {
+                setEditModePasscodeState(v);
+                setEditModePasscode(v);
+              }}
+              uiSoundEnabled={uiSoundEnabled}
+              setUiSoundEnabled={setUiSoundEnabled}
+              dashboardId={dashboardId}
+              pageBackground={pageBackground}
+              pageBackgroundLight={pageBackgroundLight}
+              pageBackgroundDark={pageBackgroundDark}
+              uploadingBg={uploadingBg}
+              uploadingBgLight={uploadingBgLight}
+              uploadingBgDark={uploadingBgDark}
+              onUploadFallback={handlePageBackgroundUpload}
+              onRemoveFallback={handlePageBackgroundRemove}
+              onUploadLight={handlePageBackgroundLightUpload}
+              onRemoveLight={handlePageBackgroundLightRemove}
+              onUploadDark={handlePageBackgroundDarkUpload}
+              onRemoveDark={handlePageBackgroundDarkRemove}
+              onSetSameBackground={(same) => void handleSetSameBackground(same)}
             />
-            <SettingsAccentDots
-              label={t("settings.theme.color")}
-              hint={t("settings.theme.colorHint")}
-              value={accent}
-              onChange={(id) => setAccent(id)}
-              names={{
-                purple: t("settings.theme.color.purple"),
-                indigo: t("settings.theme.color.indigo"),
-                blue: t("settings.theme.color.blue"),
-                teal: t("settings.theme.color.teal"),
-                green: t("settings.theme.color.green"),
-                orange: t("settings.theme.color.orange"),
-                rose: t("settings.theme.color.rose"),
-                fuchsia: t("settings.theme.color.fuchsia"),
-              } satisfies Record<ThemeAccentId, string>}
-            />
-            <SettingsChipSelect
-              label={t("settings.glassDensity")}
-              hint={t("settings.glassDensity.hint")}
-              value={glassDensity}
-              onChange={(id) => setGlassDensity(id as GlassDensity)}
-              items={GLASS_DENSITIES.map((id) => ({
-                id,
-                label: t(`settings.glassDensity.${id}`),
-              }))}
-            />
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                {t("settings.pageBackground")}
-              </p>
-              {dashboardId ? (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <SettingsImagePick
-                    label={t("settings.theme.light")}
-                    url={pageBackgroundLight}
-                    uploading={uploadingBgLight}
-                    onUpload={handlePageBackgroundLightUpload}
-                    onRemove={handlePageBackgroundLightRemove}
-                    addLabel={t("settings.pageBackground.add")}
-                    uploadingLabel={t("settings.screensaver.uploading")}
-                    removeLabel={t("settings.pageBackground.remove")}
-                  />
-                  <SettingsImagePick
-                    label={t("settings.theme.dark")}
-                    url={pageBackgroundDark}
-                    uploading={uploadingBgDark}
-                    onUpload={handlePageBackgroundDarkUpload}
-                    onRemove={handlePageBackgroundDarkRemove}
-                    addLabel={t("settings.pageBackground.add")}
-                    uploadingLabel={t("settings.screensaver.uploading")}
-                    removeLabel={t("settings.pageBackground.remove")}
-                  />
-                  <SettingsImagePick
-                    label={t("settings.pageBackground.fallback")}
-                    description={t("settings.pageBackground.fallbackDesc")}
-                    url={pageBackground}
-                    uploading={uploadingBg}
-                    onUpload={handlePageBackgroundUpload}
-                    onRemove={handlePageBackgroundRemove}
-                    addLabel={t("settings.pageBackground.add")}
-                    uploadingLabel={t("settings.screensaver.uploading")}
-                    removeLabel={t("settings.pageBackground.remove")}
-                  />
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t("settings.pageBackground.needDashboard")}</p>
-              )}
-              <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-                {t("settings.pageBackground.description")}
-              </p>
-            </div>
-            <SettingsChoiceCards
-              label={t("settings.language.setting")}
-              columns={2}
-              value={language}
-              onChange={(id) => setLanguage(id)}
-              options={[
-                {
-                  id: "en",
-                  label: t("settings.language.en"),
-                  preview: <LanguagePreview code="EN" />,
-                },
-                {
-                  id: "nl",
-                  label: t("settings.language.nl"),
-                  preview: <LanguagePreview code="NL" />,
-                },
-              ]}
-            />
-            <SettingsGroup title={t("settings.appearance.interaction")}>
-              <SettingsToggle
-                checked={editModeAllowed}
-                onChange={(v) => {
-                  setEditModeAllowedState(v);
-                  setEditModeAllowed(v);
-                }}
-                label={t("settings.dashboard.editModeAllowed")}
-                description={t("settings.dashboard.editModeAllowedHint")}
-              />
-              <SettingsField
-                label={t("settings.dashboard.editModePasscode")}
-                hint={t("settings.dashboard.editModePasscodeHint")}
-                htmlFor="edit-mode-passcode"
-              >
-                <SettingsInput
-                  id="edit-mode-passcode"
-                  type="password"
-                  value={editModePasscode}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setEditModePasscodeState(v);
-                    setEditModePasscode(v);
-                  }}
-                  placeholder={t("settings.dashboard.editModePasscodePlaceholder")}
-                  autoComplete="off"
-                  className="max-w-xs"
-                />
-              </SettingsField>
-              <SettingsToggle
-                checked={uiSoundEnabled}
-                onChange={(v) => {
-                  setUiSoundEnabled(v);
-                  if (v) playUiClick();
-                }}
-                label={t("settings.uiSounds")}
-                description={t("settings.uiSounds.hint")}
-              />
-            </SettingsGroup>
-            </>
           )}
 
           {section === "screensaver" && (
