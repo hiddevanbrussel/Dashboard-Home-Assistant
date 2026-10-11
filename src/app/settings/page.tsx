@@ -937,8 +937,8 @@ export default function SettingsPage() {
 
   return (
     <AppShell activeTab="/settings" contentNoScroll>
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
-        <aside className="shrink-0 lg:flex lg:h-full lg:w-64 lg:flex-col">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
+        <aside className="shrink-0 lg:flex lg:h-full lg:w-80 lg:flex-col">
           <h1 className="mb-4 shrink-0 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
             {t("settings.title")}
           </h1>
