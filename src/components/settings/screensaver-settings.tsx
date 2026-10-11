@@ -37,24 +37,24 @@ const DELAY_OPTIONS = [30, 60, 120, 300, 600, 900, 1800] as const;
 const DEFAULT_ON_DELAY = 300;
 
 const PREVIEW_CLOCK_SIZE: Record<ScreensaverClockSize, string> = {
-  sm: "text-[1.75rem]",
-  md: "text-[2.5rem]",
-  lg: "text-[3.25rem]",
-  xl: "text-[4.25rem]",
+  sm: "text-[1rem]",
+  md: "text-[1.25rem]",
+  lg: "text-[1.55rem]",
+  xl: "text-[1.9rem]",
 };
 
 const PREVIEW_AMPM_SIZE: Record<ScreensaverClockSize, string> = {
-  sm: "text-[0.65rem]",
-  md: "text-[0.8rem]",
-  lg: "text-[1rem]",
-  xl: "text-[1.25rem]",
+  sm: "text-[0.5rem]",
+  md: "text-[0.6rem]",
+  lg: "text-[0.7rem]",
+  xl: "text-[0.8rem]",
 };
 
 const PREVIEW_WEATHER_SIZE: Record<ScreensaverClockSize, string> = {
-  sm: "text-[0.7rem]",
-  md: "text-[0.8rem]",
-  lg: "text-[0.9rem]",
-  xl: "text-[1rem]",
+  sm: "text-[0.55rem]",
+  md: "text-[0.65rem]",
+  lg: "text-[0.7rem]",
+  xl: "text-[0.75rem]",
 };
 
 function SegmentedControl<T extends string>({
@@ -171,11 +171,11 @@ function LivePreview({
   return (
     <section
       aria-label={t("settings.screensaver.previewPanel")}
-      className="relative z-10 order-1 flex min-w-0 flex-col gap-3 lg:sticky lg:top-2 lg:order-2 lg:self-start"
+      className="relative z-10 order-1 flex w-full max-w-[13rem] min-w-0 flex-col gap-2 lg:sticky lg:top-2 lg:order-2 lg:max-w-none lg:self-start"
     >
       <div
         className={cn(
-          "relative aspect-[16/10] w-full overflow-hidden rounded-[20px] bg-[#1E1A33] shadow-[0_10px_30px_rgba(27,21,48,0.18)]",
+          "relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-[#1E1A33] shadow-[0_6px_18px_rgba(27,21,48,0.14)]",
           !enabled && "opacity-55 grayscale"
         )}
       >
@@ -223,14 +223,14 @@ function LivePreview({
 
         <div
           className={cn(
-            "absolute inset-0 flex p-7",
-            hasChips ? "pb-16" : "pb-7",
+            "absolute inset-0 flex p-3",
+            hasChips ? "pb-9" : "pb-3",
             clockPositionOverlayClass(clockPosition)
           )}
         >
           <div
             className={cn(
-              "flex flex-col gap-1.5",
+              "flex flex-col gap-0.5",
               clockPosition.endsWith("left")
                 ? "items-start text-left"
                 : clockPosition.endsWith("right")
@@ -266,17 +266,17 @@ function LivePreview({
         </div>
 
         {hasChips ? (
-          <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
+          <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1">
             {showFootball ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(15,12,28,0.62)] px-3 py-1.5 text-xs font-semibold text-[#F6EEDF]">
-                <Trophy className="h-3.5 w-3.5" aria-hidden />
-                {footballLabel}
+              <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-[rgba(15,12,28,0.62)] px-2 py-0.5 text-[10px] font-semibold text-[#F6EEDF]">
+                <Trophy className="h-3 w-3 shrink-0" aria-hidden />
+                <span className="truncate">{footballLabel}</span>
               </span>
             ) : null}
             {showMusic ? (
-              <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-[rgba(15,12,28,0.62)] px-3 py-1.5 text-xs font-semibold text-[#F6EEDF]">
-                <Music2 className="h-3.5 w-3.5" aria-hidden />
-                {musicLabel}
+              <span className="ml-auto inline-flex max-w-full items-center gap-1 truncate rounded-full bg-[rgba(15,12,28,0.62)] px-2 py-0.5 text-[10px] font-semibold text-[#F6EEDF]">
+                <Music2 className="h-3 w-3 shrink-0" aria-hidden />
+                <span className="truncate">{musicLabel}</span>
               </span>
             ) : null}
           </div>
@@ -284,17 +284,17 @@ function LivePreview({
 
         {!enabled ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="rounded-full bg-white px-3.5 py-2 text-[13px] font-bold text-gray-900">
+            <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-gray-900">
               {t("settings.screensaver.offBadge")}
             </span>
           </div>
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/80 px-1 py-1 backdrop-blur-sm dark:bg-zinc-950/70">
-        <p className="m-0 text-[13px] text-gray-500 dark:text-gray-400">{caption}</p>
-        <SettingsSecondaryButton onClick={onPreview} className="min-h-11 shrink-0 rounded-xl px-4">
-          <Play className="h-4 w-4" aria-hidden />
+      <div className="flex flex-col gap-2 rounded-xl bg-white/80 px-1 py-1 backdrop-blur-sm dark:bg-zinc-950/70">
+        <p className="m-0 text-[11px] leading-snug text-gray-500 dark:text-gray-400">{caption}</p>
+        <SettingsSecondaryButton onClick={onPreview} className="min-h-9 w-full rounded-xl px-3 text-xs">
+          <Play className="h-3.5 w-3.5" aria-hidden />
           {t("settings.screensaver.preview")}
         </SettingsSecondaryButton>
       </div>
@@ -560,7 +560,7 @@ export function ScreensaverSettings({
   };
 
   return (
-    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(11rem,13rem)]">
       <LivePreview
         enabled={enabled}
         backgroundUrl={mediaSource === "custom" ? background.trim() : ""}

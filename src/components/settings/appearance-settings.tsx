@@ -88,9 +88,9 @@ function AppearanceLivePreview({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <div
-        className="relative aspect-[16/10] w-full overflow-hidden rounded-[20px] shadow-[0_10px_30px_rgba(27,21,48,.18)]"
+        className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl shadow-[0_6px_18px_rgba(27,21,48,.14)]"
         style={{ background: dark ? "#14111F" : "#E9E6F0" }}
       >
         {backgroundUrl ? (
@@ -110,21 +110,21 @@ function AppearanceLivePreview({
             }}
           />
         )}
-        <div className="absolute inset-0 box-border flex gap-3 p-3.5">
+        <div className="absolute inset-0 box-border flex gap-1.5 p-1.5">
           <div
-            className="flex w-[24%] shrink-0 flex-col gap-1.5 rounded-[14px] p-2.5"
+            className="flex w-[22%] shrink-0 flex-col gap-1 rounded-lg p-1"
             style={glassCss}
           >
             <div
-              className="flex h-[22px] items-center rounded-lg px-2"
+              className="flex h-3 items-center rounded-md px-1"
               style={{ background: accentColor }}
             >
-              <span className="h-1.5 w-[44%] rounded-full bg-white" />
+              <span className="h-1 w-[44%] rounded-full bg-white" />
             </div>
-            {[56, 48, 40, 52].map((w, i) => (
-              <div key={i} className="flex h-[22px] items-center rounded-lg px-2">
+            {[56, 48, 40].map((w, i) => (
+              <div key={i} className="flex h-3 items-center rounded-md px-1">
                 <span
-                  className="h-1.5 rounded-full"
+                  className="h-1 rounded-full"
                   style={{
                     width: `${w}%`,
                     background: dark ? "rgba(255,255,255,.35)" : "rgba(27,21,48,.25)",
@@ -133,56 +133,56 @@ function AppearanceLivePreview({
               </div>
             ))}
           </div>
-          <div className="grid min-w-0 flex-1 grid-cols-2 content-start gap-3">
+          <div className="grid min-w-0 flex-1 grid-cols-2 content-start gap-1.5">
             <div
-              className="flex min-h-[76px] flex-col justify-between gap-2 rounded-[14px] p-3"
+              className="flex min-h-[38px] flex-col justify-between rounded-lg p-1.5"
               style={{ ...glassCss, color: fg }}
             >
-              <span className="text-[11px] font-semibold" style={{ color: sub }}>
+              <span className="text-[8px] font-semibold leading-none" style={{ color: sub }}>
                 {t("settings.appearance.preview.livingRoom")}
               </span>
-              <span className="text-[26px] font-extrabold tracking-tight">21.5°</span>
+              <span className="text-[13px] font-extrabold leading-none tracking-tight">21.5°</span>
             </div>
             <div
-              className="flex min-h-[76px] flex-col justify-between gap-2 rounded-[14px] p-3"
+              className="flex min-h-[38px] flex-col justify-between rounded-lg p-1.5"
               style={{ ...glassCss, color: fg }}
             >
-              <span className="text-[11px] font-semibold" style={{ color: sub }}>
+              <span className="text-[8px] font-semibold leading-none" style={{ color: sub }}>
                 {t("settings.appearance.preview.lights")}
               </span>
               <span
-                className="relative block h-[22px] w-[38px] rounded-full"
+                className="relative block h-3 w-5 rounded-full"
                 style={{ background: accentColor }}
               >
-                <span className="absolute left-[19px] top-[3px] h-4 w-4 rounded-full bg-white" />
+                <span className="absolute left-2.5 top-0.5 h-2 w-2 rounded-full bg-white" />
               </span>
             </div>
             <div
-              className="flex min-h-[76px] flex-col justify-between gap-2 rounded-[14px] p-3"
+              className="flex min-h-[38px] flex-col justify-between rounded-lg p-1.5"
               style={{ ...glassCss, color: fg }}
             >
-              <span className="text-[11px] font-semibold" style={{ color: sub }}>
+              <span className="text-[8px] font-semibold leading-none" style={{ color: sub }}>
                 {t("settings.appearance.preview.nowPlaying")}
               </span>
               <span
-                className="block h-1.5 overflow-hidden rounded-full"
+                className="block h-1 overflow-hidden rounded-full"
                 style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(27,21,48,.12)" }}
               >
                 <span className="block h-full w-[58%] rounded-full" style={{ background: accentColor }} />
               </span>
             </div>
             <div
-              className="flex min-h-[76px] flex-col justify-between gap-2 rounded-[14px] p-3"
+              className="flex min-h-[38px] flex-col justify-between rounded-lg p-1.5"
               style={{ ...glassCss, color: fg }}
             >
-              <span className="text-[11px] font-semibold" style={{ color: sub }}>
+              <span className="text-[8px] font-semibold leading-none" style={{ color: sub }}>
                 {t("settings.appearance.preview.energy")}
               </span>
-              <span className="flex h-7 items-end gap-1">
+              <span className="flex h-3.5 items-end gap-0.5">
                 {[40, 70, 55, 90, 30].map((h, i) => (
                   <span
                     key={i}
-                    className="w-2.5 rounded-sm"
+                    className="w-1 rounded-sm"
                     style={{ height: `${h}%`, background: accentColor }}
                   />
                 ))}
@@ -191,7 +191,7 @@ function AppearanceLivePreview({
           </div>
         </div>
       </div>
-      <p className="text-[13px] text-gray-500 dark:text-gray-400">
+      <p className="text-[11px] leading-snug text-gray-500 dark:text-gray-400">
         {t(`settings.theme.${mode === "auto" ? "system" : mode}`)}
         {" · "}
         {t(`settings.theme.color.${accent}`)}
@@ -277,10 +277,10 @@ export function AppearanceSettings(props: Props) {
   const timeExample = clock24h ? "14:32" : "2:32 PM";
 
   return (
-    <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(300px,400px)_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(11rem,13rem)]">
       <section
         aria-label={t("settings.appearance.preview")}
-        className="min-w-0 xl:sticky xl:top-2"
+        className="order-1 w-full max-w-[13rem] xl:sticky xl:top-2 xl:order-2 xl:max-w-none"
       >
         <AppearanceLivePreview
           mode={mode}
@@ -290,7 +290,7 @@ export function AppearanceSettings(props: Props) {
         />
       </section>
 
-      <div className="flex min-w-0 flex-col gap-4">
+      <div className="order-2 flex min-w-0 flex-col gap-4 xl:order-1">
         <div className="space-y-3 rounded-2xl bg-white/70 p-4 ring-1 ring-black/[0.06] dark:bg-white/5 dark:ring-white/10 sm:p-5">
           <h2 className="text-[17px] font-bold text-gray-900 dark:text-white">
             {t("settings.theme.interface")}
