@@ -1,19 +1,16 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import {
-  SettingsAlert,
   SettingsCheckRow,
   SettingsField,
   SettingsGroup,
   SettingsInput,
   SettingsPanel,
-  SettingsPillTabs,
   SettingsPrimaryButton,
   SettingsSecondaryButton,
-  SettingsSelect,
   SettingsToggle,
 } from "@/components/settings/settings-panel";
 import { MusicAssistantSettings } from "@/components/settings/music-assistant-settings";
@@ -56,17 +53,18 @@ import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { EnergyEntitySettings } from "@/components/settings/energy-entity-settings";
 import { useNewsStore } from "@/stores/news-store";
-import { RobotVacuum, Bell, BookOpen, CalendarDays, ChevronRight, DoorOpen, Home, Images, Image as ImageIcon, LayoutGrid, List, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, X, Zap } from "lucide-react";
+import { RobotVacuum, Bell, BookOpen, CalendarDays, ChevronRight, DoorOpen, Images, Image as ImageIcon, LayoutGrid, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, Plug, X, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
 import { useTranslation } from "@/hooks/use-translation";
 import { NotificationSettings } from "@/components/settings/notification-settings";
 import { DoorbellSettings } from "@/components/settings/doorbell-settings";
+import { HaConnectionSettings, type HaEntity } from "@/components/settings/ha-connection-settings";
 import { hydrateNotificationRulesStore } from "@/stores/notification-rules-store";
 import { hydrateDoorbellStore, useDoorbellStore } from "@/stores/doorbell-store";
 
-type SettingsSection = "appearance" | "screensaver" | "pages" | "notifications" | "connection" | "apps" | "entities";
+type SettingsSection = "appearance" | "screensaver" | "pages" | "notifications" | "connection" | "apps";
 type SettingsPageId = "calendar" | "energy" | "tasks";
 type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich" | "voice-satellite" | "doorbell";
 
@@ -77,7 +75,6 @@ const SECTION_KEYS: Record<SettingsSection, string> = {
   notifications: "settings.notifications",
   connection: "settings.connection",
   apps: "settings.apps",
-  entities: "settings.entities",
 };
 
 const PAGE_KEYS: Record<SettingsPageId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
@@ -92,6 +89,7 @@ const LEGACY_SECTION_REDIRECT: Record<string, { section: SettingsSection; page?:
   calendar: { section: "pages", page: "calendar" },
   energy: { section: "pages", page: "energy" },
   tasks: { section: "pages", page: "tasks" },
+  entities: { section: "connection" },
 };
 
 const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
@@ -103,27 +101,6 @@ const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string
   "voice-satellite": { labelKey: "settings.voiceSatellite", descriptionKey: "settings.voiceSatellite.description", icon: Mic },
   doorbell: { labelKey: "settings.doorbell", descriptionKey: "settings.doorbell.description", icon: DoorOpen },
 };
-
-type HaEntity = {
-  entity_id: string;
-  state: string;
-  attributes: Record<string, unknown>;
-};
-
-const ENTITY_DOMAINS = ["automation", "binary_sensor", "climate", "light", "media_player", "weather"] as const;
-
-const DOMAIN_KEYS: Record<(typeof ENTITY_DOMAINS)[number], string> = {
-  automation: "settings.entities.automation",
-  binary_sensor: "settings.entities.binarySensor",
-  climate: "settings.entities.climate",
-  light: "settings.entities.light",
-  media_player: "settings.entities.mediaPlayer",
-  weather: "settings.entities.weather",
-};
-
-function getDomain(entityId: string): string {
-  return entityId.split(".")[0] ?? "";
-}
 
 function CalendarTitleCodesEditor() {
   const { t } = useTranslation();
@@ -204,7 +181,7 @@ export default function SettingsPage() {
   const [entities, setEntities] = useState<HaEntity[]>([]);
   const [entitiesLoading, setEntitiesLoading] = useState(false);
   const [entitiesError, setEntitiesError] = useState<string | null>(null);
-  const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+  const [entitiesSyncedAt, setEntitiesSyncedAt] = useState<number | null>(null);
   const [dashboardId, setDashboardId] = useState<string | null>(null);
   const [pageBackground, setPageBackground] = useState<string | null>(null);
   const [pageBackgroundLight, setPageBackgroundLight] = useState<string | null>(null);
@@ -401,20 +378,23 @@ export default function SettingsPage() {
         if ("error" in data) {
           setEntitiesError(data.error);
           setEntities([]);
+          setEntitiesSyncedAt(null);
         } else if (Array.isArray(data)) {
           setEntities(data);
+          setEntitiesSyncedAt(Date.now());
         }
       })
       .catch(() => {
         setEntitiesError("Could not load entities.");
         setEntities([]);
+        setEntitiesSyncedAt(null);
       })
       .finally(() => setEntitiesLoading(false));
   }
 
   useEffect(() => {
-    loadEntities();
-  }, [saveMessage]);
+    if (section === "connection" || saveMessage === "success") loadEntities();
+  }, [saveMessage, section]);
 
   // Soft-discover HA when opening Connection (self-hosted only).
   useEffect(() => {
@@ -453,24 +433,6 @@ export default function SettingsPage() {
       .then((d) => setAppVersion(d.version ?? "onbekend"))
       .catch(() => setAppVersion("onbekend"));
   }, []);
-
-  const byDomain = useMemo(() => {
-    const map = new Map<string, HaEntity[]>();
-    for (const e of entities) {
-      const domain = getDomain(e.entity_id);
-      if (!ENTITY_DOMAINS.includes(domain as (typeof ENTITY_DOMAINS)[number])) continue;
-      if (!map.has(domain)) map.set(domain, []);
-      map.get(domain)!.push(e);
-    }
-    return ENTITY_DOMAINS.map((d) => [d, map.get(d) ?? []] as const).filter(
-      ([, list]) => list.length > 0
-    );
-  }, [entities]);
-
-  const activeDomain = selectedDomain && byDomain.some(([d]) => d === selectedDomain)
-    ? selectedDomain
-    : byDomain[0]?.[0] ?? null;
-  const activeList = byDomain.find(([d]) => d === activeDomain)?.[1] ?? [];
 
   async function handleTest() {
     setTestResult(null);
@@ -848,7 +810,7 @@ export default function SettingsPage() {
       { id: "notifications", labelKey: SECTION_KEYS.notifications, icon: Bell },
     ]},
     { groupKey: "settings.groups.system", sections: [
-      { id: "connection", labelKey: SECTION_KEYS.connection, icon: Home },
+      { id: "connection", labelKey: SECTION_KEYS.connection, icon: Plug },
       { id: "apps", labelKey: SECTION_KEYS.apps, icon: LayoutGrid },
     ]},
   ];
@@ -859,14 +821,10 @@ export default function SettingsPage() {
     pages: { descriptionKey: "settings.pages.description", icon: BookOpen },
     notifications: { descriptionKey: "settings.notifications.description", icon: Bell },
     connection: {
-      descriptionKey:
-        connectionSource === "supervisor"
-          ? "settings.connection.descriptionSupervisor"
-          : "settings.connection.description",
-      icon: Home,
+      descriptionKey: "settings.connection.panelDescription",
+      icon: Plug,
     },
     apps: { descriptionKey: "settings.apps.description", icon: LayoutGrid },
-    entities: { descriptionKey: "settings.entities.description", icon: List },
   };
   const currentApp = selectedApp ? APP_KEYS[selectedApp] : null;
   const currentPage = selectedPage ? PAGE_KEYS[selectedPage] : null;
@@ -935,43 +893,50 @@ export default function SettingsPage() {
     }
   );
 
-  const NAV_ITEMS = SECTION_GROUPS.flatMap(({ sections }) => sections);
-
   return (
     <AppShell activeTab="/settings" contentNoScroll>
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-4 sm:gap-5">
-        <nav
-          className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/60 bg-white/55 p-2 shadow-sm dark:border-white/10 dark:bg-white/5 sm:gap-3 sm:rounded-3xl sm:px-3"
-          aria-label={t("settings.title")}
-        >
-          <h1 className="shrink-0 px-2 text-lg font-semibold tracking-tight text-gray-900 dark:text-white sm:px-3 sm:text-xl">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
+        <aside className="shrink-0 lg:flex lg:h-full lg:w-80 lg:flex-col">
+          <h1 className="mb-4 shrink-0 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
             {t("settings.title")}
           </h1>
-          <div className="min-w-0 flex-1 overflow-x-auto">
-            <ul className="flex w-max items-center gap-0.5 sm:gap-1">
-              {NAV_ITEMS.map(({ id, labelKey, icon: Icon }) => {
-                const active = section === id || (id === "connection" && section === "entities");
-                return (
-                  <li key={id}>
-                    <button
-                      type="button"
-                      onClick={() => navigateSection(id)}
-                      className={cn(
-                        "flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors sm:px-3.5",
-                        active
-                          ? "bg-brand text-white shadow-sm"
-                          : "text-gray-700 hover:bg-black/[0.05] dark:text-gray-300 dark:hover:bg-white/10"
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                      {t(labelKey)}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </nav>
+          <nav
+            className="rounded-3xl border border-white/60 bg-white/40 p-2 dark:border-white/10 dark:bg-white/5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
+            aria-label={t("settings.title")}
+          >
+            <div className="flex gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+              {SECTION_GROUPS.map(({ groupKey, sections }, groupIndex) => (
+                <div
+                  key={groupKey}
+                  className={cn(groupIndex > 0 && "lg:mt-1 lg:border-t lg:border-white/50 lg:pt-2 dark:lg:border-white/10")}
+                >
+                  <p className="mb-1 hidden px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 lg:block">
+                    {t(groupKey)}
+                  </p>
+                  <ul className="flex gap-0.5 lg:flex-col">
+                    {sections.map(({ id, labelKey, icon: Icon }) => (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          onClick={() => navigateSection(id)}
+                          className={cn(
+                            "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
+                            section === id
+                              ? "bg-brand text-white shadow-sm"
+                              : "text-gray-700 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-white/10"
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                          {t(labelKey)}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </nav>
+        </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <SettingsPanel
@@ -984,17 +949,9 @@ export default function SettingsPage() {
                 ? () => setSelectedApp(null)
                 : selectedPage
                   ? () => navigateSection("pages")
-                  : section === "entities"
-                    ? () => navigateSection("connection")
-                    : undefined
+                  : undefined
             }
-            backLabel={
-              selectedApp
-                ? t("settings.apps.back")
-                : selectedPage
-                  ? t("settings.pages.back")
-                  : t("settings.connection.back")
-            }
+            backLabel={selectedApp ? t("settings.apps.back") : t("settings.pages.back")}
             badge={
               section === "screensaver" && !selectedApp ? (
                 <ScreensaverEnableToggle
@@ -1300,128 +1257,30 @@ export default function SettingsPage() {
           )}
 
           {section === "connection" && (
-            <div className="space-y-4">
-              {connectionSource === "supervisor" ? (
-                <SettingsAlert tone="ok">{t("settings.connection.supervisorLinked")}</SettingsAlert>
-              ) : null}
-              {isAddon && connectionSource !== "supervisor" ? (
-                <div className="flex flex-wrap gap-2">
-                  <SettingsPrimaryButton onClick={handleUseSupervisor} disabled={saving}>
-                    {t("settings.connection.useSupervisor")}
-                  </SettingsPrimaryButton>
-                </div>
-              ) : null}
-              {connectionSource !== "supervisor" ? (
-                <>
-                  {!isAddon ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {t("settings.connection.discovered")}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => void handleDiscover()}
-                          disabled={discovering}
-                          className="text-xs font-medium text-gray-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-gray-300"
-                        >
-                          {discovering
-                            ? t("settings.connection.discovering")
-                            : t("settings.connection.rediscover")}
-                        </button>
-                      </div>
-                      {discovering && discoveredInstances.length === 0 ? (
-                        <p className="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-sm text-gray-500 dark:border-white/15 dark:text-gray-400">
-                          {t("settings.connection.discovering")}
-                        </p>
-                      ) : null}
-                      {discoveredInstances.length > 0 ? (
-                        <ul className="space-y-1">
-                          {discoveredInstances.map((inst) => (
-                            <li key={inst.baseUrl}>
-                              <button
-                                type="button"
-                                onClick={() => setBaseUrl(inst.baseUrl)}
-                                className={cn(
-                                  "w-full rounded-lg border px-3 py-2 text-left text-sm transition",
-                                  baseUrl === inst.baseUrl
-                                    ? "border-accent-yellow/60 bg-accent-yellow/10 dark:border-accent-green/40 dark:bg-accent-green/10"
-                                    : "border-gray-200 hover:bg-black/[0.03] dark:border-white/10 dark:hover:bg-white/5"
-                                )}
-                              >
-                                <span className="font-medium text-gray-900 dark:text-white">{inst.name}</span>
-                                <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
-                                  {inst.baseUrl}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : !discovering ? (
-                        <p className="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-sm text-gray-500 dark:border-white/15 dark:text-gray-400">
-                          {t("settings.connection.discoverEmpty")}
-                        </p>
-                      ) : null}
-                      <SettingsPrimaryButton onClick={handleOauthLogin} disabled={!baseUrl.trim()}>
-                        {t("settings.connection.oauthLogin")}
-                      </SettingsPrimaryButton>
-                    </div>
-                  ) : null}
-                  <SettingsField label={t("settings.connection.baseUrl")} htmlFor="ha-baseUrl">
-                    <SettingsInput
-                      id="ha-baseUrl"
-                      type="url"
-                      value={baseUrl}
-                      onChange={(e) => setBaseUrl(e.target.value)}
-                      placeholder="http://homeassistant.local:8123"
-                    />
-                  </SettingsField>
-                  <SettingsField label={t("settings.connection.token")} htmlFor="ha-token">
-                    <SettingsInput
-                      id="ha-token"
-                      type="password"
-                      value={token}
-                      onChange={(e) => setToken(e.target.value)}
-                      placeholder={t("settings.connection.tokenPlaceholder")}
-                      autoComplete="off"
-                    />
-                  </SettingsField>
-                </>
-              ) : null}
-              {testResult ? (
-                <SettingsAlert tone={testResult.ok ? "ok" : "error"}>
-                  {testResult.ok ? t("settings.connection.success") : testResult.error}
-                </SettingsAlert>
-              ) : null}
-              {saveMessage === "success" ? (
-                <p className="text-sm text-emerald-700 dark:text-emerald-300">{t("settings.connection.saved")}</p>
-              ) : null}
-              <div className="flex flex-wrap gap-2">
-                <SettingsPrimaryButton onClick={handleTest} disabled={testing}>
-                  {testing ? t("settings.connection.testing") : t("settings.connection.test")}
-                </SettingsPrimaryButton>
-                {connectionSource !== "supervisor" ? (
-                  <SettingsSecondaryButton onClick={handleSave} disabled={saving || !token.trim()}>
-                    {saving ? t("settings.connection.saving") : t("settings.connection.save")}
-                  </SettingsSecondaryButton>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                onClick={() => navigateSection("entities")}
-                className="flex w-full items-center justify-between gap-3 rounded-2xl bg-black/[0.04] px-4 py-3 text-left transition-colors hover:bg-black/[0.06] dark:bg-white/5 dark:hover:bg-white/10"
-              >
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium text-gray-900 dark:text-white">
-                    {t("settings.entities")}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
-                    {t("settings.entities.description")}
-                  </span>
-                </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
-              </button>
-            </div>
+            <HaConnectionSettings
+              baseUrl={baseUrl}
+              setBaseUrl={setBaseUrl}
+              token={token}
+              setToken={setToken}
+              connectionSource={connectionSource}
+              isAddon={isAddon}
+              testing={testing}
+              saving={saving}
+              testResult={testResult}
+              saveMessage={saveMessage}
+              discoveredInstances={discoveredInstances}
+              discovering={discovering}
+              onDiscover={() => void handleDiscover()}
+              onOauthLogin={handleOauthLogin}
+              onUseSupervisor={() => void handleUseSupervisor()}
+              onTest={() => void handleTest()}
+              onSave={() => void handleSave()}
+              entities={entities}
+              entitiesLoading={entitiesLoading}
+              entitiesError={entitiesError}
+              entitiesSyncedAt={entitiesSyncedAt}
+              onRefreshEntities={loadEntities}
+            />
           )}
 
           {section === "pages" && selectedPage === "tasks" && (
@@ -1668,54 +1527,6 @@ export default function SettingsPage() {
           {selectedApp === "doorbell" && <DoorbellSettings />}
 
           {section === "notifications" && <NotificationSettings />}
-
-          {section === "entities" && (
-            <>
-              {entitiesLoading ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t("settings.entities.loading")}</p>
-              ) : entitiesError ? (
-                <SettingsAlert tone="error">{entitiesError}</SettingsAlert>
-              ) : byDomain.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t("settings.entities.empty")}</p>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <SettingsPillTabs
-                      items={byDomain.map(([domain, list]) => ({
-                        id: domain,
-                        label: `${t(DOMAIN_KEYS[domain])} (${list.length})`,
-                      }))}
-                      value={(activeDomain ?? byDomain[0][0]) as (typeof ENTITY_DOMAINS)[number]}
-                      onChange={(id) => setSelectedDomain(id)}
-                    />
-                    <button
-                      type="button"
-                      onClick={loadEntities}
-                      className="shrink-0 text-sm font-medium text-brand hover:underline"
-                    >
-                      {t("settings.entities.refresh")}
-                    </button>
-                  </div>
-                  <div role="tabpanel" className="max-h-[50vh] space-y-1 overflow-auto rounded-2xl bg-black/[0.03] p-2 dark:bg-white/5">
-                    {activeList.map((e) => {
-                      const name = (e.attributes?.friendly_name as string) ?? e.entity_id;
-                      return (
-                        <div
-                          key={e.entity_id}
-                          className="flex items-center justify-between gap-2 rounded-2xl px-3 py-2 text-sm hover:bg-white/50 dark:hover:bg-white/10"
-                        >
-                          <span className="truncate font-medium text-gray-800 dark:text-gray-100" title={e.entity_id}>
-                            {name}
-                          </span>
-                          <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">{e.state}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
 
           {selectedApp === "news" && (
             <>

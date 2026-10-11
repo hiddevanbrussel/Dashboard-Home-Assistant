@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.76
+
+- Settings: restore left sidebar navigation (Display / Dashboard / System)
+- Settings → Home Assistant: connection status card plus searchable entity browser (filter by type, group by active / idle / unavailable, copy entity ID)
+
 ## 0.4.72
 
 - Docker / add-on: pass Immich and Music Assistant credentials via env (`IMMICH_URL`, `IMMICH_API_KEY`, `MUSIC_ASSISTANT_URL`, `MUSIC_ASSISTANT_TOKEN`) or matching add-on options; server env overrides browser-stored values
