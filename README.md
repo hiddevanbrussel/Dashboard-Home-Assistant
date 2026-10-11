@@ -82,9 +82,9 @@ The header also shows the clock, weather temperature, optional RSS news, a timer
 
 ### Settings & integrations
 
-- **Appearance** — light / dark / system theme and accent color.
-- **Connection** — Home Assistant base URL and long-lived access token.
-- **Apps** — Music Assistant, Valetudo, Pexels, Immich, RSS news, and Voice Satellite (Home Assistant Assist, optional wake word).
+- **Appearance** — theme, accent, language, edit mode, and button sounds.
+- **Pages / Notifications** — calendar, energy, family, and in-app alerts.
+- **Home Assistant / Apps** — HA connection, Music Assistant, Valetudo, Pexels, Immich, RSS news, Voice Satellite, and doorbell.
 
 ---
 
@@ -220,14 +220,14 @@ A plain `docker pull` is not enough — the container must be recreated to run t
 ### Unraid
 
 1. Open the container → **Force update** (or apply update if shown).
-2. Confirm **Settings → System** shows the new version (e.g. `0.4.73`).
+2. Confirm **Settings → System** shows the new version (e.g. `0.4.74`).
 
 ### Home Assistant addon
 
 Supervisor only offers an update when the addon **version** in `config.yaml` increases. After a release:
 
 1. **Settings → Add-ons → Add-on store** → ⋮ → **Check for updates** (or refresh your custom repository).
-2. Update **Dashboard Builder** when `0.4.73` (or newer) appears.
+2. Update **Dashboard Builder** when `0.4.74` (or newer) appears.
 3. Confirm the version under the addon info / in-app **Settings → System**.
 
 The current version is shown in **Settings → System**.

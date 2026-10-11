@@ -56,7 +56,7 @@ import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { EnergyEntitySettings } from "@/components/settings/energy-entity-settings";
 import { useNewsStore } from "@/stores/news-store";
-import { RobotVacuum, Bell, CalendarDays, DoorOpen, Globe, Images, Image as ImageIcon, LayoutGrid, Link2, List, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, LayoutDashboard, X, Zap } from "lucide-react";
+import { RobotVacuum, Bell, BookOpen, CalendarDays, ChevronRight, DoorOpen, Home, Images, Image as ImageIcon, LayoutGrid, List, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, X, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
@@ -66,21 +66,32 @@ import { DoorbellSettings } from "@/components/settings/doorbell-settings";
 import { hydrateNotificationRulesStore } from "@/stores/notification-rules-store";
 import { hydrateDoorbellStore, useDoorbellStore } from "@/stores/doorbell-store";
 
-type SettingsSection = "appearance" | "screensaver" | "language" | "dashboard" | "connection" | "calendar" | "energy" | "tasks" | "apps" | "entities" | "notifications";
+type SettingsSection = "appearance" | "screensaver" | "pages" | "notifications" | "connection" | "apps" | "entities";
+type SettingsPageId = "calendar" | "energy" | "tasks";
 type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich" | "voice-satellite" | "doorbell";
 
 const SECTION_KEYS: Record<SettingsSection, string> = {
   appearance: "settings.appearance",
   screensaver: "settings.screensaver",
-  language: "settings.language",
-  dashboard: "settings.dashboard",
+  pages: "settings.pages",
+  notifications: "settings.notifications",
   connection: "settings.connection",
-  calendar: "settings.calendar",
-  energy: "settings.energy",
-  tasks: "settings.tasks",
   apps: "settings.apps",
   entities: "settings.entities",
-  notifications: "settings.notifications",
+};
+
+const PAGE_KEYS: Record<SettingsPageId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
+  calendar: { labelKey: "settings.calendar", descriptionKey: "settings.calendar.description", icon: CalendarDays },
+  energy: { labelKey: "settings.energy", descriptionKey: "settings.energy.description", icon: Zap },
+  tasks: { labelKey: "settings.tasks", descriptionKey: "settings.tasks.description", icon: ListTodo },
+};
+
+const LEGACY_SECTION_REDIRECT: Record<string, { section: SettingsSection; page?: SettingsPageId }> = {
+  language: { section: "appearance" },
+  dashboard: { section: "appearance" },
+  calendar: { section: "pages", page: "calendar" },
+  energy: { section: "pages", page: "energy" },
+  tasks: { section: "pages", page: "tasks" },
 };
 
 const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
@@ -207,6 +218,7 @@ export default function SettingsPage() {
   const [uploadingEnergyBgLight, setUploadingEnergyBgLight] = useState(false);
   const [uploadingEnergyBgDark, setUploadingEnergyBgDark] = useState(false);
   const [section, setSection] = useState<SettingsSection>("appearance");
+  const [selectedPage, setSelectedPage] = useState<SettingsPageId | null>(null);
   const [selectedApp, setSelectedApp] = useState<SettingsAppId | null>(null);
   const [editModeAllowed, setEditModeAllowedState] = useState(true);
   const [editModePasscode, setEditModePasscodeState] = useState("");
@@ -252,7 +264,20 @@ export default function SettingsPage() {
     hydrateNotificationRulesStore();
     hydrateDoorbellStore();
     const next = new URLSearchParams(window.location.search).get("section");
-    if (next && next in SECTION_KEYS) setSection(next as SettingsSection);
+    if (next && next in SECTION_KEYS) {
+      setSection(next as SettingsSection);
+    } else if (next && next in LEGACY_SECTION_REDIRECT) {
+      const legacy = LEGACY_SECTION_REDIRECT[next];
+      setSection(legacy.section);
+      if (legacy.page) setSelectedPage(legacy.page);
+      const url = new URL(window.location.href);
+      url.searchParams.set("section", legacy.section);
+      if (legacy.page) url.searchParams.set("page", legacy.page);
+      else url.searchParams.delete("page");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+    }
+    const pageParam = new URLSearchParams(window.location.search).get("page");
+    if (pageParam && pageParam in PAGE_KEYS) setSelectedPage(pageParam as SettingsPageId);
     let cancelled = false;
     fetch("/api/pexels/status", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -816,21 +841,14 @@ export default function SettingsPage() {
   const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: LucideIcon }[] }[] = [
     { groupKey: "settings.groups.display", sections: [
       { id: "appearance", labelKey: SECTION_KEYS.appearance, icon: Palette },
-      { id: "language", labelKey: SECTION_KEYS.language, icon: Globe },
       { id: "screensaver", labelKey: SECTION_KEYS.screensaver, icon: Monitor },
     ]},
     { groupKey: "settings.groups.dashboard", sections: [
-      { id: "dashboard", labelKey: SECTION_KEYS.dashboard, icon: LayoutDashboard },
-      { id: "connection", labelKey: SECTION_KEYS.connection, icon: Link2 },
-      { id: "entities", labelKey: SECTION_KEYS.entities, icon: List },
+      { id: "pages", labelKey: SECTION_KEYS.pages, icon: BookOpen },
       { id: "notifications", labelKey: SECTION_KEYS.notifications, icon: Bell },
     ]},
-    { groupKey: "settings.groups.pages", sections: [
-      { id: "calendar",  labelKey: SECTION_KEYS.calendar,  icon: CalendarDays },
-      { id: "energy",    labelKey: SECTION_KEYS.energy,    icon: Zap },
-      { id: "tasks",     labelKey: SECTION_KEYS.tasks,     icon: ListTodo     },
-    ]},
-    { groupKey: "settings.groups.apps", sections: [
+    { groupKey: "settings.groups.system", sections: [
+      { id: "connection", labelKey: SECTION_KEYS.connection, icon: Home },
       { id: "apps", labelKey: SECTION_KEYS.apps, icon: LayoutGrid },
     ]},
   ];
@@ -838,26 +856,56 @@ export default function SettingsPage() {
   const SECTION_META: Record<SettingsSection, { descriptionKey: string; icon: LucideIcon }> = {
     appearance: { descriptionKey: "settings.theme.description", icon: Palette },
     screensaver: { descriptionKey: "settings.screensaver.description", icon: Monitor },
-    language: { descriptionKey: "settings.language.intro", icon: Globe },
-    dashboard: { descriptionKey: "settings.dashboard.intro", icon: LayoutDashboard },
+    pages: { descriptionKey: "settings.pages.description", icon: BookOpen },
+    notifications: { descriptionKey: "settings.notifications.description", icon: Bell },
     connection: {
       descriptionKey:
         connectionSource === "supervisor"
           ? "settings.connection.descriptionSupervisor"
           : "settings.connection.description",
-      icon: Link2,
+      icon: Home,
     },
-    calendar: { descriptionKey: "settings.calendar.description", icon: CalendarDays },
-    energy: { descriptionKey: "settings.energy.description", icon: Zap },
-    tasks: { descriptionKey: "settings.tasks.description", icon: ListTodo },
     apps: { descriptionKey: "settings.apps.description", icon: LayoutGrid },
     entities: { descriptionKey: "settings.entities.description", icon: List },
-    notifications: { descriptionKey: "settings.notifications.description", icon: Bell },
   };
   const currentApp = selectedApp ? APP_KEYS[selectedApp] : null;
-  const panelMeta = currentApp ?? SECTION_META[section];
-  const panelTitle = currentApp ? t(currentApp.labelKey) : t(SECTION_KEYS[section]);
-  const panelDescription = t(panelMeta.descriptionKey);
+  const currentPage = selectedPage ? PAGE_KEYS[selectedPage] : null;
+  const panelMeta = currentApp ?? currentPage ?? SECTION_META[section];
+  const panelTitle = currentApp
+    ? t(currentApp.labelKey)
+    : currentPage
+      ? t(currentPage.labelKey)
+      : t(SECTION_KEYS[section]);
+  const panelDescription = t(
+    currentApp ? currentApp.descriptionKey : currentPage ? currentPage.descriptionKey : panelMeta.descriptionKey
+  );
+
+  function navigateSection(id: SettingsSection, page: SettingsPageId | null = null) {
+    setSection(id);
+    setSelectedApp(null);
+    setSelectedPage(id === "pages" ? page : null);
+    const url = new URL(window.location.href);
+    url.searchParams.set("section", id);
+    if (id === "pages" && page) url.searchParams.set("page", page);
+    else url.searchParams.delete("page");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+  }
+
+  const pageEnabled: Record<SettingsPageId, boolean> = {
+    calendar: calendarStore.enabled,
+    energy: energyStore.enabled,
+    tasks: choresStore.enabled,
+  };
+
+  const pageSummary: Record<SettingsPageId, string> = {
+    calendar: calendarStore.enabled
+      ? `${calendarStore.calendarEntityIds.length} ${t("settings.pages.summary.calendars")}`
+      : t("settings.apps.disabled"),
+    energy: energyStore.enabled ? t("settings.pages.summary.energy") : t("settings.apps.disabled"),
+    tasks: choresStore.enabled
+      ? `${t("settings.pages.summary.tasks")} · ${eveningHour}:00`
+      : t("settings.apps.disabled"),
+  };
   const appEnabled: Record<SettingsAppId, boolean> = {
     news: newsStore.enabled,
     "music-assistant": musicAssistant.enabled,
@@ -912,16 +960,10 @@ export default function SettingsPage() {
                       <li key={id}>
                         <button
                           type="button"
-                          onClick={() => {
-                            setSection(id);
-                            setSelectedApp(null);
-                            const url = new URL(window.location.href);
-                            url.searchParams.set("section", id);
-                            window.history.replaceState({}, "", `${url.pathname}${url.search}`);
-                          }}
+                          onClick={() => navigateSection(id)}
                           className={cn(
                             "flex w-full items-center gap-2.5 whitespace-nowrap rounded-2xl px-3 py-2 text-left text-sm font-medium transition-colors",
-                            section === id
+                            section === id || (id === "connection" && section === "entities")
                               ? "bg-brand text-white shadow-sm"
                               : "text-gray-700 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-white/10"
                           )}
@@ -940,12 +982,26 @@ export default function SettingsPage() {
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <SettingsPanel
-            key={selectedApp ?? section}
+            key={selectedApp ?? selectedPage ?? section}
             icon={panelMeta.icon}
             title={panelTitle}
             description={panelDescription}
-            onBack={selectedApp ? () => setSelectedApp(null) : undefined}
-            backLabel={t("settings.apps.back")}
+            onBack={
+              selectedApp
+                ? () => setSelectedApp(null)
+                : selectedPage
+                  ? () => navigateSection("pages")
+                  : section === "entities"
+                    ? () => navigateSection("connection")
+                    : undefined
+            }
+            backLabel={
+              selectedApp
+                ? t("settings.apps.back")
+                : selectedPage
+                  ? t("settings.pages.back")
+                  : t("settings.connection.back")
+            }
             badge={
               section === "screensaver" && !selectedApp ? (
                 <ScreensaverEnableToggle
@@ -1006,15 +1062,6 @@ export default function SettingsPage() {
                 label: t(`settings.glassDensity.${id}`),
               }))}
             />
-            <SettingsToggle
-              checked={uiSoundEnabled}
-              onChange={(v) => {
-                setUiSoundEnabled(v);
-                if (v) playUiClick();
-              }}
-              label={t("settings.uiSounds")}
-              description={t("settings.uiSounds.hint")}
-            />
             <div className="space-y-2">
               <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                 {t("settings.pageBackground")}
@@ -1060,10 +1107,6 @@ export default function SettingsPage() {
                 {t("settings.pageBackground.description")}
               </p>
             </div>
-            </>
-          )}
-
-          {section === "language" && (
             <SettingsChoiceCards
               label={t("settings.language.setting")}
               columns={2}
@@ -1082,6 +1125,46 @@ export default function SettingsPage() {
                 },
               ]}
             />
+            <SettingsGroup title={t("settings.appearance.interaction")}>
+              <SettingsToggle
+                checked={editModeAllowed}
+                onChange={(v) => {
+                  setEditModeAllowedState(v);
+                  setEditModeAllowed(v);
+                }}
+                label={t("settings.dashboard.editModeAllowed")}
+                description={t("settings.dashboard.editModeAllowedHint")}
+              />
+              <SettingsField
+                label={t("settings.dashboard.editModePasscode")}
+                hint={t("settings.dashboard.editModePasscodeHint")}
+                htmlFor="edit-mode-passcode"
+              >
+                <SettingsInput
+                  id="edit-mode-passcode"
+                  type="password"
+                  value={editModePasscode}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setEditModePasscodeState(v);
+                    setEditModePasscode(v);
+                  }}
+                  placeholder={t("settings.dashboard.editModePasscodePlaceholder")}
+                  autoComplete="off"
+                  className="max-w-xs"
+                />
+              </SettingsField>
+              <SettingsToggle
+                checked={uiSoundEnabled}
+                onChange={(v) => {
+                  setUiSoundEnabled(v);
+                  if (v) playUiClick();
+                }}
+                label={t("settings.uiSounds")}
+                description={t("settings.uiSounds.hint")}
+              />
+            </SettingsGroup>
+            </>
           )}
 
           {section === "screensaver" && (
@@ -1158,47 +1241,69 @@ export default function SettingsPage() {
               immichReady={immichReady}
               entities={entities}
               onOpenPexels={() => {
-                setSection("apps");
+                navigateSection("apps");
                 setSelectedApp("pexels");
               }}
               onOpenImmich={() => {
-                setSection("apps");
+                navigateSection("apps");
                 setSelectedApp("immich");
               }}
             />
           )}
 
-          {section === "dashboard" && (
-            <>
-              <SettingsToggle
-                checked={editModeAllowed}
-                onChange={(v) => {
-                  setEditModeAllowedState(v);
-                  setEditModeAllowed(v);
-                }}
-                label={t("settings.dashboard.editModeAllowed")}
-                description={t("settings.dashboard.editModeAllowedHint")}
-              />
-              <SettingsField
-                label={t("settings.dashboard.editModePasscode")}
-                hint={t("settings.dashboard.editModePasscodeHint")}
-                htmlFor="edit-mode-passcode"
-              >
-                <SettingsInput
-                  id="edit-mode-passcode"
-                  type="password"
-                  value={editModePasscode}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setEditModePasscodeState(v);
-                    setEditModePasscode(v);
-                  }}
-                  placeholder={t("settings.dashboard.editModePasscodePlaceholder")}
-                  autoComplete="off"
-                  className="max-w-xs"
-                />
-              </SettingsField>
-            </>
+          {section === "pages" && !selectedPage && (
+            <div className="overflow-hidden rounded-2xl bg-black/[0.03] ring-1 ring-black/[0.06] dark:bg-white/5 dark:ring-white/10">
+              {(Object.keys(PAGE_KEYS) as SettingsPageId[]).map((id, index) => {
+                const page = PAGE_KEYS[id];
+                const Icon = page.icon;
+                const enabled = pageEnabled[id];
+                return (
+                  <div
+                    key={id}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5",
+                      index > 0 && "border-t border-black/[0.06] dark:border-white/10"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                        enabled
+                          ? "bg-brand/10 text-brand dark:bg-brand/30 dark:text-white"
+                          : "bg-black/[0.04] text-gray-500 dark:bg-white/10 dark:text-gray-400"
+                      )}
+                    >
+                      <Icon className="h-5 w-5" aria-hidden />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigateSection("pages", id)}
+                      className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl py-1 text-left transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-gray-900 dark:text-white">
+                          {t(page.labelKey)}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400">
+                          {pageSummary[id]}
+                        </span>
+                      </span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+                    </button>
+                    <SettingsToggle
+                      compact
+                      checked={enabled}
+                      onChange={(v) => {
+                        if (id === "calendar") calendarStore.setEnabled(v);
+                        else if (id === "energy") energyStore.setEnabled(v);
+                        else choresStore.setEnabled(v);
+                      }}
+                      label={t(page.labelKey)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           {section === "connection" && (
@@ -1308,10 +1413,25 @@ export default function SettingsPage() {
                   </SettingsSecondaryButton>
                 ) : null}
               </div>
+              <button
+                type="button"
+                onClick={() => navigateSection("entities")}
+                className="flex w-full items-center justify-between gap-3 rounded-2xl bg-black/[0.04] px-4 py-3 text-left transition-colors hover:bg-black/[0.06] dark:bg-white/5 dark:hover:bg-white/10"
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-gray-900 dark:text-white">
+                    {t("settings.entities")}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                    {t("settings.entities.description")}
+                  </span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+              </button>
             </div>
           )}
 
-          {section === "tasks" && (
+          {section === "pages" && selectedPage === "tasks" && (
             <>
               <SettingsToggle
                 checked={choresStore.enabled}
@@ -1349,7 +1469,7 @@ export default function SettingsPage() {
             </>
           )}
 
-          {section === "calendar" && (
+          {section === "pages" && selectedPage === "calendar" && (
             <>
               <SettingsToggle
                 checked={calendarStore.enabled}
@@ -1415,7 +1535,7 @@ export default function SettingsPage() {
             </>
           )}
 
-          {section === "energy" && (
+          {section === "pages" && selectedPage === "energy" && (
             <>
               <SettingsToggle
                 checked={energyStore.enabled}

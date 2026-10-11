@@ -17,26 +17,37 @@ export function SettingsToggle({
   onChange,
   label,
   description,
+  compact = false,
 }: {
   checked: boolean;
   onChange: (value: boolean) => void;
   label: string;
   description?: string;
+  /** Icon-only switch control (label stays as aria-label). */
+  compact?: boolean;
 }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl bg-black/[0.04] px-4 py-3 text-left transition-colors hover:bg-black/[0.06] dark:bg-white/5 dark:hover:bg-white/10"
+      className={cn(
+        "text-left transition-colors",
+        compact
+          ? "inline-flex shrink-0 items-center justify-center rounded-full p-1 hover:bg-black/[0.04] dark:hover:bg-white/10"
+          : "flex w-full items-center justify-between gap-4 rounded-2xl bg-black/[0.04] px-4 py-3 hover:bg-black/[0.06] dark:bg-white/5 dark:hover:bg-white/10"
+      )}
     >
-      <span className="min-w-0">
-        <span className="block text-sm font-medium text-gray-900 dark:text-white">{label}</span>
-        {description ? (
-          <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">{description}</span>
-        ) : null}
-      </span>
+      {!compact ? (
+        <span className="min-w-0">
+          <span className="block text-sm font-medium text-gray-900 dark:text-white">{label}</span>
+          {description ? (
+            <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">{description}</span>
+          ) : null}
+        </span>
+      ) : null}
       <span
         className={cn(
           "relative h-6 w-11 shrink-0 rounded-full transition-colors",
