@@ -159,12 +159,19 @@ function useIdleScreensaver() {
 
 function useScreensaverWeatherLines() {
   const { t } = useTranslation();
-  const entityId =
-    getScreensaverWeatherEntityId() ??
-    (typeof window !== "undefined" ? localStorage.getItem("dashboard.headerTemperatureEntityId") : null) ??
-    "weather.home";
-  const entity = useEntityStateStore((s) => s.getState(entityId));
+  const configuredWeather = getScreensaverWeatherEntityId();
+  const weatherDisabled = configuredWeather === "off";
+  const entityId = weatherDisabled
+    ? ""
+    : configuredWeather ??
+      (typeof window !== "undefined" ? localStorage.getItem("dashboard.headerTemperatureEntityId") : null) ??
+      "weather.home";
+  const entity = useEntityStateStore((s) => (entityId ? s.getState(entityId) : undefined));
   const zoneHome = useEntityStateStore((s) => s.getState("zone.home"));
+
+  if (weatherDisabled) {
+    return { tempStr: null as string | null, location: null as string | null, conditionStr: null as string | null };
+  }
 
   const condition = (entity?.state as string) ?? "";
   const temperature =
