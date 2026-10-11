@@ -8,6 +8,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { THEME_ACCENTS, accentRgbCss, type ThemeAccentId } from "@/lib/theme-accents";
 import { GLASS_DENSITIES, GLASS_DENSITY_VARS, type GlassDensity } from "@/lib/glass-density";
 import type { ThemeMode } from "@/stores/theme-store";
+import type { Language } from "@/stores/language-store";
 import {
   SettingsField,
   SettingsInput,
@@ -29,8 +30,8 @@ type Props = {
   setAccent: (id: ThemeAccentId) => void;
   glassDensity: GlassDensity;
   setGlassDensity: (id: GlassDensity) => void;
-  language: string;
-  setLanguage: (id: string) => void;
+  language: Language;
+  setLanguage: (id: Language) => void;
   clock24h: boolean;
   setClock24h: (value: boolean) => void;
   editModeAllowed: boolean;
@@ -462,7 +463,10 @@ export function AppearanceSettings(props: Props) {
             <SettingsSelect
               id="appearance-lang"
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (next === "en" || next === "nl") setLanguage(next);
+              }}
               className="min-h-11 min-w-[240px] max-w-full"
             >
               <option value="en">{t("settings.language.en")}</option>
