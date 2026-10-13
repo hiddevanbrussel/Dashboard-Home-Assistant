@@ -24,7 +24,7 @@ const CONDITIONS = [
 
 /** Dev-only preview of the redesigned weather card (no Home Assistant required). */
 export default function WeatherCardPreviewPage() {
-  const setStates = useEntityStateStore((s) => s.setStates);
+  const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
   const setResolved = useThemeStore((s) => s.setResolved);
   const [condition, setCondition] = useState<(typeof CONDITIONS)[number]>("clear-night");
@@ -84,8 +84,16 @@ export default function WeatherCardPreviewPage() {
   }, [condition, setResolved]);
 
   useEffect(() => {
-    setStates(entities);
-  }, [entities, setStates]);
+    // Use optimistic updates so the global HA state poll cannot wipe mock entities.
+    const seed = () => {
+      for (const e of entities) {
+        updateEntityState(e.entity_id, { state: e.state, attributes: e.attributes });
+      }
+    };
+    seed();
+    const id = setInterval(seed, 2500);
+    return () => clearInterval(id);
+  }, [entities, updateEntityState]);
 
   return (
     <div className="min-h-screen bg-[#0b1220] px-4 py-8 text-white">
