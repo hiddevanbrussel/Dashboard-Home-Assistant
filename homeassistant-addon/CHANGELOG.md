@@ -1,8 +1,16 @@
 # Changelog
 
-## 0.4.79
+## 0.4.81
 
 - Topbar: restore normal height and use a light top-to-bottom fade (fade no longer doubles the bar)
+
+## 0.4.80
+
+- Media card idle state: lifestyle speaker backgrounds + ready-to-play layout (title, hint, control bar)
+
+## 0.4.79
+
+- Vacuum card 2 redesign: mockup layout (title + status + battery, hero art, Eco/Standard/Turbo tiles) with docked / empty-dock WebP art
 
 ## 0.4.78
 

@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   clampMediaCardHeight,
   clampMediaCardWidth,
+  isMediaCardIdle,
   MEDIA_CARD_DEFAULT_HEIGHT,
   MEDIA_CARD_DEFAULT_WIDTH,
+  MEDIA_CARD_IDLE_IMAGE_DARK,
+  MEDIA_CARD_IDLE_IMAGE_LIGHT,
   MEDIA_CARD_MIN_HEIGHT,
   MEDIA_CARD_MIN_WIDTH,
+  mediaCardIdleImageSrc,
   resizeMediaCardFromBottomRight,
   resolveMediaCardPlayerName,
 } from "./media-card";
@@ -56,6 +60,20 @@ describe("resolveMediaCardPlayerName", () => {
         fallback: "Media",
       })
     ).toBe("media_player.office");
+  });
+});
+
+describe("media card idle helpers", () => {
+  it("treats missing title and artwork as idle", () => {
+    expect(isMediaCardIdle({ mediaTitle: "", entityPicture: null })).toBe(true);
+    expect(isMediaCardIdle({ mediaTitle: "  ", entityPicture: "" })).toBe(true);
+    expect(isMediaCardIdle({ mediaTitle: "Song", entityPicture: null })).toBe(false);
+    expect(isMediaCardIdle({ mediaTitle: "", entityPicture: "/local/cover.jpg" })).toBe(false);
+  });
+
+  it("picks light/dark idle lifestyle backgrounds", () => {
+    expect(mediaCardIdleImageSrc(false)).toBe(MEDIA_CARD_IDLE_IMAGE_LIGHT);
+    expect(mediaCardIdleImageSrc(true)).toBe(MEDIA_CARD_IDLE_IMAGE_DARK);
   });
 });
 

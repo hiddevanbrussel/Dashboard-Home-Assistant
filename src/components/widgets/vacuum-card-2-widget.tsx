@@ -2,11 +2,9 @@
 
 import { useRef, useState } from "react";
 import {
-  AudioLines,
   Battery,
   Leaf,
   MoreVertical,
-  Power,
   Zap,
 } from "lucide-react";
 import type { VacuumCard2Props } from "./widget-types";
@@ -15,15 +13,12 @@ import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
-import { playUiClick } from "@/lib/ui-click";
 import {
   clampVacuumCard2Height,
   clampVacuumCard2Width,
   currentFanSpeedFromAttributes,
   fanModeFromSpeed,
   fanSpeedListFromAttributes,
-  humanizeVacuumState,
-  isVacuumOn,
   parsePercent,
   progressFromAttributes,
   resolveFanSpeedForMode,
@@ -32,26 +27,53 @@ import {
   vacuumCard2ArtSrc,
   vacuumCard2Density,
   vacuumHeadlineKind,
+  humanizeVacuumState,
   type VacuumFanMode,
 } from "@/lib/vacuum-card";
 
-const MODE_UI: { mode: VacuumFanMode; labelKey: string; Icon: typeof Leaf }[] = [
+function StandardModeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M5 20V13" />
+      <path d="M10 20V9" />
+      <path d="M15 20V6" />
+      <path d="M20 20V11" />
+    </svg>
+  );
+}
+
+const MODE_UI: {
+  mode: VacuumFanMode;
+  labelKey: string;
+  Icon: typeof Leaf | typeof StandardModeIcon;
+}[] = [
   { mode: "eco", labelKey: "vacuumCard.eco", Icon: Leaf },
-  { mode: "standard", labelKey: "vacuumCard.standard", Icon: AudioLines },
+  { mode: "standard", labelKey: "vacuumCard.standard", Icon: StandardModeIcon },
   { mode: "turbo", labelKey: "vacuumCard.turbo", Icon: Zap },
 ];
 
 function BatteryPill({ percent }: { percent: number }) {
   const fill = Math.min(100, Math.max(0, percent));
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-teal-500">
-      <span className="relative inline-flex h-3 w-6 items-center rounded-[3px] border border-teal-500/80 p-[1px]">
+    <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-emerald-400">
+      <span className="relative inline-flex h-3 w-6 items-center rounded-[3px] border border-emerald-400/90 p-[1px]">
         <span
-          className="h-full rounded-[1px] bg-teal-500"
+          className="h-full rounded-[1px] bg-emerald-400"
           style={{ width: `${fill}%` }}
           aria-hidden
         />
-        <span className="absolute -right-[3px] top-1/2 h-1.5 w-[2px] -translate-y-1/2 rounded-r-sm bg-teal-500/80" aria-hidden />
+        <span
+          className="absolute -right-[3px] top-1/2 h-1.5 w-[2px] -translate-y-1/2 rounded-r-sm bg-emerald-400/90"
+          aria-hidden
+        />
       </span>
       {fill}%
     </span>
@@ -59,7 +81,7 @@ function BatteryPill({ percent }: { percent: number }) {
 }
 
 export function VacuumCard2Widget({
-  title: _title,
+  title = "Vacuum",
   entity_id,
   progress_entity_id,
   background_image,
@@ -105,23 +127,24 @@ export function VacuumCard2Widget({
   const fanList = fanSpeedListFromAttributes(attrs);
   const fanSpeed = currentFanSpeedFromAttributes(attrs);
   const activeMode = fanModeFromSpeed(fanSpeed, fanList);
-  const isOn = isVacuumOn(state) || isVacuumOn(displayState);
   const headlineKind = vacuumHeadlineKind(displayState, progress);
-  const headline =
+  const statusLabel =
     headlineKind === "cleaningProgress"
       ? t("vacuumCard.cleaningProgress").replace("{n}", String(progress ?? 0))
       : headlineKind === "unknown"
         ? humanizeVacuumState(displayState) ||
           (entity ? t("vacuumCard.ready") : t("vacuumCard.unavailable"))
         : t(`vacuumCard.${headlineKind}`);
-  const artSrc = vacuumCard2ArtSrc({ backgroundImage: background_image, isDark });
+  const artSrc = vacuumCard2ArtSrc({
+    backgroundImage: background_image,
+    isDark,
+    displayState,
+  });
   const cardWidth = clampVacuumCard2Width(width);
   const cardHeight = clampVacuumCard2Height(height);
   const density = vacuumCard2Density(cardHeight);
   const isDense = density === "dense";
   const isCompact = density === "compact" || isDense;
-  // Always show mode controls while resizing; only tighten padding/type.
-  const showModeLabels = true;
 
   async function callVacuum(service: string, serviceData?: Record<string, unknown>) {
     const res = await fetch("/api/ha/call-service", {
@@ -135,21 +158,6 @@ export function VacuumCard2Widget({
       }),
     });
     if (!res.ok) throw new Error(`call-service failed: ${res.status}`);
-  }
-
-  function handlePower() {
-    if (!entity_id || pendingRef.current) return;
-    playUiClick();
-    pendingRef.current = true;
-    const previous = entity;
-    const nextState = isOn ? "returning" : "cleaning";
-    updateEntityState(entity_id, { state: nextState });
-    callVacuum(isOn ? "return_to_base" : "start")
-      .then(() => requestRefresh())
-      .catch(() => revertEntityState(entity_id, previous))
-      .finally(() => {
-        pendingRef.current = false;
-      });
   }
 
   function handleMode(mode: VacuumFanMode) {
@@ -173,7 +181,7 @@ export function VacuumCard2Widget({
   return (
     <div
       className={cn(
-        "glass-surface relative flex w-full flex-col overflow-hidden rounded-2xl border-0 text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] outline-none dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.65)]",
+        "relative flex w-full flex-col overflow-hidden rounded-[1.5rem] bg-[#0b0f14] text-white shadow-[0_18px_50px_rgba(0,0,0,0.55)] outline-none",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         interactive && "cursor-pointer",
@@ -189,36 +197,23 @@ export function VacuumCard2Widget({
           : undefined
       }
     >
-      <div className={cn("relative z-10 shrink-0", isDense ? "px-4 pt-3" : "px-5 pt-5")}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            {battery != null ? (
-              <BatteryPill percent={battery} />
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-400">
-                <Battery className="h-4 w-4" aria-hidden />
-                —
-              </span>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-0.5">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePower();
-              }}
-              disabled={!entity_id}
+      {/* Soft vignette so the photo blends into the card chrome */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[#0b0f14] via-transparent to-[#0b0f14]"
+        aria-hidden
+      />
+
+      <div className={cn("relative z-10 flex shrink-0 items-start justify-between gap-3", isDense ? "px-4 pt-3" : "px-5 pt-5")}>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-1">
+            <h2
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-1 py-0.5 text-sm font-semibold transition-colors disabled:opacity-40",
-                isOn ? "text-teal-500" : "text-gray-400 dark:text-white/45"
+                "truncate font-semibold tracking-tight text-white",
+                isDense ? "text-base" : isCompact ? "text-lg" : "text-xl"
               )}
-              aria-label={isOn ? t("vacuumCard.powerOff") : t("vacuumCard.powerOn")}
-              aria-pressed={isOn}
             >
-              <Power className={cn(isDense ? "h-4 w-4" : "h-[18px] w-[18px]")} aria-hidden />
-              {isDense ? null : isOn ? t("vacuumCard.on") : t("vacuumCard.off")}
-            </button>
+              {title}
+            </h2>
             {onMoreClick ? (
               <button
                 type="button"
@@ -226,32 +221,53 @@ export function VacuumCard2Widget({
                   e.stopPropagation();
                   onMoreClick();
                 }}
-                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+                className="ml-0.5 shrink-0 rounded-lg p-1 text-white/45 hover:bg-white/10 hover:text-white"
                 aria-label={t("common.options")}
               >
                 <MoreVertical className={cn(isDense ? "h-4 w-4" : "h-5 w-5")} aria-hidden />
               </button>
             ) : null}
           </div>
+          <p
+            className={cn(
+              "mt-0.5 truncate font-medium text-white/55",
+              isDense ? "text-xs" : "text-sm"
+            )}
+            title={displayState || state || undefined}
+          >
+            {statusLabel}
+          </p>
         </div>
-
-        <h2
-          className={cn(
-            "min-h-[1.25em] font-semibold leading-snug tracking-tight text-gray-950 dark:text-white",
-            isDense ? "mt-2 text-base" : isCompact ? "mt-3 text-xl" : "mt-3 text-[1.65rem]"
+        <div className="shrink-0 pt-0.5">
+          {battery != null ? (
+            <BatteryPill percent={battery} />
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/35">
+              <Battery className="h-4 w-4" aria-hidden />
+              —
+            </span>
           )}
-          title={displayState || state || undefined}
-        >
-          {headline}
-        </h2>
+        </div>
+      </div>
 
+      <div className="relative z-0 min-h-0 flex-1 overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={withBasePath(artSrc)}
+          alt=""
+          className={cn(
+            "pointer-events-none absolute inset-0 h-full w-full object-cover object-center",
+            isDense ? "scale-[1.05]" : "scale-100"
+          )}
+          draggable={false}
+        />
+      </div>
+
+      <div className={cn("relative z-10 shrink-0", isDense ? "px-3 pb-3 pt-1" : "px-4 pb-4 pt-1")}>
         <div
-          className={cn(
-            "grid grid-cols-3 rounded-2xl bg-gray-100/90 p-1 dark:bg-white/[0.06]",
-            isCompact ? "mt-3" : "mt-4"
-          )}
+          className={cn("grid grid-cols-3", isDense ? "gap-1.5" : "gap-2.5")}
           role="group"
-          aria-label={t("vacuumCard.standard")}
+          aria-label={t("vacuum.fan")}
         >
           {MODE_UI.map(({ mode, labelKey, Icon }) => {
             const selected = activeMode === mode;
@@ -265,35 +281,23 @@ export function VacuumCard2Widget({
                 }}
                 disabled={!entity_id || busyMode != null}
                 className={cn(
-                  "flex min-w-0 flex-col items-center rounded-xl px-1 text-[11px] font-medium transition-colors disabled:opacity-60",
-                  showModeLabels ? "gap-1 py-2.5" : "gap-0 py-2",
-                  isDense && "py-2",
+                  "flex min-w-0 flex-col items-center justify-center rounded-2xl transition-colors disabled:opacity-60",
+                  isDense ? "gap-0.5 px-1 py-2" : "gap-1 px-2 py-3",
                   selected
-                    ? "bg-white text-gray-900 shadow-sm dark:bg-zinc-800 dark:text-white"
-                    : "bg-transparent text-gray-400 hover:text-gray-600 dark:text-white/40 dark:hover:text-white/70"
+                    ? "bg-white/14 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
+                    : "bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white/80"
                 )}
                 aria-label={t(labelKey)}
                 aria-pressed={selected}
               >
-                <Icon className="h-4 w-4" aria-hidden />
-                {showModeLabels ? <span className="truncate">{t(labelKey)}</span> : null}
+                <Icon className={cn(isDense ? "h-4 w-4" : "h-[18px] w-[18px]")} aria-hidden />
+                <span className={cn("truncate font-medium", isDense ? "text-[10px]" : "text-[11px]")}>
+                  {t(labelKey)}
+                </span>
               </button>
             );
           })}
         </div>
-      </div>
-
-      <div className="relative min-h-0 flex-1 overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={withBasePath(artSrc)}
-          alt=""
-          className={cn(
-            "pointer-events-none absolute left-1/2 w-[118%] max-w-none -translate-x-1/2 object-cover object-top",
-            isDense ? "bottom-[-28%] h-[95%]" : "bottom-[-18%] h-[108%]"
-          )}
-          draggable={false}
-        />
       </div>
     </div>
   );
