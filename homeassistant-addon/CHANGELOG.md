@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.79
+
+- Vacuum card 2 redesign: mockup layout (title + status + battery, hero art, Eco/Standard/Turbo tiles) with docked / empty-dock WebP art
+
 ## 0.4.78
 
 - Weather card redesign: curated day/night WebP backgrounds, metrics bar (wind, humidity, air quality, precipitation), and per-detail switches in the edit panel
