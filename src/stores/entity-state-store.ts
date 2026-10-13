@@ -49,6 +49,12 @@ export const useEntityStateStore = create<EntityStateStore>((set, get) => ({
         states[e.entity_id] = e;
       }
     }
+    // Keep locked entities that the poll omitted (e.g. preview mocks, brief HA gaps).
+    for (const [entityId, until] of Object.entries(locks)) {
+      if (until > now && current[entityId] && !states[entityId]) {
+        states[entityId] = current[entityId];
+      }
+    }
     set({ states, updatedAt: Date.now(), error: null });
   },
   updateEntityState: (entityId, patch) => {

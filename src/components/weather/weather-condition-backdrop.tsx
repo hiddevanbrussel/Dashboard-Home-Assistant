@@ -27,10 +27,8 @@ export function WeatherConditionBackdrop({
   }, [src]);
 
   useEffect(() => {
-    if (!effective) {
-      setShown(null);
-      return;
-    }
+    // Keep the last frame if the next source is briefly unavailable (entity flicker).
+    if (!effective) return;
     if (shown === effective) return;
     let cancelled = false;
     const img = new window.Image();
