@@ -3,6 +3,8 @@ import {
   clampWeatherCardHeight,
   clampWeatherCardWidth,
   resizeWeatherCardFromBottomRight,
+  weatherIconFile,
+  weatherIconSrc,
   weatherImageBase,
   weatherImageSources,
   WEATHER_CARD_DEFAULT_HEIGHT,
@@ -76,5 +78,35 @@ describe("weather card images", () => {
       src: "/weather-partlycloudy-night.png",
       fallback: "/weather-partlycloudy.png",
     });
+  });
+});
+
+describe("weather color icons", () => {
+  it("maps Home Assistant conditions onto distinct Pixeden stems", () => {
+    expect(weatherIconFile("sunny")).toBe("sunny");
+    expect(weatherIconFile("clear")).toBe("sunny");
+    expect(weatherIconFile("zonnig")).toBe("sunny");
+    expect(weatherIconFile("clear-night")).toBe("clear-night");
+    expect(weatherIconFile("partlycloudy")).toBe("partlycloudy");
+    expect(weatherIconFile("cloudy")).toBe("cloudy");
+    expect(weatherIconFile("fog")).toBe("fog");
+    expect(weatherIconFile("mist")).toBe("fog");
+    expect(weatherIconFile("rainy")).toBe("rainy");
+    expect(weatherIconFile("pouring")).toBe("pouring");
+    expect(weatherIconFile("hail")).toBe("hail");
+    expect(weatherIconFile("snowy")).toBe("snowy");
+    expect(weatherIconFile("snowy-rainy")).toBe("snowy-rainy");
+    expect(weatherIconFile("lightning")).toBe("lightning");
+    expect(weatherIconFile("lightning-rainy")).toBe("lightning-rainy");
+    expect(weatherIconFile("windy")).toBe("windy");
+    expect(weatherIconFile("windy-variant")).toBe("windy-variant");
+    expect(weatherIconFile("exceptional")).toBe("exceptional");
+    expect(weatherIconFile("unknown")).toBe("cloudy");
+    expect(weatherIconFile("")).toBe("cloudy");
+  });
+
+  it("builds a public path under /weather-icons", () => {
+    expect(weatherIconSrc("partlycloudy")).toBe("/weather-icons/partlycloudy.png");
+    expect(weatherIconSrc("Sunny")).toBe("/weather-icons/sunny.png");
   });
 });

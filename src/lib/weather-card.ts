@@ -124,3 +124,69 @@ export function weatherImageSources(
     fallback: isNight ? `${base}.png` : null,
   };
 }
+
+/** Pixeden color-icon stems in `/public/weather-icons`. */
+export const WEATHER_ICON_FILES = [
+  "sunny",
+  "clear-night",
+  "cloudy",
+  "partlycloudy",
+  "fog",
+  "rainy",
+  "pouring",
+  "hail",
+  "snowy",
+  "snowy-rainy",
+  "lightning",
+  "lightning-rainy",
+  "windy",
+  "windy-variant",
+  "exceptional",
+] as const;
+
+export type WeatherIconFile = (typeof WEATHER_ICON_FILES)[number];
+
+/** Map a Home Assistant weather condition to a color icon file stem. */
+export function weatherIconFile(condition: string): WeatherIconFile {
+  const s = condition?.toLowerCase() ?? "";
+  switch (s) {
+    case "sunny":
+    case "clear":
+    case "zonnig":
+      return "sunny";
+    case "clear-night":
+      return "clear-night";
+    case "partlycloudy":
+      return "partlycloudy";
+    case "fog":
+    case "mist":
+      return "fog";
+    case "rainy":
+      return "rainy";
+    case "pouring":
+      return "pouring";
+    case "hail":
+      return "hail";
+    case "snowy":
+      return "snowy";
+    case "snowy-rainy":
+      return "snowy-rainy";
+    case "lightning":
+      return "lightning";
+    case "lightning-rainy":
+      return "lightning-rainy";
+    case "windy":
+      return "windy";
+    case "windy-variant":
+      return "windy-variant";
+    case "exceptional":
+      return "exceptional";
+    case "cloudy":
+    default:
+      return "cloudy";
+  }
+}
+
+export function weatherIconSrc(condition: string): string {
+  return `/weather-icons/${weatherIconFile(condition)}.png`;
+}
