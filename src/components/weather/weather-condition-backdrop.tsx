@@ -41,7 +41,7 @@ export function WeatherConditionBackdrop({
           src={effective}
           alt=""
           fill
-          sizes="(max-width: 500px) 100vw, 500px"
+          sizes="(max-width: 640px) 100vw, 576px"
           className="object-cover object-center"
           onError={fallback ? () => setImageError(true) : undefined}
         />

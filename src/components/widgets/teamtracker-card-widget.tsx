@@ -251,7 +251,7 @@ export function TeamtrackerCardWidget({
 
   return (
     <div className={cn("relative flex h-full min-h-0 w-full flex-col", className)}>
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#E6E8EC] bg-white text-[#2A2D37] dark:border-white/10 dark:bg-zinc-950 dark:text-white">
+      <div className="glass-surface relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl text-[#2A2D37] dark:text-white">
         {onMoreClick ? (
           <button
             type="button"

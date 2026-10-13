@@ -105,12 +105,15 @@ export function SensorCardWidget({
   const displayValue = formatValue(state);
   const matchedColor = matchCondition(state, conditions);
   const conditionClass = matchedColor && CONDITION_COLORS[matchedColor] ? CONDITION_COLORS[matchedColor] : null;
+  const tinted = Boolean(conditionClass);
 
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl text-white shadow-xl backdrop-blur-2xl border",
-        conditionClass ?? "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
+        "flex w-full flex-col overflow-hidden rounded-2xl border-0 shadow-xl",
+        tinted
+          ? cn("text-white backdrop-blur-2xl", conditionClass)
+          : "glass-surface text-gray-900 dark:text-white",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
@@ -120,25 +123,42 @@ export function SensorCardWidget({
       <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-1">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {show_icon && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
+            <div
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+                tinted
+                  ? "bg-white/15 text-white"
+                  : "bg-gray-200/80 text-gray-700 dark:bg-white/15 dark:text-white"
+              )}
+            >
               <IconComponent className="h-5 w-5" aria-hidden />
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="font-medium truncate text-white/90">{title}</p>
+            <p className={cn("truncate font-medium", tinted ? "text-white/90" : "text-gray-800 dark:text-white/90")}>
+              {title}
+            </p>
           </div>
         </div>
         {onMoreClick ? (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-            className="p-1.5 rounded-lg shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            className={cn(
+              "shrink-0 rounded-lg p-1.5 transition-colors",
+              tinted
+                ? "text-white/70 hover:bg-white/10 hover:text-white"
+                : "text-gray-400 hover:bg-black/5 hover:text-gray-700 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
+            )}
             aria-label={t("common.options")}
           >
             <MoreVertical className="h-5 w-5" aria-hidden />
           </button>
         ) : (
-          <div className="shrink-0 rounded-full p-1 text-white/50 hover:text-white/70" aria-label="Info">
+          <div
+            className={cn("shrink-0 rounded-full p-1", tinted ? "text-white/50 hover:text-white/70" : "text-gray-400")}
+            aria-label="Info"
+          >
             <Info className="h-4 w-4" aria-hidden />
           </div>
         )}
@@ -147,7 +167,8 @@ export function SensorCardWidget({
         <div className="flex items-baseline gap-2 flex-wrap">
           <span
             className={cn(
-              "font-bold tabular-nums text-white",
+              "font-bold tabular-nums",
+              tinted ? "text-white" : "text-gray-900 dark:text-white",
               size === "sm" && "text-2xl",
               size === "md" && "text-3xl",
               size === "lg" && "text-4xl"

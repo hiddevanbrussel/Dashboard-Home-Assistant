@@ -36,7 +36,6 @@ import {
   resolveSunTimes,
 } from "@/lib/sun-times";
 import { HeaderNotifications } from "./header-notifications";
-import { HeaderTimer } from "./header-timer";
 import { HeaderVoice } from "./header-voice";
 import { useNewsStore } from "@/stores/news-store";
 import { NewsOverlay } from "@/components/news-overlay";
@@ -432,8 +431,7 @@ export function AppShell({
               className={cn(
                 // Full viewport width (edge-to-edge, including behind sidebar), like energy bg
                 "fixed inset-x-0 top-0 z-[70]",
-                headerScrolled &&
-                  (headerContentLight ? "header-chrome-glass-over-media" : "header-chrome-glass")
+                headerContentLight ? "header-chrome-glass-over-media" : "header-chrome-glass"
               )}
             >
               <div
@@ -520,7 +518,6 @@ export function AppShell({
                     )}
                     {headerStartAction}
                     {headerEndAction}
-                    <HeaderTimer contentLight={headerContentLight} />
                     <HeaderNotifications contentLight={headerContentLight} />
                   </div>
                 </div>

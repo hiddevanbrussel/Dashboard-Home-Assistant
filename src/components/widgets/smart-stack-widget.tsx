@@ -135,7 +135,7 @@ export function SmartStackWidget({
         "relative h-full w-full min-h-0 overflow-hidden rounded-2xl",
         // Empty / edit placeholder only: light frame. With slides, the nested card is the visual.
         isEmpty &&
-          "flex flex-col border border-black/5 bg-white/70 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-950/70",
+          "flex flex-col glass-surface shadow-xl",
         className
       )}
       style={{ width: cardW, height: cardH }}

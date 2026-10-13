@@ -181,7 +181,7 @@ export function AlarmCardWidget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/90 dark:bg-black/50 text-gray-900 dark:text-white shadow-xl backdrop-blur-2xl border border-gray-200/80 dark:border-white/10 min-h-[7.75rem]",
+        "glass-surface flex w-full min-h-[7.75rem] flex-col overflow-hidden rounded-2xl border-0 text-gray-900 shadow-xl dark:text-white",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",

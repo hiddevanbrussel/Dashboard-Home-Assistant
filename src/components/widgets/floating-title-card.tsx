@@ -187,8 +187,7 @@ export function FloatingTitleCard({
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30 flex flex-col rounded-2xl overflow-hidden shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
-        hasContent ? "bg-white/10 dark:bg-black/50" : "bg-white/5 dark:bg-black/30",
+        "card-plot-in glass-surface fixed z-30 flex flex-col overflow-hidden rounded-2xl shadow-xl",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

@@ -476,9 +476,7 @@ export function ClimateCard2Widget({
     <div
       className={cn(
         "flex w-full flex-col overflow-hidden outline-none isolate",
-        isCompactLayout
-          ? "rounded-2xl border-0 bg-white/80 text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:bg-zinc-950/80 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.65)]"
-          : "rounded-2xl border-0 bg-white text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:bg-zinc-950 dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.65)]",
+        "glass-surface rounded-2xl border-0 text-gray-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.65)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         className

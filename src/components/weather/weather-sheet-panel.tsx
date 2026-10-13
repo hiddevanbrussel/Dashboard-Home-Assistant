@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, Droplets } from "lucide-react";
+import { WeatherColorIcon } from "@/components/weather/weather-color-icon";
 import { WeatherConditionBackdrop } from "@/components/weather/weather-condition-backdrop";
-import { WeatherIcon } from "@/components/widgets/weather-card-widget";
 import { useTranslation } from "@/hooks/use-translation";
 import { useLanguageStore } from "@/stores/language-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -35,18 +35,25 @@ async function loadForecast(entityId: string, type: "hourly" | "daily"): Promise
 export function WeatherSheetPanel({
   entityId,
   onClose,
+  hourly: hourlyOverride,
+  daily: dailyOverride,
 }: {
   entityId: string;
   onClose?: () => void;
+  hourly?: WeatherForecastItem[];
+  daily?: WeatherForecastItem[];
 }) {
   const { t } = useTranslation();
   const language = useLanguageStore((s) => s.language);
   const locale = language === "nl" ? "nl-NL" : "en-GB";
   const entity = useEntityStateStore((s) => s.getState(entityId));
-  const [hourly, setHourly] = useState<WeatherForecastItem[]>([]);
-  const [daily, setDaily] = useState<WeatherForecastItem[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const hasOverride = hourlyOverride != null && dailyOverride != null;
+  const [hourlyState, setHourly] = useState<WeatherForecastItem[]>(hourlyOverride ?? []);
+  const [dailyState, setDaily] = useState<WeatherForecastItem[]>(dailyOverride ?? []);
+  const [loaded, setLoaded] = useState(hasOverride);
 
+  const hourly = hourlyOverride ?? hourlyState;
+  const daily = dailyOverride ?? dailyState;
   const condition = (entity?.state as string) ?? "";
   const temperature =
     entity?.attributes?.temperature != null ? Number(entity.attributes.temperature) : undefined;
@@ -57,7 +64,7 @@ export function WeatherSheetPanel({
   const today = daily.find((item) => isForecastToday(item.datetime)) ?? daily[0];
 
   useEffect(() => {
-    if (!entityId) return;
+    if (!entityId || hasOverride) return;
     let cancelled = false;
     setLoaded(false);
     Promise.all([loadForecast(entityId, "hourly"), loadForecast(entityId, "daily")])
@@ -73,14 +80,14 @@ export function WeatherSheetPanel({
     return () => {
       cancelled = true;
     };
-  }, [entityId]);
+  }, [entityId, hasOverride]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="relative h-[19.5rem] shrink-0 overflow-hidden">
+      <div className="relative h-[16.5rem] shrink-0 overflow-hidden">
         <WeatherConditionBackdrop condition={condition} fade />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-white from-10% via-white/85 to-transparent dark:from-black dark:via-black/85" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white via-white/55 to-transparent dark:from-black dark:via-black/55" />
 
         <div className="relative z-10 flex h-full flex-col px-5">
           <div className="flex shrink-0 justify-center pb-1 pt-3">
@@ -102,30 +109,33 @@ export function WeatherSheetPanel({
             </h2>
           </div>
 
-          <div className="flex flex-1 flex-col items-center justify-center pb-10 text-center text-white">
-            <WeatherIcon state={condition} className="h-12 w-12 drop-shadow-sm" />
+          <div className="flex flex-1 flex-col items-center justify-center pb-4 text-center text-white">
+            <WeatherColorIcon state={condition} className="h-16 w-16 drop-shadow-sm" />
             <p className="mt-1 text-[4.25rem] font-semibold leading-none tracking-tight drop-shadow-md">
               {formatTemp(temperature)}
             </p>
-            <p className="mt-2 text-sm font-medium text-white/85 drop-shadow-sm">
-              {condition ? conditionLabel(condition, t) : t("weatherSheet.unknown")}
-            </p>
-            <p className="mt-1 text-sm text-white/70 drop-shadow-sm">
-              {t("weatherSheet.highLow")
-                .replace("{high}", formatTemp(today?.temperature ?? temperature))
-                .replace("{low}", formatTemp(today?.templow))}
-            </p>
-            {humidity != null && !Number.isNaN(humidity) ? (
-              <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-white/70 drop-shadow-sm">
-                <Droplets className="h-3.5 w-3.5" />
-                {Math.round(humidity)}%
-              </p>
-            ) : null}
           </div>
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-1">
+        <div className="pb-3 text-center">
+          <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+            {condition ? conditionLabel(condition, t) : t("weatherSheet.unknown")}
+          </p>
+          <p className="mt-1 text-sm text-gray-600 dark:text-white/65">
+            {t("weatherSheet.highLow")
+              .replace("{high}", formatTemp(today?.temperature ?? temperature))
+              .replace("{low}", formatTemp(today?.templow))}
+          </p>
+          {humidity != null && !Number.isNaN(humidity) ? (
+            <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-white/65">
+              <Droplets className="h-3.5 w-3.5" />
+              {Math.round(humidity)}%
+            </p>
+          ) : null}
+        </div>
+
         <section className="rounded-[1.35rem] bg-white px-3 py-3 shadow-sm dark:bg-white/5">
           <h3 className="px-2 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
             {t("weatherSheet.hourly")}
@@ -137,11 +147,11 @@ export function WeatherSheetPanel({
           ) : (
             <div className="flex gap-3 overflow-x-auto pb-1">
               {hourly.map((item) => (
-                <div key={item.datetime} className="flex w-12 shrink-0 flex-col items-center gap-1.5 py-1">
+                <div key={item.datetime} className="flex w-14 shrink-0 flex-col items-center gap-1.5 py-1">
                   <span className="text-[11px] font-medium text-gray-400 dark:text-white/45">
                     {formatForecastHour(item.datetime, locale)}
                   </span>
-                  <WeatherIcon state={item.condition || condition} className="h-5 w-5 text-sky-500 dark:text-sky-300" />
+                  <WeatherColorIcon state={item.condition || condition} className="h-7 w-7" />
                   <span className="text-sm font-semibold tabular-nums text-gray-800 dark:text-white">
                     {formatTemp(item.temperature)}
                   </span>
@@ -171,7 +181,7 @@ export function WeatherSheetPanel({
                       ? t("weatherSheet.today")
                       : formatForecastWeekday(item.datetime, locale)}
                   </span>
-                  <WeatherIcon state={item.condition || condition} className="h-5 w-5 text-sky-500 dark:text-sky-300" />
+                  <WeatherColorIcon state={item.condition || condition} className="h-6 w-6" />
                   {item.precipitationProbability != null ? (
                     <span className="w-10 text-xs font-medium text-sky-500">
                       {Math.round(item.precipitationProbability)}%

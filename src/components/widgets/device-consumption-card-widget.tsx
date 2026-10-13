@@ -69,7 +69,7 @@ export function DeviceConsumptionCardWidget({
   return (
     <div
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl bg-white/10 dark:bg-black/50 backdrop-blur-2xl text-gray-900 dark:text-white shadow-xl border border-white/20 dark:border-white/10",
+        "glass-surface flex w-full flex-col overflow-hidden rounded-2xl text-gray-900 shadow-xl dark:text-white",
         className
       )}
     >

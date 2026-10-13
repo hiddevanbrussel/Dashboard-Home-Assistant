@@ -94,42 +94,45 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
   });
 
   return (
-    <aside
-      data-app-sidebar
-      className={cn(
-        "sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-3 [touch-action:none] [-webkit-user-drag:none]",
-        className
-      )}
-      aria-label={t("nav.sidebar")}
-    >
-      {[...coreItems, ...extra].map(({ href, icon: Icon, labelKey }) => {
-        const isActive = activeHref === href;
-        return (
-          <Link
-            key={href}
-            href={href}
-            draggable={false}
-            onDragStart={(event) => event.preventDefault()}
-            aria-label={t(labelKey)}
-            title={t(labelKey)}
-            className={cn(navButtonClass(isActive), "[-webkit-user-drag:none]")}
-          >
-            <Icon className="h-5 w-5" />
-          </Link>
-        );
-      })}
-      <span className="relative z-[1] my-1 h-px w-6 bg-black/10 dark:bg-white/25" aria-hidden />
-      <ThemeIconButton />
-      <Link
-        href="/settings"
-        draggable={false}
-        onDragStart={(event) => event.preventDefault()}
-        aria-label={t("nav.settings")}
-        title={t("nav.settings")}
-        className={cn(navButtonClass(activeHref === "/settings"), "[-webkit-user-drag:none]")}
+    <div className={cn("flex flex-col items-center gap-4", className)}>
+      <aside
+        data-app-sidebar
+        className="sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-3 [touch-action:none] [-webkit-user-drag:none]"
+        aria-label={t("nav.sidebar")}
       >
-        <Settings className="h-5 w-5" />
-      </Link>
-    </aside>
+        {[...coreItems, ...extra].map(({ href, icon: Icon, labelKey }) => {
+          const isActive = activeHref === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              draggable={false}
+              onDragStart={(event) => event.preventDefault()}
+              aria-label={t(labelKey)}
+              title={t(labelKey)}
+              className={cn(navButtonClass(isActive), "[-webkit-user-drag:none]")}
+            >
+              <Icon className="h-5 w-5" />
+            </Link>
+          );
+        })}
+      </aside>
+      <aside
+        className="sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-3 [touch-action:none] [-webkit-user-drag:none]"
+        aria-label={t("nav.utilities")}
+      >
+        <ThemeIconButton />
+        <Link
+          href="/settings"
+          draggable={false}
+          onDragStart={(event) => event.preventDefault()}
+          aria-label={t("nav.settings")}
+          title={t("nav.settings")}
+          className={cn(navButtonClass(activeHref === "/settings"), "[-webkit-user-drag:none]")}
+        >
+          <Settings className="h-5 w-5" />
+        </Link>
+      </aside>
+    </div>
   );
 }

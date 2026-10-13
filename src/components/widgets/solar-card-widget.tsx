@@ -106,7 +106,7 @@ export function SolarCardWidget({
   const displayMonth = monthYield > 0 ? monthYield : yieldDataMonth.value;
 
   const cardBase =
-    "rounded-2xl bg-white/10 dark:bg-black/50 backdrop-blur-2xl text-gray-900 dark:text-white shadow-xl border border-white/20 dark:border-white/10 overflow-hidden";
+    "glass-surface overflow-hidden rounded-2xl text-gray-900 shadow-xl dark:text-white";
 
   const hasYieldEntity = !!(entity_id ?? entityToday ?? entityMonth);
 

@@ -24,6 +24,7 @@ describe("temporarily disabled widget types", () => {
     expect(isWidgetTypeTemporarilyDisabled("energy_monitor_card")).toBe(false);
     expect(isWidgetTypeTemporarilyDisabled("calendar_card")).toBe(false);
     expect(isWidgetTypeTemporarilyDisabled("chore_card")).toBe(false);
+    expect(isWidgetTypeTemporarilyDisabled("timer_card")).toBe(false);
     expect(isWidgetTypeTemporarilyDisabled("vacuum_card_2")).toBe(false);
     expect(isWidgetTypeTemporarilyDisabled("camera_card")).toBe(false);
     expect(isWidgetTypeTemporarilyDisabled("nuts_card")).toBe(false);
