@@ -2,13 +2,15 @@
 
 import { cssUrl } from "@/lib/base-path";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AppShell } from "@/components/layout/app-shell";
-import { DoorOpen, Image as ImageIcon, Plus, X } from "lucide-react";
+import { Check, DoorOpen, Image as ImageIcon, Pencil, Plus, X } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { CARD_ICONS } from "@/components/widgets/card-icons";
 import { RoomPreviewCard } from "@/components/widgets/room-preview-card";
 import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
+import { checkEditModePasscode, getEditModeAllowed, getEditModePasscode } from "@/stores/dashboard-settings-store";
 
 const ROOM_ICON_OPTIONS = ["trees", "popcorn", "utensils-crossed", "towel-rack", "baby", "rocket", "gamepad", "tent-tree", "footprints", "eye-closed", "drill", "shelving-unit", "tool-case"] as const;
 
@@ -78,6 +80,10 @@ export default function RoomsPage() {
   const [editEntities, setEditEntities] = useState<{ entity_id: string; attributes?: Record<string, unknown> }[]>([]);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editPasscodeModalOpen, setEditPasscodeModalOpen] = useState(false);
+  const [editPasscodeInput, setEditPasscodeInput] = useState("");
+  const [editPasscodeError, setEditPasscodeError] = useState<string | null>(null);
   const [floorIndex, setFloorIndex] = useState(0);
   const [pendingFloor, setPendingFloor] = useState<string | null>(null);
   const floorScrollerRef = useRef<HTMLDivElement>(null);
@@ -309,31 +315,59 @@ export default function RoomsPage() {
     setNewBackgroundPreview(null);
   };
 
+  function requestEditMode() {
+    const passcode = getEditModePasscode().trim();
+    if (passcode) {
+      setEditPasscodeInput("");
+      setEditPasscodeError(null);
+      setEditPasscodeModalOpen(true);
+      return;
+    }
+    setEditMode(true);
+  }
+
   return (
     <AppShell
       activeTab="/rooms"
       contentNoScroll
       headerEndAction={
-        <button
-          type="button"
-          onClick={openAddModal}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-white shadow-sm transition-opacity hover:opacity-90"
-          aria-label={t("rooms.addRoom")}
-        >
-          <Plus className="h-5 w-5" />
-        </button>
+        editMode ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openAddModal}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-white shadow-sm transition-opacity hover:opacity-90"
+              aria-label={t("rooms.addRoom")}
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditMode(false)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-white/10 dark:text-gray-200 dark:hover:bg-white/20"
+              aria-label={t("editPanel.doneEditing")}
+            >
+              <Check className="h-5 w-5" />
+            </button>
+          </div>
+        ) : getEditModeAllowed() ? (
+          <button
+            type="button"
+            onClick={requestEditMode}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-white shadow-sm transition-opacity hover:opacity-90"
+            aria-label={t("editPanel.editDashboard")}
+          >
+            <Pencil className="h-5 w-5" />
+          </button>
+        ) : undefined
       }
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-5 px-2 md:px-4">
+      <div data-rooms-page className="flex min-h-0 flex-1 flex-col gap-5 px-2 md:px-4">
         <div className="flex shrink-0 flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">{t("rooms.kicker")}</p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
               {t("rooms.title")}
             </h1>
-            <p className="mt-1 max-w-xl text-sm text-gray-500 dark:text-gray-400">
-              {t("rooms.description")}
-            </p>
           </div>
           {floorTabs.length > 1 && (
             <div className="flex flex-wrap gap-0.5 rounded-full bg-black/5 p-0.5 dark:bg-white/5" role="tablist" aria-label={t("rooms.floors")}>
@@ -382,16 +416,18 @@ export default function RoomsPage() {
               {t("rooms.empty")}
             </p>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-              {t("rooms.emptyHint")}
+              {t(editMode ? "rooms.emptyHint" : "rooms.emptyHintEdit")}
             </p>
-            <button
-              type="button"
-              onClick={openAddModal}
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" />
-              {t("rooms.addRoom")}
-            </button>
+            {editMode ? (
+              <button
+                type="button"
+                onClick={openAddModal}
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90"
+              >
+                <Plus className="h-4 w-4" />
+                {t("rooms.addRoom")}
+              </button>
+            ) : null}
           </div>
         )}
 
@@ -477,12 +513,16 @@ export default function RoomsPage() {
                         icon={r.icon}
                         iconBackgroundColor={r.iconBackgroundColor}
                         background={r.background}
-                        onEdit={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openEditModal(r);
-                        }}
-                        onDelete={(e) => handleDelete(r.areaId, e)}
+                        onEdit={
+                          editMode
+                            ? (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openEditModal(r);
+                              }
+                            : undefined
+                        }
+                        onDelete={editMode ? (e) => handleDelete(r.areaId, e) : undefined}
                       />
                     ))}
                   </div>
@@ -914,6 +954,52 @@ export default function RoomsPage() {
             </form>
           </div>
         </div>
+      )}
+      {editPasscodeModalOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[300]" aria-modal="true" role="dialog">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm dark:bg-black/60"
+            aria-hidden
+            onClick={() => {
+              setEditPasscodeModalOpen(false);
+              setEditPasscodeError(null);
+              setEditPasscodeInput("");
+            }}
+          />
+          <div className="fixed left-1/2 top-1/2 z-[301] w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-white/10 dark:bg-gray-900">
+            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {t("settings.dashboard.enterPasscode")}
+            </h3>
+            <input
+              type="password"
+              value={editPasscodeInput}
+              onChange={(e) => {
+                setEditPasscodeInput(e.target.value);
+                setEditPasscodeError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                if (checkEditModePasscode(editPasscodeInput)) {
+                  setEditMode(true);
+                  setEditPasscodeModalOpen(false);
+                  setEditPasscodeInput("");
+                  setEditPasscodeError(null);
+                } else {
+                  setEditPasscodeError(t("settings.dashboard.wrongPasscode"));
+                }
+              }}
+              placeholder={t("settings.dashboard.editModePasscodePlaceholder")}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/20 dark:bg-white/5 dark:text-gray-200"
+              autoFocus
+              autoComplete="off"
+            />
+            {editPasscodeError ? (
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{editPasscodeError}</p>
+            ) : null}
+          </div>
+        </div>,
+        document.body
       )}
     </AppShell>
   );

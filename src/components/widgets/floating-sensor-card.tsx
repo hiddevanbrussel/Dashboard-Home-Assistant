@@ -192,7 +192,7 @@ export function FloatingSensorCard({
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30 shadow-xl rounded-2xl overflow-hidden bg-white/10 dark:bg-black/50 backdrop-blur-2xl border border-white/20 dark:border-white/10",
+        "card-plot-in glass-surface fixed z-30 overflow-hidden rounded-2xl shadow-xl",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

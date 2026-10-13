@@ -140,7 +140,7 @@ export function ChoreCardWidget({ childId, showPoints = true, title, onMoreClick
   });
 
   return (
-    <div className="flex flex-col rounded-2xl bg-white/60 shadow-md dark:bg-white/5 backdrop-blur-sm overflow-hidden">
+    <div className="glass-surface flex flex-col overflow-hidden rounded-2xl shadow-md">
       {/* header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-black/5 dark:border-white/10">
         <ListTodo className="h-4 w-4 text-indigo-500" />

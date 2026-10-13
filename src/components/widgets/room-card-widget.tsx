@@ -119,8 +119,8 @@ export function RoomCardWidget({
         "relative flex h-full w-full min-h-0 overflow-hidden rounded-2xl",
         embedded
           ? "bg-transparent"
-          : "bg-white/10 dark:bg-black/50 shadow-xl backdrop-blur-2xl border border-white/20 dark:border-white/10",
-        !embedded && !isConfigured && "border-2 border-dashed border-gray-300 dark:border-white/20",
+          : "glass-surface shadow-xl",
+        !embedded && !isConfigured && "ring-2 ring-dashed ring-gray-300 dark:ring-white/20",
         onCardClick && "cursor-pointer hover:ring-2 hover:ring-[#4700B5]/30 transition-shadow",
         className
       )}

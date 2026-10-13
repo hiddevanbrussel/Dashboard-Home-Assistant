@@ -162,8 +162,7 @@ export function FloatingChoreCard({
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30 shadow-xl rounded-2xl overflow-hidden border transition-colors duration-200",
-        "bg-white/80 dark:bg-gray-900/80 border-white/30 dark:border-white/10 backdrop-blur-2xl",
+        "card-plot-in glass-surface fixed z-30 overflow-hidden rounded-2xl shadow-xl transition-colors duration-200",
         editMode && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && "animate-edit-wiggle"
       )}

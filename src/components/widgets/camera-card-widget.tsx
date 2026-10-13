@@ -47,7 +47,7 @@ export function CameraCardWidget({
   return (
     <div
       className={cn(
-        "flex flex-col overflow-hidden rounded-2xl bg-black/80 dark:bg-black/90 text-white shadow-xl border border-white/20 dark:border-white/10",
+        "flex flex-col overflow-hidden rounded-2xl bg-black/80 text-white shadow-xl dark:bg-black/90",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",

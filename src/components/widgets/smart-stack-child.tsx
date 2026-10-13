@@ -39,7 +39,7 @@ export function SmartStackChild({
     return (
       <div
         className={cn(
-          "flex h-full w-full items-center justify-center rounded-2xl bg-white/70 p-4 text-center text-sm text-gray-500 dark:bg-zinc-900/80 dark:text-white/50",
+          "glass-surface flex h-full w-full items-center justify-center rounded-2xl p-4 text-center text-sm text-gray-500 dark:text-white/50",
           className
         )}
       >
@@ -180,7 +180,7 @@ export function SmartStackChild({
       return (
         <div
           className={cn(
-            "h-full w-full overflow-hidden rounded-2xl border border-black/[0.06] bg-white/95 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-950/90",
+            "glass-surface h-full w-full overflow-hidden rounded-2xl shadow-xl",
             className
           )}
         >

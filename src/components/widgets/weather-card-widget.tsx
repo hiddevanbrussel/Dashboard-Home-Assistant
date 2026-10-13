@@ -59,7 +59,7 @@ export function WeatherCardWidget({
   return (
     <div
       className={cn(
-        "relative flex w-full h-full min-h-[125px] flex-col overflow-hidden rounded-2xl text-white shadow-xl border border-white/20 dark:border-white/10",
+        "relative flex h-full min-h-[125px] w-full flex-col overflow-hidden rounded-2xl text-white shadow-xl",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",

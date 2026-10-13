@@ -179,9 +179,7 @@ export function NutsCardWidget({
     <div
       ref={rootRef}
       className={cn(
-        "flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl border-0 outline-none shadow-xl backdrop-blur-2xl",
-        "bg-white/85 text-gray-900",
-        "dark:bg-zinc-950/85 dark:text-white",
+        "glass-surface flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl border-0 text-gray-900 shadow-xl outline-none dark:text-white",
         className
       )}
     >

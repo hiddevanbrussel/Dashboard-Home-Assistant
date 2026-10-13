@@ -428,8 +428,7 @@ export function FloatingRoomCard({
       >
         <div
           className={cn(
-            "flex h-full w-full overflow-hidden rounded-2xl border shadow-xl backdrop-blur-2xl transition-colors duration-200",
-            "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10"
+            "glass-surface flex h-full w-full overflow-hidden rounded-2xl shadow-xl transition-colors duration-200",
           )}
         >
           {cardContent}
@@ -469,8 +468,7 @@ export function FloatingRoomCard({
     >
       <div
         className={cn(
-          "flex h-full w-full overflow-hidden rounded-2xl border shadow-xl backdrop-blur-2xl transition-colors duration-200",
-          "bg-white/10 dark:bg-black/50 border-white/20 dark:border-white/10",
+          "glass-surface flex h-full w-full overflow-hidden rounded-2xl shadow-xl transition-colors duration-200",
           editMode && !isDragging && !isResizing && "animate-edit-wiggle"
         )}
       >

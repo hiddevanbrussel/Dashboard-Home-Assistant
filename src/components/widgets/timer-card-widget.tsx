@@ -25,7 +25,7 @@ export function TimerCardWidget({
   const active = status !== "idle";
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl bg-white/60 shadow-md backdrop-blur-sm dark:bg-white/5">
+    <div className="glass-surface flex flex-col overflow-hidden rounded-2xl shadow-md">
       <div className="flex items-center gap-2 border-b border-black/5 px-4 py-3 dark:border-white/10">
         <Timer className="h-4 w-4 text-brand" />
         <span className="flex-1 text-sm font-semibold text-gray-800 dark:text-white">
