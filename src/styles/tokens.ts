@@ -16,7 +16,7 @@ export const tokens = {
     },
     dark: {
       pageBg: "#0A0014",
-      cardBg: "rgba(71, 0, 181, 0.28)",
+      cardBg: "rgba(24, 24, 28, 0.55)",
       cardSolid: "#1C0A3A",
       accentGreen: "#6BE46B",
       accentOrange: "#F2A654",
@@ -33,7 +33,7 @@ export const tokens = {
     glass: 12,
   },
   shadow: {
-    glass: "0 8px 32px rgba(71, 0, 181, 0.08)",
+    glass: "0 8px 32px rgba(15, 23, 42, 0.08)",
     glassDark: "0 8px 32px rgba(0, 0, 0, 0.35)",
   },
   typography: {
