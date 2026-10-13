@@ -363,8 +363,11 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
     }
   }
 
-  /* Top chrome: always frosted, no hard edge */
+  /* Top chrome: heavier frost, fading out below the bar */
   [data-app-chrome] {
+    --header-fade: 3.25rem;
+    --header-blur: calc(var(--glass-blur) * 1.65 + 20px);
+    pointer-events: none;
     transition:
       background 180ms ease,
       box-shadow 180ms ease,
@@ -372,67 +375,46 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
       backdrop-filter 180ms ease;
   }
 
-  .header-chrome-glass {
-    background: rgb(255 255 255 / calc(var(--glass-opacity) * 0.88));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  [data-app-chrome] [data-app-header] {
+    pointer-events: auto;
+  }
+
+  .header-chrome-glass,
+  .header-chrome-glass-over-media {
+    padding-bottom: var(--header-fade);
     border: none;
     border-bottom: none;
     box-shadow: none;
     outline: none;
-    overflow: visible;
+    overflow: hidden;
     transform: translateZ(0);
     will-change: backdrop-filter;
+    -webkit-backdrop-filter: blur(var(--header-blur)) saturate(var(--glass-saturation));
+    backdrop-filter: blur(var(--header-blur)) saturate(var(--glass-saturation));
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 0%,
+      #000 calc(100% - var(--header-fade)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      #000 0%,
+      #000 calc(100% - var(--header-fade)),
+      transparent 100%
+    );
+  }
+
+  .header-chrome-glass {
+    background: rgb(255 255 255 / calc(var(--glass-opacity) * 0.62));
   }
 
   .dark .header-chrome-glass {
-    background: rgb(12 8 22 / calc(0.42 + 0.4 * var(--glass-opacity-dark)));
+    background: rgb(12 8 22 / calc(0.32 + 0.3 * var(--glass-opacity-dark)));
   }
 
   .header-chrome-glass-over-media {
-    background: rgb(8 6 16 / calc(0.35 + 0.3 * var(--glass-opacity-dark)));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-    border: none;
-    border-bottom: none;
-    box-shadow: none;
-    outline: none;
-    overflow: visible;
-    transform: translateZ(0);
-    will-change: backdrop-filter;
-  }
-
-  /* Soft fade so the frost does not read as a hard bar edge */
-  .header-chrome-glass::after,
-  .header-chrome-glass-over-media::after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -2rem;
-    height: 2rem;
-    background: linear-gradient(
-      to bottom,
-      rgb(255 255 255 / calc(var(--glass-opacity) * 0.55)),
-      transparent
-    );
-  }
-
-  .dark .header-chrome-glass::after {
-    background: linear-gradient(
-      to bottom,
-      rgb(12 8 22 / calc(0.28 + 0.25 * var(--glass-opacity-dark))),
-      transparent
-    );
-  }
-
-  .header-chrome-glass-over-media::after {
-    background: linear-gradient(
-      to bottom,
-      rgb(8 6 16 / calc(0.22 + 0.18 * var(--glass-opacity-dark))),
-      transparent
-    );
+    background: rgb(8 6 16 / calc(0.28 + 0.24 * var(--glass-opacity-dark)));
   }
 
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
