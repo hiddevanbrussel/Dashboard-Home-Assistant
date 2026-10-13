@@ -5,6 +5,25 @@ export const MEDIA_CARD_MAX_WIDTH = 500;
 export const MEDIA_CARD_MIN_HEIGHT = 240;
 export const MEDIA_CARD_MAX_HEIGHT = 520;
 
+/** Lifestyle speaker photo when nothing is playing (light theme). */
+export const MEDIA_CARD_IDLE_IMAGE_LIGHT = "/media-idle-light.webp";
+/** Lifestyle speaker photo when nothing is playing (dark theme). */
+export const MEDIA_CARD_IDLE_IMAGE_DARK = "/media-idle-dark.webp";
+
+/** True when the card should show the idle / ready-to-play layout. */
+export function isMediaCardIdle(input: {
+  mediaTitle?: string | null;
+  entityPicture?: string | null;
+}): boolean {
+  const title = input.mediaTitle?.trim() ?? "";
+  const picture = input.entityPicture?.trim() ?? "";
+  return !title && !picture;
+}
+
+export function mediaCardIdleImageSrc(isDark: boolean): string {
+  return isDark ? MEDIA_CARD_IDLE_IMAGE_DARK : MEDIA_CARD_IDLE_IMAGE_LIGHT;
+}
+
 /** Default / auto-generated titles that should not override the HA friendly name. */
 const GENERIC_MEDIA_CARD_TITLES = new Set(["media", "media card", "mediakaart"]);
 

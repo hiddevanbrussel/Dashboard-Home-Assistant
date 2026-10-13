@@ -1,11 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Heart, MoreVertical, Pause, Play, SkipBack, SkipForward, Disc3 } from "lucide-react";
+import { Heart, MoreVertical, Music2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import type { MediaCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { mediaArtworkCacheKey, mediaImageRequestUrl } from "@/lib/media-image";
@@ -13,8 +15,10 @@ import { playUiClick } from "@/lib/ui-click";
 import {
   clampMediaCardHeight,
   clampMediaCardWidth,
+  isMediaCardIdle,
   MEDIA_CARD_DEFAULT_HEIGHT,
   MEDIA_CARD_DEFAULT_WIDTH,
+  mediaCardIdleImageSrc,
   resolveMediaCardPlayerName,
 } from "@/lib/media-card";
 
@@ -52,6 +56,7 @@ export function MediaCardWidget({
   mediaArtistOverride,
 }: MediaCardProps & { className?: string; onMoreClick?: () => void; onExpandedChange?: (expanded: boolean) => void }) {
   const { t } = useTranslation();
+  const isDark = useThemeStore((s) => s.resolved) === "dark";
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const revertEntityState = useEntityStateStore((s) => s.revertEntityState);
@@ -61,11 +66,6 @@ export function MediaCardWidget({
   const [favorited, setFavorited] = useState(false);
   const [favoriteBusy, setFavoriteBusy] = useState(false);
 
-  const isOn =
-    entity?.state !== "off" &&
-    entity?.state !== "unavailable" &&
-    entity?.state !== "unknown" &&
-    Boolean(entity?.state);
   const isPlaying = entity?.state === "playing";
   const entityTitle = (entity?.attributes?.media_title as string) ?? "";
   const entityArtist = (entity?.attributes?.media_artist as string) ?? "";
@@ -82,10 +82,7 @@ export function MediaCardWidget({
     entityId: entity_id,
     fallback: t("cardType.media_card"),
   });
-  // Track line stays separate from the player name shown at the top of the card.
-  const displayTitle = mediaTitle || t("mediaCard.idle");
-  const displayArtist = mediaTitle ? mediaArtist : "";
-
+  const idle = isMediaCardIdle({ mediaTitle, entityPicture });
   const artworkKey = mediaArtworkCacheKey({
     entityPicture,
     mediaTitle,
@@ -94,6 +91,7 @@ export function MediaCardWidget({
   });
   const mediaImageSrc = entityPicture ? mediaImageRequestUrl(entity_id, artworkKey) : null;
   const trackKey = artworkKey || "none";
+  const idleBg = withBasePath(mediaCardIdleImageSrc(isDark));
   const cardWidth = clampMediaCardWidth(width);
   const cardHeight = clampMediaCardHeight(height);
   const canFavorite = Boolean(musicAssistant.enabled && musicAssistant.baseUrl && mediaContentId);
@@ -156,7 +154,7 @@ export function MediaCardWidget({
   return (
     <div
       className={cn(
-        "relative flex w-full flex-col overflow-hidden rounded-2xl bg-[#141414] text-white shadow-[0_18px_50px_rgba(15,23,42,0.28)]",
+        "relative flex w-full flex-col overflow-hidden rounded-[1.35rem] bg-[#141414] text-white shadow-[0_18px_50px_rgba(15,23,42,0.28)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         className
@@ -174,107 +172,138 @@ export function MediaCardWidget({
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full items-start justify-center bg-gradient-to-b from-zinc-800 to-zinc-950 pt-[22%]">
-            <Disc3 className="h-20 w-20 text-white/15" strokeWidth={1} />
-          </div>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={idleBg}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            draggable={false}
+          />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 to-black/80" />
+        <div
+          className={cn(
+            "absolute inset-0",
+            idle
+              ? "bg-gradient-to-b from-black/55 via-black/25 to-black/70"
+              : "bg-gradient-to-b from-black/25 via-black/10 to-black/80"
+          )}
+        />
       </div>
 
-      <div className="relative flex h-full flex-col justify-between p-5">
+      <div className="relative flex h-full flex-col p-5">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-start gap-1">
-            {onMoreClick ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMoreClick();
-                }}
-                className="shrink-0 rounded-lg p-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label={t("common.options")}
-              >
-                <MoreVertical className="h-5 w-5" aria-hidden />
-              </button>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start gap-1">
+              <p className="min-w-0 flex-1 truncate text-[1.05rem] font-semibold tracking-tight text-white" title={playerName}>
+                {playerName}
+              </p>
+              {onMoreClick ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMoreClick();
+                  }}
+                  className="shrink-0 rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  aria-label={t("common.options")}
+                >
+                  <MoreVertical className="h-5 w-5" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+            {idle ? (
+              <p className="mt-0.5 truncate text-sm font-medium text-white/65">{t("mediaCard.idle")}</p>
             ) : null}
-            <p
-              className={cn(
-                "min-w-0 flex-1 truncate text-sm font-medium text-white/70",
-                onMoreClick ? "pt-1.5" : "pt-0.5"
-              )}
-              title={playerName}
-            >
-              {playerName}
-            </p>
           </div>
-          <Waveform playing={isPlaying} />
+          {!idle ? <Waveform playing={isPlaying} /> : null}
         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              {displayArtist ? (
-                <p className="truncate text-sm font-medium text-white/75">{displayArtist}</p>
-              ) : null}
-              <p className="truncate text-[1.35rem] font-semibold leading-tight tracking-tight">{displayTitle}</p>
+        {idle ? (
+          <div className="flex min-h-0 flex-1 items-center gap-4 px-0.5">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-white/35 text-white/90">
+              <Music2 className="h-7 w-7" strokeWidth={1.5} aria-hidden />
             </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                void handleFavorite();
-              }}
-              disabled={!canFavorite || favoriteBusy}
-              className={cn(
-                "mt-1 shrink-0 rounded-full p-1 text-white/90 transition-colors hover:bg-white/10",
-                (!canFavorite || favoriteBusy) && "opacity-70"
-              )}
-              aria-label={t("music.addToFavorites")}
-              aria-pressed={favorited}
-            >
-              <Heart className={cn("h-5 w-5", favorited && "fill-current")} aria-hidden />
-            </button>
+            <div className="min-w-0">
+              <p className="text-[1.15rem] font-semibold leading-snug tracking-tight text-white">
+                {t("mediaCard.readyTitle")}
+              </p>
+              <p className="mt-1 text-sm font-medium leading-snug text-white/65">
+                {t("mediaCard.readyHint")}
+              </p>
+            </div>
           </div>
+        ) : (
+          <div className="mt-auto space-y-3 pt-4">
+            <div className="min-w-0">
+              {mediaArtist ? (
+                <p className="truncate text-sm font-medium text-white/75">{mediaArtist}</p>
+              ) : null}
+              <p className="truncate text-[1.35rem] font-semibold leading-tight tracking-tight">
+                {mediaTitle || t("mediaCard.idle")}
+              </p>
+            </div>
+          </div>
+        )}
 
-          <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSkip("media_previous_track");
-              }}
-              disabled={!isOn}
-              className="rounded-full p-2 text-white hover:bg-white/10 disabled:opacity-40"
-              aria-label={t("music.previous")}
-            >
-              <SkipBack className="h-5 w-5 fill-current" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePlayPause();
-              }}
-              disabled={!entity_id}
-              className="inline-flex min-w-[7.75rem] items-center justify-center gap-2 rounded-full bg-white/25 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md hover:bg-white/30 disabled:opacity-40"
-              aria-label={isPlaying ? t("mediaCard.pause") : t("mediaCard.play")}
-            >
-              {isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current" />}
-              {isPlaying ? t("mediaCard.pause") : t("mediaCard.play")}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSkip("media_next_track");
-              }}
-              disabled={!isOn}
-              className="rounded-full p-2 text-white hover:bg-white/10 disabled:opacity-40"
-              aria-label={t("music.next")}
-            >
-              <SkipForward className="h-5 w-5 fill-current" />
-            </button>
-          </div>
+        <div
+          className={cn(
+            "mt-auto flex items-center gap-1 rounded-full bg-black/45 px-2 py-1.5 backdrop-blur-md",
+            idle ? "mt-2" : "mt-4"
+          )}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSkip("media_previous_track");
+            }}
+            disabled={!entity_id}
+            className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-40"
+            aria-label={t("music.previous")}
+          >
+            <SkipBack className="h-5 w-5 fill-current" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePlayPause();
+            }}
+            disabled={!entity_id}
+            className="mx-auto inline-flex min-w-[7.5rem] flex-1 items-center justify-center gap-2 rounded-full bg-white/22 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md hover:bg-white/28 disabled:opacity-40"
+            aria-label={isPlaying ? t("mediaCard.pause") : t("mediaCard.play")}
+          >
+            {isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current" />}
+            {isPlaying ? t("mediaCard.pause") : t("mediaCard.play")}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSkip("media_next_track");
+            }}
+            disabled={!entity_id}
+            className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-40"
+            aria-label={t("music.next")}
+          >
+            <SkipForward className="h-5 w-5 fill-current" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              void handleFavorite();
+            }}
+            disabled={!canFavorite || favoriteBusy}
+            className={cn(
+              "rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white",
+              (!canFavorite || favoriteBusy) && "opacity-50"
+            )}
+            aria-label={t("music.addToFavorites")}
+            aria-pressed={favorited}
+          >
+            <Heart className={cn("h-5 w-5", favorited && "fill-current")} aria-hidden />
+          </button>
         </div>
       </div>
     </div>
