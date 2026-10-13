@@ -95,8 +95,22 @@ export type WeatherCardProps = WidgetBaseProps & {
   temperature?: number;
   humidity?: number;
   condition?: string;
-  /** Toon weersicoon (default true). */
+  /** Accentster naast de titel (default true). */
   show_icon?: boolean;
+  /** Conditietekst onder de titel (default true). */
+  show_condition?: boolean;
+  /** Hoogte / laagte (default true). */
+  show_high_low?: boolean;
+  /** Wind in de metricsbalk (default true). */
+  show_wind?: boolean;
+  /** Luchtvochtigheid in de metricsbalk (default true). */
+  show_humidity?: boolean;
+  /** Luchtkwaliteit in de metricsbalk (default false; heeft entity nodig). */
+  show_air_quality?: boolean;
+  /** Neerslag in de metricsbalk (default true). */
+  show_precipitation?: boolean;
+  /** Optionele sensor voor luchtkwaliteit / AQI. */
+  air_quality_entity_id?: string;
 };
 
 export type VacuumCardProps = WidgetBaseProps & {

@@ -27,6 +27,7 @@ describe("ha weather forecast", () => {
         temperature: 18,
         templow: 11,
         precipitationProbability: 10,
+        precipitation: null,
       },
     ]);
   });
@@ -44,6 +45,7 @@ describe("ha weather forecast", () => {
       temperature: null,
       templow: null,
       precipitationProbability: null,
+      precipitation: null,
     });
   });
 

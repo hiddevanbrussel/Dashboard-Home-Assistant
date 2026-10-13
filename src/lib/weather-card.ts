@@ -1,9 +1,24 @@
 export const WEATHER_CARD_DEFAULT_WIDTH = 320;
-export const WEATHER_CARD_DEFAULT_HEIGHT = 180;
+export const WEATHER_CARD_DEFAULT_HEIGHT = 300;
 export const WEATHER_CARD_MIN_WIDTH = 200;
 export const WEATHER_CARD_MAX_WIDTH = 500;
-export const WEATHER_CARD_MIN_HEIGHT = 100;
-export const WEATHER_CARD_MAX_HEIGHT = 400;
+export const WEATHER_CARD_MIN_HEIGHT = 140;
+export const WEATHER_CARD_MAX_HEIGHT = 420;
+
+export type WeatherCardDisplayOptions = {
+  show_icon?: boolean;
+  show_condition?: boolean;
+  show_high_low?: boolean;
+  show_wind?: boolean;
+  show_humidity?: boolean;
+  show_air_quality?: boolean;
+  show_precipitation?: boolean;
+};
+
+export function isWeatherShowFlag(value: unknown, defaultValue = true): boolean {
+  if (value === undefined || value === null) return defaultValue;
+  return value !== false;
+}
 
 export function clampWeatherCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
@@ -78,7 +93,10 @@ export function weatherBackgroundGradient(condition: string): string {
   }
 }
 
-/** Public path stem for a condition photo, without `.png`. */
+const LIGHT = (name: string) => `/weather/light/${name}.webp`;
+const DARK = (name: string) => `/weather/dark/${name}.webp`;
+
+/** Public path stem for a legacy condition photo, without `.png`. */
 export function weatherImageBase(condition: string): string | null {
   const s = condition?.toLowerCase() ?? "";
   switch (s) {
@@ -113,16 +131,58 @@ export function weatherImageBase(condition: string): string | null {
   }
 }
 
+/** Curated WebP pack (light/dark folders), with legacy PNG fallback. */
 export function weatherImageSources(
   condition: string,
   isNight: boolean
 ): { src: string | null; fallback: string | null } {
-  const base = weatherImageBase(condition);
-  if (!base) return { src: null, fallback: null };
-  return {
-    src: `${base}${isNight ? "-night" : ""}.png`,
-    fallback: isNight ? `${base}.png` : null,
-  };
+  const s = condition?.toLowerCase() ?? "";
+  switch (s) {
+    case "sunny":
+    case "clear":
+    case "zonnig":
+      return isNight
+        ? { src: DARK("weather_clear_night"), fallback: LIGHT("weather_sunny") }
+        : { src: LIGHT("weather_sunny"), fallback: "/weather-sunny.png" };
+    case "clear-night":
+      return { src: DARK("weather_clear_night"), fallback: LIGHT("weather_sunny") };
+    case "partlycloudy":
+      return isNight
+        ? { src: DARK("weather_partlycloudy_night"), fallback: LIGHT("weather_partlycloudy") }
+        : { src: LIGHT("weather_partlycloudy"), fallback: "/weather-partlycloudy.png" };
+    case "cloudy":
+    case "exceptional":
+      return { src: LIGHT("weather_cloudy"), fallback: "/weather-partlycloudy.png" };
+    case "fog":
+    case "mist":
+      return { src: LIGHT("weather_fog"), fallback: "/weather-fog.png" };
+    case "windy":
+    case "windy-variant":
+      return { src: LIGHT("weather_windy"), fallback: "/weather-partlycloudy.png" };
+    case "rainy":
+    case "pouring":
+    case "hail":
+      return {
+        src: DARK("weather_rainy"),
+        fallback: isNight ? "/weather-rainy-night.png" : "/weather-rainy.png",
+      };
+    case "snowy":
+    case "snowy-rainy":
+      return isNight
+        ? { src: DARK("weather_snowy_night"), fallback: "/weather-snowy-night.png" }
+        : { src: "/weather-snowy.png", fallback: DARK("weather_snowy_night") };
+    case "lightning":
+    case "lightning-rainy":
+      return { src: DARK("weather_lightning_rainy"), fallback: null };
+    default: {
+      const base = weatherImageBase(s);
+      if (!base) return { src: null, fallback: null };
+      return {
+        src: `${base}${isNight ? "-night" : ""}.png`,
+        fallback: isNight ? `${base}.png` : null,
+      };
+    }
+  }
 }
 
 /** Pixeden color-icon stems in `/public/weather-icons`. */
@@ -189,4 +249,82 @@ export function weatherIconFile(condition: string): WeatherIconFile {
 
 export function weatherIconSrc(condition: string): string {
   return `/weather-icons/${weatherIconFile(condition)}.png`;
+}
+
+/** Convert wind speed to Beaufort (0–12). Unit is typically m/s, km/h, mph, or kn. */
+export function windSpeedToBeaufort(speed: number, unit?: string | null): number {
+  if (!Number.isFinite(speed) || speed < 0) return 0;
+  const u = (unit ?? "m/s").toLowerCase().replace(/\s/g, "");
+  let ms = speed;
+  if (u === "km/h" || u === "kmh" || u === "kph") ms = speed / 3.6;
+  else if (u === "mph") ms = speed * 0.44704;
+  else if (u === "kn" || u === "kt" || u === "knots") ms = speed * 0.514444;
+  // else assume m/s
+  const thresholds = [0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7];
+  let bft = 0;
+  for (let i = 0; i < thresholds.length; i++) {
+    if (ms >= thresholds[i]) bft = i + 1;
+  }
+  return Math.min(12, bft);
+}
+
+const BEARING_EN = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] as const;
+const BEARING_NL = ["N", "NO", "O", "ZO", "Z", "ZW", "W", "NW"] as const;
+
+/** Compass abbreviation from degrees (0–360). */
+export function windBearingLabel(bearing: number, locale: "en" | "nl" = "en"): string {
+  if (!Number.isFinite(bearing)) return "—";
+  const normalized = ((bearing % 360) + 360) % 360;
+  const idx = Math.round(normalized / 45) % 8;
+  return (locale === "nl" ? BEARING_NL : BEARING_EN)[idx];
+}
+
+export function formatWindSummary(input: {
+  speed?: number | null;
+  bearing?: number | null;
+  unit?: string | null;
+  locale?: "en" | "nl";
+}): string | null {
+  if (input.speed == null || Number.isNaN(input.speed)) return null;
+  const bft = windSpeedToBeaufort(input.speed, input.unit);
+  const dir =
+    input.bearing != null && !Number.isNaN(input.bearing)
+      ? windBearingLabel(input.bearing, input.locale ?? "en")
+      : null;
+  return dir ? `${dir} ${bft} Bft` : `${bft} Bft`;
+}
+
+export type AirQualityLevel = "good" | "fair" | "moderate" | "poor" | "very_poor" | "unknown";
+
+/** Map AQI / categorical sensor state to a coarse air-quality level. */
+export function parseAirQualityLevel(state: string | number | null | undefined): AirQualityLevel {
+  if (state == null || state === "") return "unknown";
+  if (typeof state === "number" || (typeof state === "string" && /^-?\d+(\.\d+)?$/.test(state.trim()))) {
+    const n = typeof state === "number" ? state : Number(state);
+    if (!Number.isFinite(n)) return "unknown";
+    if (n <= 50) return "good";
+    if (n <= 100) return "fair";
+    if (n <= 150) return "moderate";
+    if (n <= 200) return "poor";
+    return "very_poor";
+  }
+  const s = String(state).toLowerCase().trim();
+  if (["good", "goed", "excellent", "uitstekend", "1", "green"].includes(s)) return "good";
+  if (["fair", "redelijk", "satisfactory", "2"].includes(s)) return "fair";
+  if (["moderate", "matig", "ok", "3", "yellow"].includes(s)) return "moderate";
+  if (["poor", "slecht", "unhealthy", "4", "orange"].includes(s)) return "poor";
+  if (
+    ["very_poor", "very poor", "zeer slecht", "hazardous", "very_unhealthy", "5", "6", "red", "purple"].includes(
+      s
+    )
+  ) {
+    return "very_poor";
+  }
+  return "unknown";
+}
+
+export function formatPrecipitationMm(value: number | null | undefined): string | null {
+  if (value == null || Number.isNaN(value)) return null;
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded} mm` : `${rounded.toFixed(1)} mm`;
 }

@@ -2,11 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   clampWeatherCardHeight,
   clampWeatherCardWidth,
+  formatPrecipitationMm,
+  formatWindSummary,
+  parseAirQualityLevel,
   resizeWeatherCardFromBottomRight,
   weatherIconFile,
   weatherIconSrc,
   weatherImageBase,
   weatherImageSources,
+  windBearingLabel,
+  windSpeedToBeaufort,
   WEATHER_CARD_DEFAULT_HEIGHT,
   WEATHER_CARD_DEFAULT_WIDTH,
   WEATHER_CARD_MIN_HEIGHT,
@@ -22,7 +27,7 @@ describe("weather-card helpers", () => {
     expect(clampWeatherCardWidth(360)).toBe(360);
     expect(clampWeatherCardHeight(undefined)).toBe(WEATHER_CARD_DEFAULT_HEIGHT);
     expect(clampWeatherCardHeight(40)).toBe(WEATHER_CARD_MIN_HEIGHT);
-    expect(clampWeatherCardHeight(900)).toBe(400);
+    expect(clampWeatherCardHeight(900)).toBe(420);
     expect(clampWeatherCardHeight(220)).toBe(220);
   });
 
@@ -41,7 +46,7 @@ describe("weather-card helpers", () => {
     expect(shrunk.width).toBe(WEATHER_CARD_MIN_WIDTH);
     expect(shrunk.height).toBe(WEATHER_CARD_MIN_HEIGHT);
     expect(shrunk.left).toBe(64);
-    expect(shrunk.bottom).toBe(128);
+    expect(shrunk.bottom).toBe(88);
     const againstViewport = resizeWeatherCardFromBottomRight({
       ...start,
       startBottom: 10,
@@ -53,9 +58,8 @@ describe("weather-card helpers", () => {
   });
 });
 
-
 describe("weather card images", () => {
-  it("maps conditions to the same public photos as the weather card", () => {
+  it("maps conditions to curated webp packs with legacy png fallbacks", () => {
     expect(weatherImageBase("sunny")).toBe("/weather-sunny");
     expect(weatherImageBase("clear")).toBe("/weather-sunny");
     expect(weatherImageBase("partlycloudy")).toBe("/weather-partlycloudy");
@@ -65,19 +69,47 @@ describe("weather card images", () => {
     expect(weatherImageBase("unknown")).toBe(null);
   });
 
-  it("uses the night photo in dark mode and falls back to the day photo", () => {
+  it("uses the night pack in dark mode and falls back to the day pack", () => {
     expect(weatherImageSources("sunny", false)).toEqual({
-      src: "/weather-sunny.png",
-      fallback: null,
-    });
-    expect(weatherImageSources("sunny", true)).toEqual({
-      src: "/weather-sunny-night.png",
+      src: "/weather/light/weather_sunny.webp",
       fallback: "/weather-sunny.png",
     });
-    expect(weatherImageSources("partlycloudy", true)).toEqual({
-      src: "/weather-partlycloudy-night.png",
-      fallback: "/weather-partlycloudy.png",
+    expect(weatherImageSources("sunny", true)).toEqual({
+      src: "/weather/dark/weather_clear_night.webp",
+      fallback: "/weather/light/weather_sunny.webp",
     });
+    expect(weatherImageSources("partlycloudy", true)).toEqual({
+      src: "/weather/dark/weather_partlycloudy_night.webp",
+      fallback: "/weather/light/weather_partlycloudy.webp",
+    });
+    expect(weatherImageSources("clear-night", false)).toEqual({
+      src: "/weather/dark/weather_clear_night.webp",
+      fallback: "/weather/light/weather_sunny.webp",
+    });
+    expect(weatherImageSources("lightning-rainy", true).src).toBe(
+      "/weather/dark/weather_lightning_rainy.webp"
+    );
+  });
+});
+
+describe("weather metrics helpers", () => {
+  it("converts wind speed to Beaufort and formats a compass summary", () => {
+    expect(windSpeedToBeaufort(0.2, "m/s")).toBe(0);
+    expect(windSpeedToBeaufort(3, "m/s")).toBe(2);
+    expect(windSpeedToBeaufort(12, "km/h")).toBe(2);
+    expect(windBearingLabel(225, "nl")).toBe("ZW");
+    expect(windBearingLabel(225, "en")).toBe("SW");
+    expect(formatWindSummary({ speed: 3.5, bearing: 225, unit: "m/s", locale: "nl" })).toBe(
+      "ZW 3 Bft"
+    );
+  });
+
+  it("maps air quality states and formats precipitation", () => {
+    expect(parseAirQualityLevel(42)).toBe("good");
+    expect(parseAirQualityLevel("goed")).toBe("good");
+    expect(parseAirQualityLevel("moderate")).toBe("moderate");
+    expect(formatPrecipitationMm(0)).toBe("0 mm");
+    expect(formatPrecipitationMm(1.25)).toBe("1.3 mm");
   });
 });
 

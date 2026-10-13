@@ -44,8 +44,22 @@ export type WidgetConfig = {
   yield_entity_id_today?: string;
   /** Solar card: entity voor kaart "Deze maand". Val terug op entity_id. */
   yield_entity_id_month?: string;
-  /** Weather card: toon weersicoon (default true). */
+  /** Weather card: accentster naast titel / andere kaarten: icoon (default true). */
   show_icon?: boolean;
+  /** Weather card: toon conditietekst (default true). */
+  show_condition?: boolean;
+  /** Weather card: toon hoog/laag (default true). */
+  show_high_low?: boolean;
+  /** Weather card: toon wind (default true). */
+  show_wind?: boolean;
+  /** Weather card: toon luchtvochtigheid (default true). */
+  show_humidity?: boolean;
+  /** Weather card: toon luchtkwaliteit (default false). */
+  show_air_quality?: boolean;
+  /** Weather card: toon neerslag (default true). */
+  show_precipitation?: boolean;
+  /** Weather card: optionele AQI / luchtkwaliteit-sensor. */
+  air_quality_entity_id?: string;
   /** Vacuum card: script entity_ids om als knoppen te tonen (script.turn_on). */
   script_ids?: string[];
   /** Vacuum card: aangepaste weergavenaam per script (entity_id -> naam). */

@@ -92,6 +92,27 @@ describe("smart-stack helpers", () => {
     expect(nuts).not.toHaveProperty("width");
     expect(nuts).not.toHaveProperty("height");
 
+    const weather = buildSmartStackChildUpdates("weather_card", {
+      title: "Thuis",
+      entity_id: "weather.home",
+      show_icon: true,
+      show_wind: false,
+      show_air_quality: true,
+      air_quality_entity_id: "sensor.aqi",
+    });
+    expect(weather).toEqual({
+      title: "Thuis",
+      entity_id: "weather.home",
+      show_icon: true,
+      show_condition: true,
+      show_high_low: true,
+      show_wind: false,
+      show_humidity: true,
+      show_air_quality: true,
+      show_precipitation: true,
+      air_quality_entity_id: "sensor.aqi",
+    });
+
     const media = buildSmartStackChildUpdates("media_card", {
       title: "Speaker",
       entity_id: "media_player.kitchen",

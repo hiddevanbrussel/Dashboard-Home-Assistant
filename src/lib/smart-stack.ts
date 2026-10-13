@@ -86,6 +86,13 @@ export type SmartStackChildEditFields = {
   display_mode?: string;
   card_layout?: "horizontal" | "square";
   show_icon?: boolean;
+  show_condition?: boolean;
+  show_high_low?: boolean;
+  show_wind?: boolean;
+  show_humidity?: boolean;
+  show_air_quality?: boolean;
+  show_precipitation?: boolean;
+  air_quality_entity_id?: string;
   show_state?: boolean;
   show_title?: boolean;
   show_team_names?: boolean;
@@ -151,6 +158,13 @@ export function buildSmartStackChildUpdates(
       return {
         ...base,
         show_icon: form.show_icon !== false,
+        show_condition: form.show_condition !== false,
+        show_high_low: form.show_high_low !== false,
+        show_wind: form.show_wind !== false,
+        show_humidity: form.show_humidity !== false,
+        show_air_quality: form.show_air_quality === true,
+        show_precipitation: form.show_precipitation !== false,
+        air_quality_entity_id: form.air_quality_entity_id || undefined,
       };
     case "vacuum_card_2":
       return {
