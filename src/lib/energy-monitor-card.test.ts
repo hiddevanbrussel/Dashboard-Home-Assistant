@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   ENERGY_MONITOR_CARD_DEFAULT_HEIGHT,
   ENERGY_MONITOR_CARD_DEFAULT_WIDTH,
+  ENERGY_MONITOR_CARD_KEEP_VISIBLE,
   ENERGY_MONITOR_CARD_MIN_HEIGHT,
   ENERGY_MONITOR_CARD_MIN_WIDTH,
   clampEnergyMonitorCardHeight,
+  clampEnergyMonitorCardPosition,
   clampEnergyMonitorCardWidth,
+  energyMonitorCardDragBounds,
   resizeEnergyMonitorCardFromBottomRight,
 } from "./energy-monitor-card";
 
@@ -48,5 +51,27 @@ describe("energy-monitor-card helpers", () => {
     });
     expect(againstViewport.bottom).toBe(0);
     expect(againstViewport.height).toBe(270);
+  });
+
+  it("lets the image hang off every edge while keeping a grab handle", () => {
+    const bounds = energyMonitorCardDragBounds(360, 260, { width: 1200, height: 800 });
+    expect(bounds).toEqual({
+      minLeft: ENERGY_MONITOR_CARD_KEEP_VISIBLE - 360,
+      maxLeft: 1200 - ENERGY_MONITOR_CARD_KEEP_VISIBLE,
+      minBottom: ENERGY_MONITOR_CARD_KEEP_VISIBLE - 260,
+      maxBottom: 800 - ENERGY_MONITOR_CARD_KEEP_VISIBLE,
+    });
+    expect(clampEnergyMonitorCardPosition({ left: -400, bottom: 40 }, bounds)).toEqual({
+      left: bounds.minLeft,
+      bottom: 40,
+    });
+    expect(clampEnergyMonitorCardPosition({ left: 2000, bottom: 2000 }, bounds)).toEqual({
+      left: bounds.maxLeft,
+      bottom: bounds.maxBottom,
+    });
+    expect(clampEnergyMonitorCardPosition({ left: 80, bottom: 24 }, bounds)).toEqual({
+      left: 80,
+      bottom: 24,
+    });
   });
 });

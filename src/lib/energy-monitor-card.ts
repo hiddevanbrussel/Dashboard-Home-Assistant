@@ -4,6 +4,43 @@ export const ENERGY_MONITOR_CARD_MIN_WIDTH = 48;
 export const ENERGY_MONITOR_CARD_MAX_WIDTH = 960;
 export const ENERGY_MONITOR_CARD_MIN_HEIGHT = 48;
 export const ENERGY_MONITOR_CARD_MAX_HEIGHT = 720;
+/** Grab handle that stays on-screen so the image can hang off any edge. */
+export const ENERGY_MONITOR_CARD_KEEP_VISIBLE = 48;
+
+export type EnergyMonitorCardDragBounds = {
+  minLeft: number;
+  maxLeft: number;
+  minBottom: number;
+  maxBottom: number;
+};
+
+/** Allow the image card to sit partly off-screen on every edge. */
+export function energyMonitorCardDragBounds(
+  cardWidth: number,
+  cardHeight: number,
+  viewport: { width: number; height: number }
+): EnergyMonitorCardDragBounds {
+  const width = Math.max(1, Math.round(cardWidth));
+  const height = Math.max(1, Math.round(cardHeight));
+  const keepX = Math.min(ENERGY_MONITOR_CARD_KEEP_VISIBLE, width);
+  const keepY = Math.min(ENERGY_MONITOR_CARD_KEEP_VISIBLE, height);
+  return {
+    minLeft: keepX - width,
+    maxLeft: viewport.width - keepX,
+    minBottom: keepY - height,
+    maxBottom: viewport.height - keepY,
+  };
+}
+
+export function clampEnergyMonitorCardPosition(
+  position: { left: number; bottom: number },
+  bounds: EnergyMonitorCardDragBounds
+): { left: number; bottom: number } {
+  return {
+    left: Math.max(bounds.minLeft, Math.min(position.left, bounds.maxLeft)),
+    bottom: Math.max(bounds.minBottom, Math.min(position.bottom, bounds.maxBottom)),
+  };
+}
 
 export function clampEnergyMonitorCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);

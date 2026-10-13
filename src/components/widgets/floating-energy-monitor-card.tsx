@@ -2,12 +2,14 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { snapToGrid, floatingParentSize, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { EnergyMonitorCardWidget } from "./energy-monitor-card-widget";
 import type { ImageCondition } from "./widget-types";
 import {
   clampEnergyMonitorCardHeight,
+  clampEnergyMonitorCardPosition,
   clampEnergyMonitorCardWidth,
+  energyMonitorCardDragBounds,
   resizeEnergyMonitorCardFromBottomRight,
 } from "@/lib/energy-monitor-card";
 import { useTranslation } from "@/hooks/use-translation";
@@ -49,9 +51,29 @@ function savePosition(scope: string | undefined, p: Position, widgetId?: string)
 
 function defaultPosition(cardWidth: number, cardHeight: number): Position {
   if (typeof window === "undefined") return { left: 100, bottom: DEFAULT_OFFSET };
-  const maxLeft = window.innerWidth - cardWidth;
-  const maxBottom = window.innerHeight - cardHeight;
-  return { left: Math.max(0, maxLeft / 2), bottom: Math.max(DEFAULT_OFFSET, maxBottom / 2) };
+  const bounds = energyMonitorCardDragBounds(cardWidth, cardHeight, {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+  return {
+    left: Math.max(bounds.minLeft, (bounds.minLeft + bounds.maxLeft) / 2),
+    bottom: Math.max(DEFAULT_OFFSET, (bounds.minBottom + bounds.maxBottom) / 2),
+  };
+}
+
+function dragBoundsFor(
+  el: HTMLElement | null,
+  cardWidth: number,
+  cardHeight: number
+): ReturnType<typeof energyMonitorCardDragBounds> {
+  const parent =
+    el && typeof window !== "undefined"
+      ? floatingParentSize(el)
+      : {
+          width: typeof window !== "undefined" ? window.innerWidth : 1200,
+          height: typeof window !== "undefined" ? window.innerHeight : 800,
+        };
+  return energyMonitorCardDragBounds(cardWidth, cardHeight, parent);
 }
 
 const LONG_PRESS_MS = 500;
@@ -102,6 +124,7 @@ export function FloatingEnergyMonitorCard({
   const totalHeight = liveSize?.height ?? cardHeight;
   const [position, setPosition] = useState<Position>(() => loadPosition(storageScope, widgetId) ?? { left: 0, bottom: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const cardElRef = useRef<HTMLDivElement | null>(null);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
@@ -138,9 +161,7 @@ export function FloatingEnergyMonitorCard({
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
-    const bounds = { maxLeft, maxBottom };
+    const bounds = dragBoundsFor(cardElRef.current, totalWidth, totalHeight);
     const saved = loadPosition(storageScope, widgetId);
     if (saved) {
       setPosition(snapToGrid(saved, bounds));
@@ -153,17 +174,8 @@ export function FloatingEnergyMonitorCard({
 
   useEffect(() => {
     if (!initialized.current || isResizing) return;
-    const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-    const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
-    setPosition((prev) =>
-      snapToGrid(
-        {
-          left: Math.max(0, Math.min(prev.left, maxLeft)),
-          bottom: Math.max(0, Math.min(prev.bottom, maxBottom)),
-        },
-        { maxLeft, maxBottom }
-      )
-    );
+    const bounds = dragBoundsFor(cardElRef.current, totalWidth, totalHeight);
+    setPosition((prev) => snapToGrid(clampEnergyMonitorCardPosition(prev, bounds), bounds));
   }, [cardWidth, cardHeight, totalWidth, totalHeight, isResizing]);
 
   useEffect(() => {
@@ -195,13 +207,15 @@ export function FloatingEnergyMonitorCard({
       if (!isDragging) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-      const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
-      const raw = {
-        left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
-        bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
-      };
-      setPosition(snapToGrid(raw, { maxLeft, maxBottom }));
+      const bounds = dragBoundsFor(cardElRef.current, totalWidth, totalHeight);
+      const raw = clampEnergyMonitorCardPosition(
+        {
+          left: dragStart.current.left + dx,
+          bottom: dragStart.current.bottom - dy,
+        },
+        bounds
+      );
+      setPosition(snapToGrid(raw, bounds));
     },
     [isDragging, totalWidth, totalHeight]
   );
@@ -212,13 +226,15 @@ export function FloatingEnergyMonitorCard({
         setIsDragging(false);
         const dx = e.clientX - dragStart.current.x;
         const dy = e.clientY - dragStart.current.y;
-        const maxLeft = typeof window !== "undefined" ? window.innerWidth - totalWidth : 400;
-        const maxBottom = typeof window !== "undefined" ? window.innerHeight - totalHeight : 400;
-        const raw = {
-          left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
-          bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
-        };
-        const next = snapToGrid(raw, { maxLeft, maxBottom });
+        const bounds = dragBoundsFor(cardElRef.current, totalWidth, totalHeight);
+        const raw = clampEnergyMonitorCardPosition(
+          {
+            left: dragStart.current.left + dx,
+            bottom: dragStart.current.bottom - dy,
+          },
+          bounds
+        );
+        const next = snapToGrid(raw, bounds);
         setPosition(next);
         savePosition(storageScope, next, widgetId);
       }
@@ -289,6 +305,7 @@ export function FloatingEnergyMonitorCard({
 
   return (
     <div
+      ref={cardElRef}
       className={cn(
         "card-plot-in fixed z-20 bg-transparent",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
