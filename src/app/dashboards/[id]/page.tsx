@@ -492,6 +492,13 @@ function WidgetByType({
   humidity_entity_id,
   display_mode,
   show_icon,
+  show_condition,
+  show_high_low,
+  show_wind,
+  show_humidity,
+  show_air_quality,
+  show_precipitation,
+  air_quality_entity_id,
   show_team_names,
   show_form,
   show_progress,
@@ -537,6 +544,13 @@ function WidgetByType({
   humidity_entity_id?: string;
   display_mode?: "standard" | "compact" | "graph";
   show_icon?: boolean;
+  show_condition?: boolean;
+  show_high_low?: boolean;
+  show_wind?: boolean;
+  show_humidity?: boolean;
+  show_air_quality?: boolean;
+  show_precipitation?: boolean;
+  air_quality_entity_id?: string;
   show_team_names?: boolean;
   show_form?: boolean;
   show_progress?: boolean;
@@ -703,6 +717,13 @@ function WidgetByType({
           title={title}
           entity_id={entity_id}
           show_icon={show_icon}
+          show_condition={show_condition}
+          show_high_low={show_high_low}
+          show_wind={show_wind}
+          show_humidity={show_humidity}
+          show_air_quality={show_air_quality}
+          show_precipitation={show_precipitation}
+          air_quality_entity_id={air_quality_entity_id}
           size={sizeProp}
         />
       );
@@ -884,6 +905,13 @@ export default function DashboardEditPage() {
     humidity_entity_id?: string;
     display_mode?: "standard" | "compact" | "graph";
     show_icon?: boolean;
+    show_condition?: boolean;
+    show_high_low?: boolean;
+    show_wind?: boolean;
+    show_humidity?: boolean;
+    show_air_quality?: boolean;
+    show_precipitation?: boolean;
+    air_quality_entity_id?: string;
     show_state?: boolean;
     script_ids?: string[];
     script_names?: Record<string, string>;
@@ -936,6 +964,13 @@ export default function DashboardEditPage() {
     humidity_entity_id: "",
     display_mode: "standard",
     show_icon: true,
+    show_condition: true,
+    show_high_low: true,
+    show_wind: true,
+    show_humidity: true,
+    show_air_quality: false,
+    show_precipitation: true,
+    air_quality_entity_id: "",
     show_state: true,
     script_ids: [],
     script_names: {},
@@ -1121,6 +1156,13 @@ export default function DashboardEditPage() {
           humidity_entity_id: child.humidity_entity_id ?? "",
           display_mode: child.display_mode ?? "standard",
           show_icon: child.show_icon !== false,
+          show_condition: child.show_condition !== false,
+          show_high_low: child.show_high_low !== false,
+          show_wind: child.show_wind !== false,
+          show_humidity: child.show_humidity !== false,
+          show_air_quality: child.show_air_quality === true,
+          show_precipitation: child.show_precipitation !== false,
+          air_quality_entity_id: child.air_quality_entity_id ?? "",
           script_ids: child.script_ids ?? [],
           script_names: child.script_names ?? {},
           cleaned_area_entity_id: child.cleaned_area_entity_id ?? "",
@@ -1213,6 +1255,13 @@ export default function DashboardEditPage() {
         humidity_entity_id: editingWidget.humidity_entity_id ?? "",
         display_mode: editingWidget.display_mode ?? "standard",
         show_icon: isCategoryCard ? ((editingWidget as { show_icon?: boolean }).show_icon ?? false) : (editingWidget.show_icon !== false),
+        show_condition: editingWidget.show_condition !== false,
+        show_high_low: editingWidget.show_high_low !== false,
+        show_wind: editingWidget.show_wind !== false,
+        show_humidity: editingWidget.show_humidity !== false,
+        show_air_quality: editingWidget.show_air_quality === true,
+        show_precipitation: editingWidget.show_precipitation !== false,
+        air_quality_entity_id: editingWidget.air_quality_entity_id ?? "",
         script_ids: editingWidget.script_ids ?? [],
         script_names: editingWidget.script_names ?? {},
         cleaned_area_entity_id: editingWidget.cleaned_area_entity_id ?? "",
@@ -2213,6 +2262,13 @@ export default function DashboardEditPage() {
                       humidity_entity_id={w.humidity_entity_id}
                       display_mode={w.display_mode}
                       show_icon={w.show_icon}
+                      show_condition={w.show_condition}
+                      show_high_low={w.show_high_low}
+                      show_wind={w.show_wind}
+                      show_humidity={w.show_humidity}
+                      show_air_quality={w.show_air_quality}
+                      show_precipitation={w.show_precipitation}
+                      air_quality_entity_id={w.air_quality_entity_id}
                       script_ids={w.script_ids}
                       script_names={w.script_names}
                       cleaned_area_entity_id={w.cleaned_area_entity_id}
@@ -2513,6 +2569,13 @@ export default function DashboardEditPage() {
               title={firstWeather.title ?? "Weather"}
               entity_id={firstWeather.entity_id}
               show_icon={firstWeather.show_icon}
+              show_condition={firstWeather.show_condition}
+              show_high_low={firstWeather.show_high_low}
+              show_wind={firstWeather.show_wind}
+              show_humidity={firstWeather.show_humidity}
+              show_air_quality={firstWeather.show_air_quality}
+              show_precipitation={firstWeather.show_precipitation}
+              air_quality_entity_id={firstWeather.air_quality_entity_id}
               width={firstWeather.width}
               height={firstWeather.height}
               editMode={editMode}
@@ -5930,31 +5993,74 @@ aria-label={t("editPanel.removeCondition")}
                       ))}
                     </div>
                     {editTab === "algemeen" && (
-                    <div className="flex items-center justify-between gap-3">
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {t("editPanel.showIcon")}
-                      </label>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={editForm.show_icon !== false}
-                        onClick={() =>
-                          setEditForm((prev) => ({ ...prev, show_icon: !(prev.show_icon !== false) }))
-                        }
-                        className={cn(
-                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4700B5] focus:ring-offset-2",
-                          editForm.show_icon !== false
-                            ? "bg-[#4700B5]"
-                            : "bg-gray-200 dark:bg-gray-600"
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition",
-                            editForm.show_icon !== false ? "translate-x-5" : "translate-x-1"
-                          )}
-                        />
-                      </button>
+                    <div className="flex flex-col gap-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                        {t("editPanel.weatherDetails")}
+                      </p>
+                      {(
+                        [
+                          ["show_icon", "editPanel.showIcon", true],
+                          ["show_condition", "editPanel.showCondition", true],
+                          ["show_high_low", "editPanel.showHighLow", true],
+                          ["show_wind", "editPanel.showWind", true],
+                          ["show_humidity", "editPanel.showHumidity", true],
+                          ["show_air_quality", "editPanel.showAirQuality", false],
+                          ["show_precipitation", "editPanel.showPrecipitation", true],
+                        ] as const
+                      ).map(([key, labelKey, defaultOn]) => {
+                        const checked =
+                          defaultOn ? editForm[key] !== false : editForm[key] === true;
+                        return (
+                          <div key={key} className="flex items-center justify-between gap-3">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {t(labelKey)}
+                            </label>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={checked}
+                              onClick={() =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  [key]: defaultOn ? !(prev[key] !== false) : !(prev[key] === true),
+                                }))
+                              }
+                              className={cn(
+                                "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4700B5] focus:ring-offset-2",
+                                checked ? "bg-[#4700B5]" : "bg-gray-200 dark:bg-gray-600"
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition",
+                                  checked ? "translate-x-5" : "translate-x-1"
+                                )}
+                              />
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {editForm.show_air_quality === true && (
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {t("editPanel.airQualityEntity")}
+                          </label>
+                          <EntitySelectWithSearch
+                            value={editForm.air_quality_entity_id ?? ""}
+                            onChange={(v) => setEditForm((prev) => ({ ...prev, air_quality_entity_id: v }))}
+                            entities={entities.filter(
+                              (e) =>
+                                e.entity_id.startsWith("sensor.") ||
+                                e.entity_id.startsWith("air_quality.")
+                            )}
+                            placeholder={t("editPanel.entityPlaceholder")}
+                            emptyOption={t("editPanel.none")}
+                          />
+                          <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                            {t("editPanel.airQualityEntityHint")}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     )}
                     {editTab === "weergave" && !isEditingSmartStackChild && (
@@ -6807,6 +6913,13 @@ aria-label={t("editPanel.removeCondition")}
                         }),
                         ...(editingWidget.type === "weather_card" && {
                           show_icon: editForm.show_icon !== false,
+                          show_condition: editForm.show_condition !== false,
+                          show_high_low: editForm.show_high_low !== false,
+                          show_wind: editForm.show_wind !== false,
+                          show_humidity: editForm.show_humidity !== false,
+                          show_air_quality: editForm.show_air_quality === true,
+                          show_precipitation: editForm.show_precipitation !== false,
+                          air_quality_entity_id: editForm.air_quality_entity_id || undefined,
                           width: editForm.width != null && editForm.width > 0 ? clampWeatherCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampWeatherCardHeight(editForm.height) : undefined,
                         }),

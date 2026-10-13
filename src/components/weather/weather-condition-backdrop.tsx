@@ -20,10 +20,31 @@ export function WeatherConditionBackdrop({
   const { src, fallback } = weatherImageSources(condition, isNight);
   const [imageError, setImageError] = useState(false);
   const effective = imageError && fallback ? fallback : src;
+  const [shown, setShown] = useState<string | null>(effective);
 
   useEffect(() => {
     setImageError(false);
   }, [src]);
+
+  useEffect(() => {
+    // Keep the last frame if the next source is briefly unavailable (entity flicker).
+    if (!effective) return;
+    if (shown === effective) return;
+    let cancelled = false;
+    const img = new window.Image();
+    img.onload = () => {
+      if (!cancelled) setShown(effective);
+    };
+    img.onerror = () => {
+      if (cancelled) return;
+      if (fallback && effective === src) setImageError(true);
+      else setShown(effective);
+    };
+    img.src = effective;
+    return () => {
+      cancelled = true;
+    };
+  }, [effective, fallback, shown, src]);
 
   return (
     <div
@@ -36,13 +57,13 @@ export function WeatherConditionBackdrop({
       aria-hidden
     >
       <div className={cn("absolute inset-0 bg-gradient-to-b", gradient)} />
-      {effective ? (
+      {shown ? (
         <Image
-          src={effective}
+          src={shown}
           alt=""
           fill
           sizes="(max-width: 640px) 100vw, 576px"
-          className="object-cover object-center"
+          className="object-cover object-center transition-opacity duration-300"
           onError={fallback ? () => setImageError(true) : undefined}
         />
       ) : null}

@@ -86,6 +86,13 @@ export function SmartStackChild({
           title={title}
           entity_id={child.entity_id ?? ""}
           show_icon={child.show_icon !== false}
+          show_condition={child.show_condition !== false}
+          show_high_low={child.show_high_low !== false}
+          show_wind={child.show_wind !== false}
+          show_humidity={child.show_humidity !== false}
+          show_air_quality={child.show_air_quality === true}
+          show_precipitation={child.show_precipitation !== false}
+          air_quality_entity_id={child.air_quality_entity_id}
           className={fill}
         />
       );

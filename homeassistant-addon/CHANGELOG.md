@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.78
+
+- Weather card redesign: curated day/night WebP backgrounds, metrics bar (wind, humidity, air quality, precipitation), and per-detail switches in the edit panel
+
 ## 0.4.77
 
 - Settings → Personalization: live preview + card layout (theme, accent, glass, background, language & time, interaction)

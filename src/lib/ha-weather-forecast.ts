@@ -6,6 +6,8 @@ export type WeatherForecastItem = {
   temperature: number | null;
   templow: number | null;
   precipitationProbability: number | null;
+  /** Precipitation amount in mm when the provider supplies it. */
+  precipitation: number | null;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -36,6 +38,7 @@ export function parseForecastItem(raw: unknown): WeatherForecastItem | null {
     precipitationProbability: parseNumber(
       item.precipitation_probability ?? item.precipitationProbability ?? item.precip_probability
     ),
+    precipitation: parseNumber(item.precipitation ?? item.precip ?? item.rain),
   };
 }
 

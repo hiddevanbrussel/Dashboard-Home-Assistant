@@ -60,6 +60,7 @@ function mockHourly(): WeatherForecastItem[] {
     temperature: 21 - Math.round(i / 3),
     templow: null,
     precipitationProbability: i % 3 === 0 ? 40 + i : null,
+    precipitation: i % 3 === 0 ? 0.4 : 0,
   }));
 }
 
@@ -80,6 +81,7 @@ function mockDaily(): WeatherForecastItem[] {
     temperature: 22 - i,
     templow: 12 - Math.round(i / 2),
     precipitationProbability: i === 0 ? 10 : 20 + i * 8,
+    precipitation: i === 0 ? 0 : i * 0.5,
   }));
 }
 

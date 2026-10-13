@@ -61,6 +61,13 @@ export function FloatingWeatherCard({
   title,
   entity_id,
   show_icon = true,
+  show_condition = true,
+  show_high_low = true,
+  show_wind = true,
+  show_humidity = true,
+  show_air_quality = false,
+  show_precipitation = true,
+  air_quality_entity_id,
   width,
   height,
   editMode = false,
@@ -73,6 +80,13 @@ export function FloatingWeatherCard({
   title: string;
   entity_id: string;
   show_icon?: boolean;
+  show_condition?: boolean;
+  show_high_low?: boolean;
+  show_wind?: boolean;
+  show_humidity?: boolean;
+  show_air_quality?: boolean;
+  show_precipitation?: boolean;
+  air_quality_entity_id?: string;
   width?: number;
   height?: number;
   editMode?: boolean;
@@ -345,6 +359,13 @@ export function FloatingWeatherCard({
           title={title}
           entity_id={entity_id}
           show_icon={show_icon}
+          show_condition={show_condition}
+          show_high_low={show_high_low}
+          show_wind={show_wind}
+          show_humidity={show_humidity}
+          show_air_quality={show_air_quality}
+          show_precipitation={show_precipitation}
+          air_quality_entity_id={air_quality_entity_id}
           size="md"
           onMoreClick={editMode ? onEdit : undefined}
           className="flex-1 min-h-0"
