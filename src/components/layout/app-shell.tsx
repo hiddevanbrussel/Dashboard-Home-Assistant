@@ -322,10 +322,22 @@ export function AppShell({
     }
     const el = chromeRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const update = () => setChromeHeight(Math.ceil(el.getBoundingClientRect().height));
+    // Measure interactive header rows only — exclude the CSS fade padding under the bar.
+    const update = () => {
+      const header = el.querySelector<HTMLElement>("[data-app-header]");
+      const sub = el.querySelector<HTMLElement>("[data-app-subheader]");
+      const h =
+        (header?.getBoundingClientRect().height ?? 0) +
+        (sub?.getBoundingClientRect().height ?? 0);
+      setChromeHeight(Math.ceil(h));
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
+    const header = el.querySelector("[data-app-header]");
+    const sub = el.querySelector("[data-app-subheader]");
+    if (header) ro.observe(header);
+    if (sub) ro.observe(sub);
     return () => ro.disconnect();
   }, [hideHeader, headerBelowAction, headerContentLight]);
 

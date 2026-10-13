@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.79
+
+- Topbar: restore normal height and use a light top-to-bottom fade (fade no longer doubles the bar)
+
 ## 0.4.78
 
 - Weather card redesign: curated day/night WebP backgrounds, metrics bar (wind, humidity, air quality, precipitation), and per-detail switches in the edit panel

@@ -363,10 +363,14 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
     }
   }
 
-  /* Top chrome: heavier frost, fading out below the bar */
+  /*
+   * Top chrome: normal bar height + a short soft fade below.
+   * --header-fade is visual only (padding); spacer measures header/subheader
+   * content so the fade does not push page content down.
+   */
   [data-app-chrome] {
-    --header-fade: 3.25rem;
-    --header-blur: calc(var(--glass-blur) * 1.65 + 20px);
+    --header-fade: 1.25rem;
+    --header-blur: calc(var(--glass-blur) * 1.35 + 12px);
     pointer-events: none;
     transition:
       background 180ms ease,
@@ -375,12 +379,14 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
       backdrop-filter 180ms ease;
   }
 
-  [data-app-chrome] [data-app-header] {
+  [data-app-chrome] [data-app-header],
+  [data-app-chrome] [data-app-subheader] {
     pointer-events: auto;
   }
 
   .header-chrome-glass,
   .header-chrome-glass-over-media {
+    /* Short dissolve under the bar — not a second full-height slab */
     padding-bottom: var(--header-fade);
     border: none;
     border-bottom: none;
@@ -391,30 +397,33 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
     will-change: backdrop-filter;
     -webkit-backdrop-filter: blur(var(--header-blur)) saturate(var(--glass-saturation));
     backdrop-filter: blur(var(--header-blur)) saturate(var(--glass-saturation));
+    /* Light fade top → bottom across the bar, then clear in the tail */
     -webkit-mask-image: linear-gradient(
       to bottom,
       #000 0%,
-      #000 calc(100% - var(--header-fade)),
+      #000 42%,
+      rgb(0 0 0 / 0.55) 72%,
       transparent 100%
     );
     mask-image: linear-gradient(
       to bottom,
       #000 0%,
-      #000 calc(100% - var(--header-fade)),
+      #000 42%,
+      rgb(0 0 0 / 0.55) 72%,
       transparent 100%
     );
   }
 
   .header-chrome-glass {
-    background: rgb(255 255 255 / calc(var(--glass-opacity) * 0.62));
+    background: rgb(255 255 255 / calc(var(--glass-opacity) * 0.7));
   }
 
   .dark .header-chrome-glass {
-    background: rgb(12 8 22 / calc(0.32 + 0.3 * var(--glass-opacity-dark)));
+    background: rgb(12 8 22 / calc(0.34 + 0.32 * var(--glass-opacity-dark)));
   }
 
   .header-chrome-glass-over-media {
-    background: rgb(8 6 16 / calc(0.28 + 0.24 * var(--glass-opacity-dark)));
+    background: rgb(8 6 16 / calc(0.3 + 0.26 * var(--glass-opacity-dark)));
   }
 
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
