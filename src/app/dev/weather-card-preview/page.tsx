@@ -75,19 +75,16 @@ export default function WeatherCardPreviewPage() {
 
   useEffect(() => {
     setLanguage("nl");
-    const nightish =
-      condition.includes("night") ||
-      condition === "rainy" ||
-      condition === "lightning-rainy" ||
-      condition === "snowy";
-    setResolved(nightish ? "dark" : "light");
-  }, [condition, setLanguage, setResolved]);
+  }, [setLanguage]);
 
   useEffect(() => {
-    const seed = () => setStates(entities);
-    seed();
-    const id = setInterval(seed, 2000);
-    return () => clearInterval(id);
+    // Day packs for clear daytime conditions; dark theme unlocks night variants.
+    const day = new Set(["sunny", "cloudy", "fog", "windy", "partlycloudy"]);
+    setResolved(day.has(condition) ? "light" : "dark");
+  }, [condition, setResolved]);
+
+  useEffect(() => {
+    setStates(entities);
   }, [entities, setStates]);
 
   return (

@@ -20,10 +20,37 @@ export function WeatherConditionBackdrop({
   const { src, fallback } = weatherImageSources(condition, isNight);
   const [imageError, setImageError] = useState(false);
   const effective = imageError && fallback ? fallback : src;
+  /** Keep the last loaded frame visible while the next WebP/PNG loads. */
+  const [shown, setShown] = useState<string | null>(effective);
 
   useEffect(() => {
     setImageError(false);
   }, [src]);
+
+  useEffect(() => {
+    if (!effective) {
+      setShown(null);
+      return;
+    }
+    // Already showing this source — nothing to do.
+    if (shown === effective) return;
+    // Prefetch so we only swap once the bitmap is ready (avoids gradient flash).
+    let cancelled = false;
+    const img = new window.Image();
+    img.onload = () => {
+      if (!cancelled) setShown(effective);
+    };
+    img.onerror = () => {
+      if (!cancelled) {
+        if (fallback && effective === src) setImageError(true);
+        else setShown(effective);
+      }
+    };
+    img.src = effective;
+    return () => {
+      cancelled = true;
+    };
+  }, [effective, fallback, shown, src]);
 
   return (
     <div
@@ -36,9 +63,9 @@ export function WeatherConditionBackdrop({
       aria-hidden
     >
       <div className={cn("absolute inset-0 bg-gradient-to-b", gradient)} />
-      {effective ? (
+      {shown ? (
         <Image
-          src={effective}
+          src={shown}
           alt=""
           fill
           sizes="(max-width: 640px) 100vw, 576px"
