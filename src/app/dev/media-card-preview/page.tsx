@@ -59,7 +59,7 @@ export default function MediaCardPreviewPage() {
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Media card preview</h1>
         <p className="mt-1 text-sm text-white/60">
-          Idle lifestyle background + ready-to-play layout. No Home Assistant required.
+          Idle lifestyle background with player name and controls. No Home Assistant required.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">

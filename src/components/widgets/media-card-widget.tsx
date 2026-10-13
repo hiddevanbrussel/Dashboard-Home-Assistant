@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Heart, MoreVertical, Music2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { Heart, MoreVertical, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import type { MediaCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
@@ -218,21 +218,7 @@ export function MediaCardWidget({
           {!idle ? <Waveform playing={isPlaying} /> : null}
         </div>
 
-        {idle ? (
-          <div className="flex min-h-0 flex-1 items-center gap-4 px-0.5">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-white/35 text-white/90">
-              <Music2 className="h-7 w-7" strokeWidth={1.5} aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[1.15rem] font-semibold leading-snug tracking-tight text-white">
-                {t("mediaCard.readyTitle")}
-              </p>
-              <p className="mt-1 text-sm font-medium leading-snug text-white/65">
-                {t("mediaCard.readyHint")}
-              </p>
-            </div>
-          </div>
-        ) : (
+        {!idle ? (
           <div className="mt-auto space-y-3 pt-4">
             <div className="min-w-0">
               {mediaArtist ? (
@@ -243,14 +229,11 @@ export function MediaCardWidget({
               </p>
             </div>
           </div>
+        ) : (
+          <div className="min-h-0 flex-1" aria-hidden />
         )}
 
-        <div
-          className={cn(
-            "mt-auto flex items-center gap-1 rounded-full bg-black/45 px-2 py-1.5 backdrop-blur-md",
-            idle ? "mt-2" : "mt-4"
-          )}
-        >
+        <div className="mt-auto flex items-center gap-1 rounded-full bg-black/45 px-2 py-1.5 backdrop-blur-md">
           <button
             type="button"
             onClick={(e) => {

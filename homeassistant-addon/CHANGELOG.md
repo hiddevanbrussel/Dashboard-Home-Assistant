@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.82
+
+- Media card idle: drop ready-to-play title, hint, and icon — keep lifestyle background + controls
+
 ## 0.4.80
 
 - Media card idle state: lifestyle speaker backgrounds + ready-to-play layout (title, hint, control bar)
