@@ -236,7 +236,7 @@ function ThemeMiniWindow({ scheme }: { scheme: "light" | "dark" }) {
         <div
           className={cn(
             "flex w-[1.15rem] flex-col items-center gap-1 py-2",
-            isLight ? "bg-white" : "bg-[#1C0A3A]"
+            isLight ? "bg-white" : "bg-[#1a1a1e]"
           )}
         >
           <span className={cn("h-1.5 w-1.5 rounded-full", isLight ? "bg-brand" : "bg-white")} />
@@ -247,7 +247,7 @@ function ThemeMiniWindow({ scheme }: { scheme: "light" | "dark" }) {
           <div className={cn("h-2.5 rounded-md", isLight ? "bg-white" : "bg-white/10")} />
           <div className="grid flex-1 grid-cols-2 gap-1">
             <div className={cn("rounded-md", isLight ? "bg-white" : "bg-white/10")} />
-            <div className={cn("rounded-md", isLight ? "bg-brand/25" : "bg-brand/55")} />
+            <div className={cn("rounded-md", isLight ? "bg-white" : "bg-white/10")} />
           </div>
         </div>
       </div>

@@ -19,11 +19,14 @@
     --glass-saturation: 140%;
     --glass-border-light: rgba(255, 255, 255, 0.6);
     --glass-border-dark: rgba(255, 255, 255, 0.08);
+    /* Neutral glass fill — accent/theme color is for menu items, not surfaces. */
+    --glass-fill: 255 255 255;
   }
 
   .dark {
     --page-bg: #0a0014;
-    --card-bg: rgb(var(--brand) / 0.28);
+    --card-bg: rgb(24 24 28 / 0.55);
+    --glass-fill: 24 24 28;
     --glass-border-light: rgba(255, 255, 255, 0.10);
     --glass-border-dark: rgba(255, 255, 255, 0.12);
   }
@@ -274,7 +277,7 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
   }
 
   .dark .glass-card {
-    background: rgb(var(--brand) / calc(0.18 + 0.22 * var(--glass-opacity-dark)));
+    background: rgb(var(--glass-fill) / calc(0.40 + 0.38 * var(--glass-opacity-dark)));
     border-color: var(--glass-border-dark);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   }
@@ -287,7 +290,7 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
   }
 
   .dark .glass-surface {
-    background: rgb(var(--brand) / calc(0.18 + 0.22 * var(--glass-opacity-dark)));
+    background: rgb(var(--glass-fill) / calc(0.40 + 0.38 * var(--glass-opacity-dark)));
   }
 
   /*
@@ -335,7 +338,7 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
   }
 
   .dark .sidebar-glass {
-    background: rgb(var(--brand) / calc(0.18 + 0.22 * var(--glass-opacity-dark)));
+    background: rgb(var(--glass-fill) / calc(0.40 + 0.38 * var(--glass-opacity-dark)));
     border-color: rgba(255, 255, 255, 0.12);
     box-shadow:
       0 12px 32px -10px rgba(0, 0, 0, 0.45),

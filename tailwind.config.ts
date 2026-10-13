@@ -31,7 +31,7 @@ const config: Config = {
         },
         dark: {
           page: "#0A0014",
-          card: "rgb(var(--brand) / 0.28)",
+          card: "rgb(var(--glass-fill) / 0.55)",
           cardSolid: "#1C0A3A",
         },
       },
@@ -40,7 +40,7 @@ const config: Config = {
         pill: "9999px",
       },
       boxShadow: {
-        glass: "0 8px 32px rgba(71, 0, 181, 0.08)",
+        glass: "0 8px 32px rgba(15, 23, 42, 0.08)",
         "glass-dark": "0 8px 32px rgba(0, 0, 0, 0.35)",
       },
       backdropBlur: {
