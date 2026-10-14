@@ -13,7 +13,7 @@ const ENTITY_ID = "sensor.team_psv_preview";
 export default function TeamtrackerCardPreviewPage() {
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
-  const setMode = useThemeStore((s) => s.setMode);
+  const setThemeMode = useThemeStore((s) => s.setMode);
   const setResolved = useThemeStore((s) => s.setResolved);
   const resolved = useThemeStore((s) => s.resolved);
   const [mode, setMode] = useState<"pre" | "in" | "post">("pre");
@@ -129,7 +129,7 @@ export default function TeamtrackerCardPreviewPage() {
             type="button"
             onClick={() => {
               const next = resolved === "dark" ? "light" : "dark";
-              setMode(next);
+              setThemeMode(next);
               setResolved(next);
             }}
             className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/80"
