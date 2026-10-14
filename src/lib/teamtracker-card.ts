@@ -6,8 +6,16 @@ import {
   type FootballMatchStatus,
 } from "@/lib/screensaver-football";
 
-/** Night stadium lifestyle background for the match card. */
-export const TEAMTRACKER_STADIUM_IMAGE = "/teamtracker-stadium.webp";
+/** Day / night stadium lifestyle backgrounds for the match card. */
+export const TEAMTRACKER_STADIUM_IMAGE_DAY = "/teamtracker-stadium-day.webp";
+export const TEAMTRACKER_STADIUM_IMAGE_NIGHT = "/teamtracker-stadium-night.webp";
+
+/** @deprecated Use TEAMTRACKER_STADIUM_IMAGE_NIGHT */
+export const TEAMTRACKER_STADIUM_IMAGE = TEAMTRACKER_STADIUM_IMAGE_NIGHT;
+
+export function teamtrackerStadiumImageSrc(isDark: boolean): string {
+  return isDark ? TEAMTRACKER_STADIUM_IMAGE_NIGHT : TEAMTRACKER_STADIUM_IMAGE_DAY;
+}
 
 export const TEAMTRACKER_CARD_DEFAULT_WIDTH = 380;
 export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 280;

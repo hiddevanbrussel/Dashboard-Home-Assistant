@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.84
+
+- Vacuum card 2: new docked / empty-dock lifestyle backgrounds
+- Team Tracker card: separate day and night stadium backgrounds (theme-aware)
+
 ## 0.4.83
 
 - Team Tracker card: stadium lifestyle background, logos + VS, league pill, calendar date/time footer (no top “next match” header)

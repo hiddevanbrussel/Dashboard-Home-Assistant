@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { TeamtrackerCardWidget } from "@/components/widgets/teamtracker-card-widget";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useLanguageStore } from "@/stores/language-store";
+import { useThemeStore } from "@/stores/theme-store";
 import { cn } from "@/lib/utils";
 
 const ENTITY_ID = "sensor.team_psv_preview";
@@ -12,6 +13,8 @@ const ENTITY_ID = "sensor.team_psv_preview";
 export default function TeamtrackerCardPreviewPage() {
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const setResolved = useThemeStore((s) => s.setResolved);
+  const resolved = useThemeStore((s) => s.resolved);
   const [mode, setMode] = useState<"pre" | "in" | "post">("pre");
 
   const entity = useMemo(() => {
@@ -103,7 +106,7 @@ export default function TeamtrackerCardPreviewPage() {
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Team Tracker card preview</h1>
         <p className="mt-1 text-sm text-white/60">
-          Stadium lifestyle background with logos, league pill, and kickoff footer. No Home Assistant
+          Day/night stadium backgrounds with logos, league pill, and kickoff footer. No Home Assistant
           required.
         </p>
 
@@ -121,6 +124,13 @@ export default function TeamtrackerCardPreviewPage() {
               {value}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setResolved(resolved === "dark" ? "light" : "dark")}
+            className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/80"
+          >
+            theme: {resolved} ({resolved === "dark" ? "night" : "day"} art)
+          </button>
         </div>
 
         <div className="mt-8 flex justify-center">
