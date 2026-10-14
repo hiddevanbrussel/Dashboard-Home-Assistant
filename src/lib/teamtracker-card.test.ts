@@ -9,9 +9,11 @@ import {
   estimateTeamtrackerProgress,
   formatTeamtrackerFormLine,
   formatTeamtrackerKickoffDate,
+  formatTeamtrackerKickoffDateLong,
   formatTeamtrackerKickoffDateTime,
   formatTeamtrackerKickoffDayLabel,
   formatTeamtrackerKickoffTime,
+  formatTeamtrackerLeagueLabel,
   formatTeamtrackerPeriodLabel,
   isTeamtrackerEntityId,
   isTeamtrackerShowForm,
@@ -32,13 +34,13 @@ describe("teamtracker-card helpers", () => {
     expect(clampTeamtrackerCardWidth(900)).toBe(520);
     expect(clampTeamtrackerCardHeight(undefined)).toBe(TEAMTRACKER_CARD_DEFAULT_HEIGHT);
     expect(clampTeamtrackerCardHeight(50)).toBe(TEAMTRACKER_CARD_MIN_HEIGHT);
-    expect(clampTeamtrackerCardHeight(900)).toBe(320);
+    expect(clampTeamtrackerCardHeight(900)).toBe(360);
   });
 
   it("resizes from the bottom-right while keeping the top-left fixed", () => {
     const grown = resizeTeamtrackerCardFromBottomRight({
       startWidth: 380,
-      startHeight: 200,
+      startHeight: 280,
       startLeft: 40,
       startBottom: 40,
       dx: 40,
@@ -46,7 +48,7 @@ describe("teamtracker-card helpers", () => {
       viewportWidth: 1200,
       viewportHeight: 800,
     });
-    expect(grown).toEqual({ width: 420, height: 220, left: 40, bottom: 20 });
+    expect(grown).toEqual({ width: 420, height: 300, left: 40, bottom: 20 });
   });
 
   it("detects teamtracker entity ids", () => {
@@ -144,6 +146,15 @@ describe("teamtracker-card helpers", () => {
     expect(formatTeamtrackerKickoffDateTime(kickoff, "nl")).toMatch(/^4 oktober 2026 20:45$/i);
     expect(formatTeamtrackerKickoffDateTime(kickoff, "en")).toMatch(/^4 October 2026 20:45$/i);
     expect(formatTeamtrackerKickoffDateTime(null, "nl")).toBe(null);
+  });
+
+  it("formats long kickoff dates with weekday and humanizes league labels", () => {
+    const kickoff = new Date(2026, 9, 22, 21, 0, 0); // Thursday
+    expect(formatTeamtrackerKickoffDateLong(kickoff, "nl")).toMatch(/^donderdag 22 oktober 2026$/i);
+    expect(formatTeamtrackerKickoffDateLong(kickoff, "en")).toMatch(/thursday.*22.*october.*2026/i);
+    expect(formatTeamtrackerLeagueLabel("UEFA.EUROPA_LEAGUE")).toBe("UEFA Europa League");
+    expect(formatTeamtrackerLeagueLabel("Eredivisie")).toBe("Eredivisie");
+    expect(formatTeamtrackerLeagueLabel(null)).toBe(null);
   });
 
   it("formats form lines and falls back to season record", () => {

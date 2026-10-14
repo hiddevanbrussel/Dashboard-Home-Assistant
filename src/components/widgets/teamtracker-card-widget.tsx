@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVertical } from "lucide-react";
+import { CalendarDays, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -9,51 +9,18 @@ import {
   estimateTeamtrackerProgress,
   footballMatchHasContent,
   formatTeamtrackerFormLine,
-  formatTeamtrackerKickoffDateTime,
+  formatTeamtrackerKickoffDateLong,
+  formatTeamtrackerKickoffTime,
+  formatTeamtrackerLeagueLabel,
   isTeamtrackerShowForm,
   isTeamtrackerShowProgress,
   isTeamtrackerShowTeamNames,
   readTeamtrackerMatch,
   teamtrackerStatusLabel,
+  TEAMTRACKER_STADIUM_IMAGE,
   type TeamtrackerMatch,
 } from "@/lib/teamtracker-card";
 import type { TeamtrackerCardProps } from "./widget-types";
-
-function StatusBadge({
-  label,
-  status,
-}: {
-  label: string;
-  status: string;
-}) {
-  if (status === "IN") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FDECEC] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#E53935] dark:bg-red-500/15 dark:text-red-300">
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#E53935] dark:bg-red-400" aria-hidden />
-        {label}
-      </span>
-    );
-  }
-  if (status === "PRE") {
-    return (
-      <span className="inline-flex items-center rounded-full bg-[#E8F1FB] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#2F6FED] dark:bg-blue-500/15 dark:text-blue-300">
-        {label}
-      </span>
-    );
-  }
-  if (status === "POST") {
-    return (
-      <span className="inline-flex items-center rounded-full bg-[#F1F2F4] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6B7280] dark:bg-white/8 dark:text-white/50">
-        {label}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center rounded-full bg-[#F1F2F4] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6B7280] dark:bg-white/8 dark:text-white/50">
-      {label}
-    </span>
-  );
-}
 
 function venueSides(match: TeamtrackerMatch): {
   left: {
@@ -103,7 +70,7 @@ function TeamLogo({ src, alt }: { src?: string | null; alt: string }) {
   if (!src) {
     return (
       <div
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F3F4F6] text-sm font-semibold text-[#9CA3AF] dark:bg-white/8 dark:text-white/35 sm:h-14 sm:w-14"
+        className="flex h-[4.25rem] w-[4.25rem] shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white/55 ring-1 ring-white/20 sm:h-[4.75rem] sm:w-[4.75rem]"
         aria-hidden
       >
         {alt.slice(0, 1).toUpperCase()}
@@ -115,7 +82,7 @@ function TeamLogo({ src, alt }: { src?: string | null; alt: string }) {
     <img
       src={withBasePath(src)}
       alt={alt}
-      className="h-12 w-12 shrink-0 rounded-full object-contain sm:h-14 sm:w-14"
+      className="h-[4.25rem] w-[4.25rem] shrink-0 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)] sm:h-[4.75rem] sm:w-[4.75rem]"
       loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).style.display = "none";
@@ -130,48 +97,35 @@ function TeamColumn({
   form,
   showName,
   showForm,
-  align,
 }: {
   logo: string | null;
   name: string;
   form: string | null;
   showName: boolean;
   showForm: boolean;
-  align: "start" | "end";
 }) {
   return (
-    <div
-      className={cn(
-        "flex min-w-0",
-        align === "start" ? "justify-start" : "justify-end"
-      )}
-    >
-      <div className="flex min-w-0 max-w-full flex-col items-center gap-2">
-        <TeamLogo src={logo} alt={name} />
-        {showName || showForm ? (
-          <div className="min-w-0 max-w-full text-center">
-            {showName ? (
-              <p className="truncate text-sm font-semibold tracking-tight text-[#2A2D37] dark:text-white/90 sm:text-[15px]">
-                {name}
-              </p>
-            ) : null}
-            {showForm ? (
-              form ? (
-                <p
-                  className={cn(
-                    "truncate text-[11px] font-medium tracking-wide text-[#A0A4AB] dark:text-white/40",
-                    showName ? "mt-0.5" : null
-                  )}
-                >
-                  {form}
-                </p>
-              ) : showName ? (
-                <p className="mt-0.5 h-[15px]" aria-hidden />
-              ) : null
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+    <div className="flex min-w-0 flex-col items-center gap-2.5">
+      <TeamLogo src={logo} alt={name} />
+      {showName || showForm ? (
+        <div className="min-w-0 max-w-full text-center">
+          {showName ? (
+            <p className="truncate text-[0.95rem] font-semibold tracking-tight text-white sm:text-[1.05rem]">
+              {name}
+            </p>
+          ) : null}
+          {showForm && form ? (
+            <p
+              className={cn(
+                "truncate text-[11px] font-medium tracking-wide text-white/45",
+                showName ? "mt-0.5" : null
+              )}
+            >
+              {form}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -185,7 +139,7 @@ function ScoreHeadline({
 }) {
   if (match.status === "PRE") {
     return (
-      <span className="text-[1.85rem] font-bold leading-none tracking-tight text-[#2A2D37] dark:text-white/90 sm:text-[2.15rem]">
+      <span className="text-[1.65rem] font-semibold leading-none tracking-[0.04em] text-white sm:text-[1.85rem]">
         VS
       </span>
     );
@@ -194,13 +148,51 @@ function ScoreHeadline({
   const left = match.showScores ? scores.left : "—";
   const right = match.showScores ? scores.right : "—";
   return (
-    <span className="text-[1.85rem] font-bold tabular-nums leading-none tracking-tight text-[#2A2D37] dark:text-white/90 sm:text-[2.15rem]">
+    <span className="text-[1.85rem] font-bold tabular-nums leading-none tracking-tight text-white sm:text-[2.15rem]">
       {left}
-      <span className="mx-1.5 font-semibold text-[#2A2D37]/80 dark:text-white/80">-</span>
+      <span className="mx-1.5 font-semibold text-white/80">-</span>
       {right}
       <span className="sr-only">
         {match.status === "POST" ? t("teamtrackerCard.finalScore") : ""}
       </span>
+    </span>
+  );
+}
+
+function LeagueOrStatusPill({
+  leagueLabel,
+  status,
+  statusLabel,
+}: {
+  leagueLabel: string | null;
+  status: string;
+  statusLabel: string;
+}) {
+  if (status === "IN") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-red-300/45 bg-red-500/20 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-red-100">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-300" aria-hidden />
+        {statusLabel}
+      </span>
+    );
+  }
+  if (status === "POST") {
+    return (
+      <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/75">
+        {statusLabel}
+      </span>
+    );
+  }
+  if (leagueLabel) {
+    return (
+      <span className="inline-flex max-w-full items-center rounded-full border border-[#7EB6FF]/45 bg-[#1B3A6B]/72 px-3.5 py-1 text-[11px] font-semibold tracking-[0.02em] text-[#D7E9FF]">
+        <span className="truncate">{leagueLabel}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/75">
+      {statusLabel}
     </span>
   );
 }
@@ -210,14 +202,14 @@ function ProgressBar({ progress }: { progress: number | null }) {
   const pct = Math.round(Math.min(1, Math.max(0, progress)) * 100);
   return (
     <div
-      className="h-1 w-full overflow-hidden rounded-full bg-[#ECEEF1] dark:bg-white/10"
+      className="h-1 w-full overflow-hidden rounded-full bg-white/15"
       role="progressbar"
       aria-valuenow={pct}
       aria-valuemin={0}
       aria-valuemax={100}
     >
       <div
-        className="h-full rounded-full bg-[#F07167] transition-[width] duration-500 ease-out dark:bg-[#E57373]"
+        className="h-full rounded-full bg-[#F07167] transition-[width] duration-500 ease-out"
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -242,16 +234,34 @@ export function TeamtrackerCardWidget({
   const sides = match ? venueSides(match) : null;
   const progress = match ? estimateTeamtrackerProgress(match) : null;
   const isUpcoming = status === "PRE";
-  const kickoffDateTime = isUpcoming
-    ? formatTeamtrackerKickoffDateTime(match?.kickoffAt, language)
-    : null;
+  const kickoffDate = formatTeamtrackerKickoffDateLong(match?.kickoffAt, language);
+  const kickoffTime = formatTeamtrackerKickoffTime(match?.kickoffAt, language);
+  const leagueLabel = formatTeamtrackerLeagueLabel(match?.league);
   const showNames = isTeamtrackerShowTeamNames(show_team_names);
   const showForm = isTeamtrackerShowForm(show_form);
   const showProgress = isTeamtrackerShowProgress(show_progress);
+  const stadiumSrc = withBasePath(TEAMTRACKER_STADIUM_IMAGE);
+  const footerRight = isUpcoming
+    ? kickoffTime
+    : status === "IN"
+      ? match?.clock
+      : kickoffTime;
 
   return (
     <div className={cn("relative flex h-full min-h-0 w-full flex-col", className)}>
-      <div className="glass-surface relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl text-[#2A2D37] dark:text-white">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.35rem] bg-[#0B1528] text-white shadow-[0_18px_50px_rgba(8,15,30,0.35)] ring-1 ring-white/10">
+        {/* eslint-disable-next-line @next/next/no-img-element -- local static lifestyle art */}
+        <img
+          src={stadiumSrc}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          draggable={false}
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-[#07111F]/78 via-[#0A1630]/55 to-[#07111F]/88"
+          aria-hidden
+        />
+
         {onMoreClick ? (
           <button
             type="button"
@@ -259,7 +269,7 @@ export function TeamtrackerCardWidget({
               e.stopPropagation();
               onMoreClick();
             }}
-            className="absolute right-2 top-2 z-20 rounded-lg p-1.5 text-[#2A2D37]/30 transition-colors hover:bg-black/5 hover:text-[#2A2D37]/65 dark:text-white/30 dark:hover:bg-white/10 dark:hover:text-white/65"
+            className="absolute right-2 top-2 z-20 rounded-lg p-1.5 text-white/45 transition-colors hover:bg-white/10 hover:text-white/80"
             aria-label={t("common.options")}
           >
             <MoreVertical className="h-4 w-4" aria-hidden />
@@ -267,42 +277,24 @@ export function TeamtrackerCardWidget({
         ) : null}
 
         {!hasContent || !match || !sides ? (
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-[#8E8E93] dark:text-white/45">
-            <p className="text-sm font-medium text-[#2A2D37]/70 dark:text-white/70">
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-white/55">
+            <p className="text-sm font-medium text-white/80">
               {title || t("cardType.teamtracker_card")}
             </p>
             <p className="text-xs">{t("teamtrackerCard.empty")}</p>
           </div>
         ) : (
-          <div
-            className={cn(
-              "relative z-10 flex min-h-0 flex-1 flex-col px-4 sm:px-5",
-              isUpcoming
-                ? "justify-center gap-4 py-4"
-                : "justify-between gap-3 pb-3.5 pt-4 sm:pt-5"
-            )}
-          >
-            <div
-              className={cn(
-                "grid grid-cols-[1fr_auto_1fr] gap-2",
-                isUpcoming ? "items-center" : "items-start"
-              )}
-            >
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col px-4 pb-3.5 pt-5 sm:px-5 sm:pb-4 sm:pt-6">
+            <div className="grid min-h-0 flex-1 grid-cols-[1fr_auto_1fr] items-center gap-2">
               <TeamColumn
                 logo={sides.left.logo}
                 name={sides.left.name}
                 form={sides.left.form}
                 showName={showNames}
                 showForm={showForm}
-                align="start"
               />
 
-              <div
-                className={cn(
-                  "flex flex-col items-center",
-                  isUpcoming ? "justify-center" : "justify-start pt-2 sm:pt-3"
-                )}
-              >
+              <div className="flex flex-col items-center justify-center px-1">
                 <ScoreHeadline match={match} t={t} />
               </div>
 
@@ -312,21 +304,35 @@ export function TeamtrackerCardWidget({
                 form={sides.right.form}
                 showName={showNames}
                 showForm={showForm}
-                align="end"
               />
             </div>
 
-            <div className="flex flex-col items-center gap-2">
-              <StatusBadge label={statusLabel} status={status} />
-              {kickoffDateTime ? (
-                <p className="text-center text-[13px] font-medium text-[#8B909A] dark:text-white/45">
-                  {kickoffDateTime}
-                </p>
-              ) : null}
-              {/* Empty PRE bar adds bottom weight without info — only show during/after play */}
-              <ProgressBar
-                progress={showProgress && !isUpcoming ? progress : null}
+            <div className="mt-3 flex flex-col items-center gap-3">
+              <LeagueOrStatusPill
+                leagueLabel={leagueLabel}
+                status={status}
+                statusLabel={statusLabel}
               />
+
+              {kickoffDate || footerRight ? (
+                <div className="flex w-full items-center gap-2 text-[12px] font-medium text-white/80 sm:text-[13px]">
+                  <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5 shrink-0 text-white/70" aria-hidden />
+                    {kickoffDate ? (
+                      <p className="truncate" title={kickoffDate}>
+                        {kickoffDate}
+                      </p>
+                    ) : (
+                      <p className="truncate text-white/45">{statusLabel}</p>
+                    )}
+                  </div>
+                  {footerRight ? (
+                    <p className="shrink-0 tabular-nums tracking-tight text-white">{footerRight}</p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <ProgressBar progress={showProgress && !isUpcoming ? progress : null} />
             </div>
           </div>
         )}
