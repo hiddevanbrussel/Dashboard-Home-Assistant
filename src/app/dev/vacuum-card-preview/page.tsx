@@ -53,7 +53,7 @@ export default function VacuumCardPreviewPage() {
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Vacuum card preview</h1>
         <p className="mt-1 text-sm text-white/60">
-          Mockup layout + docked / empty-dock art. No Home Assistant required.
+          Mockup layout + new docked / empty-dock lifestyle art. No Home Assistant required.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">

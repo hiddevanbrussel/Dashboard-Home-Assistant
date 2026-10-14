@@ -4,6 +4,7 @@ import { CalendarDays, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   estimateTeamtrackerProgress,
@@ -16,8 +17,8 @@ import {
   isTeamtrackerShowProgress,
   isTeamtrackerShowTeamNames,
   readTeamtrackerMatch,
+  teamtrackerStadiumImageSrc,
   teamtrackerStatusLabel,
-  TEAMTRACKER_STADIUM_IMAGE,
   type TeamtrackerMatch,
 } from "@/lib/teamtracker-card";
 import type { TeamtrackerCardProps } from "./widget-types";
@@ -226,6 +227,7 @@ export function TeamtrackerCardWidget({
   onMoreClick,
 }: TeamtrackerCardProps & { className?: string; onMoreClick?: () => void }) {
   const { t, language } = useTranslation();
+  const isDark = useThemeStore((s) => s.resolved) === "dark";
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const match = readTeamtrackerMatch(entity);
   const hasContent = footballMatchHasContent(match);
@@ -240,7 +242,7 @@ export function TeamtrackerCardWidget({
   const showNames = isTeamtrackerShowTeamNames(show_team_names);
   const showForm = isTeamtrackerShowForm(show_form);
   const showProgress = isTeamtrackerShowProgress(show_progress);
-  const stadiumSrc = withBasePath(TEAMTRACKER_STADIUM_IMAGE);
+  const stadiumSrc = withBasePath(teamtrackerStadiumImageSrc(isDark));
   const footerRight = isUpcoming
     ? kickoffTime
     : status === "IN"
@@ -252,13 +254,19 @@ export function TeamtrackerCardWidget({
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.35rem] bg-[#0B1528] text-white shadow-[0_18px_50px_rgba(8,15,30,0.35)] ring-1 ring-white/10">
         {/* eslint-disable-next-line @next/next/no-img-element -- local static lifestyle art */}
         <img
+          key={stadiumSrc}
           src={stadiumSrc}
           alt=""
           className="absolute inset-0 h-full w-full object-cover object-center"
           draggable={false}
         />
         <div
-          className="absolute inset-0 bg-gradient-to-b from-[#07111F]/78 via-[#0A1630]/55 to-[#07111F]/88"
+          className={cn(
+            "absolute inset-0 bg-gradient-to-b",
+            isDark
+              ? "from-[#07111F]/78 via-[#0A1630]/55 to-[#07111F]/88"
+              : "from-[#0A1628]/62 via-[#12243A]/48 to-[#0A1628]/78"
+          )}
           aria-hidden
         />
 

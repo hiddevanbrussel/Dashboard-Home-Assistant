@@ -15,6 +15,9 @@ import {
   formatTeamtrackerKickoffTime,
   formatTeamtrackerLeagueLabel,
   formatTeamtrackerPeriodLabel,
+  TEAMTRACKER_STADIUM_IMAGE_DAY,
+  TEAMTRACKER_STADIUM_IMAGE_NIGHT,
+  teamtrackerStadiumImageSrc,
   isTeamtrackerEntityId,
   isTeamtrackerShowForm,
   isTeamtrackerShowProgress,
@@ -155,6 +158,11 @@ describe("teamtracker-card helpers", () => {
     expect(formatTeamtrackerLeagueLabel("UEFA.EUROPA_LEAGUE")).toBe("UEFA Europa League");
     expect(formatTeamtrackerLeagueLabel("Eredivisie")).toBe("Eredivisie");
     expect(formatTeamtrackerLeagueLabel(null)).toBe(null);
+  });
+
+  it("picks day vs night stadium art from theme", () => {
+    expect(teamtrackerStadiumImageSrc(false)).toBe(TEAMTRACKER_STADIUM_IMAGE_DAY);
+    expect(teamtrackerStadiumImageSrc(true)).toBe(TEAMTRACKER_STADIUM_IMAGE_NIGHT);
   });
 
   it("formats form lines and falls back to season record", () => {
