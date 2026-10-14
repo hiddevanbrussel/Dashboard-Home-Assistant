@@ -6,12 +6,15 @@ import {
   type FootballMatchStatus,
 } from "@/lib/screensaver-football";
 
+/** Night stadium lifestyle background for the match card. */
+export const TEAMTRACKER_STADIUM_IMAGE = "/teamtracker-stadium.webp";
+
 export const TEAMTRACKER_CARD_DEFAULT_WIDTH = 380;
-export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 200;
+export const TEAMTRACKER_CARD_DEFAULT_HEIGHT = 280;
 export const TEAMTRACKER_CARD_MIN_WIDTH = 260;
 export const TEAMTRACKER_CARD_MAX_WIDTH = 520;
-export const TEAMTRACKER_CARD_MIN_HEIGHT = 160;
-export const TEAMTRACKER_CARD_MAX_HEIGHT = 320;
+export const TEAMTRACKER_CARD_MIN_HEIGHT = 200;
+export const TEAMTRACKER_CARD_MAX_HEIGHT = 360;
 
 export function clampTeamtrackerCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
@@ -357,6 +360,27 @@ export function formatTeamtrackerKickoffDate(
 }
 
 /**
+ * Long kickoff date with weekday, e.g. "Donderdag 23 oktober 2026".
+ */
+export function formatTeamtrackerKickoffDateLong(
+  kickoffAt: Date | null | undefined,
+  language: string
+): string | null {
+  if (!kickoffAt) return null;
+  const locale = language === "nl" ? "nl-NL" : "en-GB";
+  const formatted = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(kickoffAt);
+  // nl-NL often includes a comma ("donderdag 23 oktober 2026" or with comma); normalize casing.
+  const cleaned = formatted.replace(/,/g, "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return null;
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
+/**
  * Single-line PRE kickoff: date then time, e.g. "4 oktober 2026 20:45".
  */
 export function formatTeamtrackerKickoffDateTime(
@@ -367,6 +391,31 @@ export function formatTeamtrackerKickoffDateTime(
   if (!date) return null;
   const time = formatTeamtrackerKickoffTime(kickoffAt, language);
   return time ? `${date} ${time}` : date;
+}
+
+/**
+ * Humanize Team Tracker league / league_path values for the badge.
+ * e.g. "UEFA.EUROPA_LEAGUE" → "UEFA Europa League", "Eredivisie" stays.
+ */
+export function formatTeamtrackerLeagueLabel(league: string | null | undefined): string | null {
+  if (!league) return null;
+  const raw = league.trim();
+  if (!raw) return null;
+  if (!/[._-]/.test(raw) && raw.includes(" ")) return raw;
+  const spaced = raw
+    .replace(/[._]+/g, " ")
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!spaced) return null;
+  return spaced
+    .split(" ")
+    .map((word) => {
+      if (/^(UEFA|FIFA|FA|UCL|UEL|NBA|NFL|NHL|MLB)$/i.test(word)) return word.toUpperCase();
+      if (word.length <= 3 && word === word.toUpperCase()) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
 }
 
 export function readTeamtrackerMatch(entity: {

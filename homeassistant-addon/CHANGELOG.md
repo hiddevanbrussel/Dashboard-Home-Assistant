@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.83
+
+- Team Tracker card: stadium lifestyle background, logos + VS, league pill, calendar date/time footer (no top “next match” header)
+
 ## 0.4.82
 
 - Media card idle: drop ready-to-play title, hint, and icon — keep lifestyle background + controls
