@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.82
+
+- Media card idle: drop ready-to-play title, hint, and icon — keep lifestyle background + controls
+
 ## 0.4.81
 
 - Topbar: restore normal height and use a light top-to-bottom fade (fade no longer doubles the bar)
