@@ -89,7 +89,7 @@ function BinChip({
       draggable={false}
       className={cn(
         "shrink-0 select-none object-contain object-bottom [-webkit-user-drag:none]",
-        size === "lg" ? "h-16 w-16" : "h-[4.25rem] w-[4.25rem]"
+        size === "lg" ? "h-[4.5rem] w-[4.5rem]" : "h-16 w-16"
       )}
       aria-hidden
     />
