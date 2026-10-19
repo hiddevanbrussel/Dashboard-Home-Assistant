@@ -7,8 +7,10 @@ import {
   trashContainerImageSrc,
   trashThemeChipStyle,
   formatTrashTypeLabel,
+  isLikelyTrashEntityId,
   isTrashPickupPast,
   mapWasteTypeToTheme,
+  trashEntityTheme,
   parseTrashDate,
   resizeTrashCardFromBottomRight,
   resolveTrashPickup,
@@ -152,6 +154,43 @@ describe("trash-card helpers", () => {
     for (const pickup of schedule.upcoming) {
       expect(pickup.date!.getTime()).toBeGreaterThanOrEqual(featuredTime);
     }
+  });
+
+  it("recognizes waste entity ids and ignores unrelated sensors in the schedule", () => {
+    expect(isLikelyTrashEntityId("sensor.afvalwijzer_gft")).toBe(true);
+    expect(isLikelyTrashEntityId("sensor.temperature_living")).toBe(false);
+    expect(
+      trashEntityTheme({
+        entity_id: "sensor.afvalwijzer_pmd",
+        state: "2026-11-06",
+        attributes: { friendly_name: "PMD" },
+      })
+    ).toBe("pmd");
+
+    const schedule = buildTrashSchedule({
+      primary: {
+        theme: "gft",
+        typeRaw: "Gft",
+        date: new Date(2026, 9, 23, 12, 0, 0),
+      },
+      entities: [
+        {
+          entity_id: "sensor.random_counter",
+          state: "2026-10-21",
+          attributes: { friendly_name: "Counter" },
+        },
+        {
+          entity_id: "sensor.afvalwijzer_pmd",
+          state: "2026-11-06",
+          attributes: { friendly_name: "PMD" },
+        },
+      ],
+      ref: new Date(2026, 9, 20, 12, 0, 0),
+    });
+    expect(schedule.featured.theme).toBe("gft");
+    expect(schedule.upcoming.some((p) => p.theme === "pmd")).toBe(true);
+    // Unrelated counter must not become a fake earlier GFT/restafval pickup.
+    expect(schedule.featured.date?.getDate()).toBe(23);
   });
 
   it("ignores past pickup dates when building the schedule", () => {

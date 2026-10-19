@@ -238,6 +238,15 @@ export function resolveTrashTheme(...candidates: unknown[]): TrashTheme {
   return "gft";
 }
 
+/** Entity ids / names that look like waste-collection sensors (Afvalwijzer, etc.). */
+export function isLikelyTrashEntityId(entityId: string | undefined | null): boolean {
+  if (!entityId) return false;
+  const text = entityId.toLowerCase();
+  return /afval|afvalwijzer|trash|waste|garbage|recycle|gft|pmd|restafval|papier|plastic|organic/.test(
+    text
+  );
+}
+
 /** Assets + accent for a resolved waste theme (background, person, icon). */
 export function trashThemeAssets(theme: TrashTheme) {
   return TRASH_THEME_ASSETS[theme];
@@ -376,6 +385,18 @@ export type HaEntitySnapshot = {
   state?: string | null;
   attributes?: Record<string, unknown>;
 };
+
+/** Theme when an HA entity clearly maps to a waste fraction (not a generic date sensor). */
+export function trashEntityTheme(entity: HaEntitySnapshot): TrashTheme | null {
+  const attrs = entity.attributes ?? {};
+  return (
+    mapWasteTypeToTheme(attrString(attrs, TYPE_ATTR_KEYS)) ??
+    mapWasteTypeToTheme(entity.state) ??
+    mapWasteTypeToTheme(attrs.friendly_name) ??
+    mapWasteTypeToTheme(entity.entity_id) ??
+    null
+  );
+}
 
 /**
  * Resolve next pickup from flexible HA bindings.
@@ -620,10 +641,14 @@ export function buildTrashSchedule(input: {
   consider(input.primary);
 
   for (const entity of input.entities ?? []) {
+    const theme = trashEntityTheme(entity);
+    // Skip unrelated HA sensors — a bare date + fallback theme was poisoning schedules.
+    if (!theme && !isLikelyTrashEntityId(entity.entity_id)) continue;
+    if (!theme) continue;
     consider(
       resolveTrashPickup({
         primaryEntity: entity,
-        fallbackTheme,
+        fallbackTheme: theme,
         ref,
       })
     );

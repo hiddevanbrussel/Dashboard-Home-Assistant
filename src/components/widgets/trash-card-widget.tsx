@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import { MoreVertical } from "lucide-react";
 import type { TrashCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
@@ -15,10 +16,12 @@ import {
   formatTrashPickupDate,
   formatTrashPickupDateShort,
   formatTrashTypeLabel,
+  isLikelyTrashEntityId,
   resolveTrashPickup,
   trashCardDensity,
   trashContainerImageSrc,
   trashDemoSchedule,
+  trashEntityTheme,
   type TrashLocale,
   type TrashPickup,
   type TrashTheme,
@@ -27,50 +30,64 @@ import {
 function useTrashSchedule(
   entityId: string | undefined,
   dateEntityId: string | undefined,
-  demoTheme: TrashTheme
+  /** Dev / unbound showcase only — ignored when HA entities are bound. */
+  showcaseTheme?: TrashTheme
 ) {
   const primary = useEntityStateStore((s) => (entityId ? s.states[entityId] : undefined));
   const dateEnt = useEntityStateStore((s) =>
     dateEntityId ? s.states[dateEntityId] : undefined
   );
-  const allStates = useEntityStateStore((s) => s.states);
-  useEntityStateStore((s) => s.updatedAt);
+  // Recompute only when HA state ticks — avoid scanning every entity on unrelated renders.
+  const updatedAt = useEntityStateStore((s) => s.updatedAt);
 
-  const hasBinding = Boolean(entityId || dateEntityId);
-  const live = resolveTrashPickup({
-    primaryEntity: primary
-      ? { entity_id: entityId, state: primary.state, attributes: primary.attributes }
-      : entityId
-        ? { entity_id: entityId, state: null, attributes: {} }
-        : null,
-    dateEntity: dateEnt
-      ? { entity_id: dateEntityId, state: dateEnt.state, attributes: dateEnt.attributes }
-      : dateEntityId
-        ? { entity_id: dateEntityId, state: null, attributes: {} }
-        : null,
-    fallbackTheme: demoTheme,
-  });
+  return useMemo(() => {
+    const hasBinding = Boolean(entityId || dateEntityId);
+    const live = resolveTrashPickup({
+      primaryEntity: primary
+        ? { entity_id: entityId, state: primary.state, attributes: primary.attributes }
+        : entityId
+          ? { entity_id: entityId, state: null, attributes: {} }
+          : null,
+      dateEntity: dateEnt
+        ? { entity_id: dateEntityId, state: dateEnt.state, attributes: dateEnt.attributes }
+        : dateEntityId
+          ? { entity_id: dateEntityId, state: null, attributes: {} }
+          : null,
+      fallbackTheme: "gft",
+    });
 
-  if (!hasBinding || !live) {
-    return { ...trashDemoSchedule(demoTheme), isDemo: true };
-  }
+    if (!hasBinding || !live) {
+      // Unbound cards follow next-fraction order unless a showcase theme is forced (dev preview).
+      if (showcaseTheme) {
+        return { ...trashDemoSchedule(showcaseTheme), isDemo: true };
+      }
+      return {
+        ...buildTrashSchedule({ primary: null, fallbackTheme: "gft" }),
+        isDemo: true,
+      };
+    }
 
-  const related = Object.entries(allStates)
-    .filter(([id]) => id !== entityId && id !== dateEntityId)
-    .map(([id, ent]) => ({
-      entity_id: id,
-      state: ent.state,
-      attributes: ent.attributes,
-    }));
+    const related = Object.entries(useEntityStateStore.getState().states)
+      .filter(([id]) => id !== entityId && id !== dateEntityId)
+      .filter(([id, ent]) => {
+        if (isLikelyTrashEntityId(id)) return true;
+        return trashEntityTheme({ entity_id: id, state: ent.state, attributes: ent.attributes }) != null;
+      })
+      .map(([id, ent]) => ({
+        entity_id: id,
+        state: ent.state,
+        attributes: ent.attributes,
+      }));
 
-  return {
-    ...buildTrashSchedule({
-      primary: live,
-      entities: related,
-      fallbackTheme: demoTheme,
-    }),
-    isDemo: false,
-  };
+    return {
+      ...buildTrashSchedule({
+        primary: live,
+        entities: related,
+        fallbackTheme: live.theme,
+      }),
+      isDemo: false,
+    };
+  }, [entityId, dateEntityId, primary, dateEnt, updatedAt, showcaseTheme]);
 }
 
 function BinChip({
@@ -89,7 +106,7 @@ function BinChip({
       draggable={false}
       className={cn(
         "shrink-0 select-none object-contain object-bottom [-webkit-user-drag:none]",
-        size === "lg" ? "h-[4.5rem] w-[4.5rem]" : "h-16 w-16"
+        size === "lg" ? "h-28 w-28" : "h-14 w-14"
       )}
       aria-hidden
     />
@@ -118,7 +135,7 @@ function UpcomingCell({
   );
 }
 
-export function TrashCardWidget({
+export const TrashCardWidget = memo(function TrashCardWidget({
   title,
   entity_id,
   date_entity_id,
@@ -133,8 +150,11 @@ export function TrashCardWidget({
 }) {
   const { t, language } = useTranslation();
   const locale: TrashLocale = language === "nl" ? "nl" : "en";
-  const demoTheme = (demo_theme === "restafval" || demo_theme === "pmd" ? demo_theme : "gft") as TrashTheme;
-  const { featured, upcoming } = useTrashSchedule(entity_id, date_entity_id, demoTheme);
+  const showcaseTheme =
+    demo_theme === "restafval" || demo_theme === "pmd" || demo_theme === "gft"
+      ? demo_theme
+      : undefined;
+  const { featured, upcoming } = useTrashSchedule(entity_id, date_entity_id, showcaseTheme);
 
   const cardW = clampTrashCardWidth(width ?? TRASH_CARD_DEFAULT_WIDTH);
   const cardH = clampTrashCardHeight(height ?? TRASH_CARD_DEFAULT_HEIGHT);
@@ -174,7 +194,7 @@ export function TrashCardWidget({
       <div
         className={cn(
           "relative z-[2] flex h-full min-h-0 flex-col",
-          compact ? "gap-4 px-3.5 py-3.5" : "gap-5 px-5 py-5"
+          compact ? "gap-3 px-3.5 py-3.5" : "gap-4 px-5 py-5"
         )}
       >
         <h2
@@ -186,21 +206,21 @@ export function TrashCardWidget({
           {heading}
         </h2>
 
-        <div className="flex min-w-0 items-center gap-3.5">
+        <div className="flex min-h-0 min-w-0 flex-1 items-center gap-4">
           <BinChip theme={featured.theme} size="lg" />
           <div className="min-w-0">
             <p
               className={cn(
                 "truncate font-bold tracking-tight text-[#1B2437] dark:text-white",
-                compact ? "text-base" : "text-lg"
+                compact ? "text-lg" : "text-xl"
               )}
             >
               {featuredLabel}
             </p>
             <p
               className={cn(
-                "whitespace-nowrap font-medium tabular-nums text-[#4E5D73] dark:text-white/65",
-                compact ? "text-[13px]" : "text-[15px]"
+                "mt-1 whitespace-nowrap font-medium tabular-nums text-[#4E5D73] dark:text-white/65",
+                compact ? "text-sm" : "text-base"
               )}
             >
               {featuredDate}
@@ -209,7 +229,7 @@ export function TrashCardWidget({
         </div>
 
         {upcoming.length > 0 ? (
-          <div className="mt-auto flex items-stretch gap-3 border-t border-[#1B2437]/08 pt-4 dark:border-white/10">
+          <div className="flex shrink-0 items-stretch gap-3 border-t border-[#1B2437]/08 pt-3.5 dark:border-white/10">
             {upcoming.map((pickup, index) => (
               <div key={`${pickup.theme}-${index}`} className="flex min-w-0 flex-1 items-stretch">
                 {index > 0 ? (
@@ -223,4 +243,4 @@ export function TrashCardWidget({
       </div>
     </div>
   );
-}
+});
