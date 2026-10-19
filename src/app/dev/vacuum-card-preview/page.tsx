@@ -4,18 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import { VacuumCard2Widget } from "@/components/widgets/vacuum-card-2-widget";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useLanguageStore } from "@/stores/language-store";
+import { useThemeStore } from "@/stores/theme-store";
 import { cn } from "@/lib/utils";
 
 const ENTITY_ID = "vacuum.preview";
 
 const STATES = ["docked", "cleaning", "returning", "paused", "idle"] as const;
 
-/** Dev-only preview of the redesigned vacuum card 2 (no Home Assistant required). */
+/** Dev-only preview of the quiet vacuum card 2 (no Home Assistant required). */
 export default function VacuumCardPreviewPage() {
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const setThemeMode = useThemeStore((s) => s.setMode);
+  const setResolved = useThemeStore((s) => s.setResolved);
+  const resolved = useThemeStore((s) => s.resolved);
   const [haState, setHaState] = useState<(typeof STATES)[number]>("docked");
-  const [fan, setFan] = useState("standard");
+  const [fan, setFan] = useState("turbo");
   const [battery, setBattery] = useState(100);
 
   const entity = useMemo(
@@ -23,7 +27,7 @@ export default function VacuumCardPreviewPage() {
       entity_id: ENTITY_ID,
       state: haState,
       attributes: {
-        friendly_name: "Robotstofzuiger",
+        friendly_name: "Matt-E",
         battery_level: battery,
         fan_speed: fan,
         fan_speed_list: ["eco", "standard", "turbo"],
@@ -49,11 +53,16 @@ export default function VacuumCardPreviewPage() {
   }, [entity, updateEntityState]);
 
   return (
-    <div className="min-h-screen bg-[#12141a] px-4 py-8 text-white">
+    <div
+      className={cn(
+        "min-h-screen px-4 py-8 transition-colors",
+        resolved === "dark" ? "bg-[#0b1220] text-white" : "bg-[#E8ECF2] text-gray-900"
+      )}
+    >
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Vacuum card preview</h1>
-        <p className="mt-1 text-sm text-white/60">
-          Mockup layout + new docked / empty-dock lifestyle art. No Home Assistant required.
+        <p className={cn("mt-1 text-sm", resolved === "dark" ? "text-white/60" : "text-gray-500")}>
+          Quiet mockup layout: name + status, battery, product art, Eco / Standard / Turbo.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -64,12 +73,30 @@ export default function VacuumCardPreviewPage() {
               onClick={() => setHaState(value)}
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium",
-                haState === value ? "bg-white text-gray-900" : "bg-white/10 text-white/80"
+                haState === value
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : resolved === "dark"
+                    ? "bg-white/10 text-white/80"
+                    : "bg-black/5 text-gray-700"
               )}
             >
               {value}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              const next = resolved === "dark" ? "light" : "dark";
+              setThemeMode(next);
+              setResolved(next);
+            }}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium",
+              resolved === "dark" ? "bg-white/10 text-white/80" : "bg-black/5 text-gray-700"
+            )}
+          >
+            theme: {resolved}
+          </button>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -80,7 +107,11 @@ export default function VacuumCardPreviewPage() {
               onClick={() => setFan(value)}
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium",
-                fan === value ? "bg-emerald-400 text-gray-900" : "bg-white/10 text-white/80"
+                fan === value
+                  ? "bg-emerald-400 text-gray-900"
+                  : resolved === "dark"
+                    ? "bg-white/10 text-white/80"
+                    : "bg-black/5 text-gray-700"
               )}
             >
               fan: {value}
@@ -89,19 +120,17 @@ export default function VacuumCardPreviewPage() {
           <button
             type="button"
             onClick={() => setBattery((b) => (b === 100 ? 54 : 100))}
-            className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/80"
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium",
+              resolved === "dark" ? "bg-white/10 text-white/80" : "bg-black/5 text-gray-700"
+            )}
           >
             battery: {battery}%
           </button>
         </div>
 
         <div className="mt-8 flex justify-center">
-          <VacuumCard2Widget
-            title="Robotstofzuiger"
-            entity_id={ENTITY_ID}
-            width={320}
-            height={460}
-          />
+          <VacuumCard2Widget title="Matt-E" entity_id={ENTITY_ID} width={320} height={420} />
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 
 ## 0.4.88
 
-- Trash card: smoother drag (DOM position + no blur while moving), larger featured bin, schedule only from waste entities, remove preview-theme edit option
+- Vacuum card 2: quieter mockup layout (glass card, product art, Eco/Standard/Turbo tiles, green battery)
 
 ## 0.4.87
 

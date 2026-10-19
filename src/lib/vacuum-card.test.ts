@@ -150,9 +150,9 @@ describe("vacuum-card helpers", () => {
   });
 
   it("clamps vacuum card 2 width and height", () => {
-    expect(VACUUM_CARD_2_DEFAULT_IMAGE).toBe("/vacuum-docked.webp");
-    expect(VACUUM_CARD_2_DEFAULT_IMAGE_DARK).toBe("/vacuum-docked.webp");
-    expect(VACUUM_CARD_2_AWAY_IMAGE).toBe("/vacuum-dock-empty.webp");
+    expect(VACUUM_CARD_2_DEFAULT_IMAGE).toBe("/vacuum-robot-product.webp");
+    expect(VACUUM_CARD_2_DEFAULT_IMAGE_DARK).toBe("/vacuum-robot-product.webp");
+    expect(VACUUM_CARD_2_AWAY_IMAGE).toBe("/vacuum-robot-product.webp");
     expect(clampVacuumCard2Width(undefined)).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
     expect(clampVacuumCard2Width("not-a-number")).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
     expect(clampVacuumCard2Width(100)).toBe(240);
@@ -200,9 +200,10 @@ describe("vacuum-card helpers", () => {
     expect(vacuumCard2ArtSrc({ isDark: false })).toBe(VACUUM_CARD_2_DEFAULT_IMAGE);
     expect(vacuumCard2ArtSrc({ isDark: true })).toBe(VACUUM_CARD_2_DEFAULT_IMAGE_DARK);
     expect(vacuumCard2ArtSrc({ isDark: true, displayState: "docked" })).toBe(VACUUM_CARD_2_DEFAULT_IMAGE_DARK);
-    expect(vacuumCard2ArtSrc({ isDark: true, displayState: "cleaning" })).toBe(VACUUM_CARD_2_AWAY_IMAGE);
-    expect(vacuumCard2ArtSrc({ isDark: true, displayState: "returning" })).toBe(VACUUM_CARD_2_AWAY_IMAGE);
+    expect(vacuumCard2ArtSrc({ isDark: false, displayState: "cleaning" })).toBe(VACUUM_CARD_2_DEFAULT_IMAGE);
+    expect(vacuumCard2ArtSrc({ isDark: true, displayState: "returning" })).toBe(VACUUM_CARD_2_DEFAULT_IMAGE_DARK);
     expect(vacuumCard2ArtSrc({ isDark: true, backgroundImage: " /custom.webp " })).toBe("/custom.webp");
+    expect(VACUUM_CARD_2_AWAY_IMAGE).toBe("/vacuum-robot-product.webp");
   });
 
   it("reads last clean time and cleaned area from vacuum attributes", () => {

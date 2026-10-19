@@ -5,11 +5,11 @@ export const VACUUM_CARD_2_MAX_WIDTH = 500;
 /** Matches media-card min height so vacuum can sit at ~248px beside media. */
 export const VACUUM_CARD_2_MIN_HEIGHT = 240;
 export const VACUUM_CARD_2_MAX_HEIGHT = 640;
-/** Docked hero (vacuum on base). */
-export const VACUUM_CARD_2_DEFAULT_IMAGE = "/vacuum-docked.webp";
-export const VACUUM_CARD_2_DEFAULT_IMAGE_DARK = "/vacuum-docked.webp";
-/** Empty dock when the robot is cleaning / away. */
-export const VACUUM_CARD_2_AWAY_IMAGE = "/vacuum-dock-empty.webp";
+/** Quiet product hero (transparent product shot) — same art in light and dark. */
+export const VACUUM_CARD_2_DEFAULT_IMAGE = "/vacuum-robot-product.webp";
+export const VACUUM_CARD_2_DEFAULT_IMAGE_DARK = "/vacuum-robot-product.webp";
+/** Same product art when away — keeps the quiet card simple. */
+export const VACUUM_CARD_2_AWAY_IMAGE = "/vacuum-robot-product.webp";
 export const VACUUM_CARD_2_FOOTER_MIN_HEIGHT = 380;
 /** Below this, tighten chrome (smaller type / padding). Modes stay visible. */
 export const VACUUM_CARD_2_COMPACT_HEIGHT = 340;
@@ -311,20 +311,12 @@ export function shouldIgnoreVacuumSheetBackdropClose(
 export function vacuumCard2ArtSrc(input: {
   backgroundImage?: string | null;
   isDark: boolean;
-  /** When set, cleaning/away states show the empty-dock art. */
+  /** Kept for API compatibility; quiet card always uses the product hero. */
   displayState?: string | null;
 }): string {
   const custom = input.backgroundImage?.trim();
   if (custom) return custom;
-  const kind = vacuumHeadlineKind(input.displayState, null);
-  if (
-    kind === "cleaning" ||
-    kind === "cleaningProgress" ||
-    kind === "returning" ||
-    kind === "paused"
-  ) {
-    return VACUUM_CARD_2_AWAY_IMAGE;
-  }
+  void input.displayState;
   return input.isDark ? VACUUM_CARD_2_DEFAULT_IMAGE_DARK : VACUUM_CARD_2_DEFAULT_IMAGE;
 }
 

@@ -1,12 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import {
-  Battery,
-  Leaf,
-  MoreVertical,
-  Zap,
-} from "lucide-react";
+import { Battery, Leaf, MoreVertical, Zap } from "lucide-react";
 import type { VacuumCard2Props } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
@@ -42,10 +37,9 @@ function StandardModeIcon({ className }: { className?: string }) {
       className={className}
       aria-hidden
     >
-      <path d="M5 20V13" />
-      <path d="M10 20V9" />
-      <path d="M15 20V6" />
-      <path d="M20 20V11" />
+      <path d="M6 20V12" />
+      <path d="M12 20V7" />
+      <path d="M18 20V10" />
     </svg>
   );
 }
@@ -63,15 +57,15 @@ const MODE_UI: {
 function BatteryPill({ percent }: { percent: number }) {
   const fill = Math.min(100, Math.max(0, percent));
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-emerald-400">
-      <span className="relative inline-flex h-3 w-6 items-center rounded-[3px] border border-emerald-400/90 p-[1px]">
+    <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-emerald-500 dark:text-emerald-400">
+      <span className="relative inline-flex h-3 w-6 items-center rounded-[3px] border border-emerald-500/90 p-[1px] dark:border-emerald-400/90">
         <span
-          className="h-full rounded-[1px] bg-emerald-400"
+          className="h-full rounded-[1px] bg-emerald-500 dark:bg-emerald-400"
           style={{ width: `${fill}%` }}
           aria-hidden
         />
         <span
-          className="absolute -right-[3px] top-1/2 h-1.5 w-[2px] -translate-y-1/2 rounded-r-sm bg-emerald-400/90"
+          className="absolute -right-[3px] top-1/2 h-1.5 w-[2px] -translate-y-1/2 rounded-r-sm bg-emerald-500/90 dark:bg-emerald-400/90"
           aria-hidden
         />
       </span>
@@ -181,7 +175,7 @@ export function VacuumCard2Widget({
   return (
     <div
       className={cn(
-        "relative flex w-full flex-col overflow-hidden rounded-[1.5rem] bg-[#0b0f14] text-white shadow-[0_18px_50px_rgba(0,0,0,0.55)] outline-none",
+        "glass-surface relative flex w-full flex-col overflow-hidden rounded-[1.5rem] text-[#1B2437] shadow-[0_14px_40px_rgba(15,23,42,0.08)] outline-none dark:text-white dark:shadow-[0_14px_40px_rgba(0,0,0,0.4)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         interactive && "cursor-pointer",
@@ -197,18 +191,17 @@ export function VacuumCard2Widget({
           : undefined
       }
     >
-      {/* Soft vignette so the photo blends into the card chrome */}
       <div
-        className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[#0b0f14] via-transparent to-[#0b0f14]"
-        aria-hidden
-      />
-
-      <div className={cn("relative z-10 flex shrink-0 items-start justify-between gap-3", isDense ? "px-4 pt-3" : "px-5 pt-5")}>
+        className={cn(
+          "relative z-10 flex shrink-0 items-start justify-between gap-3",
+          isDense ? "px-4 pt-3.5" : "px-5 pt-5"
+        )}
+      >
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-1">
             <h2
               className={cn(
-                "truncate font-semibold tracking-tight text-white",
+                "truncate font-semibold tracking-tight text-[#1B2437] dark:text-white",
                 isDense ? "text-base" : isCompact ? "text-lg" : "text-xl"
               )}
             >
@@ -221,7 +214,7 @@ export function VacuumCard2Widget({
                   e.stopPropagation();
                   onMoreClick();
                 }}
-                className="ml-0.5 shrink-0 rounded-lg p-1 text-white/45 hover:bg-white/10 hover:text-white"
+                className="ml-0.5 shrink-0 rounded-lg p-1 text-[#1B2437]/35 hover:bg-black/5 hover:text-[#1B2437]/65 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
                 aria-label={t("common.options")}
               >
                 <MoreVertical className={cn(isDense ? "h-4 w-4" : "h-5 w-5")} aria-hidden />
@@ -230,7 +223,7 @@ export function VacuumCard2Widget({
           </div>
           <p
             className={cn(
-              "mt-0.5 truncate font-medium text-white/55",
+              "mt-0.5 truncate font-medium text-[#8A96A8] dark:text-white/50",
               isDense ? "text-xs" : "text-sm"
             )}
             title={displayState || state || undefined}
@@ -242,7 +235,7 @@ export function VacuumCard2Widget({
           {battery != null ? (
             <BatteryPill percent={battery} />
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/35">
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1B2437]/30 dark:text-white/35">
               <Battery className="h-4 w-4" aria-hidden />
               —
             </span>
@@ -250,14 +243,14 @@ export function VacuumCard2Widget({
         </div>
       </div>
 
-      <div className="relative z-0 min-h-0 flex-1 overflow-hidden">
+      <div className="relative z-0 flex min-h-0 flex-1 items-center justify-center px-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={withBasePath(artSrc)}
           alt=""
           className={cn(
-            "pointer-events-none absolute inset-0 h-full w-full object-cover object-center",
-            isDense ? "scale-[1.05]" : "scale-100"
+            "pointer-events-none max-h-full max-w-full object-contain drop-shadow-[0_16px_28px_rgba(15,23,42,0.12)] dark:drop-shadow-[0_16px_28px_rgba(0,0,0,0.45)]",
+            isDense ? "h-[78%]" : "h-[86%]"
           )}
           draggable={false}
         />
@@ -283,15 +276,28 @@ export function VacuumCard2Widget({
                 className={cn(
                   "flex min-w-0 flex-col items-center justify-center rounded-2xl transition-colors disabled:opacity-60",
                   isDense ? "gap-0.5 px-1 py-2" : "gap-1 px-2 py-3",
+                  "bg-[#EEF1F5] dark:bg-white/[0.06]",
                   selected
-                    ? "bg-white/14 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
-                    : "bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white/80"
+                    ? "text-[#1B2437] dark:text-white"
+                    : "text-[#8A96A8] hover:text-[#5B6B82] dark:text-white/45 dark:hover:text-white/70"
                 )}
                 aria-label={t(labelKey)}
                 aria-pressed={selected}
               >
-                <Icon className={cn(isDense ? "h-4 w-4" : "h-[18px] w-[18px]")} aria-hidden />
-                <span className={cn("truncate font-medium", isDense ? "text-[10px]" : "text-[11px]")}>
+                <Icon
+                  className={cn(
+                    isDense ? "h-4 w-4" : "h-[18px] w-[18px]",
+                    selected ? "stroke-[2.25]" : "stroke-2"
+                  )}
+                  aria-hidden
+                />
+                <span
+                  className={cn(
+                    "truncate",
+                    isDense ? "text-[10px]" : "text-[11px]",
+                    selected ? "font-semibold" : "font-medium"
+                  )}
+                >
                   {t(labelKey)}
                 </span>
               </button>
