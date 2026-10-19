@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.88
+
+- Vacuum card 2: quieter mockup layout (glass card, product art, Eco/Standard/Turbo tiles, green battery)
+
 ## 0.4.87
 
 - Trash card: abbreviated pickup dates, chronological upcoming rows, ignore stale past dates, stronger date contrast, larger upcoming bin icons
