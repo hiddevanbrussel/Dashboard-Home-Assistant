@@ -472,6 +472,24 @@ export function resolveTrashPickup(input: {
   return { theme: resolvedTheme, typeRaw, date };
 }
 
+const DEMO_TYPE_LABELS: Record<TrashTheme, string> = {
+  gft: "Gft",
+  restafval: "Restafval",
+  pmd: "PMD",
+};
+
+function startOfLocalDay(ref: Date): Date {
+  const d = new Date(ref);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/** True when the pickup day is before today (local calendar). */
+export function isTrashPickupPast(date: Date | null | undefined, ref: Date = new Date()): boolean {
+  if (!date || Number.isNaN(date.getTime())) return false;
+  return date.getTime() < startOfLocalDay(ref).getTime();
+}
+
 /** Demo pickup matching the mockup (GFT on a Friday). */
 export function trashDemoPickup(theme: TrashTheme = "gft", ref: Date = new Date()): TrashPickup {
   // Next Friday from ref (or today if Friday)
@@ -483,12 +501,29 @@ export function trashDemoPickup(theme: TrashTheme = "gft", ref: Date = new Date(
   // Offset demos so the three themes land on different Fridays
   if (theme === "restafval") d.setDate(d.getDate() + 7);
   if (theme === "pmd") d.setDate(d.getDate() + 14);
-  const labels: Record<TrashTheme, string> = {
-    gft: "Gft",
-    restafval: "Restafval",
-    pmd: "PMD",
-  };
-  return { theme, typeRaw: labels[theme], date: d };
+  return { theme, typeRaw: DEMO_TYPE_LABELS[theme], date: d };
+}
+
+/**
+ * Demo schedule for a forced featured theme (preview / unbound card).
+ * Upcoming fractions always fall on later Fridays than the featured pickup.
+ */
+export function trashDemoSchedule(
+  featuredTheme: TrashTheme = "gft",
+  ref: Date = new Date()
+): { featured: TrashPickup; upcoming: TrashPickup[] } {
+  const featured = trashDemoPickup(featuredTheme, ref);
+  const featuredTime = featured.date?.getTime() ?? startOfLocalDay(ref).getTime();
+  const upcoming = (["gft", "pmd", "restafval"] as TrashTheme[])
+    .filter((theme) => theme !== featuredTheme)
+    .map((theme, index) => {
+      const d = new Date(featuredTime);
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() + 7 * (index + 1));
+      return { theme, typeRaw: DEMO_TYPE_LABELS[theme], date: d };
+    })
+    .sort((a, b) => (a.date?.getTime() ?? 0) - (b.date?.getTime() ?? 0));
+  return { featured, upcoming };
 }
 
 export type TrashLocale = "en" | "nl";
@@ -516,21 +551,15 @@ export function formatTrashTypeLabel(
 }
 
 /**
- * Format pickup date like the mockup: "Vrijdag 2 Oktober" / "Friday 2 October".
- * Capitalizes weekday and month for both locales.
+ * Compact pickup date: "Vr 2 okt" / "Fri 2 Oct".
+ * Weekday + month are abbreviated so featured and upcoming stay readable.
  */
 export function formatTrashPickupDate(date: Date | null, locale: TrashLocale): string {
-  if (!date || Number.isNaN(date.getTime())) return "—";
-  const loc = locale === "nl" ? "nl-NL" : "en-GB";
-  const weekday = date.toLocaleDateString(loc, { weekday: "long" });
-  const day = date.getDate();
-  const month = date.toLocaleDateString(loc, { month: "long" });
-  const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-  return `${cap(weekday)} ${day} ${cap(month)}`;
+  return formatTrashPickupDateShort(date, locale);
 }
 
 /**
- * Compact secondary date: "Do 30 okt" / "Thu 30 Oct".
+ * Compact secondary date: "Vr 30 okt" / "Thu 30 Oct".
  */
 export function formatTrashPickupDateShort(date: Date | null, locale: TrashLocale): string {
   if (!date || Number.isNaN(date.getTime())) return "—";
@@ -568,6 +597,7 @@ export function trashThemeChipStyle(theme: TrashTheme): {
 /**
  * Build a quiet schedule: next featured pickup + up to two later fractions.
  * Fills missing themes with demo offsets so the card still reads as a schedule.
+ * Past pickup dates are ignored so "next collection" never shows a stale day.
  */
 export function buildTrashSchedule(input: {
   primary: TrashPickup | null;
@@ -579,21 +609,24 @@ export function buildTrashSchedule(input: {
   const fallbackTheme = input.fallbackTheme ?? "gft";
   const byTheme = new Map<TrashTheme, TrashPickup>();
 
-  if (input.primary) {
-    byTheme.set(input.primary.theme, input.primary);
-  }
-
-  for (const entity of input.entities ?? []) {
-    const pickup = resolveTrashPickup({
-      primaryEntity: entity,
-      fallbackTheme,
-      ref,
-    });
-    if (!pickup?.date) continue;
+  const consider = (pickup: TrashPickup | null | undefined) => {
+    if (!pickup?.date || isTrashPickupPast(pickup.date, ref)) return;
     const existing = byTheme.get(pickup.theme);
     if (!existing?.date || pickup.date.getTime() < existing.date.getTime()) {
       byTheme.set(pickup.theme, pickup);
     }
+  };
+
+  consider(input.primary);
+
+  for (const entity of input.entities ?? []) {
+    consider(
+      resolveTrashPickup({
+        primaryEntity: entity,
+        fallbackTheme,
+        ref,
+      })
+    );
   }
 
   for (const theme of ["gft", "pmd", "restafval"] as TrashTheme[]) {
@@ -609,7 +642,11 @@ export function buildTrashSchedule(input: {
   });
 
   const featured = sorted[0] ?? trashDemoPickup(fallbackTheme, ref);
-  const upcoming = sorted.filter((p) => p.theme !== featured.theme).slice(0, 2);
+  const featuredTime = featured.date?.getTime() ?? Number.NEGATIVE_INFINITY;
+  const upcoming = sorted
+    .filter((p) => p.theme !== featured.theme)
+    .filter((p) => (p.date?.getTime() ?? 0) >= featuredTime)
+    .slice(0, 2);
   return { featured, upcoming };
 }
 

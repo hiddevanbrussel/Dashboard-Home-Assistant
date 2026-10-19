@@ -38,10 +38,22 @@ export default function TrashPreviewPage() {
   }, [setLanguage]);
 
   useEffect(() => {
+    // Keep live preview dates in the future relative to "today" so the schedule
+    // never features a stale past collection day.
+    const fridayOffset = (weeks: number) => {
+      const d = new Date();
+      d.setHours(12, 0, 0, 0);
+      const daysUntilFri = (5 - d.getDay() + 7) % 7;
+      d.setDate(d.getDate() + daysUntilFri + weeks * 7);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
     const dates: Record<TrashTheme, string> = {
-      gft: "2026-10-02",
-      restafval: "2026-10-09",
-      pmd: "2026-10-16",
+      gft: fridayOffset(0),
+      restafval: fridayOffset(1),
+      pmd: fridayOffset(2),
     };
     setStates([
       {
@@ -53,6 +65,22 @@ export default function TrashPreviewPage() {
         entity_id: LIVE_DATE_ENTITY,
         state: dates[liveTheme],
         attributes: { friendly_name: "Next waste date" },
+      },
+      // Sibling fraction sensors so upcoming rows use real future dates too.
+      {
+        entity_id: "sensor.dev_trash_gft",
+        state: dates.gft,
+        attributes: { friendly_name: "Gft" },
+      },
+      {
+        entity_id: "sensor.dev_trash_restafval",
+        state: dates.restafval,
+        attributes: { friendly_name: "Restafval" },
+      },
+      {
+        entity_id: "sensor.dev_trash_pmd",
+        state: dates.pmd,
+        attributes: { friendly_name: "PMD" },
       },
     ]);
   }, [liveTheme, setStates]);

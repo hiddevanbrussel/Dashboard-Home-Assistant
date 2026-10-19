@@ -7,6 +7,7 @@ import {
   trashContainerImageSrc,
   trashThemeChipStyle,
   formatTrashTypeLabel,
+  isTrashPickupPast,
   mapWasteTypeToTheme,
   parseTrashDate,
   resizeTrashCardFromBottomRight,
@@ -15,6 +16,7 @@ import {
   splitTrashCardHeading,
   trashCardDensity,
   trashDemoPickup,
+  trashDemoSchedule,
   trashThemeAssets,
 } from "./trash-card";
 
@@ -125,10 +127,10 @@ describe("trash-card helpers", () => {
     expect(parseTrashDate("unavailable")).toBeNull();
   });
 
-  it("formats weekday + date for nl and en", () => {
+  it("formats abbreviated weekday + month for nl and en", () => {
     const d = new Date(2026, 9, 2, 12, 0, 0); // Friday 2 Oct 2026
-    expect(formatTrashPickupDate(d, "nl")).toMatch(/Vrijdag 2 [Oo]ktober/);
-    expect(formatTrashPickupDate(d, "en")).toMatch(/Friday 2 [Oo]ctober/);
+    expect(formatTrashPickupDate(d, "nl")).toMatch(/^Vr 2 [Oo]kt$/);
+    expect(formatTrashPickupDate(d, "en")).toMatch(/^Fri 2 [Oo]ct$/);
     expect(formatTrashPickupDate(null, "nl")).toBe("—");
     expect(formatTrashPickupDateShort(d, "nl")).toMatch(/^Vr 2 [Oo]kt$/);
     expect(formatTrashPickupDateShort(d, "en")).toMatch(/^Fri 2 [Oo]ct$/);
@@ -146,6 +148,40 @@ describe("trash-card helpers", () => {
     expect(schedule.featured.theme).toBe("gft");
     expect(schedule.upcoming).toHaveLength(2);
     expect(new Set(schedule.upcoming.map((p) => p.theme)).size).toBe(2);
+    const featuredTime = schedule.featured.date!.getTime();
+    for (const pickup of schedule.upcoming) {
+      expect(pickup.date!.getTime()).toBeGreaterThanOrEqual(featuredTime);
+    }
+  });
+
+  it("ignores past pickup dates when building the schedule", () => {
+    const schedule = buildTrashSchedule({
+      primary: {
+        theme: "gft",
+        typeRaw: "Gft",
+        date: new Date(2026, 9, 2, 12, 0, 0), // before ref
+      },
+      ref: new Date(2026, 9, 20, 12, 0, 0),
+    });
+    expect(isTrashPickupPast(schedule.featured.date, new Date(2026, 9, 20, 12, 0, 0))).toBe(
+      false
+    );
+    expect(schedule.featured.date!.getTime()).toBeGreaterThan(
+      new Date(2026, 9, 2, 12, 0, 0).getTime()
+    );
+  });
+
+  it("keeps demo upcoming dates after the featured theme", () => {
+    const schedule = trashDemoSchedule("restafval", new Date(2026, 9, 19, 12, 0, 0));
+    expect(schedule.featured.theme).toBe("restafval");
+    expect(schedule.upcoming).toHaveLength(2);
+    const featuredTime = schedule.featured.date!.getTime();
+    for (const pickup of schedule.upcoming) {
+      expect(pickup.date!.getTime()).toBeGreaterThan(featuredTime);
+    }
+    expect(schedule.upcoming[0].date!.getTime()).toBeLessThan(
+      schedule.upcoming[1].date!.getTime()
+    );
   });
 
   it("exposes light and dark chip classes per waste theme", () => {
