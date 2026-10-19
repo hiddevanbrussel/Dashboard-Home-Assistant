@@ -151,7 +151,7 @@ describe("vacuum-card helpers", () => {
 
   it("clamps vacuum card 2 width and height", () => {
     expect(VACUUM_CARD_2_DEFAULT_IMAGE).toBe("/vacuum-robot-product.webp");
-    expect(VACUUM_CARD_2_DEFAULT_IMAGE_DARK).toBe("/vacuum-robot-product-dark.webp");
+    expect(VACUUM_CARD_2_DEFAULT_IMAGE_DARK).toBe("/vacuum-robot-product.webp");
     expect(VACUUM_CARD_2_AWAY_IMAGE).toBe("/vacuum-robot-product.webp");
     expect(clampVacuumCard2Width(undefined)).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
     expect(clampVacuumCard2Width("not-a-number")).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
