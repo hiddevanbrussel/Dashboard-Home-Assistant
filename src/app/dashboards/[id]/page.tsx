@@ -2915,7 +2915,6 @@ export default function DashboardEditPage() {
                 title: w.title ?? t("cardType.trash_card"),
                 entity_id: w.entity_id ?? "",
                 date_entity_id: w.date_entity_id,
-                demo_theme: w.demo_theme,
                 width: w.width,
                 height: w.height,
               }}
@@ -6214,25 +6213,6 @@ aria-label={t("editPanel.removeCondition")}
                       />
                       <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{t("trashCard.dateEntityHint")}</p>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("trashCard.demoTheme")}
-                      </label>
-                      <select
-                        value={editForm.demo_theme ?? "gft"}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            demo_theme: e.target.value as "gft" | "restafval" | "pmd",
-                          }))
-                        }
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                      >
-                        <option value="gft">{t("trashCard.theme.gft")}</option>
-                        <option value="restafval">{t("trashCard.theme.restafval")}</option>
-                        <option value="pmd">{t("trashCard.theme.pmd")}</option>
-                      </select>
-                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -6608,7 +6588,6 @@ aria-label={t("editPanel.removeCondition")}
                         title={editForm.title || t("cardType.trash_card")}
                         entity_id={editForm.entity_id}
                         date_entity_id={editForm.date_entity_id}
-                        demo_theme={editForm.demo_theme}
                         width={clampTrashCardWidth(editForm.width ?? TRASH_CARD_DEFAULT_WIDTH)}
                         height={clampTrashCardHeight(editForm.height ?? TRASH_CARD_DEFAULT_HEIGHT)}
                         className="h-full"
@@ -7004,7 +6983,6 @@ aria-label={t("editPanel.removeCondition")}
                         ...(editingWidget.type === "trash_card" && {
                           entity_id: editForm.entity_id || "",
                           date_entity_id: editForm.date_entity_id || undefined,
-                          demo_theme: editForm.demo_theme === "restafval" || editForm.demo_theme === "pmd" ? editForm.demo_theme : "gft",
                           width: editForm.width != null && editForm.width > 0 ? clampTrashCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampTrashCardHeight(editForm.height) : undefined,
                         }),
