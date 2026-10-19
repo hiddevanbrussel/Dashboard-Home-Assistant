@@ -39,31 +39,35 @@ export function WeatherIcon({ state, className }: { state: string; className?: s
   const s = state?.toLowerCase() ?? "";
   const iconClass = cn("shrink-0", className ?? "h-8 w-8");
   if (s === "sunny" || s === "clear" || s === "zonnig") {
-    return <Sun className={cn(iconClass, "text-amber-400")} aria-hidden />;
+    return <Sun className={cn(iconClass, "text-amber-500 dark:text-amber-300")} aria-hidden />;
   }
-  if (s === "clear-night") return <Moon className={cn(iconClass, "text-[#6B7C93]")} aria-hidden />;
-  if (s === "fog" || s === "mist") return <CloudFog className={cn(iconClass, "text-[#8A97A8]")} aria-hidden />;
+  if (s === "clear-night") {
+    return <Moon className={cn(iconClass, "text-[#6B7C93] dark:text-[#A8B4C8]")} aria-hidden />;
+  }
+  if (s === "fog" || s === "mist") {
+    return <CloudFog className={cn(iconClass, "text-[#8A97A8] dark:text-[#C0C8D4]")} aria-hidden />;
+  }
   if (s === "rainy" || s === "pouring" || s === "hail") {
-    return <CloudRain className={cn(iconClass, "text-[#6B8CBA]")} aria-hidden />;
+    return <CloudRain className={cn(iconClass, "text-[#6B8CBA] dark:text-[#9BB6DC]")} aria-hidden />;
   }
   if (s === "snowy" || s === "snowy-rainy") {
-    return <CloudSnow className={cn(iconClass, "text-[#8A97A8]")} aria-hidden />;
+    return <CloudSnow className={cn(iconClass, "text-[#8A97A8] dark:text-[#D0D8E4]")} aria-hidden />;
   }
   if (s === "lightning" || s === "lightning-rainy") {
-    return <CloudLightning className={cn(iconClass, "text-[#6B7C93]")} aria-hidden />;
+    return <CloudLightning className={cn(iconClass, "text-[#6B7C93] dark:text-[#C4B48A]")} aria-hidden />;
   }
   if (s === "windy" || s === "windy-variant") {
-    return <Wind className={cn(iconClass, "text-[#6B8CBA]")} aria-hidden />;
+    return <Wind className={cn(iconClass, "text-[#6B8CBA] dark:text-[#9BB6DC]")} aria-hidden />;
   }
   if (s === "partlycloudy") {
     return (
       <span className={cn("relative inline-flex", iconClass)} aria-hidden>
-        <Sun className="absolute -right-0.5 -top-0.5 h-[55%] w-[55%] text-amber-400" />
-        <Cloud className="h-full w-full text-[#8EB4D8]" />
+        <Sun className="absolute -right-0.5 -top-0.5 h-[55%] w-[55%] text-amber-500 dark:text-amber-300" />
+        <Cloud className="h-full w-full text-[#8EB4D8] dark:text-[#B4D0EC]" />
       </span>
     );
   }
-  return <Cloud className={cn(iconClass, "text-[#8EB4D8]")} aria-hidden />;
+  return <Cloud className={cn(iconClass, "text-[#8EB4D8] dark:text-[#B4D0EC]")} aria-hidden />;
 }
 
 function formatTemp(value: number | undefined | null): string {

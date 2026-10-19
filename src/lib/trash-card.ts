@@ -526,14 +526,27 @@ export function formatTrashPickupDateShort(date: Date | null, locale: TrashLocal
   return `${cap(weekday)} ${day} ${cap(month)}`;
 }
 
-/** Soft pastel chip colors for the quieter schedule card (no lifestyle art). */
+/** Soft pastel chip colors for the quieter schedule card (light + dark). */
 export function trashThemeChipStyle(theme: TrashTheme): {
   bg: string;
   fg: string;
 } {
-  if (theme === "gft") return { bg: "bg-[#E7F3E8]", fg: "text-[#2F7D3A]" };
-  if (theme === "pmd") return { bg: "bg-[#F8EDE3]", fg: "text-[#E07A2F]" };
-  return { bg: "bg-[#ECEDEF]", fg: "text-[#5A5A5A]" };
+  if (theme === "gft") {
+    return {
+      bg: "bg-[#E7F3E8] dark:bg-emerald-400/15",
+      fg: "text-[#2F7D3A] dark:text-emerald-300",
+    };
+  }
+  if (theme === "pmd") {
+    return {
+      bg: "bg-[#F8EDE3] dark:bg-orange-400/15",
+      fg: "text-[#E07A2F] dark:text-orange-300",
+    };
+  }
+  return {
+    bg: "bg-[#ECEDEF] dark:bg-white/10",
+    fg: "text-[#5A5A5A] dark:text-white/70",
+  };
 }
 
 /**

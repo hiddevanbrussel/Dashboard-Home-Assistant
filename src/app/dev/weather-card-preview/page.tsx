@@ -26,7 +26,9 @@ const CONDITIONS = [
 export default function WeatherCardPreviewPage() {
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const setThemeMode = useThemeStore((s) => s.setMode);
   const setResolved = useThemeStore((s) => s.setResolved);
+  const resolved = useThemeStore((s) => s.resolved);
   const [condition, setCondition] = useState<(typeof CONDITIONS)[number]>("cloudy");
   const [showWind, setShowWind] = useState(true);
   const [showHumidity, setShowHumidity] = useState(true);
@@ -78,12 +80,6 @@ export default function WeatherCardPreviewPage() {
   }, [setLanguage]);
 
   useEffect(() => {
-    // Day packs for clear daytime conditions; dark theme unlocks night variants.
-    const day = new Set(["sunny", "cloudy", "fog", "windy", "partlycloudy"]);
-    setResolved(day.has(condition) ? "light" : "dark");
-  }, [condition, setResolved]);
-
-  useEffect(() => {
     // Use optimistic updates so the global HA state poll cannot wipe mock entities.
     const seed = () => {
       for (const e of entities) {
@@ -96,11 +92,16 @@ export default function WeatherCardPreviewPage() {
   }, [entities, updateEntityState]);
 
   return (
-    <div className="min-h-screen bg-[#0b1220] px-4 py-8 text-white">
+    <div
+      className={cn(
+        "min-h-screen px-4 py-8 transition-colors",
+        resolved === "dark" ? "bg-[#0b1220] text-white" : "bg-[#E8ECF2] text-gray-900"
+      )}
+    >
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Weather card preview</h1>
-        <p className="mt-1 text-sm text-white/60">
-          Mockup layout + WebP backgrounds. Toggle details like the edit panel switches.
+        <p className={cn("mt-1 text-sm", resolved === "dark" ? "text-white/60" : "text-gray-500")}>
+          Quiet glass card in light and dark theme. Toggle details like the edit panel switches.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -111,15 +112,38 @@ export default function WeatherCardPreviewPage() {
               onClick={() => setCondition(value)}
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium",
-                condition === value ? "bg-white text-gray-900" : "bg-white/10 text-white/80"
+                condition === value
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : resolved === "dark"
+                    ? "bg-white/10 text-white/80"
+                    : "bg-black/5 text-gray-700"
               )}
             >
               {value}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              const next = resolved === "dark" ? "light" : "dark";
+              setThemeMode(next);
+              setResolved(next);
+            }}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium",
+              resolved === "dark" ? "bg-white/10 text-white/80" : "bg-black/5 text-gray-700"
+            )}
+          >
+            theme: {resolved}
+          </button>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-3 text-sm text-white/80">
+        <div
+          className={cn(
+            "mt-4 flex flex-wrap gap-3 text-sm",
+            resolved === "dark" ? "text-white/80" : "text-gray-700"
+          )}
+        >
           {(
             [
               ["Hoog/laag", showHighLow, setShowHighLow],
@@ -129,7 +153,13 @@ export default function WeatherCardPreviewPage() {
               ["Neerslag", showPrecip, setShowPrecip],
             ] as const
           ).map(([label, on, setOn]) => (
-            <label key={label} className="inline-flex items-center gap-2 rounded-lg bg-white/5 px-3 py-1.5">
+            <label
+              key={label}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-lg px-3 py-1.5",
+                resolved === "dark" ? "bg-white/5" : "bg-black/5"
+              )}
+            >
               <input type="checkbox" checked={on} onChange={(e) => setOn(e.target.checked)} />
               {label}
             </label>

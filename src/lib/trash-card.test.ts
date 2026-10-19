@@ -4,6 +4,7 @@ import {
   buildTrashSchedule,
   formatTrashPickupDate,
   formatTrashPickupDateShort,
+  trashThemeChipStyle,
   formatTrashTypeLabel,
   mapWasteTypeToTheme,
   parseTrashDate,
@@ -144,6 +145,12 @@ describe("trash-card helpers", () => {
     expect(schedule.featured.theme).toBe("gft");
     expect(schedule.upcoming).toHaveLength(2);
     expect(new Set(schedule.upcoming.map((p) => p.theme)).size).toBe(2);
+  });
+
+  it("exposes light and dark chip classes per waste theme", () => {
+    expect(trashThemeChipStyle("gft").bg).toContain("dark:bg-emerald-400/15");
+    expect(trashThemeChipStyle("pmd").fg).toContain("dark:text-orange-300");
+    expect(trashThemeChipStyle("restafval").bg).toContain("dark:bg-white/10");
   });
 
   it("formats type labels", () => {
