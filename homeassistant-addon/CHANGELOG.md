@@ -2,7 +2,7 @@
 
 ## 0.4.87
 
-- Trash card: abbreviated pickup dates, chronological upcoming rows, ignore stale past dates, stronger date contrast
+- Trash card: abbreviated pickup dates, chronological upcoming rows, ignore stale past dates, stronger date contrast, larger upcoming bin icons
 
 ## 0.4.86
 
