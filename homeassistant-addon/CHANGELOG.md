@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.87
+
+- Trash card: abbreviated pickup dates, chronological upcoming rows, ignore stale past dates, stronger date contrast, larger upcoming bin icons
+
 ## 0.4.86
 
 - Weather card: mockup layout (temp left, large 3D condition icon right, metric columns) + new 3D weather icons

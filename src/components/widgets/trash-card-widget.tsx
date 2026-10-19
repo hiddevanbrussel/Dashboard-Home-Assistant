@@ -18,7 +18,7 @@ import {
   resolveTrashPickup,
   trashCardDensity,
   trashContainerImageSrc,
-  trashDemoPickup,
+  trashDemoSchedule,
   type TrashLocale,
   type TrashPickup,
   type TrashTheme,
@@ -52,11 +52,7 @@ function useTrashSchedule(
   });
 
   if (!hasBinding || !live) {
-    const featured = trashDemoPickup(demoTheme);
-    const upcoming = (["gft", "pmd", "restafval"] as TrashTheme[])
-      .filter((theme) => theme !== featured.theme)
-      .map((theme) => trashDemoPickup(theme));
-    return { featured, upcoming, isDemo: true };
+    return { ...trashDemoSchedule(demoTheme), isDemo: true };
   }
 
   const related = Object.entries(allStates)
@@ -93,7 +89,7 @@ function BinChip({
       draggable={false}
       className={cn(
         "shrink-0 select-none object-contain object-bottom [-webkit-user-drag:none]",
-        size === "lg" ? "h-16 w-16" : "h-12 w-12"
+        size === "lg" ? "h-[4.5rem] w-[4.5rem]" : "h-16 w-16"
       )}
       aria-hidden
     />
@@ -114,7 +110,7 @@ function UpcomingCell({
         <p className="truncate text-sm font-semibold tracking-tight text-[#1B2437] dark:text-white/90">
           {formatTrashTypeLabel(pickup.theme, pickup.typeRaw, locale)}
         </p>
-        <p className="truncate text-[12px] font-medium text-[#7A879C] dark:text-white/45">
+        <p className="whitespace-nowrap text-[13px] font-medium tabular-nums text-[#4E5D73] dark:text-white/70">
           {formatTrashPickupDateShort(pickup.date, locale)}
         </p>
       </div>
@@ -203,7 +199,7 @@ export function TrashCardWidget({
             </p>
             <p
               className={cn(
-                "truncate font-medium text-[#7A879C] dark:text-white/50",
+                "whitespace-nowrap font-medium tabular-nums text-[#4E5D73] dark:text-white/65",
                 compact ? "text-[13px]" : "text-[15px]"
               )}
             >
