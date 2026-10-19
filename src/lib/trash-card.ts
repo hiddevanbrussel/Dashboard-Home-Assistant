@@ -63,7 +63,18 @@ export function resizeTrashCardFromBottomRight(input: {
 }
 
 /** Bump when replacing files under `public/trash/` so browsers pick up new art. */
-export const TRASH_ASSETS_CACHE_BUST = "20260930a";
+export const TRASH_ASSETS_CACHE_BUST = "20261019a";
+
+/** Quiet schedule card: 3D wheelie-bin renders per fraction. */
+export const TRASH_CONTAINER_IMAGES: Record<TrashTheme, string> = {
+  gft: `/trash/container-gft.webp?v=${TRASH_ASSETS_CACHE_BUST}`,
+  pmd: `/trash/container-pmd.webp?v=${TRASH_ASSETS_CACHE_BUST}`,
+  restafval: `/trash/container-restafval.webp?v=${TRASH_ASSETS_CACHE_BUST}`,
+};
+
+export function trashContainerImageSrc(theme: TrashTheme): string {
+  return TRASH_CONTAINER_IMAGES[theme];
+}
 
 export const TRASH_THEME_ASSETS: Record<
   TrashTheme,
@@ -73,6 +84,8 @@ export const TRASH_THEME_ASSETS: Record<
     icon: string;
     /** Accent underline / chip icon frame fallback color */
     accent: string;
+    /** 3D container art for the quiet schedule card */
+    container: string;
   }
 > = {
   gft: {
@@ -80,18 +93,21 @@ export const TRASH_THEME_ASSETS: Record<
     person: `/trash/gft_persoon-container.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     icon: `/trash/gft_icoon.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     accent: "#2F7D3A",
+    container: TRASH_CONTAINER_IMAGES.gft,
   },
   restafval: {
     background: `/trash/restafval_achtergrond.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     person: `/trash/restafval_persoon-container.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     icon: `/trash/restafval_icoon.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     accent: "#4A4A4A",
+    container: TRASH_CONTAINER_IMAGES.restafval,
   },
   pmd: {
     background: `/trash/pmd_achtergrond.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     person: `/trash/pmd_persoon-container.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     icon: `/trash/pmd_icoon.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     accent: "#E07A2F",
+    container: TRASH_CONTAINER_IMAGES.pmd,
   },
 };
 

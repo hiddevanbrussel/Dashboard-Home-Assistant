@@ -1,8 +1,9 @@
 "use client";
 
-import { MoreVertical, Trash2 } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import type { TrashCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
+import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
@@ -16,8 +17,8 @@ import {
   formatTrashTypeLabel,
   resolveTrashPickup,
   trashCardDensity,
+  trashContainerImageSrc,
   trashDemoPickup,
-  trashThemeChipStyle,
   type TrashLocale,
   type TrashPickup,
   type TrashTheme,
@@ -83,19 +84,19 @@ function BinChip({
   theme: TrashTheme;
   size: "lg" | "sm";
 }) {
-  const chip = trashThemeChipStyle(theme);
   return (
-    <div
+    // eslint-disable-next-line @next/next/no-img-element -- local static container art
+    <img
+      key={theme}
+      src={withBasePath(trashContainerImageSrc(theme))}
+      alt=""
+      draggable={false}
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-2xl",
-        chip.bg,
-        chip.fg,
-        size === "lg" ? "h-14 w-14" : "h-11 w-11"
+        "shrink-0 select-none object-contain object-bottom [-webkit-user-drag:none]",
+        size === "lg" ? "h-16 w-16" : "h-12 w-12"
       )}
       aria-hidden
-    >
-      <Trash2 className={size === "lg" ? "h-7 w-7" : "h-5 w-5"} strokeWidth={1.75} />
-    </div>
+    />
   );
 }
 
