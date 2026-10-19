@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.86
+
+- Weather card: mockup layout (temp left, large 3D condition icon right, metric columns) + new 3D weather icons
+
 ## 0.4.85
 
 - Quieter cards: weather (glass + icon/temp metrics), Team Tracker (white logos/date/time), trash schedule (featured + upcoming with 3D container art, no lifestyle scenes)

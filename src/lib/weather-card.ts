@@ -185,7 +185,7 @@ export function weatherImageSources(
   }
 }
 
-/** Pixeden color-icon stems in `/public/weather-icons`. */
+/** 3D condition-icon stems in `/public/weather-icons` (WebP, black punched). */
 export const WEATHER_ICON_FILES = [
   "sunny",
   "clear-night",
@@ -206,7 +206,9 @@ export const WEATHER_ICON_FILES = [
 
 export type WeatherIconFile = (typeof WEATHER_ICON_FILES)[number];
 
-/** Map a Home Assistant weather condition to a color icon file stem. */
+const WEATHER_ICONS_CACHE_BUST = "20261019c";
+
+/** Map a Home Assistant weather condition to a 3D icon file stem. */
 export function weatherIconFile(condition: string): WeatherIconFile {
   const s = condition?.toLowerCase() ?? "";
   switch (s) {
@@ -248,7 +250,7 @@ export function weatherIconFile(condition: string): WeatherIconFile {
 }
 
 export function weatherIconSrc(condition: string): string {
-  return `/weather-icons/${weatherIconFile(condition)}.png`;
+  return `/weather-icons/${weatherIconFile(condition)}.webp?v=${WEATHER_ICONS_CACHE_BUST}`;
 }
 
 /** Convert wind speed to Beaufort (0–12). Unit is typically m/s, km/h, mph, or kn. */

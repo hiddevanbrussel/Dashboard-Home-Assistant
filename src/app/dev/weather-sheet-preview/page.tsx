@@ -155,7 +155,7 @@ export default function WeatherSheetPreviewPage() {
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={file}
-              src={`/weather-icons/${file}.png`}
+              src={`/weather-icons/${file}.webp`}
               alt={file}
               title={file}
               className="h-10 w-10 object-contain"

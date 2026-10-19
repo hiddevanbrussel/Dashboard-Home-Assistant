@@ -29,10 +29,10 @@ export default function WeatherCardPreviewPage() {
   const setThemeMode = useThemeStore((s) => s.setMode);
   const setResolved = useThemeStore((s) => s.setResolved);
   const resolved = useThemeStore((s) => s.resolved);
-  const [condition, setCondition] = useState<(typeof CONDITIONS)[number]>("cloudy");
+  const [condition, setCondition] = useState<(typeof CONDITIONS)[number]>("partlycloudy");
   const [showWind, setShowWind] = useState(true);
   const [showHumidity, setShowHumidity] = useState(true);
-  const [showAqi, setShowAqi] = useState(true);
+  const [showAqi, setShowAqi] = useState(false);
   const [showPrecip, setShowPrecip] = useState(true);
   const [showHighLow, setShowHighLow] = useState(true);
 
@@ -48,19 +48,19 @@ export default function WeatherCardPreviewPage() {
         entity_id: ENTITY_ID,
         state: condition,
         attributes: {
-          temperature: 16,
-          humidity: 72,
+          temperature: 12,
+          humidity: 77,
           wind_speed: 3.5,
-          wind_bearing: 225,
+          wind_bearing: 90,
           wind_speed_unit: "m/s",
           precipitation: 0,
-          friendly_name: "Thuis",
+          friendly_name: "Madeliefje",
           forecast: [
             {
               datetime: today,
               condition,
-              temperature: 19,
-              templow: 11,
+              temperature: 12,
+              templow: 8,
               precipitation: 0,
             },
           ],
@@ -101,7 +101,7 @@ export default function WeatherCardPreviewPage() {
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Weather card preview</h1>
         <p className={cn("mt-1 text-sm", resolved === "dark" ? "text-white/60" : "text-gray-500")}>
-          Quiet glass card in light and dark theme. Toggle details like the edit panel switches.
+          Mockup layout with 3D condition icons. Toggle details like the edit panel switches.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -169,7 +169,7 @@ export default function WeatherCardPreviewPage() {
         <div className="mt-8 flex justify-center">
           <div className="h-[320px] w-[340px]">
             <WeatherCardWidget
-              title="Thuis"
+              title="Madeliefje"
               entity_id={ENTITY_ID}
               show_icon
               show_condition

@@ -138,7 +138,10 @@ describe("weather color icons", () => {
   });
 
   it("builds a public path under /weather-icons", () => {
-    expect(weatherIconSrc("partlycloudy")).toBe("/weather-icons/partlycloudy.png");
-    expect(weatherIconSrc("Sunny")).toBe("/weather-icons/sunny.png");
+    expect(weatherIconSrc("partlycloudy")).toContain("/weather-icons/partlycloudy.webp");
+    expect(weatherIconSrc("Sunny")).toContain("/weather-icons/sunny.webp");
+    expect(weatherIconSrc("rainy")).toContain("/weather-icons/rainy.webp");
+    expect(weatherIconSrc("pouring")).toContain("/weather-icons/pouring.webp");
+    expect(weatherIconSrc("lightning")).toContain("/weather-icons/lightning.webp");
   });
 });
