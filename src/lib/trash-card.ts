@@ -63,7 +63,18 @@ export function resizeTrashCardFromBottomRight(input: {
 }
 
 /** Bump when replacing files under `public/trash/` so browsers pick up new art. */
-export const TRASH_ASSETS_CACHE_BUST = "20260930a";
+export const TRASH_ASSETS_CACHE_BUST = "20261019a";
+
+/** Quiet schedule card: 3D wheelie-bin renders per fraction. */
+export const TRASH_CONTAINER_IMAGES: Record<TrashTheme, string> = {
+  gft: `/trash/container-gft.webp?v=${TRASH_ASSETS_CACHE_BUST}`,
+  pmd: `/trash/container-pmd.webp?v=${TRASH_ASSETS_CACHE_BUST}`,
+  restafval: `/trash/container-restafval.webp?v=${TRASH_ASSETS_CACHE_BUST}`,
+};
+
+export function trashContainerImageSrc(theme: TrashTheme): string {
+  return TRASH_CONTAINER_IMAGES[theme];
+}
 
 export const TRASH_THEME_ASSETS: Record<
   TrashTheme,
@@ -73,6 +84,8 @@ export const TRASH_THEME_ASSETS: Record<
     icon: string;
     /** Accent underline / chip icon frame fallback color */
     accent: string;
+    /** 3D container art for the quiet schedule card */
+    container: string;
   }
 > = {
   gft: {
@@ -80,18 +93,21 @@ export const TRASH_THEME_ASSETS: Record<
     person: `/trash/gft_persoon-container.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     icon: `/trash/gft_icoon.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     accent: "#2F7D3A",
+    container: TRASH_CONTAINER_IMAGES.gft,
   },
   restafval: {
     background: `/trash/restafval_achtergrond.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     person: `/trash/restafval_persoon-container.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     icon: `/trash/restafval_icoon.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     accent: "#4A4A4A",
+    container: TRASH_CONTAINER_IMAGES.restafval,
   },
   pmd: {
     background: `/trash/pmd_achtergrond.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     person: `/trash/pmd_persoon-container.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     icon: `/trash/pmd_icoon.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     accent: "#E07A2F",
+    container: TRASH_CONTAINER_IMAGES.pmd,
   },
 };
 
@@ -511,6 +527,90 @@ export function formatTrashPickupDate(date: Date | null, locale: TrashLocale): s
   const month = date.toLocaleDateString(loc, { month: "long" });
   const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
   return `${cap(weekday)} ${day} ${cap(month)}`;
+}
+
+/**
+ * Compact secondary date: "Do 30 okt" / "Thu 30 Oct".
+ */
+export function formatTrashPickupDateShort(date: Date | null, locale: TrashLocale): string {
+  if (!date || Number.isNaN(date.getTime())) return "—";
+  const loc = locale === "nl" ? "nl-NL" : "en-GB";
+  const weekday = date.toLocaleDateString(loc, { weekday: "short" }).replace(/\./g, "");
+  const day = date.getDate();
+  const month = date.toLocaleDateString(loc, { month: "short" }).replace(/\./g, "");
+  const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+  return `${cap(weekday)} ${day} ${cap(month)}`;
+}
+
+/** Soft pastel chip colors for the quieter schedule card (light + dark). */
+export function trashThemeChipStyle(theme: TrashTheme): {
+  bg: string;
+  fg: string;
+} {
+  if (theme === "gft") {
+    return {
+      bg: "bg-[#E7F3E8] dark:bg-emerald-400/15",
+      fg: "text-[#2F7D3A] dark:text-emerald-300",
+    };
+  }
+  if (theme === "pmd") {
+    return {
+      bg: "bg-[#F8EDE3] dark:bg-orange-400/15",
+      fg: "text-[#E07A2F] dark:text-orange-300",
+    };
+  }
+  return {
+    bg: "bg-[#ECEDEF] dark:bg-white/10",
+    fg: "text-[#5A5A5A] dark:text-white/70",
+  };
+}
+
+/**
+ * Build a quiet schedule: next featured pickup + up to two later fractions.
+ * Fills missing themes with demo offsets so the card still reads as a schedule.
+ */
+export function buildTrashSchedule(input: {
+  primary: TrashPickup | null;
+  entities?: HaEntitySnapshot[];
+  fallbackTheme?: TrashTheme;
+  ref?: Date;
+}): { featured: TrashPickup; upcoming: TrashPickup[] } {
+  const ref = input.ref ?? new Date();
+  const fallbackTheme = input.fallbackTheme ?? "gft";
+  const byTheme = new Map<TrashTheme, TrashPickup>();
+
+  if (input.primary) {
+    byTheme.set(input.primary.theme, input.primary);
+  }
+
+  for (const entity of input.entities ?? []) {
+    const pickup = resolveTrashPickup({
+      primaryEntity: entity,
+      fallbackTheme,
+      ref,
+    });
+    if (!pickup?.date) continue;
+    const existing = byTheme.get(pickup.theme);
+    if (!existing?.date || pickup.date.getTime() < existing.date.getTime()) {
+      byTheme.set(pickup.theme, pickup);
+    }
+  }
+
+  for (const theme of ["gft", "pmd", "restafval"] as TrashTheme[]) {
+    if (!byTheme.has(theme)) {
+      byTheme.set(theme, trashDemoPickup(theme, ref));
+    }
+  }
+
+  const sorted = [...byTheme.values()].sort((a, b) => {
+    const at = a.date?.getTime() ?? Number.POSITIVE_INFINITY;
+    const bt = b.date?.getTime() ?? Number.POSITIVE_INFINITY;
+    return at - bt;
+  });
+
+  const featured = sorted[0] ?? trashDemoPickup(fallbackTheme, ref);
+  const upcoming = sorted.filter((p) => p.theme !== featured.theme).slice(0, 2);
+  return { featured, upcoming };
 }
 
 /**

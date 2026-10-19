@@ -1,23 +1,21 @@
 "use client";
 
-import { CalendarDays, MoreVertical } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-import { useThemeStore } from "@/stores/theme-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   estimateTeamtrackerProgress,
   footballMatchHasContent,
   formatTeamtrackerFormLine,
+  formatTeamtrackerKickoffDate,
   formatTeamtrackerKickoffDateLong,
   formatTeamtrackerKickoffTime,
-  formatTeamtrackerLeagueLabel,
   isTeamtrackerShowForm,
   isTeamtrackerShowProgress,
   isTeamtrackerShowTeamNames,
   readTeamtrackerMatch,
-  teamtrackerStadiumImageSrc,
   teamtrackerStatusLabel,
   type TeamtrackerMatch,
 } from "@/lib/teamtracker-card";
@@ -71,7 +69,7 @@ function TeamLogo({ src, alt }: { src?: string | null; alt: string }) {
   if (!src) {
     return (
       <div
-        className="flex h-[4.25rem] w-[4.25rem] shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white/55 ring-1 ring-white/20 sm:h-[4.75rem] sm:w-[4.75rem]"
+        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#EEF1F6] text-sm font-semibold text-[#9AA3B2] dark:bg-white/8 dark:text-white/40 sm:h-16 sm:w-16"
         aria-hidden
       >
         {alt.slice(0, 1).toUpperCase()}
@@ -83,7 +81,7 @@ function TeamLogo({ src, alt }: { src?: string | null; alt: string }) {
     <img
       src={withBasePath(src)}
       alt={alt}
-      className="h-[4.25rem] w-[4.25rem] shrink-0 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)] sm:h-[4.75rem] sm:w-[4.75rem]"
+      className="h-14 w-14 shrink-0 object-contain sm:h-16 sm:w-16"
       loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).style.display = "none";
@@ -106,19 +104,19 @@ function TeamColumn({
   showForm: boolean;
 }) {
   return (
-    <div className="flex min-w-0 flex-col items-center gap-2.5">
+    <div className="flex min-w-0 flex-col items-center gap-2">
       <TeamLogo src={logo} alt={name} />
       {showName || showForm ? (
         <div className="min-w-0 max-w-full text-center">
           {showName ? (
-            <p className="truncate text-[0.95rem] font-semibold tracking-tight text-white sm:text-[1.05rem]">
+            <p className="truncate text-sm font-semibold tracking-tight text-[#1B2437] dark:text-white/90">
               {name}
             </p>
           ) : null}
           {showForm && form ? (
             <p
               className={cn(
-                "truncate text-[11px] font-medium tracking-wide text-white/45",
+                "truncate text-[11px] font-medium tracking-wide text-[#8A97A8] dark:text-white/40",
                 showName ? "mt-0.5" : null
               )}
             >
@@ -140,60 +138,26 @@ function ScoreHeadline({
 }) {
   if (match.status === "PRE") {
     return (
-      <span className="text-[1.65rem] font-semibold leading-none tracking-[0.04em] text-white sm:text-[1.85rem]">
-        VS
-      </span>
+      <div className="flex flex-col items-center gap-1.5">
+        <span className="h-5 w-px bg-[#D5DCE8] dark:bg-white/15" aria-hidden />
+        <span className="text-sm font-medium lowercase tracking-wide text-[#8A97A8] dark:text-white/45">
+          vs
+        </span>
+        <span className="h-5 w-px bg-[#D5DCE8] dark:bg-white/15" aria-hidden />
+      </div>
     );
   }
   const scores = venueScores(match);
   const left = match.showScores ? scores.left : "—";
   const right = match.showScores ? scores.right : "—";
   return (
-    <span className="text-[1.85rem] font-bold tabular-nums leading-none tracking-tight text-white sm:text-[2.15rem]">
+    <span className="text-[1.75rem] font-bold tabular-nums leading-none tracking-tight text-[#1B2437] dark:text-white sm:text-[2rem]">
       {left}
-      <span className="mx-1.5 font-semibold text-white/80">-</span>
+      <span className="mx-1.5 font-semibold text-[#1B2437]/70 dark:text-white/70">-</span>
       {right}
       <span className="sr-only">
         {match.status === "POST" ? t("teamtrackerCard.finalScore") : ""}
       </span>
-    </span>
-  );
-}
-
-function LeagueOrStatusPill({
-  leagueLabel,
-  status,
-  statusLabel,
-}: {
-  leagueLabel: string | null;
-  status: string;
-  statusLabel: string;
-}) {
-  if (status === "IN") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-red-300/45 bg-red-500/20 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-red-100">
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-300" aria-hidden />
-        {statusLabel}
-      </span>
-    );
-  }
-  if (status === "POST") {
-    return (
-      <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/75">
-        {statusLabel}
-      </span>
-    );
-  }
-  if (leagueLabel) {
-    return (
-      <span className="inline-flex max-w-full items-center rounded-full border border-[#7EB6FF]/45 bg-[#1B3A6B]/72 px-3.5 py-1 text-[11px] font-semibold tracking-[0.02em] text-[#D7E9FF]">
-        <span className="truncate">{leagueLabel}</span>
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/75">
-      {statusLabel}
     </span>
   );
 }
@@ -203,7 +167,7 @@ function ProgressBar({ progress }: { progress: number | null }) {
   const pct = Math.round(Math.min(1, Math.max(0, progress)) * 100);
   return (
     <div
-      className="h-1 w-full overflow-hidden rounded-full bg-white/15"
+      className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#E8ECF2] dark:bg-white/10"
       role="progressbar"
       aria-valuenow={pct}
       aria-valuemin={0}
@@ -217,6 +181,20 @@ function ProgressBar({ progress }: { progress: number | null }) {
   );
 }
 
+/** Mockup-style date without year: "Zondag 25 oktober". */
+function formatQuietKickoffDate(kickoffAt: Date | null | undefined, language: string): string | null {
+  if (!kickoffAt) return null;
+  const locale = language === "nl" ? "nl-NL" : "en-GB";
+  const formatted = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(kickoffAt);
+  const cleaned = formatted.replace(/,/g, "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return null;
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
 export function TeamtrackerCardWidget({
   title,
   entity_id,
@@ -227,7 +205,6 @@ export function TeamtrackerCardWidget({
   onMoreClick,
 }: TeamtrackerCardProps & { className?: string; onMoreClick?: () => void }) {
   const { t, language } = useTranslation();
-  const isDark = useThemeStore((s) => s.resolved) === "dark";
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const match = readTeamtrackerMatch(entity);
   const hasContent = footballMatchHasContent(match);
@@ -236,14 +213,16 @@ export function TeamtrackerCardWidget({
   const sides = match ? venueSides(match) : null;
   const progress = match ? estimateTeamtrackerProgress(match) : null;
   const isUpcoming = status === "PRE";
-  const kickoffDate = formatTeamtrackerKickoffDateLong(match?.kickoffAt, language);
+  const kickoffDate = isUpcoming
+    ? formatQuietKickoffDate(match?.kickoffAt, language)
+    : formatTeamtrackerKickoffDateLong(match?.kickoffAt, language) ??
+      formatTeamtrackerKickoffDate(match?.kickoffAt, language);
   const kickoffTime = formatTeamtrackerKickoffTime(match?.kickoffAt, language);
-  const leagueLabel = formatTeamtrackerLeagueLabel(match?.league);
-  const showNames = isTeamtrackerShowTeamNames(show_team_names);
-  const showForm = isTeamtrackerShowForm(show_form);
+  // PRE mockup is logos-only; names/form stay available for live/finished matches.
+  const showNames = !isUpcoming && isTeamtrackerShowTeamNames(show_team_names);
+  const showForm = !isUpcoming && isTeamtrackerShowForm(show_form);
   const showProgress = isTeamtrackerShowProgress(show_progress);
-  const stadiumSrc = withBasePath(teamtrackerStadiumImageSrc(isDark));
-  const footerRight = isUpcoming
+  const footerTime = isUpcoming
     ? kickoffTime
     : status === "IN"
       ? match?.clock
@@ -251,25 +230,7 @@ export function TeamtrackerCardWidget({
 
   return (
     <div className={cn("relative flex h-full min-h-0 w-full flex-col", className)}>
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.35rem] bg-[#0B1528] text-white shadow-[0_18px_50px_rgba(8,15,30,0.35)] ring-1 ring-white/10">
-        {/* eslint-disable-next-line @next/next/no-img-element -- local static lifestyle art */}
-        <img
-          key={stadiumSrc}
-          src={stadiumSrc}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover object-center"
-          draggable={false}
-        />
-        <div
-          className={cn(
-            "absolute inset-0 bg-gradient-to-b",
-            isDark
-              ? "from-[#07111F]/78 via-[#0A1630]/55 to-[#07111F]/88"
-              : "from-[#0A1628]/62 via-[#12243A]/48 to-[#0A1628]/78"
-          )}
-          aria-hidden
-        />
-
+      <div className="glass-surface relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.35rem] text-[#1B2437] shadow-[0_12px_36px_rgba(15,23,42,0.08)] dark:text-white dark:shadow-[0_12px_36px_rgba(0,0,0,0.35)]">
         {onMoreClick ? (
           <button
             type="button"
@@ -277,7 +238,7 @@ export function TeamtrackerCardWidget({
               e.stopPropagation();
               onMoreClick();
             }}
-            className="absolute right-2 top-2 z-20 rounded-lg p-1.5 text-white/45 transition-colors hover:bg-white/10 hover:text-white/80"
+            className="absolute right-2 top-2 z-20 rounded-lg p-1.5 text-[#1B2437]/30 transition-colors hover:bg-black/5 hover:text-[#1B2437]/65 dark:text-white/30 dark:hover:bg-white/10 dark:hover:text-white/65"
             aria-label={t("common.options")}
           >
             <MoreVertical className="h-4 w-4" aria-hidden />
@@ -285,15 +246,21 @@ export function TeamtrackerCardWidget({
         ) : null}
 
         {!hasContent || !match || !sides ? (
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-white/55">
-            <p className="text-sm font-medium text-white/80">
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-[#8A97A8] dark:text-white/45">
+            <p className="text-sm font-medium text-[#1B2437]/70 dark:text-white/70">
               {title || t("cardType.teamtracker_card")}
             </p>
             <p className="text-xs">{t("teamtrackerCard.empty")}</p>
           </div>
         ) : (
-          <div className="relative z-10 flex min-h-0 flex-1 flex-col px-4 pb-3.5 pt-5 sm:px-5 sm:pb-4 sm:pt-6">
-            <div className="grid min-h-0 flex-1 grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-5 sm:px-5">
+            {!isUpcoming ? (
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A97A8] dark:text-white/45">
+                {statusLabel}
+              </p>
+            ) : null}
+
+            <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2">
               <TeamColumn
                 logo={sides.left.logo}
                 name={sides.left.name}
@@ -315,33 +282,18 @@ export function TeamtrackerCardWidget({
               />
             </div>
 
-            <div className="mt-3 flex flex-col items-center gap-3">
-              <LeagueOrStatusPill
-                leagueLabel={leagueLabel}
-                status={status}
-                statusLabel={statusLabel}
-              />
-
-              {kickoffDate || footerRight ? (
-                <div className="flex w-full items-center gap-2 text-[12px] font-medium text-white/80 sm:text-[13px]">
-                  <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                    <CalendarDays className="h-3.5 w-3.5 shrink-0 text-white/70" aria-hidden />
-                    {kickoffDate ? (
-                      <p className="truncate" title={kickoffDate}>
-                        {kickoffDate}
-                      </p>
-                    ) : (
-                      <p className="truncate text-white/45">{statusLabel}</p>
-                    )}
-                  </div>
-                  {footerRight ? (
-                    <p className="shrink-0 tabular-nums tracking-tight text-white">{footerRight}</p>
-                  ) : null}
-                </div>
+            <div className="mt-5 flex flex-col items-center gap-1.5 text-center">
+              {kickoffDate ? (
+                <p className="text-[15px] font-medium text-[#5B6B82] dark:text-white/55">{kickoffDate}</p>
               ) : null}
-
-              <ProgressBar progress={showProgress && !isUpcoming ? progress : null} />
+              {footerTime ? (
+                <p className="text-[2rem] font-bold tabular-nums leading-none tracking-tight text-[#1B2437] dark:text-white sm:text-[2.25rem]">
+                  {footerTime}
+                </p>
+              ) : null}
             </div>
+
+            <ProgressBar progress={showProgress && !isUpcoming ? progress : null} />
           </div>
         )}
       </div>

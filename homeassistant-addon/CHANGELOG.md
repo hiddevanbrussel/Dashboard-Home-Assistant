@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.85
+
+- Quieter cards: weather (glass + icon/temp metrics), Team Tracker (white logos/date/time), trash schedule (featured + upcoming with 3D container art, no lifestyle scenes)
+
 ## 0.4.84
 
 - Vacuum card 2: new docked / empty-dock lifestyle backgrounds

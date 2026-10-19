@@ -103,12 +103,16 @@ export default function TeamtrackerCardPreviewPage() {
   }, [entity, updateEntityState]);
 
   return (
-    <div className="min-h-screen bg-[#12141a] px-4 py-8 text-white">
+    <div
+      className={cn(
+        "min-h-screen px-4 py-8 transition-colors",
+        resolved === "dark" ? "bg-[#12141a] text-white" : "bg-[#E8ECF2] text-gray-900"
+      )}
+    >
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Team Tracker card preview</h1>
-        <p className="mt-1 text-sm text-white/60">
-          Day/night stadium backgrounds with logos, league pill, and kickoff footer. No Home Assistant
-          required.
+        <p className={cn("mt-1 text-sm", resolved === "dark" ? "text-white/60" : "text-gray-500")}>
+          Quiet glass match card in light and dark theme. No Home Assistant required.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -119,7 +123,11 @@ export default function TeamtrackerCardPreviewPage() {
               onClick={() => setMode(value)}
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium",
-                mode === value ? "bg-white text-gray-900" : "bg-white/10 text-white/80"
+                mode === value
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : resolved === "dark"
+                    ? "bg-white/10 text-white/80"
+                    : "bg-black/5 text-gray-700"
               )}
             >
               {value}
@@ -132,9 +140,12 @@ export default function TeamtrackerCardPreviewPage() {
               setThemeMode(next);
               setResolved(next);
             }}
-            className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/80"
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium",
+              resolved === "dark" ? "bg-white/10 text-white/80" : "bg-black/5 text-gray-700"
+            )}
           >
-            theme: {resolved} ({resolved === "dark" ? "night" : "day"} art)
+            theme: {resolved}
           </button>
         </div>
 

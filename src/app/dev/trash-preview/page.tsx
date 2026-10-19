@@ -9,6 +9,8 @@ import {
 } from "@/lib/trash-card";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useLanguageStore } from "@/stores/language-store";
+import { useThemeStore } from "@/stores/theme-store";
+import { cn } from "@/lib/utils";
 
 const THEMES: TrashTheme[] = ["gft", "restafval", "pmd"];
 const LIVE_TYPE_ENTITY = "sensor.dev_trash_next_type";
@@ -27,8 +29,10 @@ export default function TrashPreviewPage() {
   const setStates = useEntityStateStore((s) => s.setStates);
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const setThemeMode = useThemeStore((s) => s.setMode);
+  const setResolved = useThemeStore((s) => s.setResolved);
+  const resolved = useThemeStore((s) => s.resolved);
 
-  // Preview matches the NL mockup typography ("Eerstvolgende" / "ophaalmoment").
   useEffect(() => {
     setLanguage("nl");
   }, [setLanguage]);
@@ -54,28 +58,56 @@ export default function TrashPreviewPage() {
   }, [liveTheme, setStates]);
 
   return (
-    <div className="min-h-screen bg-zinc-900 p-6 text-white">
+    <div
+      className={cn(
+        "min-h-screen p-6 transition-colors",
+        resolved === "dark" ? "bg-zinc-900 text-white" : "bg-[#E8ECF2] text-gray-900"
+      )}
+    >
       <h1 className="mb-2 text-xl font-semibold">Trash card preview</h1>
-      <p className="mb-4 text-sm text-zinc-400">
-        Demo themes without Home Assistant. Drag the size slider to check resize layout.
+      <p className={cn("mb-4 text-sm", resolved === "dark" ? "text-zinc-400" : "text-gray-500")}>
+        Quiet schedule layout in light and dark theme. Drag the size slider to check resize.
       </p>
-      <label className="mb-6 flex items-center gap-3 text-sm">
-        Size {size.w}×{size.h}
-        <input
-          type="range"
-          min={240}
-          max={420}
-          value={size.w}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            setSize({ w: v, h: v });
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-3 text-sm">
+          Size {size.w}×{size.h}
+          <input
+            type="range"
+            min={240}
+            max={420}
+            value={size.w}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setSize({ w: v, h: v });
+            }}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            const next = resolved === "dark" ? "light" : "dark";
+            setThemeMode(next);
+            setResolved(next);
           }}
-        />
-      </label>
+          className={cn(
+            "rounded-full px-3 py-1 text-xs font-medium",
+            resolved === "dark" ? "bg-white/10 text-white/80" : "bg-black/5 text-gray-700"
+          )}
+        >
+          theme: {resolved}
+        </button>
+      </div>
       <div className="flex flex-wrap gap-6">
         {THEMES.map((theme) => (
           <div key={theme} className="flex flex-col gap-2">
-            <span className="text-xs uppercase tracking-wide text-zinc-400">{theme}</span>
+            <span
+              className={cn(
+                "text-xs uppercase tracking-wide",
+                resolved === "dark" ? "text-zinc-400" : "text-gray-500"
+              )}
+            >
+              {theme}
+            </span>
             <div style={{ width: size.w, height: size.h }}>
               <TrashCardWidget
                 title=""
@@ -90,9 +122,9 @@ export default function TrashPreviewPage() {
         ))}
       </div>
 
-      <h2 className="mb-2 mt-10 text-lg font-semibold">Live type → background</h2>
-      <p className="mb-4 text-sm text-zinc-400">
-        Same card config; changing the mocked HA type entity must swap background / person / icon.
+      <h2 className="mb-2 mt-10 text-lg font-semibold">Live type → schedule</h2>
+      <p className={cn("mb-4 text-sm", resolved === "dark" ? "text-zinc-400" : "text-gray-500")}>
+        Same card config; changing the mocked HA type entity updates the featured fraction.
       </p>
       <div className="mb-4 flex flex-wrap gap-2">
         {THEMES.map((theme) => (
@@ -103,9 +135,14 @@ export default function TrashPreviewPage() {
               setLiveTheme(theme);
               updateEntityState(LIVE_TYPE_ENTITY, { state: LIVE_LABELS[theme] });
             }}
-            className={`rounded-lg px-3 py-1.5 text-sm ${
-              liveTheme === theme ? "bg-white text-zinc-900" : "bg-zinc-800 text-zinc-200"
-            }`}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-sm",
+              liveTheme === theme
+                ? "bg-white text-zinc-900 shadow-sm"
+                : resolved === "dark"
+                  ? "bg-zinc-800 text-zinc-200"
+                  : "bg-black/5 text-gray-700"
+            )}
           >
             {theme}
           </button>

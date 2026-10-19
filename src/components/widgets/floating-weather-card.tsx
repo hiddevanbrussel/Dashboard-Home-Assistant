@@ -351,7 +351,7 @@ export function FloatingWeatherCard({
     >
       <div
         className={cn(
-          "glass-surface flex h-full min-h-0 flex-col overflow-hidden rounded-2xl shadow-xl",
+          "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl",
           editMode && "[&>div]:rounded-t-none [&>div]:shadow-none"
         )}
       >

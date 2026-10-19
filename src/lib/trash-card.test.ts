@@ -1,7 +1,11 @@
 import {
   clampTrashCardHeight,
   clampTrashCardWidth,
+  buildTrashSchedule,
   formatTrashPickupDate,
+  formatTrashPickupDateShort,
+  trashContainerImageSrc,
+  trashThemeChipStyle,
   formatTrashTypeLabel,
   mapWasteTypeToTheme,
   parseTrashDate,
@@ -126,6 +130,41 @@ describe("trash-card helpers", () => {
     expect(formatTrashPickupDate(d, "nl")).toMatch(/Vrijdag 2 [Oo]ktober/);
     expect(formatTrashPickupDate(d, "en")).toMatch(/Friday 2 [Oo]ctober/);
     expect(formatTrashPickupDate(null, "nl")).toBe("—");
+    expect(formatTrashPickupDateShort(d, "nl")).toMatch(/^Vr 2 [Oo]kt$/);
+    expect(formatTrashPickupDateShort(d, "en")).toMatch(/^Fri 2 [Oo]ct$/);
+  });
+
+  it("builds a quiet schedule with featured + upcoming fractions", () => {
+    const schedule = buildTrashSchedule({
+      primary: {
+        theme: "gft",
+        typeRaw: "Gft",
+        date: new Date(2026, 9, 23, 12, 0, 0),
+      },
+      ref: new Date(2026, 9, 20, 12, 0, 0),
+    });
+    expect(schedule.featured.theme).toBe("gft");
+    expect(schedule.upcoming).toHaveLength(2);
+    expect(new Set(schedule.upcoming.map((p) => p.theme)).size).toBe(2);
+  });
+
+  it("exposes light and dark chip classes per waste theme", () => {
+    expect(trashThemeChipStyle("gft").bg).toContain("dark:bg-emerald-400/15");
+    expect(trashThemeChipStyle("pmd").fg).toContain("dark:text-orange-300");
+    expect(trashThemeChipStyle("restafval").bg).toContain("dark:bg-white/10");
+  });
+
+  it("maps each waste theme to a distinct container image", () => {
+    expect(trashContainerImageSrc("gft")).toContain("container-gft.webp");
+    expect(trashContainerImageSrc("pmd")).toContain("container-pmd.webp");
+    expect(trashContainerImageSrc("restafval")).toContain("container-restafval.webp");
+    expect(
+      new Set([
+        trashContainerImageSrc("gft"),
+        trashContainerImageSrc("pmd"),
+        trashContainerImageSrc("restafval"),
+      ]).size
+    ).toBe(3);
   });
 
   it("formats type labels", () => {
