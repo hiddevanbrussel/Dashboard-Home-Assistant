@@ -1,37 +1,38 @@
 "use client";
 
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Trash2 } from "lucide-react";
 import type { TrashCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
-import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   TRASH_CARD_DEFAULT_HEIGHT,
   TRASH_CARD_DEFAULT_WIDTH,
+  buildTrashSchedule,
   clampTrashCardHeight,
   clampTrashCardWidth,
   formatTrashPickupDate,
+  formatTrashPickupDateShort,
   formatTrashTypeLabel,
   resolveTrashPickup,
-  splitTrashCardHeading,
   trashCardDensity,
   trashDemoPickup,
-  trashThemeAssets,
+  trashThemeChipStyle,
   type TrashLocale,
+  type TrashPickup,
   type TrashTheme,
 } from "@/lib/trash-card";
 
-function useTrashPickup(
+function useTrashSchedule(
   entityId: string | undefined,
   dateEntityId: string | undefined,
   demoTheme: TrashTheme
 ) {
-  // Read `states[id]` + `updatedAt` so theme art re-renders as soon as HA state changes.
   const primary = useEntityStateStore((s) => (entityId ? s.states[entityId] : undefined));
   const dateEnt = useEntityStateStore((s) =>
     dateEntityId ? s.states[dateEntityId] : undefined
   );
+  const allStates = useEntityStateStore((s) => s.states);
   useEntityStateStore((s) => s.updatedAt);
 
   const hasBinding = Boolean(entityId || dateEntityId);
@@ -50,9 +51,74 @@ function useTrashPickup(
   });
 
   if (!hasBinding || !live) {
-    return { pickup: trashDemoPickup(demoTheme), isDemo: true };
+    const featured = trashDemoPickup(demoTheme);
+    const upcoming = (["gft", "pmd", "restafval"] as TrashTheme[])
+      .filter((theme) => theme !== featured.theme)
+      .map((theme) => trashDemoPickup(theme));
+    return { featured, upcoming, isDemo: true };
   }
-  return { pickup: live, isDemo: false };
+
+  const related = Object.entries(allStates)
+    .filter(([id]) => id !== entityId && id !== dateEntityId)
+    .map(([id, ent]) => ({
+      entity_id: id,
+      state: ent.state,
+      attributes: ent.attributes,
+    }));
+
+  return {
+    ...buildTrashSchedule({
+      primary: live,
+      entities: related,
+      fallbackTheme: demoTheme,
+    }),
+    isDemo: false,
+  };
+}
+
+function BinChip({
+  theme,
+  size,
+}: {
+  theme: TrashTheme;
+  size: "lg" | "sm";
+}) {
+  const chip = trashThemeChipStyle(theme);
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-2xl",
+        chip.bg,
+        chip.fg,
+        size === "lg" ? "h-14 w-14" : "h-11 w-11"
+      )}
+      aria-hidden
+    >
+      <Trash2 className={size === "lg" ? "h-7 w-7" : "h-5 w-5"} strokeWidth={1.75} />
+    </div>
+  );
+}
+
+function UpcomingCell({
+  pickup,
+  locale,
+}: {
+  pickup: TrashPickup;
+  locale: TrashLocale;
+}) {
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-2.5">
+      <BinChip theme={pickup.theme} size="sm" />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold tracking-tight text-[#1B2437] dark:text-white/90">
+          {formatTrashTypeLabel(pickup.theme, pickup.typeRaw, locale)}
+        </p>
+        <p className="truncate text-[12px] font-medium text-[#7A879C] dark:text-white/45">
+          {formatTrashPickupDateShort(pickup.date, locale)}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export function TrashCardWidget({
@@ -71,54 +137,24 @@ export function TrashCardWidget({
   const { t, language } = useTranslation();
   const locale: TrashLocale = language === "nl" ? "nl" : "en";
   const demoTheme = (demo_theme === "restafval" || demo_theme === "pmd" ? demo_theme : "gft") as TrashTheme;
-  const { pickup } = useTrashPickup(entity_id, date_entity_id, demoTheme);
+  const { featured, upcoming } = useTrashSchedule(entity_id, date_entity_id, demoTheme);
 
   const cardW = clampTrashCardWidth(width ?? TRASH_CARD_DEFAULT_WIDTH);
   const cardH = clampTrashCardHeight(height ?? TRASH_CARD_DEFAULT_HEIGHT);
   const compact = trashCardDensity(cardW, cardH) === "compact";
-  // Theme drives background, person art, icon, and accent together.
-  const theme = pickup.theme;
-  const assets = trashThemeAssets(theme);
-  const typeLabel = formatTrashTypeLabel(theme, pickup.typeRaw, locale);
-  const dateLabel = formatTrashPickupDate(pickup.date, locale);
-  const heading =
-    title?.trim() || t("trashCard.nextCollection");
-  const { primary: titlePrimary, secondary: titleSecondary } = splitTrashCardHeading(heading);
+  const heading = title?.trim() || t("trashCard.nextCollection");
+  const featuredLabel = formatTrashTypeLabel(featured.theme, featured.typeRaw, locale);
+  const featuredDate = formatTrashPickupDate(featured.date, locale);
 
   return (
     <div
       className={cn(
-        "relative h-full w-full min-h-0 overflow-hidden rounded-2xl shadow-xl",
+        "glass-surface relative h-full w-full min-h-0 overflow-hidden rounded-[1.35rem] text-[#1B2437] shadow-[0_12px_36px_rgba(15,23,42,0.08)] dark:text-white dark:shadow-[0_12px_36px_rgba(0,0,0,0.35)]",
         className
       )}
       style={{ width: "100%", height: "100%" }}
-      data-trash-theme={theme}
+      data-trash-theme={featured.theme}
     >
-      {/* Background scene — <img> so theme swaps apply immediately (CSS bg can stick). */}
-      <img
-        key={`bg-${theme}`}
-        src={withBasePath(assets.background)}
-        alt=""
-        draggable={false}
-        className="pointer-events-none absolute inset-0 z-0 h-full w-full select-none object-cover object-center [-webkit-user-drag:none]"
-        aria-hidden
-      />
-      {/* Soft scrim for dark mode readability */}
-      <div
-        className="pointer-events-none absolute inset-0 z-0 bg-black/0 dark:bg-black/25"
-        aria-hidden
-      />
-
-      {/* Character + bin */}
-      <img
-        key={`person-${theme}`}
-        src={withBasePath(assets.person)}
-        alt=""
-        draggable={false}
-        className="pointer-events-none absolute bottom-0 right-[-4%] z-[1] h-[78%] w-auto max-w-[70%] select-none object-contain object-bottom [-webkit-user-drag:none]"
-      />
-
-      {/* Edit affordance — top-right of the card, same as other floating cards */}
       {onMoreClick ? (
         <button
           type="button"
@@ -129,7 +165,7 @@ export function TrashCardWidget({
             onMoreClick();
           }}
           className={cn(
-            "absolute z-[4] rounded-lg p-1.5 text-white/85 transition-colors hover:bg-black/20 hover:text-white",
+            "absolute z-[4] rounded-lg p-1.5 text-[#1B2437]/30 transition-colors hover:bg-black/5 hover:text-[#1B2437]/65 dark:text-white/30 dark:hover:bg-white/10 dark:hover:text-white/65",
             compact ? "right-2 top-2" : "right-2.5 top-2.5"
           )}
           aria-label={t("common.options")}
@@ -138,69 +174,55 @@ export function TrashCardWidget({
         </button>
       ) : null}
 
-      {/* Title — top-left; bold first word + light remainder (mockup split) */}
       <div
         className={cn(
-          "relative z-[2] max-w-[72%]",
-          compact ? "px-3.5 pt-3.5" : "px-5 pt-5"
+          "relative z-[2] flex h-full min-h-0 flex-col",
+          compact ? "gap-4 px-3.5 py-3.5" : "gap-5 px-5 py-5"
         )}
       >
         <h2
           className={cn(
-            "leading-[1.05] text-white drop-shadow-sm",
-            compact ? "text-[1.35rem]" : "text-[1.65rem] sm:text-[1.85rem]"
+            "pr-8 font-semibold tracking-tight text-[#1B2437] dark:text-white",
+            compact ? "text-[1.05rem]" : "text-[1.2rem]"
           )}
         >
-          <span className="block font-bold tracking-tight">{titlePrimary}</span>
-          {titleSecondary ? (
-            <span className="block font-light tracking-tight">{titleSecondary}</span>
-          ) : null}
+          {heading}
         </h2>
-        <div
-          className={cn(
-            "mt-2 rounded-full",
-            compact ? "h-[3px] w-8" : "h-1 w-10"
-          )}
-          style={{ backgroundColor: assets.accent }}
-          aria-hidden
-        />
-      </div>
 
-      {/* Info chip — vertical middle, left-aligned; no trailing action (no navigation) */}
-      <div
-        className={cn(
-          "absolute top-1/2 z-[3] flex max-w-[78%] -translate-y-1/2 items-center rounded-xl bg-white shadow-lg dark:bg-white",
-          compact ? "left-3 gap-1.5 px-1.5 py-1.5" : "left-4 gap-2.5 px-2 py-2"
-        )}
-      >
-        <img
-          key={`icon-${theme}`}
-          src={withBasePath(assets.icon)}
-          alt=""
-          draggable={false}
-          className={cn(
-            "shrink-0 rounded-lg object-cover [-webkit-user-drag:none]",
-            compact ? "h-9 w-9" : "h-11 w-11"
-          )}
-        />
-        <div className="min-w-0 flex-1 pr-1">
-          <p
-            className={cn(
-              "truncate font-bold leading-tight text-zinc-900",
-              compact ? "text-sm" : "text-[15px]"
-            )}
-          >
-            {typeLabel}
-          </p>
-          <p
-            className={cn(
-              "truncate font-light leading-tight text-zinc-500",
-              compact ? "text-[11px]" : "text-xs"
-            )}
-          >
-            {dateLabel}
-          </p>
+        <div className="flex min-w-0 items-center gap-3.5">
+          <BinChip theme={featured.theme} size="lg" />
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "truncate font-bold tracking-tight text-[#1B2437] dark:text-white",
+                compact ? "text-base" : "text-lg"
+              )}
+            >
+              {featuredLabel}
+            </p>
+            <p
+              className={cn(
+                "truncate font-medium text-[#7A879C] dark:text-white/50",
+                compact ? "text-[13px]" : "text-[15px]"
+              )}
+            >
+              {featuredDate}
+            </p>
+          </div>
         </div>
+
+        {upcoming.length > 0 ? (
+          <div className="mt-auto flex items-stretch gap-3 border-t border-[#1B2437]/08 pt-4 dark:border-white/10">
+            {upcoming.map((pickup, index) => (
+              <div key={`${pickup.theme}-${index}`} className="flex min-w-0 flex-1 items-stretch">
+                {index > 0 ? (
+                  <div className="mr-3 w-px self-stretch bg-[#1B2437]/10 dark:bg-white/10" aria-hidden />
+                ) : null}
+                <UpcomingCell pickup={pickup} locale={locale} />
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

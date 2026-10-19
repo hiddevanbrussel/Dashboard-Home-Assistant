@@ -28,7 +28,7 @@ export default function TrashPreviewPage() {
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
 
-  // Preview matches the NL mockup typography ("Eerstvolgende" / "ophaalmoment").
+  // Preview matches the NL quiet schedule mockup.
   useEffect(() => {
     setLanguage("nl");
   }, [setLanguage]);
@@ -57,7 +57,7 @@ export default function TrashPreviewPage() {
     <div className="min-h-screen bg-zinc-900 p-6 text-white">
       <h1 className="mb-2 text-xl font-semibold">Trash card preview</h1>
       <p className="mb-4 text-sm text-zinc-400">
-        Demo themes without Home Assistant. Drag the size slider to check resize layout.
+        Quiet schedule layout (featured + upcoming). Drag the size slider to check resize.
       </p>
       <label className="mb-6 flex items-center gap-3 text-sm">
         Size {size.w}×{size.h}

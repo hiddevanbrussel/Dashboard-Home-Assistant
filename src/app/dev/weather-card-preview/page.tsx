@@ -27,7 +27,7 @@ export default function WeatherCardPreviewPage() {
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
   const setResolved = useThemeStore((s) => s.setResolved);
-  const [condition, setCondition] = useState<(typeof CONDITIONS)[number]>("clear-night");
+  const [condition, setCondition] = useState<(typeof CONDITIONS)[number]>("cloudy");
   const [showWind, setShowWind] = useState(true);
   const [showHumidity, setShowHumidity] = useState(true);
   const [showAqi, setShowAqi] = useState(true);

@@ -107,8 +107,7 @@ export default function TeamtrackerCardPreviewPage() {
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Team Tracker card preview</h1>
         <p className="mt-1 text-sm text-white/60">
-          Day/night stadium backgrounds with logos, league pill, and kickoff footer. No Home Assistant
-          required.
+          Quiet white match card with logos, date, and kickoff time. No Home Assistant required.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -134,7 +133,7 @@ export default function TeamtrackerCardPreviewPage() {
             }}
             className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/80"
           >
-            theme: {resolved} ({resolved === "dark" ? "night" : "day"} art)
+            theme: {resolved}
           </button>
         </div>
 

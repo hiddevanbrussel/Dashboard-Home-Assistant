@@ -1,7 +1,9 @@
 import {
   clampTrashCardHeight,
   clampTrashCardWidth,
+  buildTrashSchedule,
   formatTrashPickupDate,
+  formatTrashPickupDateShort,
   formatTrashTypeLabel,
   mapWasteTypeToTheme,
   parseTrashDate,
@@ -126,6 +128,22 @@ describe("trash-card helpers", () => {
     expect(formatTrashPickupDate(d, "nl")).toMatch(/Vrijdag 2 [Oo]ktober/);
     expect(formatTrashPickupDate(d, "en")).toMatch(/Friday 2 [Oo]ctober/);
     expect(formatTrashPickupDate(null, "nl")).toBe("—");
+    expect(formatTrashPickupDateShort(d, "nl")).toMatch(/^Vr 2 [Oo]kt$/);
+    expect(formatTrashPickupDateShort(d, "en")).toMatch(/^Fri 2 [Oo]ct$/);
+  });
+
+  it("builds a quiet schedule with featured + upcoming fractions", () => {
+    const schedule = buildTrashSchedule({
+      primary: {
+        theme: "gft",
+        typeRaw: "Gft",
+        date: new Date(2026, 9, 23, 12, 0, 0),
+      },
+      ref: new Date(2026, 9, 20, 12, 0, 0),
+    });
+    expect(schedule.featured.theme).toBe("gft");
+    expect(schedule.upcoming).toHaveLength(2);
+    expect(new Set(schedule.upcoming.map((p) => p.theme)).size).toBe(2);
   });
 
   it("formats type labels", () => {

@@ -13,14 +13,12 @@ import {
   Leaf,
   Moon,
   MoreVertical,
-  Star,
   Sun,
   Umbrella,
   Wind,
 } from "lucide-react";
 import type { WeatherCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
-import { WeatherConditionBackdrop } from "@/components/weather/weather-condition-backdrop";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { useLanguageStore } from "@/stores/language-store";
@@ -40,15 +38,32 @@ import {
 export function WeatherIcon({ state, className }: { state: string; className?: string }) {
   const s = state?.toLowerCase() ?? "";
   const iconClass = cn("shrink-0", className ?? "h-8 w-8");
-  if (s === "sunny" || s === "clear" || s === "zonnig") return <Sun className={iconClass} aria-hidden />;
-  if (s === "clear-night") return <Moon className={iconClass} aria-hidden />;
-  if (s === "fog" || s === "mist") return <CloudFog className={iconClass} aria-hidden />;
-  if (s === "rainy" || s === "pouring" || s === "hail") return <CloudRain className={iconClass} aria-hidden />;
-  if (s === "snowy" || s === "snowy-rainy") return <CloudSnow className={iconClass} aria-hidden />;
-  if (s === "lightning" || s === "lightning-rainy") return <CloudLightning className={iconClass} aria-hidden />;
-  if (s === "windy" || s === "windy-variant") return <Wind className={iconClass} aria-hidden />;
-  if (s === "cloudy" || s === "partlycloudy" || s === "exceptional") return <Cloud className={iconClass} aria-hidden />;
-  return <Cloud className={iconClass} aria-hidden />;
+  if (s === "sunny" || s === "clear" || s === "zonnig") {
+    return <Sun className={cn(iconClass, "text-amber-400")} aria-hidden />;
+  }
+  if (s === "clear-night") return <Moon className={cn(iconClass, "text-[#6B7C93]")} aria-hidden />;
+  if (s === "fog" || s === "mist") return <CloudFog className={cn(iconClass, "text-[#8A97A8]")} aria-hidden />;
+  if (s === "rainy" || s === "pouring" || s === "hail") {
+    return <CloudRain className={cn(iconClass, "text-[#6B8CBA]")} aria-hidden />;
+  }
+  if (s === "snowy" || s === "snowy-rainy") {
+    return <CloudSnow className={cn(iconClass, "text-[#8A97A8]")} aria-hidden />;
+  }
+  if (s === "lightning" || s === "lightning-rainy") {
+    return <CloudLightning className={cn(iconClass, "text-[#6B7C93]")} aria-hidden />;
+  }
+  if (s === "windy" || s === "windy-variant") {
+    return <Wind className={cn(iconClass, "text-[#6B8CBA]")} aria-hidden />;
+  }
+  if (s === "partlycloudy") {
+    return (
+      <span className={cn("relative inline-flex", iconClass)} aria-hidden>
+        <Sun className="absolute -right-0.5 -top-0.5 h-[55%] w-[55%] text-amber-400" />
+        <Cloud className="h-full w-full text-[#8EB4D8]" />
+      </span>
+    );
+  }
+  return <Cloud className={cn(iconClass, "text-[#8EB4D8]")} aria-hidden />;
 }
 
 function formatTemp(value: number | undefined | null): string {
@@ -87,24 +102,11 @@ async function loadDailyForecast(entityId: string): Promise<WeatherForecastItem[
   }
 }
 
-function MetricCell({
-  icon,
-  value,
-  label,
-  iconClassName,
-}: {
-  icon: ReactNode;
-  value: string;
-  label: string;
-  iconClassName?: string;
-}) {
+function MetricInline({ icon, value }: { icon: ReactNode; value: string }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-center gap-1 px-1 py-1 text-center">
-      <span className={cn("text-white/90", iconClassName)}>{icon}</span>
-      <p className="w-full truncate text-[13px] font-semibold leading-tight text-white drop-shadow-sm">
-        {value}
-      </p>
-      <p className="w-full truncate text-[10px] font-medium leading-tight text-white/55">{label}</p>
+    <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-[#5B6B82] dark:text-white/60">
+      <span className="shrink-0 opacity-80">{icon}</span>
+      <span className="truncate text-[13px] font-medium tabular-nums tracking-tight">{value}</span>
     </div>
   );
 }
@@ -197,23 +199,16 @@ export function WeatherCardWidget({
   if (showWind && windText) {
     metrics.push({
       key: "wind",
-      node: (
-        <MetricCell
-          icon={<Wind className="h-4 w-4" aria-hidden />}
-          value={windText}
-          label={t("weatherCard.metric.wind")}
-        />
-      ),
+      node: <MetricInline icon={<Wind className="h-4 w-4" aria-hidden />} value={windText} />,
     });
   }
   if (showHumidity && humidity != null) {
     metrics.push({
       key: "humidity",
       node: (
-        <MetricCell
+        <MetricInline
           icon={<Droplets className="h-4 w-4" aria-hidden />}
           value={`${Math.round(humidity)}%`}
-          label={t("weatherCard.metric.humidity")}
         />
       ),
     });
@@ -221,65 +216,41 @@ export function WeatherCardWidget({
   if (showAirQuality && aqiText) {
     metrics.push({
       key: "aqi",
-      node: (
-        <MetricCell
-          icon={<Leaf className="h-4 w-4" aria-hidden />}
-          value={aqiText}
-          label={t("weatherCard.metric.airQuality")}
-          iconClassName="text-emerald-400"
-        />
-      ),
+      node: <MetricInline icon={<Leaf className="h-4 w-4" aria-hidden />} value={aqiText} />,
     });
   }
   if (showPrecipitation && precipText) {
     metrics.push({
       key: "precip",
-      node: (
-        <MetricCell
-          icon={<Umbrella className="h-4 w-4" aria-hidden />}
-          value={precipText}
-          label={t("weatherCard.metric.precipitation")}
-        />
-      ),
+      node: <MetricInline icon={<Umbrella className="h-4 w-4" aria-hidden />} value={precipText} />,
     });
   }
 
   return (
     <div
       className={cn(
-        "relative flex h-full min-h-[140px] w-full flex-col overflow-hidden rounded-[1.35rem] text-white shadow-xl",
+        "glass-surface relative flex h-full min-h-[140px] w-full flex-col overflow-hidden rounded-[1.35rem] text-[#1B2437] shadow-[0_12px_36px_rgba(15,23,42,0.08)] dark:text-white dark:shadow-[0_12px_36px_rgba(0,0,0,0.35)]",
         size === "sm" && "text-sm",
         size === "md" && "text-base",
         size === "lg" && "text-lg",
         className
       )}
     >
-      <WeatherConditionBackdrop condition={condition} className="rounded-[1.35rem]" />
-      <div className="absolute inset-0 rounded-[1.35rem] bg-gradient-to-b from-black/45 via-black/20 to-black/55" />
-
-      <div className="relative z-10 flex h-full min-h-0 flex-col px-4 pb-3 pt-3.5">
+      <div className="relative z-10 flex h-full min-h-0 flex-col px-4 pb-3.5 pt-3.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <p
-                className={cn(
-                  "truncate font-semibold tracking-tight text-white drop-shadow-md",
-                  size === "sm" && "text-lg",
-                  size === "md" && "text-xl",
-                  size === "lg" && "text-2xl"
-                )}
-              >
-                {title}
-              </p>
-              {showIcon ? (
-                <Star
-                  className="h-3.5 w-3.5 shrink-0 fill-sky-300 text-sky-300 drop-shadow-sm"
-                  aria-hidden
-                />
-              ) : null}
-            </div>
+            <p
+              className={cn(
+                "truncate font-semibold tracking-tight text-[#1B2437] dark:text-white",
+                size === "sm" && "text-[1.05rem]",
+                size === "md" && "text-[1.15rem]",
+                size === "lg" && "text-xl"
+              )}
+            >
+              {title}
+            </p>
             {showCondition && condition ? (
-              <p className="mt-0.5 truncate text-sm font-medium text-white/75 drop-shadow-sm">
+              <p className="mt-0.5 truncate text-sm font-medium text-[#7A879C] dark:text-white/50">
                 {conditionLabel(condition, t)}
               </p>
             ) : null}
@@ -291,7 +262,7 @@ export function WeatherCardWidget({
                 e.stopPropagation();
                 onMoreClick();
               }}
-              className="shrink-0 rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+              className="shrink-0 rounded-lg p-1.5 text-[#1B2437]/35 transition-colors hover:bg-black/5 hover:text-[#1B2437]/65 dark:text-white/35 dark:hover:bg-white/10 dark:hover:text-white/70"
               aria-label={t("common.options")}
             >
               <MoreVertical className="h-5 w-5" aria-hidden />
@@ -299,36 +270,47 @@ export function WeatherCardWidget({
           ) : null}
         </div>
 
-        <div className="mt-auto flex min-h-0 flex-1 flex-col justify-end pb-2 pt-3">
-          <p
-            className={cn(
-              "font-semibold tabular-nums leading-none tracking-tight text-white drop-shadow-md",
-              size === "sm" && "text-5xl",
-              size === "md" && "text-6xl",
-              size === "lg" && "text-7xl"
-            )}
-          >
-            {formatTemp(temperature)}
-          </p>
-          {showHighLow ? (
-            <div className="mt-2 flex items-center gap-3 text-sm font-medium text-white/85 drop-shadow-sm">
-              <span className="inline-flex items-center gap-0.5">
-                <ArrowUp className="h-3.5 w-3.5 opacity-80" aria-hidden />
-                {formatTemp(high)}
-              </span>
-              <span className="inline-flex items-center gap-0.5">
-                <ArrowDown className="h-3.5 w-3.5 opacity-80" aria-hidden />
-                {formatTemp(low)}
-              </span>
-            </div>
+        <div className="mt-4 flex min-h-0 flex-1 items-center gap-3">
+          {showIcon ? (
+            <WeatherIcon
+              state={condition}
+              className={cn(
+                size === "sm" && "h-12 w-12",
+                size === "md" && "h-14 w-14",
+                size === "lg" && "h-16 w-16"
+              )}
+            />
           ) : null}
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "font-semibold tabular-nums leading-none tracking-tight text-[#1B2437] dark:text-white",
+                size === "sm" && "text-4xl",
+                size === "md" && "text-5xl",
+                size === "lg" && "text-6xl"
+              )}
+            >
+              {formatTemp(temperature)}
+            </p>
+            {showHighLow ? (
+              <div className="mt-1.5 flex items-center gap-3 text-sm font-medium text-[#3D4A63] dark:text-white/70">
+                <span className="inline-flex items-center gap-0.5">
+                  <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                  {formatTemp(high)}
+                </span>
+                <span className="inline-flex items-center gap-0.5">
+                  <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                  {formatTemp(low)}
+                </span>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {metrics.length > 0 ? (
-          <div className="mt-2 flex shrink-0 items-stretch rounded-2xl bg-black/45 px-1 py-2 backdrop-blur-[2px]">
-            {metrics.map((m, i) => (
-              <div key={m.key} className="flex min-w-0 flex-1 items-stretch">
-                {i > 0 ? <div className="w-px self-stretch bg-white/15" aria-hidden /> : null}
+          <div className="mt-3 flex shrink-0 items-center border-t border-[#1B2437]/08 pt-3 dark:border-white/10">
+            {metrics.map((m) => (
+              <div key={m.key} className="min-w-0 flex-1">
                 {m.node}
               </div>
             ))}

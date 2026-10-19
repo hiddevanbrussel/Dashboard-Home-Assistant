@@ -514,6 +514,77 @@ export function formatTrashPickupDate(date: Date | null, locale: TrashLocale): s
 }
 
 /**
+ * Compact secondary date: "Do 30 okt" / "Thu 30 Oct".
+ */
+export function formatTrashPickupDateShort(date: Date | null, locale: TrashLocale): string {
+  if (!date || Number.isNaN(date.getTime())) return "—";
+  const loc = locale === "nl" ? "nl-NL" : "en-GB";
+  const weekday = date.toLocaleDateString(loc, { weekday: "short" }).replace(/\./g, "");
+  const day = date.getDate();
+  const month = date.toLocaleDateString(loc, { month: "short" }).replace(/\./g, "");
+  const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+  return `${cap(weekday)} ${day} ${cap(month)}`;
+}
+
+/** Soft pastel chip colors for the quieter schedule card (no lifestyle art). */
+export function trashThemeChipStyle(theme: TrashTheme): {
+  bg: string;
+  fg: string;
+} {
+  if (theme === "gft") return { bg: "bg-[#E7F3E8]", fg: "text-[#2F7D3A]" };
+  if (theme === "pmd") return { bg: "bg-[#F8EDE3]", fg: "text-[#E07A2F]" };
+  return { bg: "bg-[#ECEDEF]", fg: "text-[#5A5A5A]" };
+}
+
+/**
+ * Build a quiet schedule: next featured pickup + up to two later fractions.
+ * Fills missing themes with demo offsets so the card still reads as a schedule.
+ */
+export function buildTrashSchedule(input: {
+  primary: TrashPickup | null;
+  entities?: HaEntitySnapshot[];
+  fallbackTheme?: TrashTheme;
+  ref?: Date;
+}): { featured: TrashPickup; upcoming: TrashPickup[] } {
+  const ref = input.ref ?? new Date();
+  const fallbackTheme = input.fallbackTheme ?? "gft";
+  const byTheme = new Map<TrashTheme, TrashPickup>();
+
+  if (input.primary) {
+    byTheme.set(input.primary.theme, input.primary);
+  }
+
+  for (const entity of input.entities ?? []) {
+    const pickup = resolveTrashPickup({
+      primaryEntity: entity,
+      fallbackTheme,
+      ref,
+    });
+    if (!pickup?.date) continue;
+    const existing = byTheme.get(pickup.theme);
+    if (!existing?.date || pickup.date.getTime() < existing.date.getTime()) {
+      byTheme.set(pickup.theme, pickup);
+    }
+  }
+
+  for (const theme of ["gft", "pmd", "restafval"] as TrashTheme[]) {
+    if (!byTheme.has(theme)) {
+      byTheme.set(theme, trashDemoPickup(theme, ref));
+    }
+  }
+
+  const sorted = [...byTheme.values()].sort((a, b) => {
+    const at = a.date?.getTime() ?? Number.POSITIVE_INFINITY;
+    const bt = b.date?.getTime() ?? Number.POSITIVE_INFINITY;
+    return at - bt;
+  });
+
+  const featured = sorted[0] ?? trashDemoPickup(fallbackTheme, ref);
+  const upcoming = sorted.filter((p) => p.theme !== featured.theme).slice(0, 2);
+  return { featured, upcoming };
+}
+
+/**
  * Split the card title into bold (first word) + light (remainder) lines,
  * matching the mockup ("Eerstvolgende" / "ophaalmoment", "Next" / "collection").
  */
