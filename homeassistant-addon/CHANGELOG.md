@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.88
+
+- Trash card: smoother drag (DOM position + no blur while moving), larger featured bin, schedule only from waste entities, remove preview-theme edit option
+
 ## 0.4.87
 
 - Trash card: abbreviated pickup dates, chronological upcoming rows, ignore stale past dates, stronger date contrast, larger upcoming bin icons

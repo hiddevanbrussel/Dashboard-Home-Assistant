@@ -17,7 +17,6 @@ import {
   clampTrashCardHeight,
   clampTrashCardWidth,
   resizeTrashCardFromBottomRight,
-  type TrashTheme,
 } from "@/lib/trash-card";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -81,7 +80,6 @@ export function FloatingTrashCard({
     title: string;
     entity_id: string;
     date_entity_id?: string;
-    demo_theme?: TrashTheme | string;
     width?: number;
     height?: number;
   };
@@ -103,8 +101,10 @@ export function FloatingTrashCard({
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const dragStart = useRef({ x: 0, y: 0, left: 0, bottom: 0 });
   const draggingRef = useRef(false);
+  const positionRef = useRef(position);
   const resizeStart = useRef({
     x: 0,
     y: 0,
@@ -117,6 +117,18 @@ export function FloatingTrashCard({
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const displayWidth = liveSize?.width ?? cardWidth;
   const displayHeight = liveSize?.height ?? cardHeight;
+
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
+  const applyDomPosition = useCallback((next: Position) => {
+    positionRef.current = next;
+    const el = rootRef.current;
+    if (!el) return;
+    el.style.left = `${next.left}px`;
+    el.style.bottom = `${next.bottom}px`;
+  }, []);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -155,50 +167,58 @@ export function FloatingTrashCard({
     const bounds = { maxLeft, maxBottom };
     const saved = loadPosition(storageScope, widget.id, cardHeight);
     if (saved) {
-      setPosition(snapToGrid(saved, bounds));
+      const next = snapToGrid(saved, bounds);
+      setPosition(next);
+      applyDomPosition(next);
       return;
     }
     const p = snapToGrid(defaultPosition(widgetIndex, cardWidth, cardHeight), bounds);
     setPosition(p);
+    applyDomPosition(p);
     savePosition(storageScope, widget.id, p);
-  }, [widget.id, widgetIndex, cardWidth, cardHeight, storageScope]);
+  }, [widget.id, widgetIndex, cardWidth, cardHeight, storageScope, applyDomPosition]);
 
   useEffect(() => {
     if (!initialized.current || isResizing || isDragging || draggingRef.current) return;
     const maxLeft = typeof window !== "undefined" ? window.innerWidth - displayWidth : 400;
     const maxBottom = typeof window !== "undefined" ? window.innerHeight - displayHeight - 24 : 400;
-    setPosition((prev) =>
-      snapToGrid(
+    setPosition((prev) => {
+      const next = snapToGrid(
         {
           left: Math.max(0, Math.min(prev.left, maxLeft)),
           bottom: Math.max(0, Math.min(prev.bottom, maxBottom)),
         },
         { maxLeft, maxBottom }
-      )
-    );
-  }, [cardWidth, cardHeight, displayWidth, displayHeight, isResizing, isDragging]);
+      );
+      applyDomPosition(next);
+      return next;
+    });
+  }, [cardWidth, cardHeight, displayWidth, displayHeight, isResizing, isDragging, applyDomPosition]);
 
   useEffect(() => {
     if (!liveSize || isResizing) return;
     if (cardWidth === liveSize.width && cardHeight === liveSize.height) setLiveSize(null);
   }, [cardWidth, cardHeight, liveSize, isResizing]);
 
-  const applyResizeDelta = useCallback((clientX: number, clientY: number) => {
-    const start = resizeStart.current;
-    const next = resizeTrashCardFromBottomRight({
-      startWidth: start.width,
-      startHeight: start.height,
-      startLeft: start.left,
-      startBottom: start.bottom,
-      dx: clientX - start.x,
-      dy: clientY - start.y,
-      viewportWidth: typeof window !== "undefined" ? window.innerWidth : 1200,
-      viewportHeight: typeof window !== "undefined" ? window.innerHeight : 800,
-    });
-    setLiveSize({ width: next.width, height: next.height });
-    setPosition({ left: next.left, bottom: next.bottom });
-    return next;
-  }, []);
+  const applyResizeDelta = useCallback(
+    (clientX: number, clientY: number) => {
+      const start = resizeStart.current;
+      const next = resizeTrashCardFromBottomRight({
+        startWidth: start.width,
+        startHeight: start.height,
+        startLeft: start.left,
+        startBottom: start.bottom,
+        dx: clientX - start.x,
+        dy: clientY - start.y,
+        viewportWidth: typeof window !== "undefined" ? window.innerWidth : 1200,
+        viewportHeight: typeof window !== "undefined" ? window.innerHeight : 800,
+      });
+      setLiveSize({ width: next.width, height: next.height });
+      applyDomPosition({ left: next.left, bottom: next.bottom });
+      return next;
+    },
+    [applyDomPosition]
+  );
 
   const dragBoundsFor = useCallback(
     (el: HTMLElement) => {
@@ -219,12 +239,12 @@ export function FloatingTrashCard({
       setIsDragging(true);
       dragStart.current = beginFloatingCardDrag(
         { clientX: e.clientX, clientY: e.clientY },
-        position,
+        positionRef.current,
         floatingPositionFromElement(el)
       );
       el.setPointerCapture?.(e.pointerId);
     },
-    [editMode, isResizing, position]
+    [editMode, isResizing]
   );
 
   const handlePointerMove = useCallback(
@@ -233,12 +253,13 @@ export function FloatingTrashCard({
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
       const { maxLeft, maxBottom } = dragBoundsFor(e.currentTarget as HTMLElement);
-      setPosition({
+      // DOM-only updates while dragging — avoid React re-renders / glass-surface cost.
+      applyDomPosition({
         left: Math.max(0, Math.min(dragStart.current.left + dx, maxLeft)),
         bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
       });
     },
-    [dragBoundsFor]
+    [dragBoundsFor, applyDomPosition]
   );
 
   const handlePointerUp = useCallback(
@@ -254,12 +275,13 @@ export function FloatingTrashCard({
           bottom: Math.max(0, Math.min(dragStart.current.bottom - dy, maxBottom)),
         };
         const next = snapToGrid(raw, { maxLeft, maxBottom });
+        applyDomPosition(next);
         setPosition(next);
         savePosition(storageScope, widget.id, next);
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [storageScope, widget.id, dragBoundsFor]
+    [storageScope, widget.id, dragBoundsFor, applyDomPosition]
   );
 
   const handleResizePointerDown = useCallback(
@@ -274,12 +296,12 @@ export function FloatingTrashCard({
         y: e.clientY,
         width: displayWidth,
         height: displayHeight,
-        left: position.left,
-        bottom: position.bottom,
+        left: positionRef.current.left,
+        bottom: positionRef.current.bottom,
       };
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     },
-    [editMode, displayWidth, displayHeight, position]
+    [editMode, displayWidth, displayHeight]
   );
 
   const handleResizePointerMove = useCallback(
@@ -295,6 +317,7 @@ export function FloatingTrashCard({
       if (isResizing) {
         const next = applyResizeDelta(e.clientX, e.clientY);
         setIsResizing(false);
+        applyDomPosition({ left: next.left, bottom: next.bottom });
         setPosition({ left: next.left, bottom: next.bottom });
         savePosition(storageScope, widget.id, { left: next.left, bottom: next.bottom });
         onResize?.({ width: next.width, height: next.height });
@@ -302,24 +325,29 @@ export function FloatingTrashCard({
       }
       (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
     },
-    [isResizing, applyResizeDelta, storageScope, widget.id, onResize]
+    [isResizing, applyResizeDelta, storageScope, widget.id, onResize, applyDomPosition]
   );
 
   return (
     <div
+      ref={rootRef}
       data-no-page-swipe={editMode ? true : undefined}
       draggable={false}
       onDragStart={(event) => event.preventDefault()}
       className={cn(
         "card-plot-in fixed z-30 outline-none [-webkit-user-drag:none]",
         editMode && !isResizing && "cursor-grab touch-none select-none active:cursor-grabbing",
-        editMode && !isDragging && !isResizing && "animate-edit-wiggle"
+        editMode && !isDragging && !isResizing && "animate-edit-wiggle",
+        // Backdrop blur is expensive while the card moves.
+        isDragging && "[&_.glass-surface]:![backdrop-filter:none] [&_.glass-surface]:![background:rgba(255,255,255,0.92)] dark:[&_.glass-surface]:![background:rgba(24,28,36,0.92)]"
       )}
       style={{
         left: position.left,
         bottom: position.bottom,
         width: displayWidth,
         height: displayHeight,
+        contain: "layout paint",
+        willChange: isDragging || isResizing ? "left, bottom, width, height" : undefined,
         ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
       }}
       {...(!editMode &&
@@ -341,7 +369,6 @@ export function FloatingTrashCard({
           title={widget.title}
           entity_id={widget.entity_id}
           date_entity_id={widget.date_entity_id}
-          demo_theme={widget.demo_theme as TrashTheme | undefined}
           width={displayWidth}
           height={displayHeight}
           onMoreClick={editMode ? onEdit : undefined}
