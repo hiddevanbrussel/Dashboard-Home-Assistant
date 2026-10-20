@@ -254,4 +254,25 @@ describe("calendar-utils", () => {
     ];
     expect(nextUpcomingEvent(todayEvents, midday)?.summary).toBe("Afternoon");
   });
+
+  it("skips the current listed event for the upcoming footer", () => {
+    const now = new Date(2026, 8, 16, 12, 0);
+    const current: CalendarEvent = {
+      entityId: "calendar.a",
+      summary: "FC Porto - PSV [CL]",
+      start: "2026-09-16T21:00:00",
+      end: "2026-09-16T23:00:00",
+      allDay: false,
+    };
+    const next: CalendarEvent = {
+      entityId: "calendar.a",
+      summary: "Filosofie",
+      start: "2026-09-17T08:30:00",
+      end: "2026-09-17T09:20:00",
+      allDay: false,
+    };
+    expect(nextUpcomingEvent([current, next], now)?.summary).toBe("FC Porto - PSV [CL]");
+    expect(nextUpcomingEvent([current, next], now, current)?.summary).toBe("Filosofie");
+    expect(nextUpcomingEvent([current], now, current)).toBeNull();
+  });
 });

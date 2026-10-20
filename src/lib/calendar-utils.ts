@@ -98,23 +98,38 @@ export function eventsFromNowOnDay(events: CalendarEvent[], day: Date, now = new
   return dayEvents.filter((ev) => ev.allDay || eventEnd(ev).getTime() > nowMs);
 }
 
+/** Stable identity for excluding the “current” event from the upcoming footer. */
+export function calendarEventKey(ev: CalendarEvent): string {
+  return `${ev.entityId}|${ev.start}|${ev.end}|${ev.allDay ? "1" : "0"}|${ev.summary ?? ""}`;
+}
+
 /**
  * Next appointment from `now` onward. Prefers the soonest timed event that has
  * not ended yet; falls back to an all-day event still covering today.
- * Used for the calendar card “upcoming” footer.
+ * Pass `skip` to ignore the event already shown in today’s list (footer must not duplicate it).
  */
-export function nextUpcomingEvent(events: CalendarEvent[], now = new Date()): CalendarEvent | null {
+export function nextUpcomingEvent(
+  events: CalendarEvent[],
+  now = new Date(),
+  skip?: CalendarEvent | null
+): CalendarEvent | null {
   const nowMs = now.getTime();
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
+  const skipKey = skip ? calendarEventKey(skip) : null;
 
   const timed = events
     .filter((ev) => !ev.allDay && eventEnd(ev).getTime() > nowMs)
+    .filter((ev) => !skipKey || calendarEventKey(ev) !== skipKey)
     .sort((a, b) => eventStart(a).getTime() - eventStart(b).getTime());
   if (timed[0]) return timed[0];
 
   const allDay = events.find(
-    (ev) => ev.allDay && today >= eventStart(ev) && today < eventEnd(ev)
+    (ev) =>
+      ev.allDay &&
+      today >= eventStart(ev) &&
+      today < eventEnd(ev) &&
+      (!skipKey || calendarEventKey(ev) !== skipKey)
   );
   return allDay ?? null;
 }

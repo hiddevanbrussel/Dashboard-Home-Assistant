@@ -66,6 +66,33 @@ function emptyTodayTomorrowEvents(now: Date): CalendarEvent[] {
   ];
 }
 
+/**
+ * Long title tonight + next tomorrow — footer must not repeat the match,
+ * and day/time stay visible on the right.
+ */
+function longTitleTonightEvents(now: Date): CalendarEvent[] {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const tomorrow = toDateKey(addDays(now, 1));
+  return [
+    {
+      entityId: "calendar.sport",
+      summary: "FC Porto - PSV [CL]",
+      start: `${y}-${m}-${d}T21:00:00`,
+      end: `${y}-${m}-${d}T23:00:00`,
+      allDay: false,
+    },
+    {
+      entityId: "calendar.school",
+      summary: "Filosofie",
+      start: `${tomorrow}T08:30:00`,
+      end: `${tomorrow}T09:20:00`,
+      allDay: false,
+    },
+  ];
+}
+
 /** Dev-only calendar card preview with upcoming strip (no HA). */
 export default function CalendarCardPreviewPage() {
   const setLanguage = useLanguageStore((s) => s.setLanguage);
@@ -78,6 +105,7 @@ export default function CalendarCardPreviewPage() {
   }, [setLanguage]);
 
   const narrowEmptyToday = useMemo(() => emptyTodayTomorrowEvents(now), [now]);
+  const longTitleTonight = useMemo(() => longTitleTonightEvents(now), [now]);
 
   const cards = [
     {
@@ -86,6 +114,13 @@ export default function CalendarCardPreviewPage() {
       w: CALENDAR_CARD_DEFAULT_WIDTH,
       h: CALENDAR_CARD_DEFAULT_HEIGHT + 40,
       events,
+    },
+    {
+      key: "long-title",
+      label: "Long title · skip current",
+      w: CALENDAR_CARD_DEFAULT_WIDTH,
+      h: CALENDAR_CARD_DEFAULT_HEIGHT + 40,
+      events: longTitleTonight,
     },
     {
       key: "narrow-tomorrow",
