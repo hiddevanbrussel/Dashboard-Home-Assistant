@@ -97,7 +97,7 @@ export function RoomPreviewCard({
         </div>
         <p
           className={cn(
-            "text-base font-semibold tracking-tight truncate w-full text-right drop-shadow-sm",
+            "w-full truncate text-right text-[1.2rem] font-semibold tracking-tight drop-shadow-sm",
             background ? "text-white" : "text-gray-900 dark:text-white"
           )}
         >

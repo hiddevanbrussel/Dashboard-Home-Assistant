@@ -98,7 +98,7 @@ export function CameraCardWidget({
       </div>
       {show_title && (
         <div className="px-3 py-2 flex items-center justify-between gap-2 shrink-0">
-          <p className="font-medium truncate text-white/90">{title}</p>
+          <p className="truncate text-[1.2rem] font-semibold tracking-tight text-white/90">{title}</p>
           <p className="text-xs text-white/60 truncate max-w-[40%]">{friendlyName}</p>
         </div>
       )}

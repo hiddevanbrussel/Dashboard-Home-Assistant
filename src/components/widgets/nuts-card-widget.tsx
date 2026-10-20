@@ -200,12 +200,7 @@ export function NutsCardWidget({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p
-            className={cn(
-              "truncate font-medium text-gray-600 dark:text-white/80",
-              compact ? "text-xs" : "text-sm"
-            )}
-          >
+          <p className="truncate text-[1.2rem] font-semibold tracking-tight text-gray-900 dark:text-white">
             {displayTitle}
           </p>
           <div

@@ -157,7 +157,7 @@ export function RoomCardWidget({
           <div className="flex items-center gap-2 w-full justify-end min-w-0 shrink-0">
             <div className="min-w-0 flex-1 flex flex-col items-end">
               <p className={cn(
-                "text-base font-medium truncate w-full drop-shadow-sm",
+                "w-full truncate text-[1.2rem] font-semibold tracking-tight drop-shadow-sm",
                 background_image ? "text-white" : embedded ? "text-gray-900 dark:text-white/90" : "text-gray-900 dark:text-white"
               )}>
                 {title || t("cardType.room_card")}
