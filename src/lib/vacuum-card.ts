@@ -5,11 +5,11 @@ export const VACUUM_CARD_2_MAX_WIDTH = 500;
 /** Matches media-card min height so vacuum can sit at ~248px beside media. */
 export const VACUUM_CARD_2_MIN_HEIGHT = 240;
 export const VACUUM_CARD_2_MAX_HEIGHT = 640;
-/** Quiet product hero (transparent product shot) — same art in light and dark. */
-export const VACUUM_CARD_2_DEFAULT_IMAGE = "/vacuum-robot-product.webp";
-export const VACUUM_CARD_2_DEFAULT_IMAGE_DARK = "/vacuum-robot-product.webp";
-/** Same product art when away — keeps the quiet card simple. */
-export const VACUUM_CARD_2_AWAY_IMAGE = "/vacuum-robot-product.webp";
+/** Quiet product hero — theme-specific 3D renders. */
+export const VACUUM_CARD_2_DEFAULT_IMAGE = "/vacuum-robot-product-light.webp";
+export const VACUUM_CARD_2_DEFAULT_IMAGE_DARK = "/vacuum-robot-product-dark.webp";
+/** Fallback product art (light) when away — theme path still preferred via artSrc. */
+export const VACUUM_CARD_2_AWAY_IMAGE = "/vacuum-robot-product-light.webp";
 export const VACUUM_CARD_2_FOOTER_MIN_HEIGHT = 380;
 /** Below this, tighten chrome (smaller type / padding). Modes stay visible. */
 export const VACUUM_CARD_2_COMPACT_HEIGHT = 340;

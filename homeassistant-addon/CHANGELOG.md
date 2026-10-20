@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.89
+
+- Vacuum card 2: theme-specific product art for light and dark mode
+
 ## 0.4.88
 
 - Vacuum card 2: quieter mockup layout (glass card, product art, Eco/Standard/Turbo tiles, green battery)
