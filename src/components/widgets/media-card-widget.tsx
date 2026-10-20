@@ -194,7 +194,7 @@ export function MediaCardWidget({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-1">
-              <p className="min-w-0 flex-1 truncate text-[1.05rem] font-semibold tracking-tight text-white" title={playerName}>
+              <p className="min-w-0 flex-1 truncate text-[1.2rem] font-semibold tracking-tight text-white" title={playerName}>
                 {playerName}
               </p>
               {onMoreClick ? (

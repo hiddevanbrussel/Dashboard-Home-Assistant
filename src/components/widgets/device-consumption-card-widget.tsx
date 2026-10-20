@@ -74,7 +74,7 @@ export function DeviceConsumptionCardWidget({
       )}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-        <p className="font-semibold text-gray-900 dark:text-white">{title || t("cardType.device_consumption_card")}</p>
+        <p className="text-[1.2rem] font-semibold tracking-tight text-gray-900 dark:text-white">{title || t("cardType.device_consumption_card")}</p>
         {onMoreClick && (
           <button
             type="button"

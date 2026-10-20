@@ -643,7 +643,8 @@ export function ClimateCard2Widget({
               <h2
                 className={cn(
                   "truncate font-semibold leading-tight tracking-tight text-gray-950 dark:text-white",
-                  isDense ? "text-lg" : "text-[1.35rem]"
+                  // Match weather card: md = 1.2rem; larger layouts keep a bit more presence
+                  isDense ? "text-[1.2rem]" : "text-[1.35rem]"
                 )}
               >
                 {t("climateCard.climate")}

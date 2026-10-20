@@ -220,7 +220,8 @@ export function VacuumCard2Widget({
             <h2
               className={cn(
                 "truncate font-semibold tracking-tight text-[#1B2437] dark:text-white",
-                isDense ? "text-base" : isCompact ? "text-lg" : "text-xl"
+                // Match weather card: md = 1.2rem, lg = text-xl
+                isDense || isCompact ? "text-[1.2rem]" : "text-xl"
               )}
             >
               {title}
