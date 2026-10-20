@@ -70,29 +70,34 @@ function formatMonth(date: Date, locale: string): string {
   return date.toLocaleDateString(locale, { month: "long" }).toUpperCase();
 }
 
-function formatUpcomingWhen(
+/** Day / time for the upcoming strip — day above time when not today (fits narrow cards). */
+function upcomingWhenParts(
   ev: CalendarEvent,
   today: Date,
   locale: string,
   t: (key: string) => string
-): string {
+): { day?: string; time: string } {
   const start = eventStart(ev);
   if (ev.allDay) {
     if (today >= start && today < eventEnd(ev)) {
-      return t("calendar.allDay");
+      return { time: t("calendar.allDay") };
     }
     if (isSameDay(start, addDays(today, 1))) {
-      return `${t("calendar.tomorrow")} · ${t("calendar.allDay")}`;
+      return { day: t("calendar.tomorrow"), time: t("calendar.allDay") };
     }
-    return start.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
+    return {
+      time: start.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }),
+    };
   }
   const time = formatTime(start, locale);
-  if (isSameDay(start, today)) return time;
+  if (isSameDay(start, today)) return { time };
   if (isSameDay(start, addDays(today, 1))) {
-    return `${t("calendar.tomorrow")} · ${time}`;
+    return { day: t("calendar.tomorrow"), time };
   }
-  const day = start.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
-  return `${day} · ${time}`;
+  return {
+    day: start.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }),
+    time,
+  };
 }
 
 export function CalendarCardWidget({
@@ -180,6 +185,11 @@ export function CalendarCardWidget({
   const upcoming = useMemo(
     () => (showUpcoming ? nextUpcomingEvent(events, now) : null),
     [showUpcoming, events, now]
+  );
+
+  const upcomingWhen = useMemo(
+    () => (upcoming ? upcomingWhenParts(upcoming, today, locale, t) : null),
+    [upcoming, today, locale, t]
   );
 
   const visibleLimit = calendarVisibleEventCount(cardH, { showUpcoming: showUpcoming && !!upcoming });
@@ -275,17 +285,17 @@ export function CalendarCardWidget({
         </div>
       </div>
 
-      {showUpcoming && upcoming ? (
+      {showUpcoming && upcoming && upcomingWhen ? (
         <div
           className={cn(
-            "relative z-[1] flex shrink-0 items-start gap-2 border-t border-gray-200/80 py-2 dark:border-white/10",
-            // Narrow stack frames (~250–300) need tighter padding so the when-label stays readable.
+            "relative z-[1] flex shrink-0 items-end gap-2 border-t border-gray-200/80 py-2 dark:border-white/10",
+            // Narrow stack frames (~250–300): tighter padding; day stacks above time on the right.
             cardW < 340 ? "px-3" : "px-5 sm:px-6"
           )}
         >
           <span
             className={cn(
-              "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+              "mb-1.5 h-2 w-2 shrink-0 rounded-full",
               colorMap[upcoming.entityId] ?? CAL_DOT_COLORS[0]
             )}
             aria-hidden
@@ -297,12 +307,15 @@ export function CalendarCardWidget({
             <p className="truncate text-sm font-semibold leading-snug text-gray-900 dark:text-white">
               <EventTitle summary={upcoming.summary} empty={t("calendar.emptyTitle")} />
             </p>
-            {/*
-              Keep when under the title (not a trailing column). At ~280px stack width a
-              right-aligned “Morgen · 08:30” was clipped by the card overflow.
-            */}
-            <p className="mt-0.5 truncate text-xs tabular-nums text-gray-400 dark:text-gray-500">
-              {formatUpcomingWhen(upcoming, today, locale, t)}
+          </div>
+          <div className="shrink-0 self-end text-right leading-tight">
+            {upcomingWhen.day ? (
+              <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">
+                {upcomingWhen.day}
+              </p>
+            ) : null}
+            <p className="text-xs font-medium tabular-nums text-gray-500 dark:text-gray-400">
+              {upcomingWhen.time}
             </p>
           </div>
         </div>
