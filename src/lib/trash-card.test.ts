@@ -134,6 +134,12 @@ describe("trash-card helpers", () => {
     expect(parseTrashDate("unavailable")).toBeNull();
   });
 
+  it("uses shorter labels for compact upcoming cells", () => {
+    expect(formatTrashTypeLabel("restafval", "Restafval", "nl", { compact: true })).toBe("Rest");
+    expect(formatTrashTypeLabel("restafval", "Restafval", "en", { compact: true })).toBe("General");
+    expect(formatTrashTypeLabel("restafval", "Restafval", "nl")).toBe("Restafval");
+  });
+
   it("formats abbreviated weekday + month for nl and en", () => {
     const d = new Date(2026, 9, 2, 12, 0, 0); // Friday 2 Oct 2026
     expect(formatTrashPickupDate(d, "nl")).toMatch(/^Vr 2 [Oo]kt$/);

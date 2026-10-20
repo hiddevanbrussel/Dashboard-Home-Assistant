@@ -612,20 +612,29 @@ const TYPE_LABELS: Record<TrashLocale, Record<TrashTheme, string>> = {
   nl: { gft: "Gft", restafval: "Restafval", pmd: "PMD" },
 };
 
+/** Shorter labels for narrow upcoming cells (~280px cards). */
+const TYPE_LABELS_COMPACT: Record<TrashLocale, Record<TrashTheme, string>> = {
+  en: { gft: "Organic", restafval: "General", pmd: "PMD" },
+  nl: { gft: "Gft", restafval: "Rest", pmd: "PMD" },
+};
+
 /** Localized display label for a waste theme / raw type. */
 export function formatTrashTypeLabel(
   theme: TrashTheme,
   typeRaw: string | undefined,
-  locale: TrashLocale
+  locale: TrashLocale,
+  options?: { compact?: boolean }
 ): string {
+  const labels = options?.compact ? TYPE_LABELS_COMPACT[locale] : TYPE_LABELS[locale];
   const mapped = mapWasteTypeToTheme(typeRaw);
   if (mapped === theme || !typeRaw?.trim()) {
-    return TYPE_LABELS[locale][theme];
+    return labels[theme];
   }
   // Prefer short known labels when raw is noisy (entity ids)
-  if (mapped) return TYPE_LABELS[locale][mapped];
+  if (mapped) return labels[mapped];
+  if (options?.compact) return labels[theme];
   const cleaned = typeRaw.replace(/^sensor\./i, "").replace(/[_-]+/g, " ").trim();
-  if (!cleaned || cleaned.length > 28) return TYPE_LABELS[locale][theme];
+  if (!cleaned || cleaned.length > 28) return labels[theme];
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
 

@@ -162,7 +162,7 @@ function UpcomingCell({
             compact ? "text-xs" : "text-sm"
           )}
         >
-          {formatTrashTypeLabel(pickup.theme, pickup.typeRaw, locale)}
+          {formatTrashTypeLabel(pickup.theme, pickup.typeRaw, locale, { compact })}
         </p>
         <p
           className={cn(
