@@ -6,6 +6,7 @@ import { CalendarCardWidget } from "@/components/widgets/calendar-card-widget";
 import {
   CALENDAR_CARD_DEFAULT_HEIGHT,
   CALENDAR_CARD_DEFAULT_WIDTH,
+  CALENDAR_CARD_MIN_WIDTH,
 } from "@/lib/calendar-card";
 import { addDays, toDateKey } from "@/lib/calendar-utils";
 import { useLanguageStore } from "@/stores/language-store";
@@ -123,9 +124,16 @@ export default function CalendarCardPreviewPage() {
       events: longTitleTonight,
     },
     {
+      key: "min-width-long",
+      label: "Min width · day/time must stay",
+      w: CALENDAR_CARD_MIN_WIDTH,
+      h: CALENDAR_CARD_DEFAULT_HEIGHT + 40,
+      events: longTitleTonight,
+    },
+    {
       key: "narrow-tomorrow",
-      label: "280 empty-today (stack)",
-      w: 280,
+      label: "Min width empty-today",
+      w: CALENDAR_CARD_MIN_WIDTH,
       h: 280,
       events: narrowEmptyToday,
     },
