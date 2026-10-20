@@ -175,7 +175,7 @@ export function VacuumCard2Widget({
   return (
     <div
       className={cn(
-        "glass-surface relative flex w-full flex-col overflow-hidden rounded-[1.5rem] text-[#1B2437] shadow-[0_14px_40px_rgba(15,23,42,0.08)] outline-none dark:text-white dark:shadow-[0_14px_40px_rgba(0,0,0,0.4)]",
+        "relative flex w-full flex-col overflow-hidden rounded-[1.5rem] text-[#1B2437] shadow-[0_14px_40px_rgba(15,23,42,0.1)] outline-none dark:text-white dark:shadow-[0_14px_40px_rgba(0,0,0,0.45)]",
         size === "sm" && "text-sm",
         size === "lg" && "text-lg",
         interactive && "cursor-pointer",
@@ -191,6 +191,24 @@ export function VacuumCard2Widget({
           : undefined
       }
     >
+      {/* Full-bleed theme product art */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={withBasePath(artSrc)}
+        alt=""
+        className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover object-center"
+        draggable={false}
+      />
+      {/* Soft fades so header / modes stay readable on the photo */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-28 bg-gradient-to-b from-white/75 via-white/35 to-transparent dark:from-black/55 dark:via-black/25 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-36 bg-gradient-to-t from-white/80 via-white/40 to-transparent dark:from-black/60 dark:via-black/30 dark:to-transparent"
+        aria-hidden
+      />
+
       <div
         className={cn(
           "relative z-10 flex shrink-0 items-start justify-between gap-3",
@@ -214,7 +232,7 @@ export function VacuumCard2Widget({
                   e.stopPropagation();
                   onMoreClick();
                 }}
-                className="ml-0.5 shrink-0 rounded-lg p-1 text-[#1B2437]/35 hover:bg-black/5 hover:text-[#1B2437]/65 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
+                className="ml-0.5 shrink-0 rounded-lg p-1 text-[#1B2437]/40 hover:bg-black/5 hover:text-[#1B2437]/70 dark:text-white/45 dark:hover:bg-white/10 dark:hover:text-white"
                 aria-label={t("common.options")}
               >
                 <MoreVertical className={cn(isDense ? "h-4 w-4" : "h-5 w-5")} aria-hidden />
@@ -223,7 +241,7 @@ export function VacuumCard2Widget({
           </div>
           <p
             className={cn(
-              "mt-0.5 truncate font-medium text-[#8A96A8] dark:text-white/50",
+              "mt-0.5 truncate font-medium text-[#5B6B82] dark:text-white/60",
               isDense ? "text-xs" : "text-sm"
             )}
             title={displayState || state || undefined}
@@ -235,7 +253,7 @@ export function VacuumCard2Widget({
           {battery != null ? (
             <BatteryPill percent={battery} />
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1B2437]/30 dark:text-white/35">
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1B2437]/35 dark:text-white/40">
               <Battery className="h-4 w-4" aria-hidden />
               —
             </span>
@@ -243,18 +261,7 @@ export function VacuumCard2Widget({
         </div>
       </div>
 
-      <div className="relative z-0 flex min-h-0 flex-1 items-center justify-center px-6">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={withBasePath(artSrc)}
-          alt=""
-          className={cn(
-            "pointer-events-none max-h-full max-w-full object-contain drop-shadow-[0_16px_28px_rgba(15,23,42,0.12)] dark:drop-shadow-[0_16px_28px_rgba(0,0,0,0.45)]",
-            isDense ? "h-[78%]" : "h-[86%]"
-          )}
-          draggable={false}
-        />
-      </div>
+      <div className="relative z-0 min-h-0 flex-1" aria-hidden />
 
       <div className={cn("relative z-10 shrink-0", isDense ? "px-3 pb-3 pt-1" : "px-4 pb-4 pt-1")}>
         <div
@@ -276,10 +283,10 @@ export function VacuumCard2Widget({
                 className={cn(
                   "flex min-w-0 flex-col items-center justify-center rounded-2xl transition-colors disabled:opacity-60",
                   isDense ? "gap-0.5 px-1 py-2" : "gap-1 px-2 py-3",
-                  "bg-[#EEF1F5] dark:bg-white/[0.06]",
+                  "bg-white/75 backdrop-blur-sm dark:bg-white/10",
                   selected
-                    ? "text-[#1B2437] dark:text-white"
-                    : "text-[#8A96A8] hover:text-[#5B6B82] dark:text-white/45 dark:hover:text-white/70"
+                    ? "text-[#1B2437] shadow-[inset_0_0_0_1px_rgba(27,36,55,0.08)] dark:text-white dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
+                    : "text-[#5B6B82] hover:bg-white/90 hover:text-[#1B2437] dark:text-white/55 dark:hover:bg-white/14 dark:hover:text-white/80"
                 )}
                 aria-label={t(labelKey)}
                 aria-pressed={selected}
