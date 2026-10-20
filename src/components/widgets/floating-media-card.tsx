@@ -10,6 +10,12 @@ import {
   resizeMediaCardFromBottomRight,
 } from "@/lib/media-card";
 import { isVacuumCardTap } from "@/lib/vacuum-card";
+import {
+  fetchMaEntityMap,
+  pickSelectableQueueId,
+  resolveQueueIdForEntity,
+} from "@/lib/ma-entity-map";
+import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -88,6 +94,8 @@ export function FloatingMediaCard({
   const maPlayers = useMusicPlayerStore((s) => s.maPlayers);
   const playerBarExpanded = useMusicPlayerStore((s) => s.playerBarExpanded);
   const setPlayerBarExpanded = useMusicPlayerStore((s) => s.setPlayerBarExpanded);
+  const setSelectedQueueId = useMusicPlayerStore((s) => s.setSelectedQueueId);
+  const allowedSpeakerIds = useMusicAssistantStore((s) => s.allowedSpeakerIds);
   const cardWidth = clampMediaCardWidth(width);
   const cardHeight = clampMediaCardHeight(height);
   const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
@@ -150,10 +158,22 @@ export function FloatingMediaCard({
     [clearLongPress]
   );
 
-  function handleCardClick() {
+  async function handleCardClick() {
     if (editMode || playerBarExpanded) return;
     if (!isVacuumCardTap({ longPressFired: longPressFiredRef.current, moved: movedRef.current })) return;
     if (maPlayers.length === 0) return;
+    // Pre-select the speaker tied to this media card before opening the sheet.
+    try {
+      const map = await fetchMaEntityMap();
+      const queueId = pickSelectableQueueId(
+        resolveQueueIdForEntity(entity_id, maPlayers, map),
+        maPlayers,
+        allowedSpeakerIds
+      );
+      if (queueId) setSelectedQueueId(queueId);
+    } catch {
+      // Still open the bar with the current selection.
+    }
     setPlayerBarExpanded(true);
   }
 

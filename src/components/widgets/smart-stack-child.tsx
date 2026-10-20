@@ -17,8 +17,15 @@ import { TrashCardWidget } from "./trash-card-widget";
 import type { ImageCondition, SensorCondition } from "./widget-types";
 import { normalizeClimateDisplayMode } from "@/lib/climate-card";
 import { isCalendarShowUpcoming } from "@/lib/calendar-card";
+import {
+  fetchMaEntityMap,
+  pickSelectableQueueId,
+  resolveQueueIdForEntity,
+} from "@/lib/ma-entity-map";
 import { normalizeNutsAccent, normalizeNutsPeriod } from "@/lib/nuts-card";
 import { isSmartStackChildType } from "@/lib/smart-stack";
+import { useMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +43,26 @@ export function SmartStackChild({
 }) {
   const { t } = useTranslation();
   const title = child.title || t(`cardType.${child.type}`);
+  const maPlayers = useMusicPlayerStore((s) => s.maPlayers);
+  const setPlayerBarExpanded = useMusicPlayerStore((s) => s.setPlayerBarExpanded);
+  const setSelectedQueueId = useMusicPlayerStore((s) => s.setSelectedQueueId);
+  const allowedSpeakerIds = useMusicAssistantStore((s) => s.allowedSpeakerIds);
+
+  async function openMusicBarForEntity(entityId: string) {
+    if (maPlayers.length === 0) return;
+    try {
+      const map = await fetchMaEntityMap();
+      const queueId = pickSelectableQueueId(
+        resolveQueueIdForEntity(entityId, maPlayers, map),
+        maPlayers,
+        allowedSpeakerIds
+      );
+      if (queueId) setSelectedQueueId(queueId);
+    } catch {
+      // open with current selection
+    }
+    setPlayerBarExpanded(true);
+  }
 
   if (!isSmartStackChildType(child.type)) {
     return (
@@ -122,13 +149,20 @@ export function SmartStackChild({
       );
     case "media_card":
       return (
-        <MediaCardWidget
-          title={title}
-          entity_id={child.entity_id ?? ""}
-          width={width}
-          height={height}
+        <div
           className={fill}
-        />
+          onClick={() => {
+            void openMusicBarForEntity(child.entity_id ?? "");
+          }}
+        >
+          <MediaCardWidget
+            title={title}
+            entity_id={child.entity_id ?? ""}
+            width={width}
+            height={height}
+            className="h-full w-full min-h-0"
+          />
+        </div>
       );
     case "stat_pill_card":
       return (
