@@ -2,7 +2,7 @@
 
 ## 0.4.89
 
-- Vacuum card 2: theme-specific product art for light and dark mode
+- Vacuum card 2: theme-specific product art for light and dark mode as full-bleed card background
 
 ## 0.4.88
 
