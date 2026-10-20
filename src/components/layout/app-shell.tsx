@@ -35,7 +35,7 @@ import {
   languageToSunLocale,
   resolveSunTimes,
 } from "@/lib/sun-times";
-import { HeaderNotifications } from "./header-notifications";
+import { HeaderEnergyStats } from "./header-energy-stats";
 import { HeaderVoice } from "./header-voice";
 import { useNewsStore } from "@/stores/news-store";
 import { NewsOverlay } from "@/components/news-overlay";
@@ -512,7 +512,8 @@ export function AppShell({
                       <div className="pointer-events-auto">{headerCenterAction}</div>
                     </div>
                   ) : null}
-                  <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+                  <div className="ml-auto flex min-w-0 items-center justify-end gap-2 sm:gap-3">
+                    <HeaderEnergyStats contentLight={headerContentLight} />
                     {newsEnabled && rssUrls.length > 0 && (
                       <button
                         type="button"
@@ -530,7 +531,6 @@ export function AppShell({
                     )}
                     {headerStartAction}
                     {headerEndAction}
-                    <HeaderNotifications contentLight={headerContentLight} />
                   </div>
                 </div>
                 {headerBelowAction ? (

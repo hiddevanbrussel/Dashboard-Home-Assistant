@@ -23,9 +23,20 @@ function AppIcon({ name }: { name?: string | null }) {
 }
 
 /**
- * Header bell: HA persistent_notification.* plus in-app rule notifications.
+ * Notification bell: HA persistent_notification.* plus in-app rule notifications.
+ * Lives in the sidebar utilities rail (beside settings); optional header styling kept for previews.
  */
-export function HeaderNotifications({ contentLight }: { contentLight?: boolean } = {}) {
+export function HeaderNotifications({
+  contentLight,
+  placement = "header",
+  buttonClassName,
+}: {
+  contentLight?: boolean;
+  /** Sidebar opens the panel to the right of the rail. */
+  placement?: "header" | "sidebar";
+  /** Override trigger button classes (e.g. sidebar nav pill). */
+  buttonClassName?: string;
+} = {}) {
   const { t } = useTranslation();
   const states = useEntityStateStore((s) => s.states);
   const setStates = useEntityStateStore((s) => s.setStates);
@@ -126,10 +137,13 @@ export function HeaderNotifications({ contentLight }: { contentLight?: boolean }
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4700B5]",
-          contentLight
-            ? "text-white/90 hover:bg-white/10"
-            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+          buttonClassName ??
+            cn(
+              "relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4700B5]",
+              contentLight
+                ? "text-white/90 hover:bg-white/10"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+            )
         )}
         aria-label={
           count > 0
@@ -150,7 +164,14 @@ export function HeaderNotifications({ contentLight }: { contentLight?: boolean }
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-[100] mt-1 flex max-h-[70vh] w-[320px] flex-col rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl">
+        <div
+          className={cn(
+            "z-[100] flex max-h-[70vh] w-[320px] flex-col rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl",
+            placement === "sidebar"
+              ? "absolute bottom-0 left-full ml-2"
+              : "absolute right-0 top-full mt-1"
+          )}
+        >
           <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 dark:border-white/10">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
               {t("notifications.title")}
