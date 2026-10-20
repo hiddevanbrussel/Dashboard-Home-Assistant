@@ -67,19 +67,23 @@ export function GlobalMusicBar() {
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5">
               <div
                 className={cn(
-                  "animate-music-bar-in pointer-events-auto w-full max-w-[min(48rem,calc(100vw-1.5rem))]",
-                  "overflow-hidden rounded-[1.35rem]",
+                  "animate-music-bar-in pointer-events-auto relative w-full max-w-[min(48rem,calc(100vw-1.5rem))]",
+                  // overflow-visible so portaled speaker menu isn’t the only escape hatch;
+                  // radius still applies to the painted surface.
+                  "overflow-visible rounded-[1.35rem]",
                   "bg-white/90 shadow-[0_-12px_48px_rgba(15,23,42,0.22)] backdrop-blur-md",
                   "dark:bg-gray-900/95 dark:shadow-[0_-12px_48px_rgba(0,0,0,0.55)]",
                   "ring-1 ring-black/[0.06] dark:ring-white/10"
                 )}
               >
-                <MusicPlayerBarContent
-                  allowSpeakerSelection
-                  animateOpen={false}
-                  variant="floating"
-                  onClose={close}
-                />
+                <div className="overflow-hidden rounded-[1.35rem]">
+                  <MusicPlayerBarContent
+                    allowSpeakerSelection
+                    animateOpen={false}
+                    variant="floating"
+                    onClose={close}
+                  />
+                </div>
               </div>
             </div>
           </div>,
