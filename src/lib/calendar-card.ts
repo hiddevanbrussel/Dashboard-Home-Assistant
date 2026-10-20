@@ -9,8 +9,8 @@ export const CALENDAR_CARD_MAX_HEIGHT = 420;
 const EVENT_ROW_PX = 52;
 const CARD_VERTICAL_PAD_PX = 40;
 const OVERFLOW_FOOTER_PX = 22;
-/** Reserved space when the upcoming-appointment strip is enabled. */
-const UPCOMING_STRIP_PX = 52;
+/** Reserved space when the upcoming-appointment strip is enabled (label + title + when). */
+const UPCOMING_STRIP_PX = 64;
 
 export function clampCalendarCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
