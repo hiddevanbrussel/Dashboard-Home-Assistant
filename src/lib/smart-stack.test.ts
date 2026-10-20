@@ -51,6 +51,8 @@ describe("smart-stack helpers", () => {
     expect(isSmartStackChildType("climate_card_2")).toBe(true);
     expect(isSmartStackChildType("nuts_card")).toBe(true);
     expect(isSmartStackChildType("media_card")).toBe(true);
+    expect(isSmartStackChildType("calendar_card")).toBe(true);
+    expect(isSmartStackChildType("trash_card")).toBe(true);
     expect(isSmartStackChildType("card_group")).toBe(false);
     expect(isSmartStackChildType("smart_stack")).toBe(false);
   });
@@ -134,6 +136,34 @@ describe("smart-stack helpers", () => {
       show_progress: true,
     });
     expect(match).not.toHaveProperty("width");
+
+    const calendar = buildSmartStackChildUpdates("calendar_card", {
+      title: "Agenda",
+      entity_id: "",
+      show_upcoming: false,
+    });
+    expect(calendar).toEqual({
+      title: "Agenda",
+      entity_id: "",
+      show_upcoming: false,
+    });
+
+    const trash = buildSmartStackChildUpdates("trash_card", {
+      title: "Afval",
+      entity_id: "sensor.afvalwijzer_gft",
+      date_entity_id: "sensor.afvalwijzer_next_date",
+      days_entity_id: "sensor.afvalwijzer_next_in_days",
+      demo_theme: "gft",
+    });
+    expect(trash).toMatchObject({
+      title: "Afval",
+      entity_id: "sensor.afvalwijzer_gft",
+      date_entity_id: "sensor.afvalwijzer_next_date",
+      days_entity_id: "sensor.afvalwijzer_next_in_days",
+      demo_theme: "gft",
+    });
+    expect(trash).not.toHaveProperty("width");
+    expect(trash).not.toHaveProperty("height");
   });
 
   it("strips width and height from nested child patches", () => {

@@ -5,6 +5,7 @@ import {
   calendarVisibleEventCount,
   clampCalendarCardHeight,
   clampCalendarCardWidth,
+  isCalendarShowUpcoming,
   resizeCalendarCardFromBottomRight,
 } from "./calendar-card";
 
@@ -24,6 +25,15 @@ describe("calendar-card helpers", () => {
     expect(calendarVisibleEventCount(160)).toBe(1);
     expect(calendarVisibleEventCount(200)).toBe(2);
     expect(calendarVisibleEventCount(320)).toBe(4);
+    expect(calendarVisibleEventCount(320, { showUpcoming: true })).toBeLessThan(
+      calendarVisibleEventCount(320)
+    );
+  });
+
+  it("treats show_upcoming as on by default", () => {
+    expect(isCalendarShowUpcoming(undefined)).toBe(true);
+    expect(isCalendarShowUpcoming(true)).toBe(true);
+    expect(isCalendarShowUpcoming(false)).toBe(false);
   });
 
   it("resizes from the bottom-right while keeping the top-left fixed", () => {

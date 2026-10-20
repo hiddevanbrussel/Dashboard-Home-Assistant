@@ -158,6 +158,8 @@ export type WidgetConfig = {
   child_id?: string | null;
   /** Chore card: puntenbadge tonen. */
   show_chore_points?: boolean;
+  /** Calendar card: toon opkomende afspraak onderaan (default true). */
+  show_upcoming?: boolean;
   /** Power usage card: kosten per kWh (bijv. 0.25) voor berekening expense. */
   cost_per_kwh?: number;
   /** Device consumption card: entity IDs voor per-apparaat verbruik. */

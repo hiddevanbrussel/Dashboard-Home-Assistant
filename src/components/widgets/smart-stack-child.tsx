@@ -13,8 +13,10 @@ import { EnergyMonitorCardWidget } from "./energy-monitor-card-widget";
 import { TeamtrackerCardWidget } from "./teamtracker-card-widget";
 import { CameraCardWidget } from "./camera-card-widget";
 import { CalendarCardWidget } from "./calendar-card-widget";
+import { TrashCardWidget } from "./trash-card-widget";
 import type { ImageCondition, SensorCondition } from "./widget-types";
 import { normalizeClimateDisplayMode } from "@/lib/climate-card";
+import { isCalendarShowUpcoming } from "@/lib/calendar-card";
 import { normalizeNutsAccent, normalizeNutsPeriod } from "@/lib/nuts-card";
 import { isSmartStackChildType } from "@/lib/smart-stack";
 import { useTranslation } from "@/hooks/use-translation";
@@ -191,8 +193,27 @@ export function SmartStackChild({
             className
           )}
         >
-          <CalendarCardWidget title={title} width={width} height={height} />
+          <CalendarCardWidget
+            title={title}
+            width={width}
+            height={height}
+            show_upcoming={isCalendarShowUpcoming(child.show_upcoming)}
+          />
         </div>
+      );
+    case "trash_card":
+      return (
+        <TrashCardWidget
+          title={title}
+          entity_id={child.entity_id ?? ""}
+          date_entity_id={child.date_entity_id}
+          days_entity_id={child.days_entity_id}
+          fraction_entity_ids={child.fraction_entity_ids}
+          demo_theme={child.demo_theme}
+          width={width}
+          height={height}
+          className={fill}
+        />
       );
     default:
       return null;
