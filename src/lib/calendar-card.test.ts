@@ -12,7 +12,8 @@ import {
 describe("calendar-card helpers", () => {
   it("clamps width and height onto the horizontal card bounds", () => {
     expect(clampCalendarCardWidth("not-a-number")).toBe(CALENDAR_CARD_DEFAULT_WIDTH);
-    expect(clampCalendarCardWidth(100)).toBe(320);
+    expect(clampCalendarCardWidth(100)).toBe(250);
+    expect(clampCalendarCardWidth(250)).toBe(250);
     expect(clampCalendarCardWidth(900)).toBe(640);
     expect(clampCalendarCardWidth(420)).toBe(420);
     expect(clampCalendarCardHeight(undefined)).toBe(CALENDAR_CARD_DEFAULT_HEIGHT);
@@ -47,8 +48,8 @@ describe("calendar-card helpers", () => {
     };
     const grown = resizeCalendarCardFromBottomRight({ ...start, dx: 80, dy: 50 });
     expect(grown).toEqual({ width: 500, height: 250, left: 88, bottom: 22 });
-    const shrunk = resizeCalendarCardFromBottomRight({ ...start, dx: -120, dy: -80 });
-    expect(shrunk.width).toBe(320);
+    const shrunk = resizeCalendarCardFromBottomRight({ ...start, dx: -200, dy: -80 });
+    expect(shrunk.width).toBe(250);
     expect(shrunk.height).toBe(160);
     expect(shrunk.left).toBe(88);
     expect(shrunk.bottom).toBe(112);

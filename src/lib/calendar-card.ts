@@ -1,6 +1,7 @@
 export const CALENDAR_CARD_DEFAULT_WIDTH = 420;
 export const CALENDAR_CARD_DEFAULT_HEIGHT = 200;
-export const CALENDAR_CARD_MIN_WIDTH = 320;
+/** Match smart-stack / nuts 250 so nested calendars are not clipped by a higher floor. */
+export const CALENDAR_CARD_MIN_WIDTH = 250;
 export const CALENDAR_CARD_MAX_WIDTH = 640;
 export const CALENDAR_CARD_MIN_HEIGHT = 160;
 export const CALENDAR_CARD_MAX_HEIGHT = 420;

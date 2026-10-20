@@ -12,6 +12,9 @@ import { addDays, toDateKey } from "@/lib/calendar-utils";
 import { useLanguageStore } from "@/stores/language-store";
 import { cn } from "@/lib/utils";
 
+/** Typical smart-stack square — must keep Opkomend day/time inside the frame. */
+const STACK_SQUARE = 250;
+
 function fixtureEvents(now: Date): CalendarEvent[] {
   const today = toDateKey(now);
   const tomorrow = toDateKey(addDays(now, 1));
@@ -131,6 +134,13 @@ export default function CalendarCardPreviewPage() {
       events: longTitleTonight,
     },
     {
+      key: "stack-250",
+      label: "Smart-stack 250×250",
+      w: STACK_SQUARE,
+      h: STACK_SQUARE,
+      events: longTitleTonight,
+    },
+    {
       key: "narrow-tomorrow",
       label: "Min width empty-today",
       w: CALENDAR_CARD_MIN_WIDTH,
@@ -162,6 +172,7 @@ export default function CalendarCardPreviewPage() {
                 "glass-surface overflow-hidden rounded-2xl shadow-xl",
                 "bg-white/80 dark:bg-black/40"
               )}
+              style={{ width: card.w, height: card.h }}
             >
               <CalendarCardWidget
                 width={card.w}
