@@ -79,9 +79,6 @@ export function trashContainerImageSrc(theme: TrashTheme): string {
 export const TRASH_THEME_ASSETS: Record<
   TrashTheme,
   {
-    background: string;
-    person: string;
-    icon: string;
     /** Accent underline / chip icon frame fallback color */
     accent: string;
     /** 3D container art for the quiet schedule card */
@@ -89,23 +86,14 @@ export const TRASH_THEME_ASSETS: Record<
   }
 > = {
   gft: {
-    background: `/trash/gft_achtergrond.png?v=${TRASH_ASSETS_CACHE_BUST}`,
-    person: `/trash/gft_persoon-container.png?v=${TRASH_ASSETS_CACHE_BUST}`,
-    icon: `/trash/gft_icoon.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     accent: "#2F7D3A",
     container: TRASH_CONTAINER_IMAGES.gft,
   },
   restafval: {
-    background: `/trash/restafval_achtergrond.png?v=${TRASH_ASSETS_CACHE_BUST}`,
-    person: `/trash/restafval_persoon-container.png?v=${TRASH_ASSETS_CACHE_BUST}`,
-    icon: `/trash/restafval_icoon.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     accent: "#4A4A4A",
     container: TRASH_CONTAINER_IMAGES.restafval,
   },
   pmd: {
-    background: `/trash/pmd_achtergrond.png?v=${TRASH_ASSETS_CACHE_BUST}`,
-    person: `/trash/pmd_persoon-container.png?v=${TRASH_ASSETS_CACHE_BUST}`,
-    icon: `/trash/pmd_icoon.png?v=${TRASH_ASSETS_CACHE_BUST}`,
     accent: "#E07A2F",
     container: TRASH_CONTAINER_IMAGES.pmd,
   },
@@ -247,7 +235,7 @@ export function isLikelyTrashEntityId(entityId: string | undefined | null): bool
   );
 }
 
-/** Assets + accent for a resolved waste theme (background, person, icon). */
+/** Accent + container art for a resolved waste theme. */
 export function trashThemeAssets(theme: TrashTheme) {
   return TRASH_THEME_ASSETS[theme];
 }

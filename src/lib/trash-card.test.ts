@@ -108,15 +108,17 @@ describe("trash-card helpers", () => {
     expect(pmd?.theme).toBe("pmd");
   });
 
-  it("exposes distinct background assets per theme", () => {
-    expect(trashThemeAssets("gft").background).toContain("gft_achtergrond");
-    expect(trashThemeAssets("restafval").background).toContain("restafval_achtergrond");
-    expect(trashThemeAssets("pmd").background).toContain("pmd_achtergrond");
+  it("exposes distinct container assets and accents per theme", () => {
+    expect(trashThemeAssets("gft").container).toContain("container-gft.webp");
+    expect(trashThemeAssets("restafval").container).toContain("container-restafval.webp");
+    expect(trashThemeAssets("pmd").container).toContain("container-pmd.webp");
     expect(new Set([
-      trashThemeAssets("gft").background,
-      trashThemeAssets("restafval").background,
-      trashThemeAssets("pmd").background,
+      trashThemeAssets("gft").container,
+      trashThemeAssets("restafval").container,
+      trashThemeAssets("pmd").container,
     ]).size).toBe(3);
+    expect(trashThemeAssets("gft").accent).toBe("#2F7D3A");
+    expect(trashThemeAssets("pmd").accent).toBe("#E07A2F");
   });
 
   it("parses common date formats and relative words", () => {
