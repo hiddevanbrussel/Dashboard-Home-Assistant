@@ -323,12 +323,14 @@ export function ClimateCard2Widget({
   const isDense = density === "dense";
   const isCompact = density === "compact" || isDense;
   const showModeLabels = density === "comfortable" || mode === "graph";
-  const heading = title?.trim() || t("climateCard.climate");
-  const entityLabel =
+  // Card type title on top (“Klimaat”), name underneath (widget title / entity).
+  const cardTitle = t("climateCard.climate");
+  const nameLabel =
+    title?.trim() ||
     (typeof attrs.friendly_name === "string" && attrs.friendly_name.trim()) ||
     entity_id ||
     "";
-  const showEntityLabel = Boolean(entityLabel && entityLabel !== heading);
+  const showNameLabel = Boolean(nameLabel && nameLabel !== cardTitle);
   const compactAccent = climateCompactAccent({ isOn, statusKind, activeTile });
   const isCompactLayout = mode === "compact";
 
@@ -493,11 +495,11 @@ export function ClimateCard2Widget({
           <div className="flex shrink-0 items-start justify-between gap-2 px-4 pt-4">
             <div className="min-w-0">
               <h2 className="truncate text-[1.2rem] font-semibold leading-tight tracking-tight text-gray-950 dark:text-white">
-                {heading}
+                {cardTitle}
               </h2>
-              {showEntityLabel ? (
+              {showNameLabel ? (
                 <p className="mt-0.5 truncate text-[12px] font-medium leading-tight text-gray-400 dark:text-white/50">
-                  {entityLabel}
+                  {nameLabel}
                 </p>
               ) : null}
             </div>
@@ -645,16 +647,16 @@ export function ClimateCard2Widget({
                   isDense ? "text-[1.2rem]" : "text-[1.35rem]"
                 )}
               >
-                {heading}
+                {cardTitle}
               </h2>
-              {showEntityLabel ? (
+              {showNameLabel ? (
                 <p
                   className={cn(
                     "mt-0.5 truncate font-medium text-gray-400 dark:text-white/50",
                     isDense ? "text-[11px]" : "text-[13px]"
                   )}
                 >
-                  {entityLabel}
+                  {nameLabel}
                 </p>
               ) : null}
             </div>
