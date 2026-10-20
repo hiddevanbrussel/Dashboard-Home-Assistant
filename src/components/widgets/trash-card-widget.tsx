@@ -186,7 +186,7 @@ function useTrashSchedule(
   ]);
 }
 
-/** Upcoming fraction: type + date centered on the bin image. */
+/** Upcoming fraction: type + date vertically centered beside the bin. */
 function UpcomingCell({
   pickup,
   locale,
@@ -197,31 +197,36 @@ function UpcomingCell({
   compact?: boolean;
 }) {
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center">
+    <div
+      className={cn(
+        "flex min-h-0 min-w-0 flex-1 items-center",
+        compact ? "gap-1.5" : "gap-2.5"
+      )}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element -- local static container art */}
       <img
         src={withBasePath(trashContainerImageSrc(pickup.theme))}
         alt=""
         draggable={false}
         className={cn(
-          "select-none object-contain object-bottom opacity-90 [-webkit-user-drag:none]",
-          compact ? "h-14 w-14" : "h-[4.25rem] w-[4.25rem]"
+          "shrink-0 select-none object-contain object-bottom [-webkit-user-drag:none]",
+          compact ? "h-12 w-12" : "h-14 w-14"
         )}
         aria-hidden
       />
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-1 text-center">
+      <div className="min-w-0 overflow-hidden">
         <p
           className={cn(
-            "max-w-full truncate font-semibold leading-tight tracking-tight text-[#1B2437] drop-shadow-[0_1px_1px_rgba(255,255,255,0.85)] dark:text-white dark:drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]",
-            compact ? "text-[11px]" : "text-xs"
+            "truncate font-semibold leading-tight tracking-tight text-[#1B2437] dark:text-white/90",
+            compact ? "text-xs" : "text-sm"
           )}
         >
           {formatTrashTypeLabel(pickup.theme, pickup.typeRaw, locale, { compact })}
         </p>
         <p
           className={cn(
-            "max-w-full truncate font-medium tabular-nums leading-tight text-[#2A3548] drop-shadow-[0_1px_1px_rgba(255,255,255,0.85)] dark:text-white/85 dark:drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]",
-            compact ? "text-[10px]" : "text-[11px]"
+            "truncate font-medium tabular-nums leading-tight text-[#4E5D73] dark:text-white/70",
+            compact ? "text-[11px]" : "text-[13px]"
           )}
         >
           {formatTrashPickupDateShort(pickup.date, locale)}
@@ -320,10 +325,10 @@ export const TrashCardWidget = memo(function TrashCardWidget({
             draggable={false}
             className={cn(
               "pointer-events-none absolute top-1/2 z-[1] -translate-y-1/2 select-none object-contain object-bottom [-webkit-user-drag:none]",
-              // Half on the card: center the art on the left edge (cancel content padding).
+              // Mostly half-bleed from the left, nudged a bit further onto the card.
               compact
-                ? "left-0 h-[9.5rem] w-[9.5rem] -translate-x-[calc(50%+0.75rem)]"
-                : "left-0 h-[12rem] w-[12rem] -translate-x-[calc(50%+1.25rem)]"
+                ? "left-0 h-[9.5rem] w-[9.5rem] -translate-x-[calc(38%+0.75rem)]"
+                : "left-0 h-[12rem] w-[12rem] -translate-x-[calc(38%+1.25rem)]"
             )}
             aria-hidden
           />
