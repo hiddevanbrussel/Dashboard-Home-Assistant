@@ -268,6 +268,11 @@ export type TrashCardProps = WidgetBaseProps & {
   /** Optional separate date sensor (when type and date are different entities). */
   date_entity_id?: string;
   /**
+   * Optional days-until counter (Afvalwijzer `sensor.afvalwijzer_next_in_days`).
+   * When empty, auto-discovered from HA.
+   */
+  days_entity_id?: string;
+  /**
    * Optional per-fraction sensor overrides (gft / restafval / pmd).
    * Missing keys keep Afvalwijzer-style auto-discovery.
    */

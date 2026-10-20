@@ -240,6 +240,28 @@ export function isLikelyTrashEntityId(entityId: string | undefined | null): bool
   );
 }
 
+/**
+ * Afvalwijzer “days until next collection” sensors, e.g.
+ * `sensor.afvalwijzer_next_in_days` (state is an integer day count).
+ */
+export function isTrashDaysUntilEntityId(entityId: string | undefined | null): boolean {
+  if (!entityId) return false;
+  const id = entityId.toLowerCase();
+  return /next_in_days|dagen_tot|days_until|days_to_next/.test(id);
+}
+
+/** Custom Afvalwijzer sensors that are not per-fraction date sources. */
+export function isTrashSummaryEntityId(entityId: string | undefined | null): boolean {
+  if (!entityId) return false;
+  const id = entityId.toLowerCase();
+  return (
+    isTrashDaysUntilEntityId(id) ||
+    /(?:^|[._])next_type(?:$|[._])|(?:^|[._])next_in_days(?:$|[._])|(?:^|[._])today(?:_formatted)?(?:$|[._])|(?:^|[._])tomorrow(?:_formatted)?(?:$|[._])|(?:^|[._])day_after_tomorrow/.test(
+      id
+    )
+  );
+}
+
 /** Accent + container art for a resolved waste theme. */
 export function trashThemeAssets(theme: TrashTheme) {
   return TRASH_THEME_ASSETS[theme];
@@ -409,6 +431,7 @@ export function hasTrashFractionOverrides(overrides?: TrashFractionEntityIds | n
 /**
  * Auto-pick one HA sensor per waste fraction.
  * Prefers ids that name the fraction and look like a date sensor.
+ * Skips summary sensors (next_type / next_in_days / today / …).
  */
 export function discoverTrashFractionEntities(
   entities: Iterable<HaEntitySnapshot>
@@ -416,6 +439,7 @@ export function discoverTrashFractionEntities(
   const best = new Map<TrashTheme, { entity_id: string; score: number }>();
   for (const entity of entities) {
     if (!entity?.entity_id) continue;
+    if (isTrashSummaryEntityId(entity.entity_id)) continue;
     const theme =
       trashEntityTheme(entity) ??
       (isLikelyTrashEntityId(entity.entity_id) ? mapWasteTypeToTheme(entity.entity_id) : null);
@@ -431,6 +455,98 @@ export function discoverTrashFractionEntities(
   const out: TrashFractionEntityIds = {};
   for (const [theme, hit] of best) out[theme] = hit.entity_id;
   return out;
+}
+
+/**
+ * Auto-pick Afvalwijzer `next_in_days` (or similarly named) counter sensor.
+ */
+export function discoverTrashDaysUntilEntity(
+  entities: Iterable<HaEntitySnapshot>
+): string | undefined {
+  let best: { entity_id: string; score: number } | null = null;
+  for (const entity of entities) {
+    if (!entity?.entity_id) continue;
+    const id = entity.entity_id.toLowerCase();
+    let score = 0;
+    if (id.includes("next_in_days")) score += 10;
+    else if (id.includes("dagen_tot")) score += 8;
+    else if (id.includes("days_until")) score += 7;
+    else if (id.includes("days_to_next")) score += 6;
+    else if (isTrashDaysUntilEntityId(entity.entity_id)) score += 4;
+    else continue;
+    if (!isLikelyTrashEntityId(entity.entity_id) && !id.includes("afval")) score -= 2;
+    if (parseTrashDaysUntil(entity.state) != null) score += 2;
+    if (!best || score > best.score) best = { entity_id: entity.entity_id, score };
+  }
+  return best?.entity_id;
+}
+
+const DAYS_UNTIL_ATTR_KEYS = [
+  "days_until_collection_date",
+  "days_until",
+  "dagen_tot",
+  "days_to_collection",
+];
+
+/** Parse a day-count state/attribute (0–366). */
+export function parseTrashDaysUntil(raw: unknown): number | null {
+  if (raw == null || raw === "" || raw === "unknown" || raw === "unavailable") return null;
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    const n = Math.round(raw);
+    return n >= 0 && n <= 366 ? n : null;
+  }
+  const text = String(raw).trim();
+  if (!/^\d{1,3}$/.test(text)) return null;
+  const n = Number(text);
+  return n >= 0 && n <= 366 ? n : null;
+}
+
+/** Calendar days from local today to a pickup date. */
+export function trashDaysUntilFromDate(
+  date: Date | null | undefined,
+  ref: Date = new Date()
+): number | null {
+  if (!date || Number.isNaN(date.getTime())) return null;
+  const days = Math.round(
+    (startOfLocalDay(date).getTime() - startOfLocalDay(ref).getTime()) / 86_400_000
+  );
+  if (days < 0 || days > 366) return null;
+  return days;
+}
+
+/**
+ * Resolve days-until for the featured pickup:
+ * 1) dedicated counter entity state
+ * 2) days_until_* attributes on the date / type entity
+ * 3) computed from the featured date
+ */
+export function resolveTrashDaysUntil(input: {
+  daysEntity?: HaEntitySnapshot | null;
+  dateEntity?: HaEntitySnapshot | null;
+  typeEntity?: HaEntitySnapshot | null;
+  featuredDate?: Date | null;
+  ref?: Date;
+}): number | null {
+  const fromDays = parseTrashDaysUntil(input.daysEntity?.state);
+  if (fromDays != null) return fromDays;
+  for (const ent of [input.daysEntity, input.dateEntity, input.typeEntity]) {
+    const attr = parseTrashDaysUntil(attrString(ent?.attributes, DAYS_UNTIL_ATTR_KEYS));
+    if (attr != null) return attr;
+  }
+  return trashDaysUntilFromDate(input.featuredDate, input.ref);
+}
+
+/** "Today" / "Tomorrow" / "in 3 days" (en) · "Vandaag" / "Morgen" / "over 3 dagen" (nl). */
+export function formatTrashDaysUntil(
+  days: number | null | undefined,
+  locale: TrashLocale
+): string {
+  if (days == null || !Number.isFinite(days)) return "";
+  const n = Math.round(days);
+  if (n <= 0) return locale === "nl" ? "Vandaag" : "Today";
+  if (n === 1) return locale === "nl" ? "Morgen" : "Tomorrow";
+  if (locale === "nl") return n === 1 ? "over 1 dag" : `over ${n} dagen`;
+  return n === 1 ? "in 1 day" : `in ${n} days`;
 }
 
 /** Apply manual overrides on top of auto-discovery (missing override → discovered). */
@@ -686,6 +802,11 @@ export function trashThemeChipStyle(theme: TrashTheme): {
  * Build a quiet schedule: next featured pickup + up to two later fractions.
  * Past pickup dates are ignored so "next collection" never shows a stale day.
  *
+ * When `preferPrimaryAsFeatured` is set (explicit date_entity / “volgende
+ * ophaaldatum”), primary is the featured row; fraction sensors only fill other
+ * themes for upcoming. Otherwise fraction sensors win per theme and primary
+ * only fills themes with no fraction binding.
+ *
  * Demo fill (fake Fridays) only runs when there is no live HA pickup data —
  * otherwise missing fractions stay absent so dates always come from entities.
  */
@@ -696,6 +817,11 @@ export function buildTrashSchedule(input: {
   ref?: Date;
   /** Force demo fill for missing themes (dev / unbound showcase). Default: only when no live dates. */
   fillMissingWithDemo?: boolean;
+  /**
+   * Use primary (next-type + date_entity) as the featured/next pickup.
+   * Fraction auto-discovery then only supplies unbound themes for upcoming rows.
+   */
+  preferPrimaryAsFeatured?: boolean;
 }): { featured: TrashPickup; upcoming: TrashPickup[] } {
   const ref = input.ref ?? new Date();
   const fallbackTheme = input.fallbackTheme ?? "gft";
@@ -709,8 +835,9 @@ export function buildTrashSchedule(input: {
     }
   };
 
-  // Fraction sensors first — their state/attrs are the date source of truth per type.
+  // Fraction sensors — per-type dates (upcoming; also featured when no date binding).
   for (const entity of input.entities ?? []) {
+    if (isTrashSummaryEntityId(entity.entity_id)) continue;
     const theme = trashEntityTheme(entity);
     // Skip unrelated HA sensors — a bare date + fallback theme was poisoning schedules.
     if (!theme && !isLikelyTrashEntityId(entity.entity_id)) continue;
@@ -724,7 +851,39 @@ export function buildTrashSchedule(input: {
     );
   }
 
-  // Optional primary/next-type binding only fills themes that have no fraction sensor yet.
+  const primaryUsable =
+    Boolean(input.primary?.date) && !isTrashPickupPast(input.primary!.date, ref);
+
+  // Explicit volgende-ophaaldatum (+ next-type): featured from that binding only.
+  // Do not stamp that date under every type row — upcoming stays per-fraction.
+  if (input.preferPrimaryAsFeatured && primaryUsable && input.primary) {
+    const featured = input.primary;
+    byTheme.delete(featured.theme);
+
+    const hasLiveDates = true;
+    const fillDemo = input.fillMissingWithDemo ?? !hasLiveDates;
+    if (fillDemo) {
+      for (const theme of TRASH_THEMES) {
+        if (theme !== featured.theme && !byTheme.has(theme)) {
+          byTheme.set(theme, trashDemoPickup(theme, ref));
+        }
+      }
+    }
+
+    const featuredTime = featured.date?.getTime() ?? Number.NEGATIVE_INFINITY;
+    const upcoming = [...byTheme.values()]
+      .filter((p) => p.theme !== featured.theme)
+      .sort((a, b) => {
+        const at = a.date?.getTime() ?? Number.POSITIVE_INFINITY;
+        const bt = b.date?.getTime() ?? Number.POSITIVE_INFINITY;
+        return at - bt;
+      })
+      .filter((p) => (p.date?.getTime() ?? 0) >= featuredTime)
+      .slice(0, 2);
+    return { featured, upcoming };
+  }
+
+  // No date binding: primary/next-type only fills themes that have no fraction sensor yet.
   if (input.primary && !byTheme.has(input.primary.theme)) {
     consider(input.primary);
   }

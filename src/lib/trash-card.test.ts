@@ -2,24 +2,30 @@ import {
   clampTrashCardHeight,
   clampTrashCardWidth,
   buildTrashSchedule,
+  discoverTrashDaysUntilEntity,
   discoverTrashFractionEntities,
+  formatTrashDaysUntil,
   formatTrashPickupDate,
   formatTrashPickupDateShort,
   trashContainerImageSrc,
   trashThemeChipStyle,
   formatTrashTypeLabel,
   isLikelyTrashEntityId,
+  isTrashDaysUntilEntityId,
   isTrashPickupPast,
   mapWasteTypeToTheme,
   mergeTrashFractionEntities,
   normalizeTrashFractionEntityIds,
   trashEntityTheme,
   parseTrashDate,
+  parseTrashDaysUntil,
   resizeTrashCardFromBottomRight,
+  resolveTrashDaysUntil,
   resolveTrashPickup,
   resolveTrashTheme,
   splitTrashCardHeading,
   trashCardDensity,
+  trashDaysUntilFromDate,
   trashDemoPickup,
   trashDemoSchedule,
   trashThemeAssets,
@@ -203,7 +209,7 @@ describe("trash-card helpers", () => {
     expect(schedule.upcoming.some((p) => p.theme === "restafval")).toBe(false);
   });
 
-  it("prefers per-fraction entity dates over a generic next-type primary", () => {
+  it("prefers per-fraction entity dates over a generic next-type primary when no date binding", () => {
     const schedule = buildTrashSchedule({
       primary: {
         theme: "gft",
@@ -230,6 +236,110 @@ describe("trash-card helpers", () => {
     expect(schedule.featured.date?.getDate()).toBe(23);
     expect(schedule.upcoming[0].theme).toBe("restafval");
     expect(schedule.upcoming[0].date?.getDate()).toBe(30);
+  });
+
+  it("uses date_entity / primary as featured when preferPrimaryAsFeatured is set", () => {
+    const schedule = buildTrashSchedule({
+      primary: {
+        theme: "pmd",
+        typeRaw: "PMD",
+        // Volgende ophaaldatum — must win for featured even if fraction differs.
+        date: new Date(2026, 9, 25, 12, 0, 0),
+      },
+      entities: [
+        {
+          entity_id: "sensor.afvalwijzer_pmd",
+          state: "2026-10-23",
+          attributes: { friendly_name: "PMD" },
+        },
+        {
+          entity_id: "sensor.afvalwijzer_gft",
+          state: "2026-10-30",
+          attributes: { friendly_name: "Gft" },
+        },
+        {
+          entity_id: "sensor.afvalwijzer_restafval",
+          state: "2026-11-06",
+          attributes: { friendly_name: "Restafval" },
+        },
+      ],
+      ref: new Date(2026, 9, 20, 12, 0, 0),
+      fillMissingWithDemo: false,
+      preferPrimaryAsFeatured: true,
+    });
+    expect(schedule.featured.theme).toBe("pmd");
+    expect(schedule.featured.date?.getDate()).toBe(25);
+    // Upcoming other types come from fraction sensors only — not the next-date stamped on each row.
+    expect(schedule.upcoming.map((p) => p.theme)).toEqual(["gft", "restafval"]);
+    expect(schedule.upcoming[0].date?.getDate()).toBe(30);
+    expect(schedule.upcoming[1].date?.getDate()).toBe(6);
+    expect(schedule.upcoming.every((p) => p.date?.getDate() !== 25)).toBe(true);
+  });
+
+  it("discovers next_in_days and formats a days-until counter", () => {
+    expect(isTrashDaysUntilEntityId("sensor.afvalwijzer_next_in_days")).toBe(true);
+    expect(isTrashDaysUntilEntityId("sensor.afvalwijzer_gft")).toBe(false);
+    expect(
+      discoverTrashDaysUntilEntity([
+        {
+          entity_id: "sensor.afvalwijzer_gft",
+          state: "2026-10-23",
+          attributes: { days_until_collection_date: 3 },
+        },
+        {
+          entity_id: "sensor.afvalwijzer_next_in_days",
+          state: "3",
+          attributes: { friendly_name: "Next in days" },
+        },
+      ])
+    ).toBe("sensor.afvalwijzer_next_in_days");
+    expect(parseTrashDaysUntil("3")).toBe(3);
+    expect(parseTrashDaysUntil("unavailable")).toBeNull();
+    expect(
+      resolveTrashDaysUntil({
+        daysEntity: {
+          entity_id: "sensor.afvalwijzer_next_in_days",
+          state: "2",
+          attributes: {},
+        },
+        featuredDate: new Date(2026, 9, 30, 12, 0, 0),
+        ref: new Date(2026, 9, 20, 12, 0, 0),
+      })
+    ).toBe(2);
+    expect(
+      resolveTrashDaysUntil({
+        featuredDate: new Date(2026, 9, 23, 12, 0, 0),
+        ref: new Date(2026, 9, 20, 12, 0, 0),
+      })
+    ).toBe(3);
+    expect(trashDaysUntilFromDate(new Date(2026, 9, 20, 12, 0, 0), new Date(2026, 9, 20, 8, 0, 0))).toBe(
+      0
+    );
+    expect(formatTrashDaysUntil(0, "nl")).toBe("Vandaag");
+    expect(formatTrashDaysUntil(1, "en")).toBe("Tomorrow");
+    expect(formatTrashDaysUntil(3, "nl")).toBe("over 3 dagen");
+    expect(formatTrashDaysUntil(3, "en")).toBe("in 3 days");
+  });
+
+  it("does not treat next_type / next_in_days as fraction sensors", () => {
+    const discovered = discoverTrashFractionEntities([
+      {
+        entity_id: "sensor.afvalwijzer_next_type",
+        state: "gft",
+        attributes: { friendly_name: "Next type" },
+      },
+      {
+        entity_id: "sensor.afvalwijzer_next_in_days",
+        state: "2",
+        attributes: {},
+      },
+      {
+        entity_id: "sensor.afvalwijzer_gft",
+        state: "2026-10-23",
+        attributes: { friendly_name: "Gft" },
+      },
+    ]);
+    expect(discovered).toEqual({ gft: "sensor.afvalwijzer_gft" });
   });
 
   it("still fills a full demo schedule when nothing live is bound", () => {

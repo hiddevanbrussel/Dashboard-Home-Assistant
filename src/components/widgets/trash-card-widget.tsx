@@ -13,12 +13,15 @@ import {
   buildTrashSchedule,
   clampTrashCardHeight,
   clampTrashCardWidth,
+  discoverTrashDaysUntilEntity,
   discoverTrashFractionEntities,
+  formatTrashDaysUntil,
   formatTrashPickupDate,
   formatTrashPickupDateShort,
   formatTrashTypeLabel,
   mergeTrashFractionEntities,
   normalizeTrashFractionEntityIds,
+  resolveTrashDaysUntil,
   resolveTrashPickup,
   trashCardDensity,
   trashContainerImageSrc,
@@ -33,6 +36,7 @@ import {
 function useTrashSchedule(
   entityId: string | undefined,
   dateEntityId: string | undefined,
+  daysEntityId: string | undefined,
   fractionOverrides: TrashFractionEntityIds | undefined,
   /** Dev / unbound showcase only — ignored when HA entities are bound. */
   showcaseTheme?: TrashTheme
@@ -40,6 +44,9 @@ function useTrashSchedule(
   const primary = useEntityStateStore((s) => (entityId ? s.states[entityId] : undefined));
   const dateEnt = useEntityStateStore((s) =>
     dateEntityId ? s.states[dateEntityId] : undefined
+  );
+  const daysEntBound = useEntityStateStore((s) =>
+    daysEntityId ? s.states[daysEntityId] : undefined
   );
   // Recompute when HA state ticks — discovery reads the latest map inside the memo.
   const updatedAt = useEntityStateStore((s) => s.updatedAt);
@@ -54,6 +61,8 @@ function useTrashSchedule(
     const discovered = discoverTrashFractionEntities(snapshots);
     const resolvedFractions = mergeTrashFractionEntities(discovered, fractionOverrides);
     const fractionIds = trashFractionEntityIdsList(resolvedFractions);
+    const discoveredDaysId = discoverTrashDaysUntilEntity(snapshots);
+    const resolvedDaysId = daysEntityId?.trim() || discoveredDaysId;
 
     const live = resolveTrashPickup({
       primaryEntity: primary
@@ -69,8 +78,9 @@ function useTrashSchedule(
       fallbackTheme: "gft",
     });
 
-    // Include every resolved fraction sensor — dates must come from these entities,
-    // not from demo Fridays. Primary/date bindings still win via `live` when present.
+    // Fraction sensors supply per-type upcoming dates. When date_entity_id is set,
+    // that binding (+ next-type) is the featured/next pickup; auto-discovery only
+    // fills themes without that explicit next binding.
     const related = fractionIds
       .map((id) => states[id])
       .filter(Boolean)
@@ -80,39 +90,100 @@ function useTrashSchedule(
         attributes: ent.attributes,
       }));
 
-    const hasBinding = Boolean(entityId || dateEntityId || fractionIds.length > 0);
+    const hasBinding = Boolean(
+      entityId || dateEntityId || daysEntityId || fractionIds.length > 0
+    );
+    const preferPrimaryAsFeatured = Boolean(dateEntityId);
 
     if (!hasBinding) {
       // Unbound cards follow next-fraction order unless a showcase theme is forced (dev preview).
       if (showcaseTheme) {
+        const demo = trashDemoSchedule(showcaseTheme);
         return {
-          ...trashDemoSchedule(showcaseTheme),
+          ...demo,
+          daysUntil: resolveTrashDaysUntil({ featuredDate: demo.featured.date }),
           isDemo: true,
           discovered,
           resolvedFractions,
+          resolvedDaysId,
         };
       }
+      const demo = buildTrashSchedule({
+        primary: null,
+        fallbackTheme: "gft",
+        fillMissingWithDemo: true,
+      });
       return {
-        ...buildTrashSchedule({ primary: null, fallbackTheme: "gft", fillMissingWithDemo: true }),
+        ...demo,
+        daysUntil: resolveTrashDaysUntil({ featuredDate: demo.featured.date }),
         isDemo: true,
         discovered,
         resolvedFractions,
+        resolvedDaysId,
       };
     }
 
+    const schedule = buildTrashSchedule({
+      primary: live,
+      entities: related,
+      fallbackTheme: live?.theme ?? "gft",
+      // Never invent dates when HA fraction/type sensors are bound.
+      fillMissingWithDemo: false,
+      preferPrimaryAsFeatured,
+    });
+
+    const daysEntity = resolvedDaysId
+      ? daysEntBound && daysEntityId === resolvedDaysId
+        ? {
+            entity_id: daysEntityId,
+            state: daysEntBound.state,
+            attributes: daysEntBound.attributes,
+          }
+        : states[resolvedDaysId]
+          ? {
+              entity_id: resolvedDaysId,
+              state: states[resolvedDaysId].state,
+              attributes: states[resolvedDaysId].attributes,
+            }
+          : null
+      : null;
+
     return {
-      ...buildTrashSchedule({
-        primary: live,
-        entities: related,
-        fallbackTheme: live?.theme ?? "gft",
-        // Never invent dates when HA fraction/type sensors are bound.
-        fillMissingWithDemo: false,
+      ...schedule,
+      daysUntil: resolveTrashDaysUntil({
+        daysEntity,
+        dateEntity: dateEnt
+          ? {
+              entity_id: dateEntityId,
+              state: dateEnt.state,
+              attributes: dateEnt.attributes,
+            }
+          : null,
+        typeEntity: primary
+          ? {
+              entity_id: entityId,
+              state: primary.state,
+              attributes: primary.attributes,
+            }
+          : null,
+        featuredDate: schedule.featured.date,
       }),
       isDemo: false,
       discovered,
       resolvedFractions,
+      resolvedDaysId,
     };
-  }, [entityId, dateEntityId, primary, dateEnt, updatedAt, showcaseTheme, fractionOverrides]);
+  }, [
+    entityId,
+    dateEntityId,
+    daysEntityId,
+    primary,
+    dateEnt,
+    daysEntBound,
+    updatedAt,
+    showcaseTheme,
+    fractionOverrides,
+  ]);
 }
 
 function BinChip({
@@ -181,6 +252,7 @@ export const TrashCardWidget = memo(function TrashCardWidget({
   title,
   entity_id,
   date_entity_id,
+  days_entity_id,
   fraction_entity_ids,
   demo_theme,
   width,
@@ -201,9 +273,10 @@ export const TrashCardWidget = memo(function TrashCardWidget({
     () => normalizeTrashFractionEntityIds(fraction_entity_ids),
     [fraction_entity_ids]
   );
-  const { featured, upcoming } = useTrashSchedule(
+  const { featured, upcoming, daysUntil } = useTrashSchedule(
     entity_id,
     date_entity_id,
+    days_entity_id,
     fractionOverrides,
     showcaseTheme
   );
@@ -214,6 +287,7 @@ export const TrashCardWidget = memo(function TrashCardWidget({
   const heading = title?.trim() || t("trashCard.nextCollection");
   const featuredLabel = formatTrashTypeLabel(featured.theme, featured.typeRaw, locale);
   const featuredDate = formatTrashPickupDate(featured.date, locale);
+  const daysLabel = formatTrashDaysUntil(daysUntil, locale);
 
   return (
     <div
@@ -282,6 +356,16 @@ export const TrashCardWidget = memo(function TrashCardWidget({
             >
               {featuredDate}
             </p>
+            {daysLabel ? (
+              <p
+                className={cn(
+                  "truncate font-medium text-[#4E5D73]/90 dark:text-white/55",
+                  compact ? "mt-0.5 text-[11px] leading-tight" : "mt-0.5 text-sm"
+                )}
+              >
+                {daysLabel}
+              </p>
+            ) : null}
           </div>
         </div>
 

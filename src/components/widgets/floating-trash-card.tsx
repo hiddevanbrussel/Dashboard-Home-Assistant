@@ -80,6 +80,7 @@ export function FloatingTrashCard({
     title: string;
     entity_id: string;
     date_entity_id?: string;
+    days_entity_id?: string;
     fraction_entity_ids?: Partial<Record<"gft" | "restafval" | "pmd", string>>;
     width?: number;
     height?: number;
@@ -370,6 +371,7 @@ export function FloatingTrashCard({
           title={widget.title}
           entity_id={widget.entity_id}
           date_entity_id={widget.date_entity_id}
+          days_entity_id={widget.days_entity_id}
           fraction_entity_ids={widget.fraction_entity_ids}
           width={displayWidth}
           height={displayHeight}
