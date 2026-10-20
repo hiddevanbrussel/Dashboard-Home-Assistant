@@ -11,12 +11,17 @@ import {
   calendarVisibleEventCount,
   clampCalendarCardHeight,
   clampCalendarCardWidth,
+  isCalendarShowUpcoming,
 } from "@/lib/calendar-card";
 import {
+  addDays,
+  eventEnd,
   eventStart,
   eventsFromNowOnDay,
   formatTime,
+  isSameDay,
   localeOf,
+  nextUpcomingEvent,
   toDateKey,
 } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
@@ -30,6 +35,9 @@ const CAL_DOT_COLORS = [
   "bg-cyan-400",
   "bg-pink-400",
 ] as const;
+
+/** How far ahead to look for the upcoming footer when enabled. */
+const UPCOMING_LOOKAHEAD_DAYS = 14;
 
 function useFormattedEventTitle(summary: string) {
   const { language } = useTranslation();
@@ -62,14 +70,42 @@ function formatMonth(date: Date, locale: string): string {
   return date.toLocaleDateString(locale, { month: "long" }).toUpperCase();
 }
 
+function formatUpcomingWhen(
+  ev: CalendarEvent,
+  today: Date,
+  locale: string,
+  t: (key: string) => string
+): string {
+  const start = eventStart(ev);
+  if (ev.allDay) {
+    if (today >= start && today < eventEnd(ev)) {
+      return t("calendar.allDay");
+    }
+    if (isSameDay(start, addDays(today, 1))) {
+      return `${t("calendar.tomorrow")} · ${t("calendar.allDay")}`;
+    }
+    return start.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
+  }
+  const time = formatTime(start, locale);
+  if (isSameDay(start, today)) return time;
+  if (isSameDay(start, addDays(today, 1))) {
+    return `${t("calendar.tomorrow")} · ${time}`;
+  }
+  const day = start.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
+  return `${day} · ${time}`;
+}
+
 export function CalendarCardWidget({
   width,
   height,
+  show_upcoming,
   onMoreClick,
 }: {
   title?: string;
   width?: number;
   height?: number;
+  /** Show next appointment strip at the bottom (default on). */
+  show_upcoming?: boolean;
   onMoreClick?: () => void;
 }) {
   const { t, language } = useTranslation();
@@ -77,6 +113,7 @@ export function CalendarCardWidget({
   const calendarEntityIds = useCalendarStore((s) => s.calendarEntityIds);
   const cardW = clampCalendarCardWidth(width);
   const cardH = clampCalendarCardHeight(height);
+  const showUpcoming = isCalendarShowUpcoming(show_upcoming);
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -96,12 +133,17 @@ export function CalendarCardWidget({
 
   const rangeEnd = useMemo(() => {
     const d = new Date(today);
-    d.setDate(d.getDate() + 1);
+    d.setDate(d.getDate() + (showUpcoming ? UPCOMING_LOOKAHEAD_DAYS : 1));
     return d;
-  }, [today]);
+  }, [today, showUpcoming]);
 
   const { data: events = [], isLoading } = useQuery({
-    queryKey: ["dashboard-calendar-card", calendarEntityIds, toDateKey(today)],
+    queryKey: [
+      "dashboard-calendar-card",
+      calendarEntityIds,
+      toDateKey(today),
+      showUpcoming ? UPCOMING_LOOKAHEAD_DAYS : 1,
+    ],
     queryFn: () => fetchRangeEvents(calendarEntityIds, today, rangeEnd),
     enabled: calendarEntityIds.length > 0,
     refetchInterval: 60_000,
@@ -120,13 +162,18 @@ export function CalendarCardWidget({
     [events, today, now]
   );
 
-  const visibleLimit = calendarVisibleEventCount(cardH);
+  const upcoming = useMemo(
+    () => (showUpcoming ? nextUpcomingEvent(events, now) : null),
+    [showUpcoming, events, now]
+  );
+
+  const visibleLimit = calendarVisibleEventCount(cardH, { showUpcoming: showUpcoming && !!upcoming });
   const visibleEvents = dayEvents.slice(0, visibleLimit);
   const overflowCount = Math.max(0, dayEvents.length - visibleEvents.length);
 
   return (
     <div
-      className="relative flex h-full min-h-0 w-full overflow-hidden"
+      className="relative flex h-full min-h-0 w-full flex-col overflow-hidden"
       style={{ width: cardW, height: cardH }}
     >
       {onMoreClick ? (
@@ -141,75 +188,100 @@ export function CalendarCardWidget({
         </button>
       ) : null}
 
-      <div className="flex w-[38%] max-w-[9.5rem] shrink-0 flex-col justify-center px-5 py-4 sm:px-6">
-        <p className="text-[2.75rem] font-bold leading-none tracking-tight text-gray-900 tabular-nums dark:text-white">
-          {today.getDate()}
-        </p>
-        <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-gray-400 dark:text-gray-500">
-          {formatWeekday(today, locale)}
-        </p>
-        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#E06B5C]">
-          {formatMonth(today, locale)}
-        </p>
-      </div>
+      <div className="flex min-h-0 flex-1">
+        <div className="flex w-[38%] max-w-[9.5rem] shrink-0 flex-col justify-center px-5 py-4 sm:px-6">
+          <p className="text-[2.75rem] font-bold leading-none tracking-tight text-gray-900 tabular-nums dark:text-white">
+            {today.getDate()}
+          </p>
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-gray-400 dark:text-gray-500">
+            {formatWeekday(today, locale)}
+          </p>
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#E06B5C]">
+            {formatMonth(today, locale)}
+          </p>
+        </div>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-3 py-4 pr-5 sm:pr-6">
-        {calendarEntityIds.length === 0 ? (
-          <div className="flex flex-col gap-1.5 text-gray-400 dark:text-white/35">
-            <CalendarDays className="h-5 w-5 opacity-50" aria-hidden />
-            <p className="text-sm font-medium text-gray-600 dark:text-white/70">{t("calendar.noCalendars")}</p>
-            <p className="text-xs">{t("calendar.noCalendarsHint")}</p>
-            <Link
-              href="/settings"
-              draggable={false}
-              className={cn(
-                "mt-0.5 text-xs font-medium text-brand hover:underline",
-                onMoreClick && "pointer-events-none"
-              )}
-              onPointerDown={(e) => e.stopPropagation()}
-              onDragStart={(e) => e.preventDefault()}
-            >
-              {t("nav.settings")}
-            </Link>
-          </div>
-        ) : isLoading ? (
-          <div className="flex items-center py-2">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-          </div>
-        ) : dayEvents.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("calendar.noEvents")}</p>
-        ) : (
-          <>
-            <ul className="flex min-h-0 flex-col gap-3">
-              {visibleEvents.map((ev, i) => {
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-3 py-4 pr-5 sm:pr-6">
+          {calendarEntityIds.length === 0 ? (
+            <div className="flex flex-col gap-1.5 text-gray-400 dark:text-white/35">
+              <CalendarDays className="h-5 w-5 opacity-50" aria-hidden />
+              <p className="text-sm font-medium text-gray-600 dark:text-white/70">{t("calendar.noCalendars")}</p>
+              <p className="text-xs">{t("calendar.noCalendarsHint")}</p>
+              <Link
+                href="/settings"
+                draggable={false}
+                className={cn(
+                  "mt-0.5 text-xs font-medium text-brand hover:underline",
+                  onMoreClick && "pointer-events-none"
+                )}
+                onPointerDown={(e) => e.stopPropagation()}
+                onDragStart={(e) => e.preventDefault()}
+              >
+                {t("nav.settings")}
+              </Link>
+            </div>
+          ) : isLoading ? (
+            <div className="flex items-center py-2">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+            </div>
+          ) : dayEvents.length === 0 ? (
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("calendar.noEvents")}</p>
+          ) : (
+            <>
+              <ul className="flex min-h-0 flex-col gap-3">
+                {visibleEvents.map((ev, i) => {
                   const start = eventStart(ev);
                   const dot = colorMap[ev.entityId] ?? CAL_DOT_COLORS[0];
-                return (
-                  <li key={`${ev.entityId}-${ev.start}-${i}`} className="flex min-w-0 items-start gap-2.5">
-                    <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", dot)} aria-hidden />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold leading-snug text-gray-900 dark:text-white">
-                        <EventTitle summary={ev.summary} empty={t("calendar.emptyTitle")} />
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500">
-                        {ev.allDay ? t("calendar.allDay") : formatTime(start, locale)}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-            {overflowCount > 0 ? (
-              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-300 dark:text-gray-600">
-                {t(overflowCount === 1 ? "calendar.moreEvent" : "calendar.moreEvents").replace(
-                  "{n}",
-                  String(overflowCount)
-                )}
-              </p>
-            ) : null}
-          </>
-        )}
+                  return (
+                    <li key={`${ev.entityId}-${ev.start}-${i}`} className="flex min-w-0 items-start gap-2.5">
+                      <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", dot)} aria-hidden />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold leading-snug text-gray-900 dark:text-white">
+                          <EventTitle summary={ev.summary} empty={t("calendar.emptyTitle")} />
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500">
+                          {ev.allDay ? t("calendar.allDay") : formatTime(start, locale)}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              {overflowCount > 0 ? (
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-300 dark:text-gray-600">
+                  {t(overflowCount === 1 ? "calendar.moreEvent" : "calendar.moreEvents").replace(
+                    "{n}",
+                    String(overflowCount)
+                  )}
+                </p>
+              ) : null}
+            </>
+          )}
+        </div>
       </div>
+
+      {showUpcoming && upcoming ? (
+        <div className="relative z-[1] flex shrink-0 items-center gap-2.5 border-t border-gray-200/80 px-5 py-2.5 dark:border-white/10 sm:px-6">
+          <span
+            className={cn(
+              "h-2 w-2 shrink-0 rounded-full",
+              colorMap[upcoming.entityId] ?? CAL_DOT_COLORS[0]
+            )}
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
+              {t("calendar.upcoming")}
+            </p>
+            <p className="truncate text-sm font-semibold leading-snug text-gray-900 dark:text-white">
+              <EventTitle summary={upcoming.summary} empty={t("calendar.emptyTitle")} />
+            </p>
+          </div>
+          <p className="shrink-0 text-xs font-medium text-gray-400 dark:text-gray-500">
+            {formatUpcomingWhen(upcoming, today, locale, t)}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

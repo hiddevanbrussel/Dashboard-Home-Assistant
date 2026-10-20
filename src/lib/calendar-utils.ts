@@ -98,6 +98,27 @@ export function eventsFromNowOnDay(events: CalendarEvent[], day: Date, now = new
   return dayEvents.filter((ev) => ev.allDay || eventEnd(ev).getTime() > nowMs);
 }
 
+/**
+ * Next appointment from `now` onward. Prefers the soonest timed event that has
+ * not ended yet; falls back to an all-day event still covering today.
+ * Used for the calendar card “upcoming” footer.
+ */
+export function nextUpcomingEvent(events: CalendarEvent[], now = new Date()): CalendarEvent | null {
+  const nowMs = now.getTime();
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  const timed = events
+    .filter((ev) => !ev.allDay && eventEnd(ev).getTime() > nowMs)
+    .sort((a, b) => eventStart(a).getTime() - eventStart(b).getTime());
+  if (timed[0]) return timed[0];
+
+  const allDay = events.find(
+    (ev) => ev.allDay && today >= eventStart(ev) && today < eventEnd(ev)
+  );
+  return allDay ?? null;
+}
+
 /** Index of the event to emphasize in a day list: current/next timed event today, otherwise the first. */
 export function highlightedEventIndex(events: CalendarEvent[], day: Date, now = new Date()): number {
   const dayEvents = eventsOnDay(events, day);

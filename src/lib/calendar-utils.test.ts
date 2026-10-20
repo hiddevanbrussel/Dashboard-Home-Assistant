@@ -13,6 +13,7 @@ import {
   layoutTimedOverlaps,
   MIN_HOUR_H,
   monthGridDays,
+  nextUpcomingEvent,
   startOfWeek,
   stepTime,
   timedEventFrame,
@@ -235,5 +236,22 @@ describe("calendar-utils", () => {
       { entityId: "calendar.a", summary: "Trip", start: "2026-09-17T09:00:00", end: "2026-09-17T10:00:00", allDay: false },
     ];
     expect(eventsFromNowOnDay(laterEvents, tomorrow, now).map((ev) => ev.summary)).toEqual(["Trip"]);
+  });
+
+  it("picks the next upcoming appointment across days", () => {
+    const now = new Date(2026, 8, 16, 21, 30);
+    const events: CalendarEvent[] = [
+      { entityId: "calendar.a", summary: "Done", start: "2026-09-16T18:00:00", end: "2026-09-16T19:00:00", allDay: false },
+      { entityId: "calendar.a", summary: "Tomorrow", start: "2026-09-17T09:00:00", end: "2026-09-17T10:00:00", allDay: false },
+      { entityId: "calendar.a", summary: "Later week", start: "2026-09-18T12:00:00", end: "2026-09-18T13:00:00", allDay: false },
+    ];
+    expect(nextUpcomingEvent(events, now)?.summary).toBe("Tomorrow");
+
+    const midday = new Date(2026, 8, 16, 12, 0);
+    const todayEvents: CalendarEvent[] = [
+      { entityId: "calendar.a", summary: "All day", start: "2026-09-16", end: "2026-09-17", allDay: true },
+      { entityId: "calendar.a", summary: "Afternoon", start: "2026-09-16T15:00:00", end: "2026-09-16T16:00:00", allDay: false },
+    ];
+    expect(nextUpcomingEvent(todayEvents, midday)?.summary).toBe("Afternoon");
   });
 });

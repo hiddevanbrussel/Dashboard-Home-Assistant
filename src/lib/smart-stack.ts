@@ -1,7 +1,9 @@
 /** Smart Stack (slimme stapel): slideshow of nested dashboard cards. */
 
 import { normalizeClimateDisplayMode } from "@/lib/climate-card";
+import { isCalendarShowUpcoming } from "@/lib/calendar-card";
 import { normalizeNutsAccent, normalizeNutsPeriod } from "@/lib/nuts-card";
+import { normalizeTrashFractionEntityIds } from "@/lib/trash-card";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 
 export const SMART_STACK_DEFAULT_WIDTH = 300;
@@ -36,6 +38,7 @@ export const SMART_STACK_CHILD_TYPES = [
   "teamtracker_card",
   "camera_card",
   "calendar_card",
+  "trash_card",
 ] as const;
 
 export type SmartStackChildType = (typeof SMART_STACK_CHILD_TYPES)[number];
@@ -98,6 +101,7 @@ export type SmartStackChildEditFields = {
   show_team_names?: boolean;
   show_form?: boolean;
   show_progress?: boolean;
+  show_upcoming?: boolean;
   size?: string;
   label?: string;
   color?: string;
@@ -114,6 +118,10 @@ export type SmartStackChildEditFields = {
   scale?: number;
   refresh?: number;
   conditions?: WidgetConfig["conditions"];
+  date_entity_id?: string;
+  days_entity_id?: string;
+  fraction_entity_ids?: WidgetConfig["fraction_entity_ids"];
+  demo_theme?: WidgetConfig["demo_theme"];
 };
 
 /**
@@ -225,6 +233,18 @@ export function buildSmartStackChildUpdates(
       return {
         title: form.title ?? "",
         entity_id: form.entity_id ?? "",
+        show_upcoming: isCalendarShowUpcoming(form.show_upcoming),
+      };
+    case "trash_card":
+      return {
+        ...base,
+        date_entity_id: form.date_entity_id || undefined,
+        days_entity_id: form.days_entity_id || undefined,
+        fraction_entity_ids: normalizeTrashFractionEntityIds(form.fraction_entity_ids),
+        demo_theme:
+          form.demo_theme === "restafval" || form.demo_theme === "pmd" || form.demo_theme === "gft"
+            ? form.demo_theme
+            : undefined,
       };
     default:
       return base;

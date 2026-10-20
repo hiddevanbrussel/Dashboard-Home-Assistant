@@ -68,6 +68,7 @@ export type CalendarCardWidgetItem = {
   title?: string;
   width?: number;
   height?: number;
+  show_upcoming?: boolean;
 };
 
 const LONG_PRESS_MS = 500;
@@ -342,6 +343,7 @@ export function FloatingCalendarCard({
           title={widget.title}
           width={displayWidth}
           height={displayHeight}
+          show_upcoming={widget.show_upcoming}
           onMoreClick={editMode ? onEdit : undefined}
         />
       </div>

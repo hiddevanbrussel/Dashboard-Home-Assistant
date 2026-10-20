@@ -161,6 +161,7 @@ import {
 import {
   clampCalendarCardHeight,
   clampCalendarCardWidth,
+  isCalendarShowUpcoming,
   CALENDAR_CARD_DEFAULT_HEIGHT,
   CALENDAR_CARD_DEFAULT_WIDTH,
   CALENDAR_CARD_MAX_HEIGHT,
@@ -539,6 +540,7 @@ function WidgetByType({
   days_entity_id,
   fraction_entity_ids,
   demo_theme,
+  show_upcoming,
   width,
   height,
   onMoreClick,
@@ -593,6 +595,7 @@ function WidgetByType({
   days_entity_id?: string;
   fraction_entity_ids?: TrashFractionEntityIds;
   demo_theme?: "gft" | "restafval" | "pmd";
+  show_upcoming?: boolean;
   width?: number;
   height?: number;
   onMoreClick?: () => void;
@@ -823,6 +826,7 @@ function WidgetByType({
       return (
         <CalendarCardWidget
           title={title}
+          show_upcoming={show_upcoming}
           onMoreClick={onMoreClick}
         />
       );
@@ -964,6 +968,7 @@ export default function DashboardEditPage() {
     cost_per_kwh?: number;
     child_id?: string | null;
     show_chore_points?: boolean;
+    show_upcoming?: boolean;
     date_entity_id?: string;
     days_entity_id?: string;
     fraction_entity_ids?: TrashFractionEntityIds;
@@ -985,6 +990,7 @@ export default function DashboardEditPage() {
     show_humidity: true,
     show_air_quality: false,
     show_precipitation: true,
+    show_upcoming: true,
     air_quality_entity_id: "",
     show_state: true,
     script_ids: [],
@@ -1219,6 +1225,12 @@ export default function DashboardEditPage() {
           cost_per_kwh: child.cost_per_kwh ?? undefined,
           child_id: child.child_id ?? null,
           show_chore_points: child.show_chore_points !== false,
+          show_upcoming: isCalendarShowUpcoming(child.show_upcoming),
+          date_entity_id: child.date_entity_id ?? "",
+          days_entity_id: child.days_entity_id ?? "",
+          fraction_entity_ids: normalizeTrashFractionEntityIds(child.fraction_entity_ids) ?? {},
+          demo_theme:
+            child.demo_theme === "restafval" || child.demo_theme === "pmd" ? child.demo_theme : "gft",
           page: widgetPage(editingWidget),
         });
         setIconSearch("");
@@ -1239,7 +1251,9 @@ export default function DashboardEditPage() {
           child.type === "camera_card" ||
           child.type === "teamtracker_card" ||
           child.type === "weather_card" ||
-          child.type === "nuts_card"
+          child.type === "nuts_card" ||
+          child.type === "trash_card" ||
+          child.type === "calendar_card"
         ) {
           setEditTab(child.type === "media_card" ? "algemeen" : "algemeen");
         }
@@ -1317,6 +1331,7 @@ export default function DashboardEditPage() {
         cost_per_kwh: editingWidget.cost_per_kwh ?? undefined,
         child_id: editingWidget.child_id ?? null,
         show_chore_points: editingWidget.show_chore_points !== false,
+        show_upcoming: isCalendarShowUpcoming(editingWidget.show_upcoming),
         date_entity_id: editingWidget.date_entity_id ?? "",
         days_entity_id: editingWidget.days_entity_id ?? "",
         fraction_entity_ids: normalizeTrashFractionEntityIds(editingWidget.fraction_entity_ids) ?? {},
@@ -1558,7 +1573,11 @@ export default function DashboardEditPage() {
       }),
       ...(type === "weather_card" && { width: WEATHER_CARD_DEFAULT_WIDTH, height: WEATHER_CARD_DEFAULT_HEIGHT }),
       ...(type === "vacuum_card_2" && { width: VACUUM_CARD_2_DEFAULT_WIDTH, height: VACUUM_CARD_2_DEFAULT_HEIGHT }),
-      ...(type === "calendar_card" && { width: CALENDAR_CARD_DEFAULT_WIDTH, height: CALENDAR_CARD_DEFAULT_HEIGHT }),
+      ...(type === "calendar_card" && {
+        width: CALENDAR_CARD_DEFAULT_WIDTH,
+        height: CALENDAR_CARD_DEFAULT_HEIGHT,
+        show_upcoming: true,
+      }),
       ...(type === "trash_card" && {
         width: TRASH_CARD_DEFAULT_WIDTH,
         height: TRASH_CARD_DEFAULT_HEIGHT,
@@ -2899,6 +2918,7 @@ export default function DashboardEditPage() {
                 title: w.title,
                 width: w.width,
                 height: w.height,
+                show_upcoming: w.show_upcoming,
               }}
               widgetIndex={i}
               editMode={editMode}
@@ -3326,12 +3346,14 @@ export default function DashboardEditPage() {
                                   key={childType}
                                   type="button"
                                   onClick={() => {
-                                    if (childType === "calendar_card") {
+                                    if (childType === "calendar_card" || childType === "trash_card") {
                                       const newChild: WidgetConfig = {
                                         id: generateId(),
                                         type: childType,
                                         title: t(`cardType.${childType}`),
                                         entity_id: "",
+                                        ...(childType === "calendar_card" && { show_upcoming: true }),
+                                        ...(childType === "trash_card" && { demo_theme: "gft" as const }),
                                       };
                                       const nextChildren = [...(editingWidget.children ?? []), newChild];
                                       const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
@@ -6176,52 +6198,82 @@ aria-label={t("editPanel.removeCondition")}
                     </div>
                   </div>
                 )}
-                {editFormType === "calendar_card" && !isEditingSmartStackChild && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("editPanel.widthPx")}
+                {editFormType === "calendar_card" && (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t("editPanel.showUpcoming")}
                       </label>
-                      <input
-                        type="number"
-                        min={CALENDAR_CARD_MIN_WIDTH}
-                        max={CALENDAR_CARD_MAX_WIDTH}
-                        step={10}
-                        value={editForm.width ?? CALENDAR_CARD_DEFAULT_WIDTH}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? undefined : Number(e.target.value);
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={editForm.show_upcoming !== false}
+                        onClick={() =>
                           setEditForm((prev) => ({
                             ...prev,
-                            width: v != null && !Number.isNaN(v) ? v : undefined,
-                          }));
-                        }}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                      />
+                            show_upcoming: !(prev.show_upcoming !== false),
+                          }))
+                        }
+                        className={cn(
+                          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#4700B5] focus:ring-offset-2",
+                          editForm.show_upcoming !== false ? "bg-[#4700B5]" : "bg-gray-200 dark:bg-gray-600"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition",
+                            editForm.show_upcoming !== false ? "translate-x-5" : "translate-x-1"
+                          )}
+                        />
+                      </button>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                        {t("editPanel.heightPx")}
-                      </label>
-                      <input
-                        type="number"
-                        min={CALENDAR_CARD_MIN_HEIGHT}
-                        max={CALENDAR_CARD_MAX_HEIGHT}
-                        step={10}
-                        value={editForm.height ?? CALENDAR_CARD_DEFAULT_HEIGHT}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? undefined : Number(e.target.value);
-                          setEditForm((prev) => ({
-                            ...prev,
-                            height: v != null && !Number.isNaN(v) ? v : undefined,
-                          }));
-                        }}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                      />
-                    </div>
+                    {!isEditingSmartStackChild ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {t("editPanel.widthPx")}
+                          </label>
+                          <input
+                            type="number"
+                            min={CALENDAR_CARD_MIN_WIDTH}
+                            max={CALENDAR_CARD_MAX_WIDTH}
+                            step={10}
+                            value={editForm.width ?? CALENDAR_CARD_DEFAULT_WIDTH}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({
+                                ...prev,
+                                width: v != null && !Number.isNaN(v) ? v : undefined,
+                              }));
+                            }}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {t("editPanel.heightPx")}
+                          </label>
+                          <input
+                            type="number"
+                            min={CALENDAR_CARD_MIN_HEIGHT}
+                            max={CALENDAR_CARD_MAX_HEIGHT}
+                            step={10}
+                            value={editForm.height ?? CALENDAR_CARD_DEFAULT_HEIGHT}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({
+                                ...prev,
+                                height: v != null && !Number.isNaN(v) ? v : undefined,
+                              }));
+                            }}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
+                    )}
                   </div>
-                )}
-                {editFormType === "calendar_card" && isEditingSmartStackChild && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
                 )}
                 {editFormType === "trash_card" && (
                   <>
@@ -6357,48 +6409,52 @@ aria-label={t("editPanel.removeCondition")}
                         });
                       })()}
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {t("editPanel.widthPx")}
-                        </label>
-                        <input
-                          type="number"
-                          min={TRASH_CARD_MIN_WIDTH}
-                          max={TRASH_CARD_MAX_WIDTH}
-                          step={10}
-                          value={editForm.width ?? TRASH_CARD_DEFAULT_WIDTH}
-                          onChange={(e) => {
-                            const v = e.target.value === "" ? undefined : Number(e.target.value);
-                            setEditForm((prev) => ({
-                              ...prev,
-                              width: v != null && !Number.isNaN(v) ? v : undefined,
-                            }));
-                          }}
-                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                        />
+                    {!isEditingSmartStackChild ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {t("editPanel.widthPx")}
+                          </label>
+                          <input
+                            type="number"
+                            min={TRASH_CARD_MIN_WIDTH}
+                            max={TRASH_CARD_MAX_WIDTH}
+                            step={10}
+                            value={editForm.width ?? TRASH_CARD_DEFAULT_WIDTH}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({
+                                ...prev,
+                                width: v != null && !Number.isNaN(v) ? v : undefined,
+                              }));
+                            }}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                            {t("editPanel.heightPx")}
+                          </label>
+                          <input
+                            type="number"
+                            min={TRASH_CARD_MIN_HEIGHT}
+                            max={TRASH_CARD_MAX_HEIGHT}
+                            step={10}
+                            value={editForm.height ?? TRASH_CARD_DEFAULT_HEIGHT}
+                            onChange={(e) => {
+                              const v = e.target.value === "" ? undefined : Number(e.target.value);
+                              setEditForm((prev) => ({
+                                ...prev,
+                                height: v != null && !Number.isNaN(v) ? v : undefined,
+                              }));
+                            }}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {t("editPanel.heightPx")}
-                        </label>
-                        <input
-                          type="number"
-                          min={TRASH_CARD_MIN_HEIGHT}
-                          max={TRASH_CARD_MAX_HEIGHT}
-                          step={10}
-                          value={editForm.height ?? TRASH_CARD_DEFAULT_HEIGHT}
-                          onChange={(e) => {
-                            const v = e.target.value === "" ? undefined : Number(e.target.value);
-                            setEditForm((prev) => ({
-                              ...prev,
-                              height: v != null && !Number.isNaN(v) ? v : undefined,
-                            }));
-                          }}
-                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                        />
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.smartStackChildSizeLocked")}</p>
+                    )}
                   </>
                 )}
                 {editFormType === "nuts_card" && (
@@ -7123,6 +7179,7 @@ aria-label={t("editPanel.removeCondition")}
                           height: editForm.height != null && editForm.height > 0 ? editForm.height : undefined,
                         }),
                         ...(editingWidget.type === "calendar_card" && {
+                          show_upcoming: isCalendarShowUpcoming(editForm.show_upcoming),
                           width: editForm.width != null && editForm.width > 0 ? clampCalendarCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampCalendarCardHeight(editForm.height) : undefined,
                         }),

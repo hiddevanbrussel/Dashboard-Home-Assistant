@@ -9,6 +9,8 @@ export const CALENDAR_CARD_MAX_HEIGHT = 420;
 const EVENT_ROW_PX = 52;
 const CARD_VERTICAL_PAD_PX = 40;
 const OVERFLOW_FOOTER_PX = 22;
+/** Reserved space when the upcoming-appointment strip is enabled. */
+const UPCOMING_STRIP_PX = 52;
 
 export function clampCalendarCardWidth(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
@@ -23,10 +25,23 @@ export function clampCalendarCardHeight(n: unknown): number {
 }
 
 /** How many event rows fit in the card before showing an overflow footer. */
-export function calendarVisibleEventCount(height: unknown): number {
+export function calendarVisibleEventCount(
+  height: unknown,
+  options?: { showUpcoming?: boolean }
+): number {
   const h = clampCalendarCardHeight(height);
-  const available = Math.max(EVENT_ROW_PX, h - CARD_VERTICAL_PAD_PX - OVERFLOW_FOOTER_PX);
+  const upcomingReserve = options?.showUpcoming ? UPCOMING_STRIP_PX : 0;
+  const available = Math.max(
+    EVENT_ROW_PX,
+    h - CARD_VERTICAL_PAD_PX - OVERFLOW_FOOTER_PX - upcomingReserve
+  );
   return Math.max(1, Math.floor(available / EVENT_ROW_PX));
+}
+
+/** Upcoming strip default: on unless explicitly disabled. */
+export function isCalendarShowUpcoming(raw: unknown): boolean {
+  if (raw === false || raw === 0 || raw === "false" || raw === "0") return false;
+  return true;
 }
 
 /** Resize from the bottom-right corner while keeping the top-left of the card fixed. */
