@@ -38,11 +38,22 @@ type MusicPlayerBarContentProps = {
   allowSpeakerSelection?: boolean;
   /** Called when user closes the bar (e.g. in GlobalMusicBar) */
   onClose?: () => void;
-  /** Play slide-up animation when bar appears (e.g. when opening from tab) */
+  /** Play slide-up animation when bar appears (legacy full-bleed dock) */
   animateOpen?: boolean;
+  /**
+   * `floating` — content for the inset sheet (no fixed positioning; parent supplies chrome).
+   * `dock` — legacy full-bleed footer (kept for compatibility).
+   */
+  variant?: "floating" | "dock";
 };
 
-export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, animateOpen = false }: MusicPlayerBarContentProps) {
+export function MusicPlayerBarContent({
+  allowSpeakerSelection = true,
+  onClose,
+  animateOpen = false,
+  variant = "floating",
+}: MusicPlayerBarContentProps) {
+  const isFloating = variant === "floating";
   const { t } = useTranslation();
   const speakerPopoverRef = useRef<HTMLDivElement>(null);
   const [speakerPopoverOpen, setSpeakerPopoverOpen] = useState(false);
@@ -129,18 +140,29 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
   if (haArtist && !artistLine) artistLine = haArtist;
   if (haTitle && !titleLine) titleLine = haTitle;
 
+  const Root = isFloating ? "div" : "footer";
+
   return (
-    <footer
+    <Root
       className={cn(
-        "fixed bottom-0 left-0 right-0 flex flex-col border-t overflow-visible",
-        "border-gray-200/60 dark:border-white/10",
-        speakerPopoverOpen ? "z-[200]" : "z-40",
-        animateOpen && "animate-music-bar-in"
+        "relative flex flex-col overflow-visible",
+        isFloating
+          ? cn(speakerPopoverOpen ? "z-[200]" : "z-10")
+          : cn(
+              "fixed bottom-0 left-0 right-0 border-t border-gray-200/60 dark:border-white/10",
+              speakerPopoverOpen ? "z-[200]" : "z-40",
+              animateOpen && "animate-music-bar-in"
+            )
       )}
       aria-label={t("music.playerBar")}
     >
-      {/* Light mode: zachter; dark mode: donkere bar */}
-      <div className="absolute inset-0 z-0 bg-white/85 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-transparent" aria-hidden />
+      {/* Fill — floating parent already paints glass; dock keeps its own backdrop. */}
+      {!isFloating ? (
+        <div
+          className="absolute inset-0 z-0 bg-white/85 backdrop-blur-md border-t border-gray-200/50 dark:border-transparent dark:bg-gray-900/95"
+          aria-hidden
+        />
+      ) : null}
       {/* Album cover alleen links, zacht uitfaden (mask + gradient, geen harde rand) */}
       {coverSrc && (
         <div
@@ -163,20 +185,29 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
           <div
             className="absolute inset-0 hidden dark:block"
             style={{
-              background: "linear-gradient(to right, transparent 0%, rgba(17,17,17,0.75) 25%, rgba(17,17,17,0.95) 50%, rgba(17,17,17,1) 100%)",
+              background: isFloating
+                ? "linear-gradient(to right, transparent 0%, rgba(17,24,39,0.55) 30%, rgba(17,24,39,0.92) 55%, rgba(17,24,39,1) 100%)"
+                : "linear-gradient(to right, transparent 0%, rgba(17,17,17,0.75) 25%, rgba(17,17,17,0.95) 50%, rgba(17,17,17,1) 100%)",
             }}
             aria-hidden
           />
           <div
             className="absolute inset-0 block dark:hidden"
             style={{
-              background: "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.55) 25%, rgba(255,255,255,0.88) 50%, rgba(255,255,255,1) 100%)",
+              background: isFloating
+                ? "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.45) 30%, rgba(255,255,255,0.88) 55%, rgba(255,255,255,1) 100%)"
+                : "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.55) 25%, rgba(255,255,255,0.88) 50%, rgba(255,255,255,1) 100%)",
             }}
             aria-hidden
           />
         </div>
       )}
-      <div className="relative z-10 flex w-full flex-col px-4 py-2 sm:px-6">
+      <div
+        className={cn(
+          "relative z-10 flex w-full flex-col",
+          isFloating ? "px-3.5 py-3 sm:px-5" : "px-4 py-2 sm:px-6"
+        )}
+      >
       <div className="w-full flex items-center gap-4 sm:gap-6 min-w-0">
         {/* Left: cover + artist/title */}
         <div className="flex items-center gap-3 min-w-[120px] max-w-[220px] sm:max-w-xs shrink-0 flex-shrink-0">
@@ -477,6 +508,6 @@ export function MusicPlayerBarContent({ allowSpeakerSelection = true, onClose, a
           next: t("music.next"),
         }}
       />
-    </footer>
+    </Root>
   );
 }

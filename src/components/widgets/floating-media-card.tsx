@@ -9,10 +9,13 @@ import {
   clampMediaCardWidth,
   resizeMediaCardFromBottomRight,
 } from "@/lib/media-card";
+import { isVacuumCardTap } from "@/lib/vacuum-card";
+import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY = "dashboard.floatingMediaCardPosition";
 const DEFAULT_OFFSET = 24;
+const TAP_MOVE_PX = 10;
 
 type Position = { left: number; bottom: number };
 
@@ -82,6 +85,9 @@ export function FloatingMediaCard({
   onResize?: (size: { width: number; height: number }) => void;
 }) {
   const { t } = useTranslation();
+  const maPlayers = useMusicPlayerStore((s) => s.maPlayers);
+  const playerBarExpanded = useMusicPlayerStore((s) => s.playerBarExpanded);
+  const setPlayerBarExpanded = useMusicPlayerStore((s) => s.setPlayerBarExpanded);
   const cardWidth = clampMediaCardWidth(width);
   const cardHeight = clampMediaCardHeight(height);
   const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
@@ -94,6 +100,9 @@ export function FloatingMediaCard({
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0, left: 0, bottom: 0 });
   const initialized = useRef(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
+  const movedRef = useRef(false);
+  const pressStart = useRef({ x: 0, y: 0 });
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -104,15 +113,33 @@ export function FloatingMediaCard({
 
   const startLongPress = useCallback(
     (e: React.PointerEvent) => {
-      if (editMode || !onEnterEditMode) return;
+      if (editMode || playerBarExpanded) return;
+      if ((e.target as HTMLElement).closest?.("button")) return;
+      longPressFiredRef.current = false;
+      movedRef.current = false;
+      pressStart.current = { x: e.clientX, y: e.clientY };
       clearLongPress();
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      if (!onEnterEditMode) return;
       longPressTimerRef.current = setTimeout(() => {
         longPressTimerRef.current = null;
+        longPressFiredRef.current = true;
         onEnterEditMode();
       }, LONG_PRESS_MS);
     },
-    [editMode, onEnterEditMode, clearLongPress]
+    [editMode, playerBarExpanded, onEnterEditMode, clearLongPress]
+  );
+
+  const handlePressMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (editMode || playerBarExpanded) return;
+      const dx = e.clientX - pressStart.current.x;
+      const dy = e.clientY - pressStart.current.y;
+      if (dx * dx + dy * dy <= TAP_MOVE_PX * TAP_MOVE_PX) return;
+      movedRef.current = true;
+      clearLongPress();
+    },
+    [editMode, playerBarExpanded, clearLongPress]
   );
 
   const endLongPress = useCallback(
@@ -122,6 +149,13 @@ export function FloatingMediaCard({
     },
     [clearLongPress]
   );
+
+  function handleCardClick() {
+    if (editMode || playerBarExpanded) return;
+    if (!isVacuumCardTap({ longPressFired: longPressFiredRef.current, moved: movedRef.current })) return;
+    if (maPlayers.length === 0) return;
+    setPlayerBarExpanded(true);
+  }
 
   useEffect(() => {
     if (initialized.current) return;
@@ -282,20 +316,23 @@ export function FloatingMediaCard({
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}
+      data-no-page-swipe={editMode || playerBarExpanded ? true : undefined}
+      aria-haspopup={maPlayers.length > 0 ? "dialog" : undefined}
+      aria-expanded={maPlayers.length > 0 ? playerBarExpanded : undefined}
       style={{
         left: position.left,
         bottom: position.bottom,
         width: totalWidth,
         height: totalHeight,
-        ...(!editMode && onEnterEditMode ? { touchAction: "none" } : {}),
+        ...(!editMode && !playerBarExpanded ? { touchAction: "pan-y" } : {}),
       }}
-      {...(!editMode &&
-        onEnterEditMode && {
-          onPointerDown: startLongPress,
-          onPointerUp: endLongPress,
-          onPointerLeave: endLongPress,
-          onPointerCancel: endLongPress,
-        })}
+      {...(!editMode && {
+        onPointerDown: startLongPress,
+        onPointerMove: handlePressMove,
+        onPointerUp: endLongPress,
+        onPointerCancel: endLongPress,
+        onClick: handleCardClick,
+      })}
       {...(editMode && {
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,

@@ -1656,7 +1656,7 @@ export default function MusicPage() {
         </div>,
         document.body
       )}
-      <div className={cn("music-page-content w-full max-w-full flex flex-col h-full min-h-0 relative", "bg-page-light dark:bg-dark-page", showPlayerBar && playerBarExpanded && "pb-24")}>
+      <div className={cn("music-page-content w-full max-w-full flex flex-col h-full min-h-0 relative", "bg-page-light dark:bg-dark-page", showPlayerBar && !playerBarExpanded && "pb-20")}>
         <div className="flex flex-1 min-h-0 min-w-0">
           <div
             ref={musicScrollRef}
