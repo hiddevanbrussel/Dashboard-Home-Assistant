@@ -49,7 +49,7 @@ export function HeaderEnergyStats({ contentLight }: { contentLight?: boolean } =
 
   if (!enabled) return null;
 
-  const stats: StatDef[] = [
+  const allStats: StatDef[] = [
     {
       key: "yield",
       entityId: entities.solarYieldTodayEntityId,
@@ -65,7 +65,8 @@ export function HeaderEnergyStats({ contentLight }: { contentLight?: boolean } =
       entityId: entities.gridExportEntityId,
       labelKey: "header.energy.toGrid",
     },
-  ].filter((s) => Boolean(s.entityId.trim()));
+  ];
+  const stats = allStats.filter((s) => Boolean(s.entityId.trim()));
 
   if (stats.length === 0) return null;
 
