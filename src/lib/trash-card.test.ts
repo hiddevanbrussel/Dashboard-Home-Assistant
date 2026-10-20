@@ -132,12 +132,46 @@ describe("trash-card helpers", () => {
 
   it("parses common date formats and relative words", () => {
     const ref = new Date("2026-09-30T10:00:00");
-    expect(parseTrashDate("2026-10-02", ref)?.toISOString().slice(0, 10)).toBe("2026-10-02");
+    expect(parseTrashDate("2026-10-02", ref)?.getFullYear()).toBe(2026);
+    expect(parseTrashDate("2026-10-02", ref)?.getMonth()).toBe(9);
+    expect(parseTrashDate("2026-10-02", ref)?.getDate()).toBe(2);
     expect(parseTrashDate("02-10-2026", ref)?.getDate()).toBe(2);
-    expect(parseTrashDate("morgen", ref)?.toISOString().slice(0, 10)).toBe("2026-10-01");
-    expect(parseTrashDate("today", ref)?.toISOString().slice(0, 10)).toBe("2026-09-30");
-    expect(parseTrashDate(7, ref)?.toISOString().slice(0, 10)).toBe("2026-10-07");
+    expect(parseTrashDate("morgen", ref)?.getDate()).toBe(1);
+    expect(parseTrashDate("morgen", ref)?.getMonth()).toBe(9);
+    expect(parseTrashDate("today", ref)?.getDate()).toBe(30);
+    expect(parseTrashDate("today", ref)?.getMonth()).toBe(8);
+    expect(parseTrashDate(7, ref)?.getDate()).toBe(7);
+    expect(parseTrashDate(7, ref)?.getMonth()).toBe(9);
     expect(parseTrashDate("unavailable")).toBeNull();
+  });
+
+  it("uses the local calendar day of ISO datetimes (no UTC date-prefix steal)", () => {
+    // Afvalwijzer / HA often store local midnight as a UTC offset:
+    // 2026-10-24 00:00 CEST == 2026-10-23T22:00:00.000Z
+    const cetMidnight = "2026-10-23T22:00:00.000Z";
+    const parsed = parseTrashDate(cetMidnight);
+    const local = new Date(cetMidnight);
+    expect(parsed).not.toBeNull();
+    expect(parsed!.getFullYear()).toBe(local.getFullYear());
+    expect(parsed!.getMonth()).toBe(local.getMonth());
+    expect(parsed!.getDate()).toBe(local.getDate());
+    expect(parsed!.getHours()).toBe(12);
+
+    // Offset form: calendar day must follow the instant’s local day, not the
+    // YYYY-MM-DD prefix alone when that would disagree in other zones.
+    const withOffset = parseTrashDate("2026-10-24T00:00:00+02:00");
+    const offsetLocal = new Date("2026-10-24T00:00:00+02:00");
+    expect(withOffset!.getFullYear()).toBe(offsetLocal.getFullYear());
+    expect(withOffset!.getMonth()).toBe(offsetLocal.getMonth());
+    expect(withOffset!.getDate()).toBe(offsetLocal.getDate());
+    expect(withOffset!.getHours()).toBe(12);
+
+    // Pure date-only strings stay on that calendar day.
+    const dateOnly = parseTrashDate("2026-10-24");
+    expect(dateOnly?.getFullYear()).toBe(2026);
+    expect(dateOnly?.getMonth()).toBe(9);
+    expect(dateOnly?.getDate()).toBe(24);
+    expect(dateOnly?.getHours()).toBe(12);
   });
 
   it("uses shorter labels for compact upcoming cells", () => {

@@ -323,7 +323,14 @@ export function ClimateCard2Widget({
   const isDense = density === "dense";
   const isCompact = density === "compact" || isDense;
   const showModeLabels = density === "comfortable" || mode === "graph";
-  const subtitle = title?.trim() || (attrs.friendly_name as string | undefined) || entity_id;
+  // Card type title on top (“Klimaat”), name underneath (widget title / entity).
+  const cardTitle = t("climateCard.climate");
+  const nameLabel =
+    title?.trim() ||
+    (typeof attrs.friendly_name === "string" && attrs.friendly_name.trim()) ||
+    entity_id ||
+    "";
+  const showNameLabel = Boolean(nameLabel && nameLabel !== cardTitle);
   const compactAccent = climateCompactAccent({ isOn, statusKind, activeTile });
   const isCompactLayout = mode === "compact";
 
@@ -487,12 +494,14 @@ export function ClimateCard2Widget({
         <>
           <div className="flex shrink-0 items-start justify-between gap-2 px-4 pt-4">
             <div className="min-w-0">
-              <p className="truncate text-[12px] font-medium leading-tight text-gray-400 dark:text-white/50">
-                {subtitle}
-              </p>
               <h2 className="truncate text-[1.2rem] font-semibold leading-tight tracking-tight text-gray-950 dark:text-white">
-                {t("climateCard.climate")}
+                {cardTitle}
               </h2>
+              {showNameLabel ? (
+                <p className="mt-0.5 truncate text-[12px] font-medium leading-tight text-gray-400 dark:text-white/50">
+                  {nameLabel}
+                </p>
+              ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-0.5 pt-0.5">
               <button
@@ -632,14 +641,6 @@ export function ClimateCard2Widget({
             )}
           >
             <div className="min-w-0">
-              <p
-                className={cn(
-                  "truncate font-medium text-gray-400 dark:text-white/50",
-                  isDense ? "text-[11px]" : "text-[13px]"
-                )}
-              >
-                {subtitle}
-              </p>
               <h2
                 className={cn(
                   "truncate font-semibold leading-tight tracking-tight text-gray-950 dark:text-white",
@@ -647,8 +648,18 @@ export function ClimateCard2Widget({
                   isDense ? "text-[1.2rem]" : "text-[1.35rem]"
                 )}
               >
-                {t("climateCard.climate")}
+                {cardTitle}
               </h2>
+              {showNameLabel ? (
+                <p
+                  className={cn(
+                    "mt-0.5 truncate font-medium text-gray-400 dark:text-white/50",
+                    isDense ? "text-[11px]" : "text-[13px]"
+                  )}
+                >
+                  {nameLabel}
+                </p>
+              ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-1 pt-0.5">
               <button

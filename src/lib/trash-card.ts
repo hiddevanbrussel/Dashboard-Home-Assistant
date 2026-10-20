@@ -362,26 +362,36 @@ export function parseTrashDate(raw: unknown, ref: Date = new Date()): Date | nul
     }
   }
 
-  // YYYY-MM-DD or YYYY/MM/DD
-  let m = text.match(/^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})/);
+  // Date-only YYYY-MM-DD / YYYY/MM/DD (must be end-anchored — otherwise
+  // ISO timestamps like 2026-10-23T22:00:00Z steal the UTC date and show
+  // one day behind in Europe/Amsterdam).
+  let m = text.match(/^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})$/);
   if (m) {
     const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0);
     return Number.isNaN(d.getTime()) ? null : d;
   }
 
-  // DD-MM-YYYY or DD/MM/YYYY (common NL)
-  m = text.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})/);
+  // Date-only DD-MM-YYYY or DD/MM/YYYY (common NL)
+  m = text.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
   if (m) {
     const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), 12, 0, 0, 0);
     return Number.isNaN(d.getTime()) ? null : d;
   }
 
-  // ISO datetime
+  // ISO datetime — use the local calendar day of that instant (HA stores
+  // local-midnight collection dates as UTC offsets, e.g. 22:00Z for CEST).
   const iso = Date.parse(text);
   if (!Number.isNaN(iso)) {
-    const d = new Date(iso);
-    d.setHours(12, 0, 0, 0);
-    return d;
+    const instant = new Date(iso);
+    return new Date(
+      instant.getFullYear(),
+      instant.getMonth(),
+      instant.getDate(),
+      12,
+      0,
+      0,
+      0
+    );
   }
 
   return null;
