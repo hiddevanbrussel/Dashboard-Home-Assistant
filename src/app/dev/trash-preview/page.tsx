@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 const THEMES: TrashTheme[] = ["gft", "restafval", "pmd"];
 const LIVE_TYPE_ENTITY = "sensor.dev_trash_next_type";
 const LIVE_DATE_ENTITY = "sensor.dev_trash_next_date";
+const LIVE_DAYS_ENTITY = "sensor.dev_trash_next_in_days";
 
 const LIVE_LABELS: Record<TrashTheme, string> = {
   gft: "Gft",
@@ -27,7 +28,6 @@ export default function TrashPreviewPage() {
   const [size, setSize] = useState({ w: TRASH_CARD_DEFAULT_WIDTH, h: TRASH_CARD_DEFAULT_HEIGHT });
   const [liveTheme, setLiveTheme] = useState<TrashTheme>("gft");
   const setStates = useEntityStateStore((s) => s.setStates);
-  const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
   const setThemeMode = useThemeStore((s) => s.setMode);
   const setResolved = useThemeStore((s) => s.setResolved);
@@ -55,6 +55,14 @@ export default function TrashPreviewPage() {
       restafval: fridayOffset(1),
       pmd: fridayOffset(2),
     };
+    const daysUntil = Math.max(
+      0,
+      Math.round(
+        (new Date(dates[liveTheme] + "T12:00:00").getTime() -
+          new Date(new Date().toDateString()).getTime()) /
+          86_400_000
+      )
+    );
     setStates([
       {
         entity_id: LIVE_TYPE_ENTITY,
@@ -65,6 +73,11 @@ export default function TrashPreviewPage() {
         entity_id: LIVE_DATE_ENTITY,
         state: dates[liveTheme],
         attributes: { friendly_name: "Next waste date" },
+      },
+      {
+        entity_id: LIVE_DAYS_ENTITY,
+        state: String(daysUntil),
+        attributes: { friendly_name: "Next in days" },
       },
       // Sibling fraction sensors so upcoming rows use real future dates too.
       {
@@ -159,10 +172,7 @@ export default function TrashPreviewPage() {
           <button
             key={theme}
             type="button"
-            onClick={() => {
-              setLiveTheme(theme);
-              updateEntityState(LIVE_TYPE_ENTITY, { state: LIVE_LABELS[theme] });
-            }}
+            onClick={() => setLiveTheme(theme)}
             className={cn(
               "rounded-lg px-3 py-1.5 text-sm",
               liveTheme === theme
@@ -181,6 +191,7 @@ export default function TrashPreviewPage() {
           title=""
           entity_id={LIVE_TYPE_ENTITY}
           date_entity_id={LIVE_DATE_ENTITY}
+          days_entity_id={LIVE_DAYS_ENTITY}
           demo_theme="gft"
           width={size.w}
           height={size.h}

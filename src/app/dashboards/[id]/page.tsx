@@ -171,6 +171,7 @@ import {
 import {
   clampTrashCardHeight,
   clampTrashCardWidth,
+  discoverTrashDaysUntilEntity,
   discoverTrashFractionEntities,
   mergeTrashFractionEntities,
   normalizeTrashFractionEntityIds,
@@ -535,6 +536,7 @@ function WidgetByType({
   textMode,
   icon_background_color,
   date_entity_id,
+  days_entity_id,
   fraction_entity_ids,
   demo_theme,
   width,
@@ -588,6 +590,7 @@ function WidgetByType({
   cost_per_kwh?: number;
   textMode?: "title" | "subtitle" | "text" | "both";
   date_entity_id?: string;
+  days_entity_id?: string;
   fraction_entity_ids?: TrashFractionEntityIds;
   demo_theme?: "gft" | "restafval" | "pmd";
   width?: number;
@@ -829,6 +832,7 @@ function WidgetByType({
           title={title}
           entity_id={entity_id}
           date_entity_id={date_entity_id}
+          days_entity_id={days_entity_id}
           fraction_entity_ids={fraction_entity_ids}
           demo_theme={demo_theme}
           width={width}
@@ -961,6 +965,7 @@ export default function DashboardEditPage() {
     child_id?: string | null;
     show_chore_points?: boolean;
     date_entity_id?: string;
+    days_entity_id?: string;
     fraction_entity_ids?: TrashFractionEntityIds;
     demo_theme?: "gft" | "restafval" | "pmd";
     page?: number;
@@ -1020,6 +1025,7 @@ export default function DashboardEditPage() {
     child_id: null as string | null,
     show_chore_points: true,
     date_entity_id: "",
+    days_entity_id: "",
     fraction_entity_ids: {},
     demo_theme: "gft" as const,
     page: 0,
@@ -1312,6 +1318,7 @@ export default function DashboardEditPage() {
         child_id: editingWidget.child_id ?? null,
         show_chore_points: editingWidget.show_chore_points !== false,
         date_entity_id: editingWidget.date_entity_id ?? "",
+        days_entity_id: editingWidget.days_entity_id ?? "",
         fraction_entity_ids: normalizeTrashFractionEntityIds(editingWidget.fraction_entity_ids) ?? {},
         demo_theme: editingWidget.demo_theme === "restafval" || editingWidget.demo_theme === "pmd" ? editingWidget.demo_theme : "gft",
         page: widgetPage(editingWidget),
@@ -2304,6 +2311,7 @@ export default function DashboardEditPage() {
                       cost_per_kwh={w.cost_per_kwh}
                       textMode={w.textMode}
                       date_entity_id={w.date_entity_id}
+                      days_entity_id={w.days_entity_id}
                       fraction_entity_ids={w.fraction_entity_ids}
                       demo_theme={w.demo_theme}
                       width={w.width}
@@ -2928,6 +2936,7 @@ export default function DashboardEditPage() {
                 title: w.title ?? t("cardType.trash_card"),
                 entity_id: w.entity_id ?? "",
                 date_entity_id: w.date_entity_id,
+                days_entity_id: w.days_entity_id,
                 fraction_entity_ids: w.fraction_entity_ids,
                 width: w.width,
                 height: w.height,
@@ -6229,6 +6238,51 @@ aria-label={t("editPanel.removeCondition")}
                       />
                       <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{t("trashCard.dateEntityHint")}</p>
                     </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {t("trashCard.daysEntity")}
+                      </label>
+                      {(() => {
+                        const liveStates = useEntityStateStore.getState().states;
+                        const snapshots =
+                          Object.keys(liveStates).length > 0
+                            ? Object.values(liveStates).map((e) => ({
+                                entity_id: e.entity_id,
+                                state: e.state,
+                                attributes: e.attributes,
+                              }))
+                            : entities.map((e) => ({
+                                entity_id: e.entity_id,
+                                state: (e as { state?: string }).state ?? null,
+                                attributes: e.attributes,
+                              }));
+                        const autoDaysId = discoverTrashDaysUntilEntity(snapshots) ?? "";
+                        const override = (editForm.days_entity_id ?? "").trim();
+                        return (
+                          <>
+                            <EntitySelectWithSearch
+                              value={override}
+                              onChange={(v) =>
+                                setEditForm((prev) => ({
+                                  ...prev,
+                                  days_entity_id: !v || v === autoDaysId ? "" : v,
+                                }))
+                              }
+                              entities={entities.filter((e) => e.entity_id.startsWith("sensor."))}
+                              placeholder={t("editPanel.entityPlaceholder")}
+                              emptyOption={
+                                autoDaysId
+                                  ? t("trashCard.daysEntityAuto").replace("{id}", autoDaysId)
+                                  : t("editPanel.none")
+                              }
+                            />
+                            <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                              {t("trashCard.daysEntityHint")}
+                            </p>
+                          </>
+                        );
+                      })()}
+                    </div>
                     <div className="space-y-3 rounded-lg border border-gray-200/80 bg-gray-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03]">
                       <div>
                         <p className="text-xs font-medium text-gray-600 dark:text-gray-300">
@@ -6678,6 +6732,7 @@ aria-label={t("editPanel.removeCondition")}
                         title={editForm.title || t("cardType.trash_card")}
                         entity_id={editForm.entity_id}
                         date_entity_id={editForm.date_entity_id}
+                        days_entity_id={editForm.days_entity_id}
                         fraction_entity_ids={editForm.fraction_entity_ids}
                         width={clampTrashCardWidth(editForm.width ?? TRASH_CARD_DEFAULT_WIDTH)}
                         height={clampTrashCardHeight(editForm.height ?? TRASH_CARD_DEFAULT_HEIGHT)}
@@ -7074,6 +7129,7 @@ aria-label={t("editPanel.removeCondition")}
                         ...(editingWidget.type === "trash_card" && {
                           entity_id: editForm.entity_id || "",
                           date_entity_id: editForm.date_entity_id || undefined,
+                          days_entity_id: editForm.days_entity_id || undefined,
                           fraction_entity_ids: normalizeTrashFractionEntityIds(editForm.fraction_entity_ids),
                           width: editForm.width != null && editForm.width > 0 ? clampTrashCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampTrashCardHeight(editForm.height) : undefined,
