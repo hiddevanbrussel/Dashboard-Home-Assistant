@@ -99,6 +99,8 @@ export function CalendarCardWidget({
   width,
   height,
   show_upcoming,
+  previewEvents,
+  previewNow,
   onMoreClick,
 }: {
   title?: string;
@@ -106,6 +108,10 @@ export function CalendarCardWidget({
   height?: number;
   /** Show next appointment strip at the bottom (default on). */
   show_upcoming?: boolean;
+  /** Dev/preview: skip HA fetch and render these events. */
+  previewEvents?: CalendarEvent[];
+  /** Dev/preview: fixed “now” for stable upcoming selection. */
+  previewNow?: Date;
   onMoreClick?: () => void;
 }) {
   const { t, language } = useTranslation();
@@ -114,16 +120,19 @@ export function CalendarCardWidget({
   const cardW = clampCalendarCardWidth(width);
   const cardH = clampCalendarCardHeight(height);
   const showUpcoming = isCalendarShowUpcoming(show_upcoming);
-  const [now, setNow] = useState(() => new Date());
+  const isPreview = previewEvents != null;
+  const [liveNow, setLiveNow] = useState(() => new Date());
+  const now = previewNow ?? liveNow;
 
   useEffect(() => {
-    hydrateCalendarStore();
-  }, []);
+    if (!isPreview) hydrateCalendarStore();
+  }, [isPreview]);
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    if (isPreview || previewNow) return;
+    const id = window.setInterval(() => setLiveNow(new Date()), 30_000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [isPreview, previewNow]);
 
   const today = useMemo(() => {
     const d = new Date(now);
@@ -137,25 +146,31 @@ export function CalendarCardWidget({
     return d;
   }, [today, showUpcoming]);
 
-  const { data: events = [], isLoading } = useQuery({
+  const entityIds = isPreview
+    ? Array.from(new Set(previewEvents.map((ev) => ev.entityId)))
+    : calendarEntityIds;
+
+  const { data: fetchedEvents = [], isLoading } = useQuery({
     queryKey: [
       "dashboard-calendar-card",
-      calendarEntityIds,
+      entityIds,
       toDateKey(today),
       showUpcoming ? UPCOMING_LOOKAHEAD_DAYS : 1,
     ],
-    queryFn: () => fetchRangeEvents(calendarEntityIds, today, rangeEnd),
-    enabled: calendarEntityIds.length > 0,
+    queryFn: () => fetchRangeEvents(entityIds, today, rangeEnd),
+    enabled: !isPreview && entityIds.length > 0,
     refetchInterval: 60_000,
   });
 
+  const events = isPreview ? previewEvents : fetchedEvents;
+
   const colorMap = useMemo(() => {
     const map: Record<string, string> = {};
-    calendarEntityIds.forEach((id, i) => {
+    entityIds.forEach((id, i) => {
       map[id] = CAL_DOT_COLORS[i % CAL_DOT_COLORS.length];
     });
     return map;
-  }, [calendarEntityIds]);
+  }, [entityIds]);
 
   const dayEvents = useMemo(
     () => eventsFromNowOnDay(events, today, now),
@@ -202,7 +217,7 @@ export function CalendarCardWidget({
         </div>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-3 py-4 pr-5 sm:pr-6">
-          {calendarEntityIds.length === 0 ? (
+          {entityIds.length === 0 ? (
             <div className="flex flex-col gap-1.5 text-gray-400 dark:text-white/35">
               <CalendarDays className="h-5 w-5 opacity-50" aria-hidden />
               <p className="text-sm font-medium text-gray-600 dark:text-white/70">{t("calendar.noCalendars")}</p>
