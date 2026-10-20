@@ -143,22 +143,97 @@ describe("trash-card helpers", () => {
     expect(formatTrashPickupDateShort(d, "en")).toMatch(/^Fri 2 [Oo]ct$/);
   });
 
-  it("builds a quiet schedule with featured + upcoming fractions", () => {
+  it("builds a quiet schedule from live entity dates without inventing demo Fridays", () => {
     const schedule = buildTrashSchedule({
       primary: {
         theme: "gft",
         typeRaw: "Gft",
         date: new Date(2026, 9, 23, 12, 0, 0),
       },
+      entities: [
+        {
+          entity_id: "sensor.afvalwijzer_pmd",
+          state: "2026-11-06",
+          attributes: { friendly_name: "PMD" },
+        },
+        {
+          entity_id: "sensor.afvalwijzer_restafval",
+          state: "2026-10-30",
+          attributes: { friendly_name: "Restafval" },
+        },
+      ],
+      ref: new Date(2026, 9, 20, 12, 0, 0),
+      fillMissingWithDemo: false,
+    });
+    expect(schedule.featured.theme).toBe("gft");
+    expect(schedule.featured.date?.getDate()).toBe(23);
+    expect(schedule.upcoming).toHaveLength(2);
+    expect(schedule.upcoming.map((p) => p.theme)).toEqual(["restafval", "pmd"]);
+    expect(schedule.upcoming[0].date?.getDate()).toBe(30);
+    expect(schedule.upcoming[1].date?.getDate()).toBe(6);
+  });
+
+  it("does not fill missing fractions with demo dates when live HA data exists", () => {
+    const schedule = buildTrashSchedule({
+      primary: {
+        theme: "gft",
+        typeRaw: "Gft",
+        date: new Date(2026, 9, 23, 12, 0, 0),
+      },
+      entities: [
+        {
+          entity_id: "sensor.afvalwijzer_pmd",
+          state: "2026-11-06",
+          attributes: { friendly_name: "PMD" },
+        },
+      ],
       ref: new Date(2026, 9, 20, 12, 0, 0),
     });
     expect(schedule.featured.theme).toBe("gft");
+    expect(schedule.upcoming).toHaveLength(1);
+    expect(schedule.upcoming[0].theme).toBe("pmd");
+    expect(schedule.upcoming[0].date?.getDate()).toBe(6);
+    // No invented restafval demo row.
+    expect(schedule.upcoming.some((p) => p.theme === "restafval")).toBe(false);
+  });
+
+  it("prefers per-fraction entity dates over a generic next-type primary", () => {
+    const schedule = buildTrashSchedule({
+      primary: {
+        theme: "gft",
+        typeRaw: "Gft",
+        // Wrong / shared "next" date — must not override the gft sensor.
+        date: new Date(2026, 9, 21, 12, 0, 0),
+      },
+      entities: [
+        {
+          entity_id: "sensor.afvalwijzer_gft",
+          state: "2026-10-23",
+          attributes: { friendly_name: "Gft" },
+        },
+        {
+          entity_id: "sensor.afvalwijzer_restafval",
+          state: "2026-10-30",
+          attributes: { friendly_name: "Restafval" },
+        },
+      ],
+      ref: new Date(2026, 9, 20, 12, 0, 0),
+      fillMissingWithDemo: false,
+    });
+    expect(schedule.featured.theme).toBe("gft");
+    expect(schedule.featured.date?.getDate()).toBe(23);
+    expect(schedule.upcoming[0].theme).toBe("restafval");
+    expect(schedule.upcoming[0].date?.getDate()).toBe(30);
+  });
+
+  it("still fills a full demo schedule when nothing live is bound", () => {
+    const schedule = buildTrashSchedule({
+      primary: null,
+      ref: new Date(2026, 9, 20, 12, 0, 0),
+      fillMissingWithDemo: true,
+    });
+    expect(schedule.featured.date).toBeTruthy();
     expect(schedule.upcoming).toHaveLength(2);
-    expect(new Set(schedule.upcoming.map((p) => p.theme)).size).toBe(2);
-    const featuredTime = schedule.featured.date!.getTime();
-    for (const pickup of schedule.upcoming) {
-      expect(pickup.date!.getTime()).toBeGreaterThanOrEqual(featuredTime);
-    }
   });
 
   it("discovers one sensor per waste fraction and allows manual overrides", () => {
@@ -232,11 +307,13 @@ describe("trash-card helpers", () => {
         },
       ],
       ref: new Date(2026, 9, 20, 12, 0, 0),
+      fillMissingWithDemo: false,
     });
     expect(schedule.featured.theme).toBe("gft");
     expect(schedule.upcoming.some((p) => p.theme === "pmd")).toBe(true);
     // Unrelated counter must not become a fake earlier GFT/restafval pickup.
     expect(schedule.featured.date?.getDate()).toBe(23);
+    expect(schedule.upcoming).toHaveLength(1);
   });
 
   it("ignores past pickup dates when building the schedule", () => {
@@ -246,8 +323,17 @@ describe("trash-card helpers", () => {
         typeRaw: "Gft",
         date: new Date(2026, 9, 2, 12, 0, 0), // before ref
       },
+      entities: [
+        {
+          entity_id: "sensor.afvalwijzer_pmd",
+          state: "2026-11-06",
+          attributes: { friendly_name: "PMD" },
+        },
+      ],
       ref: new Date(2026, 9, 20, 12, 0, 0),
+      fillMissingWithDemo: false,
     });
+    expect(schedule.featured.theme).toBe("pmd");
     expect(isTrashPickupPast(schedule.featured.date, new Date(2026, 9, 20, 12, 0, 0))).toBe(
       false
     );

@@ -675,14 +675,18 @@ export function trashThemeChipStyle(theme: TrashTheme): {
 
 /**
  * Build a quiet schedule: next featured pickup + up to two later fractions.
- * Fills missing themes with demo offsets so the card still reads as a schedule.
  * Past pickup dates are ignored so "next collection" never shows a stale day.
+ *
+ * Demo fill (fake Fridays) only runs when there is no live HA pickup data —
+ * otherwise missing fractions stay absent so dates always come from entities.
  */
 export function buildTrashSchedule(input: {
   primary: TrashPickup | null;
   entities?: HaEntitySnapshot[];
   fallbackTheme?: TrashTheme;
   ref?: Date;
+  /** Force demo fill for missing themes (dev / unbound showcase). Default: only when no live dates. */
+  fillMissingWithDemo?: boolean;
 }): { featured: TrashPickup; upcoming: TrashPickup[] } {
   const ref = input.ref ?? new Date();
   const fallbackTheme = input.fallbackTheme ?? "gft";
@@ -696,8 +700,7 @@ export function buildTrashSchedule(input: {
     }
   };
 
-  consider(input.primary);
-
+  // Fraction sensors first — their state/attrs are the date source of truth per type.
   for (const entity of input.entities ?? []) {
     const theme = trashEntityTheme(entity);
     // Skip unrelated HA sensors — a bare date + fallback theme was poisoning schedules.
@@ -712,9 +715,18 @@ export function buildTrashSchedule(input: {
     );
   }
 
-  for (const theme of ["gft", "pmd", "restafval"] as TrashTheme[]) {
-    if (!byTheme.has(theme)) {
-      byTheme.set(theme, trashDemoPickup(theme, ref));
+  // Optional primary/next-type binding only fills themes that have no fraction sensor yet.
+  if (input.primary && !byTheme.has(input.primary.theme)) {
+    consider(input.primary);
+  }
+
+  const hasLiveDates = byTheme.size > 0;
+  const fillDemo = input.fillMissingWithDemo ?? !hasLiveDates;
+  if (fillDemo) {
+    for (const theme of TRASH_THEMES) {
+      if (!byTheme.has(theme)) {
+        byTheme.set(theme, trashDemoPickup(theme, ref));
+      }
     }
   }
 
@@ -724,7 +736,16 @@ export function buildTrashSchedule(input: {
     return at - bt;
   });
 
-  const featured = sorted[0] ?? trashDemoPickup(fallbackTheme, ref);
+  if (sorted.length === 0) {
+    // Fully empty (all past / unparsable) — fall back to a demo featured only when asked.
+    if (fillDemo) {
+      const featured = trashDemoPickup(fallbackTheme, ref);
+      return { featured, upcoming: [] };
+    }
+    return { featured: trashDemoPickup(fallbackTheme, ref), upcoming: [] };
+  }
+
+  const featured = sorted[0]!;
   const featuredTime = featured.date?.getTime() ?? Number.NEGATIVE_INFINITY;
   const upcoming = sorted
     .filter((p) => p.theme !== featured.theme)
