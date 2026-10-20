@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, MoreVertical } from "lucide-react";
@@ -70,9 +70,25 @@ function formatMonth(date: Date, locale: string): string {
   return date.toLocaleDateString(locale, { month: "long" }).toUpperCase();
 }
 
+/** Compact day label for the upcoming strip (fits narrow cards; never omit). */
+function upcomingDayLabel(
+  start: Date,
+  end: Date,
+  allDay: boolean,
+  today: Date,
+  locale: string,
+  t: (key: string) => string
+): string {
+  if (allDay && today >= start && today < end) return t("calendar.today");
+  if (isSameDay(start, today)) return t("calendar.today");
+  if (isSameDay(start, addDays(today, 1))) return t("calendar.tomorrow");
+  // Short weekday + day — month omitted so the right column stays readable when resized.
+  return start.toLocaleDateString(locale, { weekday: "short", day: "numeric" });
+}
+
 /**
- * Day + time for the upcoming strip (always two lines when possible so the
- * right column stays visible beside long titles).
+ * Day + time for the upcoming strip — always two lines so the right column
+ * stays filled at every card width (title truncates; when never does).
  */
 function upcomingWhenParts(
   ev: CalendarEvent,
@@ -81,27 +97,10 @@ function upcomingWhenParts(
   t: (key: string) => string
 ): { day: string; time: string } {
   const start = eventStart(ev);
-  if (ev.allDay) {
-    if (today >= start && today < eventEnd(ev)) {
-      return { day: t("calendar.today"), time: t("calendar.allDay") };
-    }
-    if (isSameDay(start, addDays(today, 1))) {
-      return { day: t("calendar.tomorrow"), time: t("calendar.allDay") };
-    }
-    return {
-      day: start.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }),
-      time: t("calendar.allDay"),
-    };
-  }
-  const time = formatTime(start, locale);
-  if (isSameDay(start, today)) return { day: t("calendar.today"), time };
-  if (isSameDay(start, addDays(today, 1))) {
-    return { day: t("calendar.tomorrow"), time };
-  }
-  return {
-    day: start.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }),
-    time,
-  };
+  const end = eventEnd(ev);
+  const day = upcomingDayLabel(start, end, ev.allDay, today, locale, t);
+  if (ev.allDay) return { day, time: t("calendar.allDay") };
+  return { day, time: formatTime(start, locale) };
 }
 
 export function CalendarCardWidget({
@@ -126,16 +125,37 @@ export function CalendarCardWidget({
   const { t, language } = useTranslation();
   const locale = localeOf(language);
   const calendarEntityIds = useCalendarStore((s) => s.calendarEntityIds);
-  const cardW = clampCalendarCardWidth(width);
-  const cardH = clampCalendarCardHeight(height);
+  const propW = clampCalendarCardWidth(width);
+  const propH = clampCalendarCardHeight(height);
+  const shellRef = useRef<HTMLDivElement>(null);
+  /** Prefer the visible box (smart-stack can be 250) over a clamped prop that would overflow-clip. */
+  const [measured, setMeasured] = useState<{ w: number; h: number } | null>(null);
+  const cardW = measured?.w ?? propW;
+  const cardH = measured?.h ?? propH;
   const showUpcoming = isCalendarShowUpcoming(show_upcoming);
   const isPreview = previewEvents != null;
   const [liveNow, setLiveNow] = useState(() => new Date());
   const now = previewNow ?? liveNow;
+  const narrow = cardW < 340;
+  const compact = cardW < 300;
 
   useEffect(() => {
     if (!isPreview) hydrateCalendarStore();
   }, [isPreview]);
+
+  useEffect(() => {
+    const el = shellRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect;
+      if (!box || box.width < 1 || box.height < 1) return;
+      const w = Math.round(box.width);
+      const h = Math.round(box.height);
+      setMeasured((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h }));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (isPreview || previewNow) return;
@@ -205,8 +225,15 @@ export function CalendarCardWidget({
 
   return (
     <div
-      className="relative flex h-full min-h-0 w-full flex-col overflow-hidden"
-      style={{ width: cardW, height: cardH }}
+      ref={shellRef}
+      className="relative flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden"
+      // Only set explicit size when parent does not already size us (preview / floating shell).
+      style={{
+        width: width != null ? propW : undefined,
+        height: height != null ? propH : undefined,
+        maxWidth: "100%",
+        maxHeight: "100%",
+      }}
     >
       {onMoreClick ? (
         <button
@@ -221,8 +248,18 @@ export function CalendarCardWidget({
       ) : null}
 
       <div className="flex min-h-0 flex-1">
-        <div className="flex w-[38%] max-w-[9.5rem] shrink-0 flex-col justify-center px-5 py-4 sm:px-6">
-          <p className="text-[2.75rem] font-bold leading-none tracking-tight text-gray-900 tabular-nums dark:text-white">
+        <div
+          className={cn(
+            "flex shrink-0 flex-col justify-center py-4",
+            compact ? "w-[34%] max-w-[5.5rem] px-3" : narrow ? "w-[36%] max-w-[7.5rem] px-3.5" : "w-[38%] max-w-[9.5rem] px-5"
+          )}
+        >
+          <p
+            className={cn(
+              "font-bold leading-none tracking-tight text-gray-900 tabular-nums dark:text-white",
+              compact ? "text-[2.1rem]" : "text-[2.75rem]"
+            )}
+          >
             {today.getDate()}
           </p>
           <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-gray-400 dark:text-gray-500">
@@ -233,7 +270,12 @@ export function CalendarCardWidget({
           </p>
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-3 py-4 pr-5 sm:pr-6">
+        <div
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-3 py-4",
+            compact || narrow ? "pr-3" : "pr-5"
+          )}
+        >
           {entityIds.length === 0 ? (
             <div className="flex flex-col gap-1.5 text-gray-400 dark:text-white/35">
               <CalendarDays className="h-5 w-5 opacity-50" aria-hidden />
@@ -295,8 +337,9 @@ export function CalendarCardWidget({
       {showUpcoming && upcoming && upcomingWhen ? (
         <div
           className={cn(
-            "relative z-[1] flex shrink-0 items-end gap-2.5 border-t border-gray-200/80 pt-2.5 pb-3.5 dark:border-white/10",
-            cardW < 340 ? "px-3" : "px-5 sm:px-6"
+            // Grid: when-column is max-content so resize/title never steal day+time.
+            "relative z-[1] grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-end border-t border-gray-200/80 pt-2.5 pb-3.5 dark:border-white/10",
+            compact ? "gap-x-1.5 px-2.5" : narrow ? "gap-x-2 px-3" : "gap-x-2.5 px-5"
           )}
         >
           <span
@@ -306,16 +349,21 @@ export function CalendarCardWidget({
             )}
             aria-hidden
           />
-          <div className="min-w-0 flex-1 overflow-hidden">
+          <div className="min-w-0 overflow-hidden">
             <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
               {t("calendar.upcoming")}
             </p>
-            <p className="truncate text-sm font-semibold leading-snug text-gray-900 dark:text-white">
+            <p
+              className={cn(
+                "truncate font-semibold leading-snug text-gray-900 dark:text-white",
+                compact ? "text-xs" : "text-sm"
+              )}
+            >
               <EventTitle summary={upcoming.summary} empty={t("calendar.emptyTitle")} />
             </p>
           </div>
-          <div className="min-w-[3.75rem] shrink-0 self-end text-right leading-tight">
-            <p className="truncate text-[10px] font-medium text-gray-400 dark:text-gray-500">
+          <div className="justify-self-end whitespace-nowrap text-right leading-tight [min-width:max-content]">
+            <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">
               {upcomingWhen.day}
             </p>
             <p className="tabular-nums text-xs font-semibold text-gray-600 dark:text-gray-300">

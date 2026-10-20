@@ -6,10 +6,14 @@ import { CalendarCardWidget } from "@/components/widgets/calendar-card-widget";
 import {
   CALENDAR_CARD_DEFAULT_HEIGHT,
   CALENDAR_CARD_DEFAULT_WIDTH,
+  CALENDAR_CARD_MIN_WIDTH,
 } from "@/lib/calendar-card";
 import { addDays, toDateKey } from "@/lib/calendar-utils";
 import { useLanguageStore } from "@/stores/language-store";
 import { cn } from "@/lib/utils";
+
+/** Typical smart-stack square — must keep Opkomend day/time inside the frame. */
+const STACK_SQUARE = 250;
 
 function fixtureEvents(now: Date): CalendarEvent[] {
   const today = toDateKey(now);
@@ -123,9 +127,23 @@ export default function CalendarCardPreviewPage() {
       events: longTitleTonight,
     },
     {
+      key: "min-width-long",
+      label: "Min width · day/time must stay",
+      w: CALENDAR_CARD_MIN_WIDTH,
+      h: CALENDAR_CARD_DEFAULT_HEIGHT + 40,
+      events: longTitleTonight,
+    },
+    {
+      key: "stack-250",
+      label: "Smart-stack 250×250",
+      w: STACK_SQUARE,
+      h: STACK_SQUARE,
+      events: longTitleTonight,
+    },
+    {
       key: "narrow-tomorrow",
-      label: "280 empty-today (stack)",
-      w: 280,
+      label: "Min width empty-today",
+      w: CALENDAR_CARD_MIN_WIDTH,
       h: 280,
       events: narrowEmptyToday,
     },
@@ -154,6 +172,7 @@ export default function CalendarCardPreviewPage() {
                 "glass-surface overflow-hidden rounded-2xl shadow-xl",
                 "bg-white/80 dark:bg-black/40"
               )}
+              style={{ width: card.w, height: card.h }}
             >
               <CalendarCardWidget
                 width={card.w}
