@@ -52,6 +52,20 @@ function fixtureEvents(now: Date): CalendarEvent[] {
   ];
 }
 
+/** Empty today + tomorrow morning — matches narrow stack footer case (“Morgen · 08:30”). */
+function emptyTodayTomorrowEvents(now: Date): CalendarEvent[] {
+  const tomorrow = toDateKey(addDays(now, 1));
+  return [
+    {
+      entityId: "calendar.school",
+      summary: "Filosofie",
+      start: `${tomorrow}T08:30:00`,
+      end: `${tomorrow}T09:20:00`,
+      allDay: false,
+    },
+  ];
+}
+
 /** Dev-only calendar card preview with upcoming strip (no HA). */
 export default function CalendarCardPreviewPage() {
   const setLanguage = useLanguageStore((s) => s.setLanguage);
@@ -62,6 +76,25 @@ export default function CalendarCardPreviewPage() {
   useEffect(() => {
     setLanguage("nl");
   }, [setLanguage]);
+
+  const narrowEmptyToday = useMemo(() => emptyTodayTomorrowEvents(now), [now]);
+
+  const cards = [
+    {
+      key: "default",
+      label: "Default",
+      w: CALENDAR_CARD_DEFAULT_WIDTH,
+      h: CALENDAR_CARD_DEFAULT_HEIGHT + 40,
+      events,
+    },
+    {
+      key: "narrow-tomorrow",
+      label: "280 empty-today (stack)",
+      w: 280,
+      h: 280,
+      events: narrowEmptyToday,
+    },
+  ] as const;
 
   return (
     <div className="min-h-screen bg-[#ece7df] p-6 text-gray-900">
@@ -75,19 +108,28 @@ export default function CalendarCardPreviewPage() {
         />
         Opkomende afspraak tonen
       </label>
-      <div
-        className={cn(
-          "glass-surface overflow-hidden rounded-2xl shadow-xl",
-          "w-fit bg-white/80 dark:bg-black/40"
-        )}
-      >
-        <CalendarCardWidget
-          width={CALENDAR_CARD_DEFAULT_WIDTH}
-          height={CALENDAR_CARD_DEFAULT_HEIGHT + 40}
-          show_upcoming={showUpcoming}
-          previewEvents={events}
-          previewNow={now}
-        />
+      <div className="flex flex-wrap gap-6">
+        {cards.map((card) => (
+          <div key={card.key}>
+            <p className="mb-2 text-xs font-medium text-gray-500">
+              {card.label} · {card.w}×{card.h}
+            </p>
+            <div
+              className={cn(
+                "glass-surface overflow-hidden rounded-2xl shadow-xl",
+                "bg-white/80 dark:bg-black/40"
+              )}
+            >
+              <CalendarCardWidget
+                width={card.w}
+                height={card.h}
+                show_upcoming={showUpcoming}
+                previewEvents={card.events}
+                previewNow={now}
+              />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

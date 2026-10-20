@@ -276,10 +276,16 @@ export function CalendarCardWidget({
       </div>
 
       {showUpcoming && upcoming ? (
-        <div className="relative z-[1] flex shrink-0 items-center gap-2.5 border-t border-gray-200/80 px-5 py-2.5 dark:border-white/10 sm:px-6">
+        <div
+          className={cn(
+            "relative z-[1] flex shrink-0 items-start gap-2 border-t border-gray-200/80 py-2 dark:border-white/10",
+            // Narrow stack frames (~250–300) need tighter padding so the when-label stays readable.
+            cardW < 340 ? "px-3" : "px-5 sm:px-6"
+          )}
+        >
           <span
             className={cn(
-              "h-2 w-2 shrink-0 rounded-full",
+              "mt-1.5 h-2 w-2 shrink-0 rounded-full",
               colorMap[upcoming.entityId] ?? CAL_DOT_COLORS[0]
             )}
             aria-hidden
@@ -291,10 +297,14 @@ export function CalendarCardWidget({
             <p className="truncate text-sm font-semibold leading-snug text-gray-900 dark:text-white">
               <EventTitle summary={upcoming.summary} empty={t("calendar.emptyTitle")} />
             </p>
+            {/*
+              Keep when under the title (not a trailing column). At ~280px stack width a
+              right-aligned “Morgen · 08:30” was clipped by the card overflow.
+            */}
+            <p className="mt-0.5 truncate text-xs tabular-nums text-gray-400 dark:text-gray-500">
+              {formatUpcomingWhen(upcoming, today, locale, t)}
+            </p>
           </div>
-          <p className="shrink-0 text-xs font-medium text-gray-400 dark:text-gray-500">
-            {formatUpcomingWhen(upcoming, today, locale, t)}
-          </p>
         </div>
       ) : null}
     </div>
