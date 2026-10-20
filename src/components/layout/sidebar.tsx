@@ -7,10 +7,8 @@ import {
   DoorOpen,
   Home,
   ListTodo,
-  Moon,
   Music2,
   Settings,
-  Sun,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -19,7 +17,7 @@ import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/mus
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
-import { useThemeStore } from "@/stores/theme-store";
+import { HeaderNotifications } from "./header-notifications";
 
 /** Space reserved on the left for the floating icon rail. */
 export const SIDEBAR_INSET = "5.5rem";
@@ -42,27 +40,6 @@ function navButtonClass(isActive: boolean) {
     isActive
       ? "bg-brand text-white shadow-sm dark:bg-white dark:text-brand"
       : "text-gray-700 hover:bg-white/55 hover:text-gray-900 dark:text-white/85 dark:hover:bg-white/15 dark:hover:text-white"
-  );
-}
-
-function ThemeIconButton() {
-  const { t } = useTranslation();
-  const mode = useThemeStore((s) => s.mode);
-  const resolved = useThemeStore((s) => s.resolved);
-  const setMode = useThemeStore((s) => s.setMode);
-  const effective = mode === "auto" ? resolved : mode;
-  const isLight = effective === "light";
-
-  return (
-    <button
-      type="button"
-      onClick={() => setMode(isLight ? "dark" : "light")}
-      aria-label={isLight ? t("nav.themeDark") : t("nav.themeLight")}
-      title={isLight ? t("nav.themeDark") : t("nav.themeLight")}
-      className={navButtonClass(false)}
-    >
-      {isLight ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-    </button>
   );
 }
 
@@ -121,7 +98,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
         className="sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-3 [touch-action:none] [-webkit-user-drag:none]"
         aria-label={t("nav.utilities")}
       >
-        <ThemeIconButton />
+        <HeaderNotifications placement="sidebar" buttonClassName={navButtonClass(false)} />
         <Link
           href="/settings"
           draggable={false}
