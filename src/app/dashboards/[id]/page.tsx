@@ -6239,12 +6239,19 @@ aria-label={t("editPanel.removeCondition")}
                         </p>
                       </div>
                       {(() => {
+                        const liveStates = useEntityStateStore.getState().states;
                         const discovered = discoverTrashFractionEntities(
-                          entities.map((e) => ({
-                            entity_id: e.entity_id,
-                            state: (e as { state?: string }).state ?? null,
-                            attributes: e.attributes,
-                          }))
+                          Object.keys(liveStates).length > 0
+                            ? Object.values(liveStates).map((e) => ({
+                                entity_id: e.entity_id,
+                                state: e.state,
+                                attributes: e.attributes,
+                              }))
+                            : entities.map((e) => ({
+                                entity_id: e.entity_id,
+                                state: (e as { state?: string }).state ?? null,
+                                attributes: e.attributes,
+                              }))
                         );
                         const overrides = normalizeTrashFractionEntityIds(editForm.fraction_entity_ids) ?? {};
                         const resolved = mergeTrashFractionEntities(discovered, overrides);
