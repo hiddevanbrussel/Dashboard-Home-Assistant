@@ -69,8 +69,9 @@ function useTrashSchedule(
       fallbackTheme: "gft",
     });
 
+    // Include every resolved fraction sensor — dates must come from these entities,
+    // not from demo Fridays. Primary/date bindings still win via `live` when present.
     const related = fractionIds
-      .filter((id) => id !== entityId && id !== dateEntityId)
       .map((id) => states[id])
       .filter(Boolean)
       .map((ent) => ({
@@ -92,7 +93,7 @@ function useTrashSchedule(
         };
       }
       return {
-        ...buildTrashSchedule({ primary: null, fallbackTheme: "gft" }),
+        ...buildTrashSchedule({ primary: null, fallbackTheme: "gft", fillMissingWithDemo: true }),
         isDemo: true,
         discovered,
         resolvedFractions,
@@ -104,6 +105,8 @@ function useTrashSchedule(
         primary: live,
         entities: related,
         fallbackTheme: live?.theme ?? "gft",
+        // Never invent dates when HA fraction/type sensors are bound.
+        fillMissingWithDemo: false,
       }),
       isDemo: false,
       discovered,
@@ -117,7 +120,7 @@ function BinChip({
   size,
 }: {
   theme: TrashTheme;
-  size: "lg" | "sm";
+  size: "lg" | "md" | "sm";
 }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- local static container art
@@ -128,7 +131,7 @@ function BinChip({
       draggable={false}
       className={cn(
         "shrink-0 select-none object-contain object-bottom [-webkit-user-drag:none]",
-        size === "lg" ? "h-28 w-28" : "h-14 w-14"
+        size === "lg" ? "h-28 w-28" : size === "md" ? "h-[4.5rem] w-[4.5rem]" : "h-10 w-10"
       )}
       aria-hidden
     />
@@ -138,18 +141,35 @@ function BinChip({
 function UpcomingCell({
   pickup,
   locale,
+  compact,
 }: {
   pickup: TrashPickup;
   locale: TrashLocale;
+  compact?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2.5">
+    <div
+      className={cn(
+        "flex min-w-0 flex-1",
+        compact ? "items-start gap-1.5" : "items-center gap-2.5"
+      )}
+    >
       <BinChip theme={pickup.theme} size="sm" />
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold tracking-tight text-[#1B2437] dark:text-white/90">
-          {formatTrashTypeLabel(pickup.theme, pickup.typeRaw, locale)}
+      <div className="min-w-0 overflow-hidden">
+        <p
+          className={cn(
+            "truncate font-semibold tracking-tight text-[#1B2437] dark:text-white/90",
+            compact ? "text-xs" : "text-sm"
+          )}
+        >
+          {formatTrashTypeLabel(pickup.theme, pickup.typeRaw, locale, { compact })}
         </p>
-        <p className="whitespace-nowrap text-[13px] font-medium tabular-nums text-[#4E5D73] dark:text-white/70">
+        <p
+          className={cn(
+            "truncate font-medium tabular-nums text-[#4E5D73] dark:text-white/70",
+            compact ? "text-[11px] leading-tight" : "whitespace-nowrap text-[13px]"
+          )}
+        >
           {formatTrashPickupDateShort(pickup.date, locale)}
         </p>
       </div>
@@ -226,33 +246,38 @@ export const TrashCardWidget = memo(function TrashCardWidget({
       <div
         className={cn(
           "relative z-[2] flex h-full min-h-0 flex-col",
-          compact ? "gap-3 px-3.5 py-3.5" : "gap-4 px-5 py-5"
+          compact ? "gap-2.5 px-3 py-3" : "gap-4 px-5 py-5"
         )}
       >
         <h2
           className={cn(
             "pr-8 font-semibold tracking-tight text-[#1B2437] dark:text-white",
-            compact ? "text-[1.05rem]" : "text-[1.2rem]"
+            compact ? "text-[0.98rem] leading-snug" : "text-[1.2rem]"
           )}
         >
           {heading}
         </h2>
 
-        <div className="flex min-h-0 min-w-0 flex-1 items-center gap-4">
-          <BinChip theme={featured.theme} size="lg" />
+        <div
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 items-center",
+            compact ? "gap-2.5" : "gap-4"
+          )}
+        >
+          <BinChip theme={featured.theme} size={compact ? "md" : "lg"} />
           <div className="min-w-0">
             <p
               className={cn(
                 "truncate font-bold tracking-tight text-[#1B2437] dark:text-white",
-                compact ? "text-lg" : "text-xl"
+                compact ? "text-base" : "text-xl"
               )}
             >
               {featuredLabel}
             </p>
             <p
               className={cn(
-                "mt-1 whitespace-nowrap font-medium tabular-nums text-[#4E5D73] dark:text-white/65",
-                compact ? "text-sm" : "text-base"
+                "font-medium tabular-nums text-[#4E5D73] dark:text-white/65",
+                compact ? "mt-0.5 truncate text-xs" : "mt-1 whitespace-nowrap text-base"
               )}
             >
               {featuredDate}
@@ -261,13 +286,24 @@ export const TrashCardWidget = memo(function TrashCardWidget({
         </div>
 
         {upcoming.length > 0 ? (
-          <div className="flex shrink-0 items-stretch gap-3 border-t border-[#1B2437]/08 pt-3.5 dark:border-white/10">
+          <div
+            className={cn(
+              "flex shrink-0 items-stretch border-t border-[#1B2437]/08 dark:border-white/10",
+              compact ? "gap-1.5 pt-2.5" : "gap-3 pt-3.5"
+            )}
+          >
             {upcoming.map((pickup, index) => (
               <div key={`${pickup.theme}-${index}`} className="flex min-w-0 flex-1 items-stretch">
                 {index > 0 ? (
-                  <div className="mr-3 w-px self-stretch bg-[#1B2437]/10 dark:bg-white/10" aria-hidden />
+                  <div
+                    className={cn(
+                      "w-px self-stretch bg-[#1B2437]/10 dark:bg-white/10",
+                      compact ? "mr-1.5" : "mr-3"
+                    )}
+                    aria-hidden
+                  />
                 ) : null}
-                <UpcomingCell pickup={pickup} locale={locale} />
+                <UpcomingCell pickup={pickup} locale={locale} compact={compact} />
               </div>
             ))}
           </div>
