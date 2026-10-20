@@ -1,19 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import type { MAPlayer } from "@/stores/music-player-store";
+import { resolveEntityId } from "@/lib/ma-entity-map";
 
-/** Map a Music Assistant player to its Home Assistant entity_id. */
-export function resolveEntityId(p: MAPlayer, entityMap: Record<string, string>): string | null {
-  const q = p.queue_id;
-  const name = (p.display_name as string) ?? "";
-  return (
-    entityMap[q] ??
-    entityMap[q?.toLowerCase?.() ?? ""] ??
-    entityMap[name.toLowerCase().replace(/\s+/g, "_")] ??
-    null
-  );
-}
+export { resolveEntityId };
 
 /**
  * Shared hook for speaker join/unjoin logic.
