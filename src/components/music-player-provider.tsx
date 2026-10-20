@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore, type MAPlayer, type QueueState } from "@/stores/music-player-store";
 import { callMusicAssistant } from "@/lib/music-assistant";
@@ -13,6 +14,7 @@ const POLL_INTERVAL_PLAYING_MS = 1000; // vaker bij afspelen o.a. voor radio str
  * Keeps the global music player store in sync so the player bar can be shown on any page.
  */
 export function MusicPlayerProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const musicAssistant = useMusicAssistantStore();
   const {
     setMaPlayers,
@@ -21,8 +23,11 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
     setSelectedQueueId,
     maPlayers,
   } = useMusicPlayerStore();
+  /** /dev/* pages may seed the store for UI previews without a live MA. */
+  const isDevPreview = Boolean(pathname?.startsWith("/dev/"));
 
   useEffect(() => {
+    if (isDevPreview) return;
     if (!musicAssistant.enabled || !musicAssistant.baseUrl) {
       setMaPlayers([]);
       setQueueState(null);
@@ -37,7 +42,7 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
         setMaPlayers(list as MAPlayer[]);
       })
       .catch(() => setMaPlayers([]));
-  }, [musicAssistant, setMaPlayers, setQueueState]);
+  }, [isDevPreview, musicAssistant, setMaPlayers, setQueueState]);
 
   useEffect(() => {
     if (maPlayers.length > 0 && !selectedQueueId) {
