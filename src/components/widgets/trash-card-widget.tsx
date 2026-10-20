@@ -335,7 +335,7 @@ export const TrashCardWidget = memo(function TrashCardWidget({
           <div
             className={cn(
               "relative z-[2] flex h-full min-h-0 flex-col justify-center",
-              compact ? "pl-[42%] pr-1" : "pl-[46%] pr-2"
+              compact ? "pl-[48%] pr-1" : "pl-[52%] pr-2"
             )}
           >
             <p
