@@ -2,6 +2,11 @@
 
 export type TrashTheme = "gft" | "restafval" | "pmd";
 
+export const TRASH_THEMES: TrashTheme[] = ["gft", "restafval", "pmd"];
+
+/** Per-fraction HA sensor overrides. Missing keys keep auto-discovery. */
+export type TrashFractionEntityIds = Partial<Record<TrashTheme, string>>;
+
 export type TrashPickup = {
   theme: TrashTheme;
   /** Raw waste type string from HA / demo (for display mapping). */
@@ -384,6 +389,71 @@ export function trashEntityTheme(entity: HaEntitySnapshot): TrashTheme | null {
     mapWasteTypeToTheme(entity.entity_id) ??
     null
   );
+}
+
+/** Normalize persisted per-fraction overrides (drop empties). */
+export function normalizeTrashFractionEntityIds(value: unknown): TrashFractionEntityIds | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const out: TrashFractionEntityIds = {};
+  for (const theme of TRASH_THEMES) {
+    const raw = (value as Record<string, unknown>)[theme];
+    if (typeof raw === "string" && raw.trim()) out[theme] = raw.trim();
+  }
+  return TRASH_THEMES.some((theme) => out[theme]) ? out : undefined;
+}
+
+export function hasTrashFractionOverrides(overrides?: TrashFractionEntityIds | null): boolean {
+  return Boolean(normalizeTrashFractionEntityIds(overrides));
+}
+
+/**
+ * Auto-pick one HA sensor per waste fraction.
+ * Prefers ids that name the fraction and look like a date sensor.
+ */
+export function discoverTrashFractionEntities(
+  entities: Iterable<HaEntitySnapshot>
+): TrashFractionEntityIds {
+  const best = new Map<TrashTheme, { entity_id: string; score: number }>();
+  for (const entity of entities) {
+    if (!entity?.entity_id) continue;
+    const theme =
+      trashEntityTheme(entity) ??
+      (isLikelyTrashEntityId(entity.entity_id) ? mapWasteTypeToTheme(entity.entity_id) : null);
+    if (!theme) continue;
+    const id = entity.entity_id.toLowerCase();
+    let score = 1;
+    if (id.includes(theme)) score += 3;
+    if (isLikelyTrashEntityId(entity.entity_id)) score += 1;
+    if (looksLikeDate(entity.state)) score += 2;
+    const prev = best.get(theme);
+    if (!prev || score > prev.score) best.set(theme, { entity_id: entity.entity_id, score });
+  }
+  const out: TrashFractionEntityIds = {};
+  for (const [theme, hit] of best) out[theme] = hit.entity_id;
+  return out;
+}
+
+/** Apply manual overrides on top of auto-discovery (missing override → discovered). */
+export function mergeTrashFractionEntities(
+  discovered: TrashFractionEntityIds,
+  overrides?: TrashFractionEntityIds | null
+): TrashFractionEntityIds {
+  const manual = normalizeTrashFractionEntityIds(overrides);
+  if (!manual) return { ...discovered };
+  const out: TrashFractionEntityIds = { ...discovered };
+  for (const theme of TRASH_THEMES) {
+    if (manual[theme]) out[theme] = manual[theme];
+  }
+  return out;
+}
+
+export function trashFractionEntityIdsList(fractions: TrashFractionEntityIds): string[] {
+  const ids: string[] = [];
+  for (const theme of TRASH_THEMES) {
+    const id = fractions[theme]?.trim();
+    if (id) ids.push(id);
+  }
+  return ids;
 }
 
 /**

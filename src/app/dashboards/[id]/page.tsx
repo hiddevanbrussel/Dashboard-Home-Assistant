@@ -171,12 +171,18 @@ import {
 import {
   clampTrashCardHeight,
   clampTrashCardWidth,
+  discoverTrashFractionEntities,
+  mergeTrashFractionEntities,
+  normalizeTrashFractionEntityIds,
   TRASH_CARD_DEFAULT_HEIGHT,
   TRASH_CARD_DEFAULT_WIDTH,
   TRASH_CARD_MAX_HEIGHT,
   TRASH_CARD_MAX_WIDTH,
   TRASH_CARD_MIN_HEIGHT,
   TRASH_CARD_MIN_WIDTH,
+  TRASH_THEMES,
+  type TrashFractionEntityIds,
+  type TrashTheme,
 } from "@/lib/trash-card";
 import {
   clampRoomCardHeight,
@@ -529,6 +535,7 @@ function WidgetByType({
   textMode,
   icon_background_color,
   date_entity_id,
+  fraction_entity_ids,
   demo_theme,
   width,
   height,
@@ -581,6 +588,7 @@ function WidgetByType({
   cost_per_kwh?: number;
   textMode?: "title" | "subtitle" | "text" | "both";
   date_entity_id?: string;
+  fraction_entity_ids?: TrashFractionEntityIds;
   demo_theme?: "gft" | "restafval" | "pmd";
   width?: number;
   height?: number;
@@ -821,6 +829,7 @@ function WidgetByType({
           title={title}
           entity_id={entity_id}
           date_entity_id={date_entity_id}
+          fraction_entity_ids={fraction_entity_ids}
           demo_theme={demo_theme}
           width={width}
           height={height}
@@ -952,6 +961,7 @@ export default function DashboardEditPage() {
     child_id?: string | null;
     show_chore_points?: boolean;
     date_entity_id?: string;
+    fraction_entity_ids?: TrashFractionEntityIds;
     demo_theme?: "gft" | "restafval" | "pmd";
     page?: number;
     interval_seconds?: number;
@@ -1010,6 +1020,7 @@ export default function DashboardEditPage() {
     child_id: null as string | null,
     show_chore_points: true,
     date_entity_id: "",
+    fraction_entity_ids: {},
     demo_theme: "gft" as const,
     page: 0,
     interval_seconds: SMART_STACK_DEFAULT_INTERVAL_SEC,
@@ -1301,6 +1312,7 @@ export default function DashboardEditPage() {
         child_id: editingWidget.child_id ?? null,
         show_chore_points: editingWidget.show_chore_points !== false,
         date_entity_id: editingWidget.date_entity_id ?? "",
+        fraction_entity_ids: normalizeTrashFractionEntityIds(editingWidget.fraction_entity_ids) ?? {},
         demo_theme: editingWidget.demo_theme === "restafval" || editingWidget.demo_theme === "pmd" ? editingWidget.demo_theme : "gft",
         page: widgetPage(editingWidget),
         interval_seconds: clampSmartStackIntervalSec(
@@ -2292,6 +2304,7 @@ export default function DashboardEditPage() {
                       cost_per_kwh={w.cost_per_kwh}
                       textMode={w.textMode}
                       date_entity_id={w.date_entity_id}
+                      fraction_entity_ids={w.fraction_entity_ids}
                       demo_theme={w.demo_theme}
                       width={w.width}
                       height={w.height}
@@ -2915,6 +2928,7 @@ export default function DashboardEditPage() {
                 title: w.title ?? t("cardType.trash_card"),
                 entity_id: w.entity_id ?? "",
                 date_entity_id: w.date_entity_id,
+                fraction_entity_ids: w.fraction_entity_ids,
                 width: w.width,
                 height: w.height,
               }}
@@ -3771,6 +3785,8 @@ export default function DashboardEditPage() {
                             ? t("editPanel.totalUsage")
                             : editFormType === "stat_pill_card"
                               ? t("editPanel.sensor")
+                              : editFormType === "trash_card"
+                                ? t("trashCard.typeEntity")
                               : t("editPanel.entity")
                     }
                     placeholder={t("editPanel.searchEntity")}
@@ -6213,6 +6229,80 @@ aria-label={t("editPanel.removeCondition")}
                       />
                       <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">{t("trashCard.dateEntityHint")}</p>
                     </div>
+                    <div className="space-y-3 rounded-lg border border-gray-200/80 bg-gray-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                          {t("trashCard.fractionEntities")}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
+                          {t("trashCard.fractionEntitiesHint")}
+                        </p>
+                      </div>
+                      {(() => {
+                        const liveStates = useEntityStateStore.getState().states;
+                        const discovered = discoverTrashFractionEntities(
+                          Object.keys(liveStates).length > 0
+                            ? Object.values(liveStates).map((e) => ({
+                                entity_id: e.entity_id,
+                                state: e.state,
+                                attributes: e.attributes,
+                              }))
+                            : entities.map((e) => ({
+                                entity_id: e.entity_id,
+                                state: (e as { state?: string }).state ?? null,
+                                attributes: e.attributes,
+                              }))
+                        );
+                        const overrides = normalizeTrashFractionEntityIds(editForm.fraction_entity_ids) ?? {};
+                        const resolved = mergeTrashFractionEntities(discovered, overrides);
+                        const sensorEntities = entities.filter((e) => e.entity_id.startsWith("sensor."));
+                        return TRASH_THEMES.map((theme) => {
+                          const override = overrides[theme] ?? "";
+                          const autoId = discovered[theme] ?? "";
+                          // Empty value = auto-discovery; closed select shows the discovered id in the label.
+                          const value = override;
+                          const isManual = Boolean(override);
+                          return (
+                            <div key={theme}>
+                              <EntitySelectWithSearch
+                                label={t(`trashCard.theme.${theme}`)}
+                                value={value}
+                                onChange={(v) => {
+                                  setEditForm((prev) => {
+                                    const next: TrashFractionEntityIds = {
+                                      ...(normalizeTrashFractionEntityIds(prev.fraction_entity_ids) ?? {}),
+                                    };
+                                    if (!v || v === autoId) {
+                                      delete next[theme as TrashTheme];
+                                    } else {
+                                      next[theme as TrashTheme] = v;
+                                    }
+                                    return {
+                                      ...prev,
+                                      fraction_entity_ids: normalizeTrashFractionEntityIds(next) ?? {},
+                                    };
+                                  });
+                                }}
+                                entities={sensorEntities}
+                                placeholder={t("editPanel.entityPlaceholder")}
+                                emptyOption={
+                                  autoId
+                                    ? t("trashCard.fractionAuto").replace("{id}", autoId)
+                                    : t("editPanel.none")
+                                }
+                              />
+                              <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                                {isManual
+                                  ? t("trashCard.fractionManual")
+                                  : autoId
+                                    ? t("trashCard.fractionUsingAuto").replace("{id}", resolved[theme] ?? autoId)
+                                    : t("trashCard.fractionMissing")}
+                              </p>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -6588,6 +6678,7 @@ aria-label={t("editPanel.removeCondition")}
                         title={editForm.title || t("cardType.trash_card")}
                         entity_id={editForm.entity_id}
                         date_entity_id={editForm.date_entity_id}
+                        fraction_entity_ids={editForm.fraction_entity_ids}
                         width={clampTrashCardWidth(editForm.width ?? TRASH_CARD_DEFAULT_WIDTH)}
                         height={clampTrashCardHeight(editForm.height ?? TRASH_CARD_DEFAULT_HEIGHT)}
                         className="h-full"
@@ -6983,6 +7074,7 @@ aria-label={t("editPanel.removeCondition")}
                         ...(editingWidget.type === "trash_card" && {
                           entity_id: editForm.entity_id || "",
                           date_entity_id: editForm.date_entity_id || undefined,
+                          fraction_entity_ids: normalizeTrashFractionEntityIds(editForm.fraction_entity_ids),
                           width: editForm.width != null && editForm.width > 0 ? clampTrashCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampTrashCardHeight(editForm.height) : undefined,
                         }),

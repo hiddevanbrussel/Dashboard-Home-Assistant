@@ -2,6 +2,7 @@ import {
   clampTrashCardHeight,
   clampTrashCardWidth,
   buildTrashSchedule,
+  discoverTrashFractionEntities,
   formatTrashPickupDate,
   formatTrashPickupDateShort,
   trashContainerImageSrc,
@@ -10,6 +11,8 @@ import {
   isLikelyTrashEntityId,
   isTrashPickupPast,
   mapWasteTypeToTheme,
+  mergeTrashFractionEntities,
+  normalizeTrashFractionEntityIds,
   trashEntityTheme,
   parseTrashDate,
   resizeTrashCardFromBottomRight,
@@ -156,6 +159,47 @@ describe("trash-card helpers", () => {
     for (const pickup of schedule.upcoming) {
       expect(pickup.date!.getTime()).toBeGreaterThanOrEqual(featuredTime);
     }
+  });
+
+  it("discovers one sensor per waste fraction and allows manual overrides", () => {
+    const discovered = discoverTrashFractionEntities([
+      {
+        entity_id: "sensor.temperature_living",
+        state: "21",
+        attributes: { friendly_name: "Living" },
+      },
+      {
+        entity_id: "sensor.afvalwijzer_gft",
+        state: "2026-10-23",
+        attributes: { friendly_name: "Gft" },
+      },
+      {
+        entity_id: "sensor.afvalwijzer_pmd",
+        state: "2026-11-06",
+        attributes: { friendly_name: "PMD" },
+      },
+      {
+        entity_id: "sensor.afvalwijzer_restafval",
+        state: "2026-10-30",
+        attributes: { friendly_name: "Restafval" },
+      },
+    ]);
+    expect(discovered).toEqual({
+      gft: "sensor.afvalwijzer_gft",
+      pmd: "sensor.afvalwijzer_pmd",
+      restafval: "sensor.afvalwijzer_restafval",
+    });
+    expect(
+      mergeTrashFractionEntities(discovered, { gft: "sensor.custom_gft" })
+    ).toEqual({
+      gft: "sensor.custom_gft",
+      pmd: "sensor.afvalwijzer_pmd",
+      restafval: "sensor.afvalwijzer_restafval",
+    });
+    expect(normalizeTrashFractionEntityIds({ gft: "  ", pmd: "sensor.x" })).toEqual({
+      pmd: "sensor.x",
+    });
+    expect(normalizeTrashFractionEntityIds({})).toBeUndefined();
   });
 
   it("recognizes waste entity ids and ignores unrelated sensors in the schedule", () => {

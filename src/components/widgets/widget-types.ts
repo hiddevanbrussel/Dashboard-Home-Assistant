@@ -267,6 +267,11 @@ export type EnergyMetricProps = Omit<WidgetBaseProps, "entity_id"> & {
 export type TrashCardProps = WidgetBaseProps & {
   /** Optional separate date sensor (when type and date are different entities). */
   date_entity_id?: string;
+  /**
+   * Optional per-fraction sensor overrides (gft / restafval / pmd).
+   * Missing keys keep Afvalwijzer-style auto-discovery.
+   */
+  fraction_entity_ids?: Partial<Record<"gft" | "restafval" | "pmd", string>>;
   /** Demo theme when no HA entities are bound. */
   demo_theme?: "gft" | "restafval" | "pmd";
   /** Breedte kaart in px (standaard 320). */

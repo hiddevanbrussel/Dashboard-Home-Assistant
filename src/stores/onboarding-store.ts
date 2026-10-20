@@ -118,6 +118,8 @@ export type WidgetConfig = {
   height?: number;
   /** Trash card: optionele aparte datum-sensor. */
   date_entity_id?: string;
+  /** Trash card: handmatige per-fractie sensors (anders auto-discovery). */
+  fraction_entity_ids?: Partial<Record<"gft" | "restafval" | "pmd", string>>;
   /** Trash card: demo-thema wanneer geen HA-entities gekoppeld zijn. */
   demo_theme?: "gft" | "restafval" | "pmd";
   /** Energy monitor: entity voor teruglevering aan het net. */

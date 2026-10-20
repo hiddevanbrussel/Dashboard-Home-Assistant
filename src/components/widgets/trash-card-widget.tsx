@@ -13,15 +13,18 @@ import {
   buildTrashSchedule,
   clampTrashCardHeight,
   clampTrashCardWidth,
+  discoverTrashFractionEntities,
   formatTrashPickupDate,
   formatTrashPickupDateShort,
   formatTrashTypeLabel,
-  isLikelyTrashEntityId,
+  mergeTrashFractionEntities,
+  normalizeTrashFractionEntityIds,
   resolveTrashPickup,
   trashCardDensity,
   trashContainerImageSrc,
   trashDemoSchedule,
-  trashEntityTheme,
+  trashFractionEntityIdsList,
+  type TrashFractionEntityIds,
   type TrashLocale,
   type TrashPickup,
   type TrashTheme,
@@ -30,6 +33,7 @@ import {
 function useTrashSchedule(
   entityId: string | undefined,
   dateEntityId: string | undefined,
+  fractionOverrides: TrashFractionEntityIds | undefined,
   /** Dev / unbound showcase only — ignored when HA entities are bound. */
   showcaseTheme?: TrashTheme
 ) {
@@ -37,11 +41,20 @@ function useTrashSchedule(
   const dateEnt = useEntityStateStore((s) =>
     dateEntityId ? s.states[dateEntityId] : undefined
   );
-  // Recompute only when HA state ticks — avoid scanning every entity on unrelated renders.
+  // Recompute when HA state ticks — discovery reads the latest map inside the memo.
   const updatedAt = useEntityStateStore((s) => s.updatedAt);
 
   return useMemo(() => {
-    const hasBinding = Boolean(entityId || dateEntityId);
+    const states = useEntityStateStore.getState().states;
+    const snapshots = Object.values(states).map((ent) => ({
+      entity_id: ent.entity_id,
+      state: ent.state,
+      attributes: ent.attributes,
+    }));
+    const discovered = discoverTrashFractionEntities(snapshots);
+    const resolvedFractions = mergeTrashFractionEntities(discovered, fractionOverrides);
+    const fractionIds = trashFractionEntityIdsList(resolvedFractions);
+
     const live = resolveTrashPickup({
       primaryEntity: primary
         ? { entity_id: entityId, state: primary.state, attributes: primary.attributes }
@@ -56,38 +69,47 @@ function useTrashSchedule(
       fallbackTheme: "gft",
     });
 
-    if (!hasBinding || !live) {
+    const related = fractionIds
+      .filter((id) => id !== entityId && id !== dateEntityId)
+      .map((id) => states[id])
+      .filter(Boolean)
+      .map((ent) => ({
+        entity_id: ent.entity_id,
+        state: ent.state,
+        attributes: ent.attributes,
+      }));
+
+    const hasBinding = Boolean(entityId || dateEntityId || fractionIds.length > 0);
+
+    if (!hasBinding) {
       // Unbound cards follow next-fraction order unless a showcase theme is forced (dev preview).
       if (showcaseTheme) {
-        return { ...trashDemoSchedule(showcaseTheme), isDemo: true };
+        return {
+          ...trashDemoSchedule(showcaseTheme),
+          isDemo: true,
+          discovered,
+          resolvedFractions,
+        };
       }
       return {
         ...buildTrashSchedule({ primary: null, fallbackTheme: "gft" }),
         isDemo: true,
+        discovered,
+        resolvedFractions,
       };
     }
-
-    const related = Object.entries(useEntityStateStore.getState().states)
-      .filter(([id]) => id !== entityId && id !== dateEntityId)
-      .filter(([id, ent]) => {
-        if (isLikelyTrashEntityId(id)) return true;
-        return trashEntityTheme({ entity_id: id, state: ent.state, attributes: ent.attributes }) != null;
-      })
-      .map(([id, ent]) => ({
-        entity_id: id,
-        state: ent.state,
-        attributes: ent.attributes,
-      }));
 
     return {
       ...buildTrashSchedule({
         primary: live,
         entities: related,
-        fallbackTheme: live.theme,
+        fallbackTheme: live?.theme ?? "gft",
       }),
       isDemo: false,
+      discovered,
+      resolvedFractions,
     };
-  }, [entityId, dateEntityId, primary, dateEnt, updatedAt, showcaseTheme]);
+  }, [entityId, dateEntityId, primary, dateEnt, updatedAt, showcaseTheme, fractionOverrides]);
 }
 
 function BinChip({
@@ -139,6 +161,7 @@ export const TrashCardWidget = memo(function TrashCardWidget({
   title,
   entity_id,
   date_entity_id,
+  fraction_entity_ids,
   demo_theme,
   width,
   height,
@@ -154,7 +177,16 @@ export const TrashCardWidget = memo(function TrashCardWidget({
     demo_theme === "restafval" || demo_theme === "pmd" || demo_theme === "gft"
       ? demo_theme
       : undefined;
-  const { featured, upcoming } = useTrashSchedule(entity_id, date_entity_id, showcaseTheme);
+  const fractionOverrides = useMemo(
+    () => normalizeTrashFractionEntityIds(fraction_entity_ids),
+    [fraction_entity_ids]
+  );
+  const { featured, upcoming } = useTrashSchedule(
+    entity_id,
+    date_entity_id,
+    fractionOverrides,
+    showcaseTheme
+  );
 
   const cardW = clampTrashCardWidth(width ?? TRASH_CARD_DEFAULT_WIDTH);
   const cardH = clampTrashCardHeight(height ?? TRASH_CARD_DEFAULT_HEIGHT);
