@@ -70,27 +70,31 @@ function formatMonth(date: Date, locale: string): string {
   return date.toLocaleDateString(locale, { month: "long" }).toUpperCase();
 }
 
-/** Day / time for the upcoming strip — day above time when not today (fits narrow cards). */
+/**
+ * Day + time for the upcoming strip (always two lines when possible so the
+ * right column stays visible beside long titles).
+ */
 function upcomingWhenParts(
   ev: CalendarEvent,
   today: Date,
   locale: string,
   t: (key: string) => string
-): { day?: string; time: string } {
+): { day: string; time: string } {
   const start = eventStart(ev);
   if (ev.allDay) {
     if (today >= start && today < eventEnd(ev)) {
-      return { time: t("calendar.allDay") };
+      return { day: t("calendar.today"), time: t("calendar.allDay") };
     }
     if (isSameDay(start, addDays(today, 1))) {
       return { day: t("calendar.tomorrow"), time: t("calendar.allDay") };
     }
     return {
-      time: start.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }),
+      day: start.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }),
+      time: t("calendar.allDay"),
     };
   }
   const time = formatTime(start, locale);
-  if (isSameDay(start, today)) return { time };
+  if (isSameDay(start, today)) return { day: t("calendar.today"), time };
   if (isSameDay(start, addDays(today, 1))) {
     return { day: t("calendar.tomorrow"), time };
   }
@@ -182,9 +186,12 @@ export function CalendarCardWidget({
     [events, today, now]
   );
 
+  /** First remaining-today row — must not be repeated in the upcoming footer. */
+  const currentListed = dayEvents[0] ?? null;
+
   const upcoming = useMemo(
-    () => (showUpcoming ? nextUpcomingEvent(events, now) : null),
-    [showUpcoming, events, now]
+    () => (showUpcoming ? nextUpcomingEvent(events, now, currentListed) : null),
+    [showUpcoming, events, now, currentListed]
   );
 
   const upcomingWhen = useMemo(
@@ -288,19 +295,18 @@ export function CalendarCardWidget({
       {showUpcoming && upcoming && upcomingWhen ? (
         <div
           className={cn(
-            "relative z-[1] flex shrink-0 items-end gap-2 border-t border-gray-200/80 py-2 dark:border-white/10",
-            // Narrow stack frames (~250–300): tighter padding; day stacks above time on the right.
+            "relative z-[1] flex shrink-0 items-end gap-2.5 border-t border-gray-200/80 pt-2.5 pb-3.5 dark:border-white/10",
             cardW < 340 ? "px-3" : "px-5 sm:px-6"
           )}
         >
           <span
             className={cn(
-              "mb-1.5 h-2 w-2 shrink-0 rounded-full",
+              "mb-1 h-2 w-2 shrink-0 rounded-full",
               colorMap[upcoming.entityId] ?? CAL_DOT_COLORS[0]
             )}
             aria-hidden
           />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 overflow-hidden">
             <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
               {t("calendar.upcoming")}
             </p>
@@ -308,13 +314,11 @@ export function CalendarCardWidget({
               <EventTitle summary={upcoming.summary} empty={t("calendar.emptyTitle")} />
             </p>
           </div>
-          <div className="shrink-0 self-end text-right leading-tight">
-            {upcomingWhen.day ? (
-              <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">
-                {upcomingWhen.day}
-              </p>
-            ) : null}
-            <p className="text-xs font-medium tabular-nums text-gray-500 dark:text-gray-400">
+          <div className="min-w-[3.75rem] shrink-0 self-end text-right leading-tight">
+            <p className="truncate text-[10px] font-medium text-gray-400 dark:text-gray-500">
+              {upcomingWhen.day}
+            </p>
+            <p className="tabular-nums text-xs font-semibold text-gray-600 dark:text-gray-300">
               {upcomingWhen.time}
             </p>
           </div>
