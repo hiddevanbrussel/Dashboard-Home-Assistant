@@ -12,7 +12,6 @@ import {
   resizeVacuumCard2FromBottomRight,
   resolveFanSpeedForMode,
   VACUUM_CARD_2_DEFAULT_HEIGHT,
-  VACUUM_CARD_2_AWAY_IMAGE,
   VACUUM_CARD_2_DEFAULT_IMAGE,
   VACUUM_CARD_2_DEFAULT_IMAGE_DARK,
   VACUUM_CARD_2_DEFAULT_WIDTH,
@@ -31,8 +30,10 @@ import {
   humanizeVacuumState,
   resolveVacuumBattery,
   resolveVacuumDisplayState,
+  vacuumRelatedSensorIds,
   vacuumRelativeTimeKind,
   vacuumSessionStatusKey,
+  VACUUM_BATTERY_SENSOR_HINTS,
 } from "./vacuum-card";
 
 describe("vacuum-card helpers", () => {
@@ -152,7 +153,6 @@ describe("vacuum-card helpers", () => {
   it("clamps vacuum card 2 width and height", () => {
     expect(VACUUM_CARD_2_DEFAULT_IMAGE).toBe("/vacuum-robot-product-light.webp");
     expect(VACUUM_CARD_2_DEFAULT_IMAGE_DARK).toBe("/vacuum-robot-product-dark.webp");
-    expect(VACUUM_CARD_2_AWAY_IMAGE).toBe("/vacuum-robot-product-light.webp");
     expect(clampVacuumCard2Width(undefined)).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
     expect(clampVacuumCard2Width("not-a-number")).toBe(VACUUM_CARD_2_DEFAULT_WIDTH);
     expect(clampVacuumCard2Width(100)).toBe(240);
@@ -203,7 +203,17 @@ describe("vacuum-card helpers", () => {
     expect(vacuumCard2ArtSrc({ isDark: false, displayState: "cleaning" })).toBe(VACUUM_CARD_2_DEFAULT_IMAGE);
     expect(vacuumCard2ArtSrc({ isDark: true, displayState: "returning" })).toBe(VACUUM_CARD_2_DEFAULT_IMAGE_DARK);
     expect(vacuumCard2ArtSrc({ isDark: true, backgroundImage: " /custom.webp " })).toBe("/custom.webp");
-    expect(VACUUM_CARD_2_AWAY_IMAGE).toBe("/vacuum-robot-product-light.webp");
+  });
+
+  it("lists exact sibling battery sensor ids without scanning all states", () => {
+    expect(vacuumRelatedSensorIds("vacuum.roborock", VACUUM_BATTERY_SENSOR_HINTS)).toEqual([
+      "sensor.roborock",
+      "sensor.roborock_battery_level",
+      "sensor.roborock_battery_percent",
+      "sensor.roborock_battery_percentage",
+      "sensor.roborock_battery",
+    ]);
+    expect(vacuumRelatedSensorIds(null, VACUUM_BATTERY_SENSOR_HINTS)).toEqual([]);
   });
 
   it("reads last clean time and cleaned area from vacuum attributes", () => {

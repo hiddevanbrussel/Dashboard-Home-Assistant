@@ -23,6 +23,8 @@ import {
   vacuumCard2Density,
   vacuumHeadlineKind,
   humanizeVacuumState,
+  vacuumRelatedEntitiesFromStates,
+  VACUUM_BATTERY_SENSOR_HINTS,
   type VacuumFanMode,
 } from "@/lib/vacuum-card";
 
@@ -107,16 +109,14 @@ export function VacuumCard2Widget({
   const state = (entity?.state as string | undefined) ?? "";
   const attrs = entity?.attributes ?? {};
   const displayState = resolveVacuumDisplayState(state, attrs);
-  const allStates = useEntityStateStore((s) => s.states);
-  const battery = resolveVacuumBattery({
-    entityId: entity_id,
-    attributes: attrs,
-    entities: Object.values(allStates).map((e) => ({
-      entity_id: e.entity_id,
-      state: String(e.state ?? ""),
-      attributes: e.attributes,
-    })),
-  });
+  // Subscribe to battery value only — never the full `states` map (re-renders on every HA poll).
+  const battery = useEntityStateStore((s) =>
+    resolveVacuumBattery({
+      entityId: entity_id,
+      attributes: s.getState(entity_id)?.attributes ?? attrs,
+      entities: vacuumRelatedEntitiesFromStates(s.states, entity_id, VACUUM_BATTERY_SENSOR_HINTS),
+    })
+  );
   const progress = parsePercent(progressEntity?.state) ?? progressFromAttributes(attrs);
   const fanList = fanSpeedListFromAttributes(attrs);
   const fanSpeed = currentFanSpeedFromAttributes(attrs);

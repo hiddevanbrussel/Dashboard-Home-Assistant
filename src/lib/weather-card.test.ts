@@ -8,7 +8,6 @@ import {
   resizeWeatherCardFromBottomRight,
   weatherIconFile,
   weatherIconSrc,
-  weatherImageBase,
   weatherImageSources,
   windBearingLabel,
   windSpeedToBeaufort,
@@ -59,20 +58,10 @@ describe("weather-card helpers", () => {
 });
 
 describe("weather card images", () => {
-  it("maps conditions to curated webp packs with legacy png fallbacks", () => {
-    expect(weatherImageBase("sunny")).toBe("/weather-sunny");
-    expect(weatherImageBase("clear")).toBe("/weather-sunny");
-    expect(weatherImageBase("partlycloudy")).toBe("/weather-partlycloudy");
-    expect(weatherImageBase("rainy")).toBe("/weather-rainy");
-    expect(weatherImageBase("fog")).toBe("/weather-fog");
-    expect(weatherImageBase("clear-night")).toBe("/weather-clear-night");
-    expect(weatherImageBase("unknown")).toBe(null);
-  });
-
-  it("uses the night pack in dark mode and falls back to the day pack", () => {
+  it("maps conditions to curated webp packs with webp fallbacks", () => {
     expect(weatherImageSources("sunny", false)).toEqual({
       src: "/weather/light/weather_sunny.webp",
-      fallback: "/weather-sunny.png",
+      fallback: "/weather/dark/weather_clear_night.webp",
     });
     expect(weatherImageSources("sunny", true)).toEqual({
       src: "/weather/dark/weather_clear_night.webp",
@@ -86,6 +75,11 @@ describe("weather card images", () => {
       src: "/weather/dark/weather_clear_night.webp",
       fallback: "/weather/light/weather_sunny.webp",
     });
+    expect(weatherImageSources("fog", false)).toEqual({
+      src: "/weather/light/weather_fog.webp",
+      fallback: "/weather/light/weather_cloudy.webp",
+    });
+    expect(weatherImageSources("snowy", false).src).toBe("/weather/dark/weather_snowy_night.webp");
     expect(weatherImageSources("lightning-rainy", true).src).toBe(
       "/weather/dark/weather_lightning_rainy.webp"
     );

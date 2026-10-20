@@ -96,42 +96,7 @@ export function weatherBackgroundGradient(condition: string): string {
 const LIGHT = (name: string) => `/weather/light/${name}.webp`;
 const DARK = (name: string) => `/weather/dark/${name}.webp`;
 
-/** Public path stem for a legacy condition photo, without `.png`. */
-export function weatherImageBase(condition: string): string | null {
-  const s = condition?.toLowerCase() ?? "";
-  switch (s) {
-    case "fog":
-    case "mist":
-      return "/weather-fog";
-    case "sunny":
-    case "clear":
-    case "zonnig":
-      return "/weather-sunny";
-    case "clear-night":
-      return "/weather-clear-night";
-    case "rainy":
-    case "pouring":
-    case "hail":
-      return "/weather-rainy";
-    case "cloudy":
-    case "partlycloudy":
-    case "exceptional":
-      return "/weather-partlycloudy";
-    case "snowy":
-    case "snowy-rainy":
-      return "/weather-snowy";
-    case "lightning":
-    case "lightning-rainy":
-      return "/weather-lightning";
-    case "windy":
-    case "windy-variant":
-      return "/weather-windy";
-    default:
-      return null;
-  }
-}
-
-/** Curated WebP pack (light/dark folders), with legacy PNG fallback. */
+/** Curated WebP pack (light/dark folders), with cross-pack WebP fallback. */
 export function weatherImageSources(
   condition: string,
   isNight: boolean
@@ -143,45 +108,41 @@ export function weatherImageSources(
     case "zonnig":
       return isNight
         ? { src: DARK("weather_clear_night"), fallback: LIGHT("weather_sunny") }
-        : { src: LIGHT("weather_sunny"), fallback: "/weather-sunny.png" };
+        : { src: LIGHT("weather_sunny"), fallback: DARK("weather_clear_night") };
     case "clear-night":
       return { src: DARK("weather_clear_night"), fallback: LIGHT("weather_sunny") };
     case "partlycloudy":
       return isNight
         ? { src: DARK("weather_partlycloudy_night"), fallback: LIGHT("weather_partlycloudy") }
-        : { src: LIGHT("weather_partlycloudy"), fallback: "/weather-partlycloudy.png" };
+        : { src: LIGHT("weather_partlycloudy"), fallback: LIGHT("weather_cloudy") };
     case "cloudy":
     case "exceptional":
-      return { src: LIGHT("weather_cloudy"), fallback: "/weather-partlycloudy.png" };
+      return { src: LIGHT("weather_cloudy"), fallback: LIGHT("weather_partlycloudy") };
     case "fog":
     case "mist":
-      return { src: LIGHT("weather_fog"), fallback: "/weather-fog.png" };
+      return { src: LIGHT("weather_fog"), fallback: LIGHT("weather_cloudy") };
     case "windy":
     case "windy-variant":
-      return { src: LIGHT("weather_windy"), fallback: "/weather-partlycloudy.png" };
+      return { src: LIGHT("weather_windy"), fallback: LIGHT("weather_partlycloudy") };
     case "rainy":
     case "pouring":
     case "hail":
       return {
         src: DARK("weather_rainy"),
-        fallback: isNight ? "/weather-rainy-night.png" : "/weather-rainy.png",
+        fallback: isNight ? DARK("weather_partlycloudy_night") : LIGHT("weather_cloudy"),
       };
     case "snowy":
     case "snowy-rainy":
       return isNight
-        ? { src: DARK("weather_snowy_night"), fallback: "/weather-snowy-night.png" }
-        : { src: "/weather-snowy.png", fallback: DARK("weather_snowy_night") };
+        ? { src: DARK("weather_snowy_night"), fallback: DARK("weather_rainy") }
+        : { src: DARK("weather_snowy_night"), fallback: LIGHT("weather_cloudy") };
     case "lightning":
     case "lightning-rainy":
-      return { src: DARK("weather_lightning_rainy"), fallback: null };
-    default: {
-      const base = weatherImageBase(s);
-      if (!base) return { src: null, fallback: null };
-      return {
-        src: `${base}${isNight ? "-night" : ""}.png`,
-        fallback: isNight ? `${base}.png` : null,
-      };
-    }
+      return { src: DARK("weather_lightning_rainy"), fallback: DARK("weather_rainy") };
+    default:
+      return isNight
+        ? { src: DARK("weather_partlycloudy_night"), fallback: LIGHT("weather_cloudy") }
+        : { src: LIGHT("weather_cloudy"), fallback: LIGHT("weather_partlycloudy") };
   }
 }
 

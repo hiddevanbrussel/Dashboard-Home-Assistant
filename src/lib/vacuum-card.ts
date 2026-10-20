@@ -8,8 +8,6 @@ export const VACUUM_CARD_2_MAX_HEIGHT = 640;
 /** Quiet product hero — theme-specific 3D renders. */
 export const VACUUM_CARD_2_DEFAULT_IMAGE = "/vacuum-robot-product-light.webp";
 export const VACUUM_CARD_2_DEFAULT_IMAGE_DARK = "/vacuum-robot-product-dark.webp";
-/** Fallback product art (light) when away — theme path still preferred via artSrc. */
-export const VACUUM_CARD_2_AWAY_IMAGE = "/vacuum-robot-product-light.webp";
 export const VACUUM_CARD_2_FOOTER_MIN_HEIGHT = 380;
 /** Below this, tighten chrome (smaller type / padding). Modes stay visible. */
 export const VACUUM_CARD_2_COMPACT_HEIGHT = 340;
@@ -448,6 +446,43 @@ export const VACUUM_BATTERY_SENSOR_HINTS = [
   "battery_percentage",
   "battery",
 ] as const;
+
+/**
+ * Likely sibling sensor entity_ids for a vacuum (exact matches only).
+ * Prefer this over scanning the full HA state map on every render.
+ */
+export function vacuumRelatedSensorIds(
+  vacuumEntityId: string | undefined | null,
+  hints: readonly string[]
+): string[] {
+  const objectId = vacuumObjectId(vacuumEntityId);
+  if (!objectId) return [];
+  const prefix = `sensor.${objectId}`;
+  const ids = [prefix];
+  for (const hint of hints) {
+    ids.push(`${prefix}_${hint}`);
+  }
+  return ids;
+}
+
+/** Pull only the candidate sibling sensors from a states map (O(hints), not O(states)). */
+export function vacuumRelatedEntitiesFromStates(
+  states: Record<string, { entity_id: string; state: string; attributes?: Record<string, unknown> }>,
+  vacuumEntityId: string | undefined | null,
+  hints: readonly string[]
+): VacuumRelatedEntity[] {
+  const out: VacuumRelatedEntity[] = [];
+  for (const id of vacuumRelatedSensorIds(vacuumEntityId, hints)) {
+    const entity = states[id];
+    if (!entity) continue;
+    out.push({
+      entity_id: entity.entity_id,
+      state: String(entity.state ?? ""),
+      attributes: entity.attributes,
+    });
+  }
+  return out;
+}
 
 export function findRelatedVacuumSensor(
   entities: Iterable<VacuumRelatedEntity>,

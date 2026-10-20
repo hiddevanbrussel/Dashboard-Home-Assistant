@@ -31,7 +31,7 @@ export default function ImageCardDragPreviewPage() {
           <section data-dashboard-page className="relative h-full w-full">
             <FloatingEnergyMonitorCard
               title="Afbeelding"
-              background_image="/weather-sunny.png"
+              background_image="/weather/light/weather_sunny.webp"
               width={size.width}
               height={size.height}
               editMode={editMode}
