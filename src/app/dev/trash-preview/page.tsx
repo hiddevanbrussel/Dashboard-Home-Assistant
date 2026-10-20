@@ -28,7 +28,6 @@ export default function TrashPreviewPage() {
   const [size, setSize] = useState({ w: TRASH_CARD_DEFAULT_WIDTH, h: TRASH_CARD_DEFAULT_HEIGHT });
   const [liveTheme, setLiveTheme] = useState<TrashTheme>("gft");
   const setStates = useEntityStateStore((s) => s.setStates);
-  const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
   const setLanguage = useLanguageStore((s) => s.setLanguage);
   const setThemeMode = useThemeStore((s) => s.setMode);
   const setResolved = useThemeStore((s) => s.setResolved);
@@ -173,10 +172,7 @@ export default function TrashPreviewPage() {
           <button
             key={theme}
             type="button"
-            onClick={() => {
-              setLiveTheme(theme);
-              updateEntityState(LIVE_TYPE_ENTITY, { state: LIVE_LABELS[theme] });
-            }}
+            onClick={() => setLiveTheme(theme)}
             className={cn(
               "rounded-lg px-3 py-1.5 text-sm",
               liveTheme === theme
