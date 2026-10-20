@@ -103,7 +103,7 @@ export function VacuumCardWidget({
             <IconComponent className="h-5 w-5" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-medium truncate text-gray-900 dark:text-white/90">{title || t("cardType.vacuum_card")}</p>
+            <p className="truncate text-[1.2rem] font-semibold tracking-tight text-gray-900 dark:text-white/90">{title || t("cardType.vacuum_card")}</p>
             <p className="text-xs text-gray-600 dark:text-white/60 truncate">{friendlyName}</p>
           </div>
         </div>

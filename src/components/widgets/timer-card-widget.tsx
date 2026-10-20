@@ -28,7 +28,7 @@ export function TimerCardWidget({
     <div className="glass-surface flex flex-col overflow-hidden rounded-2xl shadow-md">
       <div className="flex items-center gap-2 border-b border-black/5 px-4 py-3 dark:border-white/10">
         <Timer className="h-4 w-4 text-brand" />
-        <span className="flex-1 text-sm font-semibold text-gray-800 dark:text-white">
+        <span className="flex-1 text-[1.2rem] font-semibold tracking-tight text-gray-800 dark:text-white">
           {title || t("cardType.timer_card")}
         </span>
         {onMoreClick && (

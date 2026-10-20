@@ -323,12 +323,7 @@ export const TrashCardWidget = memo(function TrashCardWidget({
           compact ? "gap-2.5 px-3 py-3" : "gap-4 px-5 py-5"
         )}
       >
-        <h2
-          className={cn(
-            "pr-8 font-semibold tracking-tight text-[#1B2437] dark:text-white",
-            compact ? "text-[0.98rem] leading-snug" : "text-[1.2rem]"
-          )}
-        >
+        <h2 className="pr-8 text-[1.2rem] font-semibold leading-snug tracking-tight text-[#1B2437] dark:text-white">
           {heading}
         </h2>
 

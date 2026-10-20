@@ -135,7 +135,7 @@ export function SensorCardWidget({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className={cn("truncate font-medium", tinted ? "text-white/90" : "text-gray-800 dark:text-white/90")}>
+            <p className={cn("truncate text-[1.2rem] font-semibold tracking-tight", tinted ? "text-white/90" : "text-gray-800 dark:text-white/90")}>
               {title}
             </p>
           </div>

@@ -247,7 +247,7 @@ export function TeamtrackerCardWidget({
 
         {!hasContent || !match || !sides ? (
           <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-[#8A97A8] dark:text-white/45">
-            <p className="text-sm font-medium text-[#1B2437]/70 dark:text-white/70">
+            <p className="text-[1.2rem] font-semibold tracking-tight text-[#1B2437]/70 dark:text-white/70">
               {title || t("cardType.teamtracker_card")}
             </p>
             <p className="text-xs">{t("teamtrackerCard.empty")}</p>

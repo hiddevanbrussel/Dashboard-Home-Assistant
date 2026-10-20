@@ -52,7 +52,8 @@ const config: Config = {
       fontSize: {
         "hero-title": ["2.75rem", { lineHeight: "1.2" }],
         "hero-subtitle": ["1.125rem", { lineHeight: "1.4" }],
-        "card-title": ["0.9375rem", { lineHeight: "1.3" }],
+        /** Match weather card md title (`text-[1.2rem]`). */
+        "card-title": ["1.2rem", { lineHeight: "1.3" }],
         "metric": ["3rem", { lineHeight: "1.1" }],
       },
       transitionProperty: {
