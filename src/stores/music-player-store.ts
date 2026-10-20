@@ -25,7 +25,7 @@ type MusicPlayerStore = {
   setQueueState: (v: QueueState) => void;
   selectedQueueId: string | null;
   setSelectedQueueId: (v: string | null) => void;
-  /** On non-music pages: true = bar expanded, false = only label visible */
+  /** True when the floating Music Assistant player sheet is open. */
   playerBarExpanded: boolean;
   setPlayerBarExpanded: (v: boolean) => void;
 };
