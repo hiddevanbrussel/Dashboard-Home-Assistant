@@ -88,6 +88,13 @@ The header also shows the clock, weather temperature, optional RSS news, a timer
 
 ---
 
+## Requirements
+
+- Home Assistant **2024.8** or newer. From 2024.8 on, REST `return_response` works for `weather.get_forecasts`. On 2024.3–2024.7 the forecast stays empty.
+- Assist needs 2023.5 or newer.
+
+---
+
 ## Home Assistant App (Addon)
 
 Install from Supervisor for Ingress (Open Web UI / sidebar), no separate Docker host required:

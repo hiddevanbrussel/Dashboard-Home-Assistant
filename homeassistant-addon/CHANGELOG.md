@@ -4,6 +4,10 @@
 
 Login and security hardening. The dashboard does not start until `APP_SECRET` and `DASHBOARD_PASSWORD` are set. Back up the dashboard data for your install type before you update.
 
+Requires Home Assistant 2024.8 or newer. From 2024.8 on, REST `return_response` works for `weather.get_forecasts`. On 2024.3–2024.7 the forecast stays empty.
+
+Assist needs 2023.5 or newer.
+
 ### Before you update
 
 **Home Assistant add-on**
