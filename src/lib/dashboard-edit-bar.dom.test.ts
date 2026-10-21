@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { setTimeout as delay } from "node:timers/promises";
+import WebSocket from "ws";
 import { describe, expect, it } from "vitest";
 import { DashboardEditBar } from "@/components/dashboard-edit-bar";
 
@@ -74,8 +75,8 @@ class Cdp {
   private pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();
 
   constructor(private ws: WebSocket) {
-    ws.addEventListener("message", (event) => {
-      const msg = JSON.parse(String(event.data)) as { id?: number; result?: unknown; error?: unknown };
+    ws.on("message", (data) => {
+      const msg = JSON.parse(String(data)) as { id?: number; result?: unknown; error?: unknown };
       if (!msg.id || !this.pending.has(msg.id)) return;
       const waiter = this.pending.get(msg.id)!;
       this.pending.delete(msg.id);
@@ -127,8 +128,8 @@ async function withChrome<T>(run: (send: Cdp["send"]) => Promise<T>): Promise<T>
     };
     const ws = new WebSocket(version.webSocketDebuggerUrl);
     await new Promise<void>((resolve, reject) => {
-      ws.addEventListener("open", () => resolve());
-      ws.addEventListener("error", () => reject(new Error("devtools websocket failed")));
+      ws.once("open", () => resolve());
+      ws.once("error", () => reject(new Error("devtools websocket failed")));
     });
     const cdp = new Cdp(ws);
     const { targetId } = (await cdp.send("Target.createTarget", { url: "about:blank" })) as { targetId: string };
