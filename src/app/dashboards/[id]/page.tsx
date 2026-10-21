@@ -2316,7 +2316,7 @@ export default function DashboardEditPage() {
                             setAddTileStep("entity");
                             pushAddTileHistory("entity");
                           }}
-                          className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4700B5]/40 hover:bg-[#4700B5]/5 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4700B5]/50 dark:hover:bg-[#4700B5]/10"
+                          className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4700B5]/40 hover:bg-[#4700B5]/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4700B5] dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4700B5]/50 dark:hover:bg-[#4700B5]/10 dark:focus-visible:ring-[#8357be]"
                         >
                           <Icon className="h-7 w-7 text-gray-600 dark:text-gray-400" />
                           <span className="text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight">
