@@ -37,6 +37,8 @@ export class PersistentNotificationHub {
   private version = 0;
   private notifications: HaPersistentNotification[] = [];
   private ready = false;
+  /** Bumps when the socket stops so a closed subscription cannot republish its cache. */
+  private liveEpoch = 0;
   private error: string | null = null;
   private connectedBaseUrl: string | null = null;
   private listeners = 0;
@@ -88,7 +90,10 @@ export class PersistentNotificationHub {
       if (!this.shouldReturn(opts.since, opts.sessionId) && !opts.signal.aborted) {
         await this.waitForChange(opts.since, opts.sessionId, opts.signal, opts.timeoutMs);
       }
-      return this.snapshot();
+      const snapshot = this.snapshot();
+      // A stopped socket must not answer with the list it cached before idle.
+      if (this.ready) return snapshot;
+      return { ...snapshot, notifications: [] };
     } finally {
       this.release();
     }
@@ -97,13 +102,23 @@ export class PersistentNotificationHub {
   /** Drop listeners and close the Home Assistant socket. */
   close(): void {
     this.listeners = 0;
+    this.dropLiveConnection();
+    this.wakeAll();
+  }
+
+  /**
+   * The cached list is only valid while a subscription is connected.
+   * After idle (or shutdown) the next poll must wait for a fresh subscribe snapshot.
+   */
+  private dropLiveConnection(): void {
+    this.liveEpoch += 1;
     this.stopped = true;
+    this.ready = false;
     if (this.idleTimer) clearTimeout(this.idleTimer);
     this.idleTimer = null;
     this.stopWait?.();
     this.sessionClose?.();
     this.sessionClose = null;
-    this.wakeAll();
   }
 
   private apply(event: PersistentNotificationUpdate): void {
@@ -159,10 +174,7 @@ export class PersistentNotificationHub {
     this.idleTimer = setTimeout(() => {
       this.idleTimer = null;
       if (this.listeners > 0) return;
-      this.stopped = true;
-      this.stopWait?.();
-      this.sessionClose?.();
-      this.sessionClose = null;
+      this.dropLiveConnection();
     }, this.idleMs);
   }
 
@@ -191,8 +203,9 @@ export class PersistentNotificationHub {
   }
 
   private async runLoop(): Promise<void> {
+    const epoch = this.liveEpoch;
     let attempt = 0;
-    while (!this.stopped && this.listeners > 0) {
+    while (epoch === this.liveEpoch && !this.stopped && this.listeners > 0) {
       let config: HaConnectionConfig | null = null;
       try {
         config = await this.loadConfig();
@@ -205,7 +218,7 @@ export class PersistentNotificationHub {
         await this.delay(3000);
         continue;
       }
-      if (this.stopped || this.listeners <= 0) return;
+      if (epoch !== this.liveEpoch || this.stopped || this.listeners <= 0) return;
       if (!config) {
         this.error = "No HA connection";
         await this.delay(3000);
@@ -219,18 +232,19 @@ export class PersistentNotificationHub {
       try {
         let received = false;
         const session = await this.openSubscription(config, (event) => {
+          if (epoch !== this.liveEpoch) return;
           received = true;
           this.apply(event);
         });
         this.sessionClose = session.close;
-        if (this.stopped || this.listeners <= 0) {
+        if (epoch !== this.liveEpoch || this.stopped || this.listeners <= 0) {
           session.close();
           await session.done;
           return;
         }
         const end = await session.done;
         this.sessionClose = null;
-        if (this.stopped || this.listeners <= 0) return;
+        if (epoch !== this.liveEpoch || this.stopped || this.listeners <= 0) return;
         if (received) attempt = 0;
         else attempt += 1;
         if (end.reason === "auth") {

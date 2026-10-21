@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { Bell, RobotVacuum, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppNotificationsStore } from "@/stores/app-notifications-store";
 import { useHaPersistentNotifications } from "@/hooks/use-ha-notifications";
 import { useTranslation } from "@/hooks/use-translation";
+import { notificationPanelFrame, type NotificationPanelFrame } from "./notification-panel-frame";
 
 function AppIcon({ name }: { name?: string | null }) {
   if (name === "RobotVacuum") return <RobotVacuum className="h-4 w-4 shrink-0" aria-hidden />;
@@ -34,7 +35,11 @@ export function HeaderNotifications({
   const { notifications: haNotifications, dismiss: dismissHaNotifications } = useHaPersistentNotifications();
   const [open, setOpen] = useState(false);
   const [dismissingIds, setDismissingIds] = useState<string[]>([]);
+  const [frame, setFrame] = useState<NotificationPanelFrame | null>(null);
+  const [listMaxHeight, setListMaxHeight] = useState<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const appHistory = useMemo(
     () => appItems.filter((n) => !n.dismissed).slice(0, 20),
@@ -53,6 +58,30 @@ export function HeaderNotifications({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const next = notificationPanelFrame(
+        placement,
+        { right: rect.right, bottom: rect.bottom },
+        { width: window.innerWidth, height: window.innerHeight }
+      );
+      const headerHeight = headerRef.current?.getBoundingClientRect().height ?? 0;
+      setFrame(next);
+      setListMaxHeight(Math.max(0, next.maxHeight - headerHeight));
+    };
+    place();
+    window.addEventListener("resize", place);
+    const visualViewport = window.visualViewport;
+    visualViewport?.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("resize", place);
+      visualViewport?.removeEventListener("resize", place);
+    };
+  }, [open, placement, count]);
 
   async function dismissHa(notificationId: string) {
     setDismissingIds([notificationId]);
@@ -82,6 +111,7 @@ export function HeaderNotifications({
   return (
     <div className="relative flex items-center" ref={panelRef}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
@@ -114,13 +144,18 @@ export function HeaderNotifications({
       {open && (
         <div
           className={cn(
-            "z-[100] flex max-h-[70vh] w-[320px] flex-col rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl",
+            "z-[100] flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl",
+            !frame && "invisible",
             placement === "sidebar"
               ? "absolute bottom-0 left-full ml-2"
               : "absolute right-0 top-full mt-1"
           )}
+          style={frame ? { maxHeight: frame.maxHeight, width: frame.width } : undefined}
         >
-          <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 dark:border-white/10">
+          <div
+            ref={headerRef}
+            className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 dark:border-white/10"
+          >
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
               {t("notifications.title")}
             </h3>
@@ -134,7 +169,10 @@ export function HeaderNotifications({
               </button>
             )}
           </div>
-          <div className="min-h-0 flex-1 overflow-auto">
+          <div
+            className="min-h-0 overflow-y-auto overscroll-y-contain"
+            style={listMaxHeight != null ? { maxHeight: listMaxHeight } : undefined}
+          >
             {count === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                 {t("notifications.empty")}
