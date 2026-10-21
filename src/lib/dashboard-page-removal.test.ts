@@ -185,6 +185,7 @@ describe("dashboard page removal undo", () => {
     expect(toast).toContain("dark:border-white/10");
     expect(toast).toContain("dark:shadow-[0_16px_40px_rgba(0,0,0,0.55)]");
     expect(toast).toContain("dark:bg-brand-muted");
+    expect(toast).toContain("dark:text-[rgb(var(--brand-on-muted))]");
     expect(toast).toContain("dark:backdrop-blur-none");
     expect(toast).toContain("backdrop-blur-md");
     expect(toast).toContain("bg-white/95");
@@ -208,6 +209,7 @@ describe("dashboard page removal undo", () => {
     expect(notificationSource).not.toContain("dark:bg-[#1b1a21]");
     expect(notificationSource).not.toContain("min-h-11");
     expect(notificationSource).not.toContain("dark:bg-brand-muted");
+    expect(notificationSource).not.toContain("--brand-on-muted");
     expect(notificationSource).not.toContain("Ongedaan maken");
 
     useLanguageStore.setState({ language: "en" });

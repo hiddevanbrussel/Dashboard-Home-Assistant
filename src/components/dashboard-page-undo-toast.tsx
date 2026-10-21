@@ -45,7 +45,7 @@ export function DashboardPageUndoToastView({
         <button
           type="button"
           onClick={onUndo}
-          className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-brand px-4 text-sm font-semibold text-white hover:opacity-90 dark:bg-brand-muted dark:text-white"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-brand px-4 text-sm font-semibold text-white hover:opacity-90 dark:bg-brand-muted dark:text-[rgb(var(--brand-on-muted))]"
         >
           {undoLabel}
         </button>
