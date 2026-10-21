@@ -7279,13 +7279,10 @@ aria-label={t("editPanel.removeCondition")}
                     </>
                   ) : (
                     <>
+                  {!addingTile && (
                   <button
                     type="button"
                     onClick={() => {
-                      if (addingTile) {
-                        backAddTileHistory();
-                        return;
-                      }
                       const newWidgets = widgets.filter((w) => w.id !== editingWidgetId);
                       const newLayout = layout.filter((item) => item.i !== editingWidgetId);
                       setWidgets(newWidgets);
@@ -7303,7 +7300,8 @@ aria-label={t("editPanel.removeCondition")}
                   >
                     {t("editPanel.remove")}
                   </button>
-                  <div className="flex gap-2">
+                  )}
+                  <div className={cn("flex gap-2", addingTile && "ml-auto")}>
                   <button
                     type="button"
                     onClick={() => {
@@ -7317,10 +7315,10 @@ aria-label={t("editPanel.removeCondition")}
                   >
                     {t("editPanel.cancel")}
                   </button>
+                  {!addingTile && (
                   <button
                     type="button"
                     onClick={() => {
-                      if (addingTile) return;
                       handleDuplicateTile(editingWidgetId!);
                     }}
                     className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
@@ -7328,6 +7326,7 @@ aria-label={t("editPanel.removeCondition")}
                   >
                     {t("editPanel.duplicate")}
                   </button>
+                  )}
                       <button
                     type="button"
                     onClick={() => {
