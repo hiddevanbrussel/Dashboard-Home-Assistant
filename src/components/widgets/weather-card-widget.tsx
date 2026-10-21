@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -29,6 +29,17 @@ import {
   parseForecastList,
   type WeatherForecastItem,
 } from "@/lib/ha-weather-forecast";
+
+/** Full stack (title + condition + temp + high/low + metrics) needs ~173px at size="md"; +8px air (4px above and below the temperature). */
+export const WEATHER_FIT_METRICS_MIN_H = 184;
+
+/**
+ * Whether the wind / humidity / precipitation row fits.
+ * Unknown height keeps today's full stack. Width is not part of the decision.
+ */
+export function weatherCardFitsMetrics(cardHeight: number | null | undefined): boolean {
+  return cardHeight == null || !Number.isFinite(cardHeight) || cardHeight >= WEATHER_FIT_METRICS_MIN_H;
+}
 
 export function WeatherIcon({ state, className }: { state: string; className?: string }) {
   return (
@@ -103,7 +114,13 @@ export function WeatherCardWidget({
   air_quality_entity_id,
   className,
   onMoreClick,
-}: WeatherCardProps & { className?: string; onMoreClick?: () => void }) {
+  height,
+}: WeatherCardProps & {
+  className?: string;
+  onMoreClick?: () => void;
+  /** Known card height (floating card `totalHeight`). Seeds the first paint before ResizeObserver runs. */
+  height?: number;
+}) {
   const { t } = useTranslation();
   const language = useLanguageStore((s) => s.language);
   const locale = language === "nl" ? "nl" : "en";
@@ -132,6 +149,24 @@ export function WeatherCardWidget({
   const showHumidity = isWeatherShowFlag(show_humidity, true);
   const showAirQuality = isWeatherShowFlag(show_air_quality, false);
   const showPrecipitation = isWeatherShowFlag(show_precipitation, true);
+
+  /** Measure the card so the metrics row drops out before it collides. */
+  const shellRef = useRef<HTMLDivElement>(null);
+  const [cardH, setCardH] = useState<number | null>(() =>
+    typeof height === "number" && Number.isFinite(height) && height > 0 ? Math.round(height) : null
+  );
+  useEffect(() => {
+    const el = shellRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const h = Math.round(entries[0]?.contentRect.height ?? 0);
+      if (h > 0) setCardH((prev) => (prev === h ? prev : h));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // Below 184px card height the metrics row drops out; everything else stays.
+  const fitMetrics = weatherCardFitsMetrics(cardH);
 
   const [daily, setDaily] = useState<WeatherForecastItem[]>(() =>
     parseForecastList(entity?.attributes?.forecast)
@@ -213,6 +248,7 @@ export function WeatherCardWidget({
 
   return (
     <div
+      ref={shellRef}
       className={cn(
         "relative flex h-full min-h-[140px] w-full flex-col overflow-hidden rounded-[1.75rem]",
         "bg-[linear-gradient(165deg,#F7FAFD_0%,#EEF4FA_42%,#E4EDF6_100%)]",
@@ -319,7 +355,7 @@ export function WeatherCardWidget({
           ) : null}
         </div>
 
-        {metrics.length > 0 ? (
+        {metrics.length > 0 && fitMetrics ? (
           <div className="mt-2 flex shrink-0 items-center border-t border-[#1B2437]/08 pt-3 dark:border-white/10">
             {metrics.map((m, index) => (
               <div
