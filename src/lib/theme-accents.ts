@@ -23,11 +23,17 @@ export function getThemeAccent(id: string | undefined) {
   return THEME_ACCENTS.find((accent) => accent.id === id) ?? THEME_ACCENTS[0];
 }
 
+/** Dark settings primary label. White on purple; ink on the lighter muted accents. */
+export function darkPrimaryForeground(id: string | undefined): Rgb {
+  return getThemeAccent(id).id === "purple" ? [255, 255, 255] : [17, 24, 39];
+}
+
 export function themeAccentCssVars(id: string | undefined) {
   const accent = getThemeAccent(id);
   return {
     "--brand": accent.rgb.join(" "),
     "--brand-muted": accent.muted.join(" "),
+    "--brand-on-muted": darkPrimaryForeground(id).join(" "),
   } as const;
 }
 
@@ -37,6 +43,7 @@ export function applyThemeAccent(id: string | undefined) {
   const root = document.documentElement;
   root.style.setProperty("--brand", vars["--brand"]);
   root.style.setProperty("--brand-muted", vars["--brand-muted"]);
+  root.style.setProperty("--brand-on-muted", vars["--brand-on-muted"]);
 }
 
 export function accentRgbCss(rgb: Rgb) {
