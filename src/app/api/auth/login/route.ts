@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
   const password = typeof body.password === "string" ? body.password : "";
-  const expected = process.env.DASHBOARD_PASSWORD ?? "";
+  const expected = (process.env.DASHBOARD_PASSWORD ?? "").trim();
   const secret = process.env.APP_SECRET ?? "";
   if (!validateDashboardPassword(expected).ok || !secret || !safeEqual(password, expected)) {
     recordLoginFailure(clientKey(request));
