@@ -1,3 +1,5 @@
+import { sharedPositionStillUsed, tilePositionStorageKey } from "@/lib/tile-position-storage";
+
 /**
  * Types that open the settings step while adding.
  * The tile is kept in memory until that step confirms.
@@ -27,66 +29,20 @@ export type TileCommitPlan<TWidget extends { id: string }, TLayout extends { i: 
   storageKeys: string[];
 };
 
-/** Per-widget localStorage keys. Shared keys are listed only for undo, after the card has written them. */
-const PER_WIDGET_POSITION_PREFIX: Record<string, string> = {
-  text_card: "dashboard.floatingTextCardPosition.",
-  title_card: "dashboard.floatingTextCardPosition.",
-  title_only_card: "dashboard.floatingTextCardPosition.",
-  subtitle_card: "dashboard.floatingTextCardPosition.",
-  light_card: "dashboard.floatingLightCardPosition.",
-  alarm_card: "dashboard.floatingAlarmCardPosition.",
-  calendar_card: "dashboard.floatingCalendarCardPosition.",
-  card_group: "dashboard.floatingCardGroupPosition.",
-  chore_card: "dashboard.floatingChoreCard.",
-  nuts_card: "dashboard.floatingNutsCardPosition.",
-  pill_card: "dashboard.floatingPillCardPosition.",
-  room_card: "dashboard.floatingRoomCardPosition.",
-  sensor_card: "dashboard.floatingSensorCardPosition.",
-  smart_stack: "dashboard.floatingSmartStackPosition.",
-  stat_pill_card: "dashboard.floatingStatPillCardPosition.",
-  timer_card: "dashboard.floatingTimerCard.",
-  trash_card: "dashboard.floatingTrashCardPosition.",
-  vacuum_card_2: "dashboard.floatingVacuumHeroCardPosition.v2.",
-  energy_metric: "dashboard.floatingEnergyMetricPosition.",
-  media_card: "dashboard.floatingMediaCardPosition.",
-  camera_card: "dashboard.floatingCameraCardPosition.",
-  energy_monitor_card: "dashboard.floatingEnergyMonitorCardPosition.",
-  teamtracker_card: "dashboard.floatingTeamtrackerCardPosition.",
-};
-
-/** One key for the whole type. Cancel must not delete these: an existing card may own them. */
-const SHARED_POSITION_PREFIX: Record<string, string> = {
-  power_usage_card: "dashboard.floatingPowerUsageCardPosition",
-  solar_card: "dashboard.floatingSolarCardPosition",
-  weather_card: "dashboard.floatingWeatherCardPosition",
-  vacuum_card: "dashboard.floatingVacuumCardPosition",
-  climate_card: "dashboard.floatingClimateCardPosition",
-  climate_card_2: "dashboard.floatingClimateCardPosition",
-  device_consumption_card: "dashboard.floatingDeviceConsumptionCardPosition",
-};
-
-function perWidgetKey(prefix: string, scope: string | undefined, widgetId: string): string {
-  return scope ? `${prefix}${scope}.${widgetId}` : `${prefix}${widgetId}`;
-}
-
-function sharedKey(prefix: string, scope: string | undefined): string {
-  return scope ? `${prefix}.${scope}` : prefix;
-}
-
 export function tilePositionStorageKeys(
   type: string,
   scope: string | undefined,
   widgetId: string,
-  reason: "cancel" | "undo"
+  reason: "cancel" | "undo",
+  remainingTypes?: readonly string[]
 ): string[] {
-  const keys: string[] = [];
-  const perWidget = PER_WIDGET_POSITION_PREFIX[type];
-  if (perWidget) keys.push(perWidgetKey(perWidget, scope, widgetId));
-  if (reason === "undo") {
-    const shared = SHARED_POSITION_PREFIX[type];
-    if (shared) keys.push(sharedKey(shared, scope));
+  const spec = tilePositionStorageKey(type, scope, widgetId);
+  if (!spec) return [];
+  if (spec.shared) {
+    if (reason !== "undo") return [];
+    if (remainingTypes && sharedPositionStillUsed(type, remainingTypes)) return [];
   }
-  return keys;
+  return [spec.key];
 }
 
 export function clearTilePositionStorage(
@@ -94,9 +50,10 @@ export function clearTilePositionStorage(
   type: string,
   scope: string | undefined,
   widgetId: string,
-  reason: "cancel" | "undo"
+  reason: "cancel" | "undo",
+  remainingTypes?: readonly string[]
 ): string[] {
-  const keys = tilePositionStorageKeys(type, scope, widgetId, reason);
+  const keys = tilePositionStorageKeys(type, scope, widgetId, reason, remainingTypes);
   for (const key of keys) storage.removeItem(key);
   return keys;
 }

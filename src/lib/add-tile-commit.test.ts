@@ -77,4 +77,23 @@ describe("deferred save", () => {
     expect(storage.data["dashboard.floatingPowerUsageCardPosition.dash"]).toBeUndefined();
     expect(storage.data["dashboard.floatingLightCardPosition.dash.keep"]).toBe("{\"left\":50}");
   });
+
+  it("undo of a shared card leaves the key when a sibling still uses it", () => {
+    const storage = memoryStorage({
+      "dashboard.floatingClimateCardPosition.dash": "{\"left\":96,\"bottom\":200}",
+    });
+    clearTilePositionStorage(storage, "climate_card_2", "dash", "added", "undo", ["climate_card"]);
+    expect(storage.data["dashboard.floatingClimateCardPosition.dash"]).toBe("{\"left\":96,\"bottom\":200}");
+    clearTilePositionStorage(storage, "climate_card", "dash", "added", "undo", ["light_card"]);
+    expect(storage.data["dashboard.floatingClimateCardPosition.dash"]).toBeUndefined();
+  });
+
+  it("device consumption uses the per-card scope the page passes", () => {
+    expect(tilePositionStorageKeys("device_consumption_card", "dash", "w1", "cancel")).toEqual([
+      "dashboard.floatingDeviceConsumptionCardPosition.dash-w1",
+    ]);
+    expect(tilePositionStorageKeys("device_consumption_card", "dash", "w1", "undo")).toEqual([
+      "dashboard.floatingDeviceConsumptionCardPosition.dash-w1",
+    ]);
+  });
 });
