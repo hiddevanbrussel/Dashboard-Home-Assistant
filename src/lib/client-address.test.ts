@@ -2,12 +2,8 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { describe, expect, it } from "vitest";
 import { loginAllowed, recordLoginFailure, resetLoginRateLimit } from "./login-rate-limit";
-import {
-  SOCKET_IP_HEADER,
-  clientRateLimitKey,
-  installClientAddressGuard,
-  normalizeClientIp,
-} from "./client-address";
+import { SOCKET_IP_HEADER, clientRateLimitKey, normalizeClientIp } from "./client-address";
+import { installClientAddressGuard } from "./client-address-guard";
 
 function headers(init: Record<string, string>): Headers {
   return new Headers(init);
