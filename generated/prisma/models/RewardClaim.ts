@@ -199,7 +199,7 @@ export type RewardClaimGroupByOutputType = {
   _max: RewardClaimMaxAggregateOutputType | null
 }
 
-type GetRewardClaimGroupByPayload<T extends RewardClaimGroupByArgs> = Prisma.PrismaPromise<
+export type GetRewardClaimGroupByPayload<T extends RewardClaimGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<RewardClaimGroupByOutputType, T['by']> &
       {
@@ -1026,6 +1026,11 @@ export type RewardClaimFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Skip the first `n` RewardClaims.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of RewardClaims.
+   */
   distinct?: Prisma.RewardClaimScalarFieldEnum | Prisma.RewardClaimScalarFieldEnum[]
 }
 

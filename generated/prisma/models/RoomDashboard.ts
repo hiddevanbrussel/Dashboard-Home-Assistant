@@ -228,7 +228,7 @@ export type RoomDashboardGroupByOutputType = {
   _max: RoomDashboardMaxAggregateOutputType | null
 }
 
-type GetRoomDashboardGroupByPayload<T extends RoomDashboardGroupByArgs> = Prisma.PrismaPromise<
+export type GetRoomDashboardGroupByPayload<T extends RoomDashboardGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<RoomDashboardGroupByOutputType, T['by']> &
       {
@@ -1234,6 +1234,11 @@ export type RoomDashboardFindManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * Skip the first `n` RoomDashboards.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of RoomDashboards.
+   */
   distinct?: Prisma.RoomDashboardScalarFieldEnum | Prisma.RoomDashboardScalarFieldEnum[]
 }
 

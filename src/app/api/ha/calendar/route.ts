@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { getHaConnection } from "@/lib/db";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 export type CalendarEvent = {
   entityId: string;
@@ -17,6 +18,8 @@ export type CalendarEvent = {
  * Proxies HA calendar events API to avoid CORS and hide the token.
  */
 export async function GET(request: NextRequest) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = request.nextUrl;
   const entityIdsParam = searchParams.get("entityIds");
   const start = searchParams.get("start");

@@ -123,10 +123,6 @@ export function buildImmichAssetProxyUrl(opts: {
     id: opts.id,
     kind: opts.kind,
   });
-  // Omit when empty so Docker/env IMMICH_URL / IMMICH_API_KEY can supply them server-side
-  // without putting secrets in the query string.
-  if (opts.baseUrl.trim()) params.set("baseUrl", opts.baseUrl.trim());
-  if (opts.apiKey.trim()) params.set("apiKey", opts.apiKey.trim());
   return withBasePath(`/api/immich/asset?${params.toString()}`);
 }
 

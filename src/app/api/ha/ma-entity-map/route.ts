@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { getEntities } from "@/lib/ha/rest";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * GET /api/ha/ma-entity-map – Map Music Assistant queue_ids to Home Assistant media_player entity_ids.
@@ -8,6 +9,8 @@ import { getEntities } from "@/lib/ha/rest";
  * MA integration creates entities as media_player.mass_* – we match by queue_id and friendly_name.
  */
 export async function GET() {
+  const denied = await requireApiAuth();
+  if (denied) return denied;
   const config = await getHaConnection();
   if (!config) {
     return NextResponse.json({ error: "No Home Assistant connection" }, { status: 400 });

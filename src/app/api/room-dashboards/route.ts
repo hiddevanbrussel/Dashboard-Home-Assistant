@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 export type RoomDashboardListItem = {
   areaId: string;
@@ -17,6 +18,8 @@ export type RoomDashboardListItem = {
  * GET /api/room-dashboards – List all room dashboards (custom rooms).
  */
 export async function GET() {
+  const denied = await requireApiAuth();
+  if (denied) return denied;
   const list = await prisma.roomDashboard.findMany({
     orderBy: { updatedAt: "desc" },
     select: { areaId: true, name: true, icon: true, iconBackgroundColor: true, floor: true, background: true, temperatureEntityId: true, humidityEntityId: true, createdAt: true },
@@ -53,6 +56,8 @@ function slugify(str: string): string {
  * Body: { name: string, id?: string, icon?: string, background?: string, floor?: string } – id, icon, background, floor optional.
  */
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: { name?: string; id?: string; icon?: string; iconBackgroundColor?: string; background?: string; floor?: string } = {};
   try {
     body = await request.json();

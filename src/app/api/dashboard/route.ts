@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * GET /api/dashboard – The primary dashboard, or `null` when none exists.
@@ -7,6 +8,8 @@ import { prisma } from "@/lib/prisma";
  * so add-on / Docker installs still see the wizard (including LAN discovery for Docker).
  */
 export async function GET() {
+  const denied = await requireApiAuth();
+  if (denied) return denied;
   try {
     const dashboard = await prisma.dashboard.findFirst({
       orderBy: { createdAt: "asc" },

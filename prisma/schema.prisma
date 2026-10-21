@@ -119,6 +119,12 @@ model Reward {
   updatedAt  DateTime @updatedAt
 }
 
+model IntegrationCredential {
+  kind      String   @id
+  encrypted String
+  updatedAt DateTime @updatedAt
+}
+
 model RewardClaim {
   id          String   @id @default(cuid())
   rewardId    String?  // null = manual penalty by parent

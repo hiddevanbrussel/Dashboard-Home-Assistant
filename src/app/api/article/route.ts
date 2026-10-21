@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
-import { NextRequest } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { fetchChecked } from "@/lib/ssrf";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 function extractImage(html: string, baseUrl: string): string | null {
   // 1. og:image
@@ -73,6 +74,8 @@ function extractContent(html: string): string[] {
  * Fetches and extracts readable content from an article server-side.
  */
 export async function GET(request: NextRequest) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const url = request.nextUrl.searchParams.get("url");
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
 
@@ -85,10 +88,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(articleUrl, {
+    const res = await fetchChecked(articleUrl, "public-https", {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; DashboardReader/1.0)",
-        "Accept": "text/html,application/xhtml+xml",
+        Accept: "text/html,application/xhtml+xml",
       },
     });
 

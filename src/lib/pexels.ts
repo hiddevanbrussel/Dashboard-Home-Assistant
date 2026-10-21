@@ -6,20 +6,21 @@ export const PEXELS_VIDEO_PER_PAGE = 20;
 /** Cap random page depth so we stay within typical result sets. */
 export const PEXELS_MAX_RANDOM_PAGE = 80;
 
-export type PexelsKeySource = "env" | "header" | null;
+export type PexelsKeySource = "env" | "stored" | null;
 
 /**
- * Prefer the server/Docker env key when set so a stale browser-stored key
- * cannot override a working `PEXELS_API_KEY`. Fall back to the client header.
+ * Prefer the server/Docker env key, then the encrypted server store.
+ * Browser-supplied keys are ignored so they are not required in the client.
  */
 export function resolvePexelsApiKey(input: {
   envKey?: string | null;
+  storedKey?: string | null;
   headerKey?: string | null;
 }): { apiKey: string; source: PexelsKeySource } {
   const envKey = input.envKey?.trim() ?? "";
   if (envKey) return { apiKey: envKey, source: "env" };
-  const headerKey = input.headerKey?.trim() ?? "";
-  if (headerKey) return { apiKey: headerKey, source: "header" };
+  const storedKey = input.storedKey?.trim() ?? "";
+  if (storedKey) return { apiKey: storedKey, source: "stored" };
   return { apiKey: "", source: null };
 }
 

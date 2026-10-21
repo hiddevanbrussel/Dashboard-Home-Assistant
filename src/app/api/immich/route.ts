@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
-import { resolveImmichApiKey, resolveImmichBaseUrl } from "@/lib/immich-env";
+import { boundImmich } from "@/lib/bound-integration";
 import { isSafeImmichApiPath, joinImmichUrl } from "@/lib/immich-url";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * Proxy JSON calls to a local Immich instance so the browser does not hit CORS.
  * Prefers Docker/env `IMMICH_URL` + `IMMICH_API_KEY` over client-supplied values.
  */
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: {
     baseUrl?: string;
     apiKey?: string;
@@ -20,16 +23,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { baseUrl } = resolveImmichBaseUrl({
-    envUrl: process.env.IMMICH_URL,
-    bodyUrl: typeof body.baseUrl === "string" ? body.baseUrl : null,
+  const bound = await boundImmich({
+    baseUrl: typeof body.baseUrl === "string" ? body.baseUrl : null,
+    apiKey: typeof body.apiKey === "string" ? body.apiKey : null,
   });
   const path = typeof body.path === "string" ? body.path : "";
   const method = (body.method ?? "GET").toUpperCase();
-  const { apiKey } = resolveImmichApiKey({
-    envKey: process.env.IMMICH_API_KEY,
-    bodyKey: typeof body.apiKey === "string" ? body.apiKey : null,
-  });
+  if (!bound.ok) {
+    return NextResponse.json({ error: bound.error }, { status: 400 });
+  }
+  const { baseUrl, secret: apiKey } = bound.target;
 
   if (!baseUrl || !isSafeImmichApiPath(path)) {
     return NextResponse.json({ error: "Invalid Immich URL" }, { status: 400 });

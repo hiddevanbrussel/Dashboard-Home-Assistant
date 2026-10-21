@@ -110,7 +110,8 @@ docker run -d \
   --restart unless-stopped \
   -p 3000:3000 \
   -v ha-dashboard-data:/data \
-  -e APP_SECRET="change-this-to-a-random-32-char-secret" \
+  -e APP_SECRET="$(openssl rand -hex 32)" \
+  -e DASHBOARD_PASSWORD="choose-a-long-passphrase" \
   ghcr.io/hiddevanbrussel/dashboard-home-assistant:latest
 ```
 
@@ -133,7 +134,8 @@ services:
     volumes:
       - ha-dashboard-data:/data
     environment:
-      - APP_SECRET=change-this-to-a-random-32-char-secret
+      - APP_SECRET= # openssl rand -hex 32
+      - DASHBOARD_PASSWORD= # at least 12 characters; required for direct access
       - PEXELS_API_KEY=              # optional — get a free key at pexels.com/api
       - IMMICH_URL=                 # optional — e.g. http://192.168.1.50:2283
       - IMMICH_API_KEY=             # optional — Immich API key
@@ -158,7 +160,7 @@ docker compose up -d
    ghcr.io/hiddevanbrussel/dashboard-home-assistant:latest
    ```
 3. Map port **3000** and set a host path for `/data` (e.g. `/mnt/user/appdata/ha-dashboard`).
-4. Add the environment variable `APP_SECRET` with a random string.
+4. Add `APP_SECRET` (`openssl rand -hex 32`) and `DASHBOARD_PASSWORD` (at least 12 characters).
 5. Optionally add `PEXELS_API_KEY` for screensaver photos/videos, and/or `IMMICH_URL` + `IMMICH_API_KEY`, and/or `MUSIC_ASSISTANT_URL` + `MUSIC_ASSISTANT_TOKEN`.
 
 You can also import the template from the repository: [`unraid-template.xml`](unraid-template.xml)
@@ -191,7 +193,10 @@ Base URL examples:
 
 | Variable | Required | Description |
 |---|---|---|
-| `APP_SECRET` | Yes | Random secret for session encryption (min. 32 characters) |
+| `APP_SECRET` | Yes | Random encryption secret, at least 32 characters. The app refuses known placeholders. Changing it requires saving the Home Assistant connection again. |
+| `DASHBOARD_PASSWORD` | Yes | Password for browsers that open the dashboard directly. At least 12 characters, different from `APP_SECRET`. Home Assistant ingress does not ask for it. |
+| `APP_PUBLIC_ORIGIN` | No | Public https origin used as the Home Assistant login client id, for example `https://dashboard.example.com` |
+| `DOORBELL_ALLOWED_HOSTS` | No | Comma-separated hosts allowed for a doorbell WebRTC page outside the local network |
 | `DATABASE_URL` | No | SQLite path (default: `file:/data/app.db`) |
 | `PEXELS_API_KEY` | No | Free key from [pexels.com/api](https://www.pexels.com/api/) for screensaver media |
 | `IMMICH_URL` | No | Immich base URL (e.g. `http://192.168.1.50:2283`). Takes priority over Settings → Apps → Immich |
@@ -252,7 +257,7 @@ The current version is shown in **Settings → System**.
 git clone https://github.com/HiddevanBrussel/Dashboard-Home-Assistant.git
 cd Dashboard-Home-Assistant
 npm install
-cp .env.example .env   # edit APP_SECRET
+cp .env.example .env   # set APP_SECRET and DASHBOARD_PASSWORD
 npx prisma migrate dev
 npm run dev            # http://localhost:3000
 ```

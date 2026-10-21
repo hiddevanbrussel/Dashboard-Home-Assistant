@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { listAssistPipelines } from "@/lib/ha/assist";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 export async function GET() {
+  const denied = await requireApiAuth();
+  if (denied) return denied;
   const config = await getHaConnection();
   if (!config) {
     return NextResponse.json({ error: "No HA connection" }, { status: 400 });

@@ -20,6 +20,7 @@ ports_description:
   3000/tcp: Direct access (bypasses ingress; open http://HOME_ASSISTANT:3000/__ha_ingress__)
 options:
   app_secret: ""
+  dashboard_password: ""
   pexels_api_key: ""
   immich_url: ""
   immich_api_key: ""
@@ -28,6 +29,7 @@ options:
   default_language: en
 schema:
   app_secret: password
+  dashboard_password: password
   pexels_api_key: str?
   immich_url: str?
   immich_api_key: password?

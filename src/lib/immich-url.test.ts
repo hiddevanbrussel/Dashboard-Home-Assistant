@@ -81,12 +81,10 @@ describe("immich-url", () => {
         id: "11111111-2222-4333-8444-555555555555",
         kind: "preview",
       })
-    ).toBe(
-      "/api/immich/asset?id=11111111-2222-4333-8444-555555555555&kind=preview&baseUrl=http%3A%2F%2Fphotos.lan%3A2283&apiKey=secret"
-    );
+    ).toBe("/api/immich/asset?id=11111111-2222-4333-8444-555555555555&kind=preview");
   });
 
-  it("omits empty baseUrl/apiKey so Docker env can supply them", () => {
+  it("does not put the API key or base URL in the query string", () => {
     expect(
       buildImmichAssetProxyUrl({
         baseUrl: "",

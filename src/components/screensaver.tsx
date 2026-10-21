@@ -570,8 +570,8 @@ function ScreensaverOverlay({
     fetch("/api/pexels/status", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (!cancelled && data && typeof data.envConfigured === "boolean") {
-          setPexelsEnvConfigured(data.envConfigured);
+        if (!cancelled && data && (data.envConfigured === true || data.serverConfigured === true)) {
+          setPexelsEnvConfigured(true);
         }
       })
       .catch(() => {
@@ -581,8 +581,8 @@ function ScreensaverOverlay({
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled || !data) return;
-        if (typeof data.envKeyConfigured === "boolean") setImmichEnvKeyConfigured(data.envKeyConfigured);
-        if (typeof data.envUrlConfigured === "boolean") setImmichEnvUrlConfigured(data.envUrlConfigured);
+        if (data.envKeyConfigured === true || data.serverKeyConfigured === true) setImmichEnvKeyConfigured(true);
+        if (data.envUrlConfigured === true || data.serverUrlConfigured === true) setImmichEnvUrlConfigured(true);
       })
       .catch(() => {
         /* ignore */
@@ -702,7 +702,6 @@ function ScreensaverOverlay({
   const fetchPexelsPhoto = useCallback(() => {
     setMediaError(false);
     const headers: HeadersInit = {};
-    if (pexelsApiKey.trim()) headers["X-Pexels-Api-Key"] = pexelsApiKey.trim();
     fetch(`/api/pexels/photo?query=${encodeURIComponent(pexelsQuery)}&_t=${Date.now()}`, {
       cache: "no-store",
       headers,
@@ -723,7 +722,7 @@ function ScreensaverOverlay({
         applyPhoto(data.imageUrl, attr);
       })
       .catch(() => setMediaError(true));
-  }, [pexelsApiKey, pexelsQuery, applyPhoto]);
+  }, [pexelsQuery, applyPhoto]);
 
   const fetchImmichPhoto = useCallback(() => {
     if ((!immich.baseUrl && !immichEnvUrlConfigured) || (!immich.apiKey && !immichEnvKeyConfigured)) return;
@@ -808,7 +807,6 @@ function ScreensaverOverlay({
   const fetchPexelsVideo = useCallback(() => {
     if (videoRotateTimer.current) clearTimeout(videoRotateTimer.current);
     const headers: HeadersInit = {};
-    if (pexelsApiKey.trim()) headers["X-Pexels-Api-Key"] = pexelsApiKey.trim();
     fetch(`/api/pexels/video?query=${encodeURIComponent(pexelsQuery)}&_t=${Date.now()}`, {
       cache: "no-store",
       headers,
@@ -828,7 +826,7 @@ function ScreensaverOverlay({
         applyVideo(data.videoUrl, attr);
       })
       .catch(() => setMediaError(true));
-  }, [pexelsApiKey, pexelsQuery, applyVideo]);
+  }, [pexelsQuery, applyVideo]);
 
   const fetchImmichVideo = useCallback(() => {
     if ((!immich.baseUrl && !immichEnvUrlConfigured) || (!immich.apiKey && !immichEnvKeyConfigured)) return;

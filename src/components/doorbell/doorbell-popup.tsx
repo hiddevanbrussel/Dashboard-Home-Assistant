@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Mic, Video, X } from "lucide-react";
 import { withBasePath } from "@/lib/base-path";
 import { doorbellUsesWebRtc } from "@/lib/doorbell";
+import { isTrustedEmbedUrl } from "@/lib/ssrf-policy";
 import { useDoorbellStore } from "@/stores/doorbell-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,21 @@ export function DoorbellPopup() {
 
   const cameraEntityId = activeRing?.cameraEntityId || settings.cameraEntityId;
   const webrtcUrl = (activeRing?.webrtcStreamUrl || settings.webrtcStreamUrl || "").trim();
-  const useWebRtc = doorbellUsesWebRtc({ webrtcStreamUrl: webrtcUrl });
+  const [allowedHosts, setAllowedHosts] = useState<string[]>([]);
+  const useWebRtc = doorbellUsesWebRtc({ webrtcStreamUrl: webrtcUrl }) && isTrustedEmbedUrl(webrtcUrl, allowedHosts);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/doorbell-policy", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data?.hosts)) setAllowedHosts(data.hosts.filter((h: unknown) => typeof h === "string"));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const refreshMs = settings.snapshotRefreshMs;
 
   useEffect(() => {

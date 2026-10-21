@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { ChoreCompletionsResponse, ChildWithChores, ChoreCompletionRecord, ChoreFrequency, WeekDayProgress } from "@/lib/chores-types";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 const SLOT_LABELS = ["ochtend", "avond"];
 
@@ -34,6 +35,8 @@ function parseChildIds(raw: string | null): string[] | null {
 }
 
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const dateParam = searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
 
@@ -236,6 +239,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: { choreId?: string; childId?: string; frequency?: string } = {};
   try {
     body = await request.json();
@@ -280,6 +285,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: { id?: string } = {};
   try {
     body = await request.json();

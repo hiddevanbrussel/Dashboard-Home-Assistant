@@ -1,106 +1,81 @@
 import { NextResponse } from "next/server";
-import { execSync } from "child_process";
-import path from "path";
+import { spawn } from "node:child_process";
+import path from "node:path";
+import { clearLoginFailures, loginAllowed, recordLoginFailure } from "@/lib/login-rate-limit";
+import { safeEqual } from "@/lib/session";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
-const MAX_DURATION_MS = 5 * 60 * 1000; // 5 min
+const MIN_PASSCODE = 20;
 
-export const maxDuration = 300; // 5 min for build
+export const maxDuration = 300;
 
-function getExecErrorOutput(e: unknown): string {
-  const err = e instanceof Error ? e.message : String(e);
-  if (e && typeof e === "object" && "stderr" in e) {
-    const stderr = (e as { stderr?: Buffer }).stderr;
-    if (typeof stderr === "object" && stderr && "toString" in stderr)
-      return (stderr as Buffer).toString("utf8") ?? err;
-    if (typeof stderr === "string") return stderr;
-  }
-  return err;
+function run(cmd: string, args: string[], cwd: string, timeout: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { cwd, shell: false, stdio: "ignore" });
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      reject(new Error("timeout"));
+    }, timeout);
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      resolve(code ?? 1);
+    });
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
 }
 
 /**
  * POST /api/admin/update
  * Body: { passcode: string }
- * Runs git pull, npm ci, npm run build. Protected by env UPDATE_PASSCODE.
- * Set UPDATE_PASSCODE in .env (or deployment env) to enable.
+ * Runs git pull, npm ci, npm run build when UPDATE_PASSCODE is a long random value.
+ * Command output is not returned.
  */
 export async function POST(request: Request) {
-  const expected = process.env.UPDATE_PASSCODE;
-  if (!expected || typeof expected !== "string" || !expected.trim()) {
-    return NextResponse.json(
-      { ok: false, error: "update_not_configured" },
-      { status: 503 }
-    );
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
+  const expected = (process.env.UPDATE_PASSCODE ?? "").trim();
+  if (expected.length < MIN_PASSCODE) {
+    return NextResponse.json({ ok: false, error: "update_not_configured" }, { status: 503 });
+  }
+
+  const key = `update:${request.headers.get("x-real-ip") ?? "local"}`;
+  const limited = loginAllowed(key);
+  if (!limited.ok) {
+    return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
 
   let body: { passcode?: string };
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { ok: false, error: "invalid_body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: "invalid_body" }, { status: 400 });
   }
-
-  const passcode = typeof body.passcode === "string" ? body.passcode.trim() : "";
-  if (passcode !== expected) {
-    return NextResponse.json(
-      { ok: false, error: "wrong_passcode" },
-      { status: 403 }
-    );
+  const passcode = typeof body.passcode === "string" ? body.passcode : "";
+  if (!safeEqual(passcode, expected)) {
+    recordLoginFailure(key);
+    return NextResponse.json({ ok: false, error: "wrong_passcode" }, { status: 403 });
   }
+  clearLoginFailures(key);
 
   const root = path.resolve(process.cwd());
-  const steps: { step: string; output: string; error?: string }[] = [];
-
-  try {
+  const steps: { name: string; ok: boolean }[] = [];
+  const plan = [
+    { name: "git pull", cmd: "git", args: ["pull"], timeout: 60_000 },
+    { name: "npm ci", cmd: "npm", args: ["ci"], timeout: 120_000 },
+    { name: "npm run build", cmd: "npm", args: ["run", "build"], timeout: 180_000 },
+  ];
+  for (const step of plan) {
     try {
-      const out = execSync("git pull", {
-        cwd: root,
-        encoding: "utf8",
-        timeout: 60000,
-      });
-      steps.push({ step: "git pull", output: out.trim() || "(ok)" });
-    } catch (e) {
-      const out = getExecErrorOutput(e);
-      steps.push({ step: "git pull", output: out, error: "failed" });
-      return NextResponse.json({ ok: false, steps }, { status: 200 });
+      const code = await run(step.cmd, step.args, root, step.timeout);
+      steps.push({ name: step.name, ok: code === 0 });
+      if (code !== 0) return NextResponse.json({ ok: false, steps }, { status: 500 });
+    } catch {
+      steps.push({ name: step.name, ok: false });
+      return NextResponse.json({ ok: false, steps }, { status: 500 });
     }
-
-    try {
-      const out = execSync("npm ci", {
-        cwd: root,
-        encoding: "utf8",
-        timeout: 120000,
-        env: { ...process.env, CI: "1" },
-      });
-      steps.push({ step: "npm ci", output: out.trim() ? out.trim().slice(-500) : "(ok)" });
-    } catch (e) {
-      const out = getExecErrorOutput(e).slice(-800);
-      steps.push({ step: "npm ci", output: out, error: "failed" });
-      return NextResponse.json({ ok: false, steps }, { status: 200 });
-    }
-
-    try {
-      const out = execSync("npm run build", {
-        cwd: root,
-        encoding: "utf8",
-        timeout: MAX_DURATION_MS - 60000,
-        env: process.env,
-      });
-      steps.push({ step: "npm run build", output: out.trim() ? out.trim().slice(-800) : "(ok)" });
-    } catch (e) {
-      const out = getExecErrorOutput(e).slice(-1000);
-      steps.push({ step: "npm run build", output: out, error: "failed" });
-      return NextResponse.json({ ok: false, steps }, { status: 200 });
-    }
-
-    return NextResponse.json({ ok: true, steps });
-  } catch (e) {
-    const err = e instanceof Error ? e.message : String(e);
-    return NextResponse.json(
-      { ok: false, error: "update_failed", message: err },
-      { status: 500 }
-    );
   }
+  return NextResponse.json({ ok: true, steps });
 }

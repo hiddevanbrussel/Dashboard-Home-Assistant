@@ -33,6 +33,28 @@
     Mask="false">/mnt/user/appdata/dashboard</Config>
 
   <Config
+    Name="APP_SECRET"
+    Target="APP_SECRET"
+    Default=""
+    Mode=""
+    Description="Verplicht. Willekeurige sleutel van minstens 32 tekens (openssl rand -hex 32). Bij wijzigen de Home Assistant-verbinding opnieuw opslaan."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="true"></Config>
+
+  <Config
+    Name="Dashboard password"
+    Target="DASHBOARD_PASSWORD"
+    Default=""
+    Mode=""
+    Description="Verplicht. Wachtwoord voor tablets op poort 3000 (minstens 12 tekens)."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="true"></Config>
+
+  <Config
     Name="Pexels API Key"
     Target="PEXELS_API_KEY"
     Default=""

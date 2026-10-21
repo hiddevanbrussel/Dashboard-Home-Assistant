@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { runAssistAudio, runAssistText } from "@/lib/ha/assist";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 const MAX_AUDIO_BYTES = 16_000 * 2 * 15;
 
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const config = await getHaConnection();
   if (!config) {
     return NextResponse.json({ error: "No HA connection" }, { status: 400 });

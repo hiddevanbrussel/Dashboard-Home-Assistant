@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { discoverHomeAssistant } from "@/lib/ha/discover";
 import { isHaAddon } from "@/lib/ha/addon";
 import { baseUrlSchema } from "@/lib/validation";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * GET /api/ha/discover – Soft LAN discovery of Home Assistant instances.
@@ -9,6 +10,8 @@ import { baseUrlSchema } from "@/lib/validation";
  * Skipped / empty when running as HA addon (Supervisor already links).
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   if (isHaAddon()) {
     return NextResponse.json({
       instances: [],

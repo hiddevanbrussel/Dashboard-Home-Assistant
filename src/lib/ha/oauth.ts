@@ -35,16 +35,21 @@ export function buildAuthorizeUrl(params: OAuthStartParams): string {
 }
 
 /**
- * Derive this app's public origin from an incoming request.
- * Prefers X-Forwarded-* so reverse proxies work.
+ * Public origin used as the IndieAuth client_id.
+ * APP_PUBLIC_ORIGIN wins. Otherwise the Host header is used, not X-Forwarded-Host.
  */
 export function getAppClientId(request: Request): string {
-  const url = new URL(request.url);
-  const xfProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-  const xfHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const proto = xfProto || url.protocol.replace(/:$/, "") || "http";
-  const host = xfHost || request.headers.get("host") || url.host;
   const basePath = getBasePath().replace(/\/+$/, "");
+  const configured = process.env.APP_PUBLIC_ORIGIN?.trim().replace(/\/+$/, "");
+  if (configured) return `${configured}${basePath}`;
+  const url = new URL(request.url);
+  const host = request.headers.get("host")?.trim() || url.host;
+  const trustProxy = process.env.HA_ADDON === "1" || process.env.TRUST_PROXY === "1";
+  const forwarded = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const proto =
+    trustProxy && (forwarded === "https" || forwarded === "http")
+      ? forwarded
+      : url.protocol.replace(/:$/, "") || "http";
   return `${proto}://${host}${basePath}`;
 }
 

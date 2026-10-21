@@ -67,6 +67,11 @@ describe("sanitizeSvgBuffer", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("rejects nested SVG data URLs", () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><image href="data:image/svg+xml;base64,PHN2Zz48L3N2Zz4="/></svg>`;
+    expect(sanitizeSvgBuffer(Buffer.from(svg, "utf8")).ok).toBe(false);
+  });
+
   it("rejects non-svg content", () => {
     const result = sanitizeSvgBuffer(Buffer.from("<html><body>nope</body></html>", "utf8"));
     expect(result.ok).toBe(false);

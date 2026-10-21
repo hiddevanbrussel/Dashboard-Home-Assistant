@@ -3,6 +3,7 @@ import { getHaConnection } from "@/lib/db";
 import { climateHistoryPointsFromAttributeStates } from "@/lib/climate-card";
 import { computeHourlyMeanFromStates } from "@/lib/energy-dashboard";
 import { getHistory } from "@/lib/ha/rest";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 type HourData = { hour: string; value: number };
 type DayData = { date: string; consumption: number };
@@ -14,6 +15,8 @@ type DayData = { date: string; consumption: number };
  * Add &mode=attribute&attribute=current_temperature for climate attribute sampling.
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const entityIdsParam = searchParams.get("entity_ids");
   const granularity = searchParams.get("granularity");

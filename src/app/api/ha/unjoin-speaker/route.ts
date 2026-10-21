@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { callService } from "@/lib/ha/rest";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * POST /api/ha/unjoin-speaker – Unjoin a media player from its group (media_player.unjoin).
  * Body: { entity_id: string } – The media_player entity to unjoin.
  */
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: { entity_id?: string };
   try {
     body = await request.json();

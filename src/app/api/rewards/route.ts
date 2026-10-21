@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 export async function GET() {
+  const denied = await requireApiAuth();
+  if (denied) return denied;
   const rewards = await prisma.reward.findMany({ orderBy: { order: "asc" } });
   return NextResponse.json(
     rewards.map((r) => ({
@@ -16,6 +19,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: {
     title?: string;
     pointsCost?: number;

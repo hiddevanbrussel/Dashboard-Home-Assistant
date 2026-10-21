@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -7,6 +9,8 @@ import { PageBackgroundProvider } from "@/components/page-background";
 import { MusicPlayerProvider } from "@/components/music-player-provider";
 import { GlobalMusicBar } from "@/components/global-music-bar";
 import { BasePathScript } from "@/components/base-path-script";
+import { SecretMigrator } from "@/components/secret-migrator";
+import { isPublicPage, requestIsAuthorized } from "@/lib/auth-policy";
 import { withBasePath } from "@/lib/base-path";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -47,25 +51,43 @@ export const viewport = {
   themeColor: "#4700B5",
 };
 
-export default function RootLayout({
+export const dynamic = "force-dynamic";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const incoming = await headers();
+  const path = incoming.get("x-pathname") ?? "";
+  const publicPage = isPublicPage(path);
+  if (path && !publicPage) {
+    const request = new Request(`http://internal${path}`, { headers: incoming });
+    if (!requestIsAuthorized(request)) {
+      redirect(`/login?next=${encodeURIComponent(path)}`);
+    }
+  }
+
   return (
     <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <body className={`relative ${inter.className}`}>
         <BasePathScript />
-        <Providers>
-          <OnboardingGuard>
-            <MusicPlayerProvider>
-              <PageBackgroundProvider>
-                <div className="relative min-h-screen">{children}</div>
-              </PageBackgroundProvider>
-              <GlobalMusicBar />
-            </MusicPlayerProvider>
-          </OnboardingGuard>
-        </Providers>
+        {publicPage ? (
+          <div className="relative min-h-screen">{children}</div>
+        ) : (
+          <Providers>
+            <SecretMigrator>
+              <OnboardingGuard>
+                <MusicPlayerProvider>
+                  <PageBackgroundProvider>
+                    <div className="relative min-h-screen">{children}</div>
+                  </PageBackgroundProvider>
+                  <GlobalMusicBar />
+                </MusicPlayerProvider>
+              </OnboardingGuard>
+            </SecretMigrator>
+          </Providers>
+        )}
       </body>
     </html>
   );

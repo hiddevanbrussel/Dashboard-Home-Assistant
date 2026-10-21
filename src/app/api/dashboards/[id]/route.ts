@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * GET /api/dashboards/[id] – Get one dashboard.
@@ -8,6 +9,8 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireApiAuth(_request);
+  if (denied) return denied;
   const { id } = await params;
   const dashboard = await prisma.dashboard.findUnique({ where: { id } });
   if (!dashboard) {
@@ -37,6 +40,8 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { id } = await params;
   let body: {
     name?: string;
@@ -116,6 +121,8 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireApiAuth(_request);
+  if (denied) return denied;
   const { id } = await params;
   await prisma.dashboard.delete({ where: { id } });
   return NextResponse.json({ ok: true });

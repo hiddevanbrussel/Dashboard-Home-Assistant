@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { ScoresResponse, ScoreRecord } from "@/lib/chores-types";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 function getMondayDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
@@ -25,6 +26,8 @@ function getDateRange(period: string, dateStr: string): { from: string; to: stri
 }
 
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const period = searchParams.get("period") ?? "week";
   const dateParam = searchParams.get("date") ?? new Date().toISOString().slice(0, 10);

@@ -35,6 +35,7 @@ export function MusicAssistantSettings() {
   const [https, setHttps] = useState(parsed.protocol === "https");
   const [apiKey, setApiKey] = useState(musicAssistant.token);
   const [envTokenConfigured, setEnvTokenConfigured] = useState(false);
+  const [serverTokenConfigured, setServerTokenConfigured] = useState(false);
   const [envUrlConfigured, setEnvUrlConfigured] = useState(false);
   const [envUrl, setEnvUrl] = useState<string | null>(null);
   const [maTab, setMaTab] = useState<MaTab>(musicAssistant.enabled ? "speakers" : "connection");
@@ -62,6 +63,7 @@ export function MusicAssistantSettings() {
       .then((data) => {
         if (cancelled || !data) return;
         if (typeof data.envTokenConfigured === "boolean") setEnvTokenConfigured(data.envTokenConfigured);
+        if (typeof data.serverTokenConfigured === "boolean") setServerTokenConfigured(data.serverTokenConfigured);
         if (typeof data.envUrlConfigured === "boolean") setEnvUrlConfigured(data.envUrlConfigured);
         if (typeof data.envUrl === "string" && data.envUrl) setEnvUrl(data.envUrl);
       })
@@ -87,7 +89,7 @@ export function MusicAssistantSettings() {
       setMaTestResult(t("settings.musicAssistant.hostRequired"));
       return;
     }
-    if (!apiKey.trim() && !envTokenConfigured) {
+    if (!apiKey.trim() && !envTokenConfigured && !serverTokenConfigured) {
       setMaTestResult(t("settings.musicAssistant.apiKeyRequired"));
       return;
     }
@@ -146,7 +148,7 @@ export function MusicAssistantSettings() {
   const connected = Boolean(
     musicAssistant.enabled &&
       effectiveBaseUrl &&
-      (musicAssistant.token || envTokenConfigured)
+      (musicAssistant.token || envTokenConfigured || serverTokenConfigured)
   );
 
   return (

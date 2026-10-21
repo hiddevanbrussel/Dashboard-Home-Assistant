@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readIntegration } from "@/lib/integration-credentials";
 import {
   PEXELS_DEFAULT_QUERY,
   PEXELS_PHOTO_PER_PAGE,
@@ -7,6 +8,7 @@ import {
   pickRandomItem,
   resolvePexelsApiKey,
 } from "@/lib/pexels";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 type PexelsPhoto = {
   src?: { large2x?: string; large?: string; original?: string; landscape?: string };
@@ -16,9 +18,12 @@ type PexelsPhoto = {
 
 /** Haalt een willekeurige foto op van Pexels voor de screensaver. */
 export async function GET(request: NextRequest) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
+  const stored = await readIntegration("pexels");
   const { apiKey } = resolvePexelsApiKey({
     envKey: process.env.PEXELS_API_KEY,
-    headerKey: request.headers.get("x-pexels-api-key"),
+    storedKey: stored?.apiKey,
   });
   if (!apiKey) {
     return NextResponse.json(

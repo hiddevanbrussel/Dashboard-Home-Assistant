@@ -28,6 +28,7 @@ export function ImmichSettings() {
   const [https, setHttps] = useState(parsed.protocol === "https");
   const [apiKey, setApiKey] = useState(store.apiKey);
   const [envKeyConfigured, setEnvKeyConfigured] = useState(false);
+  const [serverKeyConfigured, setServerKeyConfigured] = useState(false);
   const [envUrlConfigured, setEnvUrlConfigured] = useState(false);
   const [envUrl, setEnvUrl] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
@@ -52,6 +53,7 @@ export function ImmichSettings() {
       .then((data) => {
         if (cancelled || !data) return;
         if (typeof data.envKeyConfigured === "boolean") setEnvKeyConfigured(data.envKeyConfigured);
+        if (typeof data.serverKeyConfigured === "boolean") setServerKeyConfigured(data.serverKeyConfigured);
         if (typeof data.envUrlConfigured === "boolean") setEnvUrlConfigured(data.envUrlConfigured);
         if (typeof data.envUrl === "string" && data.envUrl) setEnvUrl(data.envUrl);
       })
@@ -85,12 +87,12 @@ export function ImmichSettings() {
 
   useEffect(() => {
     const effectiveUrl = store.baseUrl || envUrl || "";
-    const hasKey = Boolean(store.apiKey) || envKeyConfigured;
+    const hasKey = Boolean(store.apiKey) || envKeyConfigured || serverKeyConfigured;
     if (!store.enabled || !effectiveUrl || !hasKey) return;
     void loadAlbums(effectiveUrl, store.apiKey);
     // Intentionally load once when the panel opens with an existing connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [envKeyConfigured, envUrl]);
+  }, [envKeyConfigured, envUrl, serverKeyConfigured]);
 
   async function testAndConnect() {
     setTestResult(null);
@@ -99,7 +101,7 @@ export function ImmichSettings() {
       setTestResult(t("settings.immich.hostRequired"));
       return;
     }
-    if (!apiKey.trim() && !envKeyConfigured) {
+    if (!apiKey.trim() && !envKeyConfigured && !serverKeyConfigured) {
       setTestResult(t("settings.immich.apiKeyRequired"));
       return;
     }

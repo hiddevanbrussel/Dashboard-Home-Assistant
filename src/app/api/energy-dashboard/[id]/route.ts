@@ -4,6 +4,7 @@ import {
   sanitizeEnergyDashboardBackgrounds,
   usableEnergyBackground,
 } from "@/lib/energy-dashboard";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * PUT /api/energy-dashboard/[id] – Update energy dashboard.
@@ -14,6 +15,8 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { id } = await params;
   let body: {
     layout?: string | null;

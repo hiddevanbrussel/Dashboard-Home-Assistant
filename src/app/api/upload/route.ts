@@ -6,6 +6,7 @@ import {
   isSvgUploadCandidate,
   sanitizeSvgBuffer,
 } from "@/lib/sanitize-svg";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 const UPLOAD_DIR =
   process.env.UPLOAD_DIR || path.join(process.cwd(), "public", "uploads");
@@ -19,6 +20,7 @@ const ALLOWED_TYPES = new Set([
 ]);
 const MAX_WIDTH = 1920;
 const JPEG_QUALITY = 90;
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 function normalizeUploadMime(type: string | null | undefined): string {
   if (!type) return "";
@@ -26,6 +28,8 @@ function normalizeUploadMime(type: string | null | undefined): string {
 }
 
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   try {
     const formData = await request.formData();
     const file = formData.get("file");
@@ -47,6 +51,9 @@ export async function POST(request: Request) {
     }
 
     const bytes = await file.arrayBuffer();
+    if (bytes.byteLength > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: "File is too large (max 8 MB)." }, { status: 400 });
+    }
     const buffer = Buffer.from(bytes);
     const isGif = mime === "image/gif";
 

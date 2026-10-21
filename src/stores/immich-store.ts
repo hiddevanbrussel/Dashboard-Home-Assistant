@@ -1,5 +1,6 @@
 "use client";
 
+import { pushIntegrationCredential } from "@/lib/client-credential-sync";
 import { create } from "zustand";
 
 const STORAGE_KEY_ENABLED = "dashboard.immich.enabled";
@@ -58,10 +59,10 @@ type ImmichStore = {
   setMediaType: (v: ImmichMediaType) => void;
 };
 
-export const useImmichStore = create<ImmichStore>((set) => ({
+export const useImmichStore = create<ImmichStore>((set, get) => ({
   enabled: getStoredBool(STORAGE_KEY_ENABLED, false),
   baseUrl: getStored(STORAGE_KEY_BASE_URL, ""),
-  apiKey: getStored(STORAGE_KEY_API_KEY, ""),
+  apiKey: "",
   albumId: getStored(STORAGE_KEY_ALBUM_ID, ""),
   mediaType: getStored(STORAGE_KEY_MEDIA_TYPE, "photo") === "video" ? "video" : "photo",
   setEnabled: (v) => {
@@ -75,8 +76,13 @@ export const useImmichStore = create<ImmichStore>((set) => ({
     notifyScreensaver();
   },
   setApiKey: (v) => {
-    persist(STORAGE_KEY_API_KEY, v);
+    try {
+      localStorage.removeItem(STORAGE_KEY_API_KEY);
+    } catch {
+      /* ignore */
+    }
     set({ apiKey: v });
+    pushIntegrationCredential({ kind: "immich", apiKey: v, baseUrl: get().baseUrl });
     notifyScreensaver();
   },
   setAlbumId: (v) => {
@@ -129,7 +135,7 @@ export function hydrateImmichStore() {
   useImmichStore.setState({
     enabled: getStoredBool(STORAGE_KEY_ENABLED, false),
     baseUrl: getStored(STORAGE_KEY_BASE_URL, ""),
-    apiKey: getStored(STORAGE_KEY_API_KEY, ""),
+    apiKey: "",
     albumId: getStored(STORAGE_KEY_ALBUM_ID, ""),
     mediaType: getStored(STORAGE_KEY_MEDIA_TYPE, "photo") === "video" ? "video" : "photo",
   });

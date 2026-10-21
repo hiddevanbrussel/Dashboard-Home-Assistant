@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { getEntities } from "@/lib/ha/rest";
+import { isEntityId } from "@/lib/ha-service-policy";
 import { mediaImageServerCacheKey } from "@/lib/media-image";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 const MEDIA_IMAGE_CACHE_MAX = 100;
 const mediaImageCache = new Map<string, { body: ArrayBuffer; contentType: string }>();
@@ -12,9 +14,11 @@ const mediaImageCache = new Map<string, { body: ArrayBuffer; contentType: string
  * Cached per player + track so a new song does not keep showing the previous cover.
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const entityId = searchParams.get("entity_id");
-  if (!entityId) {
+  if (!entityId || !isEntityId(entityId)) {
     return NextResponse.json({ error: "entity_id required" }, { status: 400 });
   }
   const trackKey = searchParams.get("t") ?? "";

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 type RouteParams = { params: Promise<{ areaId: string }> };
 
@@ -7,6 +8,8 @@ type RouteParams = { params: Promise<{ areaId: string }> };
  * GET /api/room-dashboards/[areaId] – Get or create room dashboard for an area.
  */
 export async function GET(_request: Request, { params }: RouteParams) {
+  const denied = await requireApiAuth(_request);
+  if (denied) return denied;
   const { areaId } = await params;
   if (!areaId) {
     return NextResponse.json({ error: "areaId required" }, { status: 400 });
@@ -44,6 +47,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
  * PUT /api/room-dashboards/[areaId] – Update room dashboard.
  */
 export async function PUT(request: Request, { params }: RouteParams) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { areaId } = await params;
   if (!areaId) {
     return NextResponse.json({ error: "areaId required" }, { status: 400 });
@@ -123,6 +128,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
  * DELETE /api/room-dashboards/[areaId] – Delete a room.
  */
 export async function DELETE(_request: Request, { params }: RouteParams) {
+  const denied = await requireApiAuth(_request);
+  if (denied) return denied;
   const { areaId } = await params;
   if (!areaId) {
     return NextResponse.json({ error: "areaId required" }, { status: 400 });

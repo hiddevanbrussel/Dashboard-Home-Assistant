@@ -16,15 +16,15 @@ describe("resolvePexelsApiKey", () => {
     ).toEqual({ apiKey: "env-key", source: "env" });
   });
 
-  it("uses the browser header when no env key is set", () => {
-    expect(resolvePexelsApiKey({ envKey: "", headerKey: " browser " })).toEqual({
-      apiKey: "browser",
-      source: "header",
+  it("uses the stored server key and ignores a browser header", () => {
+    expect(resolvePexelsApiKey({ envKey: "", storedKey: " stored ", headerKey: "browser" })).toEqual({
+      apiKey: "stored",
+      source: "stored",
     });
   });
 
   it("returns null when neither key is set", () => {
-    expect(resolvePexelsApiKey({ envKey: "  ", headerKey: null })).toEqual({
+    expect(resolvePexelsApiKey({ envKey: "  ", headerKey: "browser" })).toEqual({
       apiKey: "",
       source: null,
     });

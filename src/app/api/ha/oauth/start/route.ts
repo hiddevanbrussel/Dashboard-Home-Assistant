@@ -9,6 +9,7 @@ import {
   getOAuthRedirectUri,
   sanitizeReturnTo,
 } from "@/lib/ha/oauth";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 const COOKIE_NAME = "ha_oauth";
 const COOKIE_MAX_AGE = 600; // 10 minutes
@@ -18,6 +19,8 @@ const COOKIE_MAX_AGE = 600; // 10 minutes
  * Redirects the browser to Home Assistant's authorize page.
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   if (isHaAddon()) {
     return NextResponse.json(
       { error: "OAuth login is not needed when running as a Home Assistant app." },

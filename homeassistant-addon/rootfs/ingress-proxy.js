@@ -424,6 +424,9 @@ function forwardRequestHeaders(req) {
   // Always target Next by upstream host — public Host confuses some builds.
   headers.host = `${UPSTREAM_HOST}:${UPSTREAM_PORT}`;
   headers["accept-encoding"] = "identity";
+  const ingressSecret = process.env.INGRESS_AUTH_SECRET || "";
+  if (ingressSecret) headers["x-dashboard-ingress"] = ingressSecret;
+  else delete headers["x-dashboard-ingress"];
   return headers;
 }
 

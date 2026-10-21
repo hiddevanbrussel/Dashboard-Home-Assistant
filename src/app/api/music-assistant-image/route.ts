@@ -3,7 +3,9 @@ import { createHash } from "crypto";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
-import { resolveMusicAssistantBaseUrl, resolveMusicAssistantToken } from "@/lib/music-assistant-env";
+import { boundMusicAssistant } from "@/lib/bound-integration";
+import { isMetadataIp } from "@/lib/network-policy";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 const IMAGE_CACHE_MAX = 350;
 const imageCache = new Map<
@@ -89,15 +91,12 @@ const ALLOWED_IMAGE_HOSTS = new Set([
  * Caches in memory + filesystem for fast repeat loads.
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
-  const { baseUrl } = resolveMusicAssistantBaseUrl({
-    envUrl: process.env.MUSIC_ASSISTANT_URL,
-    bodyUrl: searchParams.get("baseUrl"),
-  });
-  const { token } = resolveMusicAssistantToken({
-    envToken: process.env.MUSIC_ASSISTANT_TOKEN,
-    bodyToken: searchParams.get("token"),
-  });
+  const bound = await boundMusicAssistant();
+  const baseUrl = bound.ok ? bound.target.baseUrl : "";
+  const token = bound.ok ? bound.target.secret : "";
   const urlParam = searchParams.get("url");
 
   if (!urlParam) {
@@ -119,6 +118,9 @@ export async function GET(request: Request) {
       }
     })();
 
+    if (isMetadataIp(parsed.hostname)) {
+      return NextResponse.json({ error: "That address is not allowed" }, { status: 400 });
+    }
     if (!isSameHost && !isAllowedExternal) {
       if (isExternal) {
         return NextResponse.json({ error: "External URL not from allowed music CDN" }, { status: 400 });

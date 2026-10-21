@@ -19,7 +19,8 @@ The first start pulls the pre-built image from GitHub Container Registry and may
 
 | Option | Description |
 |---|---|
-| `app_secret` | Optional. Encryption secret (min. 32 characters). Leave empty to auto-generate a stable secret stored in the app data. |
+| `app_secret` | Optional. Encryption secret (min. 32 characters). Leave empty to auto-generate a stable secret stored in the app data. Changing it means saving the Home Assistant connection again. |
+| `dashboard_password` | Required. Password for tablets that open port 3000 directly. Ingress (Open Web UI) does not ask for it. |
 | `pexels_api_key` | Optional. [Pexels](https://www.pexels.com/api/) key for screensaver media. |
 | `immich_url` | Optional. Immich base URL (e.g. `http://192.168.1.50:2283`). Overrides the browser-stored URL when set. |
 | `immich_api_key` | Optional. Immich API key for screensaver media. Overrides the browser-stored key when set. |
@@ -36,7 +37,7 @@ You can still set a custom URL + token under **Settings → Connection** if you 
 ## Ingress vs direct port
 
 - **Ingress (recommended)** — use **Open Web UI** or the sidebar entry. Traffic stays inside Home Assistant; no extra port on your LAN.
-- **Port 3000** — enable under the app’s network settings if you want a direct URL. Open `http://HOME_ASSISTANT_IP:3000/` (redirects to `/__ha_ingress__`).
+- **Port 3000** — still published for the local network. Open `http://HOME_ASSISTANT_IP:3000/` and enter the dashboard password. Ingress does not use that password.
 
 ## Data
 

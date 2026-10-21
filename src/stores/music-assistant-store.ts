@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { pushIntegrationCredential } from "@/lib/client-credential-sync";
 
 const STORAGE_KEY_ENABLED = "dashboard.musicAssistant.enabled";
 const STORAGE_KEY_BASE_URL = "dashboard.musicAssistant.baseUrl";
@@ -128,7 +129,7 @@ export type MusicAssistantStore = {
 export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => ({
   enabled: getStored(STORAGE_KEY_ENABLED, false),
   baseUrl: getStored(STORAGE_KEY_BASE_URL, DEFAULT_BASE_URL),
-  token: getStored(STORAGE_KEY_TOKEN, ""),
+  token: "",
   allowSpeakerSelection: getStored(STORAGE_KEY_ALLOW_SPEAKER_SELECTION, true),
   allowedSpeakerIds: getStored<string[]>(STORAGE_KEY_ALLOWED_SPEAKER_IDS, []),
   featuredPlaylistIds: getStored<string[]>(STORAGE_KEY_FEATURED_PLAYLIST_IDS, ["30"]),
@@ -148,8 +149,17 @@ export const useMusicAssistantStore = create<MusicAssistantStore>((set, get) => 
     set({ baseUrl: url });
   },
   setToken: (v) => {
-    setStored(STORAGE_KEY_TOKEN, v || "");
+    try {
+      localStorage.removeItem(STORAGE_KEY_TOKEN);
+    } catch {
+      /* ignore */
+    }
     set({ token: v || "" });
+    pushIntegrationCredential({
+      kind: "music-assistant",
+      token: v || "",
+      baseUrl: get().baseUrl,
+    });
   },
   setAllowSpeakerSelection: (v) => {
     setStored(STORAGE_KEY_ALLOW_SPEAKER_SELECTION, v);
@@ -269,7 +279,7 @@ export function hydrateMusicAssistantStore() {
   useMusicAssistantStore.setState({
     enabled: getStored(STORAGE_KEY_ENABLED, false),
     baseUrl: getStored(STORAGE_KEY_BASE_URL, DEFAULT_BASE_URL),
-    token: getStored(STORAGE_KEY_TOKEN, ""),
+    token: "",
     allowSpeakerSelection: getStored(STORAGE_KEY_ALLOW_SPEAKER_SELECTION, true),
     allowedSpeakerIds: getStored<string[]>(STORAGE_KEY_ALLOWED_SPEAKER_IDS, []),
     featuredPlaylistIds: getStored<string[]>(STORAGE_KEY_FEATURED_PLAYLIST_IDS, ["30"]),
