@@ -1,8 +1,14 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DashboardEditBar } from "@/components/dashboard-edit-bar";
-import { DashboardPageUndoToastView } from "@/components/dashboard-page-undo-toast";
+import {
+  DASHBOARD_PAGE_UNDO_TOAST_BOTTOM_PX,
+  DASHBOARD_PAGE_UNDO_TOAST_GAP_PX,
+  DashboardPageUndoToastView,
+} from "@/components/dashboard-page-undo-toast";
+import { DASHBOARD_EDIT_BAR_HEIGHT_PX } from "@/lib/dashboard-edit-bar";
 import { getTranslations } from "@/lib/i18n";
 import { useLanguageStore } from "@/stores/language-store";
 import {
@@ -173,7 +179,36 @@ describe("dashboard page removal undo", () => {
     expect(toast).toContain("Ongedaan maken");
     expect(toast).toContain("Pagina verwijderd");
     expect(toast).toContain('role="status"');
+    expect(toast).toContain("min-h-11");
+    expect(toast).toContain("px-4");
+    expect(toast).toContain("dark:bg-[#1b1a21]");
+    expect(toast).toContain("dark:border-white/10");
+    expect(toast).toContain("dark:shadow-[0_16px_40px_rgba(0,0,0,0.55)]");
+    expect(toast).toContain("dark:bg-brand-muted");
+    expect(toast).toContain("dark:backdrop-blur-none");
+    expect(toast).toContain("backdrop-blur-md");
+    expect(toast).toContain("bg-white/95");
+    expect(toast).toContain(`bottom:${DASHBOARD_PAGE_UNDO_TOAST_BOTTOM_PX}px`);
     expect(toast).not.toContain("h-7 w-7");
+    expect(toast).not.toContain("dark:bg-black/80");
+    expect(toast).not.toContain("top-20");
+    expect(DASHBOARD_PAGE_UNDO_TOAST_GAP_PX).toBeGreaterThanOrEqual(8);
+    expect(DASHBOARD_PAGE_UNDO_TOAST_GAP_PX).toBeLessThanOrEqual(12);
+    expect(DASHBOARD_PAGE_UNDO_TOAST_BOTTOM_PX).toBe(
+      DASHBOARD_EDIT_BAR_HEIGHT_PX + DASHBOARD_PAGE_UNDO_TOAST_GAP_PX
+    );
+
+    const notificationSource = readFileSync(
+      new URL("../components/notifications/notification-toasts.tsx", import.meta.url),
+      "utf8"
+    );
+    expect(notificationSource).toContain("backdrop-blur-md");
+    expect(notificationSource).toContain("dark:bg-black/80");
+    expect(notificationSource).toContain("bg-white/95");
+    expect(notificationSource).not.toContain("dark:bg-[#1b1a21]");
+    expect(notificationSource).not.toContain("min-h-11");
+    expect(notificationSource).not.toContain("dark:bg-brand-muted");
+    expect(notificationSource).not.toContain("Ongedaan maken");
 
     useLanguageStore.setState({ language: "en" });
     const bar = renderToStaticMarkup(
