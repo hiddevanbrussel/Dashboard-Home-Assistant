@@ -68,14 +68,20 @@ export function pathWithinBase(pathname: string, base: string): string {
 }
 
 /** Login URL for this document, or null when the browser is already on the login page. */
-export function buildLoginHref(pathname: string, search: string, baked = ""): string | null {
+export function buildLoginHref(
+  pathname: string,
+  search: string,
+  baked = "",
+  options?: { expired?: boolean }
+): string | null {
   const base = detectBrowserBasePath(pathname, baked);
   const within = pathWithinBase(pathname, base);
   if (within === "/login") return null;
   const next = safeNextPath(`${within}${search || ""}`);
   const nextPath = next.split(/[?#]/)[0] || "/";
   const target = nextPath === "/login" ? "/" : next;
-  return `${base}/login?next=${encodeURIComponent(target)}`;
+  const expired = options?.expired ? "&expired=1" : "";
+  return `${base}/login?next=${encodeURIComponent(target)}${expired}`;
 }
 
 /**
@@ -107,7 +113,7 @@ export function redirectToLoginOnce(
   baked = ""
 ): boolean {
   if (redirecting) return false;
-  const href = buildLoginHref(location.pathname, location.search, baked);
+  const href = buildLoginHref(location.pathname, location.search, baked, { expired: true });
   if (!href) return false;
   redirecting = true;
   location.assign(href);

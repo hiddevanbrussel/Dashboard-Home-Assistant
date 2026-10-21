@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useTranslation } from "@/hooks/use-translation";
@@ -14,6 +14,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
+  useEffect(() => {
+    const expired = new URLSearchParams(window.location.search).get("expired") === "1";
+    if (expired) setError(t("login.sessionExpired"));
+  }, [t]);
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setPending(true);
@@ -25,13 +30,15 @@ export default function LoginPage() {
         body: JSON.stringify({ password }),
       });
       if (!res.ok) {
-        setError(res.status === 429 ? t("login.rateLimited") : t("login.error"));
+        if (res.status === 429) setError(t("login.rateLimited"));
+        else if (res.status === 401) setError(t("login.error"));
+        else setError(t("login.genericError"));
         return;
       }
       const next = new URLSearchParams(window.location.search).get("next");
       window.location.assign(postLoginTarget(next, window.location.pathname));
     } catch {
-      setError(t("login.error"));
+      setError(t("login.genericError"));
     } finally {
       setPending(false);
     }
@@ -49,7 +56,7 @@ export default function LoginPage() {
             {t("login.hint")}
           </p>
           <label className="sr-only" htmlFor="dashboard-username">
-            Username
+            {t("login.username")}
           </label>
           <input
             id="dashboard-username"

@@ -80,7 +80,7 @@ describe("session redirect", () => {
     };
     expect(redirectToLoginOnce(location, "")).toBe(true);
     expect(redirectToLoginOnce(location, "")).toBe(false);
-    expect(assigned).toEqual(["/login?next=%2Ffamily"]);
+    expect(assigned).toEqual(["/login?next=%2Ffamily&expired=1"]);
 
     resetSessionRedirectForTests();
     const loginAssigned: string[] = [];
