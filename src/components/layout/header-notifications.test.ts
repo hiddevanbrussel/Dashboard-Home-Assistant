@@ -39,6 +39,7 @@ type HitZoneReport = {
   visibleButtons: Box[];
   panel: Box;
   panelClass: string;
+  backdropFilter: string;
   headerClientHeight: number;
   headerHeight: number;
   clear: Box & { text: string; className: string };
@@ -232,12 +233,17 @@ export function useHaPersistentNotifications() {
 import { HeaderNotifications } from ${JSON.stringify(path.join(root, "src/components/layout/header-notifications.tsx"))};
 import { useAppNotificationsStore } from "@/stores/app-notifications-store";
 import { useLanguageStore } from "@/stores/language-store";
+import { useThemeStore } from "@/stores/theme-store";
 
 useLanguageStore.setState({ language: "nl" });
 useAppNotificationsStore.setState({ items: ${JSON.stringify(appPayload)} });
 
 window.__setBellLanguage = (language) => {
   useLanguageStore.getState().setLanguage(language);
+};
+window.__setBellTheme = (resolved) => {
+  useThemeStore.setState({ resolved });
+  document.documentElement.classList.toggle("dark", resolved === "dark");
 };
 
 createRoot(document.getElementById("root")).render(
@@ -398,7 +404,9 @@ createRoot(document.getElementById("root")).render(
     expect(nl.iconsHidden).toBe(true);
     expect(nl.panelClass).toContain("dark:bg-[#1b1a21]");
     expect(nl.panelClass).toContain("dark:shadow-[0_16px_40px_rgba(0,0,0,0.55)]");
-    expect(nl.panelClass.includes("backdrop-blur")).toBe(false);
+    expect(nl.panelClass).toContain("backdrop-blur-xl");
+    expect(nl.panelClass.includes("dark:backdrop-blur")).toBe(false);
+    expect(nl.backdropFilter).toContain("blur");
     expect(nl.panelClass).toContain("bg-white");
     expect(nl.panelClass).toContain("dark:border-white/10");
     expect(nl.dismissClass).toContain("h-11");
@@ -451,6 +459,13 @@ createRoot(document.getElementById("root")).render(
       expect(button.top).toBeGreaterThanOrEqual(scrolled.panel.top - 0.5);
       expect(button.bottom).toBeLessThanOrEqual(scrolled.panel.bottom + 0.5);
     }
+
+    await cdp.evaluate<void>(`window.__setBellTheme("dark")`);
+    const dark = await measure(null);
+    expect(dark.panelClass.includes("backdrop-blur")).toBe(false);
+    expect(dark.backdropFilter === "none" || dark.backdropFilter === "").toBe(true);
+    expect(dark.panelClass).toContain("dark:bg-[#1b1a21]");
+    await cdp.evaluate<void>(`window.__setBellTheme("light")`);
 
     await cdp.evaluate<void>(`window.__setBellLanguage("en")`);
     const en = await measure(null);
@@ -514,6 +529,7 @@ async function measureInPage(scrollTop: number | null): Promise<HitZoneReport> {
     visibleButtons,
     panel: panelBox,
     panelClass: panel.className,
+    backdropFilter: getComputedStyle(panel).backdropFilter,
     headerClientHeight: header.clientHeight,
     headerHeight: header.getBoundingClientRect().height,
     clear: { ...box(clearButton), text: clearButton.textContent?.trim() || "", className: clearButton.className },
@@ -532,6 +548,7 @@ async function measureInPage(scrollTop: number | null): Promise<HitZoneReport> {
       visibleButtons: [],
       panel: { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 },
       panelClass: "",
+      backdropFilter: "",
       headerClientHeight: 0,
       headerHeight: 0,
       clear: { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, text: "", className: "" },

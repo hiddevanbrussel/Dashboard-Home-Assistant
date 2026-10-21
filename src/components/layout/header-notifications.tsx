@@ -4,6 +4,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { Bell, RobotVacuum, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppNotificationsStore } from "@/stores/app-notifications-store";
+import { useThemeStore } from "@/stores/theme-store";
 import { useHaPersistentNotifications } from "@/hooks/use-ha-notifications";
 import { useTranslation } from "@/hooks/use-translation";
 import { notificationPanelFrame, type NotificationPanelFrame } from "./notification-panel-frame";
@@ -40,6 +41,7 @@ export function HeaderNotifications({
   buttonClassName?: string;
 } = {}) {
   const { t } = useTranslation();
+  const theme = useThemeStore((s) => s.resolved);
   const appItems = useAppNotificationsStore((s) => s.items);
   const dismissAppItem = useAppNotificationsStore((s) => s.dismissItem);
   const dismissAllApp = useAppNotificationsStore((s) => s.dismissAll);
@@ -156,6 +158,9 @@ export function HeaderNotifications({
         <div
           className={cn(
             "z-[100] flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#1b1a21] dark:shadow-[0_16px_40px_rgba(0,0,0,0.55)]",
+            // globals.css remaps any class containing "backdrop-blur-xl", so the old
+            // dark: token also blurred the light panel. Keep the token only in light mode.
+            theme !== "dark" && "backdrop-blur-xl",
             !frame && "invisible",
             placement === "sidebar"
               ? "absolute bottom-0 left-full ml-2"
