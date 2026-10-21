@@ -94,7 +94,7 @@ import { useDashboardEditFlag } from "@/hooks/use-dashboard-edit-flag";
 import { cn, generateId } from "@/lib/utils";
 import { cssUrl } from "@/lib/base-path";
 import { DashboardPager } from "@/components/dashboard-pager";
-import { UndoToast } from "@/components/undo-toast";
+import { UndoToast, UNDO_TOAST_DURATION_MS } from "@/components/undo-toast";
 import {
   addTileHistoryDepth,
   backAddTileHistory,
@@ -1947,7 +1947,7 @@ export default function DashboardEditPage() {
 
   useEffect(() => {
     if (!undoAdd) return;
-    const timer = window.setTimeout(() => setUndoAdd(null), 6000);
+    const timer = window.setTimeout(() => setUndoAdd(null), UNDO_TOAST_DURATION_MS);
     return () => window.clearTimeout(timer);
   }, [undoAdd]);
 

@@ -1,5 +1,8 @@
 "use client";
 
+/** How long an undo action stays available. Same window as page removal. */
+export const UNDO_TOAST_DURATION_MS = 5000;
+
 type UndoToastProps = {
   message: string;
   actionLabel: string;
