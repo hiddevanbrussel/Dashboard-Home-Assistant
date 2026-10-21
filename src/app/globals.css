@@ -493,6 +493,12 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
   animation: energy-pulse-up 1.5s linear infinite;
 }
 
+/* Room under the in-flow dashboard grid while editing, matching the edit bar
+   (1.75rem) plus the home-indicator inset, so a bottom row can scroll clear. */
+html[data-dashboard-edit] .dashboard-grid-edit {
+  padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+}
+
 /* Dashboard grid: same spacing horizontal and vertical (controlled by margin prop) */
 .react-grid-layout .react-grid-item {
   margin: 0 !important;

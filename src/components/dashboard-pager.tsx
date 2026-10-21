@@ -2,12 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/hooks/use-translation";
-import { SIDEBAR_INSET } from "@/components/layout/sidebar";
+import { DashboardEditBar } from "@/components/dashboard-edit-bar";
 import {
-  DASHBOARD_MAX_PAGES,
   dashboardPagerHistoryStep,
   historyHasDashboardPager,
   shouldConsumeHistoryBack,
@@ -35,7 +32,6 @@ export function DashboardPager({
   onRemovePage,
   children,
 }: DashboardPagerProps) {
-  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef(page);
@@ -221,54 +217,14 @@ export function DashboardPager({
       </div>
 
       {showChrome ? (
-        <div
-          data-dashboard-pager-ui
-          className="pointer-events-none absolute bottom-5 z-[80] flex justify-center"
-          style={{ left: SIDEBAR_INSET, right: 0 }}
-        >
-          <div className="pointer-events-auto flex items-center gap-2">
-            {editMode && onRemovePage ? (
-              <button
-                type="button"
-                onClick={onRemovePage}
-                disabled={pageCount <= 1}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 disabled:opacity-30 dark:text-white/60 dark:hover:bg-white/10"
-                aria-label={t("dashboardPages.remove")}
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-            ) : null}
-            <div className="flex items-center gap-1.5 px-1" role="tablist" aria-label={t("dashboardPages.pages")}>
-              {Array.from({ length: pageCount }, (_, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  role="tab"
-                  aria-selected={index === page}
-                  aria-label={t("dashboardPages.pageN").replace("{n}", String(index + 1))}
-                  onClick={() => goTo(index)}
-                  className={cn(
-                    "h-2 rounded-full transition-all duration-300",
-                    index === page
-                      ? "w-5 bg-brand"
-                      : "w-2 bg-black/25 hover:bg-black/40 dark:bg-white/35 dark:hover:bg-white/55"
-                  )}
-                />
-              ))}
-            </div>
-            {editMode && onAddPage ? (
-              <button
-                type="button"
-                onClick={onAddPage}
-                disabled={pageCount >= DASHBOARD_MAX_PAGES}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 disabled:opacity-30 dark:text-white/60 dark:hover:bg-white/10"
-                aria-label={t("dashboardPages.add")}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            ) : null}
-          </div>
-        </div>
+        <DashboardEditBar
+          pageCount={pageCount}
+          page={page}
+          editMode={editMode}
+          onAddPage={onAddPage}
+          onRemovePage={onRemovePage}
+          onSelectPage={(index) => goTo(index)}
+        />
       ) : null}
     </div>,
     document.body
