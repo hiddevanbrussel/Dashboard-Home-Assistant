@@ -237,14 +237,14 @@ A plain `docker pull` is not enough — the container must be recreated to run t
 ### Unraid
 
 1. Open the container → **Force update** (or apply update if shown).
-2. Confirm **Settings → System** shows the new version (e.g. `0.4.85`).
+2. Confirm **Settings → System** shows the new version (e.g. `0.5.0`).
 
 ### Home Assistant addon
 
 Supervisor only offers an update when the addon **version** in `config.yaml` increases. After a release:
 
 1. **Settings → Add-ons → Add-on store** → ⋮ → **Check for updates** (or refresh your custom repository).
-2. Update **Dashboard Builder** when `0.4.85` (or newer) appears.
+2. Update **Dashboard Builder** when `0.5.0` (or newer) appears.
 3. Confirm the version under the addon info / in-app **Settings → System**.
 
 The current version is shown in **Settings → System**.
@@ -268,9 +268,11 @@ The current version is shown in **Settings → System**.
 ```bash
 git clone https://github.com/HiddevanBrussel/Dashboard-Home-Assistant.git
 cd Dashboard-Home-Assistant
-npm install
 cp .env.example .env   # set APP_SECRET and DASHBOARD_PASSWORD
-npx prisma migrate dev
+# Prisma CLI does not load .env. Export this before npm install and before migrate.
+export DATABASE_URL="file:./prisma/dev.db"
+npm install
+npx prisma migrate dev # new migration while editing prisma/schema.prisma; npm run dev only deploys existing ones
 npm run dev            # http://localhost:3000
 ```
 

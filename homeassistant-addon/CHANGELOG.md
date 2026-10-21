@@ -2,34 +2,37 @@
 
 ## 0.5.0
 
-Login and security hardening. The dashboard does not start until `APP_SECRET` and `DASHBOARD_PASSWORD` are set. Back up `/data` (or the Docker volume: `app.db`, `uploads/`, and on the add-on `app_secret`) before you update.
+Login and security hardening. The dashboard does not start until `APP_SECRET` and `DASHBOARD_PASSWORD` are set. Back up the dashboard data for your install type before you update.
 
 ### Before you update
 
 **Home Assistant add-on**
 
-1. Open **Settings → Add-ons → Dashboard Builder → Configuration**.
-2. Set `dashboard_password` (at least 12 characters, not a denylisted word). The add-on exits on start when this is empty or too weak.
-3. Leave `app_secret` empty unless you set one yourself. The add-on keeps using `/data/app_secret`, so the saved Home Assistant connection keeps working. If that file is still a published placeholder, replace it and re-save the Home Assistant connection.
-4. Update the add-on.
-5. **Open Web UI / sidebar (Ingress) does not ask for the password.** Tablets on port 3000 sign in once (90-day cookie).
+1. Make a partial Home Assistant backup that includes this add-on (**Settings → System → Backups**). That saves the add-on data.
+2. Open **Settings → Add-ons → Dashboard Builder → Configuration**.
+3. Set `dashboard_password` (at least 12 characters, not a denylisted word). The add-on exits on start when this is empty or too weak.
+4. Leave `app_secret` empty unless you set one yourself. The add-on keeps using `/data/app_secret`, so the saved Home Assistant connection keeps working. If that file is still a published placeholder, replace it and re-save the Home Assistant connection.
+5. Update the add-on.
+6. **Open Web UI / sidebar (Ingress) does not ask for the password.** Tablets on port 3000 sign in once (90-day cookie).
 
 **Docker Compose / docker run**
 
-1. Generate a secret once and store it: `openssl rand -hex 32`. Do not put that command inline in a `docker run` you repeat.
-2. Set `APP_SECRET` and `DASHBOARD_PASSWORD` (at least 12 characters). Compose uses `${APP_SECRET:?}` and `${DASHBOARD_PASSWORD:?}` and refuses to start when either is missing.
-3. `docker compose pull && docker compose up -d --force-recreate`.
+1. Stop the app and archive the Compose volume `app-data` (the `/data` mount: `app.db`, `uploads/`). For example: `docker compose stop app`, then `docker run --rm -v app-data:/data -v "$PWD":/backup alpine tar czf /backup/app-data.tgz -C /data .`. The real volume name is often prefixed with the Compose project name.
+2. Generate a secret once and store it: `openssl rand -hex 32`. Do not put that command inline in a `docker run` you repeat.
+3. Set `APP_SECRET` and `DASHBOARD_PASSWORD` (at least 12 characters). Compose uses `${APP_SECRET:?}` and `${DASHBOARD_PASSWORD:?}` and refuses to start when either is missing.
+4. `docker compose pull && docker compose up -d --force-recreate`.
 
 **Unraid**
 
-1. Edit the container or re-import `unraid-template.xml`.
-2. Fill in `APP_SECRET` and `DASHBOARD_PASSWORD`.
-3. Apply.
+1. Copy or archive `/mnt/user/appdata/dashboard` before you change the container.
+2. Edit the container or re-import `unraid-template.xml`.
+3. Fill in `APP_SECRET` and `DASHBOARD_PASSWORD`.
+4. Apply.
 
 ### Rules enforced at startup
 
 - `APP_SECRET`: required, at least 32 characters. Published placeholders are rejected. Values with fewer than 8 different characters are rejected. This repetitive check applies only to `APP_SECRET`.
-- `DASHBOARD_PASSWORD`: required, at least 12 characters, and different from `APP_SECRET`. The whole value is also rejected when it exactly matches a short denylist (`password`, `changeme`, `change-me`, `secret`, `dashboard`, and the published placeholders), compared case-insensitively. Words shorter than 12 characters fail the length check first. This is not a general dictionary. A long repeated character is allowed for the password.
+- `DASHBOARD_PASSWORD`: required, at least 12 characters, and different from `APP_SECRET`. The whole value is also rejected when it exactly matches the denylist, compared case-insensitively. Published placeholders are long enough to hit that check, for example `replace-with-a-long-passphrase`. Shorter denylist entries such as `password` and `changeme` fail the 12-character rule first. This is not a general dictionary. A long repeated character is allowed for the password.
 - Invalid values stop startup with a `[startup]` message. The add-on runs this check in `run.sh` before Next.js starts.
 
 ### Migration
@@ -42,12 +45,12 @@ Login and security hardening. The dashboard does not start until `APP_SECRET` an
 - Doorbell iframes load only local URLs, or `https` hosts listed in `DOORBELL_ALLOWED_HOSTS`.
 - Settings → update runs only when `UPDATE_PASSCODE` is at least 20 characters. Updating the container image is the normal path.
 - `.env` is not in the repository. Copy `.env.example`.
-- Behind your own proxy, set `APP_PUBLIC_ORIGIN` when the Home Assistant login client id must be a public origin, and `TRUST_PROXY=1` so `X-Forwarded-Proto` and the client IP are trusted. The add-on does not set `TRUST_PROXY`; `HA_ADDON=1` trusts its own nginx instead.
+- Behind your own proxy, set `APP_PUBLIC_ORIGIN` when the Home Assistant login client id must be a public origin. `TRUST_PROXY=1` (the add-on sets `HA_ADDON=1` and does not set `TRUST_PROXY`) makes `X-Real-IP`, then `X-Forwarded-For`, the client address for the login rate limit. The same switch makes `X-Forwarded-Proto` count for the Home Assistant login client id only. The session cookie `Secure` flag follows `X-Forwarded-Proto` whenever that header is present, including when `TRUST_PROXY` is unset. If the header is missing, `Secure` follows the request URL scheme.
 - Consider revoking Home Assistant long-lived tokens that were stored by an older version.
 
 ### Also in this release
 
-- Direct access shows a login page. The session cookie is httpOnly, signed, SameSite=Lax, 90 days, and `Secure` only on https. Five failures in 15 minutes are counted per client, not in one shared bucket.
+- Direct access shows a login page. The session cookie is httpOnly, signed, SameSite=Lax, and lasts 90 days. `Secure` is set when `X-Forwarded-Proto` or the request URL is https. Five failures in 15 minutes are counted per client, not in one shared bucket.
 - An expired session redirects to `/login?next=<path>`, including the add-on base path, and returns there after login. `next` accepts only a same-origin relative path.
 - The exact add-on root `/__ha_ingress__` requires a session. Anonymous requests redirect to `/__ha_ingress__/login?next=%2F`.
 - The ingress proxy on port 8099 accepts only the Home Assistant Supervisor (`172.30.32.2`) and loopback.
