@@ -55,6 +55,11 @@ describe("energy page backgrounds", () => {
       "/uploads/energy-animated.svg"
     );
     expect(usableEnergyBackground("/__ha_ingress__/uploads/ok.png")).toBe("/uploads/ok.png");
+    expect(usableEnergyBackground("/__ha_ingress__/uploads/ok.png?v=1")).toBe(
+      "/uploads/ok.png?v=1"
+    );
+    expect(usableEnergyBackground("/__ha_ingress__")).toBeUndefined();
+    expect(usableEnergyBackground("/__ha_ingress__uploads/ok.png")).toBeUndefined();
     expect(
       resolveEnergyPageBackground("light", {
         backgroundLight: "/uploads/energy-custom-light.jpg",

@@ -1,5 +1,7 @@
+import { stripHaIngressPrefix } from "./ha-ingress-prefix";
+
 function stripIngressPrefix(pathname: string): string {
-  return pathname.replace(/^\/__ha_ingress__(?=\/|$)/, "") || "/";
+  return stripHaIngressPrefix(pathname) || "/";
 }
 
 function isPath(pathname: string, root: string): boolean {
