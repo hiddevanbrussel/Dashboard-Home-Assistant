@@ -568,7 +568,7 @@ html.dark:has(.settings-page-bg) body {
 .dark .settings-primary:disabled {
   opacity: 1;
   background-color: rgb(var(--brand-muted) / 0.4);
-  color: #fff;
+  color: #c7c2cf;
   box-shadow: inset 0 0 0 1px rgb(var(--brand-muted));
 }
 
