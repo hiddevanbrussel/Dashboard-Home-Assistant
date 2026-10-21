@@ -98,11 +98,19 @@ import {
   clampPageIndex,
   DASHBOARD_MAX_PAGES,
   parseDashboardLayout,
-  reindexWidgetsAfterRemovedPage,
   resolvePageCount,
   serializeDashboardLayout,
   widgetPage,
 } from "@/lib/dashboard-pages";
+import {
+  applyPageRemovalAction,
+  DASHBOARD_PAGE_UNDO_MS,
+  readFloatingPositions,
+  restoreFloatingPositions,
+  type PageSnapshot,
+  type PendingPageRemoval,
+} from "@/lib/dashboard-page-removal";
+import { DashboardPageUndoToast } from "@/components/dashboard-page-undo-toast";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
   clampClimateCardHeight,
@@ -893,6 +901,29 @@ export default function DashboardEditPage() {
   dashboardPageRef.current = dashboardPage;
   const [welcomeTitle, setWelcomeTitle] = useState<string>("");
   const [welcomeSubtitle, setWelcomeSubtitle] = useState<string>("");
+  const widgetsRef = useRef(widgets);
+  const layoutRef = useRef(layout);
+  const welcomeTitleRef = useRef(welcomeTitle);
+  const welcomeSubtitleRef = useRef(welcomeSubtitle);
+  const pendingPageRemovalRef = useRef<PendingPageRemoval<WidgetConfig, LayoutItem> | null>(null);
+  const pageRemovalCommitRef = useRef<() => void>(() => {});
+  const pageUndoGenerationRef = useRef(0);
+  const [pageUndoOpen, setPageUndoOpen] = useState(false);
+  const [pageUndoGeneration, setPageUndoGeneration] = useState(0);
+  widgetsRef.current = widgets;
+  layoutRef.current = layout;
+  welcomeTitleRef.current = welcomeTitle;
+  welcomeSubtitleRef.current = welcomeSubtitle;
+
+  useEffect(() => {
+    if (!pageUndoOpen) return;
+    const generation = pageUndoGeneration;
+    const timer = window.setTimeout(() => {
+      if (pageUndoGenerationRef.current !== generation) return;
+      pageRemovalCommitRef.current();
+    }, DASHBOARD_PAGE_UNDO_MS);
+    return () => window.clearTimeout(timer);
+  }, [pageUndoOpen, pageUndoGeneration]);
   const [roomCardSize, setRoomCardSize] = useState<"normal" | "large">("normal");
   const [initialized, setInitialized] = useState(false);
   const [entities, setEntities] = useState<HaEntity[]>([]);
@@ -1527,6 +1558,7 @@ export default function DashboardEditPage() {
   const layoutMap = new Map(layout.map((item) => [item.i, item]));
 
   const handleSave = () => {
+    dismissPageUndo();
     setEditingWidgetId(null);
     setEditingGroupChildId(null);
     setEditMode(false);
@@ -1819,8 +1851,70 @@ export default function DashboardEditPage() {
     saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
+  function livePageSnapshot(): PageSnapshot<WidgetConfig, LayoutItem> {
+    return {
+      widgets: widgetsRef.current,
+      pageCount: pageCountRef.current,
+      activePage: dashboardPageRef.current,
+      layout: layoutRef.current,
+      positions: typeof window === "undefined" ? {} : readFloatingPositions(window.localStorage),
+    };
+  }
+
+  function applyPageSnapshot(snapshot: PageSnapshot<WidgetConfig, LayoutItem>) {
+    widgetsRef.current = snapshot.widgets;
+    layoutRef.current = snapshot.layout;
+    pageCountRef.current = snapshot.pageCount;
+    dashboardPageRef.current = snapshot.activePage;
+    setWidgets(snapshot.widgets);
+    setLayout(snapshot.layout);
+    setPageCount(snapshot.pageCount);
+    setDashboardPage(snapshot.activePage);
+  }
+
+  function persistPageSnapshot(snapshot: PageSnapshot<WidgetConfig, LayoutItem>) {
+    saveMutation.mutate({
+      layout: snapshot.layout,
+      widgets: snapshot.widgets,
+      welcomeTitle: welcomeTitleRef.current,
+      welcomeSubtitle: welcomeSubtitleRef.current,
+      pageCount: snapshot.pageCount,
+    });
+  }
+
+  function dismissPageUndo() {
+    pendingPageRemovalRef.current = null;
+    setPageUndoOpen(false);
+  }
+
+  function commitPendingPageRemoval() {
+    const pending = pendingPageRemovalRef.current;
+    if (!pending) return;
+    const result = applyPageRemovalAction({ current: livePageSnapshot(), pending }, "commit");
+    pendingPageRemovalRef.current = result.state.pending;
+    setPageUndoOpen(false);
+    for (const effect of result.effects) {
+      if (effect.type === "save") persistPageSnapshot(effect.snapshot);
+    }
+  }
+
+  pageRemovalCommitRef.current = commitPendingPageRemoval;
+
+  function handleUndoPageRemoval() {
+    const pending = pendingPageRemovalRef.current;
+    if (!pending) return;
+    const result = applyPageRemovalAction({ current: livePageSnapshot(), pending }, "undo");
+    pendingPageRemovalRef.current = null;
+    setPageUndoOpen(false);
+    if (typeof window !== "undefined") {
+      restoreFloatingPositions(window.localStorage, result.state.current.positions);
+    }
+    applyPageSnapshot(result.state.current);
+  }
+
   function handleAddDashboardPage() {
     if (pageCount >= DASHBOARD_MAX_PAGES) return;
+    dismissPageUndo();
     const next = pageCount + 1;
     setPageCount(next);
     setDashboardPage(next - 1);
@@ -1828,13 +1922,23 @@ export default function DashboardEditPage() {
   }
 
   function handleRemoveDashboardPage() {
-    if (pageCount <= 1) return;
-    const nextWidgets = reindexWidgetsAfterRemovedPage(widgets, dashboardPage);
-    const nextCount = pageCount - 1;
-    setWidgets(nextWidgets);
-    setPageCount(nextCount);
-    setDashboardPage(clampPageIndex(dashboardPage, nextCount));
-    saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle, pageCount: nextCount });
+    if (pageCountRef.current <= 1) return;
+    const result = applyPageRemovalAction(
+      { current: livePageSnapshot(), pending: pendingPageRemovalRef.current },
+      "remove"
+    );
+    for (const effect of result.effects) {
+      if (effect.type === "save") persistPageSnapshot(effect.snapshot);
+    }
+    pendingPageRemovalRef.current = result.state.pending;
+    applyPageSnapshot(result.state.current);
+    if (result.state.pending) {
+      pageUndoGenerationRef.current += 1;
+      setPageUndoGeneration(pageUndoGenerationRef.current);
+      setPageUndoOpen(true);
+    } else {
+      setPageUndoOpen(false);
+    }
   }
 
   if (!id || (isRoomMode && !areaId)) {
@@ -2344,6 +2448,7 @@ export default function DashboardEditPage() {
           </ReactGridLayout>
         </div>
 
+        <DashboardPageUndoToast open={pageUndoOpen && editMode} onUndo={handleUndoPageRemoval} />
         <DashboardPager
           pageCount={pageCount}
           page={dashboardPage}
