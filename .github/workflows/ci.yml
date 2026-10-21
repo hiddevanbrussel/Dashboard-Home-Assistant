@@ -31,6 +31,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Lint
+        run: npm run lint
+
       - name: Typecheck
         run: npx tsc --noEmit
 
@@ -47,9 +50,25 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+            addon_arch: amd64
+          - platform: linux/arm64
+            arch: arm64
+            addon_arch: aarch64
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -61,8 +80,9 @@ jobs:
           file: Dockerfile
           push: false
           load: true
-          platforms: linux/amd64
-          tags: dashboard-ci:local
+          provenance: false
+          platforms: ${{ matrix.platform }}
+          tags: dashboard-ci:${{ matrix.arch }}
           build-args: |
             VERSION=ci
 
@@ -73,9 +93,10 @@ jobs:
           file: Dockerfile.addon
           push: false
           load: true
-          platforms: linux/amd64
-          tags: dashboard-addon-ci:local
+          provenance: false
+          platforms: ${{ matrix.platform }}
+          tags: dashboard-addon-ci:${{ matrix.arch }}
           build-args: |
             VERSION=ci
-            BUILD_ARCH=amd64
+            BUILD_ARCH=${{ matrix.addon_arch }}
             NEXT_BASE_PATH=/__ha_ingress__
