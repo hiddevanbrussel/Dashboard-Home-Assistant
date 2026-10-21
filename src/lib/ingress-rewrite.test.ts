@@ -58,6 +58,23 @@ describe("rewriteText ingress placeholder", () => {
     expect(rewriteText("%2F__ha_ingress__%2Fenergy", INGRESS)).toBe("%2Fapi%2Fhassio_ingress%2Fx%2Fenergy");
   });
 
+  it("rewrites double-escaped middleware matcher strings into a working RegExp", () => {
+    // Next emits these as strings (`regexp:"^\\/__ha_ingress__..."`), not regex literals.
+    // The value is a RegExp source, so a raw slash inside it is valid and must still match.
+    const input =
+      '[{regexp:"^\\\\/__ha_ingress__(?:\\\\/(_next\\\\/data\\\\/[^/]{1,}))?(?:\\\\/((?!_next\\\\/static|_next\\\\/image|favicon.ico).*))?$",originalSource:"/((?!_next/static|_next/image|favicon.ico).*)"}]';
+    const rewritten = rewriteText(input, INGRESS);
+    expect(rewritten).not.toContain("__ha_ingress__");
+    expect(() => new vm.Script(`(${rewritten})`)).not.toThrow();
+    const parsed = new vm.Script(`(${rewritten})`).runInNewContext() as { regexp: string }[];
+    const pattern = new RegExp(parsed[0].regexp);
+    expect(pattern.test(INGRESS)).toBe(true);
+    expect(pattern.test(`${INGRESS}/`)).toBe(true);
+    expect(pattern.test(`${INGRESS}/energy`)).toBe(true);
+    expect(pattern.test(`${INGRESS}tra`)).toBe(false);
+    expect(pattern.test("/__ha_ingress__/energy")).toBe(false);
+  });
+
   it("rewrites a Link preload header", () => {
     const header =
       '</__ha_ingress__/_next/static/media/e4af272ccee01ff0-s.p.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2"';
