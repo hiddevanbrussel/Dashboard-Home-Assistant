@@ -250,7 +250,8 @@ export function CalendarCardWidget({
       <div className="flex min-h-0 flex-1">
         <div
           className={cn(
-            "flex shrink-0 flex-col justify-center py-4",
+            // FIX: column never narrower than its longest label (WEDNESDAY / DONDERDAG / SEPTEMBER)
+            "flex min-w-max shrink-0 flex-col justify-center py-4",
             compact ? "w-[34%] max-w-[5.5rem] px-3" : narrow ? "w-[36%] max-w-[7.5rem] px-3.5" : "w-[38%] max-w-[9.5rem] px-5"
           )}
         >

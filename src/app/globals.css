@@ -7,6 +7,8 @@
     --page-bg: #f2f0fe;
     --brand: 71 0 181;
     --brand-muted: 131 87 190;
+    --brand-on-muted: 255 255 255;
+    --brand-nav: 181 158 216;
     --hero-overlay: rgb(var(--brand) / 0.28);
     --accent-yellow: #f6d25c;
     --accent-purple: #b59ed8;
@@ -65,10 +67,11 @@
   }
 
   select.settings-select {
-    border-radius: 1rem !important;
-    font-size: 0.875rem !important;
+    border-radius: 0.75rem !important;
+    font-size: 1rem !important;
     line-height: 1.25rem;
-    padding: 0.625rem 0.75rem;
+    min-height: 3rem;
+    padding: 0.625rem 0.875rem;
   }
 
   /* Opties in dropdown: kleiner lettertype, minder ruimte/afronding */
@@ -539,4 +542,126 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
   filter: none !important;
   -webkit-filter: none !important;
   opacity: 1 !important;
+}
+
+/* Settings: flat page, no backdrop blur (weak GPUs). Layout switches at lg. */
+.settings-page-bg {
+  background: #f4f3f8;
+}
+
+.dark .settings-page-bg,
+.dark .dark\:bg-dark-page.settings-page-bg {
+  background-color: #0e0c13;
+}
+
+html.dark:has(.settings-page-bg),
+html.dark:has(.settings-page-bg) body {
+  --page-bg: #0e0c13;
+  background-color: #0e0c13;
+}
+
+/* Dark primary action. Default accent muted is #8357be with white text. */
+.dark .settings-primary {
+  background-color: rgb(var(--brand-muted));
+  color: rgb(var(--brand-on-muted));
+}
+
+.dark .settings-nav-bar {
+  background-color: rgb(var(--brand-nav));
+}
+
+.dark .settings-primary:disabled {
+  opacity: 1;
+  background-color: rgb(var(--brand-muted) / 0.4);
+  color: #c7c2cf;
+  box-shadow: inset 0 0 0 1px rgb(var(--brand-muted));
+}
+
+.settings-page-bg .header-chrome-glass,
+.settings-page-bg .header-chrome-glass-over-media {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  padding-bottom: 0;
+  background: #f4f3f8;
+}
+
+.dark .settings-page-bg .header-chrome-glass,
+.dark .settings-page-bg .header-chrome-glass-over-media {
+  background: #0e0c13;
+}
+
+.settings-page-bg .sidebar-glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: #ffffff;
+  border-color: rgba(17, 24, 39, 0.08);
+  box-shadow: none;
+}
+
+.dark .settings-page-bg .sidebar-glass {
+  background: #1b1a21;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.settings-page-bg :focus-visible {
+  outline: 2px solid #111827;
+  outline-offset: 2px;
+}
+
+.dark .settings-page-bg :focus-visible {
+  outline-color: #f3f4f6;
+}
+
+.settings-list {
+  display: block;
+  padding: 4px 4px 28px;
+}
+
+.settings-body {
+  display: none;
+}
+
+.settings-root[data-portrait-detail="true"] .settings-list {
+  display: none;
+}
+
+.settings-root[data-portrait-detail="true"] .settings-body {
+  display: block;
+  max-width: 712px;
+  height: auto;
+  overflow: auto;
+  padding: 4px 4px 32px;
+}
+
+.settings-root[data-portrait-detail="true"] .settings-nav {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .settings-list {
+    display: none;
+  }
+
+  .settings-body,
+  .settings-root[data-portrait-detail="true"] .settings-body {
+    display: grid;
+    grid-template-columns: 292px minmax(0, 1fr);
+    gap: 28px;
+    max-width: 1160px;
+    height: 100%;
+    overflow: hidden;
+    padding: 4px 8px 24px;
+  }
+
+  .settings-root[data-portrait-detail="true"] .settings-nav,
+  .settings-nav {
+    display: block;
+  }
+
+  .settings-detail {
+    min-height: 0;
+    overflow: auto;
+  }
 }

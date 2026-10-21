@@ -6,6 +6,7 @@
 
 const http = require("http");
 const path = require("path");
+const vm = require("vm");
 const {
   rewriteText,
   rewritePathsInText,
@@ -42,6 +43,23 @@ assert(asset === `r.p="${INGRESS}/_next/"`, `asset prefix: ${asset}`);
 // Exact root href needs trailing slash for HA route matcher
 const rootHref = rewriteText(`href="${PLACEHOLDER}"`, INGRESS);
 assert(rootHref === `href="${INGRESS}/"`, `root href: ${rootHref}`);
+
+const regexLiteral = rewriteText('e.replace(/^\\/__ha_ingress__(?=\\/|$)/,"")', INGRESS);
+assert(
+  regexLiteral === 'e.replace(/^\\/api\\/hassio_ingress\\/testhash(?=\\/|$)/,"")',
+  `regex literal: ${regexLiteral}`
+);
+new vm.Script(regexLiteral);
+
+const linkHeader = rewriteText(
+  '</__ha_ingress__/_next/static/media/a.woff2>; rel=preload; as="font"',
+  INGRESS
+);
+assert(
+  linkHeader ===
+    '</api/hassio_ingress/testhash/_next/static/media/a.woff2>; rel=preload; as="font"',
+  `link header: ${linkHeader}`
+);
 
 const sample =
   `href="${PLACEHOLDER}/_next/static/x.js"\n` +
