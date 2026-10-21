@@ -49,7 +49,8 @@ jobs:
           npm run build
 
   docker:
-    runs-on: ubuntu-latest
+    # arm64 builds on the native runner used by docker.yml. amd64 stays on ubuntu-latest.
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     timeout-minutes: 180
     strategy:
       fail-fast: false
@@ -66,6 +67,7 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       - name: Set up QEMU
+        if: matrix.arch != 'arm64'
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
