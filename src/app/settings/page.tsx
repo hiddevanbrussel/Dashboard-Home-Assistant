@@ -920,7 +920,9 @@ export default function SettingsPage() {
     { label: t("settings.groups.dashboard"), items: [
       { id: "paginas", label: t(SECTION_KEYS.paginas), icon: BookOpen, hint: t("settings.portrait.countOf").replace("{on}", String(enabledPageCount)).replace("{total}", "3") },
       { id: "bediening", label: t(SECTION_KEYS.bediening), icon: Hand, hint: editModeAllowed ? t("settings.portrait.editOn") : t("settings.portrait.editOff") },
-      { id: "meldingen", label: t(SECTION_KEYS.meldingen), icon: Bell, hint: t("settings.portrait.rules").replace("{n}", String(notificationRuleCount)) },
+      { id: "meldingen", label: t(SECTION_KEYS.meldingen), icon: Bell, hint: notificationRuleCount === 1
+        ? t("settings.portrait.rule")
+        : t("settings.portrait.rules").replace("{n}", String(notificationRuleCount)) },
     ]},
     { label: t("settings.groups.system"), items: [
       { id: "homeassistant", label: t(SECTION_KEYS.homeassistant), icon: Plug, hint: connectionSource ? t("settings.connection.statusConnected") : t("settings.connection.statusDisconnected"), connected: connectionSource != null },
