@@ -103,10 +103,13 @@ import {
   widgetPage,
 } from "@/lib/dashboard-pages";
 import {
-  applyPageRemovalAction,
+  createSerializedSaveQueue,
   DASHBOARD_PAGE_UNDO_MS,
   readFloatingPositions,
   restoreFloatingPositions,
+  shouldApplyPagedSave,
+  stepPageRemoval,
+  type PageRemovalStep,
   type PageSnapshot,
   type PendingPageRemoval,
 } from "@/lib/dashboard-page-removal";
@@ -897,8 +900,6 @@ export default function DashboardEditPage() {
   const [dashboardPage, setDashboardPage] = useState(0);
   const pageCountRef = useRef(pageCount);
   const dashboardPageRef = useRef(dashboardPage);
-  pageCountRef.current = pageCount;
-  dashboardPageRef.current = dashboardPage;
   const [welcomeTitle, setWelcomeTitle] = useState<string>("");
   const [welcomeSubtitle, setWelcomeSubtitle] = useState<string>("");
   const widgetsRef = useRef(widgets);
@@ -906,12 +907,23 @@ export default function DashboardEditPage() {
   const welcomeTitleRef = useRef(welcomeTitle);
   const welcomeSubtitleRef = useRef(welcomeSubtitle);
   const pendingPageRemovalRef = useRef<PendingPageRemoval<WidgetConfig, LayoutItem> | null>(null);
+  const removalMirrorRef = useRef<PageSnapshot<WidgetConfig, LayoutItem> | null>(null);
+  const pageRemovalEpochRef = useRef(0);
+  const enqueueSaveRef = useRef(createSerializedSaveQueue());
   const pageRemovalCommitRef = useRef<() => void>(() => {});
   const pageUndoGenerationRef = useRef(0);
   const [pageUndoOpen, setPageUndoOpen] = useState(false);
   const [pageUndoGeneration, setPageUndoGeneration] = useState(0);
-  widgetsRef.current = widgets;
-  layoutRef.current = layout;
+  const removalRefsLocked =
+    pendingPageRemovalRef.current != null &&
+    removalMirrorRef.current != null &&
+    pageCount !== removalMirrorRef.current.pageCount;
+  if (!removalRefsLocked) {
+    pageCountRef.current = pageCount;
+    dashboardPageRef.current = dashboardPage;
+    widgetsRef.current = widgets;
+    layoutRef.current = layout;
+  }
   welcomeTitleRef.current = welcomeTitle;
   welcomeSubtitleRef.current = welcomeSubtitle;
 
@@ -1518,21 +1530,25 @@ export default function DashboardEditPage() {
       welcomeTitle?: string;
       welcomeSubtitle?: string;
       pageCount?: number;
+      pageRemovalEpoch: number;
     }) => {
-      const res = await fetch(apiBase, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          layout: serializeDashboardLayout(payload.layout, payload.pageCount ?? pageCountRef.current),
-          widgets: JSON.stringify(payload.widgets),
-          ...(payload.welcomeTitle !== undefined && { welcomeTitle: payload.welcomeTitle || null }),
-          ...(payload.welcomeSubtitle !== undefined && { welcomeSubtitle: payload.welcomeSubtitle || null }),
-        }),
+      return enqueueSaveRef.current(async () => {
+        const res = await fetch(apiBase, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            layout: serializeDashboardLayout(payload.layout, payload.pageCount ?? pageCountRef.current),
+            widgets: JSON.stringify(payload.widgets),
+            ...(payload.welcomeTitle !== undefined && { welcomeTitle: payload.welcomeTitle || null }),
+            ...(payload.welcomeSubtitle !== undefined && { welcomeSubtitle: payload.welcomeSubtitle || null }),
+          }),
+        });
+        if (!res.ok) throw new Error("Save failed");
+        return res.json();
       });
-      if (!res.ok) throw new Error("Save failed");
-      return res.json();
     },
     onSuccess: (updated, payload) => {
+      if (!shouldApplyPagedSave(payload.pageRemovalEpoch, pageRemovalEpochRef.current)) return;
       queryClient.setQueryData(
         isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id],
         (old: unknown) => (old && updated ? { ...(old as object), ...(updated as object) } : old ?? updated)
@@ -1540,6 +1556,20 @@ export default function DashboardEditPage() {
       setPageCount(resolvePageCount(payload.pageCount ?? pageCountRef.current, payload.widgets));
     },
   });
+
+  function mutateDashboard(payload: {
+    layout: Layout;
+    widgets: WidgetConfig[];
+    welcomeTitle?: string;
+    welcomeSubtitle?: string;
+    pageCount?: number;
+  }) {
+    saveMutation.mutate({
+      ...payload,
+      pageCount: payload.pageCount ?? pageCountRef.current,
+      pageRemovalEpoch: pageRemovalEpochRef.current,
+    });
+  }
 
   const onLayoutChange = (newLayout: Layout) => {
     setLayout((prev) => {
@@ -1562,7 +1592,7 @@ export default function DashboardEditPage() {
     setEditingWidgetId(null);
     setEditingGroupChildId(null);
     setEditMode(false);
-    saveMutation.mutate({ layout, widgets, welcomeTitle, welcomeSubtitle, pageCount: pageCountRef.current });
+    mutateDashboard({ layout, widgets, welcomeTitle, welcomeSubtitle, pageCount: pageCountRef.current });
   };
 
   function handleAddTile(type: string, entityId: string, titleOverride?: string): string | undefined {
@@ -1657,7 +1687,7 @@ export default function DashboardEditPage() {
     setAddTileOpen(false);
     setAddTileStep("type");
     setAddTileSelectedType(null);
-    saveMutation.mutate({
+    mutateDashboard({
       layout: newLayout,
       widgets: newWidgets,
       welcomeTitle,
@@ -1715,7 +1745,7 @@ export default function DashboardEditPage() {
     setWidgets(newWidgets);
     setLayout(newLayout);
     setEditingWidgetId(null);
-    saveMutation.mutate({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout: newLayout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
     return newId;
   }
 
@@ -1737,7 +1767,7 @@ export default function DashboardEditPage() {
     if (editingWidgetId === widgetId) {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleEnergyMonitorCardResize(widgetId: string, size: { width: number; height: number }) {
@@ -1748,7 +1778,7 @@ export default function DashboardEditPage() {
     if (editingWidgetId === widgetId) {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleCameraCardResize(widgetId: string, size: { width: number; height: number }) {
@@ -1759,7 +1789,7 @@ export default function DashboardEditPage() {
     if (editingWidgetId === widgetId) {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleTeamtrackerCardResize(widgetId: string, size: { width: number; height: number }) {
@@ -1770,7 +1800,7 @@ export default function DashboardEditPage() {
     if (editingWidgetId === widgetId) {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleWeatherCardResize(widgetId: string, size: { width: number; height: number }) {
@@ -1781,7 +1811,7 @@ export default function DashboardEditPage() {
     if (editingWidgetId === widgetId) {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleVacuumCardResize(widgetId: string, size: { width: number; height: number }) {
@@ -1792,7 +1822,7 @@ export default function DashboardEditPage() {
     if (editingWidgetId === widgetId) {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleCalendarCardResize(widgetId: string, size: { width: number; height: number }) {
@@ -1803,7 +1833,7 @@ export default function DashboardEditPage() {
     if (editingWidgetId === widgetId) {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleTrashCardResize(widgetId: string, size: { width: number; height: number }) {
@@ -1814,7 +1844,7 @@ export default function DashboardEditPage() {
     if (editingWidgetId === widgetId) {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleNutsCardResize(widgetId: string, size: { width: number; height: number }) {
@@ -1825,7 +1855,7 @@ export default function DashboardEditPage() {
     if (editingWidgetId === widgetId) {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleRoomCardResize(widgetId: string, size: { width: number; height: number }) {
@@ -1836,7 +1866,7 @@ export default function DashboardEditPage() {
     if (editingWidgetId === widgetId) {
       setEditForm((prev) => ({ ...prev, width, height }));
     }
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
   function handleClimateCardResize(pageIndex: number, size: { width: number; height: number }) {
@@ -1848,16 +1878,21 @@ export default function DashboardEditPage() {
         : w
     );
     setWidgets(newWidgets);
-    saveMutation.mutate({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
+    mutateDashboard({ layout, widgets: newWidgets, welcomeTitle, welcomeSubtitle });
   }
 
-  function livePageSnapshot(): PageSnapshot<WidgetConfig, LayoutItem> {
+  function removalSession() {
     return {
-      widgets: widgetsRef.current,
-      pageCount: pageCountRef.current,
-      activePage: dashboardPageRef.current,
-      layout: layoutRef.current,
-      positions: typeof window === "undefined" ? {} : readFloatingPositions(window.localStorage),
+      pending: pendingPageRemovalRef.current,
+      epoch: pageRemovalEpochRef.current,
+      refs: {
+        widgets: widgetsRef.current,
+        pageCount: pageCountRef.current,
+        activePage: dashboardPageRef.current,
+        layout: layoutRef.current,
+        positions: typeof window === "undefined" ? {} : readFloatingPositions(window.localStorage),
+      },
+      mirror: removalMirrorRef.current,
     };
   }
 
@@ -1872,44 +1907,55 @@ export default function DashboardEditPage() {
     setDashboardPage(snapshot.activePage);
   }
 
-  function persistPageSnapshot(snapshot: PageSnapshot<WidgetConfig, LayoutItem>) {
+  function persistPageSnapshot(snapshot: PageSnapshot<WidgetConfig, LayoutItem>, epoch: number) {
     saveMutation.mutate({
       layout: snapshot.layout,
       widgets: snapshot.widgets,
       welcomeTitle: welcomeTitleRef.current,
       welcomeSubtitle: welcomeSubtitleRef.current,
       pageCount: snapshot.pageCount,
+      pageRemovalEpoch: epoch,
     });
   }
 
+  function adoptRemovalStep(step: PageRemovalStep<WidgetConfig, LayoutItem>) {
+    const previousGeneration = pageUndoGenerationRef.current;
+    pageRemovalEpochRef.current = step.epoch;
+    pendingPageRemovalRef.current = step.pending;
+    removalMirrorRef.current = step.mirror;
+    for (const save of step.saves) {
+      persistPageSnapshot(save.snapshot, save.epoch);
+    }
+    applyPageSnapshot(step.current);
+    setPageUndoOpen(step.undoOpen);
+    if (step.undoOpen) {
+      pageUndoGenerationRef.current = previousGeneration + 1;
+      setPageUndoGeneration(pageUndoGenerationRef.current);
+    }
+  }
+
   function dismissPageUndo() {
+    const hadPending = pendingPageRemovalRef.current != null;
     pendingPageRemovalRef.current = null;
+    removalMirrorRef.current = null;
     setPageUndoOpen(false);
+    if (hadPending) pageRemovalEpochRef.current += 1;
   }
 
   function commitPendingPageRemoval() {
-    const pending = pendingPageRemovalRef.current;
-    if (!pending) return;
-    const result = applyPageRemovalAction({ current: livePageSnapshot(), pending }, "commit");
-    pendingPageRemovalRef.current = result.state.pending;
-    setPageUndoOpen(false);
-    for (const effect of result.effects) {
-      if (effect.type === "save") persistPageSnapshot(effect.snapshot);
-    }
+    if (!pendingPageRemovalRef.current) return;
+    adoptRemovalStep(stepPageRemoval(removalSession(), "commit"));
   }
 
   pageRemovalCommitRef.current = commitPendingPageRemoval;
 
   function handleUndoPageRemoval() {
-    const pending = pendingPageRemovalRef.current;
-    if (!pending) return;
-    const result = applyPageRemovalAction({ current: livePageSnapshot(), pending }, "undo");
-    pendingPageRemovalRef.current = null;
-    setPageUndoOpen(false);
+    if (!pendingPageRemovalRef.current) return;
+    const step = stepPageRemoval(removalSession(), "undo");
     if (typeof window !== "undefined") {
-      restoreFloatingPositions(window.localStorage, result.state.current.positions);
+      restoreFloatingPositions(window.localStorage, step.current.positions);
     }
-    applyPageSnapshot(result.state.current);
+    adoptRemovalStep(step);
   }
 
   function handleAddDashboardPage() {
@@ -1917,28 +1963,15 @@ export default function DashboardEditPage() {
     dismissPageUndo();
     const next = pageCount + 1;
     setPageCount(next);
+    pageCountRef.current = next;
     setDashboardPage(next - 1);
-    saveMutation.mutate({ layout, widgets, welcomeTitle, welcomeSubtitle, pageCount: next });
+    dashboardPageRef.current = next - 1;
+    mutateDashboard({ layout, widgets, welcomeTitle, welcomeSubtitle, pageCount: next });
   }
 
   function handleRemoveDashboardPage() {
     if (pageCountRef.current <= 1) return;
-    const result = applyPageRemovalAction(
-      { current: livePageSnapshot(), pending: pendingPageRemovalRef.current },
-      "remove"
-    );
-    for (const effect of result.effects) {
-      if (effect.type === "save") persistPageSnapshot(effect.snapshot);
-    }
-    pendingPageRemovalRef.current = result.state.pending;
-    applyPageSnapshot(result.state.current);
-    if (result.state.pending) {
-      pageUndoGenerationRef.current += 1;
-      setPageUndoGeneration(pageUndoGenerationRef.current);
-      setPageUndoOpen(true);
-    } else {
-      setPageUndoOpen(false);
-    }
+    adoptRemovalStep(stepPageRemoval(removalSession(), "remove"));
   }
 
   if (!id || (isRoomMode && !areaId)) {
@@ -3391,7 +3424,7 @@ export default function DashboardEditPage() {
                                       [kids[idx - 1], kids[idx]] = [kids[idx], kids[idx - 1]];
                                       const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: kids } : w));
                                       setWidgets(nextWidgets);
-                                      saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                      mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                                     }}
                                     className="p-1 rounded text-gray-600 hover:bg-gray-100 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-white/10"
                                     aria-label={t("editPanel.moveUp")}
@@ -3407,7 +3440,7 @@ export default function DashboardEditPage() {
                                       [kids[idx], kids[idx + 1]] = [kids[idx + 1], kids[idx]];
                                       const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: kids } : w));
                                       setWidgets(nextWidgets);
-                                      saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                      mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                                     }}
                                     className="p-1 rounded text-gray-600 hover:bg-gray-100 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-white/10"
                                     aria-label={t("editPanel.moveDown")}
@@ -3429,7 +3462,7 @@ export default function DashboardEditPage() {
                                       const nextChildren = (editingWidget.children ?? []).filter((x) => x.id !== c.id);
                                       const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                                       setWidgets(nextWidgets);
-                                      saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                      mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                                     }}
                                     className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                                     aria-label={t("editPanel.remove")}
@@ -3463,7 +3496,7 @@ export default function DashboardEditPage() {
                                       const nextChildren = [...(editingWidget.children ?? []), newChild];
                                       const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                                       setWidgets(nextWidgets);
-                                      saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                      mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                                       return;
                                     }
                                     setStackAddChildType(childType);
@@ -3541,7 +3574,7 @@ export default function DashboardEditPage() {
                                           const nextChildren = [...(editingWidget.children ?? []), newChild];
                                           const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                                           setWidgets(nextWidgets);
-                                          saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                          mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                                           setStackAddChildType(null);
                                           setGroupAddEntitySearch("");
                                         }}
@@ -3771,7 +3804,7 @@ export default function DashboardEditPage() {
                           onClick={() => {
                             const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, alignment: align } : w));
                             setWidgets(nextWidgets);
-                            saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                            mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                           }}
                           className={cn(
                             "rounded-md px-2 py-1 text-xs",
@@ -3809,7 +3842,7 @@ export default function DashboardEditPage() {
                                 const nextChildren = (editingWidget.children ?? []).filter((x) => x.id !== c.id);
                                 const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                                 setWidgets(nextWidgets);
-                                saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                               }}
                               className="p-1 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                               aria-label={t("editPanel.remove")}
@@ -3853,7 +3886,7 @@ export default function DashboardEditPage() {
                                 const nextChildren = [...(editingWidget.children ?? []), newPill];
                                 const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                                 setWidgets(nextWidgets);
-                                saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                                mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                                 setGroupAddEntitySearch("");
                               }}
                               className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate"
@@ -6950,7 +6983,7 @@ aria-label={t("editPanel.removeCondition")}
                             const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                             setWidgets(nextWidgets);
                             setEditingGroupChildId(null);
-                            saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                            mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                           }}
                           className="rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                           aria-label={t("editPanel.removeCardFromStack")}
@@ -6973,7 +7006,7 @@ aria-label={t("editPanel.removeCondition")}
                             const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                             setWidgets(nextWidgets);
                             setEditingGroupChildId(null);
-                            saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                            mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                           }}
                           className="rounded-lg bg-[#4700B5] px-3 py-1.5 text-sm text-white hover:opacity-90"
                         >
@@ -6998,7 +7031,7 @@ aria-label={t("editPanel.removeCondition")}
                             const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                             setWidgets(nextWidgets);
                             setEditingGroupChildId(null);
-                            saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                            mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                           }}
                           className="rounded-lg px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                           aria-label={t("editPanel.removeCardFromGroup")}
@@ -7015,7 +7048,7 @@ aria-label={t("editPanel.removeCondition")}
                               const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                               setWidgets(nextWidgets);
                               setEditingGroupChildId(newChild.id);
-                              saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                              mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                             }
                           }}
                           className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5"
@@ -7039,7 +7072,7 @@ aria-label={t("editPanel.removeCondition")}
                             const nextWidgets = widgets.map((w) => (w.id === editingWidget.id ? { ...w, children: nextChildren } : w));
                             setWidgets(nextWidgets);
                             setEditingGroupChildId(null);
-                            saveMutation.mutate({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
+                            mutateDashboard({ layout, widgets: nextWidgets, welcomeTitle, welcomeSubtitle });
                           }}
                           className="rounded-lg bg-[#4700B5] px-3 py-1.5 text-sm text-white hover:opacity-90"
                         >
@@ -7057,7 +7090,7 @@ aria-label={t("editPanel.removeCondition")}
                           setWidgets(newWidgets);
                           setLayout(newLayout);
                           setEditingWidgetId(null);
-                          saveMutation.mutate({
+                          mutateDashboard({
                             layout: newLayout,
                             widgets: newWidgets,
                             welcomeTitle,
@@ -7097,7 +7130,7 @@ aria-label={t("editPanel.removeCondition")}
                       setWidgets(newWidgets);
                       setLayout(newLayout);
                       setEditingWidgetId(null);
-                      saveMutation.mutate({
+                      mutateDashboard({
                         layout: newLayout,
                         widgets: newWidgets,
                         welcomeTitle,
@@ -7308,7 +7341,7 @@ aria-label={t("editPanel.removeCondition")}
                       if (typeof updates.page === "number") {
                         setDashboardPage(clampPageIndex(updates.page, pageCount));
                       }
-                      saveMutation.mutate({
+                      mutateDashboard({
                         layout,
                         widgets: newWidgets,
                         welcomeTitle: newWelcomeTitle,
@@ -7374,7 +7407,7 @@ aria-label={t("editPanel.removeCondition")}
                     : w
                 );
                 setWidgets(next);
-                saveMutation.mutate({
+                mutateDashboard({
                   layout,
                   widgets: next,
                   welcomeTitle,
