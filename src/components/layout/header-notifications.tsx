@@ -3,19 +3,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Bell, RobotVacuum, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useAppNotificationsStore } from "@/stores/app-notifications-store";
+import { useHaPersistentNotifications } from "@/hooks/use-ha-notifications";
 import { useTranslation } from "@/hooks/use-translation";
-
-type HaNotificationItem = {
-  entity_id: string;
-  state: string;
-  attributes: Record<string, unknown>;
-};
-
-function getNotificationId(entityId: string): string {
-  return entityId.replace(/^persistent_notification\./, "");
-}
 
 function AppIcon({ name }: { name?: string | null }) {
   if (name === "RobotVacuum") return <RobotVacuum className="h-4 w-4 shrink-0" aria-hidden />;
@@ -23,7 +13,7 @@ function AppIcon({ name }: { name?: string | null }) {
 }
 
 /**
- * Notification bell: HA persistent_notification.* plus in-app rule notifications.
+ * Notification bell: Home Assistant persistent notifications plus in-app rule notifications.
  * Lives in the sidebar utilities rail (beside settings); optional header styling kept for previews.
  */
 export function HeaderNotifications({
@@ -38,20 +28,13 @@ export function HeaderNotifications({
   buttonClassName?: string;
 } = {}) {
   const { t } = useTranslation();
-  const states = useEntityStateStore((s) => s.states);
-  const setStates = useEntityStateStore((s) => s.setStates);
   const appItems = useAppNotificationsStore((s) => s.items);
   const dismissAppItem = useAppNotificationsStore((s) => s.dismissItem);
   const dismissAllApp = useAppNotificationsStore((s) => s.dismissAll);
+  const { notifications: haNotifications, dismiss: dismissHaNotifications } = useHaPersistentNotifications();
   const [open, setOpen] = useState(false);
-  const [dismissingId, setDismissingId] = useState<string | null>(null);
+  const [dismissingIds, setDismissingIds] = useState<string[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
-
-  const haNotifications: HaNotificationItem[] = useMemo(
-    () =>
-      Object.values(states).filter((e) => e.entity_id.startsWith("persistent_notification.")),
-    [states]
-  );
 
   const appHistory = useMemo(
     () => appItems.filter((n) => !n.dismissed).slice(0, 20),
@@ -59,23 +42,6 @@ export function HeaderNotifications({
   );
 
   const count = haNotifications.length + appHistory.length;
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/ha/state");
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        if (Array.isArray(data)) setStates(data);
-      } catch {
-        // ignore
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [setStates]);
 
   useEffect(() => {
     if (!open) return;
@@ -89,45 +55,27 @@ export function HeaderNotifications({
   }, [open]);
 
   async function dismissHa(notificationId: string) {
-    setDismissingId(notificationId);
+    setDismissingIds([notificationId]);
     try {
-      const res = await fetch("/api/ha/call-service", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          entity_id: `persistent_notification.${notificationId}`,
-          domain: "persistent_notification",
-          service: "dismiss",
-          service_data: { notification_id: notificationId },
-        }),
-      });
-      if (res.ok) {
-        const data = await fetch("/api/ha/state").then((r) => r.json());
-        if (Array.isArray(data)) setStates(data);
-      }
+      await dismissHaNotifications([notificationId]);
+    } catch {
+      // Subscription reconciles on the next poll.
     } finally {
-      setDismissingId(null);
+      setDismissingIds([]);
     }
   }
 
   async function dismissAll() {
     dismissAllApp();
-    if (haNotifications.length === 0) return;
+    const ids = haNotifications.map((item) => item.notification_id);
+    if (ids.length === 0) return;
+    setDismissingIds(ids);
     try {
-      await fetch("/api/ha/call-service", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          entity_id: "persistent_notification.dismiss_all",
-          domain: "persistent_notification",
-          service: "dismiss_all",
-          service_data: {},
-        }),
-      });
-      const data = await fetch("/api/ha/state").then((r) => r.json());
-      if (Array.isArray(data)) setStates(data);
+      await dismissHaNotifications(ids);
     } catch {
-      // ignore
+      // Subscription reconciles on the next poll.
+    } finally {
+      setDismissingIds([]);
     }
   }
 
@@ -224,14 +172,12 @@ export function HeaderNotifications({
                   </li>
                 ))}
                 {haNotifications.map((n) => {
-                  const id = getNotificationId(n.entity_id);
-                  const title =
-                    (n.attributes?.title as string) || t("notifications.item");
-                  const message = (n.attributes?.message as string) || "";
-                  const isDismissing = dismissingId === id;
+                  const title = n.title || t("notifications.item");
+                  const message = n.message || "";
+                  const isDismissing = dismissingIds.includes(n.notification_id);
                   return (
                     <li
-                      key={n.entity_id}
+                      key={n.notification_id}
                       className="border-b border-gray-100 last:border-0 dark:border-white/5"
                     >
                       <div className="flex flex-col gap-1 px-4 py-3">
@@ -241,7 +187,7 @@ export function HeaderNotifications({
                           </p>
                           <button
                             type="button"
-                            onClick={() => void dismissHa(id)}
+                            onClick={() => void dismissHa(n.notification_id)}
                             disabled={isDismissing}
                             className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50 dark:hover:bg-white/10"
                             aria-label={t("notifications.dismiss")}

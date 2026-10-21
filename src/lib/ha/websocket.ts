@@ -1,9 +1,17 @@
 /**
  * Home Assistant WebSocket client. Server-side only.
- * Connects to /api/websocket, authenticates, subscribes to state_changed.
+ * Connects to /api/websocket, authenticates, then subscribes.
  */
 
+import type { WebSocket } from "ws";
 import type { HaEntity } from "./rest";
+import {
+  parseHaWsFrame,
+  reducePersistentNotificationSocket,
+  type PersistentNotificationUpdate,
+  type SocketAction,
+  type SocketWatch,
+} from "./persistent-notifications";
 
 export type HaAreaWs = { area_id: string; name: string };
 
@@ -20,7 +28,8 @@ export type HaWsMessage =
   | { type: "result"; id: number; success: boolean; result: unknown }
   | { type: "event"; id: number; event: { data: { entity_id: string; old_state: unknown; new_state: unknown } } };
 
-function getWsUrl(baseUrl: string): string {
+/** `http(s)` base URL → `ws(s)://…/api/websocket`. Shared by every auth path. */
+export function haWebSocketUrl(baseUrl: string): string {
   const u = baseUrl.trim().replace(/\/+$/, "");
   return u.replace(/^http/, "ws") + "/api/websocket";
 }
@@ -33,7 +42,7 @@ export async function fetchAreasViaWebSocket(
   token: string
 ): Promise<HaAreaWs[]> {
   const WebSocket = (await import("ws")).default;
-  const url = getWsUrl(baseUrl);
+  const url = haWebSocketUrl(baseUrl);
   const ws = new WebSocket(url);
 
   return new Promise((resolve, reject) => {
@@ -101,7 +110,7 @@ export async function connectHaWebSocket(
   onEvent: (data: HaStateChangedEvent) => void
 ): Promise<() => void> {
   const WebSocket = (await import("ws")).default;
-  const url = getWsUrl(baseUrl);
+  const url = haWebSocketUrl(baseUrl);
   const ws = new WebSocket(url);
 
   let messageId = 1;
@@ -157,4 +166,116 @@ export async function connectHaWebSocket(
       pending.forEach((p) => p.resolve());
     });
   });
+}
+
+export type PersistentNotificationSocketEnd = {
+  reason: "closed" | "auth" | "error";
+  message?: string;
+};
+
+/**
+ * One Home Assistant websocket: authenticate with the same access token the
+ * REST client uses (supervisor, OAuth, or long-lived), then subscribe to
+ * persistent notifications. `persistent_notification/get` is the fallback when
+ * subscribe is rejected. Caller closes the socket; `done` settles when it ends.
+ */
+export async function openPersistentNotificationSubscription(
+  config: { baseUrl: string; token: string },
+  onEvent: (event: PersistentNotificationUpdate) => void
+): Promise<{ close: () => void; done: Promise<PersistentNotificationSocketEnd> }> {
+  const WebSocketImpl = (await import("ws")).default;
+  const ws: WebSocket = new WebSocketImpl(haWebSocketUrl(config.baseUrl));
+
+  let settled = false;
+  let authed = false;
+  let watch: SocketWatch = { subscribeId: null, getId: null };
+  let failure: PersistentNotificationSocketEnd | null = null;
+  let resolveDone: (end: PersistentNotificationSocketEnd) => void = () => {};
+  const done = new Promise<PersistentNotificationSocketEnd>((resolve) => {
+    resolveDone = resolve;
+  });
+
+  const finish = (end: PersistentNotificationSocketEnd) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(authTimer);
+    failure = end;
+    resolveDone(end);
+    try {
+      ws.close();
+    } catch {
+      // Socket already closing.
+    }
+  };
+
+  const authTimer = setTimeout(() => {
+    if (!authed) finish({ reason: "error", message: "WebSocket timeout" });
+  }, 15000);
+
+  const dispatch = (action: SocketAction) => {
+    switch (action.type) {
+      case "authenticate":
+        ws.send(JSON.stringify({ type: "auth", access_token: config.token }));
+        return;
+      case "send":
+        authed = true;
+        clearTimeout(authTimer);
+        ws.send(
+          JSON.stringify({
+            id: action.id,
+            type:
+              action.command === "subscribe"
+                ? "persistent_notification/subscribe"
+                : "persistent_notification/get",
+          })
+        );
+        return;
+      case "event":
+        onEvent(action.update);
+        return;
+      case "auth_failed":
+        finish({ reason: "auth", message: action.message });
+        return;
+      case "none":
+        return;
+      default: {
+        const _exhaustive: never = action;
+        return _exhaustive;
+      }
+    }
+  };
+
+  ws.on("message", (raw: Buffer | string) => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw.toString());
+    } catch {
+      return;
+    }
+    try {
+      for (const message of parseHaWsFrame(parsed)) {
+        const next = reducePersistentNotificationSocket(watch, message);
+        watch = next.watch;
+        for (const action of next.actions) dispatch(action);
+      }
+    } catch (err) {
+      finish({
+        reason: "error",
+        message: err instanceof Error ? err.message : "WebSocket error",
+      });
+    }
+  });
+
+  ws.on("error", (err: Error) => {
+    if (!failure) failure = { reason: "error", message: err.message || "WebSocket error" };
+  });
+
+  ws.on("close", () => {
+    finish(failure ?? { reason: "closed" });
+  });
+
+  return {
+    close: () => finish({ reason: "closed" }),
+    done,
+  };
 }
