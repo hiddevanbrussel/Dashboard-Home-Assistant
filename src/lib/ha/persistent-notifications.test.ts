@@ -275,6 +275,114 @@ describe("persistent notification hub", () => {
       hub.close();
     }
   });
+
+  it("serves the live cache inside the idle window and waits for a fresh subscribe after idle", async () => {
+    const sessions: {
+      emit: (event: PersistentNotificationUpdate) => void;
+      close: () => void;
+    }[] = [];
+    const hub = new PersistentNotificationHub(async (_config, onEvent) => {
+      let resolveDone: (end: PersistentNotificationSocketEnd) => void = () => {};
+      const done = new Promise<PersistentNotificationSocketEnd>((resolve) => {
+        resolveDone = resolve;
+      });
+      const session = {
+        emit: onEvent,
+        close: () => resolveDone({ reason: "closed" }),
+      };
+      sessions.push(session);
+      return { close: session.close, done };
+    }, 30);
+    const loadConfig = async () => ({ baseUrl: "http://ha.local", token: "token" });
+    const poll = (timeoutMs = 2000) =>
+      hub.waitForUpdate({
+        since: -1,
+        sessionId: null,
+        signal: new AbortController().signal,
+        loadConfig,
+        timeoutMs,
+      });
+
+    try {
+      const firstPending = poll();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(sessions).toHaveLength(1);
+      sessions[0]?.emit({ type: "current", notifications: [battery] });
+      const first = await firstPending;
+      expect(first.notifications.map((item) => item.notification_id)).toEqual(["low_battery"]);
+
+      const cached = await poll();
+      expect(cached.notifications.map((item) => item.notification_id)).toEqual(["low_battery"]);
+      expect(sessions).toHaveLength(1);
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      sessions[0]?.emit({ type: "current", notifications: [update] });
+
+      let resolved = false;
+      const refreshed = poll().then((snapshot) => {
+        resolved = true;
+        return snapshot;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(resolved).toBe(false);
+
+      for (let i = 0; i < 40 && sessions.length < 2; i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(sessions).toHaveLength(2);
+      expect(resolved).toBe(false);
+      sessions[0]?.emit({ type: "current", notifications: [login] });
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(resolved).toBe(false);
+
+      sessions[1]?.emit({ type: "current", notifications: [update] });
+      const next = await refreshed;
+      expect(next.notifications.map((item) => item.notification_id)).toEqual(["update_available"]);
+      expect(next.sessionId).toBe(first.sessionId);
+    } finally {
+      hub.close();
+    }
+  });
+
+  it("does not answer since=-1 with the idle cache when the new subscribe times out", async () => {
+    const sessions: { emit: (event: PersistentNotificationUpdate) => void }[] = [];
+    const hub = new PersistentNotificationHub(async (_config, onEvent) => {
+      let resolveDone: (end: PersistentNotificationSocketEnd) => void = () => {};
+      const done = new Promise<PersistentNotificationSocketEnd>((resolve) => {
+        resolveDone = resolve;
+      });
+      sessions.push({ emit: onEvent });
+      return {
+        close: () => resolveDone({ reason: "closed" }),
+        done,
+      };
+    }, 20);
+    const loadConfig = async () => ({ baseUrl: "http://ha.local", token: "token" });
+    try {
+      const pending = hub.waitForUpdate({
+        since: -1,
+        sessionId: null,
+        signal: new AbortController().signal,
+        loadConfig,
+        timeoutMs: 2000,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      sessions[0]?.emit({ type: "current", notifications: [battery, update] });
+      await pending;
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      const stale = await hub.waitForUpdate({
+        since: -1,
+        sessionId: null,
+        signal: new AbortController().signal,
+        loadConfig,
+        timeoutMs: 30,
+      });
+      expect(stale.notifications).toEqual([]);
+      expect(sessions.length).toBeGreaterThanOrEqual(2);
+    } finally {
+      hub.close();
+    }
+  });
 });
 
 describe("ha websocket url", () => {
