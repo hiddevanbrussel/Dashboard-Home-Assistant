@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   ChevronRight,
   CircleCheck,
@@ -154,6 +154,7 @@ export function HaConnectionSettings({
   onRefreshEntities,
 }: Props) {
   const { t } = useTranslation();
+  const entitySummaryId = useId();
   const [editing, setEditing] = useState(connectionSource == null);
   const [showToken, setShowToken] = useState(false);
   const [entitiesOpen, setEntitiesOpen] = useState(false);
@@ -359,9 +360,10 @@ export function HaConnectionSettings({
           <div className="flex min-h-[68px] items-center gap-2 border-t border-[rgba(17,24,39,0.08)] px-5 py-3 dark:border-white/10">
             <button
               type="button"
+              id={entitySummaryId}
               aria-expanded={entitiesOpen}
               onClick={() => setEntitiesOpen((v) => !v)}
-              className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left"
+              className="flex min-h-11 min-w-0 flex-1 items-center text-left"
             >
               <span className="min-w-0 flex-1">
                 <span className="block text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
@@ -373,10 +375,6 @@ export function HaConnectionSettings({
                   {formatSyncedAgo(entitiesSyncedAt, t)}
                 </span>
               </span>
-              <ChevronRight
-                className={cn("h-5 w-5 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]", entitiesOpen && "rotate-90")}
-                aria-hidden
-              />
             </button>
             <button
               type="button"
@@ -393,6 +391,15 @@ export function HaConnectionSettings({
                 <RefreshCw className="h-4 w-4" aria-hidden />
               )}
               {t("settings.entities.refresh")}
+            </button>
+            <button
+              type="button"
+              aria-expanded={entitiesOpen}
+              aria-labelledby={entitySummaryId}
+              onClick={() => setEntitiesOpen((v) => !v)}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#6b7280] dark:text-[#a1a1aa]"
+            >
+              <ChevronRight className={cn("h-5 w-5", entitiesOpen && "rotate-90")} aria-hidden />
             </button>
           </div>
         </SettingsGroup>

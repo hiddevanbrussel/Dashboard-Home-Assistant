@@ -263,7 +263,7 @@ export function AppearanceSettings(props: Props) {
           />
         </SettingsRow>
         <SettingsRow tall title={t("settings.theme.color")} hint={t("settings.theme.colorForMenu")}>
-          <div role="radiogroup" aria-label={t("settings.theme.color")} className="flex flex-wrap gap-2">
+          <div role="radiogroup" aria-label={t("settings.theme.color")} className="flex flex-nowrap gap-0">
             {THEME_ACCENTS.map((item) => (
               <SettingsSwatch
                 key={item.id}

@@ -547,8 +547,27 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
   background: #f4f3f8;
 }
 
-.dark .settings-page-bg {
-  background: #0e0c13;
+.dark .settings-page-bg,
+.dark .dark\:bg-dark-page.settings-page-bg {
+  background-color: #0e0c13;
+}
+
+html.dark:has(.settings-page-bg),
+html.dark:has(.settings-page-bg) body {
+  --page-bg: #0e0c13;
+  background-color: #0e0c13;
+}
+
+/* Dark primary action. Default accent muted is #8357be. Disabled keeps full-opacity text. */
+.dark .settings-primary {
+  background-color: rgb(var(--brand-muted));
+}
+
+.dark .settings-primary:disabled {
+  opacity: 1;
+  background-color: rgb(var(--brand-muted) / 0.4);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgb(var(--brand-muted));
 }
 
 .settings-page-bg .header-chrome-glass,

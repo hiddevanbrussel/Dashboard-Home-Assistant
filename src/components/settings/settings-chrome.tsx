@@ -22,7 +22,7 @@ export function SettingsScreenTitle({ children }: { children: ReactNode }) {
 
 export function SettingsGroupLabel({ children }: { children: ReactNode }) {
   return (
-    <p className={cn("mb-1.5 ml-4 mt-3.5 text-sm font-semibold first:mt-0", faint)}>{children}</p>
+    <p className={cn("mb-1.5 ml-4 text-sm font-semibold", faint)}>{children}</p>
   );
 }
 
@@ -67,7 +67,7 @@ export function SettingsNavList({
           >
             {item.active ? (
               <span
-                className="absolute bottom-3 left-[3px] top-3 w-[3px] rounded-sm bg-brand"
+                className="absolute bottom-3 left-[3px] top-3 w-[3px] rounded-sm bg-brand dark:bg-[#b59ed8]"
                 aria-hidden
               />
             ) : null}

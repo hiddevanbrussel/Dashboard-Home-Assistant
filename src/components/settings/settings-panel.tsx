@@ -166,7 +166,7 @@ export function SettingsPrimaryButton({
       type="button"
       {...props}
       className={cn(
-        "inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-brand px-6 text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-40",
+        "settings-primary inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-brand px-6 text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-40",
         className
       )}
     >

@@ -933,8 +933,8 @@ export default function SettingsPage() {
     return (
       <>
         <SettingsScreenTitle>{t("settings.title")}</SettingsScreenTitle>
-        {navGroups.map((group) => (
-          <div key={group.label}>
+        {navGroups.map((group, index) => (
+          <div key={group.label} className={index === 0 ? undefined : "mt-3.5"}>
             <SettingsGroupLabel>{group.label}</SettingsGroupLabel>
             <SettingsNavList
               label={group.label}
@@ -1194,7 +1194,7 @@ export default function SettingsPage() {
                   </SettingsField>
                   <Link
                     href="/family"
-                    className="inline-flex h-11 items-center gap-2 self-start rounded-xl bg-brand px-6 text-[15px] font-semibold text-white hover:opacity-90"
+                    className="settings-primary inline-flex h-11 items-center gap-2 self-start rounded-xl bg-brand px-6 text-[15px] font-semibold text-white hover:opacity-90"
                   >
                     <ListTodo className="h-4 w-4" />
                     {t("settings.tasks.manage")}
@@ -1345,7 +1345,7 @@ export default function SettingsPage() {
                   </SettingsGroup>
                   <Link
                     href="/energy"
-                    className="inline-flex h-11 items-center gap-2 self-start rounded-xl bg-brand px-6 text-[15px] font-semibold text-white hover:opacity-90"
+                    className="settings-primary inline-flex h-11 items-center gap-2 self-start rounded-xl bg-brand px-6 text-[15px] font-semibold text-white hover:opacity-90"
                   >
                     <Zap className="h-4 w-4" />
                     {t("nav.energy")}
