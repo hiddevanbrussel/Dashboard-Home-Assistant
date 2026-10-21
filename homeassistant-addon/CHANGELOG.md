@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.1] - YYYY-MM-DD
+
+<!-- TODO: replace YYYY-MM-DD with the release date. -->
+
+### Fixed
+
+- Home Assistant notifications appear in the bell again. The dashboard subscribes with the websocket command `persistent_notification/subscribe`. "Clear all" dismisses each notification on its own.
+
+### Changed
+
+- The UI font is Google Sans, self-hosted under the SIL Open Font License. `OFL.txt` is included. The clock stays on Montserrat. Tiles are otherwise unchanged.
+
 ## 0.5.0
 
 Login and security hardening. The dashboard does not start until `APP_SECRET` and `DASHBOARD_PASSWORD` are set. Back up the dashboard data for your install type before you update.
