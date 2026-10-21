@@ -60,6 +60,8 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src/lib/check-secrets.mjs ./src/lib/check-secrets.mjs
+# SIL Open Font License for the self-hosted Montserrat files.
+COPY src/fonts/montserrat/OFL.txt /usr/share/licenses/montserrat/OFL.txt
 
 RUN apk add --no-cache python3 make g++ \
   && npm rebuild better-sqlite3 \

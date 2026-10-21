@@ -45,6 +45,8 @@ COPY --from=builder /app/package-lock.json ./
 # Production dependencies only. Prisma CLI stays because it is a runtime dependency for migrations.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src/lib/check-secrets.mjs ./src/lib/check-secrets.mjs
+# SIL Open Font License for the self-hosted Montserrat files.
+COPY src/fonts/montserrat/OFL.txt /usr/share/licenses/montserrat/OFL.txt
 
 # better-sqlite3 is een native addon: opnieuw bouwen voor deze container (Alpine) zodat de .node-binding klopt
 RUN apk add --no-cache python3 make g++ \
