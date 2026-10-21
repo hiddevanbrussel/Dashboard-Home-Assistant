@@ -19,7 +19,7 @@ import { safeNextPath } from "@/lib/session-redirect";
 /**
  * Classic Google Sans (variable wght axis only, latin subset).
  * One preloaded woff2. adjustFontFallback inserts a size-adjusted Arial
- * face, then the named stack ends with Inter, system-ui.
+ * face, then the named stack ends with system-ui.
  */
 const googleSans = localFont({
   src: "../../node_modules/@fontsource-variable/google-sans/files/google-sans-latin-wght-normal.woff2",
@@ -27,7 +27,7 @@ const googleSans = localFont({
   display: "swap",
   preload: true,
   adjustFontFallback: "Arial",
-  fallback: ["Inter", "system-ui"],
+  fallback: ["system-ui"],
 });
 const montserrat = Montserrat({
   subsets: ["latin"],
