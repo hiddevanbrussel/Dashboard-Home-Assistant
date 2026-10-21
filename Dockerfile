@@ -14,7 +14,9 @@ COPY . .
 # prisma generate vereist DATABASE_URL; bij build is er geen runtime-ENV, dus placeholder
 ENV DATABASE_URL="file:./dev.db"
 RUN npx prisma generate
-RUN npm run build
+# next/font downloads Montserrat during the build. A dropped response crashes
+# the loader, so clear .next and try once more.
+RUN npm run build || (rm -rf .next && npm run build)
 
 FROM node:20-alpine AS runner
 
