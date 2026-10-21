@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { validateConnectionInput } from "@/lib/validation";
 import { testConnection } from "@/lib/ha/rest";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * POST /api/ha/test – Test HA connection with baseUrl + token.
  * Body: { baseUrl: string, token: string }. Never returns token to client.
  */
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: unknown;
   try {
     body = await request.json();

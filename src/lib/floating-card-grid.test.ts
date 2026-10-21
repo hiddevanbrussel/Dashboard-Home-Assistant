@@ -43,8 +43,12 @@ describe("floating-card-grid", () => {
 
   it("only treats data-no-drag targets as non-draggable", () => {
     expect(isFloatingCardNoDragTarget(null)).toBe(false);
-    expect(isFloatingCardNoDragTarget({ closest: () => null })).toBe(false);
-    expect(isFloatingCardNoDragTarget({ closest: (sel: string) => (sel === "[data-no-drag]" ? {} : null) })).toBe(true);
+    expect(isFloatingCardNoDragTarget({ closest: () => null } as unknown as EventTarget)).toBe(false);
+    expect(
+      isFloatingCardNoDragTarget({
+        closest: (sel: string) => (sel === "[data-no-drag]" ? {} : null),
+      } as unknown as EventTarget)
+    ).toBe(true);
   });
 
   it("clamps drag bounds to the containing block, not the window", () => {

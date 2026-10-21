@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { getEntities } from "@/lib/ha/rest";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * GET /api/ha/entities – List entities from HA. Uses stored connection; no token on client.
  * Query: connectionId (optional).
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const connectionId = searchParams.get("connectionId") ?? undefined;
   const config = await getHaConnection(connectionId);

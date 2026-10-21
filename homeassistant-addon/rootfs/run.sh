@@ -5,6 +5,7 @@ OPTIONS_FILE=/data/options.json
 
 if [ -f "$OPTIONS_FILE" ]; then
   APP_SECRET=$(jq -r '.app_secret // empty' "$OPTIONS_FILE")
+  DASHBOARD_PASSWORD=$(jq -r '.dashboard_password // empty' "$OPTIONS_FILE")
   PEXELS_API_KEY=$(jq -r '.pexels_api_key // empty' "$OPTIONS_FILE")
   IMMICH_URL=$(jq -r '.immich_url // empty' "$OPTIONS_FILE")
   IMMICH_API_KEY=$(jq -r '.immich_api_key // empty' "$OPTIONS_FILE")
@@ -13,6 +14,7 @@ if [ -f "$OPTIONS_FILE" ]; then
   DEFAULT_LANGUAGE=$(jq -r '.default_language // "en"' "$OPTIONS_FILE")
 else
   APP_SECRET=""
+  DASHBOARD_PASSWORD=""
   PEXELS_API_KEY=""
   IMMICH_URL=""
   IMMICH_API_KEY=""
@@ -33,6 +35,15 @@ if [ -z "$APP_SECRET" ] || [ "$APP_SECRET" = "null" ]; then
 fi
 
 export APP_SECRET
+if [ -z "$DASHBOARD_PASSWORD" ] || [ "$DASHBOARD_PASSWORD" = "null" ]; then
+  echo "[addon] Set dashboard_password in the app configuration. Tablets on port 3000 use it. Ingress does not." >&2
+  exit 1
+fi
+export DASHBOARD_PASSWORD
+# Reject short, placeholder, and repetitive secrets before Next, nginx, or the ingress proxy start.
+node /app/src/lib/check-secrets.mjs
+export INGRESS_AUTH_SECRET="$(openssl rand -hex 32)"
+export HA_ADDON="1"
 export DATABASE_URL="${DATABASE_URL:-file:/data/app.db}"
 export UPLOAD_DIR="${UPLOAD_DIR:-/data/uploads}"
 export NEXT_PUBLIC_DEFAULT_LANGUAGE="$DEFAULT_LANGUAGE"
@@ -52,7 +63,6 @@ if [ -n "$MUSIC_ASSISTANT_TOKEN" ] && [ "$MUSIC_ASSISTANT_TOKEN" != "null" ]; th
   export MUSIC_ASSISTANT_TOKEN
 fi
 
-export HA_ADDON="1"
 if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
   export HA_SUPERVISOR_TOKEN="$SUPERVISOR_TOKEN"
 fi

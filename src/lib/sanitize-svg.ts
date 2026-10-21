@@ -14,7 +14,10 @@ const DANGEROUS_TAG =
 const EVENT_HANDLER_ATTR = /\bon[a-z]+\s*=/i;
 const JAVASCRIPT_URI = /(?:href|xlink:href|src)\s*=\s*["']?\s*javascript:/i;
 const EXTERNAL_HREF =
-  /(?:href|xlink:href)\s*=\s*["']\s*(?:https?:|\/\/|file:|data:(?!image\/))/i;
+  /(?:href|xlink:href)\s*=\s*["']\s*(?:https?:|\/\/|file:|data:(?!image\/(?:png|jpeg|jpg|gif|webp)))/i;
+const NESTED_SVG = /data:image\/svg/i;
+const SMIL_SENSITIVE =
+  /attributeName\s*=\s*["'](?:on[a-z]+|href|xlink:href)["']/i;
 const EXTERNAL_ENTITY = /<!ENTITY/i;
 const XML_STYLESHEET = /<\?xml-stylesheet\b[^?]*\?>/gi;
 
@@ -91,8 +94,11 @@ export function sanitizeSvgBuffer(buffer: Buffer): SanitizeSvgResult {
   if (JAVASCRIPT_URI.test(trimmed)) {
     return { ok: false, error: "SVG with javascript: URLs is not allowed." };
   }
-  if (EXTERNAL_HREF.test(trimmed)) {
+  if (EXTERNAL_HREF.test(trimmed) || NESTED_SVG.test(trimmed)) {
     return { ok: false, error: "SVG with external or non-image data URLs is not allowed." };
+  }
+  if (SMIL_SENSITIVE.test(trimmed)) {
+    return { ok: false, error: "SVG animation of links or event handlers is not allowed." };
   }
 
   return { ok: true, svg: trimmed };

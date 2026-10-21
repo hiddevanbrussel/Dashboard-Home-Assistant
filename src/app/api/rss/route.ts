@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { fetchChecked } from "@/lib/ssrf";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 export type NewsItem = {
   title: string;
@@ -62,6 +64,8 @@ function parseRSS(xml: string, feedUrl: string): NewsItem[] {
  * Cached for 5 minutes via Next.js fetch cache.
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const url = searchParams.get("url");
 
@@ -78,9 +82,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await fetch(feedUrl, {
+    const response = await fetchChecked(feedUrl, "public-https", {
       headers: { "User-Agent": "Dashboard/1.0 RSS Reader" },
-      next: { revalidate: 300 },
     });
 
     if (!response.ok) {

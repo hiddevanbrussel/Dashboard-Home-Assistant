@@ -10,6 +10,7 @@ import {
   sanitizeReturnTo,
 } from "@/lib/ha/oauth";
 import { buildOAuthBundle, encodeOAuthBundle } from "@/lib/ha/oauth-token";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 const COOKIE_NAME = "ha_oauth";
 
@@ -34,6 +35,8 @@ function redirectToApp(
  * a refreshable OAuth bundle (never a bare short-lived access token alone).
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const stateRaw = searchParams.get("state");

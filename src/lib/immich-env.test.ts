@@ -58,7 +58,7 @@ describe("readImmichEnvConfig", () => {
       readImmichEnvConfig({
         IMMICH_API_KEY: "secret",
         IMMICH_URL: "http://immich.lan:2283",
-      })
+      } as unknown as NodeJS.ProcessEnv)
     ).toEqual({
       envKeyConfigured: true,
       envUrlConfigured: true,
@@ -67,7 +67,7 @@ describe("readImmichEnvConfig", () => {
   });
 
   it("reports nothing when env is empty", () => {
-    expect(readImmichEnvConfig({})).toEqual({
+    expect(readImmichEnvConfig({} as NodeJS.ProcessEnv)).toEqual({
       envKeyConfigured: false,
       envUrlConfigured: false,
       envUrl: null,

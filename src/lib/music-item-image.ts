@@ -82,7 +82,7 @@ export function getItemImageUrl(item: MASearchItemImage | null | undefined): str
 export function getImageSrc(
   rawUrl: string | null,
   baseUrl: string | undefined,
-  token: string | undefined
+  _token?: string
 ): string | null {
   if (!rawUrl || !rawUrl.trim()) return null;
   let url = rawUrl.trim();
@@ -92,8 +92,7 @@ export function getImageSrc(
   if (url.startsWith("http://") || url.startsWith("https://")) {
     const base = baseUrl?.replace(/\/+$/, "") ?? "";
     if (base && url.startsWith(base)) {
-      const params = new URLSearchParams({ baseUrl: base, url });
-      if (token) params.set("token", token);
+      const params = new URLSearchParams({ url });
       return withBasePath(`/api/music-assistant-image?${params.toString()}`);
     }
     return url;
@@ -103,8 +102,7 @@ export function getImageSrc(
   const isMaOrigin = base && (url.startsWith(base) || url.startsWith("http://localhost") || url.startsWith("http://127.0.0.1"));
   if ((isRelative || isMaOrigin) && base) {
     const full = isRelative ? `${base}${url}` : url;
-    const params = new URLSearchParams({ baseUrl: base, url: full });
-    if (token) params.set("token", token);
+    const params = new URLSearchParams({ url: full });
     return withBasePath(`/api/music-assistant-image?${params.toString()}`);
   }
   return url;

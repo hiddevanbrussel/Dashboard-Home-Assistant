@@ -214,7 +214,7 @@ export type DashboardGroupByOutputType = {
   _max: DashboardMaxAggregateOutputType | null
 }
 
-type GetDashboardGroupByPayload<T extends DashboardGroupByArgs> = Prisma.PrismaPromise<
+export type GetDashboardGroupByPayload<T extends DashboardGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<DashboardGroupByOutputType, T['by']> &
       {
@@ -1182,6 +1182,11 @@ export type DashboardFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Skip the first `n` Dashboards.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Dashboards.
+   */
   distinct?: Prisma.DashboardScalarFieldEnum | Prisma.DashboardScalarFieldEnum[]
 }
 

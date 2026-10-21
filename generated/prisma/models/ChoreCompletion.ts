@@ -199,7 +199,7 @@ export type ChoreCompletionGroupByOutputType = {
   _max: ChoreCompletionMaxAggregateOutputType | null
 }
 
-type GetChoreCompletionGroupByPayload<T extends ChoreCompletionGroupByArgs> = Prisma.PrismaPromise<
+export type GetChoreCompletionGroupByPayload<T extends ChoreCompletionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ChoreCompletionGroupByOutputType, T['by']> &
       {
@@ -1033,6 +1033,11 @@ export type ChoreCompletionFindManyArgs<ExtArgs extends runtime.Types.Extensions
    * Skip the first `n` ChoreCompletions.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of ChoreCompletions.
+   */
   distinct?: Prisma.ChoreCompletionScalarFieldEnum | Prisma.ChoreCompletionScalarFieldEnum[]
 }
 

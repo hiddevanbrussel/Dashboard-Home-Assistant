@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { callServiceWithResponse, getEntities } from "@/lib/ha/rest";
 import { parseForecastList, parseWeatherForecastPayload, type WeatherForecastKind } from "@/lib/ha-weather-forecast";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const url = new URL(request.url);
   const entityId = url.searchParams.get("entity_id")?.trim() ?? "";
   const typeParam = url.searchParams.get("type") === "hourly" ? "hourly" : "daily";

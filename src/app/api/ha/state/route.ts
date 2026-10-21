@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { getEntities } from "@/lib/ha/rest";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * GET /api/ha/state – Current entity states from HA. Uses stored connection.
  * Client polls this; no token sent. For realtime, poll every 5–10s.
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const connectionId = searchParams.get("connectionId") ?? undefined;
   const config = await getHaConnection(connectionId);

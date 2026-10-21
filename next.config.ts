@@ -32,6 +32,18 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "Content-Security-Policy", value: "base-uri 'self'; object-src 'none'" },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     return [
       { source: "/uploads/:path*", destination: "/api/uploads/:path*" },

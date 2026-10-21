@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { resolveMusicAssistantBaseUrl, resolveMusicAssistantToken } from "@/lib/music-assistant-env";
+import { boundMusicAssistant } from "@/lib/bound-integration";
 import { callMaServer } from "@/lib/ma-server";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * Proxy to Music Assistant API (https://www.music-assistant.io/api/).
@@ -8,6 +9,8 @@ import { callMaServer } from "@/lib/ma-server";
  * POST body: { baseUrl?: string, token?: string, command: string, args?: Record<string, unknown>, skipCache?: boolean }
  */
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: {
     baseUrl?: string;
     token?: string;
@@ -26,25 +29,18 @@ export async function POST(request: Request) {
     (typeof body?.baseUrl === "string" && body.baseUrl) ||
     (typeof body.url === "string" && body.url) ||
     "";
-  const { baseUrl } = resolveMusicAssistantBaseUrl({
-    envUrl: process.env.MUSIC_ASSISTANT_URL,
-    bodyUrl: rawBodyUrl,
-  });
-  const { token } = resolveMusicAssistantToken({
-    envToken: process.env.MUSIC_ASSISTANT_TOKEN,
-    bodyToken: typeof body?.token === "string" ? body.token : null,
+  const bound = await boundMusicAssistant({
+    baseUrl: rawBodyUrl,
+    token: typeof body?.token === "string" ? body.token : null,
   });
   const command = typeof body?.command === "string" ? body.command : "";
-  if (!baseUrl || !command) {
+  if (!bound.ok || !command) {
     return NextResponse.json(
-      {
-        error: !baseUrl
-          ? "baseUrl required (set MUSIC_ASSISTANT_URL or enter a URL in Settings)"
-          : "baseUrl and command required",
-      },
+      { error: bound.ok ? "command required" : bound.error },
       { status: 400 }
     );
   }
+  const { baseUrl, secret: token } = bound.target;
 
   try {
     const data = await callMaServer(baseUrl, token, command, body.args ?? {}, {

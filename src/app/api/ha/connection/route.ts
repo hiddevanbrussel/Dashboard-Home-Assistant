@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getHaConnection, getHaConnectionStatus } from "@/lib/db";
 import { getAddonHaConfig, isSupervisorBaseUrl } from "@/lib/ha/addon";
 import { testConnection } from "@/lib/ha/rest";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * GET /api/ha/connection – Current connection (baseUrl only, never token).
@@ -12,6 +13,8 @@ import { testConnection } from "@/lib/ha/rest";
  * Pass ?test=1 to verify the Supervisor/API link.
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const status = await getHaConnectionStatus();
   // Touch getHaConnection so addon seed runs
   await getHaConnection();
@@ -49,6 +52,8 @@ export async function GET(request: Request) {
  * Body: { useSupervisor: true } — re-link via Supervisor when running as an app.
  */
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: unknown;
   try {
     body = await request.json();

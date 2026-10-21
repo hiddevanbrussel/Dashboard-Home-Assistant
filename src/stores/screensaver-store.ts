@@ -1,3 +1,4 @@
+import { pushIntegrationCredential } from "@/lib/client-credential-sync";
 import {
   DEFAULT_SCREENSAVER_CLOCK_POSITION,
   getScreensaverClockPositionOrDefault,
@@ -181,23 +182,22 @@ export function setScreensaverPexelsQuery(query: string): void {
   }
 }
 
-/** Pexels API-key (gratis op pexels.com/api). Opgeslagen lokaal, niet op de server. */
+/** Pexels API key is stored encrypted on the server, not in the browser. */
 export function getScreensaverPexelsApiKey(): string {
-  if (typeof window === "undefined") return "";
-  try {
-    const v = localStorage.getItem(STORAGE_KEY_PEXELS_API_KEY);
-    return typeof v === "string" ? v : "";
-  } catch {
-    return "";
-  }
+  return "";
 }
 
 export function setScreensaverPexelsApiKey(apiKey: string): void {
   try {
-    localStorage.setItem(STORAGE_KEY_PEXELS_API_KEY, apiKey.trim());
+    localStorage.removeItem(STORAGE_KEY_PEXELS_API_KEY);
+  } catch {
+    /* ignore */
+  }
+  pushIntegrationCredential({ kind: "pexels", apiKey: apiKey.trim() });
+  try {
     window.dispatchEvent(new CustomEvent("screensaver-setting-changed"));
   } catch {
-    // ignore
+    /* ignore */
   }
 }
 

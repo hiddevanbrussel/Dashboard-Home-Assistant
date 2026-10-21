@@ -249,7 +249,7 @@ export type ChoreGroupByOutputType = {
   _max: ChoreMaxAggregateOutputType | null
 }
 
-type GetChoreGroupByPayload<T extends ChoreGroupByArgs> = Prisma.PrismaPromise<
+export type GetChoreGroupByPayload<T extends ChoreGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ChoreGroupByOutputType, T['by']> &
       {
@@ -1210,6 +1210,11 @@ export type ChoreFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    * Skip the first `n` Chores.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Chores.
+   */
   distinct?: Prisma.ChoreScalarFieldEnum | Prisma.ChoreScalarFieldEnum[]
 }
 

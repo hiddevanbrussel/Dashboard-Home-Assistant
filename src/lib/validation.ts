@@ -1,21 +1,13 @@
 import { z } from "zod";
+import { isAllowedHaBaseUrl } from "./ssrf-policy";
 
-/** Base URL for Home Assistant (http or https, optional port). */
+/** Base URL for Home Assistant. Cleartext http is limited to the local network. */
 export const baseUrlSchema = z
   .string()
   .min(1, "Base URL is required")
-  .url("Invalid URL format")
-  .refine(
-    (url) => {
-      try {
-        const u = new URL(url);
-        return u.protocol === "http:" || u.protocol === "https:";
-      } catch {
-        return false;
-      }
-    },
-    { message: "URL must use http or https" }
-  );
+  .refine((url) => isAllowedHaBaseUrl(url), {
+    message: "Use https, or http only for a local Home Assistant address.",
+  });
 
 /** Long-lived access token (non-empty string). */
 export const tokenSchema = z.string().min(1, "Token is required");

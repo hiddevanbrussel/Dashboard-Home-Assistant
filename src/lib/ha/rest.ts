@@ -140,7 +140,7 @@ export async function callService(
     const res = await haFetch(
       config.baseUrl,
       config.token,
-      `/api/services/${domain}/${service}`,
+      `/api/services/${encodeURIComponent(domain)}/${encodeURIComponent(service)}`,
       { method: "POST", body: JSON.stringify(data) }
     );
     if (!res.ok) {
@@ -166,7 +166,7 @@ export async function callServiceWithResponse(
     const res = await haFetch(
       config.baseUrl,
       config.token,
-      `/api/services/${domain}/${service}?return_response`,
+      `/api/services/${encodeURIComponent(domain)}/${encodeURIComponent(service)}?return_response`,
       { method: "POST", body: JSON.stringify(data) }
     );
     if (!res.ok) {

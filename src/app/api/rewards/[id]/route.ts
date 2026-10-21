@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { id } = await params;
   let body: {
     title?: string;
@@ -45,6 +48,8 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireApiAuth(_request);
+  if (denied) return denied;
   const { id } = await params;
   try {
     await prisma.$transaction([

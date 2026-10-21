@@ -60,6 +60,7 @@ export const ModelName = {
   Chore: 'Chore',
   ChoreCompletion: 'ChoreCompletion',
   Reward: 'Reward',
+  IntegrationCredential: 'IntegrationCredential',
   RewardClaim: 'RewardClaim'
 } as const
 
@@ -211,6 +212,15 @@ export const RewardScalarFieldEnum = {
 } as const
 
 export type RewardScalarFieldEnum = (typeof RewardScalarFieldEnum)[keyof typeof RewardScalarFieldEnum]
+
+
+export const IntegrationCredentialScalarFieldEnum = {
+  kind: 'kind',
+  encrypted: 'encrypted',
+  updatedAt: 'updatedAt'
+} as const
+
+export type IntegrationCredentialScalarFieldEnum = (typeof IntegrationCredentialScalarFieldEnum)[keyof typeof IntegrationCredentialScalarFieldEnum]
 
 
 export const RewardClaimScalarFieldEnum = {

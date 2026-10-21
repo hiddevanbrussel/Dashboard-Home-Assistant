@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 export type DashboardListItem = {
   id: string;
@@ -12,6 +13,8 @@ export type DashboardListItem = {
  * GET /api/dashboards – List all dashboards.
  */
 export async function GET() {
+  const denied = await requireApiAuth();
+  if (denied) return denied;
   const list = await prisma.dashboard.findMany({
     orderBy: { createdAt: "desc" },
     select: { id: true, name: true, theme: true, createdAt: true },
@@ -29,6 +32,8 @@ export async function GET() {
  * POST /api/dashboards – Create a new dashboard.
  */
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: { name?: string; theme?: string } = {};
   try {
     body = await request.json();

@@ -63,6 +63,11 @@ export type ChoreCompletion = Prisma.ChoreCompletionModel
  */
 export type Reward = Prisma.RewardModel
 /**
+ * Model IntegrationCredential
+ * 
+ */
+export type IntegrationCredential = Prisma.IntegrationCredentialModel
+/**
  * Model RewardClaim
  * 
  */

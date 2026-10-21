@@ -158,7 +158,7 @@ export type RoomGroupByOutputType = {
   _max: RoomMaxAggregateOutputType | null
 }
 
-type GetRoomGroupByPayload<T extends RoomGroupByArgs> = Prisma.PrismaPromise<
+export type GetRoomGroupByPayload<T extends RoomGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<RoomGroupByOutputType, T['by']> &
       {
@@ -954,6 +954,11 @@ export type RoomFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
    * Skip the first `n` Rooms.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Rooms.
+   */
   distinct?: Prisma.RoomScalarFieldEnum | Prisma.RoomScalarFieldEnum[]
 }
 

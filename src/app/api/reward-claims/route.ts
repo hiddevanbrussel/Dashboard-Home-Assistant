@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: { rewardId?: string; childId?: string; points?: number; reason?: string } = {};
   try {
     body = await request.json();

@@ -1,5 +1,6 @@
 "use client";
 
+import { pushIntegrationCredential } from "@/lib/client-credential-sync";
 import { create } from "zustand";
 
 const STORAGE_KEY_ENABLED = "dashboard.valetudo.enabled";
@@ -48,11 +49,11 @@ type ValetudoStore = {
   setPassword: (v: string) => void;
 };
 
-export const useValetudoStore = create<ValetudoStore>((set) => ({
+export const useValetudoStore = create<ValetudoStore>((set, get) => ({
   enabled: getStoredBool(STORAGE_KEY_ENABLED, false),
   baseUrl: getStored(STORAGE_KEY_BASE_URL, ""),
   username: getStored(STORAGE_KEY_USERNAME, ""),
-  password: getStored(STORAGE_KEY_PASSWORD, ""),
+  password: "",
   setEnabled: (v) => {
     persist(STORAGE_KEY_ENABLED, String(v));
     set({ enabled: v });
@@ -66,8 +67,18 @@ export const useValetudoStore = create<ValetudoStore>((set) => ({
     set({ username: v });
   },
   setPassword: (v) => {
-    persist(STORAGE_KEY_PASSWORD, v);
+    try {
+      localStorage.removeItem(STORAGE_KEY_PASSWORD);
+    } catch {
+      /* ignore */
+    }
     set({ password: v });
+    pushIntegrationCredential({
+      kind: "valetudo",
+      password: v,
+      username: get().username,
+      baseUrl: get().baseUrl,
+    });
   },
 }));
 
@@ -77,6 +88,6 @@ export function hydrateValetudoStore() {
     enabled: getStoredBool(STORAGE_KEY_ENABLED, false),
     baseUrl: getStored(STORAGE_KEY_BASE_URL, ""),
     username: getStored(STORAGE_KEY_USERNAME, ""),
-    password: getStored(STORAGE_KEY_PASSWORD, ""),
+    password: "",
   });
 }

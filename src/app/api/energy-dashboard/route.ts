@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sanitizeEnergyDashboardBackgrounds } from "@/lib/energy-dashboard";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * GET /api/energy-dashboard – Get the energy dashboard (singleton). Creates one if none exists.
  * Keeps intentional `/uploads/` light/dark customs; clears legacy / bundled / shared wallpaper paths.
  */
 export async function GET() {
+  const denied = await requireApiAuth();
+  if (denied) return denied;
   try {
     let dashboard = await prisma.energyDashboard.findFirst({
       orderBy: { createdAt: "asc" },

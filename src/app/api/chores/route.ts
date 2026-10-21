@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 function parseChildIds(raw: string | null): string[] | null {
   if (!raw) return null;
@@ -12,6 +13,8 @@ function parseChildIds(raw: string | null): string[] | null {
 }
 
 export async function GET() {
+  const denied = await requireApiAuth();
+  if (denied) return denied;
   const chores = await prisma.chore.findMany({ orderBy: { order: "asc" } });
   return NextResponse.json(
     chores.map((c) => ({
@@ -31,6 +34,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: {
     title?: string;
     points?: number;

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { isAllowedHaMediaUrl } from "@/lib/ha/assist";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const url = new URL(request.url).searchParams.get("url");
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { SESSION_AUTH_HEADER, SESSION_AUTH_VALUE, sessionRedirectStarted } from "@/lib/session-redirect";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 
 const POLL_INTERVAL_MS = 5000;
@@ -21,9 +22,27 @@ export function useEntityStatePolling(connectionId?: string) {
       ? `/api/ha/state?connectionId=${encodeURIComponent(connectionId)}`
       : "/api/ha/state";
 
+    function stop() {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
     function poll() {
+      if (sessionRedirectStarted()) {
+        stop();
+        return;
+      }
       fetch(url)
         .then((res) => {
+          if (
+            sessionRedirectStarted() ||
+            (res.status === 401 && res.headers.get(SESSION_AUTH_HEADER) === SESSION_AUTH_VALUE)
+          ) {
+            stop();
+            return null;
+          }
           if (!res.ok) throw new Error("Fetch failed");
           return res.json();
         })
@@ -45,8 +64,10 @@ export function useEntityStatePolling(connectionId?: string) {
       const url = connectionId
         ? `/api/ha/state?connectionId=${encodeURIComponent(connectionId)}`
         : "/api/ha/state";
+      if (sessionRedirectStarted()) return;
       fetch(url)
         .then((res) => {
+          if (res.status === 401 && res.headers.get(SESSION_AUTH_HEADER) === SESSION_AUTH_VALUE) return null;
           if (!res.ok) throw new Error("Fetch failed");
           return res.json();
         })

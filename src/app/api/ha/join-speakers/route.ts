@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
 import { callService } from "@/lib/ha/rest";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * POST /api/ha/join-speakers – Join media players into a sync group (media_player.join).
@@ -8,6 +9,8 @@ import { callService } from "@/lib/ha/rest";
  * Requires Home Assistant connection and Music Assistant integration (media_player entities).
  */
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: { entity_ids?: string[] };
   try {
     body = await request.json();

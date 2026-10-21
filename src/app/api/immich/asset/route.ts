@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { resolveImmichApiKey, resolveImmichBaseUrl } from "@/lib/immich-env";
+import { boundImmich } from "@/lib/bound-integration";
 import { isSafeImmichAssetId, joinImmichUrl } from "@/lib/immich-url";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * Stream an Immich thumbnail or video through this app so the screensaver can
@@ -8,17 +9,16 @@ import { isSafeImmichAssetId, joinImmichUrl } from "@/lib/immich-url";
  * Prefers Docker/env `IMMICH_URL` + `IMMICH_API_KEY` over query params.
  */
 export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   const { searchParams } = new URL(request.url);
-  const { baseUrl } = resolveImmichBaseUrl({
-    envUrl: process.env.IMMICH_URL,
-    bodyUrl: searchParams.get("baseUrl"),
-  });
-  const { apiKey } = resolveImmichApiKey({
-    envKey: process.env.IMMICH_API_KEY,
-    bodyKey: searchParams.get("apiKey"),
-  });
+  const bound = await boundImmich();
   const id = (searchParams.get("id") ?? "").trim();
   const kind = searchParams.get("kind") === "video" ? "video" : "preview";
+  if (!bound.ok) {
+    return NextResponse.json({ error: bound.error }, { status: 400 });
+  }
+  const { baseUrl, secret: apiKey } = bound.target;
 
   if (!baseUrl || !isSafeImmichAssetId(id) || !apiKey) {
     return NextResponse.json({ error: "Invalid Immich asset request" }, { status: 400 });

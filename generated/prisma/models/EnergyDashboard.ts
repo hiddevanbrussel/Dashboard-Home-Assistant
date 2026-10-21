@@ -256,7 +256,7 @@ export type EnergyDashboardGroupByOutputType = {
   _max: EnergyDashboardMaxAggregateOutputType | null
 }
 
-type GetEnergyDashboardGroupByPayload<T extends EnergyDashboardGroupByArgs> = Prisma.PrismaPromise<
+export type GetEnergyDashboardGroupByPayload<T extends EnergyDashboardGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<EnergyDashboardGroupByOutputType, T['by']> &
       {
@@ -1242,6 +1242,11 @@ export type EnergyDashboardFindManyArgs<ExtArgs extends runtime.Types.Extensions
    * Skip the first `n` EnergyDashboards.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of EnergyDashboards.
+   */
   distinct?: Prisma.EnergyDashboardScalarFieldEnum | Prisma.EnergyDashboardScalarFieldEnum[]
 }
 

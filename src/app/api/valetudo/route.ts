@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
+import { boundValetudo } from "@/lib/bound-integration";
 import { isSafeValetudoApiPath, isSafeValetudoBaseUrl } from "@/lib/valetudo-url";
+import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
  * Proxy to a local Valetudo instance so the browser does not hit CORS.
  * Client sends connection details; nothing is stored on the server.
  */
 export async function POST(request: Request) {
+  const denied = await requireApiAuth(request);
+  if (denied) return denied;
   let body: {
     baseUrl?: string;
     username?: string;
@@ -20,11 +24,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const baseUrl = typeof body.baseUrl === "string" ? body.baseUrl.replace(/\/+$/, "") : "";
+  const bound = await boundValetudo({
+    baseUrl: typeof body.baseUrl === "string" ? body.baseUrl : null,
+    username: typeof body.username === "string" ? body.username : null,
+    password: typeof body.password === "string" ? body.password : null,
+  });
   const path = typeof body.path === "string" ? body.path : "";
   const method = (body.method ?? "GET").toUpperCase();
-  const username = typeof body.username === "string" ? body.username : "";
-  const password = typeof body.password === "string" ? body.password : "";
+  if (!bound.ok) {
+    return NextResponse.json({ error: bound.error }, { status: 400 });
+  }
+  const baseUrl = bound.target.baseUrl.replace(/\/+$/, "");
+  const username = bound.username;
+  const password = bound.target.secret;
 
   if (!isSafeValetudoBaseUrl(baseUrl) || !isSafeValetudoApiPath(path)) {
     return NextResponse.json({ error: "Invalid Valetudo URL" }, { status: 400 });

@@ -52,12 +52,13 @@ describe("ha/oauth", () => {
     expect(sanitizeReturnTo(null)).toBe("/onboarding");
   });
 
-  it("derives client id from forwarded headers and base path", () => {
+  it("uses APP_PUBLIC_ORIGIN and ignores X-Forwarded-Host", () => {
     process.env.NEXT_PUBLIC_BASE_PATH = "/__ha_ingress__";
+    process.env.APP_PUBLIC_ORIGIN = "https://ha.example.com";
     const req = new Request("http://127.0.0.1:3000/api/ha/oauth/start", {
       headers: {
         "x-forwarded-proto": "https",
-        "x-forwarded-host": "ha.example.com",
+        "x-forwarded-host": "evil.example",
       },
     });
     const clientId = getAppClientId(req);
@@ -65,5 +66,7 @@ describe("ha/oauth", () => {
     expect(getOAuthRedirectUri(clientId)).toBe(
       "https://ha.example.com/__ha_ingress__/api/ha/oauth/callback"
     );
+    delete process.env.APP_PUBLIC_ORIGIN;
+    expect(getAppClientId(req)).toBe("http://127.0.0.1:3000/__ha_ingress__");
   });
 });
