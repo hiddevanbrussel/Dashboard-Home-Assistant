@@ -48,6 +48,7 @@ type HitZoneReport = {
   iconsHidden: boolean;
   titleOnlyGap: number | null;
   scrollTop: number;
+  hits: { label: string; points: number; misses: number; sample: string; hasMessage: boolean }[];
 };
 
 type CdpResult = { result?: { value?: unknown } };
@@ -409,6 +410,8 @@ createRoot(document.getElementById("root")).render(
     expect(nl.backdropFilter).toContain("blur");
     expect(nl.panelClass).toContain("bg-white");
     expect(nl.panelClass).toContain("dark:border-white/10");
+    expect(nl.dismissClass).toContain("relative");
+    expect(nl.dismissClass).toContain("z-[1]");
     expect(nl.dismissClass).toContain("h-11");
     expect(nl.dismissClass).toContain("w-11");
     expect(nl.dismissClass).toContain("focus-visible:ring-[#4700B5]");
@@ -444,6 +447,12 @@ createRoot(document.getElementById("root")).render(
     expect(nl.clear.right).toBeLessThanOrEqual(nl.panel.right + 0.5);
     expect(nl.titleOnlyGap).not.toBeNull();
     expect(nl.titleOnlyGap!).toBeGreaterThanOrEqual(8);
+    expect(nl.hits.some((hit) => hit.hasMessage)).toBe(true);
+    expect(nl.hits.some((hit) => !hit.hasMessage)).toBe(true);
+    for (const hit of nl.hits) {
+      expect(hit.points, hit.label).toBeGreaterThanOrEqual(44 * 44);
+      expect(hit.misses, `${hit.label} ${hit.sample}`).toBe(0);
+    }
 
     const scrolled = await measure(175);
     expect(scrolled.error).toBeUndefined();
@@ -538,6 +547,38 @@ async function measureInPage(scrollTop: number | null): Promise<HitZoneReport> {
     iconsHidden: dismiss.every((button) => button.querySelector("svg")?.getAttribute("aria-hidden") === "true"),
     titleOnlyGap,
     scrollTop: scroller.scrollTop,
+    hits: dismiss.flatMap((button) => {
+      const rect = button.getBoundingClientRect();
+      const fullyVisible =
+        rect.top >= panelBox.top - 0.5 &&
+        rect.bottom <= panelBox.bottom + 0.5 &&
+        rect.left >= 0 &&
+        rect.top >= 0 &&
+        rect.right <= window.innerWidth &&
+        rect.bottom <= window.innerHeight;
+      if (!fullyVisible) return [];
+      const row = button.closest("li");
+      const hasMessage = Boolean(row?.querySelector("p.break-words"));
+      let points = 0;
+      let misses = 0;
+      const samples: string[] = [];
+      for (let y = rect.top + 0.5; y < rect.bottom; y += 1) {
+        for (let x = rect.left + 0.5; x < rect.right; x += 1) {
+          points += 1;
+          const hit = document.elementFromPoint(x, y);
+          if (!hit || (hit !== button && !button.contains(hit))) {
+            misses += 1;
+            if (samples.length < 12) {
+              samples.push(
+                `${(x - rect.left).toFixed(1)},${(y - rect.top).toFixed(1)} -> ${hit ? `${hit.tagName}.${String(hit.className).slice(0, 60)}` : "null"}`
+              );
+            }
+          }
+        }
+      }
+      const sample = samples.join(" | ");
+      return [{ label: button.getAttribute("aria-label") || "", points, misses, sample, hasMessage }];
+    }),
   };
 
   function fail(error: string): HitZoneReport {
@@ -557,6 +598,7 @@ async function measureInPage(scrollTop: number | null): Promise<HitZoneReport> {
       iconsHidden: false,
       titleOnlyGap: null,
       scrollTop: 0,
+      hits: [],
     };
   }
 }

@@ -14,9 +14,12 @@ import { notificationPanelFrame, type NotificationPanelFrame } from "./notificat
  * Negative margins keep the layout box at 24×24: 8px up, 12px down, 10px left/right,
  * so the zone stays ≥8px from "Alles wissen" and from the next row's X.
  * pt-2 puts the 24px visual exactly where it was (top of the 44px zone + 8px).
+ * The message sits later in the row and would cover the lower part of this zone.
+ * relative z-[1] keeps the full 44px on top of that text, and under the sticky header (z-10).
+ * The inset span fills the rounded corners, which otherwise fall through to the row.
  */
 const DISMISS_TAP_CLASS =
-  "group -mb-3 -ml-2.5 -mr-2.5 -mt-2 flex h-11 w-11 shrink-0 items-start justify-center rounded-lg pt-2 text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#4700B5] disabled:opacity-50 dark:focus-visible:ring-[#8357be]";
+  "group relative z-[1] -mb-3 -ml-2.5 -mr-2.5 -mt-2 flex h-11 w-11 shrink-0 items-start justify-center rounded-lg pt-2 text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#4700B5] disabled:opacity-50 dark:focus-visible:ring-[#8357be]";
 const DISMISS_ICON_CLASS =
   "rounded p-1 group-hover:bg-gray-100 group-hover:text-gray-600 dark:group-hover:bg-white/10 dark:group-hover:text-gray-200";
 
@@ -217,6 +220,7 @@ export function HeaderNotifications({
                           <span className={DISMISS_ICON_CLASS}>
                             <X className="h-4 w-4" aria-hidden />
                           </span>
+                          <span className="absolute inset-0" aria-hidden />
                         </button>
                       </div>
                       {n.message ? (
@@ -251,6 +255,7 @@ export function HeaderNotifications({
                             <span className={DISMISS_ICON_CLASS}>
                               <X className="h-4 w-4" aria-hidden />
                             </span>
+                            <span className="absolute inset-0" aria-hidden />
                           </button>
                         </div>
                         {message ? (
