@@ -5,6 +5,9 @@ describe("hidesDashboardWallpaper", () => {
   it("hides the dashboard photo on the Music Assistant page", () => {
     expect(hidesDashboardWallpaper("/music")).toBe(true);
     expect(hidesDashboardWallpaper("/music/")).toBe(true);
+    expect(hidesDashboardWallpaper("/__ha_ingress__/music")).toBe(true);
+    expect(hidesDashboardWallpaper("/__ha_ingress__music")).toBe(false);
+    expect(hidesDashboardWallpaper("/__ha_ingress__")).toBe(false);
   });
 
   it("hides the dashboard photo on Energy (uses its own page-wide art)", () => {
