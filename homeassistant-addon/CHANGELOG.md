@@ -1,16 +1,13 @@
 # Changelog
 
-## [0.5.1] - YYYY-MM-DD
+## [0.5.1] - 2026-10-21
 
-<!-- TODO: replace YYYY-MM-DD with the release date. -->
-
-### Fixed
-
-- Home Assistant notifications appear in the bell again. The dashboard subscribes with the websocket command `persistent_notification/subscribe`. "Clear all" dismisses each notification on its own.
-
-### Changed
-
-- The UI font is Google Sans, self-hosted under the SIL Open Font License. `OFL.txt` is included. The clock stays on Montserrat. Tiles are otherwise unchanged.
+- Fix: the add-on UI crashed under Home Assistant ingress (#277).
+- Fix: the notification bell (#271).
+- The UI font is now Google Sans, self-hosted (#273).
+- Weather tile: the metrics row is hidden on low tiles (#276).
+- Calendar tile: date labels stay inside the date column (#275).
+- New settings screen (#272).
 
 ## 0.5.0
 
