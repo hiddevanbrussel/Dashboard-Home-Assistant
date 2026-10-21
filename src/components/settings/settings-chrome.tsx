@@ -67,7 +67,7 @@ export function SettingsNavList({
           >
             {item.active ? (
               <span
-                className="absolute bottom-3 left-[3px] top-3 w-[3px] rounded-sm bg-brand dark:bg-[#b59ed8]"
+                className="settings-nav-bar absolute bottom-3 left-[3px] top-3 w-[3px] rounded-sm bg-brand"
                 aria-hidden
               />
             ) : null}

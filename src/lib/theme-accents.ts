@@ -28,12 +28,32 @@ export function darkPrimaryForeground(id: string | undefined): Rgb {
   return getThemeAccent(id).id === "purple" ? [255, 255, 255] : [17, 24, 39];
 }
 
+/**
+ * Dark active navigation bar. Purple is the approved #b59ed8.
+ * The others use that bar's lightness and saturation on the accent hue.
+ */
+const DARK_NAV_BAR: Record<ThemeAccentId, Rgb> = {
+  purple: [181, 158, 216],
+  indigo: [163, 158, 216],
+  blue: [158, 173, 216],
+  teal: [158, 216, 211],
+  green: [158, 216, 180],
+  orange: [216, 175, 158],
+  rose: [216, 158, 172],
+  fuchsia: [211, 158, 216],
+};
+
+export function darkNavBar(id: string | undefined): Rgb {
+  return DARK_NAV_BAR[getThemeAccent(id).id];
+}
+
 export function themeAccentCssVars(id: string | undefined) {
   const accent = getThemeAccent(id);
   return {
     "--brand": accent.rgb.join(" "),
     "--brand-muted": accent.muted.join(" "),
     "--brand-on-muted": darkPrimaryForeground(id).join(" "),
+    "--brand-nav": darkNavBar(id).join(" "),
   } as const;
 }
 
@@ -44,6 +64,7 @@ export function applyThemeAccent(id: string | undefined) {
   root.style.setProperty("--brand", vars["--brand"]);
   root.style.setProperty("--brand-muted", vars["--brand-muted"]);
   root.style.setProperty("--brand-on-muted", vars["--brand-on-muted"]);
+  root.style.setProperty("--brand-nav", vars["--brand-nav"]);
 }
 
 export function accentRgbCss(rgb: Rgb) {

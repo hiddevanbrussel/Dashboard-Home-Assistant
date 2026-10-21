@@ -8,6 +8,7 @@
     --brand: 71 0 181;
     --brand-muted: 131 87 190;
     --brand-on-muted: 255 255 255;
+    --brand-nav: 181 158 216;
     --hero-overlay: rgb(var(--brand) / 0.28);
     --accent-yellow: #f6d25c;
     --accent-purple: #b59ed8;
@@ -563,6 +564,10 @@ html.dark:has(.settings-page-bg) body {
 .dark .settings-primary {
   background-color: rgb(var(--brand-muted));
   color: rgb(var(--brand-on-muted));
+}
+
+.dark .settings-nav-bar {
+  background-color: rgb(var(--brand-nav));
 }
 
 .dark .settings-primary:disabled {

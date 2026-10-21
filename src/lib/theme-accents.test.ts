@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_THEME_ACCENT,
+  darkNavBar,
   darkPrimaryForeground,
   getThemeAccent,
   isThemeAccentId,
@@ -14,6 +15,7 @@ import {
 } from "./theme-accents";
 
 const SETTINGS_CARD: Rgb = [27, 26, 33];
+const NAV_SURFACE: Rgb = [43, 42, 48];
 
 function channel(c: number) {
   const s = c / 255;
@@ -52,7 +54,17 @@ describe("theme accents", () => {
       "--brand": "29 78 216",
       "--brand-muted": "107 138 223",
       "--brand-on-muted": "17 24 39",
+      "--brand-nav": "158 173 216",
     });
+  });
+
+  it("keeps the dark navigation bar at 3:1 on #2b2a30", () => {
+    expect(darkNavBar("purple")).toEqual([181, 158, 216]);
+    for (const accent of THEME_ACCENTS) {
+      const bar = darkNavBar(accent.id);
+      expect(contrast(bar, NAV_SURFACE), accent.id).toBeGreaterThanOrEqual(3);
+      expect(themeAccentCssVars(accent.id)["--brand-nav"]).toBe(bar.join(" "));
+    }
   });
 
   it("keeps dark primary text at 4.5:1 and the button at 3:1 on the card", () => {
