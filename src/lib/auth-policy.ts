@@ -15,6 +15,16 @@ export function normalizePath(pathname: string): string {
   return path || "/";
 }
 
+/**
+ * Path used for the page auth check.
+ * The exact add-on basePath (`/__ha_ingress__`) does not run middleware, so `x-pathname` is empty.
+ * Treat that as the dashboard root.
+ */
+export function pathnameForAuth(header: string | null | undefined): string {
+  const path = (header ?? "").trim();
+  return path || "/";
+}
+
 export function isPublicPage(pathname: string): boolean {
   const path = normalizePath(pathname);
   return path === "/login";

@@ -10,8 +10,10 @@ import { MusicPlayerProvider } from "@/components/music-player-provider";
 import { GlobalMusicBar } from "@/components/global-music-bar";
 import { BasePathScript } from "@/components/base-path-script";
 import { SecretMigrator } from "@/components/secret-migrator";
-import { isPublicPage, requestIsAuthorized } from "@/lib/auth-policy";
+import { AuthFetchGuard } from "@/components/auth-fetch-guard";
+import { isPublicPage, pathnameForAuth, requestIsAuthorized } from "@/lib/auth-policy";
 import { withBasePath } from "@/lib/base-path";
+import { safeNextPath } from "@/lib/session-redirect";
 
 const inter = Inter({ subsets: ["latin"] });
 const montserrat = Montserrat({
@@ -59,12 +61,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const incoming = await headers();
-  const path = incoming.get("x-pathname") ?? "";
+  const path = pathnameForAuth(incoming.get("x-pathname"));
   const publicPage = isPublicPage(path);
-  if (path && !publicPage) {
+  if (!publicPage) {
     const request = new Request(`http://internal${path}`, { headers: incoming });
     if (!requestIsAuthorized(request)) {
-      redirect(`/login?next=${encodeURIComponent(path)}`);
+      redirect(`/login?next=${encodeURIComponent(safeNextPath(path))}`);
     }
   }
 
@@ -72,6 +74,7 @@ export default async function RootLayout({
     <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <body className={`relative ${inter.className}`}>
         <BasePathScript />
+        <AuthFetchGuard />
         {publicPage ? (
           <div className="relative min-h-screen">{children}</div>
         ) : (
