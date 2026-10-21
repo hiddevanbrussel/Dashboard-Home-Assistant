@@ -33,6 +33,17 @@
     Mask="false">/mnt/user/appdata/dashboard</Config>
 
   <Config
+    Name="Database URL"
+    Target="DATABASE_URL"
+    Default="file:/data/app.db"
+    Mode=""
+    Description="SQLite path inside the container. The image default is file:/data/app.db. A value set here overrides that default."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="false">file:/data/app.db</Config>
+
+  <Config
     Name="APP_SECRET"
     Target="APP_SECRET"
     Default=""

@@ -64,6 +64,8 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 # Uploads in het data-volume zodat nextjs er mag schrijven (geen EACCES)
 ENV UPLOAD_DIR=/data/uploads
+# Image default for a bare docker run. A runtime DATABASE_URL still overrides this.
+ENV DATABASE_URL="file:/data/app.db"
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
