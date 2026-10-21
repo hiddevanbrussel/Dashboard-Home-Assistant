@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { WEATHER_FIT_METRICS_MIN_H, weatherCardFitsMetrics } from "@/components/widgets/weather-card-widget";
 import {
   clampWeatherCardHeight,
   clampWeatherCardWidth,
@@ -137,5 +138,13 @@ describe("weather color icons", () => {
     expect(weatherIconSrc("rainy")).toContain("/weather-icons/rainy.webp");
     expect(weatherIconSrc("pouring")).toContain("/weather-icons/pouring.webp");
     expect(weatherIconSrc("lightning")).toContain("/weather-icons/lightning.webp");
+  });
+});
+
+describe("weather metrics row height", () => {
+  it("drops the metrics row below 184px and keeps it from 184px", () => {
+    expect(WEATHER_FIT_METRICS_MIN_H).toBe(184);
+    expect(weatherCardFitsMetrics(183)).toBe(false);
+    expect(weatherCardFitsMetrics(184)).toBe(true);
   });
 });
