@@ -2235,7 +2235,7 @@ export default function DashboardEditPage() {
           <OfflinePill />
         </div>
 
-        <div className={cn("rounded-card overflow-hidden", editMode && "grid-edit-touch")}>
+        <div className={cn("dashboard-grid-edit rounded-card overflow-hidden", editMode && "grid-edit-touch")}>
           <ReactGridLayout
             className="layout"
             layout={layoutForGrid}
