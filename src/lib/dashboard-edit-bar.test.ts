@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DASHBOARD_EDIT_BAR_LEGACY_OFFSET_PX,
+  browsePageDotTop,
   editBarClearsResizeHandle,
   editBarVerticalBand,
   resizeHandleVerticalBand,
@@ -23,6 +24,11 @@ describe("dashboard edit bar vs bottom resize handle", () => {
     expect(
       editBarClearsResizeHandle(LANDSCAPE_HEIGHT, BOTTOM_TILE_PX, DASHBOARD_EDIT_BAR_LEGACY_OFFSET_PX)
     ).toBe(false);
+  });
+
+  it("keeps non-edit page dots at main's bottom-5 position", () => {
+    expect(browsePageDotTop(LANDSCAPE_HEIGHT)).toBe(772);
+    expect(browsePageDotTop(PORTRAIT_HEIGHT)).toBe(1252);
   });
 
   it("places the handle's lower edge 2px above a 28px bar", () => {

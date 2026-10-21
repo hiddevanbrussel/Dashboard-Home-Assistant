@@ -9,6 +9,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import WebSocket from "ws";
 import { describe, expect, it } from "vitest";
 import { DashboardEditBar } from "@/components/dashboard-edit-bar";
+import { browsePageDotTop } from "@/lib/dashboard-edit-bar";
 
 const CHROME = [
   process.env.CHROME_PATH,
@@ -213,6 +214,97 @@ function expectHandleClearsBar(hit: Hit) {
   });
 }
 
+const LAYOUT_CSS = String.raw`
+  html, body { margin: 0; font-size: 16px; }
+  * { box-sizing: border-box; }
+  button { margin: 0; padding: 0; border: 0; background: transparent; }
+  .absolute { position: absolute; }
+  .relative { position: relative; }
+  .bottom-5 { bottom: 1.25rem; }
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .justify-center { justify-content: center; }
+  .gap-2 { gap: 0.5rem; }
+  .gap-1\.5 { gap: 0.375rem; }
+  .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+  .h-7 { height: 1.75rem; }
+  .w-7 { width: 1.75rem; }
+  .h-2 { height: 0.5rem; }
+  .w-2 { width: 0.5rem; }
+  .w-5 { width: 1.25rem; }
+  .rounded-full { border-radius: 9999px; }
+  .pointer-events-none { pointer-events: none; }
+  .pointer-events-auto { pointer-events: auto; }
+  .z-\[80\] { z-index: 80; }
+`;
+
+/** Non-edit chrome from main: `bottom-5`, cluster only as tall as the dots. */
+function mainBrowseBarHtml(): string {
+  return `<div data-role="main" data-dashboard-pager-ui class="pointer-events-none absolute bottom-5 z-[80] flex justify-center" style="left:5.5rem;right:0">
+    <div class="pointer-events-auto flex items-center gap-2">
+      <div class="flex items-center gap-1.5 px-1" role="tablist" aria-label="Pages">
+        <button type="button" role="tab" aria-selected="true" aria-label="Page 1" class="h-2 w-5 rounded-full"></button>
+        <button type="button" role="tab" aria-selected="false" aria-label="Page 2" class="h-2 w-2 rounded-full"></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function browsePositionHtml(width: number, height: number): string {
+  const branch = renderToStaticMarkup(
+    createElement(DashboardEditBar, {
+      pageCount: 2,
+      page: 0,
+      editMode: false,
+      onSelectPage: () => {},
+    })
+  );
+  return `<!doctype html>
+<html>
+<head><meta charset="utf-8" /><style>${LAYOUT_CSS}</style></head>
+<body>
+  <div id="main" style="position:relative;width:${width}px;height:${height}px">${mainBrowseBarHtml()}</div>
+  <div id="branch" style="position:relative;width:${width}px;height:${height}px">${branch}</div>
+</body>
+</html>`;
+}
+
+type DotBox = { x: number; y: number; w: number; h: number };
+
+async function measureBrowseDots(width: number, height: number): Promise<{ main: DotBox; branch: DotBox }> {
+  const dir = await mkdtemp(join(tmpdir(), "edit-bar-browse-"));
+  const file = join(dir, "index.html");
+  await writeFile(file, browsePositionHtml(width, height));
+  try {
+    return await withChrome(async (send) => {
+      await send("Emulation.setDeviceMetricsOverride", {
+        width,
+        height: height * 2,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      await send("Page.navigate", { url: `file://${file}` });
+      await delay(250);
+      const result = (await send("Runtime.evaluate", {
+        expression: `(() => {
+          function box(root) {
+            const host = root.getBoundingClientRect();
+            const dot = root.querySelector('[aria-label="Page 1"]');
+            const r = dot.getBoundingClientRect();
+            return { x: r.x - host.x, y: r.y - host.y, w: r.width, h: r.height };
+          }
+          return { main: box(document.getElementById("main")), branch: box(document.getElementById("branch")) };
+        })()`,
+        returnByValue: true,
+      })) as { result?: { value?: { main: DotBox; branch: DotBox } }; exceptionDetails?: unknown };
+      if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails));
+      return result.result?.value as { main: DotBox; branch: DotBox };
+    });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
 describe.skipIf(!CHROME)("edit bar elementFromPoint", () => {
   it("returns the resize handle, not the toolbar, for a bottom tile in portrait 800x1280", async () => {
     expectHandleClearsBar(await hitTest(800, 1280, 32));
@@ -220,5 +312,16 @@ describe.skipIf(!CHROME)("edit bar elementFromPoint", () => {
 
   it("returns the resize handle, not the toolbar, for a bottom tile in landscape 1280x800", async () => {
     expectHandleClearsBar(await hitTest(1280, 800, 272));
+  });
+
+  it("places non-edit page dots on main's bottom-5 position in landscape and portrait", async () => {
+    for (const [width, height] of [
+      [1280, 800],
+      [800, 1280],
+    ] as const) {
+      const measured = await measureBrowseDots(width, height);
+      expect(measured.branch, JSON.stringify(measured)).toEqual(measured.main);
+      expect(measured.branch.y).toBe(browsePageDotTop(height));
+    }
   });
 });

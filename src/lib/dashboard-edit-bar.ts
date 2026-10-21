@@ -13,8 +13,11 @@ export const DASHBOARD_RESIZE_HANDLE_PX = 24;
 /** `-bottom-0.5 -right-0.5` pulls the handle 2px outside the card. */
 export const DASHBOARD_RESIZE_HANDLE_OUTSET_PX = 2;
 
-/** Previous `bottom-5` offset. Kept so the regression test can show the overlap. */
+/** Previous `bottom-5` offset. Still the position outside edit mode. */
 export const DASHBOARD_EDIT_BAR_LEGACY_OFFSET_PX = 20;
+
+/** Page-dot height (`h-2`). Outside edit mode the cluster is only this tall. */
+export const DASHBOARD_PAGE_DOT_PX = 8;
 
 export type VerticalBand = { top: number; bottom: number };
 
@@ -38,6 +41,15 @@ export function verticalBandsOverlap(a: VerticalBand, b: VerticalBand): boolean 
  * True when a tile at `cardBottomPx` can be resized without the edit bar
  * covering the handle, at every horizontal position.
  */
+/**
+ * Top of the page dots outside edit mode. Main places a content-sized cluster
+ * `bottom-5` (20px) above the viewport edge, so an 8px dot starts 28px up.
+ * At 800px that is y 772; the flush edit bar centers the same dot at y 782.
+ */
+export function browsePageDotTop(viewportHeight: number): number {
+  return viewportHeight - DASHBOARD_EDIT_BAR_LEGACY_OFFSET_PX - DASHBOARD_PAGE_DOT_PX;
+}
+
 export function editBarClearsResizeHandle(
   viewportHeight: number,
   cardBottomPx: number,

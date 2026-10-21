@@ -5,7 +5,10 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
 import { SIDEBAR_INSET } from "@/components/layout/sidebar";
 import { DASHBOARD_MAX_PAGES } from "@/lib/dashboard-pages";
-import { DASHBOARD_EDIT_BAR_HEIGHT_PX } from "@/lib/dashboard-edit-bar";
+import {
+  DASHBOARD_EDIT_BAR_HEIGHT_PX,
+  DASHBOARD_EDIT_BAR_LEGACY_OFFSET_PX,
+} from "@/lib/dashboard-edit-bar";
 
 type DashboardEditBarProps = {
   pageCount: number;
@@ -17,9 +20,9 @@ type DashboardEditBarProps = {
 };
 
 /**
- * Page controls pinned to the viewport bottom. The wrapper does not take
- * hits — only the buttons do — and the bar is 28px tall at `bottom: 0` so it
- * stays under the resize handle of a tile at `bottom: 32px`.
+ * Page controls under the dashboard. Outside edit mode the cluster keeps
+ * main's `bottom-5` position. In edit mode the bar is 28px tall at `bottom: 0`
+ * and only the buttons take hits, so it stays under a bottom tile's resize handle.
  */
 export function DashboardEditBar({
   pageCount,
@@ -30,6 +33,53 @@ export function DashboardEditBar({
   onSelectPage,
 }: DashboardEditBarProps) {
   const { t } = useTranslation();
+
+  const dots = (
+    <div
+      className={cn("flex items-center gap-1.5 px-1", editMode && "pointer-events-none")}
+      style={editMode ? { pointerEvents: "none" } : undefined}
+      role="tablist"
+      aria-label={t("dashboardPages.pages")}
+    >
+      {Array.from({ length: pageCount }, (_, index) => (
+        <button
+          key={index}
+          type="button"
+          role="tab"
+          aria-selected={index === page}
+          aria-label={t("dashboardPages.pageN").replace("{n}", String(index + 1))}
+          onClick={() => onSelectPage(index)}
+          style={editMode ? { pointerEvents: "auto" } : undefined}
+          className={cn(
+            "h-2 rounded-full transition-all duration-300",
+            editMode && "pointer-events-auto",
+            index === page
+              ? "w-5 bg-brand"
+              : "w-2 bg-black/25 hover:bg-black/40 dark:bg-white/35 dark:hover:bg-white/55"
+          )}
+        />
+      ))}
+    </div>
+  );
+
+  if (!editMode) {
+    return (
+      <div
+        data-dashboard-pager-ui
+        className="pointer-events-none absolute bottom-5 z-[80] flex justify-center"
+        style={{
+          left: SIDEBAR_INSET,
+          right: 0,
+          bottom: DASHBOARD_EDIT_BAR_LEGACY_OFFSET_PX,
+          pointerEvents: "none",
+        }}
+      >
+        <div className="pointer-events-auto flex items-center gap-2" style={{ pointerEvents: "auto" }}>
+          {dots}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -48,7 +98,7 @@ export function DashboardEditBar({
         className="pointer-events-none flex h-7 items-center gap-2"
         style={{ pointerEvents: "none", height: DASHBOARD_EDIT_BAR_HEIGHT_PX }}
       >
-        {editMode && onRemovePage ? (
+        {onRemovePage ? (
           <button
             type="button"
             onClick={onRemovePage}
@@ -60,31 +110,8 @@ export function DashboardEditBar({
             <Minus className="h-3.5 w-3.5" />
           </button>
         ) : null}
-        <div
-          className="pointer-events-none flex items-center gap-1.5 px-1"
-          style={{ pointerEvents: "none" }}
-          role="tablist"
-          aria-label={t("dashboardPages.pages")}
-        >
-          {Array.from({ length: pageCount }, (_, index) => (
-            <button
-              key={index}
-              type="button"
-              role="tab"
-              aria-selected={index === page}
-              aria-label={t("dashboardPages.pageN").replace("{n}", String(index + 1))}
-              onClick={() => onSelectPage(index)}
-              style={{ pointerEvents: "auto" }}
-              className={cn(
-                "pointer-events-auto h-2 rounded-full transition-all duration-300",
-                index === page
-                  ? "w-5 bg-brand"
-                  : "w-2 bg-black/25 hover:bg-black/40 dark:bg-white/35 dark:hover:bg-white/55"
-              )}
-            />
-          ))}
-        </div>
-        {editMode && onAddPage ? (
+        {dots}
+        {onAddPage ? (
           <button
             type="button"
             onClick={onAddPage}
