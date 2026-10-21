@@ -141,7 +141,7 @@ function AppearanceLivePreview({
               <span className="text-[8px] font-semibold leading-none" style={{ color: sub }}>
                 {t("settings.appearance.preview.livingRoom")}
               </span>
-              <span className="text-[13px] font-extrabold leading-none tracking-tight">21.5°</span>
+              <span className="text-[13px] font-bold leading-none tracking-tight">21.5°</span>
             </div>
             <div
               className="flex min-h-[38px] flex-col justify-between rounded-lg p-1.5"

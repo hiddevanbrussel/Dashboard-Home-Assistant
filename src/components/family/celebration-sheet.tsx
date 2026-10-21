@@ -27,7 +27,7 @@ export function CelebrationSheet({
         <div className="mx-auto h-40 w-56">
           <CelebrationArt />
         </div>
-        <h2 className="mt-2 text-3xl font-black text-gray-900 dark:text-white">{t("family.greatJob")}</h2>
+        <h2 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{t("family.greatJob")}</h2>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
           {t("family.greatJobBody").replace("{n}", String(celebration.points)).replace("{task}", celebration.title).replace("{name}", celebration.childName)}
         </p>

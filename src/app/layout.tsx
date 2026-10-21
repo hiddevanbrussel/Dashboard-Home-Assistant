@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { Inter, Montserrat } from "next/font/google";
+import localFont from "next/font/local";
+import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { OnboardingGuard } from "@/components/onboarding-guard";
@@ -15,7 +16,19 @@ import { isPublicPage, pathnameForAuth, requestIsAuthorized } from "@/lib/auth-p
 import { withBasePath } from "@/lib/base-path";
 import { safeNextPath } from "@/lib/session-redirect";
 
-const inter = Inter({ subsets: ["latin"] });
+/**
+ * Classic Google Sans (variable wght axis only, latin subset).
+ * One preloaded woff2. adjustFontFallback inserts a size-adjusted Arial
+ * face, then the named stack ends with Inter, system-ui.
+ */
+const googleSans = localFont({
+  src: "../../node_modules/@fontsource-variable/google-sans/files/google-sans-latin-wght-normal.woff2",
+  weight: "400 700",
+  display: "swap",
+  preload: true,
+  adjustFontFallback: "Arial",
+  fallback: ["Inter", "system-ui"],
+});
 const montserrat = Montserrat({
   subsets: ["latin"],
   weight: ["500", "600", "800", "900"],
@@ -72,7 +85,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={montserrat.variable} suppressHydrationWarning>
-      <body className={`relative ${inter.className}`}>
+      <body className={`relative ${googleSans.className}`}>
         <BasePathScript />
         <AuthFetchGuard />
         {publicPage ? (

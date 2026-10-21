@@ -137,7 +137,7 @@ export function ChildTaskBoard({
           </div>
           <div className="text-right">
             <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">{t("family.totalBalance")}</p>
-            <p className="text-2xl font-black tabular-nums text-gray-900 dark:text-white">{balance}</p>
+            <p className="text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{balance}</p>
           </div>
         </div>
         <div className="mt-5">
