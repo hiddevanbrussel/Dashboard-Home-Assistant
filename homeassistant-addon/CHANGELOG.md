@@ -28,10 +28,19 @@ Assist needs 2023.5 or newer.
 
 **Unraid**
 
-1. Copy or archive `/mnt/user/appdata/dashboard` before you change the container.
+1. Stop the container, then copy or archive `/mnt/user/appdata/dashboard`, so `app.db` is consistent.
 2. Edit the container or re-import `unraid-template.xml`.
 3. Fill in `APP_SECRET` and `DASHBOARD_PASSWORD`.
 4. Apply.
+
+**Docker and Unraid**
+
+- Stop the container before copying appdata, so `app.db` is consistent.
+- Reuse the existing `APP_SECRET` if it is at least 32 characters and not a placeholder. With a new `APP_SECRET`, re-save **Settings → Home Assistant** after the first start.
+- Make sure `DATABASE_URL=file:/data/app.db` (now the image default).
+- A new host or port is a new browser origin, so browser-stored settings and keys don't carry over. Run the localStorage migration on the existing origin, or re-enter them.
+- Revoking the Home Assistant long-lived token also disconnects any other instance that uses a copy of the same database.
+- Before the update, pin the existing container to a fixed tag (e.g. `:0.4.89`) if you don't want `:latest` to jump to 0.5.0.
 
 ### Rules enforced at startup
 
