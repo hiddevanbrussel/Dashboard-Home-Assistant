@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import localFont from "next/font/local";
-import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { OnboardingGuard } from "@/components/onboarding-guard";
@@ -29,11 +28,38 @@ const googleSans = localFont({
   adjustFontFallback: "Arial",
   fallback: ["system-ui"],
 });
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["500", "600", "800", "900"],
+/**
+ * Same latin cuts the Google loader used (500, 600, 800, 900).
+ * Bundled files so `next build` does not depend on fonts.gstatic.com.
+ */
+const montserrat = localFont({
+  src: [
+    {
+      path: "../../node_modules/@fontsource/montserrat/files/montserrat-latin-500-normal.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../node_modules/@fontsource/montserrat/files/montserrat-latin-600-normal.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../../node_modules/@fontsource/montserrat/files/montserrat-latin-800-normal.woff2",
+      weight: "800",
+      style: "normal",
+    },
+    {
+      path: "../../node_modules/@fontsource/montserrat/files/montserrat-latin-900-normal.woff2",
+      weight: "900",
+      style: "normal",
+    },
+  ],
   variable: "--font-montserrat",
   display: "swap",
+  preload: true,
+  adjustFontFallback: "Arial",
+  fallback: ["ui-sans-serif", "system-ui"],
 });
 
 export const metadata: Metadata = {
