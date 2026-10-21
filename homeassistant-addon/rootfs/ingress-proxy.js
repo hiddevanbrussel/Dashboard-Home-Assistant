@@ -85,6 +85,16 @@ function rewritePathsInText(text, ingressPath) {
   let out = text;
 
   if (out.includes("__ha_ingress__")) {
+    // Regex literals escape the placeholder slash (`/^\/__ha_ingress__(?=\/|$)/`).
+    // Replacing the bare `/__ha_ingress__` substring inside that escape injects
+    // raw slashes (`/^\/api/hassio_ingress/<token>(?=\/|$)/`) and the client
+    // throws "Invalid regular expression flags". Rewrite the escaped form
+    // first, with every slash escaped, so the output stays a valid regex and
+    // a valid JS string (`\/` in a string is just `/`).
+    const phEsc = "\\/__ha_ingress__";
+    const prefixEsc = prefix.replace(/\//g, "\\/");
+    out = out.split(phEsc).join(prefixEsc);
+
     // 1) Paths under the placeholder
     out = out.split(PLACEHOLDER + "/").join(withSlash);
 
@@ -97,6 +107,8 @@ function rewritePathsInText(text, ingressPath) {
     // 3) Bare placeholder left = Next basePath / router prefix (no trailing slash)
     out = out.split(PLACEHOLDER).join(prefix);
 
+    // `\u002F` and `%2F` already encode every slash in the replacement.
+    // A raw `/` here would terminate a regex literal the same way as above.
     const phUni = "\\u002F__ha_ingress__";
     const prefixUni = prefix.replace(/\//g, "\\u002F");
     const withSlashUni = prefixUni + "\\u002F";
@@ -386,6 +398,19 @@ function upstreamPath(url) {
   return PLACEHOLDER + path + query;
 }
 
+/**
+ * Rewrite a `Link` response header (font preload and friends).
+ * Next emits `</__ha_ingress__/_next/static/media/….woff2>; rel=preload`.
+ * Node joins duplicate Link headers with ", "; arrays are handled too.
+ */
+function rewriteLinkHeader(link, ingressPath) {
+  if (!ingressPath || link == null) return link;
+  if (Array.isArray(link)) {
+    return link.map((value) => rewritePathsInText(String(value), ingressPath));
+  }
+  return rewritePathsInText(String(link), ingressPath);
+}
+
 /** Make Location relative and rewrite placeholder; never leak upstream origin. */
 function rewriteLocation(location, ingressPath) {
   let loc = String(location);
@@ -488,6 +513,9 @@ const server = http.createServer((req, res) => {
         if (outHeaders.location) {
           outHeaders.location = rewriteLocation(String(outHeaders.location), ingressPath);
         }
+        if (outHeaders.link) {
+          outHeaders.link = rewriteLinkHeader(outHeaders.link, ingressPath);
+        }
         if (outHeaders["set-cookie"] && ingressPath) {
           const cookies = Array.isArray(outHeaders["set-cookie"])
             ? outHeaders["set-cookie"]
@@ -542,6 +570,7 @@ module.exports = {
   rewriteHtmlDocument,
   rewriteBody,
   rewriteLocation,
+  rewriteLinkHeader,
   shouldRewrite,
   upstreamPath,
   clientIp,

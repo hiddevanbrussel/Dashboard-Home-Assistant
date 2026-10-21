@@ -1,3 +1,5 @@
+import { stripHaIngressPrefix } from "./ha-ingress-prefix";
+
 /**
  * Bust browser / ingress caches when the bundled PNGs change but keep the same path.
  * Bump when replacing `public/energy/energy-bg-*.png`.
@@ -31,7 +33,7 @@ export function energyBackgroundPathname(url: string): string {
   }
   const withoutQuery = (raw.split("?")[0] ?? raw).split("#")[0] ?? raw;
   // Strip HA ingress / Next basePath prefixes so `/__ha_ingress__/energy/...` matches.
-  return withoutQuery.replace(/^\/__ha_ingress__(?=\/|$)/, "") || "/";
+  return stripHaIngressPrefix(withoutQuery) || "/";
 }
 
 function isBundledEnergyIllustrationPath(pathname: string): boolean {
@@ -56,7 +58,7 @@ export function usableEnergyBackground(url: string | null | undefined): string |
   // Only paths under /uploads/ count as intentional energy customs.
   if (!pathname.startsWith("/uploads/")) return undefined;
   // Preserve the stored path (without ingress prefix) so the client can apply basePath.
-  const withoutIngress = trimmed.replace(/^\/__ha_ingress__(?=\/|$)/, "");
+  const withoutIngress = stripHaIngressPrefix(trimmed);
   return withoutIngress.startsWith("/") ? withoutIngress : `/${withoutIngress}`;
 }
 

@@ -338,6 +338,10 @@ Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBU
 - Issues: https://github.com/hiddevanbrussel/Dashboard-Home-Assistant/issues
 - If you like the project: [Buy me a coffee](https://buymeacoffee.com/hiddevanbrussel)
 
+## Fonts
+
+The interface uses [Google Sans](https://github.com/google/fonts/tree/main/ofl/googlesans) (Latin, variable weight axis 400–700), self-hosted from `@fontsource-variable/google-sans`. Google Sans is licensed under the SIL Open Font License 1.1. Copyright 2025 The Google Sans Project Authors (https://github.com/googlefonts/googlesans). See [OFL.txt](OFL.txt). Clock digits stay in Montserrat.
+
 ## License
 
 [GPL-3.0-only](LICENSE) © Hidde van Brussel

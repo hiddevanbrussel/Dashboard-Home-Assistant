@@ -945,7 +945,7 @@ export default function FamilyPage() {
       <div className="flex h-full flex-col">
         {/* page header */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white">{t("family.yourTasks")}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("family.yourTasks")}</h1>
           <div className="flex flex-wrap items-center gap-3">
             {view === "tasks" && children.length > 0 ? (
               <label className="flex h-10 w-56 items-center gap-2 rounded-full bg-white px-3 shadow-sm ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">

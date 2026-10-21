@@ -367,6 +367,7 @@ export function FloatingWeatherCard({
           show_precipitation={show_precipitation}
           air_quality_entity_id={air_quality_entity_id}
           size="md"
+          height={totalHeight}
           onMoreClick={editMode ? onEdit : undefined}
           className="flex-1 min-h-0"
         />
