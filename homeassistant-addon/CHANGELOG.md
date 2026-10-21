@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.1] - 2026-10-21
+
+- Fix: the add-on UI crashed under Home Assistant ingress (#277).
+- Fix: the notification bell (#271).
+- The UI font is now Google Sans, self-hosted (#273).
+- Weather tile: the metrics row is hidden on low tiles (#276).
+- Calendar tile: date labels stay inside the date column (#275).
+- New settings screen (#272).
+
 ## 0.5.0
 
 Login and security hardening. The dashboard does not start until `APP_SECRET` and `DASHBOARD_PASSWORD` are set. Back up the dashboard data for your install type before you update.

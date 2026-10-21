@@ -17,11 +17,17 @@ describe("hidesDashboardWallpaper", () => {
     expect(hidesDashboardWallpaper("/__ha_ingress__/energy/")).toBe(true);
   });
 
+  it("hides the dashboard photo on Settings", () => {
+    expect(hidesDashboardWallpaper("/settings")).toBe(true);
+    expect(hidesDashboardWallpaper("/settings/")).toBe(true);
+    expect(hidesDashboardWallpaper("/__ha_ingress__/settings")).toBe(true);
+    expect(hidesDashboardWallpaper("/api/hassio_ingress/abc123/settings")).toBe(true);
+  });
+
   it("keeps the photo on home and other dashboard pages", () => {
     expect(hidesDashboardWallpaper("/")).toBe(false);
     expect(hidesDashboardWallpaper("/dashboards")).toBe(false);
     expect(hidesDashboardWallpaper("/rooms")).toBe(false);
-    expect(hidesDashboardWallpaper("/settings")).toBe(false);
     expect(hidesDashboardWallpaper("/vacuum")).toBe(false);
     expect(hidesDashboardWallpaper(null)).toBe(false);
   });

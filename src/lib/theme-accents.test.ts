@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_THEME_ACCENT,
+  darkNavBar,
+  darkPrimaryForeground,
   getThemeAccent,
   isThemeAccentId,
   mixRgb,
@@ -9,7 +11,23 @@ import {
   screensaverClockRgb,
   THEME_ACCENTS,
   themeAccentCssVars,
+  type Rgb,
 } from "./theme-accents";
+
+const SETTINGS_CARD: Rgb = [27, 26, 33];
+const NAV_SURFACE: Rgb = [43, 42, 48];
+
+function channel(c: number) {
+  const s = c / 255;
+  return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+}
+
+function contrast(a: Rgb, b: Rgb) {
+  const lum = (rgb: Rgb) => 0.2126 * channel(rgb[0]) + 0.7152 * channel(rgb[1]) + 0.0722 * channel(rgb[2]);
+  const hi = Math.max(lum(a), lum(b));
+  const lo = Math.min(lum(a), lum(b));
+  return (hi + 0.05) / (lo + 0.05);
+}
 
 describe("theme accents", () => {
   it("defaults to the Omnidocs purple", () => {
@@ -35,7 +53,29 @@ describe("theme accents", () => {
     expect(themeAccentCssVars("blue")).toEqual({
       "--brand": "29 78 216",
       "--brand-muted": "107 138 223",
+      "--brand-on-muted": "17 24 39",
+      "--brand-nav": "158 173 216",
     });
+  });
+
+  it("keeps the dark navigation bar at 3:1 on #2b2a30", () => {
+    expect(darkNavBar("purple")).toEqual([181, 158, 216]);
+    for (const accent of THEME_ACCENTS) {
+      const bar = darkNavBar(accent.id);
+      expect(contrast(bar, NAV_SURFACE), accent.id).toBeGreaterThanOrEqual(3);
+      expect(themeAccentCssVars(accent.id)["--brand-nav"]).toBe(bar.join(" "));
+    }
+  });
+
+  it("keeps dark primary text at 4.5:1 and the button at 3:1 on the card", () => {
+    for (const accent of THEME_ACCENTS) {
+      const text = darkPrimaryForeground(accent.id);
+      expect(contrast(text, accent.muted), accent.id).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(accent.muted, SETTINGS_CARD), accent.id).toBeGreaterThanOrEqual(3);
+      expect(themeAccentCssVars(accent.id)["--brand-on-muted"]).toBe(text.join(" "));
+    }
+    expect(darkPrimaryForeground("purple")).toEqual([255, 255, 255]);
+    expect(darkPrimaryForeground("teal")).toEqual([17, 24, 39]);
   });
 
   it("narrows stored accent ids", () => {
