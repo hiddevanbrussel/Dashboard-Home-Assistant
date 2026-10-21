@@ -59,7 +59,7 @@ function RuleEditor({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-3 rounded-2xl border border-brand/20 bg-brand/5 p-4 dark:bg-brand/10">
+    <div className="space-y-3 rounded-2xl border border-[rgba(17,24,39,0.08)] bg-white p-4 dark:border-white/10 dark:bg-[#1b1a21]">
       <SettingsField label={t("settings.notifications.name")}>
         <SettingsInput
           value={draft.name}
@@ -304,10 +304,10 @@ export function NotificationSettings() {
                 <div className="flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                      <p className="truncate text-sm font-medium text-gray-900 dark:text-white" title={rule.name || rule.title}>
                         {rule.name || rule.title}
                       </p>
-                      <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                      <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400" title={`${rule.entityId || rule.entityDomain || ""} ${rule.fromStates.join("/")} ${rule.toStates.join("/")}`}>
                         {rule.entityId ||
                           (rule.entityDomain
                             ? `${t("settings.notifications.domain")}: ${rule.entityDomain}`

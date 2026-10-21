@@ -7,10 +7,10 @@ import { Check, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const settingsInputClass =
-  "w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white";
+  "h-12 w-full rounded-xl border border-[rgba(17,24,39,0.16)] bg-white px-3.5 text-base text-[#111827] placeholder:text-[#6b7280] focus:outline-none dark:border-white/20 dark:bg-black/20 dark:text-[#f3f4f6] dark:placeholder:text-[#a1a1aa]";
 
 export const settingsSelectClass =
-  "settings-select w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white";
+  "settings-select h-12 w-full rounded-xl border border-[rgba(17,24,39,0.16)] bg-white px-3.5 text-base text-[#111827] focus:outline-none dark:border-white/20 dark:bg-black/20 dark:text-[#f3f4f6]";
 
 export function SettingsToggle({
   checked,
@@ -34,30 +34,31 @@ export function SettingsToggle({
       aria-label={label}
       onClick={() => onChange(!checked)}
       className={cn(
-        "text-left transition-colors",
+        "text-left",
         compact
-          ? "inline-flex shrink-0 items-center justify-center rounded-full p-1 hover:bg-black/[0.04] dark:hover:bg-white/10"
-          : "flex w-full items-center justify-between gap-4 rounded-2xl bg-black/[0.04] px-4 py-3 hover:bg-black/[0.06] dark:bg-white/5 dark:hover:bg-white/10"
+          ? "inline-flex h-11 w-16 shrink-0 items-center justify-end"
+          : "flex min-h-11 w-full items-center justify-between gap-4"
       )}
     >
       {!compact ? (
         <span className="min-w-0">
-          <span className="block text-sm font-medium text-gray-900 dark:text-white">{label}</span>
+          <span className="block text-base font-medium leading-snug text-[#111827] dark:text-[#f3f4f6]">{label}</span>
           {description ? (
-            <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">{description}</span>
+            <span className="mt-0.5 block text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">{description}</span>
           ) : null}
         </span>
       ) : null}
       <span
         className={cn(
-          "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-          checked ? "bg-brand" : "bg-gray-300 dark:bg-white/20"
+          "relative h-8 w-[52px] shrink-0 rounded-full",
+          checked ? "bg-[#111827] dark:bg-[#f3f4f6]" : "bg-[rgba(17,24,39,0.18)] dark:bg-white/20"
         )}
+        aria-hidden
       >
         <span
           className={cn(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-            checked ? "left-5" : "left-0.5"
+            "absolute top-[3px] h-[26px] w-[26px] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.2)]",
+            checked ? "left-[23px] dark:bg-[#1b1a21]" : "left-[3px]"
           )}
         />
       </span>
@@ -81,26 +82,26 @@ export function SettingsCheckRow({
       type="button"
       onClick={() => onChange(!checked)}
       className={cn(
-        "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors",
+        "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left",
         checked
-          ? "bg-brand/10 dark:bg-brand/25"
-          : "bg-black/[0.03] hover:bg-black/[0.06] dark:bg-white/5 dark:hover:bg-white/10"
+          ? "bg-[rgba(17,24,39,0.05)] dark:bg-white/[0.07]"
+          : "bg-transparent hover:bg-[rgba(17,24,39,0.04)] dark:hover:bg-white/5"
       )}
     >
       <span
         className={cn(
           "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
           checked
-            ? "border-brand bg-brand text-white"
+            ? "border-[#111827] bg-[#111827] text-white dark:border-[#f3f4f6] dark:bg-[#f3f4f6] dark:text-[#111827]"
             : "border-gray-300 bg-white/60 dark:border-white/20 dark:bg-white/5"
         )}
       >
         {checked ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden /> : null}
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-sm font-medium text-gray-800 dark:text-gray-100">{label}</span>
+        <span className="block truncate text-sm font-medium text-gray-800 dark:text-gray-100" title={label}>{label}</span>
         {description ? (
-          <span className="mt-0.5 block truncate text-[11px] text-gray-400 dark:text-gray-500">{description}</span>
+          <span className="mt-0.5 block truncate text-[11px] text-gray-400 dark:text-gray-500" title={description}>{description}</span>
         ) : null}
       </span>
     </button>
@@ -120,11 +121,11 @@ export function SettingsField({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-800 dark:text-gray-200">
+      <label htmlFor={htmlFor} className="block text-[15px] font-medium text-[#111827] dark:text-[#f3f4f6]">
         {label}
       </label>
       {children}
-      {hint ? <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{hint}</p> : null}
+      {hint ? <p className="text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">{hint}</p> : null}
     </div>
   );
 }
@@ -147,7 +148,7 @@ export function SettingsGroup({
   children?: ReactNode;
 }) {
   return (
-    <div className="space-y-3 rounded-2xl bg-black/[0.03] p-4 dark:bg-white/5">
+    <div className="space-y-3 rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white p-5 dark:border-white/10 dark:bg-[#1b1a21]">
       {title ? <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{title}</p> : null}
       {description ? <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{description}</p> : null}
       {children}
@@ -165,7 +166,7 @@ export function SettingsPrimaryButton({
       type="button"
       {...props}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40",
+        "inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-brand px-6 text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-40",
         className
       )}
     >
@@ -184,7 +185,7 @@ export function SettingsSecondaryButton({
       type="button"
       {...props}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-full border border-white/60 bg-white/40 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-white/70 disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10",
+        "inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[rgba(17,24,39,0.08)] bg-white px-[18px] text-[15px] font-semibold text-[#111827] shadow-[inset_0_0_0_1px_rgba(17,24,39,0.08)] disabled:opacity-40 dark:border-white/10 dark:bg-[#1b1a21] dark:text-[#f3f4f6] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]",
         className
       )}
     >
@@ -291,7 +292,7 @@ export function SettingsPanel({
   children: ReactNode;
 }) {
   return (
-    <div className="settings-panel-enter glass-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border border-white/70 p-0 dark:border-white/10">
+    <div className="settings-panel-enter flex min-h-0 flex-1 flex-col overflow-hidden p-0">
       <div className="flex items-start justify-between gap-3 border-b border-white/50 px-5 py-5 dark:border-white/10">
         <div className="flex min-w-0 items-start gap-3">
           {onBack ? (

@@ -8,7 +8,6 @@ import {
   SettingsField,
   SettingsGroup,
   SettingsInput,
-  SettingsPanel,
   SettingsPrimaryButton,
   SettingsSecondaryButton,
   SettingsToggle,
@@ -44,43 +43,54 @@ import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { EnergyEntitySettings } from "@/components/settings/energy-entity-settings";
 import { useNewsStore } from "@/stores/news-store";
-import { RobotVacuum, Bell, BookOpen, CalendarDays, ChevronRight, DoorOpen, Images, Image as ImageIcon, LayoutGrid, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, Plug, X, Zap } from "lucide-react";
+import { RobotVacuum, Bell, BookOpen, CalendarDays, ChevronRight, DoorOpen, Hand, Images, Image as ImageIcon, Info, Languages, LayoutGrid, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, Plug, X, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
 import { useTranslation } from "@/hooks/use-translation";
 import { NotificationSettings } from "@/components/settings/notification-settings";
 import { DoorbellSettings } from "@/components/settings/doorbell-settings";
 import { HaConnectionSettings, type HaEntity } from "@/components/settings/ha-connection-settings";
-import { hydrateNotificationRulesStore } from "@/stores/notification-rules-store";
+import { hydrateNotificationRulesStore, useNotificationRulesStore } from "@/stores/notification-rules-store";
 import { hydrateDoorbellStore, useDoorbellStore } from "@/stores/doorbell-store";
+import {
+  SettingsDetailHeader,
+  SettingsGroup as SettingsSurface,
+  SettingsGroupLabel,
+  SettingsNavList,
+  SettingsRow,
+  SettingsScreenTitle,
+} from "@/components/settings/settings-chrome";
+import { useSettingsNavigation } from "@/components/settings/use-settings-navigation";
+import { isSettingsSectionId, type SettingsAppId, type SettingsPageId, type SettingsSectionId } from "@/lib/settings-navigation";
 
-type SettingsSection = "appearance" | "screensaver" | "pages" | "notifications" | "connection" | "apps";
-type SettingsPageId = "calendar" | "energy" | "tasks";
-type SettingsAppId = "news" | "music-assistant" | "valetudo" | "pexels" | "immich" | "voice-satellite" | "doorbell";
-
-const SECTION_KEYS: Record<SettingsSection, string> = {
-  appearance: "settings.appearance",
-  screensaver: "settings.screensaver",
-  pages: "settings.pages",
-  notifications: "settings.notifications",
-  connection: "settings.connection",
+const SECTION_KEYS: Record<SettingsSectionId, string> = {
+  uiterlijk: "settings.appearance",
+  taal: "settings.appearance.languageTime",
+  schermbeveiliging: "settings.screensaver",
+  paginas: "settings.pages",
+  bediening: "settings.appearance.interaction",
+  meldingen: "settings.notifications",
+  homeassistant: "settings.connection",
   apps: "settings.apps",
+  over: "settings.sections.over",
+};
+
+const SECTION_DESCRIPTIONS: Record<SettingsSectionId, string> = {
+  uiterlijk: "settings.theme.description",
+  taal: "settings.sections.taal.description",
+  schermbeveiliging: "settings.screensaver.description",
+  paginas: "settings.pages.description",
+  bediening: "settings.sections.bediening.description",
+  meldingen: "settings.notifications.description",
+  homeassistant: "settings.connection.panelDescription",
+  apps: "settings.apps.description",
+  over: "settings.sections.over.description",
 };
 
 const PAGE_KEYS: Record<SettingsPageId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
   calendar: { labelKey: "settings.calendar", descriptionKey: "settings.calendar.description", icon: CalendarDays },
   energy: { labelKey: "settings.energy", descriptionKey: "settings.energy.description", icon: Zap },
   tasks: { labelKey: "settings.tasks", descriptionKey: "settings.tasks.description", icon: ListTodo },
-};
-
-const LEGACY_SECTION_REDIRECT: Record<string, { section: SettingsSection; page?: SettingsPageId }> = {
-  language: { section: "appearance" },
-  dashboard: { section: "appearance" },
-  calendar: { section: "pages", page: "calendar" },
-  energy: { section: "pages", page: "energy" },
-  tasks: { section: "pages", page: "tasks" },
-  entities: { section: "connection" },
 };
 
 const APP_KEYS: Record<SettingsAppId, { labelKey: string; descriptionKey: string; icon: LucideIcon }> = {
@@ -159,6 +169,10 @@ function CalendarTitleCodesEditor() {
 
 export default function SettingsPage() {
   const { t } = useTranslation();
+  const { loc, isPortrait, go, back } = useSettingsNavigation();
+  const section = loc.sectie;
+  const selectedPage = loc.page;
+  const selectedApp = loc.app;
   const [baseUrl, setBaseUrl] = useState("http://homeassistant.local:8123");
   const [token, setToken] = useState("");
   const [connectionSource, setConnectionSource] = useState<"supervisor" | "manual" | null>(null);
@@ -185,9 +199,6 @@ export default function SettingsPage() {
   const [energyBackgroundDark, setEnergyBackgroundDark] = useState<string | null>(null);
   const [uploadingEnergyBgLight, setUploadingEnergyBgLight] = useState(false);
   const [uploadingEnergyBgDark, setUploadingEnergyBgDark] = useState(false);
-  const [section, setSection] = useState<SettingsSection>("appearance");
-  const [selectedPage, setSelectedPage] = useState<SettingsPageId | null>(null);
-  const [selectedApp, setSelectedApp] = useState<SettingsAppId | null>(null);
   const [editModeAllowed, setEditModeAllowedState] = useState(true);
   const [editModePasscode, setEditModePasscodeState] = useState("");
   const [eveningHour, setEveningHourState] = useState(13);
@@ -212,6 +223,7 @@ export default function SettingsPage() {
   const voiceSatellite = useVoiceSatelliteStore();
   const immich = useImmichStore();
   const doorbellEnabled = useDoorbellStore((s) => s.settings.enabled);
+  const notificationRuleCount = useNotificationRulesStore((s) => s.rules.length);
   const [pexelsEnabled, setPexelsEnabled] = useState(false);
   const [pexelsEnvConfigured, setPexelsEnvConfigured] = useState(false);
   const [immichEnvKeyConfigured, setImmichEnvKeyConfigured] = useState(false);
@@ -231,21 +243,6 @@ export default function SettingsPage() {
     hydrateImmichStore();
     hydrateNotificationRulesStore();
     hydrateDoorbellStore();
-    const next = new URLSearchParams(window.location.search).get("section");
-    if (next && next in SECTION_KEYS) {
-      setSection(next as SettingsSection);
-    } else if (next && next in LEGACY_SECTION_REDIRECT) {
-      const legacy = LEGACY_SECTION_REDIRECT[next];
-      setSection(legacy.section);
-      if (legacy.page) setSelectedPage(legacy.page);
-      const url = new URL(window.location.href);
-      url.searchParams.set("section", legacy.section);
-      if (legacy.page) url.searchParams.set("page", legacy.page);
-      else url.searchParams.delete("page");
-      window.history.replaceState({}, "", `${url.pathname}${url.search}`);
-    }
-    const pageParam = new URLSearchParams(window.location.search).get("page");
-    if (pageParam && pageParam in PAGE_KEYS) setSelectedPage(pageParam as SettingsPageId);
     let cancelled = false;
     fetch("/api/pexels/status", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -310,15 +307,13 @@ export default function SettingsPage() {
       setConnectionSource("manual");
       setTestResult({ ok: true });
       setSaveMessage("success");
-      setSection("connection");
-      window.history.replaceState({}, "", window.location.pathname);
+      go({ sectie: "homeassistant", page: null, app: null }, "replace");
     } else if (params.get("ha_oauth") === "error") {
       setTestResult({
         ok: false,
         error: params.get("ha_oauth_error") || t("settings.connection.oauthFail"),
       });
-      setSection("connection");
-      window.history.replaceState({}, "", window.location.pathname);
+      go({ sectie: "homeassistant", page: null, app: null }, "replace");
     }
 
     fetch("/api/ha/connection")
@@ -332,7 +327,7 @@ export default function SettingsPage() {
         }
       })
       .catch(() => {});
-  }, [t]);
+  }, [t, go]);
 
   useEffect(() => {
     fetch("/api/dashboard")
@@ -384,12 +379,12 @@ export default function SettingsPage() {
   }
 
   useEffect(() => {
-    if (section === "connection" || saveMessage === "success") loadEntities();
+    if (section === "homeassistant" || saveMessage === "success") loadEntities();
   }, [saveMessage, section]);
 
   // Soft-discover HA when opening Connection (self-hosted only).
   useEffect(() => {
-    if (section !== "connection") return;
+    if (section !== "homeassistant") return;
     if (isAddon || connectionSource === "supervisor") return;
     let cancelled = false;
     (async () => {
@@ -832,53 +827,16 @@ export default function SettingsPage() {
   const setGlassDensity = useGlassDensityStore((s) => s.setDensity);
   const { language, setLanguage } = useLanguageStore();
 
-  const SECTION_GROUPS: { groupKey: string; sections: { id: SettingsSection; labelKey: string; icon: LucideIcon }[] }[] = [
-    { groupKey: "settings.groups.display", sections: [
-      { id: "appearance", labelKey: SECTION_KEYS.appearance, icon: Palette },
-      { id: "screensaver", labelKey: SECTION_KEYS.screensaver, icon: Monitor },
-    ]},
-    { groupKey: "settings.groups.dashboard", sections: [
-      { id: "pages", labelKey: SECTION_KEYS.pages, icon: BookOpen },
-      { id: "notifications", labelKey: SECTION_KEYS.notifications, icon: Bell },
-    ]},
-    { groupKey: "settings.groups.system", sections: [
-      { id: "connection", labelKey: SECTION_KEYS.connection, icon: Plug },
-      { id: "apps", labelKey: SECTION_KEYS.apps, icon: LayoutGrid },
-    ]},
-  ];
+  function openSection(id: SettingsSectionId) {
+    go({ sectie: id, page: null, app: null }, isPortrait ? "push" : "replace");
+  }
 
-  const SECTION_META: Record<SettingsSection, { descriptionKey: string; icon: LucideIcon }> = {
-    appearance: { descriptionKey: "settings.theme.description", icon: Palette },
-    screensaver: { descriptionKey: "settings.screensaver.description", icon: Monitor },
-    pages: { descriptionKey: "settings.pages.description", icon: BookOpen },
-    notifications: { descriptionKey: "settings.notifications.description", icon: Bell },
-    connection: {
-      descriptionKey: "settings.connection.panelDescription",
-      icon: Plug,
-    },
-    apps: { descriptionKey: "settings.apps.description", icon: LayoutGrid },
-  };
-  const currentApp = selectedApp ? APP_KEYS[selectedApp] : null;
-  const currentPage = selectedPage ? PAGE_KEYS[selectedPage] : null;
-  const panelMeta = currentApp ?? currentPage ?? SECTION_META[section];
-  const panelTitle = currentApp
-    ? t(currentApp.labelKey)
-    : currentPage
-      ? t(currentPage.labelKey)
-      : t(SECTION_KEYS[section]);
-  const panelDescription = t(
-    currentApp ? currentApp.descriptionKey : currentPage ? currentPage.descriptionKey : panelMeta.descriptionKey
-  );
+  function openPage(page: SettingsPageId) {
+    go({ sectie: "paginas", page, app: null }, "push");
+  }
 
-  function navigateSection(id: SettingsSection, page: SettingsPageId | null = null) {
-    setSection(id);
-    setSelectedApp(null);
-    setSelectedPage(id === "pages" ? page : null);
-    const url = new URL(window.location.href);
-    url.searchParams.set("section", id);
-    if (id === "pages" && page) url.searchParams.set("page", page);
-    else url.searchParams.delete("page");
-    window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+  function openApp(app: SettingsAppId) {
+    go({ sectie: "apps", page: null, app: app }, "push");
   }
 
   const pageEnabled: Record<SettingsPageId, boolean> = {
@@ -925,76 +883,88 @@ export default function SettingsPage() {
     }
   );
 
-  return (
-    <AppShell activeTab="/settings" contentNoScroll>
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 lg:flex-row lg:gap-5">
-        <aside className="shrink-0 lg:flex lg:h-full lg:w-56 lg:flex-col">
-          <h1 className="mb-4 shrink-0 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
-            {t("settings.title")}
-          </h1>
-          <nav
-            className="rounded-3xl border border-white/60 bg-white/40 p-2 dark:border-white/10 dark:bg-white/5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
-            aria-label={t("settings.title")}
-          >
-            <div className="flex gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-              {SECTION_GROUPS.map(({ groupKey, sections }, groupIndex) => (
-                <div
-                  key={groupKey}
-                  className={cn(groupIndex > 0 && "lg:mt-1 lg:border-t lg:border-white/50 lg:pt-2 dark:lg:border-white/10")}
-                >
-                  <p className="mb-1 hidden px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 lg:block">
-                    {t(groupKey)}
-                  </p>
-                  <ul className="flex gap-0.5 lg:flex-col">
-                    {sections.map(({ id, labelKey, icon: Icon }) => (
-                      <li key={id}>
-                        <button
-                          type="button"
-                          onClick={() => navigateSection(id)}
-                          className={cn(
-                            "flex w-full items-center gap-2.5 rounded-2xl px-2.5 py-2 text-left text-sm font-medium transition-colors",
-                            section === id
-                              ? "bg-brand text-white shadow-sm"
-                              : "text-gray-700 hover:bg-white/70 dark:text-gray-300 dark:hover:bg-white/10"
-                          )}
-                        >
-                          <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                          {t(labelKey)}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </nav>
-        </aside>
+  const shown: SettingsSectionId = section ?? "uiterlijk";
+  const currentApp = selectedApp ? APP_KEYS[selectedApp] : null;
+  const currentPage = selectedPage ? PAGE_KEYS[selectedPage] : null;
+  const panelTitle = currentApp
+    ? t(currentApp.labelKey)
+    : currentPage
+      ? t(currentPage.labelKey)
+      : t(SECTION_KEYS[shown]);
+  const panelDescription = t(
+    currentApp ? currentApp.descriptionKey : currentPage ? currentPage.descriptionKey : SECTION_DESCRIPTIONS[shown]
+  );
+  const subpageBackLabel = selectedApp ? t("settings.apps.back") : selectedPage ? t("settings.pages.back") : undefined;
+  const themeLabel = t(mode === "auto" ? "settings.theme.system" : mode === "dark" ? "settings.theme.dark" : "settings.theme.light");
+  const accentLabel = t(`settings.theme.color.${accent}`);
+  const enabledPageCount = (Object.keys(PAGE_KEYS) as SettingsPageId[]).filter((id) => pageEnabled[id]).length;
+  const enabledAppCount = (Object.keys(APP_KEYS) as SettingsAppId[]).filter((id) => appEnabled[id]).length;
+  const screensaverHint = screensaverDelaySeconds > 0
+    ? t("settings.portrait.after").replace("{label}", t(
+        screensaverDelaySeconds === 30 ? "settings.screensaver.30s"
+        : screensaverDelaySeconds === 60 ? "settings.screensaver.1m"
+        : screensaverDelaySeconds === 120 ? "settings.screensaver.2m"
+        : screensaverDelaySeconds === 300 ? "settings.screensaver.5m"
+        : screensaverDelaySeconds === 600 ? "settings.screensaver.10m"
+        : screensaverDelaySeconds === 900 ? "settings.screensaver.15m"
+        : "settings.screensaver.30m"
+      ))
+    : t("settings.screensaver.off");
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <SettingsPanel
-            key={selectedApp ?? selectedPage ?? section}
-            icon={panelMeta.icon}
-            title={panelTitle}
-            description={panelDescription}
-            onBack={
-              selectedApp
-                ? () => setSelectedApp(null)
-                : selectedPage
-                  ? () => navigateSection("pages")
-                  : undefined
-            }
-            backLabel={selectedApp ? t("settings.apps.back") : t("settings.pages.back")}
-            badge={
-              section === "screensaver" && !selectedApp ? (
-                <ScreensaverEnableToggle
-                  enabled={screensaverEnabled}
-                  onChange={setScreensaverEnabled}
-                />
-              ) : undefined
-            }
-          >
-          {section === "appearance" && (
+  const navGroups: { label: string; items: { id: SettingsSectionId; label: string; hint: string; icon: LucideIcon; connected?: boolean }[] }[] = [
+    { label: t("settings.groups.display"), items: [
+      { id: "uiterlijk", label: t(SECTION_KEYS.uiterlijk), icon: Palette, hint: `${themeLabel} · ${accentLabel}` },
+      { id: "taal", label: t(SECTION_KEYS.taal), icon: Languages, hint: `${language === "nl" ? t("settings.language.nl") : t("settings.language.en")} · ${screensaverClock24h ? t("settings.screensaver.24h") : t("settings.screensaver.12hShort")}` },
+      { id: "schermbeveiliging", label: t(SECTION_KEYS.schermbeveiliging), icon: Monitor, hint: screensaverHint },
+    ]},
+    { label: t("settings.groups.dashboard"), items: [
+      { id: "paginas", label: t(SECTION_KEYS.paginas), icon: BookOpen, hint: t("settings.portrait.countOf").replace("{on}", String(enabledPageCount)).replace("{total}", "3") },
+      { id: "bediening", label: t(SECTION_KEYS.bediening), icon: Hand, hint: editModeAllowed ? t("settings.portrait.editOn") : t("settings.portrait.editOff") },
+      { id: "meldingen", label: t(SECTION_KEYS.meldingen), icon: Bell, hint: t("settings.portrait.rules").replace("{n}", String(notificationRuleCount)) },
+    ]},
+    { label: t("settings.groups.system"), items: [
+      { id: "homeassistant", label: t(SECTION_KEYS.homeassistant), icon: Plug, hint: connectionSource ? t("settings.connection.statusConnected") : t("settings.connection.statusDisconnected"), connected: connectionSource != null },
+      { id: "apps", label: t(SECTION_KEYS.apps), icon: LayoutGrid, hint: t("settings.portrait.countOf").replace("{on}", String(enabledAppCount)).replace("{total}", "7") },
+      { id: "over", label: t(SECTION_KEYS.over), icon: Info, hint: t("settings.portrait.version").replace("{version}", appVersion ?? "…") },
+    ]},
+  ];
+
+  function renderNav(portrait: boolean) {
+    return (
+      <>
+        <SettingsScreenTitle>{t("settings.title")}</SettingsScreenTitle>
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            <SettingsGroupLabel>{group.label}</SettingsGroupLabel>
+            <SettingsNavList
+              label={group.label}
+              portrait={portrait}
+              onSelect={(id) => {
+                if (isSettingsSectionId(id)) openSection(id);
+              }}
+              items={group.items.map((item) => ({
+                ...item,
+                active: !portrait && item.id === shown,
+              }))}
+            />
+          </div>
+        ))}
+      </>
+    );
+  }
+
+  const detail = (
+    <>
+      <SettingsDetailHeader
+        title={panelTitle}
+        description={panelDescription}
+        portrait={isPortrait}
+        onBack={section ? back : undefined}
+        backLabel={isPortrait ? (subpageBackLabel ?? t("settings.title")) : subpageBackLabel}
+      />
+      {(shown === "uiterlijk" || shown === "taal" || shown === "bediening") && (
             <AppearanceSettings
+              part={shown}
               mode={mode}
               setMode={setMode}
               accent={accent}
@@ -1037,7 +1007,19 @@ export default function SettingsPage() {
             />
           )}
 
-          {section === "screensaver" && (
+          {shown === "schermbeveiliging" && (
+            <div className="mb-4">
+              <SettingsSurface>
+                <div className="px-5 py-3">
+                  <ScreensaverEnableToggle
+                    enabled={screensaverEnabled}
+                    onChange={setScreensaverEnabled}
+                  />
+                </div>
+              </SettingsSurface>
+            </div>
+          )}
+          {shown === "schermbeveiliging" && (
             <ScreensaverSettings
               delaySeconds={screensaverDelaySeconds}
               onDelayChange={(seconds) => {
@@ -1110,55 +1092,36 @@ export default function SettingsPage() {
               pexelsReady={pexelsReady}
               immichReady={immichReady}
               entities={entities}
-              onOpenPexels={() => {
-                navigateSection("apps");
-                setSelectedApp("pexels");
-              }}
-              onOpenImmich={() => {
-                navigateSection("apps");
-                setSelectedApp("immich");
-              }}
+              onOpenPexels={() => openApp("pexels")}
+              onOpenImmich={() => openApp("immich")}
             />
           )}
 
-          {section === "pages" && !selectedPage && (
-            <div className="overflow-hidden rounded-2xl bg-black/[0.03] ring-1 ring-black/[0.06] dark:bg-white/5 dark:ring-white/10">
-              {(Object.keys(PAGE_KEYS) as SettingsPageId[]).map((id, index) => {
+          {shown === "paginas" && !selectedPage && (
+            <SettingsSurface>
+              {(Object.keys(PAGE_KEYS) as SettingsPageId[]).map((id) => {
                 const page = PAGE_KEYS[id];
-                const Icon = page.icon;
                 const enabled = pageEnabled[id];
+                const summary = pageSummary[id];
                 return (
                   <div
                     key={id}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5",
-                      index > 0 && "border-t border-black/[0.06] dark:border-white/10"
-                    )}
+                    className="flex min-h-[68px] items-center gap-2 border-t border-[rgba(17,24,39,0.08)] px-5 py-3 first:border-t-0 dark:border-white/10"
                   >
-                    <div
-                      className={cn(
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                        enabled
-                          ? "bg-brand/10 text-brand dark:bg-brand/30 dark:text-white"
-                          : "bg-black/[0.04] text-gray-500 dark:bg-white/10 dark:text-gray-400"
-                      )}
-                    >
-                      <Icon className="h-5 w-5" aria-hidden />
-                    </div>
                     <button
                       type="button"
-                      onClick={() => navigateSection("pages", id)}
-                      className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl py-1 text-left transition-colors hover:bg-black/[0.03] dark:hover:bg-white/5"
+                      onClick={() => openPage(id)}
+                      className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left"
                     >
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-gray-900 dark:text-white">
+                      <span className="min-w-0 flex-1">
+                        <span className="block break-words text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
                           {t(page.labelKey)}
                         </span>
-                        <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400">
-                          {pageSummary[id]}
+                        <span className="mt-0.5 block break-words text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]" title={summary}>
+                          {summary}
                         </span>
                       </span>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+                      <ChevronRight className="h-5 w-5 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]" aria-hidden />
                     </button>
                     <SettingsToggle
                       compact
@@ -1173,10 +1136,10 @@ export default function SettingsPage() {
                   </div>
                 );
               })}
-            </div>
+            </SettingsSurface>
           )}
 
-          {section === "connection" && (
+          {shown === "homeassistant" && (
             <HaConnectionSettings
               baseUrl={baseUrl}
               setBaseUrl={setBaseUrl}
@@ -1203,7 +1166,7 @@ export default function SettingsPage() {
             />
           )}
 
-          {section === "pages" && selectedPage === "tasks" && (
+          {shown === "paginas" && selectedPage === "tasks" && (
             <>
               <SettingsToggle
                 checked={choresStore.enabled}
@@ -1231,7 +1194,7 @@ export default function SettingsPage() {
                   </SettingsField>
                   <Link
                     href="/family"
-                    className="inline-flex items-center gap-2 self-start rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90"
+                    className="inline-flex h-11 items-center gap-2 self-start rounded-xl bg-brand px-6 text-[15px] font-semibold text-white hover:opacity-90"
                   >
                     <ListTodo className="h-4 w-4" />
                     {t("settings.tasks.manage")}
@@ -1241,7 +1204,7 @@ export default function SettingsPage() {
             </>
           )}
 
-          {section === "pages" && selectedPage === "calendar" && (
+          {shown === "paginas" && selectedPage === "calendar" && (
             <>
               <SettingsToggle
                 checked={calendarStore.enabled}
@@ -1307,7 +1270,7 @@ export default function SettingsPage() {
             </>
           )}
 
-          {section === "pages" && selectedPage === "energy" && (
+          {shown === "paginas" && selectedPage === "energy" && (
             <>
               <SettingsToggle
                 checked={energyStore.enabled}
@@ -1382,7 +1345,7 @@ export default function SettingsPage() {
                   </SettingsGroup>
                   <Link
                     href="/energy"
-                    className="inline-flex items-center gap-2 self-start rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90"
+                    className="inline-flex h-11 items-center gap-2 self-start rounded-xl bg-brand px-6 text-[15px] font-semibold text-white hover:opacity-90"
                   >
                     <Zap className="h-4 w-4" />
                     {t("nav.energy")}
@@ -1392,46 +1355,34 @@ export default function SettingsPage() {
             </>
           )}
 
-          {section === "apps" && !selectedApp && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {shown === "apps" && !selectedApp && (
+            <SettingsSurface>
               {(Object.keys(APP_KEYS) as SettingsAppId[]).map((id) => {
                 const app = APP_KEYS[id];
-                const Icon = app.icon;
                 const enabled = appEnabled[id];
+                const status = enabled ? t("settings.apps.enabled") : t("settings.apps.disabled");
+                const description = t(app.descriptionKey);
                 return (
                   <button
                     key={id}
                     type="button"
-                    onClick={() => setSelectedApp(id)}
-                    className="flex flex-col items-start gap-3 rounded-2xl bg-black/[0.04] p-4 text-left ring-1 ring-black/[0.06] transition-colors hover:bg-black/[0.07] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 dark:bg-white/5 dark:ring-white/10 dark:hover:bg-white/10"
+                    onClick={() => openApp(id)}
+                    className="flex min-h-[68px] w-full items-center gap-4 border-t border-[rgba(17,24,39,0.08)] px-5 py-3 text-left first:border-t-0 dark:border-white/10"
                   >
-                    <div className="flex w-full items-start justify-between gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/10 text-brand dark:bg-brand/30 dark:text-white">
-                        <Icon className="h-5 w-5" aria-hidden />
-                      </div>
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                          enabled
-                            ? "bg-brand/15 text-brand dark:bg-brand/30 dark:text-white"
-                            : "bg-black/[0.06] text-gray-500 dark:bg-white/10 dark:text-gray-400"
-                        )}
-                      >
-                        {enabled ? t("settings.apps.enabled") : t("settings.apps.disabled")}
-                      </span>
-                    </div>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-gray-900 dark:text-white">
+                    <span className="min-w-0 flex-1">
+                      <span className="block break-words text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
                         {t(app.labelKey)}
                       </span>
-                      <span className="mt-1 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-                        {t(app.descriptionKey)}
+                      <span className="mt-0.5 block break-words text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]" title={description}>
+                        {description}
                       </span>
                     </span>
+                    <span className="shrink-0 text-sm font-medium text-[#4b5563] dark:text-[#c4c4cc]">{status}</span>
+                    <ChevronRight className="h-5 w-5 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]" aria-hidden />
                   </button>
                 );
               })}
-            </div>
+            </SettingsSurface>
           )}
 
           {selectedApp === "music-assistant" && <MusicAssistantSettings />}
@@ -1446,7 +1397,15 @@ export default function SettingsPage() {
 
           {selectedApp === "doorbell" && <DoorbellSettings />}
 
-          {section === "notifications" && <NotificationSettings />}
+          {shown === "meldingen" && <NotificationSettings />}
+          {shown === "over" && (
+            <SettingsSurface>
+              <SettingsRow
+                title={t("settings.sections.over.version")}
+                hint={appVersion ?? "…"}
+              />
+            </SettingsSurface>
+          )}
 
           {selectedApp === "news" && (
             <>
@@ -1460,7 +1419,7 @@ export default function SettingsPage() {
                   <ul className="space-y-1.5">
                     {newsFeedDraft.map((url, i) => (
                       <li key={i} className="flex items-center gap-2">
-                        <span className="min-w-0 flex-1 truncate rounded-2xl bg-white/70 px-3 py-2 font-mono text-xs text-gray-700 dark:bg-white/5 dark:text-gray-300">
+                        <span className="min-w-0 flex-1 truncate rounded-xl bg-[rgba(17,24,39,0.04)] px-3 py-2 font-mono text-xs text-[#111827] dark:bg-white/5 dark:text-[#f3f4f6]" title={url}>
                           {url}
                         </span>
                         <button
@@ -1470,7 +1429,7 @@ export default function SettingsPage() {
                             setNewsFeedDraft(next);
                             newsStore.setRssUrls(next);
                           }}
-                          className="shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-500"
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-500"
                           aria-label={t("news.settings.removeFeed")}
                         >
                           <X className="h-3.5 w-3.5" />
@@ -1512,14 +1471,23 @@ export default function SettingsPage() {
               </SettingsGroup>
             </>
           )}
-          </SettingsPanel>
+    </>
+  );
+
+  return (
+    <AppShell activeTab="/settings" contentNoScroll className="settings-page-bg">
+      <div
+        className="settings-root flex h-full min-h-0 flex-1 flex-col"
+        data-portrait-detail={section ? "true" : "false"}
+      >
+        <div className="settings-list mx-auto min-h-0 w-full max-w-[712px] flex-1 overflow-auto">
+          {renderNav(true)}
+        </div>
+        <div className="settings-body mx-auto h-full min-h-0 w-full max-w-[1160px] flex-1">
+          <aside className="settings-nav min-h-0 overflow-auto">{renderNav(false)}</aside>
+          <div className="settings-detail min-h-0 overflow-auto">{detail}</div>
         </div>
       </div>
-      {appVersion && (
-        <p className="fixed bottom-4 right-4 text-xs font-mono text-gray-400 dark:text-gray-500 pointer-events-none select-none">
-          v{appVersion}
-        </p>
-      )}
     </AppShell>
   );
 }

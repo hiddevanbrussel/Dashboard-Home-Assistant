@@ -2,8 +2,12 @@
 
 import { useMemo, useState } from "react";
 import {
+  ChevronRight,
+  CircleCheck,
   CloudSun,
   Copy,
+  Eye,
+  EyeOff,
   Lightbulb,
   Loader2,
   Plug,
@@ -25,6 +29,11 @@ import {
   SettingsSecondaryButton,
   SettingsToggle,
 } from "@/components/settings/settings-panel";
+import {
+  SettingsBlockLabel,
+  SettingsDisclosure,
+  SettingsGroup,
+} from "@/components/settings/settings-chrome";
 
 export type HaEntity = {
   entity_id: string;
@@ -146,6 +155,9 @@ export function HaConnectionSettings({
 }: Props) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(connectionSource == null);
+  const [showToken, setShowToken] = useState(false);
+  const [entitiesOpen, setEntitiesOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hideUnavailable, setHideUnavailable] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
@@ -217,6 +229,16 @@ export function HaConnectionSettings({
   }, [filtered]);
 
   const totalInDomains = byDomain.reduce((n, [, list]) => n + list.length, 0);
+  const entityTypeCount = new Set(entities.map((e) => getDomain(e.entity_id)).filter(Boolean)).size;
+  const statusDetail = connected
+    ? [
+        connectionSource === "supervisor" ? t("settings.connection.viaSupervisor") : null,
+        hostLabel(baseUrl),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : t("settings.connection.statusHint");
+  const showManualFields = connectionSource !== "supervisor";
 
   async function copyEntityId(id: string) {
     try {
@@ -244,14 +266,14 @@ export function HaConnectionSettings({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">{name}</span>
+            <span className="truncate text-sm font-semibold text-gray-900 dark:text-white" title={name}>{name}</span>
             {sameCount > 1 ? (
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/20 dark:text-amber-200">
                 {t("settings.entities.sameName").replace("{n}", String(sameCount))}
               </span>
             ) : null}
           </div>
-          <code className="mt-0.5 block truncate font-mono text-xs text-gray-500 dark:text-gray-400">
+          <code className="mt-0.5 block truncate font-mono text-xs text-gray-500 dark:text-gray-400" title={e.entity_id}>
             {e.entity_id}
           </code>
         </div>
@@ -269,7 +291,7 @@ export function HaConnectionSettings({
         <button
           type="button"
           onClick={() => void copyEntityId(e.entity_id)}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-black/[0.05] hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#4b5563] hover:bg-black/[0.05] dark:text-[#c4c4cc] dark:hover:bg-white/10"
           aria-label={t("settings.entities.copyId")}
           title={copiedId === e.entity_id ? t("settings.entities.copied") : t("settings.entities.copyId")}
         >
@@ -311,171 +333,218 @@ export function HaConnectionSettings({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/70 px-4 py-3 ring-1 ring-black/[0.06] dark:bg-white/5 dark:ring-white/10">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
+      <div>
+        <SettingsBlockLabel>{t("settings.connection.statusHeading")}</SettingsBlockLabel>
+        <SettingsGroup>
+          <div className="flex min-h-[68px] items-center gap-4 px-5 py-3">
             <span
               className={cn(
-                "h-2.5 w-2.5 rounded-full",
-                connected ? "bg-emerald-500" : "bg-gray-300 dark:bg-white/25"
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                connected
+                  ? "bg-[rgba(22,163,74,0.12)] text-[#15803d] dark:text-[#4ade80]"
+                  : "bg-[rgba(17,24,39,0.05)] text-[#6b7280] dark:bg-white/10 dark:text-[#a1a1aa]"
               )}
-              aria-hidden
-            />
-            <span className="text-sm font-bold text-gray-900 dark:text-white">
-              {connected ? t("settings.connection.statusConnected") : t("settings.connection.statusDisconnected")}
+            >
+              <CircleCheck className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
+                {connected ? t("settings.connection.statusConnected") : t("settings.connection.statusDisconnected")}
+              </span>
+              <span className="mt-0.5 block break-words text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]" title={statusDetail}>
+                {statusDetail}
+              </span>
             </span>
           </div>
-          <p className="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
-            {connected
-              ? [
-                  hostLabel(baseUrl),
-                  t("settings.connection.entitySummary")
-                    .replace("{count}", String(totalInDomains || entities.length))
-                    .replace("{types}", String(byDomain.length || ENTITY_DOMAINS.length)),
-                  formatSyncedAgo(entitiesSyncedAt, t),
-                ].join(" · ")
-              : t("settings.connection.statusHint")}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <SettingsSecondaryButton
-            onClick={() => {
-              onRefreshEntities();
-              void onTest();
-            }}
-            disabled={entitiesLoading || testing}
-            className="gap-2"
-          >
-            {entitiesLoading || testing ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : (
-              <RefreshCw className="h-4 w-4" aria-hidden />
-            )}
-            {t("settings.entities.refresh")}
-          </SettingsSecondaryButton>
-          {connectionSource !== "supervisor" || editing ? (
-            <SettingsPrimaryButton onClick={() => setEditing((v) => !v)}>
-              {editing ? t("settings.connection.hideEdit") : t("settings.connection.edit")}
-            </SettingsPrimaryButton>
-          ) : (
-            <SettingsPrimaryButton onClick={() => setEditing(true)}>
-              {t("settings.connection.edit")}
-            </SettingsPrimaryButton>
-          )}
-        </div>
+          <div className="flex min-h-[68px] items-center gap-2 border-t border-[rgba(17,24,39,0.08)] px-5 py-3 dark:border-white/10">
+            <button
+              type="button"
+              aria-expanded={entitiesOpen}
+              onClick={() => setEntitiesOpen((v) => !v)}
+              className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
+                  {t("settings.connection.entitySummary")
+                    .replace("{count}", String(entities.length || totalInDomains))
+                    .replace("{types}", String(entityTypeCount || byDomain.length))}
+                </span>
+                <span className="mt-0.5 block text-sm text-[#4b5563] dark:text-[#c4c4cc]">
+                  {formatSyncedAgo(entitiesSyncedAt, t)}
+                </span>
+              </span>
+              <ChevronRight
+                className={cn("h-5 w-5 shrink-0 text-[#6b7280] dark:text-[#a1a1aa]", entitiesOpen && "rotate-90")}
+                aria-hidden
+              />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onRefreshEntities();
+                void onTest();
+              }}
+              disabled={entitiesLoading || testing}
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-[15px] font-semibold text-[#111827] disabled:opacity-40 dark:text-[#f3f4f6]"
+            >
+              {entitiesLoading || testing ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <RefreshCw className="h-4 w-4" aria-hidden />
+              )}
+              {t("settings.entities.refresh")}
+            </button>
+          </div>
+        </SettingsGroup>
       </div>
 
       {editing || !connected ? (
-        <div className="space-y-4 rounded-2xl bg-black/[0.03] p-4 dark:bg-white/5">
-          {connectionSource === "supervisor" ? (
-            <SettingsAlert tone="ok">{t("settings.connection.supervisorLinked")}</SettingsAlert>
-          ) : null}
-          {isAddon && connectionSource !== "supervisor" ? (
-            <div className="flex flex-wrap gap-2">
-              <SettingsPrimaryButton onClick={onUseSupervisor} disabled={saving}>
-                {t("settings.connection.useSupervisor")}
-              </SettingsPrimaryButton>
-            </div>
-          ) : null}
-          {connectionSource !== "supervisor" ? (
-            <>
-              {!isAddon ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {t("settings.connection.discovered")}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={onDiscover}
-                      disabled={discovering}
-                      className="text-xs font-medium text-gray-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-gray-300"
-                    >
-                      {discovering
-                        ? t("settings.connection.discovering")
-                        : t("settings.connection.rediscover")}
-                    </button>
-                  </div>
-                  {discovering && discoveredInstances.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-sm text-gray-500 dark:border-white/15 dark:text-gray-400">
-                      {t("settings.connection.discovering")}
-                    </p>
-                  ) : null}
-                  {discoveredInstances.length > 0 ? (
-                    <ul className="space-y-1">
-                      {discoveredInstances.map((inst) => (
-                        <li key={inst.baseUrl}>
-                          <button
-                            type="button"
-                            onClick={() => setBaseUrl(inst.baseUrl)}
-                            className={cn(
-                              "w-full rounded-lg border px-3 py-2 text-left text-sm transition",
-                              baseUrl === inst.baseUrl
-                                ? "border-brand/40 bg-brand/10"
-                                : "border-gray-200 hover:bg-black/[0.03] dark:border-white/10 dark:hover:bg-white/5"
-                            )}
-                          >
-                            <span className="font-medium text-gray-900 dark:text-white">{inst.name}</span>
-                            <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
-                              {inst.baseUrl}
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : !discovering ? (
-                    <p className="rounded-lg border border-dashed border-gray-200 px-3 py-2 text-sm text-gray-500 dark:border-white/15 dark:text-gray-400">
-                      {t("settings.connection.discoverEmpty")}
-                    </p>
-                  ) : null}
-                  <SettingsPrimaryButton onClick={onOauthLogin} disabled={!baseUrl.trim()}>
-                    {t("settings.connection.oauthLogin")}
-                  </SettingsPrimaryButton>
+        <div>
+          <SettingsBlockLabel>{t("settings.connection.edit")}</SettingsBlockLabel>
+          <SettingsGroup>
+            <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
+              {connectionSource === "supervisor" ? (
+                <div className="sm:col-span-2">
+                  <SettingsAlert tone="ok">{t("settings.connection.supervisorLinked")}</SettingsAlert>
                 </div>
               ) : null}
-              <SettingsField label={t("settings.connection.baseUrl")} htmlFor="ha-baseUrl">
-                <SettingsInput
-                  id="ha-baseUrl"
-                  type="url"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder="http://homeassistant.local:8123"
-                />
-              </SettingsField>
-              <SettingsField label={t("settings.connection.token")} htmlFor="ha-token">
-                <SettingsInput
-                  id="ha-token"
-                  type="password"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  placeholder={t("settings.connection.tokenPlaceholder")}
-                  autoComplete="off"
-                />
-              </SettingsField>
+              {showManualFields ? (
+                <>
+                  <SettingsField label={t("settings.connection.addressLabel")} htmlFor="ha-baseUrl">
+                    <SettingsInput
+                      id="ha-baseUrl"
+                      type="url"
+                      value={baseUrl}
+                      onChange={(e) => setBaseUrl(e.target.value)}
+                      placeholder="http://homeassistant.local:8123"
+                    />
+                  </SettingsField>
+                  <SettingsField label={t("settings.connection.tokenLabel")} htmlFor="ha-token">
+                    <div className="relative">
+                      <SettingsInput
+                        id="ha-token"
+                        type={showToken ? "text" : "password"}
+                        value={token}
+                        onChange={(e) => setToken(e.target.value)}
+                        placeholder={t("settings.connection.tokenPaste")}
+                        title={t("settings.connection.tokenPaste")}
+                        autoComplete="off"
+                        className="pr-12"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowToken((v) => !v)}
+                        className="absolute right-0.5 top-0.5 flex h-11 w-11 items-center justify-center text-[#4b5563] dark:text-[#c4c4cc]"
+                        aria-label={showToken ? t("settings.connection.hideToken") : t("settings.connection.showToken")}
+                      >
+                        {showToken ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+                      </button>
+                    </div>
+                    <p className="mt-2 text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
+                      {t("settings.connection.tokenHelp")}
+                    </p>
+                  </SettingsField>
+                </>
+              ) : null}
+              {testResult ? (
+                <div className="sm:col-span-2">
+                  <SettingsAlert tone={testResult.ok ? "ok" : "error"}>
+                    {testResult.ok ? t("settings.connection.success") : testResult.error}
+                  </SettingsAlert>
+                </div>
+              ) : null}
+              {saveMessage === "success" ? (
+                <p className="text-sm text-emerald-700 dark:text-emerald-300 sm:col-span-2">{t("settings.connection.saved")}</p>
+              ) : null}
+              <div className="flex flex-wrap gap-3 sm:col-span-2">
+                {showManualFields ? (
+                  <SettingsPrimaryButton onClick={onSave} disabled={saving || !token.trim()}>
+                    {saving ? t("settings.connection.saving") : t("settings.connection.save")}
+                  </SettingsPrimaryButton>
+                ) : null}
+                <SettingsSecondaryButton onClick={onTest} disabled={testing}>
+                  {testing ? t("settings.connection.testing") : t("settings.connection.test")}
+                </SettingsSecondaryButton>
+              </div>
+            </div>
+          </SettingsGroup>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="flex min-h-[68px] w-full items-center rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white px-5 text-left text-base font-medium text-[#111827] dark:border-white/10 dark:bg-[#1b1a21] dark:text-[#f3f4f6]"
+        >
+          {t("settings.connection.edit")}
+        </button>
+      )}
+
+      <SettingsDisclosure
+        title={t("settings.advanced")}
+        hideTitle={t("settings.advanced.hide")}
+        hint={t("settings.advanced.connection")}
+        open={advancedOpen}
+        onToggle={() => setAdvancedOpen((v) => !v)}
+      >
+        <div className="space-y-3 border-t border-[rgba(17,24,39,0.08)] px-5 py-4 dark:border-white/10">
+          {isAddon && connectionSource !== "supervisor" ? (
+            <SettingsSecondaryButton onClick={onUseSupervisor} disabled={saving}>
+              {t("settings.connection.useSupervisor")}
+            </SettingsSecondaryButton>
+          ) : null}
+          {showManualFields && !isAddon ? (
+            <>
+              <div className="flex min-h-11 items-center justify-between gap-3">
+                <p className="text-sm font-medium text-[#4b5563] dark:text-[#c4c4cc]">
+                  {t("settings.connection.discovered")}
+                </p>
+                <button
+                  type="button"
+                  onClick={onDiscover}
+                  disabled={discovering}
+                  className="inline-flex h-11 items-center text-sm font-semibold text-[#111827] disabled:opacity-40 dark:text-[#f3f4f6]"
+                >
+                  {discovering ? t("settings.connection.discovering") : t("settings.connection.rediscover")}
+                </button>
+              </div>
+              {discoveredInstances.length > 0 ? (
+                <ul className="space-y-2">
+                  {discoveredInstances.map((inst) => (
+                    <li key={inst.baseUrl}>
+                      <button
+                        type="button"
+                        onClick={() => setBaseUrl(inst.baseUrl)}
+                        className={cn(
+                          "flex min-h-11 w-full flex-col justify-center rounded-xl border px-3 py-2 text-left",
+                          baseUrl === inst.baseUrl
+                            ? "border-[#111827] dark:border-[#f3f4f6]"
+                            : "border-[rgba(17,24,39,0.08)] dark:border-white/10"
+                        )}
+                      >
+                        <span className="text-sm font-medium text-[#111827] dark:text-[#f3f4f6]">{inst.name}</span>
+                        <span className="text-xs text-[#4b5563] dark:text-[#c4c4cc]">{inst.baseUrl}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-[#4b5563] dark:text-[#c4c4cc]">
+                  {discovering ? t("settings.connection.discovering") : t("settings.connection.discoverEmpty")}
+                </p>
+              )}
+              <SettingsSecondaryButton onClick={onOauthLogin} disabled={!baseUrl.trim()}>
+                {t("settings.connection.oauthLogin")}
+              </SettingsSecondaryButton>
             </>
           ) : null}
-          {testResult ? (
-            <SettingsAlert tone={testResult.ok ? "ok" : "error"}>
-              {testResult.ok ? t("settings.connection.success") : testResult.error}
-            </SettingsAlert>
+          {connectionSource === "supervisor" ? (
+            <p className="text-sm text-[#4b5563] dark:text-[#c4c4cc]">{t("settings.connection.supervisorLinked")}</p>
           ) : null}
-          {saveMessage === "success" ? (
-            <p className="text-sm text-emerald-700 dark:text-emerald-300">{t("settings.connection.saved")}</p>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            <SettingsPrimaryButton onClick={onTest} disabled={testing}>
-              {testing ? t("settings.connection.testing") : t("settings.connection.test")}
-            </SettingsPrimaryButton>
-            {connectionSource !== "supervisor" ? (
-              <SettingsSecondaryButton onClick={onSave} disabled={saving || !token.trim()}>
-                {saving ? t("settings.connection.saving") : t("settings.connection.save")}
-              </SettingsSecondaryButton>
-            ) : null}
-          </div>
         </div>
-      ) : null}
+      </SettingsDisclosure>
 
-      <div className="space-y-3 rounded-2xl bg-white/70 p-4 ring-1 ring-black/[0.06] dark:bg-white/5 dark:ring-white/10">
+      {entitiesOpen ? (
+      <div className="space-y-3 rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white p-4 dark:border-white/10 dark:bg-[#1b1a21]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-base font-bold text-gray-900 dark:text-white">{t("settings.entities")}</h3>
@@ -528,10 +597,10 @@ export function HaConnectionSettings({
                     type="button"
                     onClick={() => setSelectedDomain(domain)}
                     className={cn(
-                      "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition-colors",
+                      "inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-semibold",
                       on
-                        ? "bg-brand text-white shadow-sm"
-                        : "bg-black/[0.04] text-gray-700 hover:bg-black/[0.07] dark:bg-white/10 dark:text-gray-200 dark:hover:bg-white/15"
+                        ? "bg-[#111827] text-white dark:bg-[#f3f4f6] dark:text-[#111827]"
+                        : "bg-[rgba(17,24,39,0.05)] text-[#4b5563] dark:bg-white/10 dark:text-[#c4c4cc]"
                     )}
                   >
                     <Icon className="h-4 w-4" aria-hidden />
@@ -557,6 +626,7 @@ export function HaConnectionSettings({
           </>
         )}
       </div>
+      ) : null}
     </div>
   );
 }
