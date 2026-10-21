@@ -104,13 +104,19 @@ During soft onboarding the app **links automatically** via the Supervisor (no UR
 
 The easiest way to run the dashboard outside Supervisor is the pre-built Docker image from GitHub Container Registry.
 
+Generate `APP_SECRET` once and keep it. Do not put `$(openssl rand -hex 32)` in a command you run again: a new secret makes the saved Home Assistant connection unreadable.
+
+```bash
+openssl rand -hex 32
+```
+
 ```bash
 docker run -d \
   --name ha-dashboard \
   --restart unless-stopped \
   -p 3000:3000 \
   -v ha-dashboard-data:/data \
-  -e APP_SECRET="$(openssl rand -hex 32)" \
+  -e APP_SECRET="paste-the-secret-you-saved" \
   -e DASHBOARD_PASSWORD="choose-a-long-passphrase" \
   ghcr.io/hiddevanbrussel/dashboard-home-assistant:latest
 ```
@@ -134,8 +140,8 @@ services:
     volumes:
       - ha-dashboard-data:/data
     environment:
-      - APP_SECRET= # openssl rand -hex 32
-      - DASHBOARD_PASSWORD= # at least 12 characters; required for direct access
+      - APP_SECRET=${APP_SECRET:?Set APP_SECRET to the output of openssl rand -hex 32}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:?Set DASHBOARD_PASSWORD to a passphrase of at least 12 characters}
       - PEXELS_API_KEY=              # optional — get a free key at pexels.com/api
       - IMMICH_URL=                 # optional — e.g. http://192.168.1.50:2283
       - IMMICH_API_KEY=             # optional — Immich API key
@@ -145,6 +151,8 @@ services:
 volumes:
   ha-dashboard-data:
 ```
+
+Put the two values in a `.env` file next to `docker-compose.yml` (do not commit it). Compose refuses to start when either variable is missing.
 
 ```bash
 docker compose up -d
@@ -193,10 +201,12 @@ Base URL examples:
 
 | Variable | Required | Description |
 |---|---|---|
-| `APP_SECRET` | Yes | Random encryption secret, at least 32 characters. The app refuses known placeholders. Changing it requires saving the Home Assistant connection again. |
-| `DASHBOARD_PASSWORD` | Yes | Password for browsers that open the dashboard directly. At least 12 characters, different from `APP_SECRET`. Home Assistant ingress does not ask for it. |
+| `APP_SECRET` | Yes | Random encryption secret, at least 32 characters. Known placeholders and values with fewer than 8 different characters are rejected. Changing it requires saving the Home Assistant connection again. |
+| `DASHBOARD_PASSWORD` | Yes | Password for browsers that open the dashboard directly. At least 12 characters, different from `APP_SECRET`. Exact denylist words such as `password` and `changeme` are rejected. Home Assistant ingress does not ask for it. |
 | `APP_PUBLIC_ORIGIN` | No | Public https origin used as the Home Assistant login client id, for example `https://dashboard.example.com` |
-| `DOORBELL_ALLOWED_HOSTS` | No | Comma-separated hosts allowed for a doorbell WebRTC page outside the local network |
+| `TRUST_PROXY` | No | Set to `1` behind your own reverse proxy so `X-Forwarded-Proto` and the client IP are trusted. The add-on does not need this; it sets `HA_ADDON=1`. |
+| `DOORBELL_ALLOWED_HOSTS` | No | Comma-separated https hosts allowed for a doorbell page that is not on the local network |
+| `UPDATE_PASSCODE` | No | At least 20 characters to enable Settings → System → Install update. Leave unset to keep that button off. Prefer updating the container image. |
 | `DATABASE_URL` | No | SQLite path (default: `file:/data/app.db`) |
 | `PEXELS_API_KEY` | No | Free key from [pexels.com/api](https://www.pexels.com/api/) for screensaver media |
 | `IMMICH_URL` | No | Immich base URL (e.g. `http://192.168.1.50:2283`). Takes priority over Settings → Apps → Immich |
@@ -210,7 +220,9 @@ Base URL examples:
 
 ## Automatic updates
 
-The Docker image is rebuilt automatically on every push to `main` (amd64) and on every version tag (`v*.*.*`, amd64 + arm64). The version in **Settings → System** matches `package.json` / the addon `config.yaml`.
+Images are published when a version tag `v*.*.*` is pushed. That build includes amd64 and arm64/aarch64, and it moves `latest`. A push to `main` does not publish images. An existing version tag is not overwritten. The version in **Settings → System** matches `package.json` / the addon `config.yaml`.
+
+To release 0.5.0 after this is merged, push the git tag `v0.5.0`. Do not reuse an existing version tag.
 
 ### Docker / Docker Compose
 

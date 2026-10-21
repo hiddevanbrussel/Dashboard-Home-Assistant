@@ -62,7 +62,7 @@ describe("readMusicAssistantEnvConfig", () => {
       readMusicAssistantEnvConfig({
         MUSIC_ASSISTANT_TOKEN: "secret",
         MUSIC_ASSISTANT_URL: "http://ma.lan:8095",
-      })
+      } as unknown as NodeJS.ProcessEnv)
     ).toEqual({
       envTokenConfigured: true,
       envUrlConfigured: true,
@@ -71,7 +71,7 @@ describe("readMusicAssistantEnvConfig", () => {
   });
 
   it("reports nothing when env is empty", () => {
-    expect(readMusicAssistantEnvConfig({})).toEqual({
+    expect(readMusicAssistantEnvConfig({} as NodeJS.ProcessEnv)).toEqual({
       envTokenConfigured: false,
       envUrlConfigured: false,
       envUrl: null,

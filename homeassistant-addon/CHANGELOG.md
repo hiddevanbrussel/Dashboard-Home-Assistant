@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.5.0
+
+Login and security hardening. The dashboard does not start until `APP_SECRET` and `DASHBOARD_PASSWORD` are set. Back up `/data` (or the Docker volume: `app.db`, `uploads/`, and on the add-on `app_secret`) before you update.
+
+### Before you update
+
+**Home Assistant add-on**
+
+1. Open **Settings → Add-ons → Dashboard Builder → Configuration**.
+2. Set `dashboard_password` (at least 12 characters, not a denylisted word). The add-on exits on start when this is empty or too weak.
+3. Leave `app_secret` empty unless you set one yourself. The add-on keeps using `/data/app_secret`, so the saved Home Assistant connection keeps working. If that file is still a published placeholder, replace it and re-save the Home Assistant connection.
+4. Update the add-on.
+5. **Open Web UI / sidebar (Ingress) does not ask for the password.** Tablets on port 3000 sign in once (90-day cookie).
+
+**Docker Compose / docker run**
+
+1. Generate a secret once and store it: `openssl rand -hex 32`. Do not put that command inline in a `docker run` you repeat.
+2. Set `APP_SECRET` and `DASHBOARD_PASSWORD` (at least 12 characters). Compose uses `${APP_SECRET:?}` and `${DASHBOARD_PASSWORD:?}` and refuses to start when either is missing.
+3. `docker compose pull && docker compose up -d --force-recreate`.
+
+**Unraid**
+
+1. Edit the container or re-import `unraid-template.xml`.
+2. Fill in `APP_SECRET` and `DASHBOARD_PASSWORD`.
+3. Apply.
+
+### Rules enforced at startup
+
+- `APP_SECRET`: required, at least 32 characters. Published placeholders are rejected. Values with fewer than 8 different characters are rejected. This repetitive check applies only to `APP_SECRET`.
+- `DASHBOARD_PASSWORD`: required, at least 12 characters, and different from `APP_SECRET`. The whole value is also rejected when it exactly matches a short denylist (`password`, `changeme`, `change-me`, `secret`, `dashboard`, and the published placeholders), compared case-insensitively. Words shorter than 12 characters fail the length check first. This is not a general dictionary. A long repeated character is allowed for the password.
+- Invalid values stop startup with a `[startup]` message. The add-on runs this check in `run.sh` before Next.js starts.
+
+### Migration
+
+- Startup runs `prisma migrate deploy`, which adds `IntegrationCredential`.
+- If `APP_SECRET` changed, re-save **Settings → Home Assistant**. The old ciphertext cannot be decrypted.
+- Immich, Music Assistant, Pexels, and Valetudo secrets move from the browser into the database. Open the dashboard once in each signed-in browser. If that browser no longer has them, enter them again in Settings.
+- RSS and article fetches allow public `https` URLs only.
+- A public `http` Home Assistant URL is rejected. `http` stays allowed for localhost, private IPs, and names such as `.local`, `.lan`, `.home`, and single-label hosts.
+- Doorbell iframes load only local URLs, or `https` hosts listed in `DOORBELL_ALLOWED_HOSTS`.
+- Settings → update runs only when `UPDATE_PASSCODE` is at least 20 characters. Updating the container image is the normal path.
+- `.env` is not in the repository. Copy `.env.example`.
+- Behind your own proxy, set `APP_PUBLIC_ORIGIN` when the Home Assistant login client id must be a public origin, and `TRUST_PROXY=1` so `X-Forwarded-Proto` and the client IP are trusted. The add-on does not set `TRUST_PROXY`; `HA_ADDON=1` trusts its own nginx instead.
+- Consider revoking Home Assistant long-lived tokens that were stored by an older version.
+
+### Also in this release
+
+- Direct access shows a login page. The session cookie is httpOnly, signed, SameSite=Lax, 90 days, and `Secure` only on https. Five failures in 15 minutes are counted per client, not in one shared bucket.
+- An expired session redirects to `/login?next=<path>`, including the add-on base path, and returns there after login. `next` accepts only a same-origin relative path.
+- The exact add-on root `/__ha_ingress__` requires a session. Anonymous requests redirect to `/__ha_ingress__/login?next=%2F`.
+- The ingress proxy on port 8099 accepts only the Home Assistant Supervisor (`172.30.32.2`) and loopback.
+- API routes require a session, except health, login, logout, and the PWA icon.
+- Integration secrets are encrypted and only sent to the URL they were saved with. Image proxy URLs no longer include tokens.
+- Uploads are limited to 8 MB. SVG responses use a sandbox CSP.
+- Responses send `X-Content-Type-Options`, `Referrer-Policy`, and `Content-Security-Policy: base-uri 'self'; object-src 'none'`.
+- Dependencies include Next.js 15.5.28, Prisma and `@prisma/adapter-better-sqlite3` 7.10.1, sharp 0.35.5, and ws 8.22.0.
+- Container tag `latest` is published only when a `v*.*.*` git tag is pushed, together with amd64 and arm64/aarch64 images for that version. An existing version tag is not overwritten. A push to `main` does not publish images. Release 0.5.0 by pushing git tag `v0.5.0` after merge.
+
 ## 0.4.89
 
 - Vacuum card 2: theme-specific product art for light and dark mode as full-bleed card background

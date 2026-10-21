@@ -6,27 +6,27 @@
   <Network>bridge</Network>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Overview>Home Assistant Dashboard Builder – een persoonlijk dashboard voor Home Assistant met widgets, screensaver en kalender.</Overview>
+  <Overview>Home Assistant Dashboard Builder. A touchscreen dashboard for Home Assistant with widgets, a screensaver, and a calendar.</Overview>
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
   <Description>Home Assistant Dashboard Builder</Description>
 
   <Config
-    Name="Web UI poort"
+    Name="Web UI port"
     Target="3000"
     Default="3000"
     Mode="tcp"
-    Description="Poort waarop het dashboard bereikbaar is."
+    Description="Port where the dashboard is available."
     Type="Port"
     Display="always"
     Required="true"
     Mask="false">3000</Config>
 
   <Config
-    Name="Data map"
+    Name="Data folder"
     Target="/data"
     Default="/mnt/user/appdata/dashboard"
     Mode="rw"
-    Description="Locatie voor de database (SQLite) en geüploade afbeeldingen."
+    Description="Location for the SQLite database and uploaded images."
     Type="Path"
     Display="always"
     Required="true"
@@ -37,7 +37,7 @@
     Target="APP_SECRET"
     Default=""
     Mode=""
-    Description="Verplicht. Willekeurige sleutel van minstens 32 tekens (openssl rand -hex 32). Bij wijzigen de Home Assistant-verbinding opnieuw opslaan."
+    Description="Required. Random secret of at least 32 characters (openssl rand -hex 32). Generate it once and keep it. If you change it, re-save the Home Assistant connection."
     Type="Variable"
     Display="always"
     Required="true"
@@ -48,7 +48,7 @@
     Target="DASHBOARD_PASSWORD"
     Default=""
     Mode=""
-    Description="Verplicht. Wachtwoord voor tablets op poort 3000 (minstens 12 tekens)."
+    Description="Required. Password for tablets that open port 3000 directly. At least 12 characters, different from APP_SECRET."
     Type="Variable"
     Display="always"
     Required="true"
@@ -59,7 +59,7 @@
     Target="PEXELS_API_KEY"
     Default=""
     Mode=""
-    Description="Optioneel: gratis API-key van pexels.com/api voor screensaver foto's/video's."
+    Description="Optional. Free API key from pexels.com/api for screensaver photos and videos."
     Type="Variable"
     Display="always"
     Required="false"
@@ -70,7 +70,7 @@
     Target="IMMICH_URL"
     Default=""
     Mode=""
-    Description="Optioneel: Immich basis-URL (bijv. http://192.168.1.50:2283). Heeft voorrang op Instellingen."
+    Description="Optional. Immich base URL (for example http://192.168.1.50:2283). Takes priority over Settings."
     Type="Variable"
     Display="always"
     Required="false"
@@ -81,7 +81,7 @@
     Target="IMMICH_API_KEY"
     Default=""
     Mode=""
-    Description="Optioneel: Immich API-key voor screensaver media. Heeft voorrang op een browser-key."
+    Description="Optional. Immich API key for screensaver media. Takes priority over a browser-stored key."
     Type="Variable"
     Display="always"
     Required="false"
@@ -92,7 +92,7 @@
     Target="MUSIC_ASSISTANT_URL"
     Default=""
     Mode=""
-    Description="Optioneel: Music Assistant basis-URL (bijv. http://192.168.1.50:8095). Heeft voorrang op Instellingen."
+    Description="Optional. Music Assistant base URL (for example http://192.168.1.50:8095). Takes priority over Settings."
     Type="Variable"
     Display="always"
     Required="false"
@@ -103,7 +103,7 @@
     Target="MUSIC_ASSISTANT_TOKEN"
     Default=""
     Mode=""
-    Description="Optioneel: Music Assistant API-token. Heeft voorrang op een browser-token."
+    Description="Optional. Music Assistant API token. Takes priority over a browser-stored token."
     Type="Variable"
     Display="always"
     Required="false"

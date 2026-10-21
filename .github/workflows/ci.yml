@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DATABASE_URL: file:./ci.db
+  APP_SECRET: ci-secret-k7Qx-9mP2vL4nR8wT6yH3cF5bN1a
+  DASHBOARD_PASSWORD: ci-dashboard-passphrase
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Production build
+        run: npm run build
+
+      - name: Production build with add-on basePath
+        env:
+          NEXT_BASE_PATH: /__ha_ingress__
+          NEXT_PUBLIC_BASE_PATH: /__ha_ingress__
+        run: |
+          rm -rf .next
+          npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build app image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: dashboard-ci:local
+          build-args: |
+            VERSION=ci
+
+      - name: Build add-on image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: Dockerfile.addon
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: dashboard-addon-ci:local
+          build-args: |
+            VERSION=ci
+            BUILD_ARCH=amd64
+            NEXT_BASE_PATH=/__ha_ingress__
