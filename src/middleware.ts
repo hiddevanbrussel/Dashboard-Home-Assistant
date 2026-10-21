@@ -15,5 +15,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // "/" is required. With a basePath, the negative-lookahead matcher does not
+  // match the exact root (`/__ha_ingress__`), so middleware never set x-pathname.
+  matcher: ["/", "/((?!_next/static|_next/image|favicon.ico).*)"],
 };

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { ingressAuthorized, isPublicApi, isPublicPage, requestIsAuthorized, sessionAuthorized } from "./auth-policy";
+import {
+  ingressAuthorized,
+  isPublicApi,
+  isPublicPage,
+  pathnameForAuth,
+  requestIsAuthorized,
+  sessionAuthorized,
+} from "./auth-policy";
 import { signSession } from "./session";
 
 const SECRET = "k7Qx-9mP2vL4nR8wT6yH3cF5bN1aZ0eD";
@@ -31,6 +38,18 @@ describe("auth policy", () => {
     expect(isPublicApi("/api/health")).toBe(true);
     expect(isPublicApi("/api/ha/state")).toBe(false);
     delete process.env.NEXT_PUBLIC_BASE_PATH;
+  });
+
+  it("treats a missing pathname as the dashboard root so the basePath root still requires login", () => {
+    expect(pathnameForAuth(null)).toBe("/");
+    expect(pathnameForAuth("")).toBe("/");
+    expect(pathnameForAuth("   ")).toBe("/");
+    expect(isPublicPage(pathnameForAuth(null))).toBe(false);
+    expect(pathnameForAuth("/login")).toBe("/login");
+    expect(isPublicPage(pathnameForAuth("/login"))).toBe(true);
+    expect(pathnameForAuth("/__ha_ingress__")).toBe("/__ha_ingress__");
+    const root = pathnameForAuth(null);
+    expect(`/__ha_ingress__/login?next=${encodeURIComponent(root)}`).toBe("/__ha_ingress__/login?next=%2F");
   });
 
   it("honors the ingress header only inside the add-on", () => {

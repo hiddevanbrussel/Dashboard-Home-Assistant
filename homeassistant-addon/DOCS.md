@@ -2,6 +2,11 @@
 
 Personal, touchscreen-friendly dashboard for Home Assistant. Add widgets, set backgrounds, manage rooms, track energy, and more — without writing Lovelace YAML.
 
+## Requirements
+
+- Home Assistant **2024.8** or newer. From 2024.8 on, REST `return_response` works for `weather.get_forecasts`. On 2024.3–2024.7 the forecast stays empty.
+- Assist needs 2023.5 or newer.
+
 ## Installation
 
 1. In Home Assistant go to **Settings → Apps → App Store** (or **Settings → Add-ons** on older versions).

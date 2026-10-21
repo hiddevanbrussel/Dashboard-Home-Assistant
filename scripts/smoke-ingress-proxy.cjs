@@ -155,7 +155,6 @@ upstream.listen(UPSTREAM_PORT, "127.0.0.1", () => {
         ...process.env,
         INGRESS_UPSTREAM_PORT: String(UPSTREAM_PORT),
         INGRESS_PORT: String(PROXY_PORT),
-        INGRESS_ALLOW_ALL: "1",
       },
       stdio: ["ignore", "pipe", "pipe"],
     }

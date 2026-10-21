@@ -28,6 +28,8 @@ const UPSTREAM_HOST = "127.0.0.1";
 const UPSTREAM_PORT = Number(process.env.INGRESS_UPSTREAM_PORT || 3001);
 const LISTEN_PORT = Number(process.env.INGRESS_PORT || 8099);
 const UPSTREAM_ORIGIN = `http://${UPSTREAM_HOST}:${UPSTREAM_PORT}`;
+/** Home Assistant Supervisor, the only ingress client on HassOS. */
+const SUPERVISOR_INGRESS_IP = "172.30.32.2";
 
 /** Flight tags that use `id:TAG{hexLen},{bytes}` (see react-server-dom client). */
 const LENGTH_PREFIXED_TAGS = new Set(
@@ -40,12 +42,8 @@ function clientIp(req) {
 }
 
 function isAllowed(ip) {
-  if (process.env.INGRESS_ALLOW_ALL === "1") return true;
   if (ip === "127.0.0.1" || ip === "::1") return true;
-  // Supervisor ingress + common Docker / HA OS nets
-  if (ip.startsWith("172.")) return true;
-  if (ip.startsWith("10.")) return true;
-  if (ip.startsWith("192.168.")) return true;
+  if (ip === SUPERVISOR_INGRESS_IP) return true;
   return false;
 }
 
@@ -528,9 +526,10 @@ const server = http.createServer((req, res) => {
 });
 
 if (require.main === module) {
+  // 0.0.0.0 so Supervisor can reach the container. Source IPs are filtered above.
   server.listen(LISTEN_PORT, "0.0.0.0", () => {
     console.log(
-      `[ingress-proxy] :${LISTEN_PORT} → ${UPSTREAM_HOST}:${UPSTREAM_PORT} (rewrite ${PLACEHOLDER})`
+      `[ingress-proxy] :${LISTEN_PORT} → ${UPSTREAM_HOST}:${UPSTREAM_PORT} (rewrite ${PLACEHOLDER}; allow ${SUPERVISOR_INGRESS_IP} and loopback)`
     );
   });
 }
@@ -545,5 +544,8 @@ module.exports = {
   rewriteLocation,
   shouldRewrite,
   upstreamPath,
+  clientIp,
+  isAllowed,
+  SUPERVISOR_INGRESS_IP,
   PLACEHOLDER,
 };

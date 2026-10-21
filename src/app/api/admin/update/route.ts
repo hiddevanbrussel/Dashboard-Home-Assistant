@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { spawn } from "node:child_process";
 import path from "node:path";
+import { clientRateLimitKey } from "@/lib/client-address";
 import { clearLoginFailures, loginAllowed, recordLoginFailure } from "@/lib/login-rate-limit";
 import { safeEqual } from "@/lib/session";
 import { requireApiAuth } from "@/lib/require-api-auth";
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "update_not_configured" }, { status: 503 });
   }
 
-  const key = `update:${request.headers.get("x-real-ip") ?? "local"}`;
+  const key = `update:${clientRateLimitKey(request.headers)}`;
   const limited = loginAllowed(key);
   if (!limited.ok) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });

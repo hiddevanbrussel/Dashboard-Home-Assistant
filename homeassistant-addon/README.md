@@ -10,6 +10,6 @@ The app is available via **Open Web UI** / the sidebar (Home Assistant Ingress).
 
 ## Direct port
 
-Port `3000` is optional. If enabled, open:
+Port `3000` is optional and is not Home Assistant ingress. Tablets sign in with the dashboard password:
 
 `http://homeassistant.local:3000/__ha_ingress__/`

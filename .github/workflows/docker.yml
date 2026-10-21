@@ -1,13 +1,12 @@
 name: Build & Push Docker
 
-# Speed strategy:
-# - main pushes: amd64 only (no QEMU) — typically a few minutes
-# - version tags: amd64 + native arm64 runners, then merge app multi-arch manifests
-# Addon images stay per-arch paths (HA expects .../addon/{arch}:version)
+# Publishing runs only when a version tag vX.Y.Z is pushed.
+# That tag builds amd64 and arm64/aarch64 for the app and the add-on.
+# An existing version tag is refused (not overwritten). `latest` moves only on these tags.
+# Pushes to main do not publish images.
 
 on:
   push:
-    branches: [main]
     tags: ["v*.*.*"]
 
 env:
@@ -62,28 +61,11 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=${{ needs.version.outputs.version }}
 
-      # main: push tagged amd64 image directly (fast path).
-      - name: Build and push (amd64 tagged)
-        if: github.ref_type != 'tag'
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            VERSION=${{ needs.version.outputs.version }}
-          cache-from: type=gha,scope=app-amd64
-          cache-to: type=gha,mode=max,scope=app-amd64
-
-      # tags: push by digest; merge-app creates the multi-arch tag.
+      # Push by digest; merge-app creates the multi-arch tag, including latest.
       - name: Build and push (amd64 by digest)
         if: github.ref_type == 'tag'
         id: build
@@ -208,6 +190,20 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=${{ needs.version.outputs.version }}
+            type=raw,value=latest
+
+      - name: Refuse to overwrite an existing version tag
+        run: |
+          image="${REGISTRY}/${IMAGE_NAME}:${VERSION}"
+          if docker buildx imagetools inspect "$image" >/dev/null 2>&1; then
+            echo "::error::Refusing to overwrite existing image ${image}"
+            exit 1
+          fi
+          echo "${image} is not published yet"
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          VERSION: ${{ needs.version.outputs.version }}
 
       - name: Create multi-arch manifest
         working-directory: /tmp/digests
@@ -238,6 +234,36 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Addon amd64 tags
+        id: addon-tags
+        run: |
+          tags="${REGISTRY}/${ADDON_IMAGE_NAME}/amd64:${VERSION}"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            tags="${tags}"$'\n'"${REGISTRY}/${ADDON_IMAGE_NAME}/amd64:latest"
+          fi
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          ADDON_IMAGE_NAME: ${{ env.ADDON_IMAGE_NAME }}
+          VERSION: ${{ needs.version.outputs.version }}
+
+      - name: Refuse to overwrite an existing addon amd64 tag
+        run: |
+          image="${REGISTRY}/${ADDON_IMAGE_NAME}/amd64:${VERSION}"
+          if docker buildx imagetools inspect "$image" >/dev/null 2>&1; then
+            echo "::error::Refusing to overwrite existing image ${image}"
+            exit 1
+          fi
+          echo "${image} is not published yet"
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          ADDON_IMAGE_NAME: ${{ env.ADDON_IMAGE_NAME }}
+          VERSION: ${{ needs.version.outputs.version }}
+
       - name: Build and push (addon amd64)
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -245,9 +271,7 @@ jobs:
           file: Dockerfile.addon
           push: true
           platforms: linux/amd64
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/amd64:${{ needs.version.outputs.version }}
-            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE_NAME }}/amd64:latest
+          tags: ${{ steps.addon-tags.outputs.tags }}
           build-args: |
             VERSION=${{ needs.version.outputs.version }}
             BUILD_ARCH=amd64
@@ -275,6 +299,19 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refuse to overwrite an existing addon aarch64 tag
+        run: |
+          image="${REGISTRY}/${ADDON_IMAGE_NAME}/aarch64:${VERSION}"
+          if docker buildx imagetools inspect "$image" >/dev/null 2>&1; then
+            echo "::error::Refusing to overwrite existing image ${image}"
+            exit 1
+          fi
+          echo "${image} is not published yet"
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          ADDON_IMAGE_NAME: ${{ env.ADDON_IMAGE_NAME }}
+          VERSION: ${{ needs.version.outputs.version }}
 
       - name: Build and push (addon aarch64)
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0

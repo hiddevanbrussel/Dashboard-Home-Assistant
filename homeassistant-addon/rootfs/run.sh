@@ -40,6 +40,8 @@ if [ -z "$DASHBOARD_PASSWORD" ] || [ "$DASHBOARD_PASSWORD" = "null" ]; then
   exit 1
 fi
 export DASHBOARD_PASSWORD
+# Reject short, placeholder, and repetitive secrets before Next, nginx, or the ingress proxy start.
+node /app/src/lib/check-secrets.mjs
 export INGRESS_AUTH_SECRET="$(openssl rand -hex 32)"
 export HA_ADDON="1"
 export DATABASE_URL="${DATABASE_URL:-file:/data/app.db}"
