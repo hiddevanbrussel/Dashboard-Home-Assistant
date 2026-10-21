@@ -32,6 +32,13 @@ describe("validateDashboardPassword", () => {
   it("accepts a passphrase", () => {
     expect(validateDashboardPassword(STRONG_PASSWORD)).toEqual({ ok: true });
   });
+
+  it("rejects exact denylist words, case-insensitively, and does not apply the repetitive check", () => {
+    expect(validateDashboardPassword("password").ok).toBe(false);
+    expect(validateDashboardPassword("changeme").ok).toBe(false);
+    expect(validateDashboardPassword("REPLACE-WITH-A-LONG-PASSPHRASE").ok).toBe(false);
+    expect(validateDashboardPassword("a".repeat(12))).toEqual({ ok: true });
+  });
 });
 
 describe("validateRuntimeSecrets", () => {
