@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingParentSize, floatingPositionFromElement } from "@/lib/floating-card-grid";
-import { stagedOrFallback } from "@/lib/tile-stage";
 import { EnergyMonitorCardWidget } from "./energy-monitor-card-widget";
 import type { ImageCondition } from "./widget-types";
 import {
@@ -168,7 +167,7 @@ export function FloatingEnergyMonitorCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(stagedOrFallback(widgetId, defaultPosition(totalWidth, totalHeight)), bounds);
+    const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
     setPosition(p);
     savePosition(storageScope, p, widgetId);
   }, [totalWidth, totalHeight, storageScope, widgetId]);

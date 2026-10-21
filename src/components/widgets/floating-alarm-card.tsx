@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
-import { stagedOrFallback } from "@/lib/tile-stage";
 import { AlarmCardWidget } from "./alarm-card-widget";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -124,7 +123,7 @@ export function FloatingAlarmCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(stagedOrFallback(widgetId, defaultPosition(widgetIndex)), bounds);
+    const p = snapToGrid(defaultPosition(widgetIndex), bounds);
     setPosition(p);
     savePosition(storageScope, widgetId, p);
   }, [widgetId, widgetIndex, storageScope]);

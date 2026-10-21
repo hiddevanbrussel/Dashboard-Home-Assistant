@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
-import { stagedOrFallback } from "@/lib/tile-stage";
 import { TimerCardWidget } from "./timer-card-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingTimerCard.";
@@ -102,7 +101,7 @@ export function FloatingTimerCard({
     const bounds = { maxLeft, maxBottom };
     const saved = loadPosition(storageScope, widget.id);
     if (saved) { setPosition(snapToGrid(saved, bounds)); return; }
-    const p = snapToGrid(stagedOrFallback(widget.id, defaultPosition()), bounds);
+    const p = snapToGrid(defaultPosition(), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
   }, [widget.id, widgetIndex, storageScope]);

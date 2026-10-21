@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
-import { stagedOrFallback } from "@/lib/tile-stage";
 import { PillCardWidget } from "./pill-card-widget";
 import type { SensorCondition } from "./widget-types";
 
@@ -124,7 +123,7 @@ export function FloatingPillCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(stagedOrFallback(widget.id, defaultPosition(widgetIndex)), bounds);
+    const p = snapToGrid(defaultPosition(widgetIndex), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
   }, [widget.id, widgetIndex, storageScope]);

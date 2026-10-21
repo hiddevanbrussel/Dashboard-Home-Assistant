@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
-import { stagedOrFallback } from "@/lib/tile-stage";
 import { VacuumCardWidget } from "./vacuum-card-widget";
 import { VacuumBottomSheet } from "@/components/vacuum/vacuum-bottom-sheet";
 import { isVacuumCardTap } from "@/lib/vacuum-card";
@@ -62,7 +61,6 @@ export function FloatingVacuumCard({
   icon,
   editMode = false,
   storageScope,
-  widgetId,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -75,7 +73,6 @@ export function FloatingVacuumCard({
   icon?: string;
   editMode?: boolean;
   storageScope?: string;
-  widgetId?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
@@ -165,10 +162,10 @@ export function FloatingVacuumCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(stagedOrFallback(widgetId, defaultPosition()), bounds);
+    const p = snapToGrid(defaultPosition(), bounds);
     setPosition(p);
     savePosition(storageScope, p);
-  }, [storageScope, widgetId]);
+  }, [storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {

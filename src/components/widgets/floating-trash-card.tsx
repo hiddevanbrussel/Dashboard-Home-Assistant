@@ -10,7 +10,6 @@ import {
   isFloatingCardNoDragTarget,
   snapToGrid,
 } from "@/lib/floating-card-grid";
-import { stagedOrFallback } from "@/lib/tile-stage";
 import { TrashCardWidget } from "./trash-card-widget";
 import {
   TRASH_CARD_DEFAULT_HEIGHT,
@@ -175,7 +174,7 @@ export function FloatingTrashCard({
       applyDomPosition(next);
       return;
     }
-    const p = snapToGrid(stagedOrFallback(widget.id, defaultPosition(widgetIndex, cardWidth, cardHeight)), bounds);
+    const p = snapToGrid(defaultPosition(widgetIndex, cardWidth, cardHeight), bounds);
     setPosition(p);
     applyDomPosition(p);
     savePosition(storageScope, widget.id, p);

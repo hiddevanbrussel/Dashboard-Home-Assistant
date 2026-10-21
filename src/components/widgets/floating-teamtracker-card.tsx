@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
-import { stagedOrFallback } from "@/lib/tile-stage";
 import { TeamtrackerCardWidget } from "./teamtracker-card-widget";
 import {
   clampTeamtrackerCardHeight,
@@ -163,7 +162,7 @@ export function FloatingTeamtrackerCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(stagedOrFallback(widgetId, defaultPosition(totalWidth, totalHeight, widgetId)), bounds);
+    const p = snapToGrid(defaultPosition(totalWidth, totalHeight, widgetId), bounds);
     setPosition(p);
     savePosition(storageScope, p, widgetId);
   }, [totalWidth, totalHeight, storageScope, widgetId]);

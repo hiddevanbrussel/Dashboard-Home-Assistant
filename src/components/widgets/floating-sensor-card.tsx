@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
-import { stagedOrFallback } from "@/lib/tile-stage";
 import { SensorCardWidget } from "./sensor-card-widget";
 import type { SensorCondition as WidgetSensorCondition } from "./widget-types";
 
@@ -129,7 +128,7 @@ export function FloatingSensorCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(stagedOrFallback(widgetId, defaultPosition(cardWidth, widgetIndex)), bounds);
+    const p = snapToGrid(defaultPosition(cardWidth, widgetIndex), bounds);
     setPosition(p);
     savePosition(storageScope, widgetId, p);
   }, [cardWidth, widgetId, widgetIndex, storageScope]);

@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
-import { stagedOrFallback } from "@/lib/tile-stage";
 import { SolarCardWidget } from "./solar-card-widget";
 
 const STORAGE_KEY = "dashboard.floatingSolarCardPosition";
@@ -57,7 +56,6 @@ export function FloatingSolarCard({
   yield_entity_id_month,
   editMode = false,
   storageScope,
-  widgetId,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -68,7 +66,6 @@ export function FloatingSolarCard({
   yield_entity_id_month?: string;
   editMode?: boolean;
   storageScope?: string;
-  widgetId?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
@@ -118,10 +115,10 @@ export function FloatingSolarCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(stagedOrFallback(widgetId, defaultPosition()), bounds);
+    const p = snapToGrid(defaultPosition(), bounds);
     setPosition(p);
     savePosition(storageScope, p);
-  }, [storageScope, widgetId]);
+  }, [storageScope]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {

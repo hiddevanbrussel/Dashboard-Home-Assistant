@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
-import { stagedOrFallback } from "@/lib/tile-stage";
 import { DeviceConsumptionCardWidget } from "./device-consumption-card-widget";
 
 const STORAGE_KEY = "dashboard.floatingDeviceConsumptionCardPosition";
@@ -54,7 +53,6 @@ export function FloatingDeviceConsumptionCard({
   height,
   editMode = false,
   storageScope,
-  widgetId,
   onRemove,
   onEdit,
   onEnterEditMode,
@@ -66,7 +64,6 @@ export function FloatingDeviceConsumptionCard({
   height?: number;
   editMode?: boolean;
   storageScope?: string;
-  widgetId?: string;
   onRemove?: () => void;
   onEdit?: () => void;
   onEnterEditMode?: () => void;
@@ -118,10 +115,10 @@ export function FloatingDeviceConsumptionCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(stagedOrFallback(widgetId, defaultPosition()), bounds);
+    const p = snapToGrid(defaultPosition(), bounds);
     setPosition(p);
     savePosition(storageScope, p);
-  }, [storageScope, cardW, widgetId]);
+  }, [storageScope, cardW]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {

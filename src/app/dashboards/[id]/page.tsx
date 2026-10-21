@@ -117,7 +117,7 @@ import {
   TILE_SIDEBAR_INSET_PX,
   type TileRect,
 } from "@/lib/tile-placement";
-import { dropStagedTilePosition, stageTilePosition } from "@/lib/tile-stage";
+import { forgetTilePosition, writeTilePosition } from "@/lib/tile-position-storage";
 import {
   clampPageIndex,
   DASHBOARD_MAX_PAGES,
@@ -1092,6 +1092,7 @@ export default function DashboardEditPage() {
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roomBackgroundInputRef = useRef<HTMLInputElement>(null);
   const pendingAddRef = useRef<string | null>(null);
+  const placedStorageRef = useRef<{ widgetId: string; key: string } | null>(null);
   const widgetsRef = useRef(widgets);
   const layoutRef = useRef(layout);
   const syncAddTileRef = useRef<(stack: AddTileStep[]) => void>(() => {});
@@ -1544,6 +1545,7 @@ export default function DashboardEditPage() {
       welcomeSubtitle?: string;
       pageCount?: number;
       commit?: boolean;
+      placementKey?: string;
     }) => {
       if (pendingAddRef.current && !payload.commit) return null;
       const res = await fetch(apiBase, {
@@ -1560,12 +1562,25 @@ export default function DashboardEditPage() {
       return res.json();
     },
     onSuccess: (updated, payload) => {
+      if (
+        updated &&
+        payload.placementKey &&
+        placedStorageRef.current?.key === payload.placementKey
+      ) {
+        placedStorageRef.current = null;
+      }
       if (!updated) return;
       queryClient.setQueryData(
         isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id],
         (old: unknown) => (old && updated ? { ...(old as object), ...(updated as object) } : old ?? updated)
       );
       setPageCount(resolvePageCount(payload.pageCount ?? pageCountRef.current, payload.widgets));
+    },
+    onError: (_error, payload) => {
+      const placed = placedStorageRef.current;
+      if (!payload.placementKey || !placed || placed.key !== payload.placementKey) return;
+      if (typeof window !== "undefined") forgetTilePosition(window.localStorage, placed.key);
+      placedStorageRef.current = null;
     },
   });
 
@@ -1689,9 +1704,7 @@ export default function DashboardEditPage() {
     }
 
     const slot = placeNewTile(type, widgets.filter((widget) => widget.type === type).length);
-    stageTilePosition(newId, { left: slot.left, bottom: slot.bottom });
-    setPlacedHighlight({ id: newId, left: slot.left, bottom: slot.bottom, width: slot.width, height: slot.height });
-    setUndoAdd({ id: newId, type });
+    const placementKey = rememberTilePosition(type, newId, slot);
 
     const qk = isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id];
     queryClient.setQueryData(qk, (old: unknown) => {
@@ -1719,8 +1732,36 @@ export default function DashboardEditPage() {
       welcomeSubtitle,
       pageCount: pageCountRef.current,
       commit: true,
+      placementKey,
     });
     return undefined;
+  }
+
+  function rememberTilePosition(
+    type: string,
+    widgetId: string,
+    slot: { left: number; bottom: number; width: number; height: number }
+  ): string | undefined {
+    let placementKey: string | undefined;
+    if (typeof window !== "undefined") {
+      const stored = writeTilePosition(window.localStorage, type, id, widgetId, {
+        left: slot.left,
+        bottom: slot.bottom,
+      });
+      if (stored.written && stored.key) {
+        placedStorageRef.current = { widgetId, key: stored.key };
+        placementKey = stored.key;
+        setPlacedHighlight({
+          id: widgetId,
+          left: slot.left,
+          bottom: slot.bottom,
+          width: slot.width,
+          height: slot.height,
+        });
+      }
+    }
+    setUndoAdd({ id: widgetId, type });
+    return placementKey;
   }
 
   function placeNewTile(type: string, widgetIndex: number) {
@@ -1759,8 +1800,10 @@ export default function DashboardEditPage() {
     setPendingAddId(null);
     setWidgets(plan.widgets);
     setLayout(plan.layout);
-    if (typeof window !== "undefined") clearTilePositionStorage(window.localStorage, type, id, pendingId, "cancel");
-    dropStagedTilePosition(pendingId);
+    if (typeof window !== "undefined") {
+      clearTilePositionStorage(window.localStorage, type, id, pendingId, "cancel");
+    }
+    if (placedStorageRef.current?.widgetId === pendingId) placedStorageRef.current = null;
     setEditingWidgetId((current) => (current === pendingId ? null : current));
     setEditingGroupChildId(null);
   }
@@ -1780,23 +1823,16 @@ export default function DashboardEditPage() {
     pushAddTileHistory("configure");
   }
 
-  function finishAddedTile(type: string, widgetId: string) {
+  function finishAddedTile(type: string, widgetId: string): string | undefined {
     const slot = placeNewTile(
       type,
       widgets.filter((widget) => widget.type === type && widget.id !== widgetId).length
     );
-    stageTilePosition(widgetId, { left: slot.left, bottom: slot.bottom });
-    setPlacedHighlight({
-      id: widgetId,
-      left: slot.left,
-      bottom: slot.bottom,
-      width: slot.width,
-      height: slot.height,
-    });
-    setUndoAdd({ id: widgetId, type });
+    const placementKey = rememberTilePosition(type, widgetId, slot);
     pendingAddRef.current = null;
     setPendingAddId(null);
     discardAddTileHistory();
+    return placementKey;
   }
 
   function undoAddedTile() {
@@ -1805,9 +1841,16 @@ export default function DashboardEditPage() {
     setWidgets(plan.widgets);
     setLayout(plan.layout);
     if (typeof window !== "undefined") {
-      clearTilePositionStorage(window.localStorage, undoAdd.type, id, undoAdd.id, "undo");
+      clearTilePositionStorage(
+        window.localStorage,
+        undoAdd.type,
+        id,
+        undoAdd.id,
+        "undo",
+        plan.widgets.map((widget) => widget.type)
+      );
     }
-    dropStagedTilePosition(undoAdd.id);
+    if (placedStorageRef.current?.widgetId === undoAdd.id) placedStorageRef.current = null;
     setUndoAdd(null);
     setPlacedHighlight((current) => (current?.id === undoAdd.id ? null : current));
     if (plan.persist) {
@@ -2747,7 +2790,6 @@ export default function DashboardEditPage() {
               yield_entity_id_month={(firstSolar as { yield_entity_id_month?: string }).yield_entity_id_month}
               editMode={editMode}
               storageScope={id}
-              widgetId={firstSolar.id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -2796,7 +2838,6 @@ export default function DashboardEditPage() {
               height={firstPowerUsage.height}
               editMode={editMode}
               storageScope={id}
-              widgetId={firstPowerUsage.id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -2824,7 +2865,6 @@ export default function DashboardEditPage() {
               height={w.height}
               editMode={editMode}
               storageScope={`${id}-${w.id}`}
-              widgetId={w.id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
@@ -2892,7 +2932,6 @@ export default function DashboardEditPage() {
               height={firstWeather.height}
               editMode={editMode}
               storageScope={id}
-              widgetId={firstWeather.id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -2975,7 +3014,6 @@ export default function DashboardEditPage() {
               icon={firstVacuum.icon}
               editMode={editMode}
               storageScope={id}
-              widgetId={firstVacuum.id}
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
@@ -7297,7 +7335,10 @@ aria-label={t("editPanel.removeCondition")}
                         addingTile &&
                         editingWidgetId != null &&
                         planConfirmPendingAdd(widgets, editingWidgetId).persist;
-                      if (wasAdding && editingWidgetId) finishAddedTile(editingWidget.type, editingWidgetId);
+                      let placementKey: string | undefined;
+                      if (wasAdding && editingWidgetId) {
+                        placementKey = finishAddedTile(editingWidget.type, editingWidgetId);
+                      }
                       const isCategoryCard = editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card";
                       const newWelcomeTitle = welcomeTitle;
                       const newWelcomeSubtitle = welcomeSubtitle;
@@ -7482,6 +7523,7 @@ aria-label={t("editPanel.removeCondition")}
                         welcomeTitle: newWelcomeTitle,
                         welcomeSubtitle: newWelcomeSubtitle,
                         commit: wasAdding,
+                        placementKey,
                       });
                       setEditingWidgetId(null);
                     }}
