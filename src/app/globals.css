@@ -316,54 +316,30 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
     backdrop-filter: none;
   }
 
-  /* Floating nav rail — frosted glass that stays readable over page photos */
+  /* Floating nav rail: solid, no blur (same surface as settings, bell panel, page pill) */
   .sidebar-glass {
-    background: rgba(255, 255, 255, var(--glass-opacity));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-    border: 1px solid rgba(255, 255, 255, 0.55);
-    box-shadow:
-      0 10px 28px -10px rgba(15, 10, 40, 0.22),
-      0 2px 8px rgba(15, 10, 40, 0.08);
-  }
-
-  .sidebar-glass::after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(
-      155deg,
-      rgba(255, 255, 255, 0.45) 0%,
-      transparent 42%
-    );
+    background: #ffffff;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
   }
 
   .dark .sidebar-glass {
-    background: rgb(var(--glass-fill) / calc(0.40 + 0.38 * var(--glass-opacity-dark)));
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow:
-      0 12px 32px -10px rgba(0, 0, 0, 0.45),
-      0 2px 8px rgba(0, 0, 0, 0.2);
+    background: #1b1a21;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   }
 
-  .dark .sidebar-glass::after {
-    background: linear-gradient(
-      155deg,
-      rgba(255, 255, 255, 0.12) 0%,
-      transparent 42%
-    );
+  .sidebar-item:focus {
+    outline: none;
   }
 
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .sidebar-glass {
-      background: rgba(255, 255, 255, 0.94);
-    }
+  .sidebar-item:focus-visible {
+    outline: 2px solid #111827;
+    outline-offset: 2px;
+  }
 
-    .dark .sidebar-glass {
-      background: rgba(24, 24, 28, 0.88);
-    }
+  .dark .sidebar-item:focus-visible {
+    outline-color: #f3f4f6;
   }
 
   /*
@@ -599,16 +575,7 @@ html.dark:has(.settings-page-bg) body {
 }
 
 .settings-page-bg .sidebar-glass {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  background: #ffffff;
-  border-color: rgba(17, 24, 39, 0.08);
   box-shadow: none;
-}
-
-.dark .settings-page-bg .sidebar-glass {
-  background: #1b1a21;
-  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .settings-page-bg :focus-visible {

@@ -403,6 +403,8 @@ createRoot(document.getElementById("root")).render(
       [...APP_ITEMS, ...HA_ITEMS].map((item) => `Melding verwijderen: ${item.title}`)
     );
     expect(nl.iconsHidden).toBe(true);
+    expect(nl.panelClass).toContain("ml-3.5");
+    expect(nl.panelClass).not.toContain("ml-2 ");
     expect(nl.panelClass).toContain("dark:bg-[#1b1a21]");
     expect(nl.panelClass).toContain("dark:shadow-[0_16px_40px_rgba(0,0,0,0.55)]");
     expect(nl.panelClass).toContain("backdrop-blur-xl");
