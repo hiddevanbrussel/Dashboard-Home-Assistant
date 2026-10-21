@@ -10,6 +10,7 @@ import {
   isFloatingCardNoDragTarget,
   snapToGrid,
 } from "@/lib/floating-card-grid";
+import { stagedOrFallback } from "@/lib/tile-stage";
 import { NutsCardWidget } from "./nuts-card-widget";
 import {
   NUTS_CARD_DEFAULT_HEIGHT,
@@ -166,7 +167,7 @@ export function FloatingNutsCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(widgetIndex, cardWidth, cardHeight), bounds);
+    const p = snapToGrid(stagedOrFallback(widget.id, defaultPosition(widgetIndex, cardWidth, cardHeight)), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
   }, [widget.id, widgetIndex, cardWidth, cardHeight, storageScope]);

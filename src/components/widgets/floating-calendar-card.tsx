@@ -10,6 +10,7 @@ import {
   isFloatingCardNoDragTarget,
   snapToGrid,
 } from "@/lib/floating-card-grid";
+import { stagedOrFallback } from "@/lib/tile-stage";
 import { CalendarCardWidget } from "./calendar-card-widget";
 import {
   clampCalendarCardHeight,
@@ -155,7 +156,7 @@ export function FloatingCalendarCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(widgetIndex, cardWidth, cardHeight), bounds);
+    const p = snapToGrid(stagedOrFallback(widget.id, defaultPosition(widgetIndex, cardWidth, cardHeight)), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
   }, [storageScope, widget.id, widgetIndex, cardWidth, cardHeight]);

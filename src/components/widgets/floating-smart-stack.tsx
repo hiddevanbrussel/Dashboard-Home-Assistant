@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { stagedOrFallback } from "@/lib/tile-stage";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import { SmartStackWidget } from "./smart-stack-widget";
 import {
@@ -136,7 +137,7 @@ export function FloatingSmartStack({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(widgetIndex, totalWidth, totalHeight), bounds);
+    const p = snapToGrid(stagedOrFallback(widget.id, defaultPosition(widgetIndex, totalWidth, totalHeight)), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
   }, [widget.id, widgetIndex, totalWidth, totalHeight, storageScope]);

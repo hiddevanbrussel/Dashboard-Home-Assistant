@@ -10,6 +10,7 @@ import {
   isFloatingCardNoDragTarget,
   snapToGrid,
 } from "@/lib/floating-card-grid";
+import { stagedOrFallback } from "@/lib/tile-stage";
 import { VacuumCard2Widget } from "./vacuum-card-2-widget";
 import { VacuumBottomSheet } from "@/components/vacuum/vacuum-bottom-sheet";
 import {
@@ -223,7 +224,7 @@ export function FloatingVacuumCard2({
       applyDomPosition(next);
       return;
     }
-    const p = snapToGrid(defaultPosition(widgetIndex, cardWidth, cardHeight), bounds);
+    const p = snapToGrid(stagedOrFallback(widget.id, defaultPosition(widgetIndex, cardWidth, cardHeight)), bounds);
     setPosition(p);
     applyDomPosition(p);
     savePosition(storageScope, widget.id, p);

@@ -671,3 +671,14 @@ html.dark:has(.settings-page-bg) body {
     overflow: auto;
   }
 }
+
+/* Glow around a tile that was just added. The tile itself is not restyled. */
+.tile-added-highlight {
+  pointer-events: none;
+  border-radius: 22px;
+  box-shadow: 0 0 0 3px #4700b5, 0 0 0 9px rgba(71, 0, 181, 0.16);
+}
+
+.dark .tile-added-highlight {
+  box-shadow: 0 0 0 3px #8357be, 0 0 0 9px rgba(131, 87, 190, 0.25);
+}

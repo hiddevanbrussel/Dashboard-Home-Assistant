@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, FLOATING_CARD_GRID_STEP, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { stagedOrFallback } from "@/lib/tile-stage";
 import {
   clampRoomCardHeight,
   clampRoomCardWidth,
@@ -226,7 +227,7 @@ export function FloatingRoomCard({
       p = snapToGrid(saved, bounds);
       if (others.length > 0) p = getNonOverlappingPosition(p, totalWidth, totalHeight, others, bounds);
     } else {
-      p = snapToGrid(defaultPosition(widgetIndex, totalWidth, totalHeight), bounds);
+      p = snapToGrid(stagedOrFallback(widget.id, defaultPosition(widgetIndex, totalWidth, totalHeight)), bounds);
       if (others.length > 0) p = getNonOverlappingPosition(p, totalWidth, totalHeight, others, bounds);
     }
     setPosition(p);

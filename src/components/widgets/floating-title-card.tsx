@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { stagedOrFallback } from "@/lib/tile-stage";
 import { useTranslation } from "@/hooks/use-translation";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingWelcomeCardPosition.";
@@ -119,7 +120,7 @@ export function FloatingTitleCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(), bounds);
+    const p = snapToGrid(stagedOrFallback(widgetId, defaultPosition()), bounds);
     setPosition(p);
     savePosition(widgetId, p);
   }, [widgetId]);

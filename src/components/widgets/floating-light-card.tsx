@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { stagedOrFallback } from "@/lib/tile-stage";
 import { LightCardWidget } from "./light-card-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingLightCardPosition.";
@@ -133,7 +134,7 @@ export function FloatingLightCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(widgetIndex, totalWidth, cardHeight), bounds);
+    const p = snapToGrid(stagedOrFallback(widget.id, defaultPosition(widgetIndex, totalWidth, cardHeight)), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
   }, [totalWidth, cardHeight, widget.id, widgetIndex, storageScope]);

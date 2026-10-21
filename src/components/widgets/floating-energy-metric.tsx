@@ -10,6 +10,7 @@ import {
   isFloatingCardNoDragTarget,
   snapToGrid,
 } from "@/lib/floating-card-grid";
+import { stagedOrFallback } from "@/lib/tile-stage";
 import { EnergyMetricWidget } from "./energy-metric-widget";
 
 const STORAGE_KEY_PREFIX = "dashboard.floatingEnergyMetricPosition.";
@@ -150,7 +151,7 @@ export function FloatingEnergyMetric({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPosition(widgetIndex), bounds);
+    const p = snapToGrid(stagedOrFallback(widget.id, defaultPosition(widgetIndex)), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
   }, [storageScope, widget.id, widgetIndex]);

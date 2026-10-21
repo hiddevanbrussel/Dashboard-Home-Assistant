@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { stagedOrFallback } from "@/lib/tile-stage";
 import { TextCardWidget } from "./text-card-widget";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -139,7 +140,7 @@ export function FloatingTextCard({
       setPosition(snapToGrid(saved, bounds));
       return;
     }
-    const p = snapToGrid(defaultPositionForWidth(totalWidth, widgetIndex), bounds);
+    const p = snapToGrid(stagedOrFallback(widget.id, defaultPositionForWidth(totalWidth, widgetIndex)), bounds);
     setPosition(p);
     savePosition(storageScope, widget.id, p);
   }, [totalWidth, widget.id, widgetIndex, storageScope]);

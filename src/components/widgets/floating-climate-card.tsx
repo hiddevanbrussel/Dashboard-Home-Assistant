@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { stagedOrFallbackAny } from "@/lib/tile-stage";
 import { ClimateCard2Widget } from "./climate-card-2-widget";
 import {
   clampClimateCardHeight,
@@ -172,7 +173,13 @@ export function FloatingClimateCard({
         savePosition(storageScope, clamped);
         return;
       }
-      const p = snapToGrid(defaultPosition(totalWidth, totalHeight), bounds);
+      const p = snapToGrid(
+        stagedOrFallbackAny(
+          widgets.map((item) => item.id),
+          defaultPosition(totalWidth, totalHeight)
+        ),
+        bounds
+      );
       setPosition(p);
       savePosition(storageScope, p);
     } else {
