@@ -108,7 +108,7 @@ function SettingsCard({
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3.5 rounded-2xl border border-black/[0.06] bg-white/70 p-5 dark:border-white/10 dark:bg-white/5">
+    <section className="flex flex-col gap-3.5 rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white p-5 dark:border-white/10 dark:bg-[#1b1a21]">
       <div className="flex flex-col gap-0.5">
         <h3 className="text-[17px] font-bold tracking-tight text-gray-900 dark:text-white">{title}</h3>
         {description ? (
@@ -326,8 +326,8 @@ function SourceRow({
       className={cn(
         "flex flex-wrap items-center gap-3 rounded-[14px] px-4 py-2",
         selected
-          ? "border-2 border-brand bg-brand/5 dark:bg-brand/15"
-          : "border-2 border-black/[0.04] bg-white/80 dark:border-white/10 dark:bg-white/5"
+          ? "border-2 border-[#111827] bg-[rgba(17,24,39,0.04)] dark:border-[#f3f4f6] dark:bg-white/[0.06]"
+          : "border-2 border-black/[0.04] bg-white dark:border-white/10 dark:bg-[#1b1a21]"
       )}
     >
       <button
@@ -341,7 +341,7 @@ function SourceRow({
           className={cn(
             "box-border h-5 w-5 shrink-0 rounded-full border-2",
             selected
-              ? "border-brand bg-brand shadow-[inset_0_0_0_3px_white]"
+              ? "border-[#111827] bg-[#111827] shadow-[inset_0_0_0_3px_white] dark:border-[#f3f4f6] dark:bg-[#f3f4f6]"
               : "border-gray-400 bg-white dark:border-white/40 dark:bg-transparent"
           )}
           aria-hidden
@@ -364,7 +364,7 @@ function SourceRow({
       <button
         type="button"
         onClick={onAction}
-        className="inline-flex min-h-11 items-center whitespace-nowrap text-[13px] font-semibold text-brand hover:underline"
+        className="inline-flex h-11 items-center whitespace-nowrap rounded-xl px-3 text-[15px] font-semibold text-[#111827] dark:text-[#f3f4f6]"
       >
         {actionLabel}
       </button>
@@ -413,29 +413,37 @@ export function ScreensaverEnableToggle({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-        {enabled ? t("settings.screensaver.enabledOn") : t("settings.screensaver.enabledOff")}
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={t("settings.screensaver")}
+      onClick={() => onChange(!enabled)}
+      className="flex min-h-11 w-full items-center justify-between gap-4 text-left"
+    >
+      <span className="min-w-0">
+        <span className="block text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
+          {t("settings.screensaver")}
+        </span>
+        <span className="mt-0.5 block text-sm text-[#4b5563] dark:text-[#c4c4cc]">
+          {enabled ? t("settings.screensaver.enabledOn") : t("settings.screensaver.enabledOff")}
+        </span>
       </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={enabled}
-        aria-label={t("settings.screensaver")}
-        onClick={() => onChange(!enabled)}
+      <span
         className={cn(
-          "relative h-8 w-[52px] shrink-0 rounded-full border-0 p-0 transition-colors",
-          enabled ? "bg-brand" : "bg-gray-300 dark:bg-white/25"
+          "relative h-8 w-[52px] shrink-0 rounded-full",
+          enabled ? "bg-[#111827] dark:bg-[#f3f4f6]" : "bg-[rgba(17,24,39,0.18)] dark:bg-white/20"
         )}
+        aria-hidden
       >
         <span
           className={cn(
-            "absolute top-1 h-6 w-6 rounded-full bg-white shadow-sm transition-[left]",
-            enabled ? "left-6" : "left-1"
+            "absolute top-[3px] h-[26px] w-[26px] rounded-full bg-white shadow-sm",
+            enabled ? "left-[23px] dark:bg-[#1b1a21]" : "left-[3px]"
           )}
         />
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }
 
@@ -617,9 +625,9 @@ export function ScreensaverSettings({
                       onClick={() => onDelayChange(seconds)}
                       className={cn(
                         "min-h-11 whitespace-nowrap rounded-full border px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
-                        selected
-                          ? "border-brand bg-brand text-white"
-                          : "border-black/10 bg-white text-gray-700 hover:bg-black/[0.03] dark:border-white/15 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
+        selected
+          ? "border-[#111827] bg-[#111827] text-white dark:border-[#f3f4f6] dark:bg-[#f3f4f6] dark:text-[#111827]"
+          : "border-black/10 bg-white text-gray-700 hover:bg-black/[0.03] dark:border-white/15 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
                       )}
                     >
                       {t(labelKey)}
@@ -776,7 +784,7 @@ export function ScreensaverSettings({
                           className={cn(
                             "flex h-11 w-11 items-center justify-center rounded-[10px] border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
                             selected
-                              ? "border-brand bg-brand"
+                              ? "border-[#111827] bg-[#111827] dark:border-[#f3f4f6] dark:bg-[#f3f4f6]"
                               : "border-black/10 bg-white hover:bg-black/[0.03] dark:border-white/15 dark:bg-white/5 dark:hover:bg-white/10"
                           )}
                         >
