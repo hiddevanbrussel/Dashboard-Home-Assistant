@@ -8,6 +8,17 @@ import { useHaPersistentNotifications } from "@/hooks/use-ha-notifications";
 import { useTranslation } from "@/hooks/use-translation";
 import { notificationPanelFrame, type NotificationPanelFrame } from "./notification-panel-frame";
 
+/**
+ * 44×44 tap zone around the unchanged 24×24 visual (16px icon + p-1).
+ * Negative margins keep the layout box at 24×24: 8px up, 12px down, 10px left/right,
+ * so the zone stays ≥8px from "Alles wissen" and from the next row's X.
+ * pt-2 puts the 24px visual exactly where it was (top of the 44px zone + 8px).
+ */
+const DISMISS_TAP_CLASS =
+  "group -mb-3 -ml-2.5 -mr-2.5 -mt-2 flex h-11 w-11 shrink-0 items-start justify-center rounded-lg pt-2 text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#4700B5] disabled:opacity-50 dark:focus-visible:ring-[#8357be]";
+const DISMISS_ICON_CLASS =
+  "rounded p-1 group-hover:bg-gray-100 group-hover:text-gray-600 dark:group-hover:bg-white/10 dark:group-hover:text-gray-200";
+
 function AppIcon({ name }: { name?: string | null }) {
   if (name === "RobotVacuum") return <RobotVacuum className="h-4 w-4 shrink-0" aria-hidden />;
   return <Bell className="h-4 w-4 shrink-0" aria-hidden />;
@@ -144,7 +155,7 @@ export function HeaderNotifications({
       {open && (
         <div
           className={cn(
-            "z-[100] flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-black/50 dark:backdrop-blur-xl",
+            "z-[100] flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#1b1a21] dark:shadow-[0_16px_40px_rgba(0,0,0,0.55)]",
             !frame && "invisible",
             placement === "sidebar"
               ? "absolute bottom-0 left-full ml-2"
@@ -163,7 +174,7 @@ export function HeaderNotifications({
               <button
                 type="button"
                 onClick={() => void dismissAll()}
-                className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="-my-3 -mr-2 inline-flex h-11 items-center rounded-lg px-2 text-xs font-medium text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#4700B5] dark:text-gray-400 dark:hover:text-gray-200 dark:focus-visible:ring-[#8357be]"
               >
                 {t("notifications.dismissAll")}
               </button>
@@ -184,7 +195,7 @@ export function HeaderNotifications({
                     key={n.id}
                     className="border-b border-gray-100 last:border-0 dark:border-white/5"
                   >
-                    <div className="flex flex-col gap-1 px-4 py-3">
+                    <div className="flex min-h-[52px] flex-col gap-1 px-4 py-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex min-w-0 flex-1 items-center gap-2">
                           <AppIcon name={n.icon} />
@@ -195,10 +206,12 @@ export function HeaderNotifications({
                         <button
                           type="button"
                           onClick={() => dismissAppItem(n.id)}
-                          className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/10"
-                          aria-label={t("notifications.dismiss")}
+                          className={DISMISS_TAP_CLASS}
+                          aria-label={t("notifications.dismissItem").replace("{title}", n.title)}
                         >
-                          <X className="h-4 w-4" />
+                          <span className={DISMISS_ICON_CLASS}>
+                            <X className="h-4 w-4" aria-hidden />
+                          </span>
                         </button>
                       </div>
                       {n.message ? (
@@ -218,7 +231,7 @@ export function HeaderNotifications({
                       key={n.notification_id}
                       className="border-b border-gray-100 last:border-0 dark:border-white/5"
                     >
-                      <div className="flex flex-col gap-1 px-4 py-3">
+                      <div className="flex min-h-[52px] flex-col gap-1 px-4 py-3">
                         <div className="flex items-start justify-between gap-2">
                           <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900 dark:text-white">
                             {title}
@@ -227,10 +240,12 @@ export function HeaderNotifications({
                             type="button"
                             onClick={() => void dismissHa(n.notification_id)}
                             disabled={isDismissing}
-                            className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50 dark:hover:bg-white/10"
-                            aria-label={t("notifications.dismiss")}
+                            className={DISMISS_TAP_CLASS}
+                            aria-label={t("notifications.dismissItem").replace("{title}", title)}
                           >
-                            <X className="h-4 w-4" />
+                            <span className={DISMISS_ICON_CLASS}>
+                              <X className="h-4 w-4" aria-hidden />
+                            </span>
                           </button>
                         </div>
                         {message ? (
