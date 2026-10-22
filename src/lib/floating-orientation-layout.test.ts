@@ -1,6 +1,10 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { DashboardLayoutNoticeView } from "@/components/dashboard-layout-notice";
+import { DASHBOARD_PAGE_UNDO_TOAST_BOTTOM_PX } from "@/components/dashboard-page-undo-toast";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { readFloatingPositions, restoreFloatingPositions, type PositionStorage } from "@/lib/dashboard-page-removal";
 import { getTranslations } from "@/lib/i18n";
@@ -10,8 +14,11 @@ import {
   floatingStoragePrefixes,
   layoutStorageKey,
   measuredSizeOverrides,
+  consumeLayoutNotice,
+  MIN_VISIBLE_BOTTOM_PX,
   overlapPairs,
   portraitBelowFold,
+  PORTRAIT_BELOW_FOLD_NOTICE_KEY,
   pushDown,
   readingOrder,
   reconcileFloatingLayout,
@@ -202,6 +209,79 @@ describe("push down", () => {
       expect(byId[id].bottom).toBe(BEREKEND[id].bottom);
     }
     expect(overlapPairs(pushed, "gap")).toEqual([]);
+  });
+
+  it("separates two lights pushed onto the same spot by a camera grown 270px", () => {
+    const camera = placedFrom({ ...BEREKEND.Camera, h: 540, bottom: 290 }, "Camera", true);
+    const start = ORDER.map((id) => (id === "Camera" ? camera : placedFrom(BEREKEND[id], id, false)));
+    const pushed = pushDown(start, PORTRAIT).tiles;
+    const byId = Object.fromEntries(pushed.map((item) => [item.id, item]));
+
+    expect(byId.Camera.left).toBe(400);
+    expect(byId.Camera.bottom).toBe(290);
+    expect(byId.Bedlamp.left).toBe(544);
+    expect(byId.Keuken.left).toBe(544);
+    expect(byId.Bedlamp.bottom).toBe(192);
+    expect(byId.Keuken.bottom).toBe(96);
+    expect(byId.Bedlamp.bottom).not.toBe(byId.Keuken.bottom);
+    expect(overlapPairs(pushed, "gap")).toEqual([]);
+    for (const item of pushed) {
+      if (item.bottom < 0) continue;
+      expect(item.bottom).toBeGreaterThanOrEqual(MIN_VISIBLE_BOTTOM_PX);
+    }
+  });
+
+  it("leaves no gap overlap after push for seeded stacks", () => {
+    for (let trial = 0; trial < 40; trial += 1) {
+      const rand = mulberry32(0x6f1900 + trial);
+      const count = 2 + Math.floor(rand() * 5);
+      const anchorIndex = rand() < 0.7 ? Math.floor(rand() * count) : -1;
+      const start: PlacedTile[] = [];
+      for (let index = 0; index < count; index += 1) {
+        const w = 96 + Math.floor(rand() * 8) * 16;
+        const h = 64 + Math.floor(rand() * 6) * 16;
+        const left = 16 + Math.floor(rand() * 20) * 16;
+        const bottom = 32 + Math.floor(rand() * 48) * 16;
+        start.push({
+          id: `t${index}`,
+          left,
+          bottom,
+          x: left,
+          y: PORTRAIT.height - bottom - h,
+          w,
+          h,
+          anchor: index === anchorIndex,
+        });
+      }
+      const pushed = pushDown(start, PORTRAIT).tiles;
+      const anchors = new Set(start.filter((tile) => tile.anchor).map((tile) => tile.id));
+      for (const [leftId, rightId] of overlapPairs(pushed, "gap")) {
+        expect(anchors.has(leftId) && anchors.has(rightId)).toBe(true);
+      }
+      for (const tile of pushed) {
+        const before = start.find((item) => item.id === tile.id);
+        expect(before).toBeTruthy();
+        expect(tile.left).toBe(before?.left);
+        if (tile.anchor) expect(tile.bottom).toBe(before?.bottom);
+        if (tile.bottom >= 0) expect(tile.bottom).toBeGreaterThanOrEqual(MIN_VISIBLE_BOTTOM_PX);
+      }
+    }
+  });
+
+  it("keeps on-screen tiles 32px above the page bar without lifting below-fold tiles", () => {
+    const onBar = placedFrom({ left: 96, bottom: 0, w: 240, h: 70 }, "Bedlamp");
+    expect(pushDown([onBar], PORTRAIT).tiles[0]?.bottom).toBe(MIN_VISIBLE_BOTTOM_PX);
+    const below = placedFrom({ left: 96, bottom: -48, w: 240, h: 70 }, "Keuken");
+    expect(pushDown([below], PORTRAIT).tiles[0]?.bottom).toBe(-48);
+    const climate = placedFrom({ left: 96, bottom: 0, w: 300, h: 340 }, "Klimaat");
+    expect(pushDown([climate], PORTRAIT).tiles[0]?.bottom).toBe(MIN_VISIBLE_BOTTOM_PX);
+  });
+
+  it("stops when the only remaining overlap is between anchors", () => {
+    const a = placedFrom(BEREKEND.Bedlamp, "Bedlamp", true);
+    const b = placedFrom({ ...BEREKEND.Bedlamp, left: 544 }, "Keuken", true);
+    const pushed = pushDown([a, b], PORTRAIT).tiles;
+    expect(pushed.map((tile) => tile.bottom)).toEqual([BEREKEND.Bedlamp.bottom, BEREKEND.Bedlamp.bottom]);
   });
 
   it("keeps the climate position inside the clamp it would save", () => {
@@ -641,6 +721,16 @@ describe("orientation migration", () => {
 });
 
 describe("below the fold and widget prefixes", () => {
+  it("shows the below-fold notice once per session and keeps repeating landscape overlap", () => {
+    const session = new MemoryStorage();
+    expect(consumeLayoutNotice("portrait-below-fold", session)).toBe("portrait-below-fold");
+    expect(session.getItem(PORTRAIT_BELOW_FOLD_NOTICE_KEY)).toBe("1");
+    expect(consumeLayoutNotice("portrait-below-fold", session)).toBeNull();
+    expect(consumeLayoutNotice("landscape-overlap", session)).toBe("landscape-overlap");
+    expect(consumeLayoutNotice("landscape-overlap", session)).toBe("landscape-overlap");
+    expect(consumeLayoutNotice(null, session)).toBeNull();
+  });
+
   it("asks for vertical scroll room when a bottom is negative", () => {
     expect(scrollOverflowPx([32, 0])).toBe(0);
     expect(scrollOverflowPx([32, -32])).toBe(48);
@@ -669,12 +759,41 @@ describe("below the fold and widget prefixes", () => {
   it("has both layout messages in Dutch and English", () => {
     const en = getTranslations("en");
     const nl = getTranslations("nl");
-    for (const key of ["dashboardLayout.landscapeOverlap", "dashboardLayout.portraitBelowFold"]) {
-      expect(en[key]).toBeTruthy();
-      expect(nl[key]).toBeTruthy();
-      expect(en[key]).not.toBe(key);
-      expect(nl[key]).not.toBe(en[key]);
-    }
+    expect(nl["dashboardLayout.portraitBelowFold"]).toBe(
+      "Sommige tegels staan onder de schermrand. Scroll omlaag om ze te zien."
+    );
+    expect(en["dashboardLayout.portraitBelowFold"]).toBe(
+      "Some tiles sit below the screen edge. Scroll down to see them."
+    );
+    expect(nl["dashboardLayout.landscapeOverlap"]).toBe(
+      "Tegels overlappen in liggende stand. Verplaats ze daar zelf."
+    );
+    expect(en["dashboardLayout.landscapeOverlap"]).toBe(
+      "Tiles overlap in landscape. Move them there yourself."
+    );
+
+    const notice = renderToStaticMarkup(
+      createElement(DashboardLayoutNoticeView, {
+        message: nl["dashboardLayout.portraitBelowFold"],
+        onDismiss: () => {},
+      })
+    );
+    expect(notice).toContain('role="status"');
+    expect(notice).not.toMatch(/<button[^>]*role=/);
+    expect(notice).toContain("h-11");
+    expect(notice).toContain("whitespace-nowrap");
+    expect(notice).toContain(`bottom:${DASHBOARD_PAGE_UNDO_TOAST_BOTTOM_PX}px`);
+    expect(notice).not.toContain("top-16");
+    expect(notice).toContain(nl["dashboardLayout.portraitBelowFold"]);
+
+    const css = readFileSync(path.join(process.cwd(), "src/app/globals.css"), "utf8");
+    expect(css).toContain("html[data-dashboard-edit] [data-dashboard-pager]");
+    expect(css).toContain("html[data-dashboard-edit][data-portrait-scroll] [data-dashboard-pager]");
+    expect(css).toContain("pointer-events: auto");
+    expect(css).toContain(
+      "html[data-portrait-scroll]:not([data-dashboard-edit]) [data-dashboard-page] .card-plot-in"
+    );
+    expect(css).toContain("touch-action: pan-y !important");
   });
 
   it("records a measured size that differs from the widget config", () => {
@@ -688,6 +807,16 @@ describe("below the fold and widget prefixes", () => {
     expect(overrides.sensor).toEqual({ w: 260, h: 108 });
   });
 });
+
+function mulberry32(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = Math.imul(state ^ (state >>> 15), 1 | state);
+    value = (value + Math.imul(value ^ (value >>> 7), 61 | value)) ^ value;
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 function keyName(key: string): (typeof ORDER)[number] {
   if (key.includes("Weather")) return "Weer";

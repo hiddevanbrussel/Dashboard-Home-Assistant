@@ -91,6 +91,10 @@ export const MARGIN_RIGHT = 16;
 export const MARGIN_TOP = 80;
 /** Delete control sits about 10px outside the top and right of the card. */
 export const REMOVE_BADGE_OUTSET_PX = 10;
+/** Page bar is 28px. On-screen tiles stay at least 32px above the viewport bottom. */
+export const MIN_VISIBLE_BOTTOM_PX = 32;
+/** Shown once per browser session, not on every rotation. */
+export const PORTRAIT_BELOW_FOLD_NOTICE_KEY = "dashboard.floatingLayout.portraitBelowFoldSeen";
 
 export type Orientation = "landscape" | "portrait";
 export type PortraitSource = "afgeleid" | "gebruiker";
@@ -485,7 +489,14 @@ export function firstFit(
       y = viewport.height - bottom - tile.h;
       guard += 1;
     }
-    const settled = settleClamp(tile, spot.x, bottom, viewport);
+    let settled = settleClamp(tile, spot.x, bottom, viewport);
+    let settleGuard = 0;
+    while (hits(tile, settled.x, settled.y, obstacles) && settleGuard < 500) {
+      bottom = settled.bottom - GRID;
+      if (bottom >= 0 && bottom < MIN_VISIBLE_BOTTOM_PX) bottom = -GRID;
+      settled = settleClamp(tile, spot.x, bottom, viewport);
+      settleGuard += 1;
+    }
     placed.push(settled);
     obstacles.push(settled);
   }
@@ -529,15 +540,18 @@ function settleClamp(
   const maxBottom = Math.max(0, viewport.height - tile.h - inset);
   let nextLeft = Math.max(0, Math.min(left, maxLeft));
   let nextBottom = bottom;
+  const minBottom = maxBottom >= MIN_VISIBLE_BOTTOM_PX ? MIN_VISIBLE_BOTTOM_PX : 0;
   if (tile.persistsClamp) {
     const snapped = snapToGrid(
-      { left: nextLeft, bottom: Math.max(0, nextBottom) },
-      { maxLeft, maxBottom }
+      { left: nextLeft, bottom: Math.max(minBottom, nextBottom) },
+      { maxLeft, maxBottom, minBottom }
     );
     nextLeft = snapped.left;
     nextBottom = snapped.bottom;
   } else if (nextBottom > maxBottom) {
     nextBottom = Math.floor(maxBottom / GRID) * GRID;
+  } else if (nextBottom >= 0 && nextBottom < MIN_VISIBLE_BOTTOM_PX && maxBottom >= MIN_VISIBLE_BOTTOM_PX) {
+    nextBottom = MIN_VISIBLE_BOTTOM_PX;
   }
   return {
     id: tile.id,
@@ -552,6 +566,70 @@ function settleClamp(
   };
 }
 
+/** Same place in one pass: the later id moves, so the earlier tile stays. */
+function yieldsTo(tile: PlacedTile, other: PlacedTile): boolean {
+  if (other.anchor) return true;
+  if (other.y !== tile.y) return other.y < tile.y;
+  if (other.x !== tile.x) return other.x < tile.x;
+  return other.id < tile.id;
+}
+
+function clearBottom(
+  tile: PlacedTile,
+  minY: number,
+  viewportHeight: number
+): number {
+  let bottom = floorBottom(viewportHeight, minY, tile.h);
+  if (viewportHeight - bottom - tile.h < minY) bottom -= GRID;
+  if (tile.persistsClamp) return Math.max(MIN_VISIBLE_BOTTOM_PX, bottom);
+  if (bottom < 0 || bottom >= MIN_VISIBLE_BOTTOM_PX) return bottom;
+  const raisedY = viewportHeight - MIN_VISIBLE_BOTTOM_PX - tile.h;
+  if (raisedY >= minY) return MIN_VISIBLE_BOTTOM_PX;
+  let dropped = -GRID;
+  let guard = 0;
+  while (viewportHeight - dropped - tile.h < minY && guard < 500) {
+    dropped -= GRID;
+    guard += 1;
+  }
+  return dropped;
+}
+
+function applySettled(tile: PlacedTile, settled: PlacedTile): boolean {
+  const changed = settled.left !== tile.left || settled.bottom !== tile.bottom || settled.y !== tile.y;
+  tile.left = settled.left;
+  tile.x = settled.x;
+  tile.bottom = settled.bottom;
+  tile.y = settled.y;
+  return changed;
+}
+
+function nudgePastOverlap(tile: PlacedTile, viewportHeight: number): boolean {
+  let bottom = tile.bottom - GRID;
+  if (tile.persistsClamp) bottom = Math.max(MIN_VISIBLE_BOTTOM_PX, bottom);
+  else if (bottom >= 0 && bottom < MIN_VISIBLE_BOTTOM_PX) bottom = -GRID;
+  if (bottom === tile.bottom) return false;
+  tile.bottom = bottom;
+  tile.y = viewportHeight - bottom - tile.h;
+  tile.left = tile.x;
+  return true;
+}
+
+function blockersOf(items: readonly PlacedTile[], tile: PlacedTile): PlacedTile[] {
+  return items.filter((other) => other !== tile && blocksPlacement(tile, other));
+}
+
+/** One grid down for a tile that still overlaps, skipping the page-bar band. */
+function nudgeOneYielder(items: readonly PlacedTile[], viewportHeight: number): boolean {
+  const ordered = [...items].sort((a, b) => a.y - b.y || a.x - b.x || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  for (const tile of ordered) {
+    if (tile.anchor) continue;
+    const blockers = blockersOf(items, tile);
+    if (blockers.length === 0 || !blockers.some((other) => yieldsTo(tile, other))) continue;
+    if (nudgePastOverlap(tile, viewportHeight)) return true;
+  }
+  return false;
+}
+
 export function pushDown(
   tiles: readonly PlacedTile[],
   viewport: { width: number; height: number }
@@ -560,15 +638,12 @@ export function pushDown(
   const limit = items.length * 80 + 8;
   for (let pass = 0; pass < limit; pass += 1) {
     let moved = false;
-    const ordered = [...items].sort((a, b) => a.y - b.y || a.x - b.x);
+    const ordered = [...items].sort((a, b) => a.y - b.y || a.x - b.x || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     for (const tile of ordered) {
       if (tile.anchor) continue;
       const blockers = items.filter((other) => other !== tile && blocksPlacement(tile, other));
       if (blockers.length === 0) continue;
-      const yields = blockers.some(
-        (other) => other.anchor || other.y < tile.y || (other.y === tile.y && other.x < tile.x)
-      );
-      if (!yields) continue;
+      if (!blockers.some((other) => yieldsTo(tile, other))) continue;
       let minY = tile.y;
       for (const other of blockers) {
         const borderClear = other.y + other.h + GAP;
@@ -576,23 +651,22 @@ export function pushDown(
         minY = Math.max(minY, borderClear, badgeClear);
       }
       if (minY <= tile.y) continue;
-      let bottom = floorBottom(viewport.height, minY, tile.h);
-      if (tile.persistsClamp) bottom = Math.max(0, bottom);
-      const y = viewport.height - bottom - tile.h;
-      if (bottom === tile.bottom && y === tile.y) continue;
+      let bottom = clearBottom(tile, minY, viewport.height);
+      if (bottom === tile.bottom) {
+        if (!nudgePastOverlap(tile, viewport.height)) continue;
+        moved = true;
+        continue;
+      }
       tile.bottom = bottom;
-      tile.y = y;
+      tile.y = viewport.height - bottom - tile.h;
       tile.left = tile.x;
       moved = true;
     }
-    if (!moved) break;
-  }
-  for (const tile of items) {
-    const settled = settleClamp(tile, tile.left, tile.bottom, viewport);
-    tile.left = settled.left;
-    tile.x = settled.x;
-    tile.bottom = settled.bottom;
-    tile.y = settled.y;
+    for (const tile of items) {
+      if (applySettled(tile, settleClamp(tile, tile.left, tile.bottom, viewport))) moved = true;
+    }
+    if (overlapPairs(items, "gap").length === 0) break;
+    if (!moved && !nudgeOneYielder(items, viewport.height)) break;
   }
   return { tiles: items, belowFold: items.some((tile) => tile.bottom < 0) };
 }
@@ -825,6 +899,21 @@ export function portraitBelowFold(
   viewport: { width: number; height: number }
 ): boolean {
   return boxesFromPositions(positions, tiles, viewport, undefined).some((tile) => tile.bottom < 0);
+}
+
+/** Portrait below-fold is announced once per session. Landscape overlap is unchanged. */
+export function consumeLayoutNotice(
+  notice: LayoutNotice | null,
+  session: { getItem(key: string): string | null; setItem(key: string, value: string): void }
+): LayoutNotice | null {
+  if (notice !== "portrait-below-fold") return notice;
+  try {
+    if (session.getItem(PORTRAIT_BELOW_FOLD_NOTICE_KEY) === "1") return null;
+    session.setItem(PORTRAIT_BELOW_FOLD_NOTICE_KEY, "1");
+  } catch {
+    return notice;
+  }
+  return notice;
 }
 
 export function landscapeOverlaps(

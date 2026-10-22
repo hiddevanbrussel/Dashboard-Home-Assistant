@@ -147,6 +147,21 @@ html[data-dashboard-edit] [data-energy-board] .card-plot-in {
   pointer-events: auto;
 }
 
+/* The edit rule above sets the pager to pointer-events: none and beats the
+   pager's own pointer-events-auto. Portrait with tiles below the fold still
+   needs vertical scrolling. Landscape never sets data-portrait-scroll. */
+html[data-dashboard-edit][data-portrait-scroll] [data-dashboard-pager] {
+  pointer-events: auto;
+}
+
+/* A view-mode swipe that starts on a card has to pan the portrait scroller.
+   Inline touch-action: none on the wrappers would otherwise swallow it.
+   Edit mode is excluded so drag and resize keep working. Child sliders set
+   their own touch-action; this property is not inherited. */
+html[data-portrait-scroll]:not([data-dashboard-edit]) [data-dashboard-page] .card-plot-in {
+  touch-action: pan-y !important;
+}
+
 /* Title/text cards often sit in the header band. Let taps reach the card,
    while header controls stay clickable. */
 html[data-dashboard-edit] [data-app-header] {
