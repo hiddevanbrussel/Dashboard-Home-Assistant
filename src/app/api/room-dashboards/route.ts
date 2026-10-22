@@ -58,7 +58,16 @@ function slugify(str: string): string {
 export async function POST(request: Request) {
   const denied = await requireApiAuth(request);
   if (denied) return denied;
-  let body: { name?: string; id?: string; icon?: string; iconBackgroundColor?: string; background?: string; floor?: string } = {};
+  let body: {
+    name?: string;
+    id?: string;
+    icon?: string;
+    iconBackgroundColor?: string;
+    background?: string;
+    floor?: string;
+    temperatureEntityId?: string;
+    humidityEntityId?: string;
+  } = {};
   try {
     body = await request.json();
   } catch {
@@ -96,6 +105,14 @@ export async function POST(request: Request) {
   const iconBackgroundColor = typeof body.iconBackgroundColor === "string" && body.iconBackgroundColor.trim() ? body.iconBackgroundColor.trim() : null;
   const background = typeof body.background === "string" && body.background.trim() ? body.background.trim() : null;
   const floor = typeof body.floor === "string" && body.floor.trim() ? body.floor.trim() : null;
+  const temperatureEntityId =
+    typeof body.temperatureEntityId === "string" && body.temperatureEntityId.trim()
+      ? body.temperatureEntityId.trim()
+      : null;
+  const humidityEntityId =
+    typeof body.humidityEntityId === "string" && body.humidityEntityId.trim()
+      ? body.humidityEntityId.trim()
+      : null;
 
   let rd;
   try {
@@ -107,6 +124,8 @@ export async function POST(request: Request) {
         iconBackgroundColor: iconBackgroundColor,
         background: background,
         floor: floor,
+        temperatureEntityId,
+        humidityEntityId,
       },
     });
   } catch (err) {
@@ -129,6 +148,8 @@ export async function POST(request: Request) {
     iconBackgroundColor: rd.iconBackgroundColor ?? null,
     floor: rd.floor ?? null,
     background: rd.background ?? null,
+    temperatureEntityId: rd.temperatureEntityId ?? null,
+    humidityEntityId: rd.humidityEntityId ?? null,
     createdAt: rd.createdAt.toISOString(),
   });
 }
