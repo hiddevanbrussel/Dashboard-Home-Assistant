@@ -2552,24 +2552,30 @@ export default function DashboardEditPage() {
           </>
       ) : getEditModeAllowed() ? (
         <>
-          <button
-            type="button"
-            onClick={() => {
-              const passcode = getEditModePasscode().trim();
-              if (passcode) {
-                setEditPasscodeInput("");
-                setEditPasscodeError(null);
-                setEditPasscodeModalOpen(true);
-              } else {
-                setEditMode(true);
-              }
-            }}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-white hover:opacity-90"
-            style={{ backgroundColor: "#4700B5" }}
-            aria-label={t("editPanel.editDashboard")}
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
+          <span className="relative inline-flex h-8 w-8 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                const passcode = getEditModePasscode().trim();
+                if (passcode) {
+                  setEditPasscodeInput("");
+                  setEditPasscodeError(null);
+                  setEditPasscodeModalOpen(true);
+                } else {
+                  setEditMode(true);
+                }
+              }}
+              className="group absolute left-1/2 top-1/2 z-[1] flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full"
+              aria-label={t("editPanel.editDashboard")}
+            >
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-full text-white group-hover:opacity-90"
+                style={{ backgroundColor: "#4700B5" }}
+              >
+                <Pencil className="h-4 w-4" />
+              </span>
+            </button>
+          </span>
           {editPasscodeModalOpen && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[300]" aria-modal="true" role="dialog">
               <div
