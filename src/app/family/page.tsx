@@ -779,8 +779,8 @@ export default function FamilyPage() {
   });
 
   const { data: streaksData } = useQuery<StreaksResponse>({
-    queryKey: ["chore-streaks"],
-    queryFn: () => fetch("/api/chore-completions/streaks").then((r) => r.json()),
+    queryKey: ["chore-streaks", todayDate],
+    queryFn: () => fetch(`/api/chore-completions/streaks?date=${todayDate}`).then((r) => r.json()),
     refetchInterval: 300_000,
   });
 
@@ -804,7 +804,7 @@ export default function FamilyPage() {
       fetch("/api/chore-completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ choreId, childId, frequency }),
+        body: JSON.stringify({ choreId, childId, frequency, date: todayDate }),
       }).then((r) => r.json()),
     onMutate: async ({ choreId, childId }) => {
       await queryClient.cancelQueries({ queryKey: ["chore-completions", todayDate] });

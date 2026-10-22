@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { localDateKey } from "./local-date";
+import { localDateKey, resolveChoreDay } from "./local-date";
 
 const AMSTERDAM = "Europe/Amsterdam";
 
@@ -11,6 +11,7 @@ describe("localDateKey", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   function onAmsterdamDay(isoUtc: string): string {
@@ -110,5 +111,54 @@ describe("localDateKey", () => {
     }) as typeof Intl.DateTimeFormat);
 
     expect(localDateKey()).toBe("2026-07-15");
+  });
+});
+
+describe("resolveChoreDay", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  function asUtcServer() {
+    vi.stubEnv("TZ", "UTC");
+    const RealDateTimeFormat = Intl.DateTimeFormat;
+    vi.spyOn(Intl, "DateTimeFormat").mockImplementation(((
+      locales?: Intl.LocalesArgument,
+      options?: Intl.DateTimeFormatOptions,
+    ) => {
+      const real = new RealDateTimeFormat(locales, options);
+      if (options?.timeZone) return real;
+      const resolved = real.resolvedOptions();
+      return Object.assign(real, {
+        resolvedOptions: () => ({ ...resolved, timeZone: "UTC" }),
+      });
+    }) as typeof Intl.DateTimeFormat);
+  }
+
+  it("at 00:30 Amsterdam time ignores a UTC server timezone", () => {
+    // 00:30 CEST is still the previous UTC day.
+    vi.setSystemTime(new Date("2026-07-14T22:30:00.000Z"));
+    asUtcServer();
+
+    expect(process.env.TZ).toBe("UTC");
+    expect(localDateKey()).toBe("2026-07-14");
+    expect(resolveChoreDay()).toBe("2026-07-15");
+  });
+
+  it("prefers the client day, then the client zone, then the HA zone", () => {
+    vi.setSystemTime(new Date("2026-07-14T22:30:00.000Z"));
+    asUtcServer();
+
+    expect(resolveChoreDay({ date: "2026-07-16", timeZone: "UTC", haTimeZone: "UTC" })).toBe("2026-07-16");
+    expect(resolveChoreDay({ date: "2026-02-31" })).toBe("2026-07-15");
+    expect(resolveChoreDay({ timeZone: "UTC", haTimeZone: "Europe/Amsterdam" })).toBe("2026-07-14");
+    expect(resolveChoreDay({ haTimeZone: "America/New_York" })).toBe("2026-07-14");
+    expect(resolveChoreDay({ haTimeZone: "Not/AZone" })).toBe("2026-07-15");
   });
 });

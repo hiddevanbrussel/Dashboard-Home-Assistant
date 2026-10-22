@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { StreaksResponse } from "@/lib/chores-types";
 import { requireApiAuth } from "@/lib/require-api-auth";
-import { localDateKey } from "@/lib/local-date";
+import { resolveChoreDay } from "@/lib/local-date";
 
 function parseChildIds(raw: string | null): string[] | null {
   if (!raw) return null;
@@ -25,10 +25,14 @@ function addDays(dateStr: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function GET() {
-  const denied = await requireApiAuth();
+export async function GET(request: Request) {
+  const denied = await requireApiAuth(request);
   if (denied) return denied;
-  const today = localDateKey();
+  const { searchParams } = new URL(request.url);
+  const today = resolveChoreDay({
+    date: searchParams.get("date"),
+    timeZone: searchParams.get("timeZone"),
+  });
 
   const [children, chores, completions] = await Promise.all([
     prisma.child.findMany({ orderBy: { order: "asc" } }),
