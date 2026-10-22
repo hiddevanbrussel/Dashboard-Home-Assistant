@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.2] - 2026-10-22
+
+No breaking changes: existing configs and localStorage keep working.
+
+### Added
+
+- Deleting a dashboard page can be undone for five seconds, and only the latest deletion stays undoable (#289).
+
+### Changed
+
+- The notification panel is solid in dark mode, and each dismiss control is a 44px tap target (#288).
+- The clock font ships with the app, so the dashboard no longer downloads it from Google Fonts (#287).
+- Glass density now applies only to the tiles. The navigation rail is solid, including over a photo background, with 44×44 tap targets (#291).
+
+### Fixed
+
+- The notification panel stays inside the screen, so Clear all remains visible, and the first list after idle shows current notifications (#282).
+- In edit mode the page bar no longer covers the resize handle of a tile along the bottom (#286).
+
 ## [0.5.1] - 2026-10-21
 
 - Fix: the add-on UI crashed under Home Assistant ingress (#277).
