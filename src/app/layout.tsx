@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import localFont from "next/font/local";
-import { Montserrat } from "next/font/google";
+import { montserrat } from "@/fonts/montserrat/montserrat";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { OnboardingGuard } from "@/components/onboarding-guard";
@@ -28,12 +28,6 @@ const googleSans = localFont({
   preload: true,
   adjustFontFallback: "Arial",
   fallback: ["system-ui"],
-});
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["500", "600", "800", "900"],
-  variable: "--font-montserrat",
-  display: "swap",
 });
 
 export const metadata: Metadata = {

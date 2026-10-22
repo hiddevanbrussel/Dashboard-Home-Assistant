@@ -14,9 +14,7 @@ COPY . .
 # prisma generate vereist DATABASE_URL; bij build is er geen runtime-ENV, dus placeholder
 ENV DATABASE_URL="file:./dev.db"
 RUN npx prisma generate
-# next/font downloads Montserrat during the build. A dropped response crashes
-# the loader, so clear .next and try once more.
-RUN npm run build || (rm -rf .next && npm run build)
+RUN npm run build
 
 FROM node:20-alpine AS runner
 
@@ -47,6 +45,8 @@ COPY --from=builder /app/package-lock.json ./
 # Production dependencies only. Prisma CLI stays because it is a runtime dependency for migrations.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src/lib/check-secrets.mjs ./src/lib/check-secrets.mjs
+# SIL Open Font License for the self-hosted Montserrat files.
+COPY src/fonts/montserrat/OFL.txt /usr/share/licenses/montserrat/OFL.txt
 
 # better-sqlite3 is een native addon: opnieuw bouwen voor deze container (Alpine) zodat de .node-binding klopt
 RUN apk add --no-cache python3 make g++ \
