@@ -154,12 +154,13 @@ html[data-dashboard-edit][data-portrait-scroll] [data-dashboard-pager] {
   pointer-events: auto;
 }
 
-/* A view-mode swipe that starts on a card has to pan the portrait scroller.
-   Inline touch-action: none on the wrappers would otherwise swallow it.
-   Edit mode is excluded so drag and resize keep working. Child sliders set
-   their own touch-action; this property is not inherited. */
+/* A view-mode swipe that starts on a card has to pan the portrait scroller
+   vertically and still move between pages horizontally. Inline touch-action: none
+   on the wrappers would otherwise swallow both. Edit mode is excluded so drag
+   and resize keep working. Child sliders set their own touch-action; it is not
+   inherited. */
 html[data-portrait-scroll]:not([data-dashboard-edit]) [data-dashboard-page] .card-plot-in {
-  touch-action: pan-y !important;
+  touch-action: pan-x pan-y !important;
 }
 
 /* Title/text cards often sit in the header band. Let taps reach the card,

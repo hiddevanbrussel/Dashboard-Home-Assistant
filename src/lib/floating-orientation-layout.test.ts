@@ -793,7 +793,7 @@ describe("below the fold and widget prefixes", () => {
     expect(css).toContain(
       "html[data-portrait-scroll]:not([data-dashboard-edit]) [data-dashboard-page] .card-plot-in"
     );
-    expect(css).toContain("touch-action: pan-y !important");
+    expect(css).toContain("touch-action: pan-x pan-y !important");
   });
 
   it("records a measured size that differs from the widget config", () => {
