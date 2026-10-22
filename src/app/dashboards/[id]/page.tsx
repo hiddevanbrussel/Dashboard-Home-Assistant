@@ -1135,6 +1135,8 @@ export default function DashboardEditPage() {
   const pendingAddRef = useRef<string | null>(null);
   const placedStorageRef = useRef<{ widgetId: string; key: string } | null>(null);
   const syncAddTileRef = useRef<(stack: AddTileStep[]) => void>(() => {});
+  const addTileButtonRef = useRef<HTMLButtonElement>(null);
+  const addTileDialogRef = useRef<HTMLDivElement>(null);
   const LONG_PRESS_MS = 500;
 
   async function handleRoomBackgroundUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -2009,6 +2011,62 @@ export default function DashboardEditPage() {
     return () => window.clearTimeout(timer);
   }, [undoAdd]);
 
+  const addTileWasOpenRef = useRef(false);
+  useEffect(() => {
+    if (!addTileOpen) {
+      if (addTileWasOpenRef.current) addTileButtonRef.current?.focus();
+      addTileWasOpenRef.current = false;
+      return;
+    }
+    addTileWasOpenRef.current = true;
+    const dialog = addTileDialogRef.current;
+    if (!dialog) return;
+
+    const focusableSelector = [
+      "button:not([disabled])",
+      "a[href]",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])",
+    ].join(", ");
+
+    const focusable = () =>
+      Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+        (el) => !el.hasAttribute("disabled") && el.getClientRects().length > 0,
+      );
+
+    dialog.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const nodes = focusable();
+      if (nodes.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+      const inside = active instanceof Node && dialog.contains(active) && active !== dialog;
+      if (event.shiftKey) {
+        if (!inside || active === first) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+      if (!inside || active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [addTileOpen]);
+
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
   const entitiesToShow =
     addTileSelectedType === "pill_card"
@@ -2357,6 +2415,7 @@ export default function DashboardEditPage() {
       {editMode ? (
         <>
             <button
+              ref={addTileButtonRef}
               type="button"
               onClick={() => {
                 setAddTileOpen(true);
@@ -2378,9 +2437,16 @@ export default function DashboardEditPage() {
                   aria-hidden
                   onClick={closeAddFlow}
                 />
-                <div className="fixed left-1/2 top-1/2 z-[301] flex h-[min(640px,calc(100dvh-2rem))] max-h-[calc(100dvh-1rem)] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-[rgba(17,24,39,0.08)] bg-white shadow-2xl dark:border-white/10 dark:bg-[#1b1a21]">
+                <div
+                  ref={addTileDialogRef}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="add-tile-dialog-title"
+                  tabIndex={-1}
+                  className="fixed left-1/2 top-1/2 z-[301] flex h-[min(640px,calc(100dvh-2rem))] max-h-[calc(100dvh-1rem)] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-[rgba(17,24,39,0.08)] bg-white shadow-2xl outline-none dark:border-white/10 dark:bg-[#1b1a21]"
+                >
                   <div className="flex min-h-[68px] shrink-0 items-center justify-between gap-2 border-b border-[rgba(17,24,39,0.08)] px-3 py-2.5 dark:border-white/10">
-                    <h3 className="min-w-0 flex-1 truncate pl-2 text-xl font-semibold tracking-tight text-[#111827] dark:text-[#f3f4f6]">
+                    <h3 id="add-tile-dialog-title" className="min-w-0 flex-1 truncate pl-2 text-xl font-semibold tracking-tight text-[#111827] dark:text-[#f3f4f6]">
                       {addTileStep === "type" ? t("editPanel.addTile") : t("editPanel.chooseEntity")}
                     </h3>
                     <button
