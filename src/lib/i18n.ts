@@ -3022,7 +3022,7 @@ const translations: Record<"en" | "nl", Translations> = {
     "editPanel.cardHeightRangeImage": "48–720 px (standaard 260)",
     "editPanel.searchEntityPlaceholder": "Zoek op naam of entity_id (bijv. sensor.woonkamer)…",
     "editPanel.tileName": "Tegelnaam",
-    "editPanel.tileNamePlaceholder": "Kaartnaam",
+    "editPanel.tileNamePlaceholder": "Tegelnaam",
     "editPanel.yieldEntity": "Opbrengst (yield)",
     "editPanel.entityForConditions": "Entity voor voorwaarden (bijv. weather.home)",
     "editPanel.totalUsage": "Totaal verbruik (kWh, cumulative sensor)",
