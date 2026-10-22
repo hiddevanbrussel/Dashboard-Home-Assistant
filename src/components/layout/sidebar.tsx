@@ -34,12 +34,16 @@ const optionalItems = [
   { href: "/music", icon: Music2, labelKey: "nav.music", flag: "music" },
 ] as const;
 
+/**
+ * 44×44 tap zone (Redmi Pad SE, ≥44px). Accent only on the active item:
+ * light = brand, dark = brand-muted (same as the settings primary button).
+ */
 function navButtonClass(isActive: boolean) {
   return cn(
-    "relative z-[1] flex h-10 w-10 items-center justify-center rounded-full transition-all duration-150",
+    "sidebar-item relative z-[1] flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-150",
     isActive
-      ? "bg-brand text-white shadow-sm dark:bg-white dark:text-brand"
-      : "text-gray-700 hover:bg-white/55 hover:text-gray-900 dark:text-white/85 dark:hover:bg-white/15 dark:hover:text-white"
+      ? "bg-brand text-white dark:bg-brand-muted dark:text-[rgb(var(--brand-on-muted))]"
+      : "text-gray-700 hover:bg-gray-900/[0.06] active:bg-gray-900/10 aria-expanded:bg-gray-900/10 dark:text-gray-200 dark:hover:bg-white/[0.08] dark:active:bg-white/[0.12] dark:aria-expanded:bg-white/[0.12]"
   );
 }
 
@@ -74,7 +78,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
     <div className={cn("flex flex-col items-center gap-4", className)}>
       <aside
         data-app-sidebar
-        className="sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-3 [touch-action:none] [-webkit-user-drag:none]"
+        className="sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-1.5 [touch-action:none] [-webkit-user-drag:none]"
         aria-label={t("nav.sidebar")}
       >
         {[...coreItems, ...extra].map(({ href, icon: Icon, labelKey }) => {
@@ -86,6 +90,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
               draggable={false}
               onDragStart={(event) => event.preventDefault()}
               aria-label={t(labelKey)}
+              aria-current={isActive ? "page" : undefined}
               title={t(labelKey)}
               className={cn(navButtonClass(isActive), "[-webkit-user-drag:none]")}
             >
@@ -95,7 +100,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
         })}
       </aside>
       <aside
-        className="sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-3 [touch-action:none] [-webkit-user-drag:none]"
+        className="sidebar-glass relative flex w-14 flex-col items-center gap-1 rounded-full py-1.5 [touch-action:none] [-webkit-user-drag:none]"
         aria-label={t("nav.utilities")}
       >
         <HeaderNotifications placement="sidebar" buttonClassName={navButtonClass(false)} />
@@ -104,6 +109,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
           draggable={false}
           onDragStart={(event) => event.preventDefault()}
           aria-label={t("nav.settings")}
+          aria-current={activeHref === "/settings" ? "page" : undefined}
           title={t("nav.settings")}
           className={cn(navButtonClass(activeHref === "/settings"), "[-webkit-user-drag:none]")}
         >

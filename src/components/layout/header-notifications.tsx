@@ -149,7 +149,12 @@ export function HeaderNotifications({
         <Bell className="h-5 w-5" aria-hidden />
         {count > 0 && (
           <span
-            className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
+            className={cn(
+              "absolute flex items-center justify-center rounded-full text-white",
+              placement === "sidebar"
+                ? "right-0.5 top-0.5 h-[18px] min-w-[18px] bg-red-600 px-[5px] text-[11px] font-semibold tabular-nums ring-2 ring-white dark:ring-[#1b1a21]"
+                : "-right-0.5 -top-0.5 h-4 min-w-[1rem] bg-red-500 px-1 text-[10px] font-bold"
+            )}
             aria-hidden
           >
             {count > 99 ? "99+" : count}
@@ -166,7 +171,7 @@ export function HeaderNotifications({
             theme !== "dark" && "backdrop-blur-xl",
             !frame && "invisible",
             placement === "sidebar"
-              ? "absolute bottom-0 left-full ml-2"
+              ? "absolute bottom-0 left-full ml-3.5"
               : "absolute right-0 top-full mt-1"
           )}
           style={frame ? { maxHeight: frame.maxHeight, width: frame.width } : undefined}
