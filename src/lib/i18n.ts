@@ -3090,7 +3090,7 @@ const translations: Record<"en" | "nl", Translations> = {
     "editPanel.dashboardPage": "Bordpagina",
     "editPanel.doneEditing": "Klaar met bewerken",
     "editPanel.editDashboard": "Dashboard bewerken",
-    "editPanel.addTile": "Kaart toevoegen",
+    "editPanel.addTile": "Tegel toevoegen",
     "editPanel.chooseEntity": "Kies entity",
     "editPanel.roomBackground": "Kamerachtergrond",
     "editPanel.invalidRoom": "Ongeldige kamer.",
