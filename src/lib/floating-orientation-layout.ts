@@ -1016,8 +1016,11 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
     const leaving = snapshotLive(storage, tiles);
     if (layout.active === "landscape") layout.landscape = leaving;
     if (layout.active === "portrait") {
-      if (!sameMap(leaving, layout.portrait)) layout.portraitBron = "gebruiker";
-      layout.portrait = leaving;
+      const portraitEdited = !sameMap(leaving, layout.portrait) && !sameMap(leaving, layout.landscape);
+      if (portraitEdited) {
+        layout.portrait = leaving;
+        layout.portraitBron = "gebruiker";
+      }
     }
     if (orientation === "portrait" && layout.portrait == null) {
       const derived = derivePortrait(tiles, layout.landscape, portraitViewport, landscapeViewport, false);
@@ -1035,15 +1038,20 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
     }
     const next = orientation === "portrait" ? layout.portrait ?? {} : layout.landscape;
     const previous = orientation === "portrait" ? layout.landscape : layout.portrait;
-    if (applyPositions(storage, previous, next)) {
-      wrote = true;
-      remount = input.mounted;
-    }
     layout.active = orientation;
+    // The master is durable before the shared keys change, so a crash or a
+    // second tab cannot mistake portrait bytes for the landscape layout.
+    writeFloatingLayout(storage, dashboardId, layout);
     wrote = true;
+    if (applyPositions(storage, previous, next)) remount = input.mounted;
   } else if (orientation === "portrait" && layout.portrait) {
     const current = snapshotLive(storage, tiles);
-    if (!sameMap(current, layout.portrait) && !input.rederive && !input.push) {
+    if (sameMap(current, layout.landscape) && !sameMap(current, layout.portrait)) {
+      if (applyPositions(storage, null, layout.portrait)) {
+        wrote = true;
+        remount = input.mounted;
+      }
+    } else if (!sameMap(current, layout.portrait) && !input.rederive && !input.push) {
       layout.portrait = { ...layout.portrait, ...current };
       layout.portraitBron = "gebruiker";
       wrote = true;
@@ -1084,7 +1092,13 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
     }
   } else if (orientation === "landscape") {
     const current = snapshotLive(storage, tiles);
-    if (!sameMap(current, layout.landscape)) {
+    const keysArePortrait = layout.portrait != null && sameMap(current, layout.portrait) && !sameMap(current, layout.landscape);
+    if (keysArePortrait) {
+      if (applyPositions(storage, null, layout.landscape)) {
+        wrote = true;
+        remount = input.mounted;
+      }
+    } else if (!sameMap(current, layout.landscape)) {
       layout.landscape = current;
       wrote = true;
     }

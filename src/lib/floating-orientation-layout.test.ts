@@ -305,6 +305,123 @@ describe("orientation migration", () => {
     expect(layout.portrait).toEqual(clear);
   });
 
+  it("restores the landscape master after the app was closed in portrait", () => {
+    const storage = new MemoryStorage();
+    seed(storage, LANDSCAPE_LS);
+    reconcileFloatingLayout({
+      storage,
+      dashboardId: SCOPE,
+      orientation: "portrait",
+      viewport: PORTRAIT,
+      tiles: qaTiles(),
+      push: false,
+      reportNotice: false,
+      rederive: false,
+      mounted: false,
+    });
+    for (const [key, value] of Object.entries(LANDSCAPE_LS)) expect(storage.getItem(key)).not.toBe(value);
+
+    const reopened = reconcileFloatingLayout({
+      storage,
+      dashboardId: SCOPE,
+      orientation: "landscape",
+      viewport: LANDSCAPE,
+      tiles: qaTiles(),
+      push: false,
+      reportNotice: false,
+      rederive: false,
+      mounted: true,
+    });
+    expect(reopened.remount).toBe(true);
+    for (const [key, value] of Object.entries(LANDSCAPE_LS)) expect(storage.getItem(key)).toBe(value);
+    const layout = JSON.parse(storage.getItem(layoutStorageKey(SCOPE)) ?? "{}") as {
+      active: string;
+      landscape: Record<string, string>;
+    };
+    expect(layout.active).toBe("landscape");
+    for (const [key, value] of Object.entries(LANDSCAPE_LS)) expect(layout.landscape[key]).toBe(value);
+  });
+
+  it("does not copy portrait bytes into the landscape master when a swap was interrupted", () => {
+    const storage = new MemoryStorage();
+    seed(storage, LANDSCAPE_LS);
+    reconcileFloatingLayout({
+      storage,
+      dashboardId: SCOPE,
+      orientation: "portrait",
+      viewport: PORTRAIT,
+      tiles: qaTiles(),
+      push: false,
+      reportNotice: false,
+      rederive: false,
+      mounted: false,
+    });
+    const saved = JSON.parse(storage.getItem(layoutStorageKey(SCOPE)) ?? "{}") as {
+      landscape: Record<string, string>;
+      portrait: Record<string, string>;
+      portraitBron: string;
+    };
+    storage.setItem(
+      layoutStorageKey(SCOPE),
+      JSON.stringify({ v: 1, active: "landscape", landscape: saved.landscape, portrait: saved.portrait, portraitBron: saved.portraitBron })
+    );
+
+    reconcileFloatingLayout({
+      storage,
+      dashboardId: SCOPE,
+      orientation: "landscape",
+      viewport: LANDSCAPE,
+      tiles: qaTiles(),
+      push: false,
+      reportNotice: false,
+      rederive: false,
+      mounted: true,
+    });
+    for (const [key, value] of Object.entries(LANDSCAPE_LS)) {
+      expect(storage.getItem(key)).toBe(value);
+    }
+    const layout = JSON.parse(storage.getItem(layoutStorageKey(SCOPE)) ?? "{}") as { landscape: Record<string, string> };
+    for (const [key, value] of Object.entries(LANDSCAPE_LS)) expect(layout.landscape[key]).toBe(value);
+  });
+
+  it("keeps the landscape master on a portrait reload", () => {
+    const storage = new MemoryStorage();
+    seed(storage, LANDSCAPE_LS);
+    reconcileFloatingLayout({
+      storage,
+      dashboardId: SCOPE,
+      orientation: "portrait",
+      viewport: PORTRAIT,
+      tiles: qaTiles(),
+      push: false,
+      reportNotice: false,
+      rederive: false,
+      mounted: false,
+    });
+    const before = storage.getItem(layoutStorageKey(SCOPE));
+    const portraitKeys = snapshotActive(storage, qaTiles());
+    const reloaded = reconcileFloatingLayout({
+      storage,
+      dashboardId: SCOPE,
+      orientation: "portrait",
+      viewport: PORTRAIT,
+      tiles: qaTiles(),
+      push: false,
+      reportNotice: false,
+      rederive: false,
+      mounted: true,
+    });
+    expect(reloaded.wrote).toBe(false);
+    expect(snapshotActive(storage, qaTiles())).toEqual(portraitKeys);
+    const layout = JSON.parse(storage.getItem(layoutStorageKey(SCOPE)) ?? "{}") as {
+      active: string;
+      landscape: Record<string, string>;
+    };
+    expect(layout.active).toBe("portrait");
+    for (const [key, value] of Object.entries(LANDSCAPE_LS)) expect(layout.landscape[key]).toBe(value);
+    expect(storage.getItem(layoutStorageKey(SCOPE))).toBe(before);
+  });
+
   it("restores landscape bytes after a portrait drag and does not push landscape", () => {
     const storage = new MemoryStorage();
     seed(storage, LANDSCAPE_LS);
