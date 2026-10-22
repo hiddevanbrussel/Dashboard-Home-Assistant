@@ -21,9 +21,7 @@ ENV NEXT_PUBLIC_BASE_PATH="/__ha_ingress__"
 ARG VERSION=0.0.0
 ENV APP_VERSION="${VERSION}"
 RUN npx prisma generate
-# next/font downloads Montserrat during the build. A dropped response crashes
-# the loader, so clear .next and try once more.
-RUN npm run build || (rm -rf .next && npm run build)
+RUN npm run build
 
 FROM node:20-alpine AS runner
 
@@ -62,6 +60,8 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src/lib/check-secrets.mjs ./src/lib/check-secrets.mjs
+# SIL Open Font License for the self-hosted Montserrat files.
+COPY src/fonts/montserrat/OFL.txt /usr/share/licenses/montserrat/OFL.txt
 
 RUN apk add --no-cache python3 make g++ \
   && npm rebuild better-sqlite3 \
