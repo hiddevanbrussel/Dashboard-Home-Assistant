@@ -22,7 +22,8 @@ function commandSecrets(record: Record<string, unknown> | null): string[] {
  * Proxy to Music Assistant API (https://www.music-assistant.io/api/).
  * Prefers Docker/env `MUSIC_ASSISTANT_URL` + `MUSIC_ASSISTANT_TOKEN` over client body.
  * POST body: { baseUrl?: string, token?: string, command: string, args?: Record<string, unknown>, skipCache?: boolean }
- * `command` must match the playback/library allowlist. config/* and every other command return 403.
+ * `command` must be an exact allowlist entry. The only config command is config/players/get
+ * (player-bar volume preload). Every other config/* command returns 403.
  */
 export async function POST(request: Request) {
   const denied = await requireApiAuth(request);

@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/music-assistant/route";
 import { boundMusicAssistant } from "@/lib/bound-integration";
 import { callMaServer } from "@/lib/ma-server";
-import { MUSIC_ASSISTANT_ALLOWED_COMMANDS } from "@/lib/music-assistant-commands";
+import {
+  MUSIC_ASSISTANT_ALLOWED_COMMANDS,
+  MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND,
+} from "@/lib/music-assistant-commands";
+import { readPreloadedPlayerVolume } from "@/lib/player-volume";
 import { SESSION_COOKIE, signSession } from "@/lib/session";
 
 vi.mock("@/lib/ma-server", () => ({
@@ -21,6 +25,7 @@ const SERVER_TOKEN = "server-side-token";
 const BASE_URL = "http://ma.local:8095";
 
 const ALLOWED = [
+  "config/players/get",
   "music/albums/album_tracks",
   "music/albums/get",
   "music/artists/artist_albums",
@@ -102,11 +107,12 @@ describe("music assistant command allowlist", () => {
 
   it("exports exactly the commands the route may forward", () => {
     expect([...MUSIC_ASSISTANT_ALLOWED_COMMANDS]).toEqual([...ALLOWED]);
+    expect(MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND).toBe("config/players/get");
     for (const command of ALLOWED) {
       expect(command).toBe(command.trim());
       expect(command).toBe(command.toLowerCase());
-      expect(command.includes("config/")).toBe(false);
     }
+    expect(ALLOWED.filter((command) => command.startsWith("config/"))).toEqual(["config/players/get"]);
   });
 
   it.each(ALLOWED)("forwards %s", async (command) => {
@@ -140,9 +146,34 @@ describe("music assistant command allowlist", () => {
     );
   });
 
+  it("forwards config/players/get and preloads the player-bar volume", async () => {
+    vi.mocked(callMaServer).mockResolvedValueOnce({
+      result: { player_id: "queue-1", volume_level: 0.42, volume_muted: true },
+    });
+    const res = await post(
+      clientBody(MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND, { args: { player_id: "queue-1" } })
+    );
+    expect(res.status).toBe(200);
+    expect(callMaServer).toHaveBeenCalledWith(
+      BASE_URL,
+      SERVER_TOKEN,
+      "config/players/get",
+      { player_id: "queue-1" },
+      { skipCache: false }
+    );
+    expect(readPreloadedPlayerVolume(await res.json())).toEqual({ volume: 42, muted: true });
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it.each([
-    ["config/players/get", { command: "config/players/get" }, '"config/players/get"'],
     ["config/players/save", { command: "config/players/save" }, '"config/players/save"'],
+    ["config/players/get/../save", { command: "config/players/get/../save" }, '"config/players/get/../save"'],
+    ["config/players/get/../../config/core/save", { command: "config/players/get/../../config/core/save" }, '"config/players/get/../../config/core/save"'],
+    ["config/players/get/save", { command: "config/players/get/save" }, '"config/players/get/save"'],
+    ["config/providers/remove", { command: "config/providers/remove" }, '"config/providers/remove"'],
+    ["config/providers/save", { command: "config/providers/save" }, '"config/providers/save"'],
+    ["config/providers/sync", { command: "config/providers/sync" }, '"config/providers/sync"'],
+    ["config/core/update", { command: "config/core/update" }, '"config/core/update"'],
     ["config/players", { command: "config/players" }, '"config/players"'],
     ["config/core/save", { command: "config/core/save" }, '"config/core/save"'],
     ["config/", { command: "config/" }, '"config/"'],

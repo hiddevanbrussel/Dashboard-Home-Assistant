@@ -1,9 +1,17 @@
 /**
  * Exact Music Assistant commands that POST /api/music-assistant may forward.
- * Match is case-sensitive and does not trim. config/* is never allowed,
- * including config/players/get. Volume changes use players/cmd/volume_*.
+ * Match is case-sensitive and does not trim. There is no prefix or wildcard.
+ *
+ * config/* is rejected except one read: `config/players/get`. The player bar
+ * preloads volume_level and volume_muted with that command
+ * (src/hooks/use-music-player-actions.ts). It is not a prefix, so
+ * config/players/save, config/providers/* and config/core/* stay blocked.
+ * Volume changes use players/cmd/volume_*.
  */
+export const MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND = "config/players/get" as const;
+
 export const MUSIC_ASSISTANT_ALLOWED_COMMANDS = [
+  MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND,
   "music/albums/album_tracks",
   "music/albums/get",
   "music/artists/artist_albums",
