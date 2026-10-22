@@ -11,7 +11,7 @@ export type PreloadedPlayerVolume = {
 export function readPreloadedPlayerVolume(data: unknown): PreloadedPlayerVolume {
   if (!data || typeof data !== "object") return { volume: null, muted: null };
   const record = data as { error?: unknown; result?: unknown; volume_level?: unknown; volume_muted?: unknown };
-  if (typeof record.error === "string" && record.error) return { volume: null, muted: null };
+  if (record.error) return { volume: null, muted: null };
   const nested = record.result;
   const source =
     nested && typeof nested === "object"

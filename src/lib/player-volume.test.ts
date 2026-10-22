@@ -23,14 +23,29 @@ describe("player volume preload", () => {
     });
   });
 
-  it("ignores a proxy rejection and a level outside 0..1", () => {
-    expect(readPreloadedPlayerVolume({ error: "Command not allowed" })).toEqual({
-      volume: null,
-      muted: null,
-    });
+  it("ignores a level outside 0..1", () => {
     expect(readPreloadedPlayerVolume({ result: { volume_level: 80, volume_muted: false } })).toEqual({
       volume: null,
       muted: false,
     });
+  });
+
+  it("leaves the slider unchanged for a string error, an error object, and a 403 response", () => {
+    const buried = { result: { volume_level: 0.25, volume_muted: true } };
+    expect(readPreloadedPlayerVolume({ ...buried, error: "Command not allowed" })).toEqual({
+      volume: null,
+      muted: null,
+    });
+    expect(readPreloadedPlayerVolume({ ...buried, error: { message: "Command not allowed" } })).toEqual({
+      volume: null,
+      muted: null,
+    });
+    expect(
+      readPreloadedPlayerVolume({
+        status: 403,
+        error: { status: 403, message: "Command not allowed" },
+        result: { volume_level: 0.25, volume_muted: true },
+      })
+    ).toEqual({ volume: null, muted: null });
   });
 });
