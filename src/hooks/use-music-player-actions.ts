@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { callMusicAssistant } from "@/lib/music-assistant";
+import { MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND } from "@/lib/music-assistant-commands";
+import { readPreloadedPlayerVolume } from "@/lib/player-volume";
 import { playUiClick } from "@/lib/ui-click";
 
 export function useMusicPlayerActions() {
@@ -20,16 +22,13 @@ export function useMusicPlayerActions() {
 
   useEffect(() => {
     if (!musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
-    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "config/players/get", {
+    callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND, {
       player_id: selectedQueueId,
     })
       .then((data: unknown) => {
-        const err = (data as { error?: string })?.error;
-        if (err) return;
-        const res = (data as { result?: { volume_level?: number; volume_muted?: boolean } })?.result ?? (data as { volume_level?: number; volume_muted?: boolean });
-        const vol = res?.volume_level;
-        if (typeof vol === "number" && vol >= 0 && vol <= 1) setVolume(Math.round(vol * 100));
-        if (typeof res?.volume_muted === "boolean") setVolumeMuted(res.volume_muted);
+        const next = readPreloadedPlayerVolume(data);
+        if (next.volume != null) setVolume(next.volume);
+        if (next.muted != null) setVolumeMuted(next.muted);
       })
       .catch(() => {});
   }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
