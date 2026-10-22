@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  consumeLayoutNotice,
   currentOrientation,
   floatingTilesFromWidgets,
   measuredSizeOverrides,
@@ -162,8 +163,9 @@ export function useFloatingOrientation({
     sizeSigRef.current = sizeSig;
     if (result.remount) setEpoch((value) => value + 1);
     if (result.scrollOverflowPx !== scrollOverflowPx) setScrollOverflowPx(result.scrollOverflowPx);
-    if (previous !== null && previous !== orientation) setNotice(result.notice ? noticeKey(result.notice) : null);
-    else if (result.notice) setNotice(noticeKey(result.notice));
+    const visible = consumeLayoutNotice(result.notice, window.sessionStorage);
+    if (previous !== null && previous !== orientation) setNotice(visible ? noticeKey(visible) : null);
+    else if (visible) setNotice(noticeKey(visible));
   }
 
   useEffect(() => {
@@ -263,39 +265,69 @@ export function useFloatingOrientation({
   }, [ready, dashboardId, orientation, epoch, viewport.width, viewport.height]);
 
   useEffect(() => {
+    const root = document.documentElement;
+    if (scrollOverflowPx > 0 && orientation === "portrait") root.setAttribute("data-portrait-scroll", "");
+    else root.removeAttribute("data-portrait-scroll");
+    return () => root.removeAttribute("data-portrait-scroll");
+  }, [scrollOverflowPx, orientation]);
+
+  useEffect(() => {
     if (scrollOverflowPx <= 0 || orientation !== "portrait") return;
     let frame = 0;
     let alive = true;
-    const tick = () => {
-      if (!alive) return;
-      if (!pointerDownRef.current) {
-        const hanging = tilesRef.current.flatMap((tile) => {
-          if (tile.persistsClamp) return [];
-          const raw = window.localStorage.getItem(tile.key);
-          if (!raw) return [];
-          try {
-            const parsed = JSON.parse(raw) as { left?: number; bottom?: number };
-            if (typeof parsed.left !== "number" || typeof parsed.bottom !== "number" || parsed.bottom >= 0) return [];
-            return [{ key: tile.key, left: parsed.left, bottom: parsed.bottom, w: tile.w }];
-          } catch {
-            return [];
-          }
-        });
-        if (hanging.length > 0) {
-          const nodes = [...document.querySelectorAll<HTMLElement>(".card-plot-in")].map((node) => ({
-            style: node.style,
-            offsetWidth: node.offsetWidth,
-          }));
-          revealBelowFoldTiles(nodes, hanging);
-          restoreBelowFoldStorage(window.localStorage, hanging);
+    const reveal = () => {
+      if (!alive || pointerDownRef.current) return;
+      const hanging = tilesRef.current.flatMap((tile) => {
+        if (tile.persistsClamp) return [];
+        const raw = window.localStorage.getItem(tile.key);
+        if (!raw) return [];
+        try {
+          const parsed = JSON.parse(raw) as { left?: number; bottom?: number };
+          if (typeof parsed.left !== "number" || typeof parsed.bottom !== "number" || parsed.bottom >= 0) return [];
+          return [{ key: tile.key, left: parsed.left, bottom: parsed.bottom, w: tile.w }];
+        } catch {
+          return [];
+        }
+      });
+      if (hanging.length === 0) return;
+      const nodes = [...document.querySelectorAll<HTMLElement>(".card-plot-in")].map((node) => ({
+        style: node.style,
+        offsetWidth: node.offsetWidth,
+      }));
+      revealBelowFoldTiles(nodes, hanging);
+      restoreBelowFoldStorage(window.localStorage, hanging);
+    };
+    const schedule = () => {
+      if (!alive || frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        reveal();
+      });
+    };
+    const onStyle = (records: MutationRecord[]) => {
+      for (const record of records) {
+        const target = record.target;
+        if (target instanceof Element && target.classList.contains("card-plot-in")) {
+          schedule();
+          return;
         }
       }
-      frame = window.requestAnimationFrame(tick);
     };
-    frame = window.requestAnimationFrame(tick);
+    schedule();
+    const mutations = new MutationObserver(onStyle);
+    mutations.observe(document.body, { subtree: true, attributes: true, attributeFilter: ["style"] });
+    const sizes = new ResizeObserver(() => schedule());
+    sizes.observe(document.documentElement);
+    const onPointerUp = () => schedule();
+    window.addEventListener("pointerup", onPointerUp, true);
+    window.addEventListener("pointercancel", onPointerUp, true);
     return () => {
       alive = false;
-      window.cancelAnimationFrame(frame);
+      mutations.disconnect();
+      sizes.disconnect();
+      window.removeEventListener("pointerup", onPointerUp, true);
+      window.removeEventListener("pointercancel", onPointerUp, true);
+      if (frame) window.cancelAnimationFrame(frame);
     };
   }, [scrollOverflowPx, orientation, epoch]);
 

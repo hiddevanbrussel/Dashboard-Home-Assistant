@@ -114,6 +114,7 @@ import {
   type PendingPageRemoval,
 } from "@/lib/dashboard-page-removal";
 import { DashboardPageUndoToast } from "@/components/dashboard-page-undo-toast";
+import { DashboardLayoutNotice } from "@/components/dashboard-layout-notice";
 import { useFloatingOrientation } from "@/hooks/use-floating-orientation";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
@@ -2492,16 +2493,7 @@ export default function DashboardEditPage() {
 
         <DashboardPageUndoToast open={pageUndoOpen && editMode} onUndo={handleUndoPageRemoval} />
         {floatingLayout.notice ? (
-          <div className="pointer-events-none fixed inset-x-0 top-16 z-[200] flex justify-center px-3">
-            <button
-              type="button"
-              role="status"
-              onClick={floatingLayout.dismissNotice}
-              className="pointer-events-auto max-w-sm rounded-2xl border border-white/60 bg-white/95 px-4 py-3 text-left text-sm font-semibold text-gray-900 shadow-lg dark:border-white/10 dark:bg-[#1b1a21] dark:text-white"
-            >
-              {t(floatingLayout.notice)}
-            </button>
-          </div>
+          <DashboardLayoutNotice message={t(floatingLayout.notice)} onDismiss={floatingLayout.dismissNotice} />
         ) : null}
         <DashboardPager
           key={floatingLayout.epoch}
