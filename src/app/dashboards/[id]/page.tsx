@@ -128,7 +128,6 @@ import {
 } from "@/lib/dashboard-pages";
 import {
   createSerializedSaveQueue,
-  DASHBOARD_PAGE_UNDO_MS,
   readFloatingPositions,
   restoreFloatingPositions,
   shouldApplyPagedSave,
@@ -137,7 +136,6 @@ import {
   type PageSnapshot,
   type PendingPageRemoval,
 } from "@/lib/dashboard-page-removal";
-import { DashboardPageUndoToast } from "@/components/dashboard-page-undo-toast";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
   clampClimateCardHeight,
@@ -957,7 +955,7 @@ export default function DashboardEditPage() {
     const timer = window.setTimeout(() => {
       if (pageUndoGenerationRef.current !== generation) return;
       pageRemovalCommitRef.current();
-    }, DASHBOARD_PAGE_UNDO_MS);
+    }, UNDO_TOAST_DURATION_MS);
     return () => window.clearTimeout(timer);
   }, [pageUndoOpen, pageUndoGeneration]);
   const [roomCardSize, setRoomCardSize] = useState<"normal" | "large">("normal");
@@ -2791,7 +2789,14 @@ export default function DashboardEditPage() {
           </ReactGridLayout>
         </div>
 
-        <DashboardPageUndoToast open={pageUndoOpen && editMode} onUndo={handleUndoPageRemoval} />
+        {pageUndoOpen && editMode && typeof document !== "undefined" && createPortal(
+          <UndoToast
+            message={t("dashboardPages.removed")}
+            actionLabel={t("dashboardPages.undo")}
+            onAction={handleUndoPageRemoval}
+          />,
+          document.body
+        )}
         <DashboardPager
           pageCount={pageCount}
           page={dashboardPage}
