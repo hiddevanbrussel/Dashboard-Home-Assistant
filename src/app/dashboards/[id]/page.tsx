@@ -114,6 +114,7 @@ import {
   type PendingPageRemoval,
 } from "@/lib/dashboard-page-removal";
 import { DashboardPageUndoToast } from "@/components/dashboard-page-undo-toast";
+import { useFloatingOrientation } from "@/hooks/use-floating-orientation";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
   clampClimateCardHeight,
@@ -1523,6 +1524,13 @@ export default function DashboardEditPage() {
     if (error && id) router.replace(isRoomMode ? "/rooms" : "/dashboards");
   }, [error, id, isRoomMode, router]);
 
+  const floatingLayout = useFloatingOrientation({
+    dashboardId: id,
+    ready: initialized,
+    widgets,
+    editMode,
+  });
+
   const saveMutation = useMutation({
     mutationFn: async (payload: {
       layout: Layout;
@@ -1589,6 +1597,7 @@ export default function DashboardEditPage() {
 
   const handleSave = () => {
     dismissPageUndo();
+    floatingLayout.commitEdits();
     setEditingWidgetId(null);
     setEditingGroupChildId(null);
     setEditMode(false);
@@ -2482,11 +2491,25 @@ export default function DashboardEditPage() {
         </div>
 
         <DashboardPageUndoToast open={pageUndoOpen && editMode} onUndo={handleUndoPageRemoval} />
+        {floatingLayout.notice ? (
+          <div className="pointer-events-none fixed inset-x-0 top-16 z-[200] flex justify-center px-3">
+            <button
+              type="button"
+              role="status"
+              onClick={floatingLayout.dismissNotice}
+              className="pointer-events-auto max-w-sm rounded-2xl border border-white/60 bg-white/95 px-4 py-3 text-left text-sm font-semibold text-gray-900 shadow-lg dark:border-white/10 dark:bg-[#1b1a21] dark:text-white"
+            >
+              {t(floatingLayout.notice)}
+            </button>
+          </div>
+        ) : null}
         <DashboardPager
+          key={floatingLayout.epoch}
           pageCount={pageCount}
           page={dashboardPage}
           onPageChange={setDashboardPage}
           editMode={editMode}
+          verticalOverflowPx={floatingLayout.scrollOverflowPx}
           onAddPage={editMode ? handleAddDashboardPage : undefined}
           onRemovePage={editMode ? handleRemoveDashboardPage : undefined}
         >
