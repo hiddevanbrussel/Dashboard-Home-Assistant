@@ -85,10 +85,10 @@ export function MusicSearchOverlay({
             <X className="h-5 w-5" />
           </button>
           <label className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-full bg-black/5 px-4 dark:bg-white/10">
-            <Search className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden />
+            <Search className="h-4 w-4 shrink-0 text-gray-600 dark:text-gray-300" aria-hidden />
             <input
               ref={inputRef}
-              type="search"
+              type="text"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               onKeyDown={(e) => {
@@ -96,17 +96,17 @@ export function MusicSearchOverlay({
                 if (e.key === "Escape") onClose();
               }}
               placeholder={t("music.searchPlaceholder")}
-              className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-500 outline-none dark:text-gray-100"
+              className="h-11 min-w-0 flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-600 outline-none dark:text-gray-100 dark:placeholder-gray-300"
               aria-label={t("music.search")}
             />
             {query ? (
               <button
                 type="button"
                 onClick={() => onQueryChange("")}
-                className="rounded-full p-1 text-gray-500 hover:bg-black/5 dark:hover:bg-white/10"
+                className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/10"
                 aria-label={t("music.close")}
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             ) : null}
             {searching ? (
@@ -121,7 +121,7 @@ export function MusicSearchOverlay({
               type="button"
               onClick={() => onFilterChange(id)}
               className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                "min-h-11 shrink-0 rounded-full px-4 text-sm font-medium transition-colors",
                 filter === id
                   ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                   : "bg-black/5 text-gray-700 hover:bg-black/10 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/15"
@@ -143,7 +143,7 @@ export function MusicSearchOverlay({
 
       <div className="min-h-0 flex-1 overflow-auto px-4 pb-10 sm:px-6">
         {playerLabel ? (
-          <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mb-4 text-xs text-gray-600 dark:text-gray-300">
             {t("music.playOn")}: <span className="font-medium text-gray-800 dark:text-gray-200">{playerLabel}</span>
           </p>
         ) : null}
@@ -155,12 +155,12 @@ export function MusicSearchOverlay({
         ) : empty && hasQuery ? (
           <div className="mx-auto max-w-lg py-14 text-center">
             <Search className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" aria-hidden />
-            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
               {t("music.noResults")} &quot;{query.trim()}&quot;. {t("music.noResultsTry")}
             </p>
           </div>
         ) : empty ? (
-          <p className="mx-auto max-w-lg py-14 text-center text-sm text-gray-500 dark:text-gray-400">
+          <p className="mx-auto max-w-lg py-14 text-center text-sm text-gray-600 dark:text-gray-300">
             {t("music.searchHint")}
           </p>
         ) : showGrouped ? (
@@ -258,7 +258,7 @@ function SearchTile({ item, variant }: { item: MusicSearchResult; variant: "squa
       </div>
       <p className="mt-1.5 truncate text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
       {item.subtitle ? (
-        <p className="truncate text-xs text-gray-500 dark:text-gray-400">{item.subtitle}</p>
+        <p className="truncate text-xs text-gray-600 dark:text-gray-300">{item.subtitle}</p>
       ) : null}
     </button>
   );
@@ -276,7 +276,7 @@ function SearchRow({
   const Icon = item.mediaType === "artist" ? User : item.mediaType === "radio" ? Radio : Disc3;
   return (
     <li
-      className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+      className="flex min-h-14 items-center gap-3 rounded-xl px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
       onPointerDown={item.longPress?.onPointerDown}
       onPointerUp={item.longPress?.onPointerUp}
       onPointerLeave={item.longPress?.onPointerLeave}
@@ -306,22 +306,22 @@ function SearchRow({
       <button
         type="button"
         onClick={() => (item.canOpen ? item.onOpen?.() : item.canPlay ? item.onPlay() : undefined)}
-        className="min-w-0 flex-1 text-left"
+        className="min-h-11 min-w-0 flex-1 text-left"
       >
         <p className="truncate font-medium text-gray-900 dark:text-white">{item.name}</p>
-        <p className="truncate text-xs text-gray-500 dark:text-gray-400">{item.subtitle}</p>
+        <p className="truncate text-xs text-gray-600 dark:text-gray-300">{item.subtitle}</p>
       </button>
-      <span className="shrink-0 text-xs tabular-nums text-gray-500 dark:text-gray-400">{item.durationLabel}</span>
+      <span className="shrink-0 text-xs tabular-nums text-gray-600 dark:text-gray-300">{item.durationLabel}</span>
       {item.onFavorite ? (
         <button
           type="button"
           onClick={item.onFavorite}
           disabled={item.isFavoritePending}
           className={cn(
-            "shrink-0 rounded-full p-2",
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
             item.isFavorited || item.isFavoritePending
               ? "text-red-500"
-              : "text-gray-400 hover:text-red-500"
+              : "text-gray-600 hover:text-red-500 dark:text-gray-300"
           )}
           aria-label={favoriteLabel}
         >
@@ -332,7 +332,7 @@ function SearchRow({
         type="button"
         onClick={item.onPlay}
         disabled={!item.canPlay || item.isPlayPending}
-        className="shrink-0 rounded-full bg-gray-900 p-2 text-white hover:opacity-90 disabled:opacity-40 dark:bg-white dark:text-gray-900"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-900 text-white hover:opacity-90 disabled:opacity-40 dark:bg-white dark:text-gray-900"
         aria-label={playLabel}
       >
         {item.isPlayPending ? (

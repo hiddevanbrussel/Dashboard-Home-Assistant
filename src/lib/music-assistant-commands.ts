@@ -7,8 +7,19 @@
  * (src/hooks/use-music-player-actions.ts). It is not a prefix, so
  * config/players/save, config/providers/* and config/core/* stay blocked.
  * Volume changes use players/cmd/volume_*.
+ *
+ * Queue view, remove, and clear are three exact commands. `player_queues/items_x`
+ * and `player_queues/clear/extra` are different strings and stay rejected.
+ * Reorder (`player_queues/move_item`) and repeat stay off the list.
  */
 export const MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND = "config/players/get" as const;
+
+/** `PlayerQueuesController.items(queue_id, limit, offset)`. */
+export const MUSIC_ASSISTANT_QUEUE_ITEMS_COMMAND = "player_queues/items" as const;
+/** `PlayerQueuesController.delete_item(queue_id, item_id_or_index)`. */
+export const MUSIC_ASSISTANT_QUEUE_DELETE_ITEM_COMMAND = "player_queues/delete_item" as const;
+/** `PlayerQueuesController.clear(queue_id)`. */
+export const MUSIC_ASSISTANT_QUEUE_CLEAR_COMMAND = "player_queues/clear" as const;
 
 export const MUSIC_ASSISTANT_ALLOWED_COMMANDS = [
   MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND,
@@ -25,8 +36,11 @@ export const MUSIC_ASSISTANT_ALLOWED_COMMANDS = [
   "music/recently_played_items",
   "music/search",
   "player_queues/all",
+  MUSIC_ASSISTANT_QUEUE_CLEAR_COMMAND,
+  MUSIC_ASSISTANT_QUEUE_DELETE_ITEM_COMMAND,
   "player_queues/dont_stop_the_music",
   "player_queues/get",
+  MUSIC_ASSISTANT_QUEUE_ITEMS_COMMAND,
   "player_queues/next",
   "player_queues/pause",
   "player_queues/play",

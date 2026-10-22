@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
-import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useMusicNavVisible } from "@/hooks/use-music-nav-visible";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
@@ -54,7 +55,7 @@ type SidebarProps = {
 
 export function Sidebar({ activeHref, className }: SidebarProps) {
   const { t } = useTranslation();
-  const musicAssistantEnabled = useMusicAssistantStore((s) => s.enabled);
+  const showMusic = useMusicNavVisible();
   const calendarEnabled = useCalendarStore((s) => s.enabled);
   const choresEnabled = useChoresStore((s) => s.enabled);
   const energyEnabled = useEnergyStore((s) => s.enabled);
@@ -70,7 +71,7 @@ export function Sidebar({ activeHref, className }: SidebarProps) {
     if (item.flag === "calendar") return calendarEnabled;
     if (item.flag === "energy") return energyEnabled;
     if (item.flag === "family") return choresEnabled;
-    if (item.flag === "music") return musicAssistantEnabled;
+    if (item.flag === "music") return showMusic;
     return false;
   });
 
