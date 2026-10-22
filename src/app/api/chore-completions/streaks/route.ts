@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { StreaksResponse } from "@/lib/chores-types";
 import { requireApiAuth } from "@/lib/require-api-auth";
+import { localDateKey } from "@/lib/local-date";
 
 function parseChildIds(raw: string | null): string[] | null {
   if (!raw) return null;
@@ -27,7 +28,7 @@ function addDays(dateStr: string, n: number): string {
 export async function GET() {
   const denied = await requireApiAuth();
   if (denied) return denied;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateKey();
 
   const [children, chores, completions] = await Promise.all([
     prisma.child.findMany({ orderBy: { order: "asc" } }),

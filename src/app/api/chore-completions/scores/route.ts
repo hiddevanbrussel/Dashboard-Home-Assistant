@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { ScoresResponse, ScoreRecord } from "@/lib/chores-types";
 import { requireApiAuth } from "@/lib/require-api-auth";
+import { localDateKey } from "@/lib/local-date";
 
 function getMondayDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
   if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const period = searchParams.get("period") ?? "week";
-  const dateParam = searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
+  const dateParam = searchParams.get("date") ?? localDateKey();
 
   const { from, to } = getDateRange(period, dateParam);
 

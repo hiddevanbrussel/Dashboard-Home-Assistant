@@ -3,11 +3,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ListTodo, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { localDateKey } from "@/lib/local-date";
 import type { ChoreCompletionsResponse, ChildWithChores } from "@/lib/chores-types";
 import { useTranslation } from "@/hooks/use-translation";
 
 function getTodayDate() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
 // ── minimal ChoreRow for widget ───────────────────────────────────────────────

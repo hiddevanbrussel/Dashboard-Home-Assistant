@@ -13,6 +13,7 @@ import { CelebrationSheet, type CelebrationState } from "@/components/family/cel
 import { ChildTaskBoard } from "@/components/family/child-task-board";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
+import { localDateKey } from "@/lib/local-date";
 import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
 import type { ChildRecord, ChoreRecord, ChoreCompletionsResponse, ScoresResponse, ChoreFrequency, RewardRecord, StreaksResponse, BalancesResponse } from "@/lib/chores-types";
 
@@ -57,7 +58,7 @@ function RewardIcon({ name, className }: { name: string | null; className?: stri
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function getTodayDate() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
 const COLOR_PRESETS = [

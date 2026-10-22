@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { ChoreCompletionsResponse, ChildWithChores, ChoreCompletionRecord, ChoreFrequency, WeekDayProgress } from "@/lib/chores-types";
 import { requireApiAuth } from "@/lib/require-api-auth";
+import { localDateKey } from "@/lib/local-date";
 
 const SLOT_LABELS = ["ochtend", "avond"];
 
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
   const denied = await requireApiAuth(request);
   if (denied) return denied;
   const { searchParams } = new URL(request.url);
-  const dateParam = searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
+  const dateParam = searchParams.get("date") ?? localDateKey();
 
   const todayDate = dateParam;
   const mondayDate = getMondayDate(dateParam);
@@ -251,7 +252,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "choreId, childId, frequency are required" }, { status: 400 });
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateKey();
 
   // Weekday-only chores cannot be completed on weekends
   if (body.frequency === "weekdays" && isWeekend(today)) {
