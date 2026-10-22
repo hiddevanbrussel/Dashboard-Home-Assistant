@@ -340,7 +340,9 @@ Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBU
 
 ## Fonts
 
-The interface uses [Google Sans](https://github.com/google/fonts/tree/main/ofl/googlesans) (Latin, variable weight axis 400–700), self-hosted from `@fontsource-variable/google-sans`. Google Sans is licensed under the SIL Open Font License 1.1. Copyright 2025 The Google Sans Project Authors (https://github.com/googlefonts/googlesans). See [OFL.txt](OFL.txt). Clock digits stay in Montserrat.
+The interface uses [Google Sans](https://github.com/google/fonts/tree/main/ofl/googlesans) (Latin, variable weight axis 400–700), self-hosted from `@fontsource-variable/google-sans`. Google Sans is licensed under the SIL Open Font License 1.1. Copyright 2025 The Google Sans Project Authors (https://github.com/googlefonts/googlesans). See [OFL.txt](OFL.txt).
+
+Clock digits and the screensaver use [Montserrat](https://github.com/JulietaUla/Montserrat) (latin subset only; weights 500, 600, 800 and 900), self-hosted with `next/font/local` from `src/fonts/montserrat/`. Montserrat is licensed under the SIL Open Font License 1.1. Copyright 2024 The Montserrat.Git Project Authors (https://github.com/JulietaUla/Montserrat.git). See [src/fonts/montserrat/OFL.txt](src/fonts/montserrat/OFL.txt). The Docker image and the add-on image also copy that file to `/usr/share/licenses/montserrat/OFL.txt`.
 
 ## License
 
