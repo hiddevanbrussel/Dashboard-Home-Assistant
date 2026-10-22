@@ -1134,11 +1134,7 @@ export default function DashboardEditPage() {
   const roomBackgroundInputRef = useRef<HTMLInputElement>(null);
   const pendingAddRef = useRef<string | null>(null);
   const placedStorageRef = useRef<{ widgetId: string; key: string } | null>(null);
-  const widgetsRef = useRef(widgets);
-  const layoutRef = useRef(layout);
   const syncAddTileRef = useRef<(stack: AddTileStep[]) => void>(() => {});
-  widgetsRef.current = widgets;
-  layoutRef.current = layout;
   const LONG_PRESS_MS = 500;
 
   async function handleRoomBackgroundUpload(e: React.ChangeEvent<HTMLInputElement>) {
