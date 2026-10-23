@@ -65,6 +65,11 @@ type AppShellProps = {
   headerEndAction?: React.ReactNode;
   /** Rendered in the header after the clock/temperature (e.g. calendar toggle). */
   headerStartAction?: React.ReactNode;
+  /**
+   * Stat pills pinned to the header, rendered before the energy stats.
+   * When set, sunrise/sunset is hidden in portrait to make room.
+   */
+  headerStatPills?: React.ReactNode;
   /** Centered in the header (e.g. legacy centered chrome). */
   headerCenterAction?: React.ReactNode;
   /**
@@ -240,6 +245,7 @@ export function AppShell({
   headerEndAction,
   headerStartAction,
   headerCenterAction,
+  headerStatPills,
   headerBelowAction,
   welcomeTitle: welcomeTitleProp,
   welcomeSubtitle: welcomeSubtitleProp,
@@ -485,7 +491,7 @@ export function AppShell({
                   )}
                   {showSunTimes && (
                     <div
-                      className="flex items-center gap-2.5"
+                      className={cn("flex items-center gap-2.5", headerStatPills != null && "portrait:hidden")}
                       aria-label={t("appShell.sunTimes")}
                     >
                       <span
@@ -513,6 +519,7 @@ export function AppShell({
                     </div>
                   ) : null}
                   <div className="ml-auto flex min-w-0 items-center justify-end gap-2 sm:gap-3">
+                    {headerStatPills}
                     <HeaderEnergyStats contentLight={headerContentLight} />
                     {newsEnabled && rssUrls.length > 0 && (
                       <button
