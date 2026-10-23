@@ -141,14 +141,19 @@ describe("resolveChoreDay", () => {
     }) as typeof Intl.DateTimeFormat);
   }
 
-  it("at 00:30 Amsterdam time ignores a UTC server timezone", () => {
-    // 00:30 CEST is still the previous UTC day.
-    vi.setSystemTime(new Date("2026-07-14T22:30:00.000Z"));
+  it("at 00:30 Amsterdam summer and winter time ignores a UTC process timezone", () => {
     asUtcServer();
-
     expect(process.env.TZ).toBe("UTC");
+
+    vi.setSystemTime(new Date("2026-01-14T23:30:00.000Z")); // 00:30 CET
+    expect(localDateKey()).toBe("2026-01-14");
+    expect(localDateKey(new Date(), "Europe/Amsterdam")).toBe("2026-01-15");
+    expect(resolveChoreDay({ date: localDateKey(new Date(), "Europe/Amsterdam") })).toBe("2026-01-15");
+
+    vi.setSystemTime(new Date("2026-07-14T22:30:00.000Z")); // 00:30 CEST
     expect(localDateKey()).toBe("2026-07-14");
-    expect(resolveChoreDay()).toBe("2026-07-15");
+    expect(localDateKey(new Date(), "Europe/Amsterdam")).toBe("2026-07-15");
+    expect(resolveChoreDay({ date: localDateKey(new Date(), "Europe/Amsterdam") })).toBe("2026-07-15");
   });
 
   it("prefers the client day, then the client zone, then the HA zone", () => {

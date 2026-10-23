@@ -8,7 +8,7 @@ import type { ChoreCompletionsResponse, ChildWithChores } from "@/lib/chores-typ
 import { useTranslation } from "@/hooks/use-translation";
 
 function getTodayDate() {
-  return localDateKey();
+  return localDateKey(new Date(), "Europe/Amsterdam");
 }
 
 // ── minimal ChoreRow for widget ───────────────────────────────────────────────
@@ -125,7 +125,7 @@ export function ChoreCardWidget({ childId, showPoints = true, title, onMoreClick
       fetch("/api/chore-completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ choreId, childId: cid, frequency }),
+        body: JSON.stringify({ choreId, childId: cid, frequency, date: todayDate }),
       }).then((r) => r.json()),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["chore-completions", todayDate] }),
   });
