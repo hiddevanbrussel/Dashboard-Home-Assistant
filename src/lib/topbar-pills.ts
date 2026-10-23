@@ -5,6 +5,13 @@
  * Unknown fields are kept: tiles are spread, never rebuilt.
  */
 
+import {
+  tilePositionStorageKey,
+  writeTilePosition,
+  type TilePosition,
+  type TilePositionStorage,
+} from "./tile-position-storage";
+
 export const TOPBAR_PILL_TYPE = "stat_pill_card";
 export const TOPBAR_PILL_MAX = 4;
 
@@ -79,4 +86,21 @@ export function moveToGrid<T extends TopbarPillFields>(widgets: T[], id: string)
     return rest as T;
   });
   return compactOrder(next);
+}
+
+/**
+ * Before an unpinned pill remounts on the dashboard: keep its last floating position when there
+ * is one, otherwise write `place()` (the first free, non-overlapping slot) to the key the floating
+ * pill reads on mount. `place` is only called when needed (it measures the DOM).
+ */
+export function ensureGridPosition(
+  storage: Pick<TilePositionStorage, "getItem" | "setItem">,
+  scope: string | undefined,
+  widgetId: string,
+  place: () => TilePosition
+): "kept" | "placed" {
+  const spec = tilePositionStorageKey(TOPBAR_PILL_TYPE, scope, widgetId);
+  if (spec && storage.getItem(spec.key) != null) return "kept";
+  writeTilePosition(storage, TOPBAR_PILL_TYPE, scope, widgetId, place());
+  return "placed";
 }

@@ -7,10 +7,11 @@ import { useTranslation } from "@/hooks/use-translation";
 import { StatPillCardWidget } from "@/components/widgets/stat-pill-card-widget";
 import type { SensorCondition } from "@/components/widgets/widget-types";
 import type { WidgetConfig } from "@/stores/onboarding-store";
-import { anchorFromElement, usePopoverDismiss, type TileMenuAnchor } from "./tile-menu";
+import { FOCUS_RING_BRAND, anchorFromElement, usePopoverDismiss, type TileMenuAnchor } from "./tile-menu";
 
-const slotFocusClass =
-  "rounded-full outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400";
+const chipFocusClass = cn("outline-none", FOCUS_RING_BRAND);
+/** Space kept between the "+N" list and the viewport bottom; the list scrolls inside it. */
+const OVERFLOW_BOTTOM_MARGIN = 16;
 
 function PinnedPill({
   widget,
@@ -29,22 +30,13 @@ function PinnedPill({
   };
   return (
     // 44 px tall hit area; the parent row is 0 px tall so the header height does not change.
+    // The slot is not a button: the pill's own ⋮ is the keyboard control, and a tap on the rest
+    // of the pill is a pointer shortcut. That keeps a <button> from nesting inside role="button".
     <div
       ref={slotRef}
       data-header-statpill-id={widget.id}
-      className={cn("flex h-11 shrink-0 items-center", editMode && "cursor-pointer", slotFocusClass, className)}
-      {...(editMode && {
-        role: "button",
-        tabIndex: 0,
-        "aria-haspopup": "menu" as const,
-        onClick: open,
-        onKeyDown: (e: React.KeyboardEvent) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            open();
-          }
-        },
-      })}
+      className={cn("flex h-11 shrink-0 items-center", editMode && "cursor-pointer", className)}
+      onClick={editMode ? open : undefined}
     >
       <div className={cn(editMode && "animate-edit-wiggle")}>
         <StatPillCardWidget
@@ -78,11 +70,16 @@ function OverflowList({
   const listRef = useRef<HTMLDivElement | null>(null);
   usePopoverDismiss(listRef, onClose);
   if (typeof document === "undefined") return null;
+  const top = anchor.bottom + 8;
   return createPortal(
     <div
       ref={listRef}
-      className="fixed z-[300] flex max-w-[calc(100vw-1rem)] flex-col items-end gap-1 rounded-2xl border border-[rgba(17,24,39,0.08)] bg-white/95 p-2 shadow-[0_12px_32px_rgba(15,10,40,0.18)] backdrop-blur-md dark:border-white/10 dark:bg-[#1b1a21] dark:shadow-[0_12px_32px_rgba(0,0,0,0.55)] dark:backdrop-blur-none"
-      style={{ top: anchor.bottom + 8, right: Math.max(8, window.innerWidth - anchor.right) }}
+      className="fixed z-[300] flex max-w-[calc(100vw-1rem)] flex-col items-end gap-1 overflow-y-auto overscroll-contain rounded-2xl border border-[rgba(17,24,39,0.08)] bg-white/95 p-2 shadow-[0_12px_32px_rgba(15,10,40,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-[#1b1a21] dark:shadow-[0_12px_32px_rgba(0,0,0,0.55)] dark:backdrop-blur-none"
+      style={{
+        top,
+        right: Math.max(8, window.innerWidth - anchor.right),
+        maxHeight: Math.max(60, window.innerHeight - top - OVERFLOW_BOTTOM_MARGIN),
+      }}
     >
       {pills.map((w) => (
         <PinnedPill
@@ -121,7 +118,7 @@ export function HeaderStatPills({
   const rest = pills.slice(1);
 
   return (
-    <div data-header-stat-pills className="flex h-0 shrink-0 items-center gap-2">
+    <div data-header-stat-pills className="flex h-0 shrink-0 items-center gap-3">
       {pills.map((w, i) => (
         <PinnedPill
           key={w.id}
@@ -138,13 +135,13 @@ export function HeaderStatPills({
             const anchor = anchorFromElement(e.currentTarget);
             setOverflowAnchor((cur) => (cur ? null : anchor));
           }}
-          aria-haspopup="true"
+          aria-haspopup="menu"
           aria-expanded={overflowAnchor != null}
           aria-label={t("tileMenu.moreInTopbar").replace("{n}", String(rest.length))}
           className={cn(
             "hidden h-11 min-w-11 shrink-0 items-center justify-center rounded-full border px-2 text-sm font-semibold tabular-nums portrait:flex",
             "border-[rgba(17,24,39,0.12)] bg-white/90 text-gray-800 dark:border-white/15 dark:bg-[#1b1a21] dark:text-gray-100",
-            slotFocusClass
+            chipFocusClass
           )}
         >
           +{rest.length}

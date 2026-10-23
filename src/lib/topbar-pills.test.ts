@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canPinMore, moveToGrid, moveToTopbar, topbarPills } from "./topbar-pills";
+import { canPinMore, ensureGridPosition, moveToGrid, moveToTopbar, topbarPills } from "./topbar-pills";
+import { defaultTileSize, resolveTilePosition, tileRectsCollide } from "./tile-placement";
 
 type W = {
   id: string;
@@ -110,5 +111,48 @@ describe("topbarPills", () => {
     const w: W[] = [pill("a"), { id: "s", type: "sensor_card" }];
     expect(topbarPills(w)).toEqual([]);
     expect(canPinMore(w)).toBe(true);
+  });
+});
+
+describe("ensureGridPosition", () => {
+  const memory = (seed: Record<string, string> = {}) => {
+    const data = { ...seed };
+    return {
+      data,
+      getItem: (k: string) => (k in data ? data[k] : null),
+      setItem: (k: string, v: string) => {
+        data[k] = v;
+      },
+    };
+  };
+  const key = "dashboard.floatingStatPillCardPosition.dash1.p1";
+
+  it("keeps the last floating position and does not measure", () => {
+    const storage = memory({ [key]: JSON.stringify({ left: 200, bottom: 300 }) });
+    let calls = 0;
+    const result = ensureGridPosition(storage, "dash1", "p1", () => {
+      calls++;
+      return { left: 0, bottom: 0 };
+    });
+    expect(result).toBe("kept");
+    expect(calls).toBe(0);
+    expect(JSON.parse(storage.data[key])).toEqual({ left: 200, bottom: 300 });
+  });
+
+  it("writes the first free slot that overlaps no tile when there is no saved position", () => {
+    const storage = memory();
+    const viewport = { width: 1280, height: 800 };
+    const tile = defaultTileSize("stat_pill_card");
+    // A big tile in the top-left of the usable area: the old default spot would overlap it.
+    const occupied = [{ left: 88, top: 72, width: 600, height: 400 }];
+    const result = ensureGridPosition(storage, "dash1", "p1", () => {
+      const slot = resolveTilePosition({ viewport, tile, occupied, minLeft: 88, minTop: 72, minBottom: 36 });
+      expect(slot.placedBy).toBe("first-fit");
+      return { left: slot.left, bottom: slot.bottom };
+    });
+    expect(result).toBe("placed");
+    const saved = JSON.parse(storage.data[key]) as { left: number; bottom: number };
+    const rect = { left: saved.left, top: viewport.height - saved.bottom - tile.height, ...tile };
+    expect(occupied.some((o) => tileRectsCollide(rect, o, 0))).toBe(false);
   });
 });

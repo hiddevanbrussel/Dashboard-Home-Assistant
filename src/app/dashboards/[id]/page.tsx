@@ -14,7 +14,7 @@ import { ArrowLeft, RobotVacuum, CalendarDays, Check, Timer, Trash2, ChevronDown
 import { ArrowRightLeft, ArrowUpToLine } from "lucide-react";
 import { TileMenu, anchorFromElement, type TileMenuAnchor, type TileMenuItem } from "@/components/layout/tile-menu";
 import { HeaderStatPills } from "@/components/layout/header-stat-pills";
-import { TOPBAR_PILL_MAX, canPinMore, moveToGrid, moveToTopbar, topbarPills } from "@/lib/topbar-pills";
+import { TOPBAR_PILL_MAX, canPinMore, ensureGridPosition, moveToGrid, moveToTopbar, topbarPills } from "@/lib/topbar-pills";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
@@ -2099,6 +2099,14 @@ export default function DashboardEditPage() {
   function handleTopbarMove(widgetId: string, to: "topbar" | "grid") {
     const next = to === "topbar" ? moveToTopbar(widgets, widgetId) : moveToGrid(widgets, widgetId);
     if (next === widgets) return;
+    if (to === "grid" && typeof window !== "undefined") {
+      // Last floating position if there is one; otherwise the first free spot that overlaps no tile.
+      ensureGridPosition(window.localStorage, id, widgetId, () => {
+        const pillsOnGrid = next.filter((w) => w.type === "stat_pill_card" && w.placement !== "topbar").length;
+        const slot = placeNewTile("stat_pill_card", pillsOnGrid);
+        return { left: slot.left, bottom: slot.bottom };
+      });
+    }
     setWidgets(next);
     mutateDashboard({ layout, widgets: next, welcomeTitle, welcomeSubtitle });
   }
