@@ -275,6 +275,7 @@ import {
   WEATHER_CARD_MIN_HEIGHT,
   WEATHER_CARD_MIN_WIDTH,
 } from "@/lib/weather-card";
+import { EmptyStateCard } from "@/components/layout/empty-state-card";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
 const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "smart_stack", "card_group", "chore_card", "calendar_card", "timer_card", "trash_card"] as const;
@@ -2277,6 +2278,16 @@ export default function DashboardEditPage() {
     setDashboardPage(snapshot.activePage);
   }
 
+  /** Empty-state button: edit mode on, then the add-tile dialog at its first step (same as the edit bar button). */
+  function openAddTileFromEmptyState() {
+    setEditMode(true);
+    setAddTileOpen(true);
+    setAddTileStep("type");
+    setAddTileSelectedType(null);
+    setAddTileEntitySearch("");
+    pushAddTileHistory("type");
+  }
+
   function persistPageSnapshot(snapshot: PageSnapshot<WidgetConfig, LayoutItem>, epoch: number) {
     saveMutation.mutate({
       layout: snapshot.layout,
@@ -2347,7 +2358,7 @@ export default function DashboardEditPage() {
   if (!id || (isRoomMode && !areaId)) {
     return (
       <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           {isRoomMode ? t("editPanel.invalidRoom") : t("editPanel.invalidDashboardId")}
         </p>
       </AppShell>
@@ -2357,7 +2368,7 @@ export default function DashboardEditPage() {
   if (isLoading || error) {
     return (
       <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           {error ? t("editPanel.dashboardNotFound") : t("editPanel.loading")}
         </p>
       </AppShell>
@@ -2735,6 +2746,7 @@ export default function DashboardEditPage() {
         welcomeSubtitle={welcomeSubtitle || undefined}
         welcomeEntityIds={isRoomMode && data ? { temperature: (data as { temperatureEntityId?: string | null }).temperatureEntityId ?? null, humidity: (data as { humidityEntityId?: string | null }).humidityEntityId ?? null } : undefined}
         hideWelcome={false}
+        headerEditMode={editMode}
         welcomeEditable={editMode}
         onWelcomeChange={editMode ? ({ title, subtitle }) => {
           setWelcomeTitle(title);
@@ -2879,6 +2891,18 @@ export default function DashboardEditPage() {
             : widgets;
           return (
             <>
+        {/* A tile that is being added (pendingAddId) is not in pageWidgets, so it does not count. */}
+        {!pageWidgets.some((w) => widgetPage(w) === pageIndex) && (
+          <div className="flex min-h-[60vh] items-center justify-center px-4 py-8">
+            <EmptyStateCard
+              icon={LayoutGrid}
+              title={t("dashboard.emptyTitle")}
+              body={t("dashboard.emptyBody")}
+              action={{ label: t("editPanel.addTileAction"), onClick: openAddTileFromEmptyState }}
+              tip={t("dashboard.emptyTip")}
+            />
+          </div>
+        )}
         {pageWidgets
           .filter((w) => w.type === "media_card" && widgetPage(w) === pageIndex)
           .map((w) => (
