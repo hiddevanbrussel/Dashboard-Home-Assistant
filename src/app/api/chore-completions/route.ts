@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { ChoreCompletionsResponse, ChildWithChores, ChoreCompletionRecord, ChoreFrequency, WeekDayProgress } from "@/lib/chores-types";
 import { requireApiAuth } from "@/lib/require-api-auth";
+import { resolveChoreDay } from "@/lib/local-date";
 
 const SLOT_LABELS = ["ochtend", "avond"];
 
@@ -38,7 +39,10 @@ export async function GET(request: Request) {
   const denied = await requireApiAuth(request);
   if (denied) return denied;
   const { searchParams } = new URL(request.url);
-  const dateParam = searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
+  const dateParam = resolveChoreDay({
+    date: searchParams.get("date"),
+    timeZone: searchParams.get("timeZone"),
+  });
 
   const todayDate = dateParam;
   const mondayDate = getMondayDate(dateParam);
@@ -241,7 +245,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const denied = await requireApiAuth(request);
   if (denied) return denied;
-  let body: { choreId?: string; childId?: string; frequency?: string } = {};
+  let body: { choreId?: string; childId?: string; frequency?: string; date?: string; timeZone?: string } = {};
   try {
     body = await request.json();
   } catch {
@@ -251,7 +255,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "choreId, childId, frequency are required" }, { status: 400 });
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = resolveChoreDay({ date: body.date, timeZone: body.timeZone });
 
   // Weekday-only chores cannot be completed on weekends
   if (body.frequency === "weekdays" && isWeekend(today)) {
