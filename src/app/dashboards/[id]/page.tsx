@@ -2891,10 +2891,15 @@ export default function DashboardEditPage() {
             : widgets;
           return (
             <>
-        {/* A tile that is being added (pendingAddId) is not in pageWidgets, so it does not count. */}
-        {!pageWidgets.some((w) => widgetPage(w) === pageIndex) && (
-          <div className="flex min-h-[60vh] items-center justify-center px-4 py-8">
+        {/* A tile that is being added (pendingAddId) is not in pageWidgets, so it does not count.
+            Neither does a stat pill pinned to the top bar (#301, `placement: "topbar"`). */}
+        {!pageWidgets.some(
+          (w) => widgetPage(w) === pageIndex && (w as { placement?: string }).placement !== "topbar"
+        ) && (
+          // The pager layer is pointer-events-none (taps fall through to the page); only the card takes them.
+          <div className="flex h-full items-center justify-center px-4 py-8">
             <EmptyStateCard
+              className="pointer-events-auto"
               icon={LayoutGrid}
               title={t("dashboard.emptyTitle")}
               body={t("dashboard.emptyBody")}
