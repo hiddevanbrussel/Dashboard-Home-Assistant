@@ -5,13 +5,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/app-shell";
 import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
 import { CardDefinitionModal } from "@/components/card-definition-modal";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { ArrowLeft, RobotVacuum, CalendarDays, Check, Timer, Trash2, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
-import { ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft, ArrowUpToLine } from "lucide-react";
+import { TileMenu, anchorFromElement, type TileMenuAnchor, type TileMenuItem } from "@/components/layout/tile-menu";
+import { HeaderStatPills } from "@/components/layout/header-stat-pills";
+import { TOPBAR_PILL_MAX, canPinMore, ensureGridPosition, moveToGrid, moveToTopbar, topbarPills } from "@/lib/topbar-pills";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
@@ -275,6 +278,7 @@ import {
   WEATHER_CARD_MIN_HEIGHT,
   WEATHER_CARD_MIN_WIDTH,
 } from "@/lib/weather-card";
+import { EmptyStateCard } from "@/components/layout/empty-state-card";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
 const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "smart_stack", "card_group", "chore_card", "calendar_card", "timer_card", "trash_card"] as const;
@@ -982,6 +986,14 @@ export default function DashboardEditPage() {
   const [groupAddEntitySearch, setGroupAddEntitySearch] = useState("");
   const [powerUsageDeviceSearch, setPowerUsageDeviceSearch] = useState("");
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
+  /** Stat pill ⋮ menu (edit mode). Anchored to the tapped pill. */
+  const [tileMenu, setTileMenu] = useState<{ widgetId: string; anchor: TileMenuAnchor } | null>(null);
+  const closeTileMenu = useCallback(() => setTileMenu(null), []);
+  /** Last pointerdown on a floating stat pill: anchor for onEdit, which gets no event. */
+  const statPillTapRef = useRef<{ id: string; el: Element | null; x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (!editMode) setTileMenu(null);
+  }, [editMode]);
   /** When editing a card_group, id of the child pill being edited (null = editing group itself). */
   const [editingGroupChildId, setEditingGroupChildId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
@@ -2084,6 +2096,29 @@ export default function DashboardEditPage() {
     setLayout((prev) => prev.filter((item) => item.i !== widgetId));
   }
 
+  /** Pin a stat pill to the top bar or put it back on the dashboard; saved straight away. */
+  function handleTopbarMove(widgetId: string, to: "topbar" | "grid") {
+    const next = to === "topbar" ? moveToTopbar(widgets, widgetId) : moveToGrid(widgets, widgetId);
+    if (next === widgets) return;
+    if (to === "grid" && typeof window !== "undefined") {
+      // Last floating position if there is one; otherwise the first free spot that overlaps no tile.
+      ensureGridPosition(window.localStorage, id, widgetId, () => {
+        const pillsOnGrid = next.filter((w) => w.type === "stat_pill_card" && w.placement !== "topbar").length;
+        const slot = placeNewTile("stat_pill_card", pillsOnGrid);
+        return { left: slot.left, bottom: slot.bottom };
+      });
+    }
+    setWidgets(next);
+    mutateDashboard({ layout, widgets: next, welcomeTitle, welcomeSubtitle });
+  }
+
+  function openStatPillMenu(widgetId: string, el: Element | null) {
+    const target =
+      el ?? document.querySelector(`[data-statpill-id="${CSS.escape(widgetId)}"]`)?.firstElementChild ?? null;
+    if (!target) return;
+    setTileMenu({ widgetId, anchor: anchorFromElement(target) });
+  }
+
   function handleDuplicateTile(widgetId: string): string | undefined {
     const original = widgets.find((w) => w.id === widgetId);
     if (!original) return undefined;
@@ -2277,6 +2312,16 @@ export default function DashboardEditPage() {
     setDashboardPage(snapshot.activePage);
   }
 
+  /** Empty-state button: edit mode on, then the add-tile dialog at its first step (same as the edit bar button). */
+  function openAddTileFromEmptyState() {
+    setEditMode(true);
+    setAddTileOpen(true);
+    setAddTileStep("type");
+    setAddTileSelectedType(null);
+    setAddTileEntitySearch("");
+    pushAddTileHistory("type");
+  }
+
   function persistPageSnapshot(snapshot: PageSnapshot<WidgetConfig, LayoutItem>, epoch: number) {
     saveMutation.mutate({
       layout: snapshot.layout,
@@ -2347,7 +2392,7 @@ export default function DashboardEditPage() {
   if (!id || (isRoomMode && !areaId)) {
     return (
       <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           {isRoomMode ? t("editPanel.invalidRoom") : t("editPanel.invalidDashboardId")}
         </p>
       </AppShell>
@@ -2357,7 +2402,7 @@ export default function DashboardEditPage() {
   if (isLoading || error) {
     return (
       <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           {error ? t("editPanel.dashboardNotFound") : t("editPanel.loading")}
         </p>
       </AppShell>
@@ -2726,15 +2771,60 @@ export default function DashboardEditPage() {
 
   const hasCardGroup = widgets.some((w) => w.type === "card_group");
 
+  const pinnedStatPills = topbarPills(widgets);
+  const tileMenuWidget = tileMenu && editMode ? widgets.find((w) => w.id === tileMenu.widgetId) : undefined;
+  const tileMenuItems: TileMenuItem[] = [];
+  if (tileMenuWidget) {
+    const pillId = tileMenuWidget.id;
+    tileMenuItems.push({
+      key: "edit",
+      label: t("editPanel.editTile"),
+      icon: Pencil,
+      onSelect: () => setEditingWidgetId(pillId),
+    });
+    if (tileMenuWidget.placement === "topbar") {
+      tileMenuItems.push({
+        key: "toGrid",
+        label: t("tileMenu.toGrid"),
+        icon: LayoutGrid,
+        onSelect: () => handleTopbarMove(pillId, "grid"),
+      });
+    } else {
+      const full = !canPinMore(widgets);
+      tileMenuItems.push({
+        key: "toTopbar",
+        label: t("tileMenu.toTopbar"),
+        icon: ArrowUpToLine,
+        disabled: full,
+        hint: full
+          ? t("tileMenu.topbarFull")
+              .replace("{n}", String(pinnedStatPills.length))
+              .replace("{max}", String(TOPBAR_PILL_MAX))
+          : undefined,
+        onSelect: () => handleTopbarMove(pillId, "topbar"),
+      });
+    }
+  }
+
   return (
     <AppShell
         activeTab={isRoomMode ? "/rooms" : "/dashboards"}
         headerEndAction={headerEndAction}
+        headerStatPills={
+          pinnedStatPills.length > 0 ? (
+            <HeaderStatPills
+              pills={pinnedStatPills}
+              editMode={editMode}
+              onOpenMenu={(widgetId, anchor) => setTileMenu({ widgetId, anchor })}
+            />
+          ) : undefined
+        }
         backHref={isRoomMode ? "/rooms" : undefined}
         welcomeTitle={welcomeTitle || undefined}
         welcomeSubtitle={welcomeSubtitle || undefined}
         welcomeEntityIds={isRoomMode && data ? { temperature: (data as { temperatureEntityId?: string | null }).temperatureEntityId ?? null, humidity: (data as { humidityEntityId?: string | null }).humidityEntityId ?? null } : undefined}
         hideWelcome={false}
+        headerEditMode={editMode}
         welcomeEditable={editMode}
         onWelcomeChange={editMode ? ({ title, subtitle }) => {
           setWelcomeTitle(title);
@@ -2742,6 +2832,14 @@ export default function DashboardEditPage() {
         } : undefined}
         contentNoScroll={hasCardGroup}
       >
+      {tileMenu && tileMenuWidget && (
+        <TileMenu
+          anchor={tileMenu.anchor}
+          items={tileMenuItems}
+          ariaLabel={t("tileMenu.label")}
+          onClose={closeTileMenu}
+        />
+      )}
       <div className="space-y-6 overflow-x-hidden min-h-0">
         <div className="flex items-center justify-end">
           <OfflinePill />
@@ -2879,6 +2977,23 @@ export default function DashboardEditPage() {
             : widgets;
           return (
             <>
+        {/* A tile that is being added (pendingAddId) is not in pageWidgets, so it does not count.
+            Neither does a stat pill pinned to the top bar (#301, `placement: "topbar"`). */}
+        {!pageWidgets.some(
+          (w) => widgetPage(w) === pageIndex && (w as { placement?: string }).placement !== "topbar"
+        ) && (
+          // The pager layer is pointer-events-none (taps fall through to the page); only the card takes them.
+          <div className="flex h-full items-center justify-center px-4 py-8">
+            <EmptyStateCard
+              className="pointer-events-auto"
+              icon={LayoutGrid}
+              title={t("dashboard.emptyTitle")}
+              body={t("dashboard.emptyBody")}
+              action={{ label: t("editPanel.addTileAction"), onClick: openAddTileFromEmptyState }}
+              tip={t("dashboard.emptyTip")}
+            />
+          </div>
+        )}
         {pageWidgets
           .filter((w) => w.type === "media_card" && widgetPage(w) === pageIndex)
           .map((w) => (
@@ -3085,10 +3200,30 @@ export default function DashboardEditPage() {
           ))}
 
         {pageWidgets
-          .filter((w) => w.type === "stat_pill_card" && widgetPage(w) === pageIndex)
+          .filter((w) => w.type === "stat_pill_card" && w.placement !== "topbar" && widgetPage(w) === pageIndex)
           .map((w, i) => (
-            <FloatingStatPillCard
+            // display: contents keeps the pill's fixed containing block; the wrapper only listens.
+            <div
               key={w.id}
+              style={{ display: "contents" }}
+              data-statpill-id={w.id}
+              onPointerDownCapture={(e) => {
+                statPillTapRef.current = { id: w.id, el: e.currentTarget.firstElementChild, x: e.clientX, y: e.clientY };
+              }}
+              onPointerUp={
+                editMode
+                  ? (e) => {
+                      // A tap (not a drag) on the pill body opens the menu; the ⋮ button goes through onEdit.
+                      const tap = statPillTapRef.current;
+                      if (!tap || tap.id !== w.id) return;
+                      if ((e.target as HTMLElement).closest?.("button")) return;
+                      if (Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 6) return;
+                      openStatPillMenu(w.id, tap.el);
+                    }
+                  : undefined
+              }
+            >
+            <FloatingStatPillCard
               widgetId={w.id}
               widgetIndex={i}
               title={w.title ?? "Stat"}
@@ -3101,9 +3236,14 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={
+                editMode
+                  ? () => openStatPillMenu(w.id, statPillTapRef.current?.id === w.id ? statPillTapRef.current.el : null)
+                  : undefined
+              }
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
+            </div>
           ))}
 
         {pageWidgets
