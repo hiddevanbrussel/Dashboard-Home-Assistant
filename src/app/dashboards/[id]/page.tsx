@@ -11,7 +11,7 @@ import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { ArrowLeft, RobotVacuum, CalendarDays, Check, Timer, Trash2, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, SlidersHorizontal, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
-import { ArrowRightLeft, ArrowUpToLine } from "lucide-react";
+import { ArrowRightLeft, ArrowUpToLine, Copy } from "lucide-react";
 import { TileMenu, anchorFromElement, type TileMenuAnchor, type TileMenuItem } from "@/components/layout/tile-menu";
 import { HeaderStatPills } from "@/components/layout/header-stat-pills";
 import { TOPBAR_PILL_MAX, canPinMore, ensureGridPosition, moveToGrid, moveToTopbar, topbarPills } from "@/lib/topbar-pills";
@@ -124,7 +124,16 @@ import {
   TILE_SIDEBAR_INSET_PX,
   type TileRect,
 } from "@/lib/tile-placement";
-import { forgetTilePosition, writeTilePosition } from "@/lib/tile-position-storage";
+import { forgetTilePosition, tilePositionStorageKey, writeTilePosition } from "@/lib/tile-position-storage";
+import {
+  duplicateTileTitle,
+  readSavedTilePosition,
+  removeTileWithSnapshot,
+  restoreRemovedTile,
+  restoreSavedTilePosition,
+  type RemovedTileSnapshot,
+  type SavedTilePosition,
+} from "@/lib/tile-menu-actions";
 import {
   clampPageIndex,
   DASHBOARD_MAX_PAGES,
@@ -935,9 +944,32 @@ export default function DashboardEditPage() {
   const closeTileMenu = useCallback(() => setTileMenu(null), []);
   /** Last pointerdown on a floating stat pill: anchor for onEdit, which gets no event. */
   const statPillTapRef = useRef<{ id: string; el: Element | null; x: number; y: number } | null>(null);
+  /** Last tapped tile (any type): anchor for the ⋮ menu, since onEdit gets no event. */
+  const lastTileTapRef = useRef<Element | null>(null);
+  /** Tile removed from the ⋮ menu, kept for the 5-second undo. */
+  const [removedTile, setRemovedTile] = useState<{
+    snapshot: RemovedTileSnapshot<WidgetConfig, LayoutItem>;
+    position: SavedTilePosition | null;
+  } | null>(null);
   useEffect(() => {
-    if (!editMode) setTileMenu(null);
+    if (!editMode) {
+      setTileMenu(null);
+      setRemovedTile(null);
+    }
   }, [editMode]);
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const tile = (e.target as Element | null)?.closest?.(".card-plot-in, .react-grid-item");
+      if (tile) lastTileTapRef.current = tile;
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, []);
+  useEffect(() => {
+    if (!removedTile) return;
+    const timer = window.setTimeout(() => setRemovedTile(null), UNDO_TOAST_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [removedTile]);
   /** When editing a card_group, id of the child pill being edited (null = editing group itself). */
   const [editingGroupChildId, setEditingGroupChildId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
@@ -2035,14 +2067,51 @@ export default function DashboardEditPage() {
     setTileMenu({ widgetId, anchor: anchorFromElement(target) });
   }
 
+  /** ⋮ on any tile: open the tile menu at the tile that was just tapped (or focused). */
+  function openTileMenu(widgetId: string) {
+    const focused = document.activeElement?.closest?.(".card-plot-in, .react-grid-item") ?? null;
+    const target = lastTileTapRef.current?.isConnected ? lastTileTapRef.current : focused;
+    const anchor: TileMenuAnchor = target
+      ? anchorFromElement(target)
+      : { left: window.innerWidth / 2, right: window.innerWidth / 2, top: window.innerHeight / 3, bottom: window.innerHeight / 3 };
+    setTileMenu({ widgetId, anchor });
+  }
+
+  const tileMenuHandler = (widgetId: string) => (editMode ? () => openTileMenu(widgetId) : undefined);
+
+  /** Remove from the ⋮ menu: gone at once, back with Ongedaan maken for 5 seconds. Saved with Klaar, as before. */
+  function handleRemoveTileWithUndo(widgetId: string) {
+    const removed = removeTileWithSnapshot(widgets, layout, widgetId);
+    if (!removed.snapshot) return;
+    setWidgets(removed.widgets);
+    setLayout(removed.layout);
+    const position =
+      typeof window !== "undefined"
+        ? readSavedTilePosition(window.localStorage, tilePositionStorageKey(removed.snapshot.widget.type, id, widgetId)?.key)
+        : null;
+    setRemovedTile({ snapshot: removed.snapshot, position });
+  }
+
+  function handleUndoRemoveTile() {
+    if (!removedTile) return;
+    // Removal prunes the stored position; write it back first so the tile returns where it was.
+    if (typeof window !== "undefined") restoreSavedTilePosition(window.localStorage, removedTile.position);
+    const restored = restoreRemovedTile(widgets, layout, removedTile.snapshot);
+    setWidgets(restored.widgets);
+    setLayout(restored.layout);
+    setRemovedTile(null);
+  }
+
   function handleDuplicateTile(widgetId: string): string | undefined {
     const original = widgets.find((w) => w.id === widgetId);
     if (!original) return undefined;
     const newId = generateId();
+    // A copy of a pill in the top bar goes to the grid, so it never counts against the bar's maximum.
+    const { placement: _placement, topbar_order: _topbarOrder, ...source } = original;
     const duplicated: WidgetConfig = {
-      ...original,
+      ...source,
       id: newId,
-      title: `${original.title ?? ""} (kopie)`.trim() || original.title,
+      title: duplicateTileTitle(original.title, t("editPanel.copySuffix")) || original.title,
       ...((original.type === "card_group" || original.type === "smart_stack") &&
         original.children && {
           children: original.children.map((c) => ({
@@ -2061,6 +2130,12 @@ export default function DashboardEditPage() {
           w: 4,
           h: original.type === "text_card" ? 1 : 2,
         };
+    // Floating copy: write the first free spot before it mounts, like Tegel toevoegen, so it does not land on the original.
+    if (typeof window !== "undefined") {
+      const sameType = widgets.filter((w) => w.type === original.type).length;
+      const slot = placeNewTile(original.type, sameType);
+      writeTilePosition(window.localStorage, original.type, id, newId, { left: slot.left, bottom: slot.bottom });
+    }
     const newWidgets = [...widgets, duplicated];
     const newLayout = [...layout, newLayoutItem];
     setWidgets(newWidgets);
@@ -2686,14 +2761,24 @@ export default function DashboardEditPage() {
       icon: Pencil,
       onSelect: () => setEditingWidgetId(pillId),
     });
-    if (tileMenuWidget.placement === "topbar") {
+    tileMenuItems.push({
+      key: "duplicate",
+      label: t("editPanel.duplicateCard"),
+      icon: Copy,
+      onSelect: () => {
+        handleDuplicateTile(pillId);
+      },
+    });
+    // Only stat pills can go to the top bar.
+    const isPill = tileMenuWidget.type === "stat_pill_card";
+    if (isPill && tileMenuWidget.placement === "topbar") {
       tileMenuItems.push({
         key: "toGrid",
         label: t("tileMenu.toGrid"),
         icon: LayoutGrid,
         onSelect: () => handleTopbarMove(pillId, "grid"),
       });
-    } else {
+    } else if (isPill) {
       const full = !canPinMore(widgets);
       tileMenuItems.push({
         key: "toTopbar",
@@ -2708,6 +2793,12 @@ export default function DashboardEditPage() {
         onSelect: () => handleTopbarMove(pillId, "topbar"),
       });
     }
+    tileMenuItems.push({
+      key: "remove",
+      label: t("editPanel.removeCard"),
+      icon: Trash2,
+      onSelect: () => handleRemoveTileWithUndo(pillId),
+    });
   }
 
   return (
@@ -2850,7 +2941,7 @@ export default function DashboardEditPage() {
                       demo_theme={w.demo_theme}
                       width={w.width}
                       height={w.height}
-                      onMoreClick={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                      onMoreClick={tileMenuHandler(w.id)}
                     />
                   </div>
                 </div>
@@ -2859,6 +2950,14 @@ export default function DashboardEditPage() {
           </ReactGridLayout>
         </div>
 
+        {removedTile && editMode && !pageUndoOpen && typeof document !== "undefined" && createPortal(
+          <UndoToast
+            message={t("tileMenu.removed")}
+            actionLabel={t("dashboardPages.undo")}
+            onAction={handleUndoRemoveTile}
+          />,
+          document.body
+        )}
         {pageUndoOpen && editMode && typeof document !== "undefined" && createPortal(
           <UndoToast
             message={t("dashboardPages.removed")}
@@ -2918,7 +3017,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(w.id)
+                  ? () => openTileMenu(w.id)
                   : undefined
               }
               onRemove={
@@ -2952,7 +3051,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? (id) => setEditingWidgetId(id) : undefined}
+              onEdit={editMode ? (cardId) => openTileMenu(cardId) : undefined}
               onRemove={editMode ? (id) => handleRemoveTile(id) : undefined}
               onResize={editMode ? (size) => handleClimateCardResize(pageIndex, size) : undefined}
             />
@@ -2987,7 +3086,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={() => {
                 setEditMode(true);
-                setEditingWidgetId(w.id);
+                openTileMenu(w.id);
               }}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
@@ -3011,7 +3110,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={() => {
                 setEditMode(true);
-                setEditingWidgetId(w.id);
+                openTileMenu(w.id);
               }}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
@@ -3030,7 +3129,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstSolar.id)
+                  ? () => openTileMenu(firstSolar.id)
                   : undefined
               }
               onRemove={
@@ -3058,7 +3157,7 @@ export default function DashboardEditPage() {
               storageScope={id}
               widgetId={w.id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleEnergyMonitorCardResize(w.id, size) : undefined}
             />
@@ -3078,7 +3177,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstPowerUsage.id)
+                  ? () => openTileMenu(firstPowerUsage.id)
                   : undefined
               }
               onRemove={
@@ -3103,7 +3202,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={`${id}-${w.id}`}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3171,7 +3270,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3197,7 +3296,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstWeather.id)
+                  ? () => openTileMenu(firstWeather.id)
                   : undefined
               }
               onRemove={
@@ -3227,7 +3326,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(w.id)
+                  ? () => openTileMenu(w.id)
                   : undefined
               }
               onRemove={
@@ -3257,7 +3356,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(w.id)
+                  ? () => openTileMenu(w.id)
                   : undefined
               }
               onResize={editMode ? (size) => handleTeamtrackerCardResize(w.id, size) : undefined}
@@ -3279,7 +3378,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstVacuum.id)
+                  ? () => openTileMenu(firstVacuum.id)
                   : undefined
               }
               onRemove={
@@ -3309,7 +3408,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleVacuumCardResize(w.id, size) : undefined}
             />
@@ -3328,7 +3427,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3363,7 +3462,7 @@ export default function DashboardEditPage() {
                   index: roomCards.findIndex((x) => x.id === ow.id),
                 }))}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onCardClick={
                 !editMode
@@ -3404,7 +3503,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleNutsCardResize(w.id, size) : undefined}
             />
@@ -3426,7 +3525,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3448,7 +3547,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3463,7 +3562,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(g.id) : undefined}
+              onEdit={tileMenuHandler(g.id)}
               onRemove={editMode ? () => handleRemoveTile(g.id) : undefined}
             />
           ))}
@@ -3478,7 +3577,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
             />
           ))}
 
@@ -3498,7 +3597,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleCalendarCardResize(w.id, size) : undefined}
             />
@@ -3516,7 +3615,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3539,7 +3638,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleTrashCardResize(w.id, size) : undefined}
             />
