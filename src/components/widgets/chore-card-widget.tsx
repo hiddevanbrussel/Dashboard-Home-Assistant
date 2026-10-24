@@ -3,11 +3,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ListTodo, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { localDateKey } from "@/lib/local-date";
 import type { ChoreCompletionsResponse, ChildWithChores } from "@/lib/chores-types";
 import { useTranslation } from "@/hooks/use-translation";
 
 function getTodayDate() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey(new Date(), "Europe/Amsterdam");
 }
 
 // ── minimal ChoreRow for widget ───────────────────────────────────────────────
@@ -124,7 +125,7 @@ export function ChoreCardWidget({ childId, showPoints = true, title, onMoreClick
       fetch("/api/chore-completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ choreId, childId: cid, frequency }),
+        body: JSON.stringify({ choreId, childId: cid, frequency, date: todayDate }),
       }).then((r) => r.json()),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["chore-completions", todayDate] }),
   });
