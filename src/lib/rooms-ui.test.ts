@@ -6,6 +6,7 @@ import { RoomTileView } from "@/components/rooms/room-tile";
 import { getTranslations } from "@/lib/i18n";
 import {
   ROOM_ICON_COLORS,
+  ROOM_ICON_OPTIONS,
   ROOM_PHOTO_SCRIM_TEXT_ALPHA,
   compositeOnWhite,
   contrastRatio,
@@ -15,7 +16,9 @@ import {
   orderLinkedRooms,
   reduceRoomCardLink,
   roomCardLinkCounts,
+  humanizeIconKey,
   roomColorNameKey,
+  roomIconLabelKey,
   roomColorOptions,
   sameRoomColor,
 } from "@/lib/room-catalog";
@@ -340,5 +343,36 @@ describe("colour swatch labels", () => {
     const panel = readFileSync("src/components/rooms/room-panel.tsx", "utf8");
     expect(panel).toContain("roomColorNameKey(entry)");
     expect(panel).not.toMatch(/aria-label=\{preset \? entry/);
+  });
+});
+
+describe("icon button labels", () => {
+  const nl = getTranslations("nl");
+  const en = getTranslations("en");
+
+  it("gives every icon a spoken name in Dutch and English instead of its key", () => {
+    const names = new Set<string>();
+    for (const icon of ROOM_ICON_OPTIONS) {
+      const key = roomIconLabelKey(icon);
+      expect(key).not.toBeNull();
+      expect(nl[key!]).toBeTruthy();
+      expect(en[key!]).toBeTruthy();
+      expect(nl[key!]).not.toContain("-");
+      names.add(nl[key!]);
+    }
+    expect(names.size).toBe(ROOM_ICON_OPTIONS.length);
+  });
+
+  it("falls back to a readable name for older icon keys", () => {
+    expect(roomIconLabelKey("ChefHat")).toBeNull();
+    expect(humanizeIconKey("ChefHat")).toBe("Chef hat");
+    expect(humanizeIconKey("chef-hat")).toBe("Chef hat");
+    expect(humanizeIconKey("Sofa")).toBe("Sofa");
+  });
+
+  it("uses the name, not the key, as the icon button label", () => {
+    const panel = readFileSync("src/components/rooms/room-panel.tsx", "utf8");
+    expect(panel).toContain("roomIconLabelKey(key)");
+    expect(panel).not.toMatch(/aria-label=\{key\}/);
   });
 });

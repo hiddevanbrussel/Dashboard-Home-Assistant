@@ -19,6 +19,21 @@ export const ROOM_ICON_OPTIONS = [
   "tool-case",
 ] as const;
 
+/** Spoken name per icon (i18n `roomsUi.iconName.<key>`), so a screen reader does not read the icon key. */
+export function roomIconLabelKey(icon: string): string | null {
+  return (ROOM_ICON_OPTIONS as readonly string[]).includes(icon) ? `roomsUi.iconName.${icon}` : null;
+}
+
+/** Readable fallback for an older icon key outside the list: "ChefHat" / "chef-hat" → "Chef hat". */
+export function humanizeIconKey(icon: string): string {
+  const words = icon
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[-_]+/g, " ")
+    .trim()
+    .toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 /** Each preset is at least 4.5:1 with a white icon. */
 export const ROOM_ICON_COLORS = [
   "#4700B5",

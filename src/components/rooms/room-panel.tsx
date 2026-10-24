@@ -9,7 +9,9 @@ import {
   ROOM_ICON_COLOR_DEFAULT,
   ROOM_ICON_OPTIONS,
   iconForeground,
+  humanizeIconKey,
   roomColorNameKey,
+  roomIconLabelKey,
   roomColorOptions,
   sameRoomColor,
 } from "@/lib/room-catalog";
@@ -415,7 +417,10 @@ export function RoomPanel({
                     type="button"
                     onClick={() => setIcon(key)}
                     aria-pressed={selected}
-                    aria-label={key}
+                    aria-label={(() => {
+                      const labelKey = roomIconLabelKey(key);
+                      return labelKey ? t(labelKey) : humanizeIconKey(key);
+                    })()}
                     className={cn(
                       "flex h-11 w-11 items-center justify-center rounded-2xl ring-1",
                       selected
