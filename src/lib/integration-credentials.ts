@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import { decrypt, encrypt } from "./encrypt";
+import { clearEncryptionCache, decrypt, encrypt } from "./encrypt";
 
 export const INTEGRATION_KINDS = ["immich", "music-assistant", "pexels", "valetudo"] as const;
 export type IntegrationKind = (typeof INTEGRATION_KINDS)[number];
@@ -34,10 +34,12 @@ export async function writeIntegration(kind: IntegrationKind, patch: Integration
   for (const key of ["baseUrl", "apiKey", "token", "username", "password"] as const) {
     if (key in patch) next[key] = patch[key];
   }
+  clearEncryptionCache();
+  const encrypted = encrypt(JSON.stringify(next));
   await prisma.integrationCredential.upsert({
     where: { kind },
-    create: { kind, encrypted: encrypt(JSON.stringify(next)) },
-    update: { encrypted: encrypt(JSON.stringify(next)) },
+    create: { kind, encrypted },
+    update: { encrypted },
   });
 }
 

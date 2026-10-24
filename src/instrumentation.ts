@@ -4,6 +4,8 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { installClientAddressGuard } = await import("./lib/client-address-guard");
     installClientAddressGuard();
+    const { installResponseCompression } = await import("./lib/http-compress");
+    installResponseCompression();
     const { assertRuntimeSecrets } = await import("./lib/check-secrets.mjs");
     assertRuntimeSecrets();
   }
