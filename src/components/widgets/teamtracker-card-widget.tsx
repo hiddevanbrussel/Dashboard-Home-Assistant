@@ -238,7 +238,7 @@ export function TeamtrackerCardWidget({
               e.stopPropagation();
               onMoreClick();
             }}
-            className="absolute right-2 top-2 z-20 rounded-lg p-1.5 text-[#1B2437]/30 transition-colors hover:bg-black/5 hover:text-[#1B2437]/65 dark:text-white/30 dark:hover:bg-white/10 dark:hover:text-white/65"
+            className="tile-kebab-hit absolute right-2 top-2 z-20 rounded-lg p-1.5 text-[#1B2437]/30 transition-colors hover:bg-black/5 hover:text-[#1B2437]/65 dark:text-white/30 dark:hover:bg-white/10 dark:hover:text-white/65"
             aria-label={t("common.options")}
           >
             <MoreVertical className="h-4 w-4" aria-hidden />

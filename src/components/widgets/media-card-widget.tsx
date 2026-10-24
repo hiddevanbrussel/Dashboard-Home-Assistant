@@ -204,7 +204,7 @@ export function MediaCardWidget({
                     e.stopPropagation();
                     onMoreClick();
                   }}
-                  className="shrink-0 rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  className="tile-kebab-hit shrink-0 rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
                   aria-label={t("common.options")}
                 >
                   <MoreVertical className="h-5 w-5" aria-hidden />

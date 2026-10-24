@@ -176,7 +176,7 @@ export function PillCardWidget({
           type="button"
           onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
           className={cn(
-            "rounded-full shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors",
+            "tile-kebab-hit rounded-full shrink-0 text-white/70 hover:text-white hover:bg-white/10 transition-colors",
             iconOnly ? "absolute -right-0.5 -top-0.5 p-0.5" : "p-1"
           )}
           aria-label={t("common.options")}

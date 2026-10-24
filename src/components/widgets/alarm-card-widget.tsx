@@ -209,7 +209,7 @@ export function AlarmCardWidget({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-              className="p-1.5 rounded-lg shrink-0 text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors"
+              className="tile-kebab-hit p-1.5 rounded-lg shrink-0 text-gray-600 hover:text-gray-900 dark:text-white/70 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-white/10 transition-colors"
               aria-label={t("alarm.options")}
             >
               <MoreVertical className="h-5 w-5" aria-hidden />

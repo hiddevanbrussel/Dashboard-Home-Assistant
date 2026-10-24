@@ -135,7 +135,7 @@ export function TextCardWidget({
             onMoreClick();
           }}
           className={cn(
-            "absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-900/5 dark:hover:bg-white/10 transition-colors z-20",
+            "tile-kebab-hit absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-900/5 dark:hover:bg-white/10 transition-colors z-20",
             entity_id && "right-12"
           )}
           aria-label={t("common.options")}
