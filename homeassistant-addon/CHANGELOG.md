@@ -22,6 +22,7 @@ No breaking changes: existing configs, dashboards and localStorage keep working.
 
 ### Added
 
+- Add tile, phase 1: a new tile lands on the first free spot on screen (never behind the sidebar) and glows for 4 seconds with an undo toast. Each step of the add dialog goes back with the back button or Escape, touch targets are 44px, and the list stays above the on-screen keyboard (#290).
 - Stat pills can be pinned to the top bar from a new tile menu in edit mode (⋮ → Move to top bar), and moved back to the grid. Up to 4 per dashboard or room; in portrait the bar shows one pill plus a "+N" chip (#301).
 - An empty dashboard or room page explains itself and offers one Add tile button. Home without a dashboard shows a translated welcome card (#302).
 
@@ -30,6 +31,15 @@ No breaking changes: existing configs, dashboards and localStorage keep working.
 - The top-bar clock shows hours and minutes only, in the app language, and updates once a minute (#302).
 - The top-bar temperature can only be tapped in edit mode, where it opens the weather picker. In normal use it is plain text (#302).
 - Top-bar buttons and the weather picker's close button have 44px touch targets, without changing the bar height (#302).
+- Dutch copy calls tiles "Tegel" everywhere: add, edit, name, remove, duplicate and move to another room. English is unchanged (#293).
+
+### Fixed
+
+- Chores: between 00:00 and 02:00 "today" still counted as yesterday. The chores card now follows the local calendar day (#297).
+
+### Security
+
+- The Music Assistant proxy only forwards the commands the dashboard itself uses; admin commands such as `config/*` are refused with 403, and rejected commands are logged without tokens (#295).
 
 ## [0.5.2] - 2026-10-22
 
