@@ -168,6 +168,10 @@ export type WidgetConfig = {
   device_names?: Record<string, string>;
   /** Home board page index (0-based). Missing means page 0. */
   page?: number;
+  /** Stat pill: "topbar" renders it in the header instead of the floating layer. */
+  placement?: "topbar";
+  /** Stat pill in the top bar: position in the pill row (0-based). */
+  topbar_order?: number;
 };
 
 export type TemplateId = "overview" | "rooms" | "energy";

@@ -39,6 +39,15 @@ import { HeaderEnergyStats } from "./header-energy-stats";
 import { HeaderVoice } from "./header-voice";
 import { useNewsStore } from "@/stores/news-store";
 import { NewsOverlay } from "@/components/news-overlay";
+import { ChevronDown } from "lucide-react";
+import { formatHeaderClock, msUntilNextMinute } from "@/lib/header-clock";
+
+/**
+ * Invisible ≥44×44 px touch target around a smaller control.
+ * The pseudo-element is absolutely positioned, so layout and bar height do not change.
+ */
+const HIT_AREA_44 =
+  "relative after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-full after:min-w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']";
 
 /** Scroll distance before the top chrome gets frosted glass. */
 const HEADER_SCROLL_FROST_THRESHOLD = 8;
@@ -65,6 +74,11 @@ type AppShellProps = {
   headerEndAction?: React.ReactNode;
   /** Rendered in the header after the clock/temperature (e.g. calendar toggle). */
   headerStartAction?: React.ReactNode;
+  /**
+   * Stat pills pinned to the header, rendered before the energy stats.
+   * When set, sunrise/sunset is hidden in portrait to make room.
+   */
+  headerStatPills?: React.ReactNode;
   /** Centered in the header (e.g. legacy centered chrome). */
   headerCenterAction?: React.ReactNode;
   /**
@@ -100,6 +114,8 @@ type AppShellProps = {
   contentRightInset?: string;
   /** Hide the header clock (e.g. when the calendar panel already shows the time). */
   hideHeaderClock?: boolean;
+  /** Dashboard/room edit mode: the temperature becomes a button that opens the entity picker. */
+  headerEditMode?: boolean;
   /** Hide the whole header bar (e.g. while Music search fills the content column). */
   hideHeader?: boolean;
   className?: string;
@@ -147,9 +163,9 @@ function TemperatureEntityModal({
         setEntities(weather);
         setError(null);
       })
-      .catch(() => setError("Could not load weather entities."))
+      .catch(() => setError(t("appShell.weatherEntitiesError")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -169,7 +185,10 @@ function TemperatureEntityModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className={cn(
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700",
+              HIT_AREA_44
+            )}
             aria-label={t("appShell.close")}
           >
             <X className="h-4 w-4" />
@@ -212,22 +231,20 @@ function TemperatureEntityModal({
   );
 }
 
-function useHeaderClock() {
+/** hh:mm in the app language; re-renders once a minute, on the minute. */
+function useHeaderClock(language: string) {
   const [time, setTime] = useState("");
   useEffect(() => {
+    let id: ReturnType<typeof setTimeout>;
     function update() {
       const now = new Date();
       const use24h = typeof window !== "undefined" && getScreensaverClock24h();
-      setTime(
-        use24h
-          ? now.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })
-          : now.toLocaleTimeString("nl-NL", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })
-      );
+      setTime(formatHeaderClock(now, language, use24h));
+      id = setTimeout(update, msUntilNextMinute(now));
     }
     update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, []);
+    return () => clearTimeout(id);
+  }, [language]);
   return time;
 }
 
@@ -240,6 +257,7 @@ export function AppShell({
   headerEndAction,
   headerStartAction,
   headerCenterAction,
+  headerStatPills,
   headerBelowAction,
   welcomeTitle: welcomeTitleProp,
   welcomeSubtitle: welcomeSubtitleProp,
@@ -255,6 +273,7 @@ export function AppShell({
   headerFixed = false,
   contentRightInset,
   hideHeaderClock = false,
+  headerEditMode = false,
   hideHeader = false,
   className,
 }: AppShellProps) {
@@ -268,7 +287,7 @@ export function AppShell({
   const hideWallpaper =
     hidesDashboardWallpaper(pathname) || activeTab === "/music" || activeTab === "/energy";
   const showPhotoWash = Boolean(pageBackground) && !hideWallpaper;
-  const headerTime = useHeaderClock();
+  const headerTime = useHeaderClock(language);
   const [temperatureModalOpen, setTemperatureModalOpen] = useState(false);
   const [chosenTemperatureEntityId, setChosenTemperatureEntityId] = useState<string | null>(null);
   const [newsOpen, setNewsOpen] = useState(false);
@@ -390,6 +409,21 @@ export function AppShell({
     locale: sunLocale,
     hour12: !clock24h,
   });
+  const temperatureClass = cn(
+    "flex items-center gap-1.5 text-sm font-medium rounded-lg px-2 py-1 -mx-2",
+    headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300"
+  );
+  const temperatureContent = (
+    <>
+      {effectiveTempEntity?.startsWith("weather.") && temperatureState?.state ? (
+        <WeatherIcon state={temperatureState.state} light={headerContentLight} />
+      ) : (
+        <Thermometer className={cn("h-4 w-4 shrink-0", headerContentLight ? "text-white/80" : "text-gray-500 dark:text-gray-400")} aria-hidden />
+      )}
+      {temperatureDisplay ?? "—"}
+    </>
+  );
+
   const showSunTimes = Boolean(sunriseDisplay || sunsetDisplay);
   const sunIconClass = cn(
     "h-3.5 w-3.5 shrink-0",
@@ -461,31 +495,36 @@ export function AppShell({
                   )}
                 >
                   {!hideHeaderClock && (
-                    <span className={cn("text-sm font-bold tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")} aria-live="polite">
+                    <span className={cn("text-sm font-bold tabular-nums", headerContentLight ? "text-white/90" : "text-gray-700 dark:text-gray-300")}>
                       {headerTime}
                     </span>
                   )}
-                  {effectiveTempEntity != null && (
+                  {/* Plain text in normal use; only a button in dashboard/room edit mode. */}
+                  {effectiveTempEntity != null && !headerEditMode && (
+                    <span className={temperatureClass}>{temperatureContent}</span>
+                  )}
+                  {effectiveTempEntity != null && headerEditMode && (
                     <button
                       type="button"
                       onClick={() => setTemperatureModalOpen(true)}
                       className={cn(
-                        "flex items-center gap-1.5 text-sm font-medium rounded-lg px-2 py-1 -mx-2 transition-colors",
-                        headerContentLight ? "text-white/90 hover:bg-white/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+                        temperatureClass,
+                        HIT_AREA_44,
+                        "outline-dashed outline-1 -outline-offset-1 transition-colors",
+                        "focus-visible:outline focus-visible:outline-2",
+                        headerContentLight
+                          ? "outline-white/70 hover:bg-white/10"
+                          : "outline-gray-500 hover:bg-gray-100 dark:outline-gray-400 dark:hover:bg-white/10"
                       )}
-                      aria-label="Choose temperature entity"
+                      aria-label={t("appShell.chooseTemperature")}
                     >
-                      {effectiveTempEntity?.startsWith("weather.") && temperatureState?.state ? (
-                        <WeatherIcon state={temperatureState.state} light={headerContentLight} />
-                      ) : (
-                        <Thermometer className={cn("h-4 w-4 shrink-0", headerContentLight ? "text-white/80" : "text-gray-500 dark:text-gray-400")} aria-hidden />
-                      )}
-                      {temperatureDisplay ?? "—"}
+                      {temperatureContent}
+                      <ChevronDown className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
                     </button>
                   )}
                   {showSunTimes && (
                     <div
-                      className="flex items-center gap-2.5"
+                      className={cn("flex items-center gap-2.5", headerStatPills != null && "portrait:hidden")}
                       aria-label={t("appShell.sunTimes")}
                     >
                       <span
@@ -513,6 +552,7 @@ export function AppShell({
                     </div>
                   ) : null}
                   <div className="ml-auto flex min-w-0 items-center justify-end gap-2 sm:gap-3">
+                    {headerStatPills}
                     <HeaderEnergyStats contentLight={headerContentLight} />
                     {newsEnabled && rssUrls.length > 0 && (
                       <button
@@ -520,6 +560,7 @@ export function AppShell({
                         onClick={() => setNewsOpen(true)}
                         className={cn(
                           "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                          HIT_AREA_44,
                           headerContentLight
                             ? "text-white/90 hover:bg-white/10"
                             : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
