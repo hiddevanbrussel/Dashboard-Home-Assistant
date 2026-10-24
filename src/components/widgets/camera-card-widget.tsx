@@ -88,7 +88,7 @@ export function CameraCardWidget({
                 e.stopPropagation();
                 onMoreClick();
               }}
-              className="p-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white/90 transition-colors"
+              className="tile-kebab-hit p-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white/90 transition-colors"
               aria-label={t("common.options")}
             >
               <MoreVertical className="h-4 w-4" aria-hidden />

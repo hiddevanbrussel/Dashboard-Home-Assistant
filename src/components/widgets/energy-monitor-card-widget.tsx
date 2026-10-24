@@ -111,7 +111,7 @@ export function EnergyMonitorCardWidget({
               e.stopPropagation();
               onMoreClick();
             }}
-            className="rounded-md p-0.5 shrink-0 text-white/80 hover:bg-black/30 hover:text-white transition-colors"
+            className="tile-kebab-hit rounded-md p-0.5 shrink-0 text-white/80 hover:bg-black/30 hover:text-white transition-colors"
             aria-label={t("common.options")}
           >
             <MoreVertical className="h-4 w-4" aria-hidden />

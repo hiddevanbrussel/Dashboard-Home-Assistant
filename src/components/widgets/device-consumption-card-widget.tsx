@@ -79,7 +79,7 @@ export function DeviceConsumptionCardWidget({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
-            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
+            className="tile-kebab-hit p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10"
             aria-label={t("common.options")}
           >
             <MoreVertical className="h-5 w-5" />

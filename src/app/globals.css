@@ -666,3 +666,23 @@ html.dark:has(.settings-page-bg) body {
 .dark .tile-added-highlight {
   box-shadow: 0 0 0 3px #8357be, 0 0 0 9px rgba(131, 87, 190, 0.25);
 }
+
+/*
+ * 44px touch target for the ⋮ in tiles, without changing the icon, its look or the layout.
+ * In the components layer so Tailwind's `absolute` on an already positioned ⋮ still wins.
+ */
+@layer components {
+  .tile-kebab-hit {
+    position: relative;
+  }
+
+  .tile-kebab-hit::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
