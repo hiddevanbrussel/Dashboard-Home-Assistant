@@ -5,13 +5,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/app-shell";
 import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
 import { CardDefinitionModal } from "@/components/card-definition-modal";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { RobotVacuum, CalendarDays, Check, Timer, Trash2, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
-import { ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, RobotVacuum, CalendarDays, Check, Timer, Trash2, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
+import { ArrowRightLeft, ArrowUpToLine } from "lucide-react";
+import { TileMenu, anchorFromElement, type TileMenuAnchor, type TileMenuItem } from "@/components/layout/tile-menu";
+import { HeaderStatPills } from "@/components/layout/header-stat-pills";
+import { TOPBAR_PILL_MAX, canPinMore, ensureGridPosition, moveToGrid, moveToTopbar, topbarPills } from "@/lib/topbar-pills";
 
 type LayoutItem = ReactGridLayout.Layout;
 type Layout = LayoutItem[];
@@ -94,6 +97,30 @@ import { useDashboardEditFlag } from "@/hooks/use-dashboard-edit-flag";
 import { cn, generateId } from "@/lib/utils";
 import { cssUrl } from "@/lib/base-path";
 import { DashboardPager } from "@/components/dashboard-pager";
+import { UndoToast, UNDO_TOAST_DURATION_MS } from "@/components/undo-toast";
+import {
+  addTileHistoryDepth,
+  backAddTileHistory,
+  bindAddTilePop,
+  discardAddTileHistory,
+  pushAddTileHistory,
+  type AddTileStep,
+} from "@/lib/add-tile-history";
+import {
+  clearTilePositionStorage,
+  planCancelPendingAdd,
+  planConfirmPendingAdd,
+  planUndoAddedTile,
+  tileDefersSave,
+} from "@/lib/add-tile-commit";
+import {
+  resolveTilePosition,
+  defaultTileSize,
+  TILE_EDIT_BAR_INSET_PX,
+  TILE_SIDEBAR_INSET_PX,
+  type TileRect,
+} from "@/lib/tile-placement";
+import { forgetTilePosition, writeTilePosition } from "@/lib/tile-position-storage";
 import {
   clampPageIndex,
   DASHBOARD_MAX_PAGES,
@@ -104,7 +131,6 @@ import {
 } from "@/lib/dashboard-pages";
 import {
   createSerializedSaveQueue,
-  DASHBOARD_PAGE_UNDO_MS,
   readFloatingPositions,
   restoreFloatingPositions,
   shouldApplyPagedSave,
@@ -113,7 +139,6 @@ import {
   type PageSnapshot,
   type PendingPageRemoval,
 } from "@/lib/dashboard-page-removal";
-import { DashboardPageUndoToast } from "@/components/dashboard-page-undo-toast";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
   clampClimateCardHeight,
@@ -253,6 +278,7 @@ import {
   WEATHER_CARD_MIN_HEIGHT,
   WEATHER_CARD_MIN_WIDTH,
 } from "@/lib/weather-card";
+import { EmptyStateCard } from "@/components/layout/empty-state-card";
 
 /** Alleen deze types kunnen als tile worden toegevoegd (floating cards). */
 const ADDABLE_WIDGET_TYPES = ["text_card", "climate_card_2", "light_card", "media_card", "solar_card", "energy_monitor_card", "power_usage_card", "device_consumption_card", "stat_pill_card", "sensor_card", "weather_card", "vacuum_card", "vacuum_card_2", "alarm_card", "camera_card", "teamtracker_card", "pill_card", "room_card", "nuts_card", "smart_stack", "card_group", "chore_card", "calendar_card", "timer_card", "trash_card"] as const;
@@ -933,7 +959,7 @@ export default function DashboardEditPage() {
     const timer = window.setTimeout(() => {
       if (pageUndoGenerationRef.current !== generation) return;
       pageRemovalCommitRef.current();
-    }, DASHBOARD_PAGE_UNDO_MS);
+    }, UNDO_TOAST_DURATION_MS);
     return () => window.clearTimeout(timer);
   }, [pageUndoOpen, pageUndoGeneration]);
   const [roomCardSize, setRoomCardSize] = useState<"normal" | "large">("normal");
@@ -948,9 +974,26 @@ export default function DashboardEditPage() {
   const [addTileStep, setAddTileStep] = useState<"type" | "entity">("type");
   const [addTileSelectedType, setAddTileSelectedType] = useState<string | null>(null);
   const [addTileEntitySearch, setAddTileEntitySearch] = useState("");
+  const [pendingAddId, setPendingAddId] = useState<string | null>(null);
+  const [placedHighlight, setPlacedHighlight] = useState<{
+    id: string;
+    left: number;
+    bottom: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [undoAdd, setUndoAdd] = useState<{ id: string; type: string } | null>(null);
   const [groupAddEntitySearch, setGroupAddEntitySearch] = useState("");
   const [powerUsageDeviceSearch, setPowerUsageDeviceSearch] = useState("");
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
+  /** Stat pill ⋮ menu (edit mode). Anchored to the tapped pill. */
+  const [tileMenu, setTileMenu] = useState<{ widgetId: string; anchor: TileMenuAnchor } | null>(null);
+  const closeTileMenu = useCallback(() => setTileMenu(null), []);
+  /** Last pointerdown on a floating stat pill: anchor for onEdit, which gets no event. */
+  const statPillTapRef = useRef<{ id: string; el: Element | null; x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (!editMode) setTileMenu(null);
+  }, [editMode]);
   /** When editing a card_group, id of the child pill being edited (null = editing group itself). */
   const [editingGroupChildId, setEditingGroupChildId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
@@ -1101,6 +1144,11 @@ export default function DashboardEditPage() {
   const [uploadingRoomBackground, setUploadingRoomBackground] = useState(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roomBackgroundInputRef = useRef<HTMLInputElement>(null);
+  const pendingAddRef = useRef<string | null>(null);
+  const placedStorageRef = useRef<{ widgetId: string; key: string } | null>(null);
+  const syncAddTileRef = useRef<(stack: AddTileStep[]) => void>(() => {});
+  const addTileButtonRef = useRef<HTMLButtonElement>(null);
+  const addTileDialogRef = useRef<HTMLDivElement>(null);
   const LONG_PRESS_MS = 500;
 
   async function handleRoomBackgroundUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1169,6 +1217,23 @@ export default function DashboardEditPage() {
   const editingWidget = editingWidgetId
     ? widgets.find((w) => w.id === editingWidgetId)
     : null;
+  const addingTile =
+    pendingAddId != null && editingWidgetId === pendingAddId && editingGroupChildId == null;
+
+  function closeTileEditor() {
+    if (
+      (editingWidget?.type === "card_group" || editingWidget?.type === "smart_stack") &&
+      editingGroupChildId
+    ) {
+      setEditingGroupChildId(null);
+      return;
+    }
+    if (addingTile) {
+      backAddTileHistory();
+      return;
+    }
+    setEditingWidgetId(null);
+  }
 
   const editingStackChild =
     editingWidget?.type === "smart_stack" && editingGroupChildId
@@ -1530,8 +1595,11 @@ export default function DashboardEditPage() {
       welcomeTitle?: string;
       welcomeSubtitle?: string;
       pageCount?: number;
+      commit?: boolean;
+      placementKey?: string;
       pageRemovalEpoch: number;
     }) => {
+      if (pendingAddRef.current && !payload.commit) return null;
       return enqueueSaveRef.current(async () => {
         const res = await fetch(apiBase, {
           method: "PUT",
@@ -1548,12 +1616,26 @@ export default function DashboardEditPage() {
       });
     },
     onSuccess: (updated, payload) => {
+      if (
+        updated &&
+        payload.placementKey &&
+        placedStorageRef.current?.key === payload.placementKey
+      ) {
+        placedStorageRef.current = null;
+      }
+      if (!updated) return;
       if (!shouldApplyPagedSave(payload.pageRemovalEpoch, pageRemovalEpochRef.current)) return;
       queryClient.setQueryData(
         isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id],
         (old: unknown) => (old && updated ? { ...(old as object), ...(updated as object) } : old ?? updated)
       );
       setPageCount(resolvePageCount(payload.pageCount ?? pageCountRef.current, payload.widgets));
+    },
+    onError: (_error, payload) => {
+      const placed = placedStorageRef.current;
+      if (!payload.placementKey || !placed || placed.key !== payload.placementKey) return;
+      if (typeof window !== "undefined") forgetTilePosition(window.localStorage, placed.key);
+      placedStorageRef.current = null;
     },
   });
 
@@ -1563,6 +1645,8 @@ export default function DashboardEditPage() {
     welcomeTitle?: string;
     welcomeSubtitle?: string;
     pageCount?: number;
+    commit?: boolean;
+    placementKey?: string;
   }) {
     saveMutation.mutate({
       ...payload,
@@ -1589,10 +1673,22 @@ export default function DashboardEditPage() {
 
   const handleSave = () => {
     dismissPageUndo();
+    const pendingId = pendingAddRef.current;
+    if (pendingId) dropPendingTile();
+    if (addTileHistoryDepth() > 0) discardAddTileHistory();
     setEditingWidgetId(null);
     setEditingGroupChildId(null);
     setEditMode(false);
-    mutateDashboard({ layout, widgets, welcomeTitle, welcomeSubtitle, pageCount: pageCountRef.current });
+    const nextWidgets = pendingId ? widgets.filter((widget) => widget.id !== pendingId) : widgets;
+    const nextLayout = pendingId ? layout.filter((item) => item.i !== pendingId) : layout;
+    mutateDashboard({
+      layout: nextLayout,
+      widgets: nextWidgets,
+      welcomeTitle,
+      welcomeSubtitle,
+      pageCount: pageCountRef.current,
+      commit: true,
+    });
   };
 
   function handleAddTile(type: string, entityId: string, titleOverride?: string): string | undefined {
@@ -1669,7 +1765,19 @@ export default function DashboardEditPage() {
     const isFloatingOnly = type === "text_card" || type === "media_card" || type === "solar_card" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "sensor_card" || type === "weather_card" || type === "climate_card" || type === "climate_card_2" || type === "light_card" || type === "vacuum_card" || type === "vacuum_card_2" || type === "alarm_card" || type === "camera_card" || type === "teamtracker_card" || type === "pill_card" || type === "room_card" || type === "nuts_card" || type === "smart_stack" || type === "card_group" || type === "chore_card" || type === "calendar_card" || type === "timer_card" || type === "trash_card";
     const newLayout = isFloatingOnly ? layout : [...layout, newLayoutItem];
 
-    // Optimistisch query-cache updaten zodat de widget direct beschikbaar is bij remount/refetch
+    if (tileDefersSave(type)) {
+      pendingAddRef.current = newId;
+      flushSync(() => {
+        setWidgets(newWidgets);
+        setLayout(newLayout);
+        setPendingAddId(newId);
+      });
+      return newId;
+    }
+
+    const slot = placeNewTile(type, widgets.filter((widget) => widget.type === type).length);
+    const placementKey = rememberTilePosition(type, newId, slot);
+
     const qk = isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id];
     queryClient.setQueryData(qk, (old: unknown) => {
       if (!old || typeof old !== "object") return old;
@@ -1687,15 +1795,289 @@ export default function DashboardEditPage() {
     setAddTileOpen(false);
     setAddTileStep("type");
     setAddTileSelectedType(null);
+    setAddTileEntitySearch("");
+    discardAddTileHistory();
     mutateDashboard({
       layout: newLayout,
       widgets: newWidgets,
       welcomeTitle,
       welcomeSubtitle,
       pageCount: pageCountRef.current,
+      commit: true,
+      placementKey,
     });
-    return type === "text_card" || type === "room_card" || type === "nuts_card" || type === "smart_stack" || type === "energy_monitor_card" || type === "power_usage_card" || type === "device_consumption_card" || type === "stat_pill_card" || type === "trash_card" ? newId : undefined;
+    return undefined;
   }
+
+  function rememberTilePosition(
+    type: string,
+    widgetId: string,
+    slot: { left: number; bottom: number; width: number; height: number }
+  ): string | undefined {
+    let placementKey: string | undefined;
+    if (typeof window !== "undefined") {
+      const stored = writeTilePosition(window.localStorage, type, id, widgetId, {
+        left: slot.left,
+        bottom: slot.bottom,
+      });
+      if (stored.written && stored.key) {
+        placedStorageRef.current = { widgetId, key: stored.key };
+        placementKey = stored.key;
+        setPlacedHighlight({
+          id: widgetId,
+          left: slot.left,
+          bottom: slot.bottom,
+          width: slot.width,
+          height: slot.height,
+        });
+      }
+    }
+    setUndoAdd({ id: widgetId, type });
+    return placementKey;
+  }
+
+  function placeNewTile(type: string, widgetIndex: number) {
+    const tile = defaultTileSize(type);
+    const header = typeof document !== "undefined" ? document.querySelector("[data-app-header]") : null;
+    const minTop = header ? Math.ceil(header.getBoundingClientRect().bottom) + 8 : 72;
+    const occupied: TileRect[] = [];
+    if (typeof document !== "undefined") {
+      document.querySelectorAll(".card-plot-in").forEach((node) => {
+        const rect = (node as HTMLElement).getBoundingClientRect();
+        if (rect.width < 8 || rect.height < 8) return;
+        if (rect.right < 0 || rect.bottom < 0 || rect.left > window.innerWidth || rect.top > window.innerHeight) return;
+        occupied.push({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+      });
+    }
+    return resolveTilePosition({
+      viewport: {
+        width: typeof window !== "undefined" ? window.innerWidth : 1280,
+        height: typeof window !== "undefined" ? window.innerHeight : 800,
+      },
+      tile,
+      occupied,
+      minLeft: TILE_SIDEBAR_INSET_PX,
+      minTop,
+      minBottom: TILE_EDIT_BAR_INSET_PX + 8,
+      widgetIndex,
+    });
+  }
+
+  function dropPendingTile() {
+    const pendingId = pendingAddRef.current;
+    if (!pendingId) return;
+    const type = widgetsRef.current.find((widget) => widget.id === pendingId)?.type ?? "";
+    const plan = planCancelPendingAdd(widgetsRef.current, layoutRef.current, pendingId, type, id);
+    pendingAddRef.current = null;
+    setPendingAddId(null);
+    setWidgets(plan.widgets);
+    setLayout(plan.layout);
+    if (typeof window !== "undefined") {
+      clearTilePositionStorage(window.localStorage, type, id, pendingId, "cancel");
+    }
+    if (placedStorageRef.current?.widgetId === pendingId) placedStorageRef.current = null;
+    setEditingWidgetId((current) => (current === pendingId ? null : current));
+    setEditingGroupChildId(null);
+  }
+
+  function closeAddFlow() {
+    dropPendingTile();
+    setAddTileOpen(false);
+    setAddTileStep("type");
+    setAddTileSelectedType(null);
+    setAddTileEntitySearch("");
+    discardAddTileHistory();
+  }
+
+  function openConfigureStep(newId: string) {
+    setEditingWidgetId(newId);
+    setAddTileOpen(false);
+    pushAddTileHistory("configure");
+  }
+
+  function finishAddedTile(type: string, widgetId: string): string | undefined {
+    const slot = placeNewTile(
+      type,
+      widgets.filter((widget) => widget.type === type && widget.id !== widgetId).length
+    );
+    const placementKey = rememberTilePosition(type, widgetId, slot);
+    pendingAddRef.current = null;
+    setPendingAddId(null);
+    discardAddTileHistory();
+    return placementKey;
+  }
+
+  function undoAddedTile() {
+    if (!undoAdd) return;
+    const plan = planUndoAddedTile(widgets, layout, undoAdd.id, undoAdd.type, id);
+    setWidgets(plan.widgets);
+    setLayout(plan.layout);
+    if (typeof window !== "undefined") {
+      clearTilePositionStorage(
+        window.localStorage,
+        undoAdd.type,
+        id,
+        undoAdd.id,
+        "undo",
+        plan.widgets.map((widget) => widget.type)
+      );
+    }
+    if (placedStorageRef.current?.widgetId === undoAdd.id) placedStorageRef.current = null;
+    setUndoAdd(null);
+    setPlacedHighlight((current) => (current?.id === undoAdd.id ? null : current));
+    if (plan.persist) {
+      mutateDashboard({
+        layout: plan.layout,
+        widgets: plan.widgets,
+        welcomeTitle,
+        welcomeSubtitle,
+        pageCount: pageCountRef.current,
+        commit: true,
+      });
+    }
+  }
+
+  syncAddTileRef.current = (stack) => {
+    const top = stack[stack.length - 1] ?? null;
+    if (top !== "configure") dropPendingTile();
+    if (!top) {
+      setAddTileOpen(false);
+      setAddTileStep("type");
+      setAddTileSelectedType(null);
+      setAddTileEntitySearch("");
+      return;
+    }
+    if (top === "type") {
+      setAddTileOpen(true);
+      setAddTileStep("type");
+      setAddTileSelectedType(null);
+      setAddTileEntitySearch("");
+      return;
+    }
+    if (top === "entity") {
+      setAddTileOpen(true);
+      setAddTileStep("entity");
+    }
+  };
+
+  useEffect(() => bindAddTilePop((stack) => syncAddTileRef.current(stack)), []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (addTileHistoryDepth() === 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      backAddTileHistory();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
+
+  const placedHighlightRef = useRef(placedHighlight);
+  placedHighlightRef.current = placedHighlight;
+
+  useEffect(() => {
+    const snapshot = placedHighlightRef.current;
+    if (!snapshot) return;
+    const highlightId = snapshot.id;
+    const frame = window.requestAnimationFrame(() => {
+      const planned = placedHighlightRef.current;
+      if (!planned || planned.id !== highlightId) return;
+      let best: DOMRect | null = null;
+      let bestDistance = 64;
+      for (const node of document.querySelectorAll(".card-plot-in")) {
+        const rect = (node as HTMLElement).getBoundingClientRect();
+        const bottom = window.innerHeight - rect.bottom;
+        const distance = Math.abs(rect.left - planned.left) + Math.abs(bottom - planned.bottom);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = rect;
+        }
+      }
+      if (!best) return;
+      const measured = best;
+      setPlacedHighlight((current) => {
+        if (!current || current.id !== highlightId) return current;
+        return {
+          ...current,
+          left: measured.left,
+          bottom: window.innerHeight - measured.bottom,
+          width: measured.width,
+          height: measured.height,
+        };
+      });
+    });
+    const timer = window.setTimeout(() => {
+      setPlacedHighlight((current) => (current?.id === highlightId ? null : current));
+    }, 4000);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [placedHighlight?.id]);
+
+  useEffect(() => {
+    if (!undoAdd) return;
+    const timer = window.setTimeout(() => setUndoAdd(null), UNDO_TOAST_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [undoAdd]);
+
+  const addTileWasOpenRef = useRef(false);
+  useEffect(() => {
+    if (!addTileOpen) {
+      if (addTileWasOpenRef.current) addTileButtonRef.current?.focus();
+      addTileWasOpenRef.current = false;
+      return;
+    }
+    addTileWasOpenRef.current = true;
+    const dialog = addTileDialogRef.current;
+    if (!dialog) return;
+
+    const focusableSelector = [
+      "button:not([disabled])",
+      "a[href]",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])",
+    ].join(", ");
+
+    const focusable = () =>
+      Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+        (el) => !el.hasAttribute("disabled") && el.getClientRects().length > 0,
+      );
+
+    dialog.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const nodes = focusable();
+      if (nodes.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+      const inside = active instanceof Node && dialog.contains(active) && active !== dialog;
+      if (event.shiftKey) {
+        if (!inside || active === first) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+      if (!inside || active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [addTileOpen]);
 
   const domain = addTileSelectedType ? WIDGET_TYPE_DOMAIN[addTileSelectedType] : null;
   const entitiesToShow =
@@ -1712,6 +2094,29 @@ export default function DashboardEditPage() {
   function handleRemoveTile(widgetId: string) {
     setWidgets((prev) => prev.filter((w) => w.id !== widgetId));
     setLayout((prev) => prev.filter((item) => item.i !== widgetId));
+  }
+
+  /** Pin a stat pill to the top bar or put it back on the dashboard; saved straight away. */
+  function handleTopbarMove(widgetId: string, to: "topbar" | "grid") {
+    const next = to === "topbar" ? moveToTopbar(widgets, widgetId) : moveToGrid(widgets, widgetId);
+    if (next === widgets) return;
+    if (to === "grid" && typeof window !== "undefined") {
+      // Last floating position if there is one; otherwise the first free spot that overlaps no tile.
+      ensureGridPosition(window.localStorage, id, widgetId, () => {
+        const pillsOnGrid = next.filter((w) => w.type === "stat_pill_card" && w.placement !== "topbar").length;
+        const slot = placeNewTile("stat_pill_card", pillsOnGrid);
+        return { left: slot.left, bottom: slot.bottom };
+      });
+    }
+    setWidgets(next);
+    mutateDashboard({ layout, widgets: next, welcomeTitle, welcomeSubtitle });
+  }
+
+  function openStatPillMenu(widgetId: string, el: Element | null) {
+    const target =
+      el ?? document.querySelector(`[data-statpill-id="${CSS.escape(widgetId)}"]`)?.firstElementChild ?? null;
+    if (!target) return;
+    setTileMenu({ widgetId, anchor: anchorFromElement(target) });
   }
 
   function handleDuplicateTile(widgetId: string): string | undefined {
@@ -1907,6 +2312,16 @@ export default function DashboardEditPage() {
     setDashboardPage(snapshot.activePage);
   }
 
+  /** Empty-state button: edit mode on, then the add-tile dialog at its first step (same as the edit bar button). */
+  function openAddTileFromEmptyState() {
+    setEditMode(true);
+    setAddTileOpen(true);
+    setAddTileStep("type");
+    setAddTileSelectedType(null);
+    setAddTileEntitySearch("");
+    pushAddTileHistory("type");
+  }
+
   function persistPageSnapshot(snapshot: PageSnapshot<WidgetConfig, LayoutItem>, epoch: number) {
     saveMutation.mutate({
       layout: snapshot.layout,
@@ -1977,7 +2392,7 @@ export default function DashboardEditPage() {
   if (!id || (isRoomMode && !areaId)) {
     return (
       <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           {isRoomMode ? t("editPanel.invalidRoom") : t("editPanel.invalidDashboardId")}
         </p>
       </AppShell>
@@ -1987,7 +2402,7 @@ export default function DashboardEditPage() {
   if (isLoading || error) {
     return (
       <AppShell activeTab={isRoomMode ? "/rooms" : "/dashboards"}>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           {error ? t("editPanel.dashboardNotFound") : t("editPanel.loading")}
         </p>
       </AppShell>
@@ -2045,112 +2460,107 @@ export default function DashboardEditPage() {
       {editMode ? (
         <>
             <button
+              ref={addTileButtonRef}
               type="button"
-              onClick={() => setAddTileOpen(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
-              style={{ backgroundColor: "#4700B5" }}
-              aria-label={t("editPanel.addTile")}
+              onClick={() => {
+                setAddTileOpen(true);
+                setAddTileStep("type");
+                setAddTileSelectedType(null);
+                setAddTileEntitySearch("");
+                pushAddTileHistory("type");
+              }}
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[rgba(17,24,39,0.08)] bg-white px-[18px] text-[15px] font-semibold text-[#111827] shadow-[inset_0_0_0_1px_transparent,0_1px_2px_rgba(15,23,42,0.06)] hover:bg-[rgba(17,24,39,0.03)] dark:border-white/10 dark:bg-[#1b1a21] dark:text-[#f3f4f6] dark:hover:bg-white/5"
+              aria-label={t("editPanel.addTileAction")}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" aria-hidden />
+              {t("editPanel.addTileAction")}
             </button>
             {addTileOpen && typeof document !== "undefined" && createPortal(
               <>
                 <div
-                  className="fixed inset-0 z-[300] bg-black/40 dark:bg-black/70 backdrop-blur-sm transition-opacity"
+                  className="fixed inset-0 z-[300] bg-[rgba(14,12,19,0.34)] dark:bg-black/60"
                   aria-hidden
-                  onClick={() => {
-                    setAddTileOpen(false);
-                    setAddTileStep("type");
-                    setAddTileSelectedType(null);
-                    setAddTileEntitySearch("");
-                  }}
+                  onClick={closeAddFlow}
                 />
-                <div className="fixed left-1/2 top-1/2 z-[301] flex max-h-[min(780px,calc(100vh-6rem))] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950">
-                  <div className="flex shrink-0 items-center justify-between border-b border-gray-200 p-5 pb-3 dark:border-white/10">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <div
+                  ref={addTileDialogRef}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="add-tile-dialog-title"
+                  tabIndex={-1}
+                  className="fixed left-1/2 top-1/2 z-[301] flex h-[min(640px,calc(100dvh-2rem))] max-h-[calc(100dvh-1rem)] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-[rgba(17,24,39,0.08)] bg-white shadow-2xl outline-none dark:border-white/10 dark:bg-[#1b1a21]"
+                >
+                  <div className="flex min-h-[68px] shrink-0 items-center justify-between gap-2 border-b border-[rgba(17,24,39,0.08)] px-3 py-2.5 dark:border-white/10">
+                    <h3 id="add-tile-dialog-title" className="min-w-0 flex-1 truncate pl-2 text-xl font-semibold tracking-tight text-[#111827] dark:text-[#f3f4f6]">
                       {addTileStep === "type" ? t("editPanel.addTile") : t("editPanel.chooseEntity")}
                     </h3>
                     <button
                       type="button"
-                      onClick={() => {
-                        setAddTileOpen(false);
-                        setAddTileStep("type");
-                        setAddTileSelectedType(null);
-                        setAddTileEntitySearch("");
-                      }}
-                      className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
+                      onClick={closeAddFlow}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#4b5563] hover:bg-[rgba(17,24,39,0.05)] dark:text-[#c4c4cc] dark:hover:bg-white/10"
                       aria-label={t("editPanel.close")}
                     >
                       <X className="h-5 w-5" />
                     </button>
                   </div>
-                  <div className="min-h-0 flex-1 overflow-y-auto p-5 pt-4">
+                  <div className="flex min-h-0 flex-1 flex-col">
                   {addTileStep === "type" ? (
+                    <div className="min-h-0 flex-1 overflow-y-auto p-5 pt-4">
                     <div className="grid grid-cols-3 gap-2">
                       {ADDABLE_WIDGET_TILES.filter(({ type }) => !isWidgetTypeTemporarilyDisabled(type)).map(({ type, labelKey, Icon }) => (
                         <button
                           key={type}
                           type="button"
                           onClick={() => {
+                            const openDeferred = (tileType: string, entityId: string, title?: string) => {
+                              const newId = handleAddTile(tileType, entityId, title);
+                              if (newId) openConfigureStep(newId);
+                            };
                             if (type === "text_card") {
-                              const newId = handleAddTile("text_card", "", t("editPanel.newText"));
-                              if (newId) setEditingWidgetId(newId);
-                              setAddTileOpen(false);
+                              openDeferred("text_card", "", t("editPanel.newText"));
                               return;
                             }
                             if (type === "card_group") {
                               handleAddTile("card_group", "", t("cardType.card_group"));
-                              setAddTileOpen(false);
                               return;
                             }
                             if (type === "smart_stack") {
-                              const newId = handleAddTile("smart_stack", "", t("cardType.smart_stack"));
-                              if (newId) setEditingWidgetId(newId);
-                              setAddTileOpen(false);
+                              openDeferred("smart_stack", "", t("cardType.smart_stack"));
                               return;
                             }
                             if (type === "room_card") {
-                              const newId = handleAddTile("room_card", "", t("cardType.room_card"));
-                              if (newId) setEditingWidgetId(newId);
+                              openDeferred("room_card", "", t("cardType.room_card"));
                               return;
                             }
                             if (type === "energy_monitor_card") {
-                              const newId = handleAddTile("energy_monitor_card", "", t("cardType.energy_monitor_card"));
-                              if (newId) setEditingWidgetId(newId);
-                              setAddTileOpen(false);
+                              openDeferred("energy_monitor_card", "", t("cardType.energy_monitor_card"));
                               return;
                             }
                             if (type === "power_usage_card") {
-                              const newId = handleAddTile("power_usage_card", "", t("cardType.power_usage_card"));
-                              if (newId) setEditingWidgetId(newId);
-                              setAddTileOpen(false);
+                              openDeferred("power_usage_card", "", t("cardType.power_usage_card"));
                               return;
                             }
                             if (type === "calendar_card") {
                               handleAddTile("calendar_card", "", "");
-                              setAddTileOpen(false);
                               return;
                             }
                             if (type === "trash_card") {
-                              const newId = handleAddTile("trash_card", "", t("cardType.trash_card"));
-                              if (newId) setEditingWidgetId(newId);
-                              setAddTileOpen(false);
+                              openDeferred("trash_card", "", t("cardType.trash_card"));
                               return;
                             }
                             if (type === "chore_card") {
                               handleAddTile("chore_card", "", t("cardType.chore_card"));
-                              setAddTileOpen(false);
                               return;
                             }
                             if (type === "timer_card") {
                               handleAddTile("timer_card", "", t("cardType.timer_card"));
-                              setAddTileOpen(false);
                               return;
                             }
                             setAddTileSelectedType(type);
                             setAddTileStep("entity");
+                            pushAddTileHistory("entity");
                           }}
-                          className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4700B5]/40 hover:bg-[#4700B5]/5 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4700B5]/50 dark:hover:bg-[#4700B5]/10"
+                          className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/80 py-4 px-3 transition-colors hover:border-[#4700B5]/40 hover:bg-[#4700B5]/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4700B5] dark:border-white/10 dark:bg-white/5 dark:hover:border-[#4700B5]/50 dark:hover:bg-[#4700B5]/10 dark:focus-visible:ring-[#8357be]"
                         >
                           <Icon className="h-7 w-7 text-gray-600 dark:text-gray-400" />
                           <span className="text-xs font-medium text-gray-700 dark:text-gray-200 text-center leading-tight">
@@ -2159,28 +2569,28 @@ export default function DashboardEditPage() {
                         </button>
                       ))}
                     </div>
+                    </div>
                   ) : (
-                    <div className="flex flex-col">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAddTileStep("type");
-                          setAddTileSelectedType(null);
-                          setAddTileEntitySearch("");
-                        }}
-                        className="mb-3 self-start px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg"
-                      >
-                        ← {t("editPanel.back")}
-                      </button>
-                      <input
-                        type="text"
-                        value={addTileEntitySearch}
-                        onChange={(e) => setAddTileEntitySearch(e.target.value)}
-                        placeholder={t("editPanel.addTileSearchPlaceholder")}
-                        className="mb-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:placeholder-gray-500"
-                        autoFocus
-                      />
-                      <div className="overflow-auto rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-100 dark:divide-white/5">
+                    <>
+                      <div className="flex shrink-0 items-center gap-2 px-3 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => backAddTileHistory()}
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#4b5563] hover:bg-[rgba(17,24,39,0.05)] dark:text-[#c4c4cc] dark:hover:bg-white/10"
+                          aria-label={t("editPanel.back")}
+                        >
+                          <ArrowLeft className="h-5 w-5" aria-hidden />
+                        </button>
+                        <input
+                          type="text"
+                          value={addTileEntitySearch}
+                          onChange={(e) => setAddTileEntitySearch(e.target.value)}
+                          placeholder={t("editPanel.addTileSearchPlaceholder")}
+                          className="h-12 min-w-0 flex-1 rounded-xl border border-[rgba(17,24,39,0.16)] bg-white px-3.5 text-base text-[#111827] placeholder:text-[#6b7280] dark:border-white/20 dark:bg-black/20 dark:text-[#f3f4f6] dark:placeholder:text-[#a1a1aa]"
+                        />
+                      </div>
+                      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-3">
+                      <div className="overflow-hidden rounded-[18px] border border-[rgba(17,24,39,0.08)] dark:border-white/10">
                         {(() => {
                           const q = addTileEntitySearch.trim().toLowerCase();
                           const filtered = q
@@ -2208,27 +2618,31 @@ export default function DashboardEditPage() {
                                 key={e.entity_id}
                                 type="button"
                                 onClick={() => {
-                                  if (addTileSelectedType) {
-                                    const name = (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
-                                    const titleOverride = addTileSelectedType === "nuts_card" ? (name || t("cardType.nuts_card")) : addTileSelectedType === "energy_monitor_card" ? (name || t("cardType.energy_monitor_card")) : addTileSelectedType === "power_usage_card" ? (name || t("cardType.power_usage_card")) : (name || undefined);
-                                    const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride);
-                                    if ((addTileSelectedType === "nuts_card" || addTileSelectedType === "stat_pill_card") && newId) setEditingWidgetId(newId);
-                                  }
-                                  setAddTileOpen(false);
-                                  setAddTileStep("type");
-                                  setAddTileSelectedType(null);
-                                  setAddTileEntitySearch("");
+                                  if (!addTileSelectedType) return;
+                                  const friendly =
+                                    (e.attributes as { friendly_name?: string })?.friendly_name ?? e.entity_id;
+                                  const titleOverride =
+                                    addTileSelectedType === "nuts_card"
+                                      ? friendly || t("cardType.nuts_card")
+                                      : addTileSelectedType === "energy_monitor_card"
+                                        ? friendly || t("cardType.energy_monitor_card")
+                                        : addTileSelectedType === "power_usage_card"
+                                          ? friendly || t("cardType.power_usage_card")
+                                          : friendly || undefined;
+                                  const newId = handleAddTile(addTileSelectedType, e.entity_id, titleOverride);
+                                  if (newId && tileDefersSave(addTileSelectedType)) openConfigureStep(newId);
                                 }}
-                                className="block w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 truncate"
+                                className="flex min-h-12 w-full items-center border-b border-[rgba(17,24,39,0.08)] px-4 text-left text-sm text-[#111827] last:border-b-0 hover:bg-[rgba(17,24,39,0.04)] dark:border-white/10 dark:text-[#f3f4f6] dark:hover:bg-white/10"
                                 title={e.entity_id}
                               >
-                                {name}
+                                <span className="truncate">{name}</span>
                               </button>
                             );
                           });
                         })()}
                       </div>
-                    </div>
+                      </div>
+                    </>
                   )}
                   </div>
                 </div>
@@ -2240,33 +2654,39 @@ export default function DashboardEditPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saveMutation.isPending}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-white/20"
-                aria-label={t("editPanel.doneEditing")}
+                className="inline-flex h-11 items-center rounded-xl bg-[#4700B5] px-[18px] text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-60 dark:bg-[#8357be]"
+                aria-label={t("editPanel.done")}
               >
-                <Check className="h-4 w-4" />
+                {t("editPanel.done")}
               </button>
             </div>
           </>
       ) : getEditModeAllowed() ? (
         <>
-          <button
-            type="button"
-            onClick={() => {
-              const passcode = getEditModePasscode().trim();
-              if (passcode) {
-                setEditPasscodeInput("");
-                setEditPasscodeError(null);
-                setEditPasscodeModalOpen(true);
-              } else {
-                setEditMode(true);
-              }
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:opacity-90"
-            style={{ backgroundColor: "#4700B5" }}
-            aria-label={t("editPanel.editDashboard")}
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
+          <span className="relative inline-flex h-8 w-8 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                const passcode = getEditModePasscode().trim();
+                if (passcode) {
+                  setEditPasscodeInput("");
+                  setEditPasscodeError(null);
+                  setEditPasscodeModalOpen(true);
+                } else {
+                  setEditMode(true);
+                }
+              }}
+              className="group absolute left-1/2 top-1/2 z-[1] flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full"
+              aria-label={t("editPanel.editDashboard")}
+            >
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-full text-white group-hover:opacity-90"
+                style={{ backgroundColor: "#4700B5" }}
+              >
+                <Pencil className="h-4 w-4" />
+              </span>
+            </button>
+          </span>
           {editPasscodeModalOpen && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[300]" aria-modal="true" role="dialog">
               <div
@@ -2351,15 +2771,60 @@ export default function DashboardEditPage() {
 
   const hasCardGroup = widgets.some((w) => w.type === "card_group");
 
+  const pinnedStatPills = topbarPills(widgets);
+  const tileMenuWidget = tileMenu && editMode ? widgets.find((w) => w.id === tileMenu.widgetId) : undefined;
+  const tileMenuItems: TileMenuItem[] = [];
+  if (tileMenuWidget) {
+    const pillId = tileMenuWidget.id;
+    tileMenuItems.push({
+      key: "edit",
+      label: t("editPanel.editTile"),
+      icon: Pencil,
+      onSelect: () => setEditingWidgetId(pillId),
+    });
+    if (tileMenuWidget.placement === "topbar") {
+      tileMenuItems.push({
+        key: "toGrid",
+        label: t("tileMenu.toGrid"),
+        icon: LayoutGrid,
+        onSelect: () => handleTopbarMove(pillId, "grid"),
+      });
+    } else {
+      const full = !canPinMore(widgets);
+      tileMenuItems.push({
+        key: "toTopbar",
+        label: t("tileMenu.toTopbar"),
+        icon: ArrowUpToLine,
+        disabled: full,
+        hint: full
+          ? t("tileMenu.topbarFull")
+              .replace("{n}", String(pinnedStatPills.length))
+              .replace("{max}", String(TOPBAR_PILL_MAX))
+          : undefined,
+        onSelect: () => handleTopbarMove(pillId, "topbar"),
+      });
+    }
+  }
+
   return (
     <AppShell
         activeTab={isRoomMode ? "/rooms" : "/dashboards"}
         headerEndAction={headerEndAction}
+        headerStatPills={
+          pinnedStatPills.length > 0 ? (
+            <HeaderStatPills
+              pills={pinnedStatPills}
+              editMode={editMode}
+              onOpenMenu={(widgetId, anchor) => setTileMenu({ widgetId, anchor })}
+            />
+          ) : undefined
+        }
         backHref={isRoomMode ? "/rooms" : undefined}
         welcomeTitle={welcomeTitle || undefined}
         welcomeSubtitle={welcomeSubtitle || undefined}
         welcomeEntityIds={isRoomMode && data ? { temperature: (data as { temperatureEntityId?: string | null }).temperatureEntityId ?? null, humidity: (data as { humidityEntityId?: string | null }).humidityEntityId ?? null } : undefined}
         hideWelcome={false}
+        headerEditMode={editMode}
         welcomeEditable={editMode}
         onWelcomeChange={editMode ? ({ title, subtitle }) => {
           setWelcomeTitle(title);
@@ -2367,6 +2832,14 @@ export default function DashboardEditPage() {
         } : undefined}
         contentNoScroll={hasCardGroup}
       >
+      {tileMenu && tileMenuWidget && (
+        <TileMenu
+          anchor={tileMenu.anchor}
+          items={tileMenuItems}
+          ariaLabel={t("tileMenu.label")}
+          onClose={closeTileMenu}
+        />
+      )}
       <div className="space-y-6 overflow-x-hidden min-h-0">
         <div className="flex items-center justify-end">
           <OfflinePill />
@@ -2388,6 +2861,7 @@ export default function DashboardEditPage() {
             draggableHandle={editMode ? ".tile-drag-handle" : undefined}
           >
             {widgets
+            .filter((w) => w.id !== pendingAddId)
             .filter((w) => w.type !== "text_card" && w.type !== "title_card" && w.type !== "title_only_card" && w.type !== "subtitle_card" && w.type !== "media_card" && w.type !== "climate_card" && w.type !== "climate_card_2" && w.type !== "light_card" && w.type !== "solar_card" && w.type !== "energy_monitor_card" && w.type !== "power_usage_card" && w.type !== "device_consumption_card" && w.type !== "stat_pill_card" && w.type !== "weather_card" && w.type !== "vacuum_card" && w.type !== "vacuum_card_2" && w.type !== "alarm_card" && w.type !== "camera_card" && w.type !== "teamtracker_card" && w.type !== "pill_card" && w.type !== "room_card" && w.type !== "nuts_card" && w.type !== "smart_stack" && w.type !== "card_group" && w.type !== "chore_card" && w.type !== "calendar_card" && w.type !== "timer_card" && w.type !== "trash_card")
             .map((w) => {
               const item = layoutMap.get(w.id);
@@ -2481,7 +2955,14 @@ export default function DashboardEditPage() {
           </ReactGridLayout>
         </div>
 
-        <DashboardPageUndoToast open={pageUndoOpen && editMode} onUndo={handleUndoPageRemoval} />
+        {pageUndoOpen && editMode && typeof document !== "undefined" && createPortal(
+          <UndoToast
+            message={t("dashboardPages.removed")}
+            actionLabel={t("dashboardPages.undo")}
+            onAction={handleUndoPageRemoval}
+          />,
+          document.body
+        )}
         <DashboardPager
           pageCount={pageCount}
           page={dashboardPage}
@@ -2490,9 +2971,30 @@ export default function DashboardEditPage() {
           onAddPage={editMode ? handleAddDashboardPage : undefined}
           onRemovePage={editMode ? handleRemoveDashboardPage : undefined}
         >
-          {(pageIndex) => (
+          {(pageIndex) => {
+          const pageWidgets = pendingAddId
+            ? widgets.filter((widget) => widget.id !== pendingAddId)
+            : widgets;
+          return (
             <>
-        {widgets
+        {/* A tile that is being added (pendingAddId) is not in pageWidgets, so it does not count.
+            Neither does a stat pill pinned to the top bar (#301, `placement: "topbar"`). */}
+        {!pageWidgets.some(
+          (w) => widgetPage(w) === pageIndex && (w as { placement?: string }).placement !== "topbar"
+        ) && (
+          // The pager layer is pointer-events-none (taps fall through to the page); only the card takes them.
+          <div className="flex h-full items-center justify-center px-4 py-8">
+            <EmptyStateCard
+              className="pointer-events-auto"
+              icon={LayoutGrid}
+              title={t("dashboard.emptyTitle")}
+              body={t("dashboard.emptyBody")}
+              action={{ label: t("editPanel.addTileAction"), onClick: openAddTileFromEmptyState }}
+              tip={t("dashboard.emptyTip")}
+            />
+          </div>
+        )}
+        {pageWidgets
           .filter((w) => w.type === "media_card" && widgetPage(w) === pageIndex)
           .map((w) => (
             <FloatingMediaCard
@@ -2520,7 +3022,7 @@ export default function DashboardEditPage() {
           ))}
 
         {(() => {
-          const climateCards = widgets.filter(
+          const climateCards = pageWidgets.filter(
             (w) =>
               (w.type === "climate_card" || w.type === "climate_card_2") &&
               widgetPage(w) === pageIndex
@@ -2548,7 +3050,7 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {widgets
+        {pageWidgets
           .filter((w) =>
             (w.type === "text_card" || w.type === "title_card" || w.type === "title_only_card" || w.type === "subtitle_card") &&
             widgetPage(w) === pageIndex
@@ -2582,7 +3084,7 @@ export default function DashboardEditPage() {
             />
           ))}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "light_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingLightCard
@@ -2607,7 +3109,7 @@ export default function DashboardEditPage() {
           ))}
 
         {(() => {
-          const firstSolar = widgets.find((w) => w.type === "solar_card" && widgetPage(w) === pageIndex);
+          const firstSolar = pageWidgets.find((w) => w.type === "solar_card" && widgetPage(w) === pageIndex);
           return firstSolar ? (
             <FloatingSolarCard
               title={firstSolar.title ?? t("cardType.solar_card")}
@@ -2631,7 +3133,7 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "energy_monitor_card" && widgetPage(w) === pageIndex)
           .map((w) => (
             <FloatingEnergyMonitorCard
@@ -2654,7 +3156,7 @@ export default function DashboardEditPage() {
           ))}
 
         {(() => {
-          const firstPowerUsage = widgets.find((w) => w.type === "power_usage_card" && widgetPage(w) === pageIndex);
+          const firstPowerUsage = pageWidgets.find((w) => w.type === "power_usage_card" && widgetPage(w) === pageIndex);
           return firstPowerUsage ? (
             <FloatingPowerUsageCard
               title={firstPowerUsage.title ?? t("cardType.power_usage_card")}
@@ -2679,7 +3181,7 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "device_consumption_card" && widgetPage(w) === pageIndex)
           .map((w) => (
             <FloatingDeviceConsumptionCard
@@ -2697,11 +3199,31 @@ export default function DashboardEditPage() {
             />
           ))}
 
-        {widgets
-          .filter((w) => w.type === "stat_pill_card" && widgetPage(w) === pageIndex)
+        {pageWidgets
+          .filter((w) => w.type === "stat_pill_card" && w.placement !== "topbar" && widgetPage(w) === pageIndex)
           .map((w, i) => (
-            <FloatingStatPillCard
+            // display: contents keeps the pill's fixed containing block; the wrapper only listens.
+            <div
               key={w.id}
+              style={{ display: "contents" }}
+              data-statpill-id={w.id}
+              onPointerDownCapture={(e) => {
+                statPillTapRef.current = { id: w.id, el: e.currentTarget.firstElementChild, x: e.clientX, y: e.clientY };
+              }}
+              onPointerUp={
+                editMode
+                  ? (e) => {
+                      // A tap (not a drag) on the pill body opens the menu; the ⋮ button goes through onEdit.
+                      const tap = statPillTapRef.current;
+                      if (!tap || tap.id !== w.id) return;
+                      if ((e.target as HTMLElement).closest?.("button")) return;
+                      if (Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 6) return;
+                      openStatPillMenu(w.id, tap.el);
+                    }
+                  : undefined
+              }
+            >
+            <FloatingStatPillCard
               widgetId={w.id}
               widgetIndex={i}
               title={w.title ?? "Stat"}
@@ -2714,12 +3236,17 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={
+                editMode
+                  ? () => openStatPillMenu(w.id, statPillTapRef.current?.id === w.id ? statPillTapRef.current.el : null)
+                  : undefined
+              }
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
+            </div>
           ))}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "sensor_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingSensorCard
@@ -2741,7 +3268,7 @@ export default function DashboardEditPage() {
           ))}
 
         {(() => {
-          const firstWeather = widgets.find((w) => w.type === "weather_card" && widgetPage(w) === pageIndex);
+          const firstWeather = pageWidgets.find((w) => w.type === "weather_card" && widgetPage(w) === pageIndex);
           return firstWeather ? (
             <FloatingWeatherCard
               title={firstWeather.title ?? "Weather"}
@@ -2774,7 +3301,7 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "camera_card" && widgetPage(w) === pageIndex)
           .map((w) => (
             <FloatingCameraCard
@@ -2803,7 +3330,7 @@ export default function DashboardEditPage() {
             />
           ))}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "teamtracker_card" && widgetPage(w) === pageIndex)
           .map((w) => (
             <FloatingTeamtrackerCard
@@ -2829,7 +3356,7 @@ export default function DashboardEditPage() {
           ))}
 
         {(() => {
-          const firstVacuum = widgets.find((w) => w.type === "vacuum_card" && widgetPage(w) === pageIndex);
+          const firstVacuum = pageWidgets.find((w) => w.type === "vacuum_card" && widgetPage(w) === pageIndex);
           return firstVacuum ? (
             <FloatingVacuumCard
               title={firstVacuum.title ?? t("cardType.vacuum_card")}
@@ -2855,7 +3382,7 @@ export default function DashboardEditPage() {
           ) : null;
         })()}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "vacuum_card_2" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingVacuumCard2
@@ -2879,7 +3406,7 @@ export default function DashboardEditPage() {
             />
           ))}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "alarm_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingAlarmCard
@@ -2898,7 +3425,7 @@ export default function DashboardEditPage() {
           ))}
 
         {(() => {
-          const roomCards = widgets.filter((w) => w.type === "room_card" && widgetPage(w) === pageIndex);
+          const roomCards = pageWidgets.filter((w) => w.type === "room_card" && widgetPage(w) === pageIndex);
           return roomCards.map((w, i) => (
             <FloatingRoomCard
               key={w.id}
@@ -2946,7 +3473,7 @@ export default function DashboardEditPage() {
           ));
         })()}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "nuts_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingNutsCard
@@ -2975,7 +3502,7 @@ export default function DashboardEditPage() {
           ))}
 
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "chore_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingChoreCard
@@ -2995,7 +3522,7 @@ export default function DashboardEditPage() {
             />
           ))}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "pill_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingPillCard
@@ -3017,7 +3544,7 @@ export default function DashboardEditPage() {
             />
           ))}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "card_group" && widgetPage(w) === pageIndex)
           .map((g, i) => (
             <FloatingCardGroup
@@ -3032,7 +3559,7 @@ export default function DashboardEditPage() {
             />
           ))}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "smart_stack" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingSmartStack
@@ -3046,7 +3573,7 @@ export default function DashboardEditPage() {
             />
           ))}
 
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "calendar_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingCalendarCard
@@ -3067,7 +3594,7 @@ export default function DashboardEditPage() {
               onResize={editMode ? (size) => handleCalendarCardResize(w.id, size) : undefined}
             />
           ))}
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "timer_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingTimerCard
@@ -3084,7 +3611,7 @@ export default function DashboardEditPage() {
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
-        {widgets
+        {pageWidgets
           .filter((w) => w.type === "trash_card" && widgetPage(w) === pageIndex)
           .map((w, i) => (
             <FloatingTrashCard
@@ -3109,7 +3636,8 @@ export default function DashboardEditPage() {
             />
           ))}
             </>
-          )}
+          );
+        }}
         </DashboardPager>
 
         {editingWidgetId && editingWidget && typeof document !== "undefined" && createPortal(
@@ -3118,18 +3646,9 @@ export default function DashboardEditPage() {
               className="fixed inset-0 z-[190] bg-black/40 dark:bg-black/70 backdrop-blur-sm"
               aria-hidden
               data-no-page-swipe
-              onClick={() => {
-                if (
-                  (editingWidget?.type === "card_group" || editingWidget?.type === "smart_stack") &&
-                  editingGroupChildId
-                ) {
-                  setEditingGroupChildId(null);
-                } else {
-                  setEditingWidgetId(null);
-                }
-              }}
+              onClick={closeTileEditor}
             />
-            <div className="fixed left-1/2 top-1/2 z-[200] flex max-h-[min(820px,calc(100vh-6rem))] w-[min(960px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950">
+            <div className="fixed left-1/2 top-1/2 z-[200] flex max-h-[min(820px,calc(100dvh-2rem))] w-[min(960px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 animate-fade-scale-in-center flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950">
               <div className="flex shrink-0 items-center justify-between border-b border-gray-200 p-5 pb-3 dark:border-white/10">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {(editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card")
@@ -3152,17 +3671,8 @@ export default function DashboardEditPage() {
               </h3>
               <button
                 type="button"
-                onClick={() => {
-                  if (
-                    (editingWidget?.type === "card_group" || editingWidget?.type === "smart_stack") &&
-                    editingGroupChildId
-                  ) {
-                    setEditingGroupChildId(null);
-                  } else {
-                    setEditingWidgetId(null);
-                  }
-                }}
-                className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
+                onClick={closeTileEditor}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
                 aria-label={t("editPanel.close")}
               >
                 <X className="h-5 w-5" />
@@ -7122,6 +7632,7 @@ aria-label={t("editPanel.removeCondition")}
                     </>
                   ) : (
                     <>
+                  {!addingTile && (
                   <button
                     type="button"
                     onClick={() => {
@@ -7142,14 +7653,22 @@ aria-label={t("editPanel.removeCondition")}
                   >
                     {t("editPanel.remove")}
                   </button>
-                  <div className="flex gap-2">
+                  )}
+                  <div className={cn("flex gap-2", addingTile && "ml-auto")}>
                   <button
                     type="button"
-                    onClick={() => setEditingWidgetId(null)}
+                    onClick={() => {
+                      if (addingTile) {
+                        backAddTileHistory();
+                        return;
+                      }
+                      setEditingWidgetId(null);
+                    }}
                     className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 dark:border-white/10 dark:text-gray-300"
                   >
                     {t("editPanel.cancel")}
                   </button>
+                  {!addingTile && (
                   <button
                     type="button"
                     onClick={() => {
@@ -7160,9 +7679,18 @@ aria-label={t("editPanel.removeCondition")}
                   >
                     {t("editPanel.duplicate")}
                   </button>
+                  )}
                       <button
                     type="button"
                     onClick={() => {
+                      const wasAdding =
+                        addingTile &&
+                        editingWidgetId != null &&
+                        planConfirmPendingAdd(widgets, editingWidgetId).persist;
+                      let placementKey: string | undefined;
+                      if (wasAdding && editingWidgetId) {
+                        placementKey = finishAddedTile(editingWidget.type, editingWidgetId);
+                      }
                       const isCategoryCard = editingWidget.type === "text_card" || editingWidget.type === "title_card" || editingWidget.type === "title_only_card" || editingWidget.type === "subtitle_card";
                       const newWelcomeTitle = welcomeTitle;
                       const newWelcomeSubtitle = welcomeSubtitle;
@@ -7346,12 +7874,18 @@ aria-label={t("editPanel.removeCondition")}
                         widgets: newWidgets,
                         welcomeTitle: newWelcomeTitle,
                         welcomeSubtitle: newWelcomeSubtitle,
+                        commit: wasAdding,
+                        placementKey,
                       });
                       setEditingWidgetId(null);
                     }}
-                    className="rounded-lg bg-[#4700B5] px-3 py-1.5 text-sm text-white hover:opacity-90"
+                    className={
+                      addingTile
+                        ? "inline-flex h-12 items-center rounded-xl bg-[#4700B5] px-4 text-[15px] font-semibold text-white hover:opacity-90 dark:bg-[#8357be]"
+                        : "rounded-lg bg-[#4700B5] px-3 py-1.5 text-sm text-white hover:opacity-90"
+                    }
                   >
-                    {t("editPanel.save")}
+                    {addingTile ? t("editPanel.add") : t("editPanel.save")}
                   </button>
                   </div>
                     </>
@@ -7417,6 +7951,27 @@ aria-label={t("editPanel.removeCondition")}
             />,
             document.body
           )}
+        {placedHighlight && typeof document !== "undefined" && createPortal(
+          <div
+            className="tile-added-highlight fixed z-[65]"
+            style={{
+              left: placedHighlight.left,
+              bottom: placedHighlight.bottom,
+              width: placedHighlight.width,
+              height: placedHighlight.height,
+            }}
+            aria-hidden
+          />,
+          document.body
+        )}
+        {undoAdd && typeof document !== "undefined" && createPortal(
+          <UndoToast
+            message={t("editPanel.tileAdded")}
+            actionLabel={t("editPanel.undo")}
+            onAction={undoAddedTile}
+          />,
+          document.body
+        )}
       </div>
     </AppShell>
   );

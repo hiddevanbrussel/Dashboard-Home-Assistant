@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.3] - 2026-10-24
+
+No breaking changes: existing configs, dashboards and localStorage keep working.
+
+### Added
+
+- Stat pills can be pinned to the top bar from a new tile menu in edit mode (⋮ → Move to top bar), and moved back to the grid. Up to 4 per dashboard or room; in portrait the bar shows one pill plus a "+N" chip (#301).
+- An empty dashboard or room page explains itself and offers one Add tile button. Home without a dashboard shows a translated welcome card (#302).
+
+### Changed
+
+- The top-bar clock shows hours and minutes only, in the app language, and updates once a minute (#302).
+- The top-bar temperature can only be tapped in edit mode, where it opens the weather picker. In normal use it is plain text (#302).
+- Top-bar buttons and the weather picker's close button have 44px touch targets, without changing the bar height (#302).
+
 ## [0.5.2] - 2026-10-22
 
 No breaking changes: existing configs and localStorage keep working.
