@@ -952,8 +952,10 @@ export default function FamilyPage() {
   const handleComplete = useCallback((choreId: string, childId: string, frequency: string) => {
     const child = children.find((c) => c.id === childId);
     const chore = child?.chores.find((ch) => ch.choreId === choreId);
+    const hour = new Date().getHours();
+    const eveningHour = getEveningHour();
     const remaining = child && chore
-      ? remainingVisibleTodayChores(child.chores, choreId, new Date().getHours(), getEveningHour())
+      ? remainingVisibleTodayChores(child.chores, choreId, hour, eveningHour)
       : 1;
     completeMutation.mutate({
       choreId,
@@ -962,7 +964,7 @@ export default function FamilyPage() {
       title: chore?.title ?? "",
       points: chore?.points ?? 0,
       childName: child?.name ?? "",
-      celebrate: chore ? shouldCelebrateCompletingToday(remaining, chore.penalty) : false,
+      celebrate: chore ? shouldCelebrateCompletingToday(chore, remaining, hour, eveningHour) : false,
     });
   }, [completeMutation, children]);
 
