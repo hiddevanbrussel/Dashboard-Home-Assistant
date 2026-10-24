@@ -322,7 +322,8 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   }
 
-  html[data-glass-density="off"] :is([class*="backdrop-blur-xl"], [class*="backdrop-blur-2xl"]),
+  /* Same :not() chain as the remap above, so this rule out-ranks it (0,5,1 vs 0,4,0). */
+  html[data-glass-density="off"] :is([class*="backdrop-blur-xl"], [class*="backdrop-blur-2xl"]):not(.sidebar-glass):not(.header-chrome-glass):not(.header-chrome-glass-over-media),
   html[data-glass-density="off"] .glass-card,
   html[data-glass-density="off"] .glass-surface,
   html[data-glass-density="off"] .sidebar-glass,
