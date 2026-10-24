@@ -6,6 +6,7 @@ import {
   currentOrientation,
   floatingTilesFromWidgets,
   measuredSizeOverrides,
+  placingTiles,
   readFloatingLayout,
   reconcileFloatingLayout,
   restoreBelowFoldStorage,
@@ -125,7 +126,8 @@ export function useFloatingOrientation({
   const orientation = currentOrientation(viewport.width, viewport.height);
   const tiles = withOverrides(dashboardId ? floatingTilesFromWidgets(widgets, dashboardId) : [], sizeOverrides);
   tilesRef.current = tiles;
-  const tileSig = tiles.map((tile) => `${tile.key}:${tile.page}:${tile.w}x${tile.h}`).join("|");
+  // `parked` is in the signature so pinning or unpinning a tile reconciles again.
+  const tileSig = tiles.map((tile) => `${tile.key}:${tile.page}:${tile.w}x${tile.h}${tile.parked ? ":parked" : ""}`).join("|");
   const sizeSig = tiles.map((tile) => `${tile.key}:${tile.w}x${tile.h}`).join("|");
   const sig = `${dashboardId ?? ""}|${ready ? 1 : 0}|${orientation}|${viewport.width}x${viewport.height}|${tileSig}|${generation}`;
 
@@ -236,7 +238,8 @@ export function useFloatingOrientation({
       if (!layout || layout.portraitBron !== "afgeleid" || !layout.portrait) return;
       const nodes = document.querySelectorAll<HTMLElement>(".card-plot-in");
       if (nodes.length === 0) return;
-      const known = tilesRef.current.flatMap((tile) => {
+      // Parked tiles are not rendered, so they cannot be matched to a measured node.
+      const known = placingTiles(tilesRef.current).flatMap((tile) => {
         const raw = layout.portrait?.[tile.key];
         if (!raw) return [];
         try {
@@ -277,7 +280,7 @@ export function useFloatingOrientation({
     let alive = true;
     const reveal = () => {
       if (!alive || pointerDownRef.current) return;
-      const hanging = tilesRef.current.flatMap((tile) => {
+      const hanging = placingTiles(tilesRef.current).flatMap((tile) => {
         if (tile.persistsClamp) return [];
         const raw = window.localStorage.getItem(tile.key);
         if (!raw) return [];

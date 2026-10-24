@@ -844,3 +844,100 @@ function snapshotActive(storage: MemoryStorage, tiles: readonly FloatingTile[]):
   }
   return snap;
 }
+
+describe("parked tiles (stat pills pinned to the top bar)", () => {
+  const PILL_KEY = `dashboard.floatingStatPillCardPosition.${SCOPE}.pill`;
+  // In landscape the pill sits where portrait first-fit would put the weather card.
+  const PILL_LANDSCAPE = '{"left":96,"bottom":896}';
+  const pill = (parked: boolean) =>
+    tile("Pill", PILL_KEY, { w: 140, h: 44, legacyTopOffset: 44, ...(parked ? { parked: true } : {}) });
+
+  function run(
+    storage: MemoryStorage,
+    orientation: "landscape" | "portrait",
+    tiles: FloatingTile[],
+    push = false,
+    anchorKeys?: ReadonlySet<string>
+  ) {
+    return reconcileFloatingLayout({
+      storage,
+      dashboardId: SCOPE,
+      orientation,
+      viewport: orientation === "portrait" ? PORTRAIT : LANDSCAPE,
+      tiles,
+      push,
+      anchorKeys,
+      reportNotice: false,
+      rederive: false,
+      mounted: true,
+    });
+  }
+
+  function layoutOf(storage: MemoryStorage) {
+    return JSON.parse(storage.getItem(layoutStorageKey(SCOPE)) ?? "{}") as {
+      landscape: Record<string, string>;
+      portrait: Record<string, string> | null;
+    };
+  }
+
+  it("takes no space when portrait is derived", () => {
+    const withPill = new MemoryStorage();
+    seed(withPill, { ...LANDSCAPE_LS, [PILL_KEY]: PILL_LANDSCAPE });
+    run(withPill, "portrait", [...qaTiles(), pill(true)], true);
+
+    const without = new MemoryStorage();
+    seed(without, LANDSCAPE_LS);
+    run(without, "portrait", qaTiles(), true);
+
+    const portraitWith = { ...(layoutOf(withPill).portrait ?? {}) };
+    expect(portraitWith[PILL_KEY]).toBeUndefined();
+    expect(portraitWith).toEqual(layoutOf(without).portrait);
+  });
+
+  it("keeps its landscape position in the master and gets it back byte for byte", () => {
+    const storage = new MemoryStorage();
+    seed(storage, { ...LANDSCAPE_LS, [PILL_KEY]: PILL_LANDSCAPE });
+    const tiles = [...qaTiles(), pill(true)];
+    run(storage, "portrait", tiles, true);
+    expect(layoutOf(storage).landscape[PILL_KEY]).toBe(PILL_LANDSCAPE);
+
+    run(storage, "landscape", tiles);
+    expect(storage.getItem(PILL_KEY)).toBe(PILL_LANDSCAPE);
+    for (const [key, value] of Object.entries(LANDSCAPE_LS)) expect(storage.getItem(key)).toBe(value);
+  });
+
+  it("is not pruned as a removed widget", () => {
+    const storage = new MemoryStorage();
+    seed(storage, { ...LANDSCAPE_LS, [PILL_KEY]: PILL_LANDSCAPE });
+    run(storage, "portrait", [...qaTiles(), pill(false)], true);
+    run(storage, "portrait", [...qaTiles(), pill(true)]);
+    expect(layoutOf(storage).landscape[PILL_KEY]).toBe(PILL_LANDSCAPE);
+  });
+
+  it("does not push other tiles away", () => {
+    const storage = new MemoryStorage();
+    seed(storage, { ...LANDSCAPE_LS, [PILL_KEY]: PILL_LANDSCAPE });
+    run(storage, "portrait", qaTiles(), true);
+    const before = snapshotActive(storage, qaTiles());
+    // The parked pill's stored portrait spot sits right on top of the weather card, and it is an
+    // anchor (as if just moved), so if it took part in the push the weather card would have to yield.
+    storage.setItem(PILL_KEY, before[`dashboard.floatingWeatherCardPosition.${SCOPE}`]);
+    run(storage, "portrait", [...qaTiles(), pill(true)]);
+    expect(layoutOf(storage).portrait?.[PILL_KEY]).toBe(before[`dashboard.floatingWeatherCardPosition.${SCOPE}`]);
+    run(storage, "portrait", [...qaTiles(), pill(true)], true, new Set([PILL_KEY]));
+    expect(snapshotActive(storage, qaTiles())).toEqual(before);
+  });
+
+  it("gets a free portrait slot once it is unparked without a portrait position", () => {
+    const storage = new MemoryStorage();
+    seed(storage, { ...LANDSCAPE_LS, [PILL_KEY]: PILL_LANDSCAPE });
+    run(storage, "portrait", [...qaTiles(), pill(true)], true);
+    expect(storage.getItem(PILL_KEY)).toBeNull();
+
+    run(storage, "portrait", [...qaTiles(), pill(false)]);
+    const all = [...qaTiles(), pill(false)];
+    const portrait = layoutOf(storage).portrait ?? {};
+    expect(portrait[PILL_KEY]).toBeDefined();
+    expect(overlapPairs(boxes(all, portrait), "pixels")).toEqual([]);
+  });
+});

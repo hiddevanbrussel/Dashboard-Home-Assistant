@@ -129,7 +129,18 @@ export type FloatingTile = {
   h: number;
   bottomInset: number;
   legacyTopOffset: number;
+  /**
+   * Not on the floating layer right now (e.g. a stat pill pinned to the top bar).
+   * Its keys are kept in both orientation sets and swapped like any other tile,
+   * but it is ignored for placing, pushing and overlap/below-fold checks.
+   */
+  parked?: boolean;
 };
+
+/** Tiles that take part in placing and pushing (everything that is not parked). */
+export function placingTiles<T extends { parked?: boolean }>(tiles: readonly T[]): T[] {
+  return tiles.filter((tile) => !tile.parked);
+}
 
 export type FloatingWidgetInput = {
   id: string;
@@ -140,6 +151,8 @@ export type FloatingWidgetInput = {
   card_layout?: "horizontal" | "square";
   size?: string;
   display_mode?: string;
+  /** See `FloatingTile.parked`. */
+  parked?: boolean;
 };
 
 type KeyShape = "scope" | "widget" | "id";
@@ -246,6 +259,7 @@ export function floatingTilesFromWidgets(widgets: readonly FloatingWidgetInput[]
       h: size.h,
       bottomInset: entry.bottomInset,
       legacyTopOffset,
+      ...(widget.parked ? { parked: true } : {}),
     });
   }
   return tiles;
@@ -1072,7 +1086,9 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
     }
   }
 
+  // Parked tiles stay live (their keys are kept and swapped) but never place, push or count for checks.
   const liveKeys = new Set(tiles.map((tile) => tile.key));
+  const placing = placingTiles(tiles);
   let layout = readFloatingLayout(storage, dashboardId);
   if (!layout && (orientation === "landscape" || tiles.length === 0)) return EMPTY_RESULT;
 
@@ -1112,14 +1128,14 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
       }
     }
     if (orientation === "portrait" && layout.portrait == null) {
-      const derived = derivePortrait(tiles, layout.landscape, portraitViewport, landscapeViewport, false);
+      const derived = derivePortrait(placing, layout.landscape, portraitViewport, landscapeViewport, false);
       layout.portrait = derived.positions;
       layout.portraitBron = derived.source;
     }
     if (orientation === "portrait" && layout.portrait) {
-      layout.portrait = placeMissingTiles(layout.portrait, tiles, portraitViewport);
+      layout.portrait = placeMissingTiles(layout.portrait, placing, portraitViewport);
       if (input.push) {
-        const pushed = applyPush(layout.portrait, tiles, portraitViewport, input.anchorKeys);
+        const pushed = applyPush(layout.portrait, placing, portraitViewport, input.anchorKeys);
         layout.portrait = pushed.positions;
         if (pushed.belowFold && input.reportNotice) notice = "portrait-below-fold";
         if (input.anchorKeys && input.anchorKeys.size > 0) layout.portraitBron = "gebruiker";
@@ -1145,7 +1161,7 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
       layout.portraitBron = "gebruiker";
       wrote = true;
     }
-    const missing = placeMissingTiles(layout.portrait, tiles, viewport);
+    const missing = placeMissingTiles(layout.portrait, placing, viewport);
     if (!sameMap(missing, layout.portrait)) {
       layout.portrait = missing;
       if (applyPositions(storage, null, missing)) {
@@ -1154,7 +1170,7 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
       }
     }
     if (input.rederive && layout.portraitBron === "afgeleid") {
-      const derived = derivePortrait(tiles, layout.landscape, viewport, landscapeViewport, true);
+      const derived = derivePortrait(placing, layout.landscape, viewport, landscapeViewport, true);
       if (!sameMap(derived.positions, layout.portrait)) {
         layout.portrait = derived.positions;
         layout.portraitBron = "afgeleid";
@@ -1165,7 +1181,7 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
       }
     }
     if (input.push) {
-      const pushed = applyPush(layout.portrait, tiles, viewport, input.anchorKeys);
+      const pushed = applyPush(layout.portrait, placing, viewport, input.anchorKeys);
       if (!sameMap(pushed.positions, layout.portrait)) {
         layout.portrait = pushed.positions;
         if (applyPositions(storage, null, pushed.positions)) {
@@ -1193,10 +1209,10 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
     }
   }
 
-  if (orientation === "landscape" && input.reportNotice && landscapeOverlaps(layout.landscape, tiles, viewport)) {
+  if (orientation === "landscape" && input.reportNotice && landscapeOverlaps(layout.landscape, placing, viewport)) {
     notice = "landscape-overlap";
   }
-  if (orientation === "portrait" && layout.portrait && input.reportNotice && portraitBelowFold(layout.portrait, tiles, viewport)) {
+  if (orientation === "portrait" && layout.portrait && input.reportNotice && portraitBelowFold(layout.portrait, placing, viewport)) {
     notice = "portrait-below-fold";
   }
 
@@ -1204,7 +1220,7 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
 
   const active = orientation === "portrait" ? layout.portrait : layout.landscape;
   const bottoms = active
-    ? boxesFromPositions(active, tiles, viewport, undefined).map((tile) => tile.bottom)
+    ? boxesFromPositions(active, placing, viewport, undefined).map((tile) => tile.bottom)
     : [];
   return {
     wrote,
