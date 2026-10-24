@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/app-shell";
 import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
 import { CardDefinitionModal } from "@/components/card-definition-modal";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
@@ -1590,12 +1590,10 @@ export default function DashboardEditPage() {
     if (error && id) router.replace(isRoomMode ? "/rooms" : "/dashboards");
   }, [error, id, isRoomMode, router]);
 
-  // Stat pills pinned to the top bar (#301) are not on the floating layer, so they take no space here.
-  const floatingWidgets = useMemo(() => widgets.filter((w) => w.placement !== "topbar"), [widgets]);
   const floatingLayout = useFloatingOrientation({
     dashboardId: id,
     ready: initialized,
-    widgets: floatingWidgets,
+    widgets,
     editMode,
   });
 
