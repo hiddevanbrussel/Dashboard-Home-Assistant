@@ -10,7 +10,7 @@ import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { ArrowLeft, RobotVacuum, CalendarDays, Check, Timer, Trash2, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
+import { ArrowLeft, RobotVacuum, CalendarDays, Check, Timer, Trash2, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, SlidersHorizontal, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
 import { ArrowRightLeft, ArrowUpToLine } from "lucide-react";
 import { TileMenu, anchorFromElement, type TileMenuAnchor, type TileMenuItem } from "@/components/layout/tile-menu";
 import { HeaderStatPills } from "@/components/layout/header-stat-pills";
@@ -98,6 +98,10 @@ import { cn, generateId } from "@/lib/utils";
 import { cssUrl } from "@/lib/base-path";
 import { DashboardPager } from "@/components/dashboard-pager";
 import { UndoToast, UNDO_TOAST_DURATION_MS } from "@/components/undo-toast";
+import { LinkedRoomList } from "@/components/rooms/linked-room-list";
+import { RoomPanel, toPanelRoom } from "@/components/rooms/room-panel";
+import { reduceRoomCardLink } from "@/lib/room-catalog";
+import { writeRoomDeleteHandoff } from "@/lib/room-removal";
 import {
   addTileHistoryDepth,
   backAddTileHistory,
@@ -460,68 +464,6 @@ function MoveCardToRoomSection({
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-function LinkedRoomSelect({
-  value,
-  onChange,
-  t,
-}: {
-  value?: string;
-  onChange: (areaId: string | undefined) => void;
-  t: (key: string) => string;
-}) {
-  const [rooms, setRooms] = useState<RoomListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/room-dashboards")
-      .then((res) => res.json())
-      .then((list: RoomListItem[]) => setRooms(Array.isArray(list) ? list : []))
-      .catch(() => setRooms([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return <p className="text-sm text-gray-500 dark:text-gray-400">{t("editPanel.loading")}</p>;
-  }
-
-  if (rooms.length === 0) {
-    return (
-      <div>
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-          {t("editPanel.linkedRoom")}
-        </label>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("editPanel.linkedRoomEmpty")}</p>
-      </div>
-    );
-  }
-
-  const selectedMissing = Boolean(value && !rooms.some((r) => r.areaId === value));
-
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-        {t("editPanel.linkedRoom")}
-      </label>
-      <select
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value || undefined)}
-        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-      >
-        <option value="">{t("editPanel.linkedRoomNone")}</option>
-        {selectedMissing && value ? (
-          <option value={value}>{value}</option>
-        ) : null}
-        {rooms.map((r) => (
-          <option key={r.areaId} value={r.areaId}>
-            {r.name || r.areaId}
-          </option>
-        ))}
-      </select>
-      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.linkedRoomHint")}</p>
     </div>
   );
 }
@@ -1140,55 +1082,14 @@ export default function DashboardEditPage() {
     title: string;
   } | null>(null);
   const [definitionModalEntities, setDefinitionModalEntities] = useState<HaEntity[]>([]);
-  const [roomBackgroundOpen, setRoomBackgroundOpen] = useState(false);
-  const [uploadingRoomBackground, setUploadingRoomBackground] = useState(false);
+  const [roomPanelOpen, setRoomPanelOpen] = useState(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const roomBackgroundInputRef = useRef<HTMLInputElement>(null);
   const pendingAddRef = useRef<string | null>(null);
   const placedStorageRef = useRef<{ widgetId: string; key: string } | null>(null);
   const syncAddTileRef = useRef<(stack: AddTileStep[]) => void>(() => {});
   const addTileButtonRef = useRef<HTMLButtonElement>(null);
   const addTileDialogRef = useRef<HTMLDivElement>(null);
   const LONG_PRESS_MS = 500;
-
-  async function handleRoomBackgroundUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !areaId) return;
-    e.target.value = "";
-    setUploadingRoomBackground(true);
-    try {
-      const formData = new FormData();
-      formData.set("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Upload failed");
-      await fetch(apiBase, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ background: json.url }),
-      });
-      queryClient.invalidateQueries({ queryKey: ["room-dashboard", areaId] });
-      window.dispatchEvent(new Event("page-background-changed"));
-    } finally {
-      setUploadingRoomBackground(false);
-      setRoomBackgroundOpen(false);
-    }
-  }
-
-  async function handleRoomBackgroundRemove() {
-    if (!areaId) return;
-    try {
-      await fetch(apiBase, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ background: null }),
-      });
-      queryClient.invalidateQueries({ queryKey: ["room-dashboard", areaId] });
-      window.dispatchEvent(new Event("page-background-changed"));
-    } finally {
-      setRoomBackgroundOpen(false);
-    }
-  }
 
   function clearLongPressTimer() {
     if (longPressTimerRef.current != null) {
@@ -2409,54 +2310,42 @@ export default function DashboardEditPage() {
     );
   }
 
-  const roomBackground = (data as { background?: string | null })?.background ?? null;
-
   const headerEndAction = (
     <>
-      {isRoomMode && areaId && (
-        <div className="relative">
+      {isRoomMode && areaId && data ? (
+        <>
           <button
             type="button"
-            onClick={() => setRoomBackgroundOpen((v) => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-            aria-label={t("editPanel.roomBackground")}
-            title={t("editPanel.roomBackground")}
+            onClick={() => setRoomPanelOpen(true)}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-gray-800 ring-1 ring-gray-300 hover:bg-gray-100 dark:text-gray-100 dark:ring-white/20 dark:hover:bg-white/10"
+            aria-label={t("roomsUi.roomSettings")}
+            title={t("roomsUi.roomSettings")}
           >
-            <ImageIcon className="h-4 w-4" aria-hidden />
+            <SlidersHorizontal className="h-5 w-5" aria-hidden />
           </button>
-          {roomBackgroundOpen && (
-                <>
-                  <div className="fixed inset-0 z-[299]" aria-hidden onClick={() => setRoomBackgroundOpen(false)} />
-                  <div className="absolute right-0 top-full z-[300] mt-1 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-white/10 dark:bg-gray-900">
-                    <input
-                      ref={roomBackgroundInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleRoomBackgroundUpload}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => roomBackgroundInputRef.current?.click()}
-                      disabled={uploadingRoomBackground}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 disabled:opacity-50"
-                    >
-                      {uploadingRoomBackground ? t("editPanel.uploading") : t("editPanel.uploadImage")}
-                    </button>
-                    {roomBackground && (
-                      <button
-                        type="button"
-                        onClick={handleRoomBackgroundRemove}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                      >
-                        {t("editPanel.removeBackground")}
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+          {roomPanelOpen ? (
+            <RoomPanel
+              mode="edit"
+              room={toPanelRoom(areaId, data)}
+              onClose={() => setRoomPanelOpen(false)}
+              onSaved={() => {
+                setRoomPanelOpen(false);
+                queryClient.invalidateQueries({ queryKey: ["room-dashboard", areaId] });
+                window.dispatchEvent(new Event("page-background-changed"));
+              }}
+              onDelete={(room) => {
+                setRoomPanelOpen(false);
+                writeRoomDeleteHandoff(window.sessionStorage, {
+                  areaId: room.areaId,
+                  name: room.name,
+                  commitAt: Date.now() + UNDO_TOAST_DURATION_MS,
+                });
+                router.push("/rooms");
+              }}
+            />
+          ) : null}
+        </>
+      ) : null}
       {editMode ? (
         <>
             <button
@@ -3662,7 +3551,7 @@ export default function DashboardEditPage() {
                       ? t("editPanel.editCardInGroup")
                       : t("editPanel.editCardGroup")
                     : editingWidget.type === "room_card"
-                      ? t("editPanel.editRoom")
+                      ? t("roomsUi.editRoomTile")
                       : editingWidget.type === "power_usage_card"
                         ? t("editPanel.editPowerUsage")
                         : editingWidget.type === "device_consumption_card"
@@ -4663,10 +4552,14 @@ export default function DashboardEditPage() {
                     </div>
                     {editTab === "entiteiten" && (
                       <div className="space-y-4">
-                        <LinkedRoomSelect
+                        <LinkedRoomList
                           value={editForm.area_id}
-                          onChange={(areaId) => setEditForm((prev) => ({ ...prev, area_id: areaId ?? "" }))}
-                          t={t}
+                          onChange={(areaId) =>
+                            setEditForm((prev) => reduceRoomCardLink(prev, { type: "select", areaId }))
+                          }
+                          onAdopt={(room) =>
+                            setEditForm((prev) => reduceRoomCardLink(prev, { type: "adopt", room }))
+                          }
                         />
                         <div>
                           <EntitySelectWithSearch
