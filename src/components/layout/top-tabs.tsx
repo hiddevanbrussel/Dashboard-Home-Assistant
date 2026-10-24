@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 import { CalendarDays, DoorOpen, LayoutDashboard, ListTodo, Music2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/use-translation";
-import { useMusicAssistantStore, hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { hydrateMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useMusicNavVisible } from "@/hooks/use-music-nav-visible";
 import { useCalendarStore, hydrateCalendarStore } from "@/stores/calendar-store";
 import { useChoresStore, hydrateChoresStore } from "@/stores/chores-store";
 import { useEnergyStore, hydrateEnergyStore } from "@/stores/energy-store";
@@ -28,7 +29,7 @@ type TopTabsProps = {
 
 export function TopTabs({ activeHref, className, contentLight }: TopTabsProps) {
   const { t } = useTranslation();
-  const musicAssistantEnabled = useMusicAssistantStore((s) => s.enabled);
+  const showMusic = useMusicNavVisible();
   const calendarEnabled = useCalendarStore((s) => s.enabled);
   const choresEnabled = useChoresStore((s) => s.enabled);
   const energyEnabled = useEnergyStore((s) => s.enabled);
@@ -43,7 +44,7 @@ export function TopTabs({ activeHref, className, contentLight }: TopTabsProps) {
     ...(calendarEnabled  ? [calendarTab] : []),
     ...(energyEnabled    ? [energyTab]   : []),
     ...(choresEnabled    ? [familyTab]   : []),
-    ...(musicAssistantEnabled ? [musicTab] : []),
+    ...(showMusic ? [musicTab] : []),
   ];
   return (
     <nav

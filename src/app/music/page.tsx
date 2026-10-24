@@ -186,6 +186,7 @@ function getProviderLabel(item: MASearchItem): string {
     (item as { provider?: string }).provider ??
     "";
   const base = (typeof raw === "string" ? raw : "").split("--")[0]?.trim() || "library";
+  if (base.toLowerCase() === "library") return "";
   return base.charAt(0).toUpperCase() + base.slice(1).toLowerCase();
 }
 
@@ -1513,7 +1514,7 @@ export default function MusicPage() {
             type="button"
             onClick={() => setSearchOverlayOpen(true)}
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+              "flex h-11 w-11 items-center justify-center rounded-full transition-colors",
               headerOverHero
                 ? "text-white/90 hover:bg-white/10"
                 : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
@@ -1525,6 +1526,7 @@ export default function MusicPage() {
         ) : undefined
       }
       headerBelowAction={
+        !useMA ? undefined : (
         <nav
           className="px-4 pb-2.5 pt-0.5 sm:px-6"
           aria-label={t("music.title")}
@@ -1544,10 +1546,16 @@ export default function MusicPage() {
                 { id: "artists" as const, label: t("music.menuArtists"), icon: User },
                 { id: "albums" as const, label: t("music.menuAlbums"), icon: Disc3 },
                 { id: "playlists" as const, label: t("music.menuPlaylists"), icon: ListMusic },
+                { id: "radio" as const, label: t("music.menuRadio"), icon: Radio },
                 { id: "podcasts" as const, label: t("music.menuPodcasts"), icon: Podcast },
               ] as const
             ).map(({ id, label, icon: Icon }) => {
-              const active = id === "home" ? !selectedMenu && !selectedCategory && !selectedPodcast : selectedMenu === id;
+              const active =
+                id === "home"
+                  ? !selectedMenu && !selectedCategory && !selectedPodcast
+                  : id === "radio"
+                    ? !selectedMenu && selectedCategory === "radio"
+                    : selectedMenu === id;
               const light = headerOverHero;
               return (
                 <button
@@ -1562,16 +1570,19 @@ export default function MusicPage() {
                     setSelectedCategory(null);
                     if (id === "home") {
                       setSelectedMenu(null);
+                    } else if (id === "radio") {
+                      setSelectedMenu(null);
+                      setSelectedCategory("radio");
                     } else {
                       setSelectedMenu(id);
                     }
                   }}
                   className={cn(
-                    "relative flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-150",
+                    "relative flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-all duration-150",
                     light
                       ? active
                         ? "bg-white/20 text-white shadow-sm"
-                        : "text-white/75 hover:bg-white/10 hover:text-white"
+                        : "text-white/90 hover:bg-white/10 hover:text-white"
                       : active
                         ? "bg-white text-gray-900 shadow-sm dark:bg-white/95 dark:text-gray-900"
                         : "text-gray-600 hover:bg-white/50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
@@ -1588,6 +1599,7 @@ export default function MusicPage() {
             })}
           </div>
         </nav>
+        )
       }
     >
       {searchOverlay}
@@ -1625,7 +1637,7 @@ export default function MusicPage() {
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                 </div>
               ) : addToPlaylistPlaylists.length === 0 ? (
-                <p className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{t("music.noPlaylists")}</p>
+                <p className="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">{t("music.noPlaylists")}</p>
               ) : (
                 <ul className="space-y-0">
                   {addToPlaylistPlaylists.map((pl) => {
@@ -1711,7 +1723,7 @@ export default function MusicPage() {
                     setSelectedMenu("albums");
                     setSelectedCategory(null);
                   }}
-                  className="inline-flex items-center gap-2 rounded-full bg-black/[0.04] px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-black/[0.07] dark:bg-white/8 dark:text-white dark:hover:bg-white/12"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-black/[0.04] px-4 text-sm font-medium text-gray-800 hover:bg-black/[0.07] dark:bg-white/8 dark:text-white dark:hover:bg-white/12"
                   aria-label={t("music.back")}
                 >
                   <ArrowLeft className="h-4 w-4 shrink-0" />
@@ -1719,7 +1731,7 @@ export default function MusicPage() {
                 </button>
                 <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)]">
                   <section className="min-w-0 order-2 lg:order-1">
-                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-600 dark:text-white/65">
                       {t("music.albumTracks")}
                     </h3>
                     {albumTracksLoading ? (
@@ -1727,7 +1739,7 @@ export default function MusicPage() {
                         <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                       </div>
                     ) : albumTracks.length === 0 ? (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noAlbumTracks")}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 py-4">{t("music.noAlbumTracks")}</p>
                     ) : (
                       <ul className="space-y-1" role="list">
                         {albumTracks.map((item, index) => {
@@ -1745,21 +1757,21 @@ export default function MusicPage() {
                               onPointerUp={lp.onPointerUp}
                               onPointerLeave={lp.onPointerLeave}
                             >
-                              <span className="w-8 tabular-nums text-sm text-gray-400">{index + 1}</span>
+                              <span className="w-8 tabular-nums text-sm text-gray-600 dark:text-white/65">{index + 1}</span>
                               <div className="min-w-0 flex-1">
                                 <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
                               </div>
-                              <span className="shrink-0 tabular-nums text-xs text-gray-400">{formatDuration(duration)}</span>
+                              <span className="shrink-0 tabular-nums text-xs text-gray-600 dark:text-white/70">{formatDuration(duration)}</span>
                               {uri && (
                                 <button
                                   type="button"
                                   onClick={(e) => { e.preventDefault(); addToFavorites(uri); }}
                                   disabled={favoritePending.has(uri)}
                                   className={cn(
-                                    "shrink-0 rounded-full p-2 transition-colors",
+                                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors",
                                     favorited.has(uri) || favoritePending.has(uri)
                                       ? "text-red-500 dark:text-red-400"
-                                      : "text-gray-400 hover:text-red-500"
+                                      : "text-gray-600 hover:text-red-500 dark:text-gray-300"
                                   )}
                                   title={t("music.addToFavorites")}
                                   aria-label={t("music.addToFavorites")}
@@ -1775,7 +1787,7 @@ export default function MusicPage() {
                                 type="button"
                                 onClick={lp.wrapClick(() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri)))}
                                 disabled={!canPlay || !!isPlayPending}
-                                className="shrink-0 rounded-full bg-brand p-2 text-white hover:opacity-90 disabled:opacity-50"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-white hover:opacity-90 disabled:opacity-50 dark:bg-brand-muted"
                                 aria-label={t("music.playOn")}
                               >
                                 {isPlayPending ? (
@@ -1803,9 +1815,9 @@ export default function MusicPage() {
                     <h2 className="mt-4 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
                       {album.name ?? t("music.unknown")}
                     </h2>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-white/60">{artistStr}</p>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-white/70">{artistStr}</p>
                     {albumTracks.length > 0 ? (
-                      <p className="mt-1 text-xs font-medium uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
+                      <p className="mt-1 text-xs font-medium uppercase tracking-[0.14em] text-gray-600 dark:text-white/65">
                         {albumTracks.length} {albumTracks.length === 1 ? t("music.trackCountOne") : t("music.trackCountMany")}
                       </p>
                     ) : null}
@@ -1814,7 +1826,7 @@ export default function MusicPage() {
                         type="button"
                         onClick={() => albumUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(albumUri))}
                         disabled={!albumUri || !selectedQueueId}
-                        className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 dark:bg-brand-muted"
                         aria-label={t("music.play")}
                       >
                         <Play className="h-4 w-4 fill-current ml-0.5" />
@@ -1826,7 +1838,7 @@ export default function MusicPage() {
                           onClick={(e) => { e.preventDefault(); addToFavorites(albumUri); }}
                           disabled={favoritePending.has(albumUri)}
                           className={cn(
-                            "flex h-10 w-10 items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/8",
+                            "flex h-11 w-11 items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/8",
                             isFav ? "text-red-500" : "text-gray-500 hover:text-red-500"
                           )}
                           title={t("music.addToFavorites")}
@@ -1854,7 +1866,7 @@ export default function MusicPage() {
                 <button
                   type="button"
                   onClick={() => { setSelectedArtist(null); setArtistAlbums([]); setArtistTracks([]); setError(null); setSelectedMenu("artists"); setSelectedCategory(null); }}
-                  className="inline-flex items-center gap-2 rounded-full bg-black/[0.04] px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-black/[0.07] dark:bg-white/8 dark:text-white dark:hover:bg-white/12"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-black/[0.04] px-4 text-sm font-medium text-gray-800 hover:bg-black/[0.07] dark:bg-white/8 dark:text-white dark:hover:bg-white/12"
                   aria-label={t("music.back")}
                 >
                   <ArrowLeft className="h-4 w-4 shrink-0" />
@@ -1863,7 +1875,7 @@ export default function MusicPage() {
                 <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)]">
                   <div className="min-w-0 order-2 lg:order-1 space-y-8">
                     <section>
-                      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
+                      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-600 dark:text-white/65">
                         {t("music.albums")}
                       </h3>
                       {artistAlbumsLoading ? (
@@ -1871,7 +1883,7 @@ export default function MusicPage() {
                           <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                         </div>
                       ) : artistAlbums.length === 0 ? (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noAlbums")}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 py-4">{t("music.noAlbums")}</p>
                       ) : (
                         <div className="music-h-scroll flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-4 scroll-smooth snap-x snap-proximity scrollbar-hide overscroll-x-contain">
                           {artistAlbums.map((item, index) => {
@@ -1909,7 +1921,7 @@ export default function MusicPage() {
                       )}
                     </section>
                     <section>
-                      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
+                      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-600 dark:text-white/65">
                         {t("music.artistTracks")}
                       </h3>
                       {artistTracksLoading ? (
@@ -1917,7 +1929,7 @@ export default function MusicPage() {
                           <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                         </div>
                       ) : artistTracks.length === 0 ? (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noTracks")}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 py-4">{t("music.noTracks")}</p>
                       ) : (
                         <ul className="space-y-1" role="list">
                           {artistTracks.map((item, index) => {
@@ -1935,21 +1947,21 @@ export default function MusicPage() {
                                 onPointerUp={lp.onPointerUp}
                                 onPointerLeave={lp.onPointerLeave}
                               >
-                                <span className="w-8 tabular-nums text-sm text-gray-400">{index + 1}</span>
+                                <span className="w-8 tabular-nums text-sm text-gray-600 dark:text-white/65">{index + 1}</span>
                                 <div className="min-w-0 flex-1">
                                   <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
                                 </div>
-                                <span className="shrink-0 tabular-nums text-xs text-gray-400">{formatDuration(duration)}</span>
+                                <span className="shrink-0 tabular-nums text-xs text-gray-600 dark:text-white/70">{formatDuration(duration)}</span>
                                 {uri && (
                                   <button
                                     type="button"
                                     onClick={(e) => { e.preventDefault(); addToFavorites(uri); }}
                                     disabled={favoritePending.has(uri)}
                                     className={cn(
-                                      "shrink-0 rounded-full p-2 transition-colors",
+                                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors",
                                       favorited.has(uri) || favoritePending.has(uri)
                                         ? "text-red-500 dark:text-red-400"
-                                        : "text-gray-400 hover:text-red-500"
+                                        : "text-gray-600 hover:text-red-500 dark:text-gray-300"
                                     )}
                                     title={t("music.addToFavorites")}
                                     aria-label={t("music.addToFavorites")}
@@ -1965,7 +1977,7 @@ export default function MusicPage() {
                                   type="button"
                                   onClick={lp.wrapClick(() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri)))}
                                   disabled={!canPlay || !!isPlayPending}
-                                  className="shrink-0 rounded-full bg-brand p-2 text-white hover:opacity-90 disabled:opacity-50"
+                                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-white hover:opacity-90 disabled:opacity-50 dark:bg-brand-muted"
                                   aria-label={t("music.playOn")}
                                 >
                                   {isPlayPending ? (
@@ -1994,13 +2006,13 @@ export default function MusicPage() {
                     <h2 className="mt-4 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
                       {(selectedArtist as MASearchItem).name ?? t("music.unknown")}
                     </h2>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-white/60">{t("music.artistAlbums")}</p>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-white/70">{t("music.artistAlbums")}</p>
                     <div className="mt-4">
                       <button
                         type="button"
                         onClick={() => artistUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(artistUri))}
                         disabled={!artistUri || !selectedQueueId}
-                        className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 dark:bg-brand-muted"
                         aria-label={t("music.play")}
                       >
                         <Play className="h-4 w-4 fill-current ml-0.5" />
@@ -2031,7 +2043,7 @@ export default function MusicPage() {
                     setSelectedMenu("podcasts");
                     setSelectedCategory(null);
                   }}
-                  className="inline-flex items-center gap-2 rounded-full bg-black/[0.04] px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-black/[0.07] dark:bg-white/8 dark:text-white dark:hover:bg-white/12"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-black/[0.04] px-4 text-sm font-medium text-gray-800 hover:bg-black/[0.07] dark:bg-white/8 dark:text-white dark:hover:bg-white/12"
                   aria-label={t("music.back")}
                 >
                   <ArrowLeft className="h-4 w-4 shrink-0" />
@@ -2039,7 +2051,7 @@ export default function MusicPage() {
                 </button>
                 <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)]">
                   <section className="min-w-0 order-2 lg:order-1">
-                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-600 dark:text-white/65">
                       {t("music.podcastEpisodes")}
                     </h3>
                     {podcastEpisodesLoading ? (
@@ -2047,7 +2059,7 @@ export default function MusicPage() {
                         <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
                       </div>
                     ) : podcastEpisodes.length === 0 ? (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 py-4">{t("music.noPodcastEpisodes")}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 py-4">{t("music.noPodcastEpisodes")}</p>
                     ) : (
                       <ul className="space-y-1" role="list">
                         {podcastEpisodes.map((item, index) => {
@@ -2061,16 +2073,16 @@ export default function MusicPage() {
                               key={uri ?? `podcast-ep-${index}`}
                               className="flex items-center gap-3 rounded-2xl bg-black/[0.03] px-3 py-2.5 hover:bg-black/[0.06] dark:bg-white/5 dark:hover:bg-white/10"
                             >
-                              <span className="w-8 tabular-nums text-sm text-gray-400">{index + 1}</span>
+                              <span className="w-8 tabular-nums text-sm text-gray-600 dark:text-white/65">{index + 1}</span>
                               <div className="min-w-0 flex-1">
                                 <p className="truncate font-medium text-gray-900 dark:text-white">{name}</p>
                               </div>
-                              <span className="shrink-0 tabular-nums text-xs text-gray-400">{formatDuration(duration)}</span>
+                              <span className="shrink-0 tabular-nums text-xs text-gray-600 dark:text-white/70">{formatDuration(duration)}</span>
                               <button
                                 type="button"
                                 onClick={() => canPlay && uri && playOnPlayer(normalizePlayMediaUri(uri))}
                                 disabled={!canPlay || !!isPlayPending}
-                                className="shrink-0 rounded-full bg-brand p-2 text-white hover:opacity-90 disabled:opacity-50"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-white hover:opacity-90 disabled:opacity-50 dark:bg-brand-muted"
                                 aria-label={t("music.playOn")}
                               >
                                 {isPlayPending ? (
@@ -2099,14 +2111,14 @@ export default function MusicPage() {
                       {(selectedPodcast as MASearchItem).name ?? t("music.unknown")}
                     </h2>
                     {publisher ? (
-                      <p className="mt-1 text-sm text-gray-500 dark:text-white/60">{publisher}</p>
+                      <p className="mt-1 text-sm text-gray-600 dark:text-white/70">{publisher}</p>
                     ) : null}
                     <div className="mt-4">
                       <button
                         type="button"
                         onClick={() => podcastUri && selectedQueueId && playOnPlayer(normalizePlayMediaUri(podcastUri))}
                         disabled={!podcastUri || !selectedQueueId}
-                        className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50 dark:bg-brand-muted"
                         aria-label={t("music.play")}
                       >
                         <Play className="h-4 w-4 fill-current ml-0.5" />
@@ -2124,7 +2136,7 @@ export default function MusicPage() {
               <button
                 type="button"
                 onClick={() => setSelectedMenu(null)}
-                className="absolute left-0 flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
+                className="absolute left-0 flex min-h-11 items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t("music.back")}
@@ -2136,7 +2148,7 @@ export default function MusicPage() {
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
               </div>
             ) : libraryArtists.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("music.artistsHint")}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t("music.artistsHint")}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {libraryArtists.map((item, index) => {
@@ -2175,7 +2187,7 @@ export default function MusicPage() {
               <button
                 type="button"
                 onClick={() => setSelectedMenu(null)}
-                className="absolute left-0 flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
+                className="absolute left-0 flex min-h-11 items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t("music.back")}
@@ -2187,7 +2199,7 @@ export default function MusicPage() {
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
               </div>
             ) : libraryAlbums.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("music.noAlbums")}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t("music.noAlbums")}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {libraryAlbums.map((item, index) => {
@@ -2229,7 +2241,7 @@ export default function MusicPage() {
               <button
                 type="button"
                 onClick={() => setSelectedMenu(null)}
-                className="absolute left-0 flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
+                className="absolute left-0 flex min-h-11 items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t("music.back")}
@@ -2241,7 +2253,7 @@ export default function MusicPage() {
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
               </div>
             ) : libraryPlaylists.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("music.noPlaylists")}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t("music.noPlaylists")}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {libraryPlaylists.map((item, index) => {
@@ -2283,7 +2295,7 @@ export default function MusicPage() {
               <button
                 type="button"
                 onClick={() => setSelectedMenu(null)}
-                className="absolute left-0 flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
+                className="absolute left-0 flex min-h-11 items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t("music.back")}
@@ -2295,7 +2307,7 @@ export default function MusicPage() {
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent" aria-hidden />
               </div>
             ) : libraryPodcasts.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t("music.noPodcasts")}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t("music.noPodcasts")}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {libraryPodcasts.map((item, index) => {
@@ -2330,15 +2342,17 @@ export default function MusicPage() {
           </div>
         ) : selectedCategory ? (
           <div className="space-y-6">
-            <div className="relative flex items-center justify-center w-full min-h-[2rem]">
+            <div className="relative flex min-h-11 items-center justify-center w-full">
+              {selectedCategory === "radio" ? null : (
               <button
                 type="button"
                 onClick={() => { setSelectedCategory(null); setSelectedMenu(null); }}
-                className="absolute left-0 flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
+                className="absolute left-0 flex min-h-11 items-center gap-2 text-sm font-medium text-gray-900 dark:text-white/90 hover:text-gray-800 dark:hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t("music.back")}
               </button>
+              )}
               <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">
                 {selectedCategory === "radio" ? t("music.radioStations") : t("music.recentlyPlayed")}
               </h2>
@@ -2426,10 +2440,10 @@ export default function MusicPage() {
               )
             )}
             {selectedCategory === "recentlyPlayed" && !recentLoading && recentItems.length === 0 && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 py-8">{t("music.noHistory")}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 py-8">{t("music.noHistory")}</p>
             )}
             {selectedCategory === "radio" && !radioStationsLoading && radioStations.length === 0 && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 py-8">{t("music.noRadioStations")}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 py-8">{t("music.noRadioStations")}</p>
             )}
           </div>
         ) : (
@@ -2448,7 +2462,7 @@ export default function MusicPage() {
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Music2 className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("music.noMediaPlayers")}</p>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 max-w-sm">
                 {t("music.noMediaPlayersHint")}
               </p>
             </div>
@@ -2456,7 +2470,7 @@ export default function MusicPage() {
         )}
 
         {!playersLoading && !useMA && entities.length > 0 && (
-          <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
+          <div className="flex flex-wrap content-start gap-6">
             {entities.map((e) => {
               const title = (e.attributes?.friendly_name as string) ?? e.entity_id;
               return (
