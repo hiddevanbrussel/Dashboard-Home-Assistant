@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.4] - 2026-10-24
+
+No breaking changes: existing configs, dashboards and localStorage keep working.
+
+### Added
+
+- Tasks v2 on the family page: task cards one per row in portrait and two in landscape, ticking off with a 5-second undo, a celebration when all of today's tasks are done, and a points balance that never goes below zero (#298, #304).
+- Rooms page v1: room tiles with temperature and humidity, floor tabs with counts, one room panel for name, floor, background, icon, colour and sensors, deleting with a 5-second undo, and linking a dashboard room tile from a list (#299).
+- Tiles no longer overlap in portrait: portrait and landscape keep their own tile positions. Landscape stays exactly as it was; portrait is laid out once and tiles are pushed apart when you tap Done or rotate (#296).
+
+### Fixed
+
+- The undo message is no longer cut off in portrait (#298, #304).
+- Weekly tasks no longer trigger the "all done today" celebration (#298, #304).
+- Stat pills pinned to the top bar keep their positions in both orientations and take no space in portrait (#296).
+
 ## [0.5.3] - 2026-10-24
 
 No breaking changes: existing configs, dashboards and localStorage keep working.
