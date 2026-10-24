@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/app-shell";
 import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
 import { CardDefinitionModal } from "@/components/card-definition-modal";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
@@ -143,6 +143,8 @@ import {
   type PageSnapshot,
   type PendingPageRemoval,
 } from "@/lib/dashboard-page-removal";
+import { DashboardLayoutNotice } from "@/components/dashboard-layout-notice";
+import { useFloatingOrientation } from "@/hooks/use-floating-orientation";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
   clampClimateCardHeight,
@@ -1489,6 +1491,18 @@ export default function DashboardEditPage() {
     if (error && id) router.replace(isRoomMode ? "/rooms" : "/dashboards");
   }, [error, id, isRoomMode, router]);
 
+  // Stat pills pinned to the top bar (#301) are parked: their positions are kept, but they take no space.
+  const orientationWidgets = useMemo(
+    () => widgets.map((w) => (w.placement === "topbar" ? { ...w, parked: true } : w)),
+    [widgets]
+  );
+  const floatingLayout = useFloatingOrientation({
+    dashboardId: id,
+    ready: initialized,
+    widgets: orientationWidgets,
+    editMode,
+  });
+
   const saveMutation = useMutation({
     mutationFn: async (payload: {
       layout: Layout;
@@ -1577,6 +1591,7 @@ export default function DashboardEditPage() {
     const pendingId = pendingAddRef.current;
     if (pendingId) dropPendingTile();
     if (addTileHistoryDepth() > 0) discardAddTileHistory();
+    floatingLayout.commitEdits();
     setEditingWidgetId(null);
     setEditingGroupChildId(null);
     setEditMode(false);
@@ -2852,11 +2867,16 @@ export default function DashboardEditPage() {
           />,
           document.body
         )}
+        {floatingLayout.notice ? (
+          <DashboardLayoutNotice message={t(floatingLayout.notice)} onDismiss={floatingLayout.dismissNotice} />
+        ) : null}
         <DashboardPager
+          key={floatingLayout.epoch}
           pageCount={pageCount}
           page={dashboardPage}
           onPageChange={setDashboardPage}
           editMode={editMode}
+          verticalOverflowPx={floatingLayout.scrollOverflowPx}
           onAddPage={editMode ? handleAddDashboardPage : undefined}
           onRemovePage={editMode ? handleRemoveDashboardPage : undefined}
         >
