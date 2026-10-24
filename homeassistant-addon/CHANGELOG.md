@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.5] - 2026-10-25
+
+No breaking changes: existing configs, dashboards and localStorage keep working.
+
+### Added
+
+- Every tile has a tile menu in edit mode (⋮ → Edit tile, Duplicate tile, Remove tile). A duplicate lands on the first free spot with "(copy)" after its name; removing can be undone for 5 seconds and the tile comes back in the same place (#309).
+
+### Changed
+
+- The ⋮ button on every tile has a 44px touch area, without changing how it looks (#308).
+
+### Fixed
+
+- Icon buttons in the room panel are read out by name instead of the icon's code name (#307).
+- Glass effect Off now also turns off the blur on tiles that set their own blur (#307).
+
 ## [0.5.4] - 2026-10-24
 
 No breaking changes: existing configs, dashboards and localStorage keep working.
