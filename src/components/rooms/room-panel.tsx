@@ -7,9 +7,9 @@ import { cssUrl } from "@/lib/base-path";
 import {
   ROOM_FLOORS,
   ROOM_ICON_COLOR_DEFAULT,
-  ROOM_ICON_COLORS,
   ROOM_ICON_OPTIONS,
   iconForeground,
+  roomColorNameKey,
   roomColorOptions,
   sameRoomColor,
 } from "@/lib/room-catalog";
@@ -437,7 +437,7 @@ export function RoomPanel({
             <div className="flex flex-wrap gap-1.5">
               {colors.map((entry) => {
                 const selected = sameRoomColor(color, entry);
-                const preset = (ROOM_ICON_COLORS as readonly string[]).includes(entry);
+                const nameKey = roomColorNameKey(entry);
                 return (
                   <button
                     key={entry}
@@ -447,7 +447,7 @@ export function RoomPanel({
                       setColor(entry);
                     }}
                     aria-pressed={selected}
-                    aria-label={preset ? entry : `${t("roomsUi.currentColor")} ${entry}`}
+                    aria-label={nameKey ? t(nameKey) : `${t("roomsUi.currentColor")} ${entry}`}
                     className={cn(
                       "flex h-11 w-11 items-center justify-center rounded-full",
                       selected && "outline outline-2 outline-offset-2"

@@ -15,6 +15,7 @@ import {
   orderLinkedRooms,
   reduceRoomCardLink,
   roomCardLinkCounts,
+  roomColorNameKey,
   roomColorOptions,
   sameRoomColor,
 } from "@/lib/room-catalog";
@@ -308,5 +309,36 @@ describe("rooms page source", () => {
     expect(tile).not.toMatch(/light_entity|media_player|playing/);
     const widgetsDiffHint = readFileSync("src/components/widgets/room-preview-card.tsx", "utf8");
     expect(widgetsDiffHint).toContain("RoomPreviewCard");
+  });
+});
+
+describe("colour swatch labels", () => {
+  const nl = getTranslations("nl");
+  const en = getTranslations("en");
+
+  it("gives every preset a spoken name in Dutch and English instead of a hex code", () => {
+    const names = new Set<string>();
+    for (const color of ROOM_ICON_COLORS) {
+      const key = roomColorNameKey(color);
+      expect(key).not.toBeNull();
+      expect(nl[key!]).toBeTruthy();
+      expect(en[key!]).toBeTruthy();
+      expect(nl[key!]).not.toMatch(/#|[0-9a-f]{6}/i);
+      names.add(nl[key!]);
+    }
+    expect(names.size).toBe(ROOM_ICON_COLORS.length);
+  });
+
+  it("matches presets regardless of letter case and leaves custom colours unnamed", () => {
+    expect(roomColorNameKey("#4700b5")).toBe(roomColorNameKey("#4700B5"));
+    expect(roomColorNameKey(" #0f766e ")).toBe("roomsUi.colorName.teal");
+    expect(roomColorNameKey("#3B82F6")).toBeNull();
+    expect(roomColorNameKey(null)).toBeNull();
+  });
+
+  it("uses the name, not the hex code, as the swatch label", () => {
+    const panel = readFileSync("src/components/rooms/room-panel.tsx", "utf8");
+    expect(panel).toContain("roomColorNameKey(entry)");
+    expect(panel).not.toMatch(/aria-label=\{preset \? entry/);
   });
 });

@@ -34,6 +34,26 @@ export const ROOM_ICON_COLORS = [
 
 export const ROOM_ICON_COLOR_DEFAULT = ROOM_ICON_COLORS[0];
 
+/** Spoken name per preset (i18n `roomsUi.colorName.<name>`), so a screen reader does not read a hex code. */
+export const ROOM_ICON_COLOR_NAMES: Record<(typeof ROOM_ICON_COLORS)[number], string> = {
+  "#4700B5": "purple",
+  "#4F46E5": "indigo",
+  "#0369A1": "blue",
+  "#0F766E": "teal",
+  "#047857": "green",
+  "#B45309": "amber",
+  "#BE123C": "red",
+  "#BE185D": "pink",
+  "#475569": "slate",
+};
+
+/** i18n key for a preset colour (any letter case), or null for a colour outside the set. */
+export function roomColorNameKey(color: string | null | undefined): string | null {
+  if (!color) return null;
+  const preset = ROOM_ICON_COLORS.find((entry) => entry.toLowerCase() === color.trim().toLowerCase());
+  return preset ? `roomsUi.colorName.${ROOM_ICON_COLOR_NAMES[preset]}` : null;
+}
+
 /**
  * Darkens the bottom of a photo enough that white type stays at least 6:1
  * over a white photograph through the two-line name and the climate row.
