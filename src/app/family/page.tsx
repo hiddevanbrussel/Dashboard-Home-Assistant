@@ -16,6 +16,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { remainingVisibleTodayChores, savedCompletionId, shouldCelebrateCompletingToday } from "@/lib/family-task-completion";
 import { clampPointsBalance } from "@/lib/points-balance";
 import { cn } from "@/lib/utils";
+import { localDateKey } from "@/lib/local-date";
 import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode, getEveningHour } from "@/stores/dashboard-settings-store";
 import type { ChildRecord, ChoreRecord, ChoreCompletionsResponse, ScoresResponse, ChoreFrequency, RewardRecord, StreaksResponse, BalancesResponse } from "@/lib/chores-types";
 
@@ -60,7 +61,7 @@ function RewardIcon({ name, className }: { name: string | null; className?: stri
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function getTodayDate() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
 const COLOR_PRESETS = [
@@ -806,8 +807,8 @@ export default function FamilyPage() {
   });
 
   const { data: streaksData } = useQuery<StreaksResponse>({
-    queryKey: ["chore-streaks"],
-    queryFn: () => fetch("/api/chore-completions/streaks").then((r) => r.json()),
+    queryKey: ["chore-streaks", todayDate],
+    queryFn: () => fetch(`/api/chore-completions/streaks?date=${todayDate}`).then((r) => r.json()),
     refetchInterval: 300_000,
   });
 
@@ -831,7 +832,7 @@ export default function FamilyPage() {
       const response = await fetch("/api/chore-completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ choreId, childId, frequency }),
+        body: JSON.stringify({ choreId, childId, frequency, date: todayDate }),
       });
       const data = await response.json().catch(() => ({})) as { id?: string };
       const id = savedCompletionId(response.ok, data.id);

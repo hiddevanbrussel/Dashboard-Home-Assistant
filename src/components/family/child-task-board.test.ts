@@ -48,10 +48,10 @@ describe("Taken v2 undo and edit panel", () => {
     expect(page).toContain("z-[91]");
   });
 
-  it("does not take over the date logic from the other draft", () => {
-    expect(page).toContain("toISOString().slice(0, 10)");
-    expect(page).not.toContain("resolveChoreDay");
-    expect(page).not.toContain("localDateKey");
+  // #297 (local calendar day) is on main now: keep it, and never fall back to the UTC day.
+  it("follows main's local calendar day and keeps the board free of date logic", () => {
+    expect(page).toContain("localDateKey");
+    expect(page).not.toContain("toISOString().slice(0, 10)");
     expect(board).not.toContain("resolveChoreDay");
     expect(board).not.toContain("localDateKey");
   });
