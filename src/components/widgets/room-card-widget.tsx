@@ -175,7 +175,7 @@ export function RoomCardWidget({
                 data-no-drag
                 onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
                 className={cn(
-                  "p-1.5 rounded-lg shrink-0 transition-colors",
+                  "tile-kebab-hit p-1.5 rounded-lg shrink-0 transition-colors",
                   background_image ? "text-white/80 hover:text-white hover:bg-white/20" : embedded ? "text-gray-500 hover:text-gray-800 hover:bg-black/5 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
                 )}
                 aria-label={t("roomCard.edit")}

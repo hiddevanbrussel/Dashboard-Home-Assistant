@@ -20,6 +20,8 @@ type DashboardPagerProps = {
   editMode?: boolean;
   onAddPage?: () => void;
   onRemovePage?: () => void;
+  /** Extra scroll room when portrait tiles sit below the screen edge. 0 keeps the landscape scroller unchanged. */
+  verticalOverflowPx?: number;
   children: (pageIndex: number) => React.ReactNode;
 };
 
@@ -30,6 +32,7 @@ export function DashboardPager({
   editMode = false,
   onAddPage,
   onRemovePage,
+  verticalOverflowPx = 0,
   children,
 }: DashboardPagerProps) {
   const [mounted, setMounted] = useState(false);
@@ -176,13 +179,22 @@ export function DashboardPager({
         ref={scrollerRef}
         data-dashboard-pager
         tabIndex={pageCount > 1 ? 0 : undefined}
-        className={cn(
-          "flex h-full w-full min-w-0 overflow-y-hidden outline-none scrollbar-hide overscroll-x-contain",
-          pageCount > 1 && !editMode && "pointer-events-auto",
-          pageCount > 1 && !editMode &&
-            "cursor-grab snap-x snap-mandatory overflow-x-auto touch-pan-x active:cursor-grabbing",
-          (pageCount < 2 || editMode) && "overflow-x-hidden pointer-events-none"
-        )}
+        className={
+          verticalOverflowPx > 0
+            ? cn(
+                "flex h-full w-full min-w-0 overflow-y-auto outline-none scrollbar-hide overscroll-x-contain pointer-events-auto",
+                pageCount > 1 && !editMode &&
+                  "cursor-grab snap-x snap-mandatory overflow-x-auto touch-pan-x touch-pan-y active:cursor-grabbing",
+                (pageCount < 2 || editMode) && "overflow-x-hidden touch-pan-y"
+              )
+            : cn(
+                "flex h-full w-full min-w-0 overflow-y-hidden outline-none scrollbar-hide overscroll-x-contain",
+                pageCount > 1 && !editMode && "pointer-events-auto",
+                pageCount > 1 && !editMode &&
+                  "cursor-grab snap-x snap-mandatory overflow-x-auto touch-pan-x active:cursor-grabbing",
+                (pageCount < 2 || editMode) && "overflow-x-hidden pointer-events-none"
+              )
+        }
         onPointerDown={onScrollerPointerDown}
         onPointerMove={onScrollerPointerMove}
         onPointerUp={onScrollerPointerUp}
@@ -208,10 +220,25 @@ export function DashboardPager({
             key={index}
             data-dashboard-page
             data-dashboard-page-swipe={index === page ? true : undefined}
-            className="relative box-border h-full w-full min-w-full shrink-0 basis-full snap-start pointer-events-none"
+            className={
+              verticalOverflowPx > 0
+                ? "relative box-border h-full w-full min-w-full shrink-0 basis-full snap-start pointer-events-none self-start"
+                : "relative box-border h-full w-full min-w-full shrink-0 basis-full snap-start pointer-events-none"
+            }
+            style={verticalOverflowPx > 0 ? { height: `calc(100% + ${verticalOverflowPx}px)` } : undefined}
             aria-hidden={index !== page}
           >
-            {children(index)}
+            {verticalOverflowPx > 0 ? (
+              <div
+                data-dashboard-page-frame
+                className="pointer-events-none"
+                style={{ height: `calc(100% - ${verticalOverflowPx}px)`, transform: "translateZ(0)" }}
+              >
+                {children(index)}
+              </div>
+            ) : (
+              children(index)
+            )}
           </section>
         ))}
       </div>

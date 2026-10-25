@@ -234,7 +234,7 @@ export function NutsCardWidget({
                 e.stopPropagation();
                 onMoreClick();
               }}
-              className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-black/5 hover:text-gray-700 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
+              className="tile-kebab-hit rounded-lg p-1 text-gray-400 transition-colors hover:bg-black/5 hover:text-gray-700 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
               aria-label={t("common.options")}
             >
               <MoreVertical className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />

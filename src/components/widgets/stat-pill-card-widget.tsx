@@ -177,7 +177,7 @@ export function StatPillCardWidget({
             e.stopPropagation();
             onMoreClick();
           }}
-          className="absolute -right-1.5 -top-1.5 z-10 rounded-full bg-white/90 p-1 text-gray-500 shadow-sm ring-1 ring-black/5 hover:text-gray-700 dark:bg-zinc-900 dark:text-gray-300 dark:ring-white/10 dark:hover:text-white"
+          className="tile-kebab-hit absolute -right-1.5 -top-1.5 z-10 rounded-full bg-white/90 p-1 text-gray-500 shadow-sm ring-1 ring-black/5 hover:text-gray-700 dark:bg-zinc-900 dark:text-gray-300 dark:ring-white/10 dark:hover:text-white"
           aria-label={t("common.options")}
         >
           <MoreVertical className="h-3.5 w-3.5" aria-hidden />

@@ -147,6 +147,22 @@ html[data-dashboard-edit] [data-energy-board] .card-plot-in {
   pointer-events: auto;
 }
 
+/* The edit rule above sets the pager to pointer-events: none and beats the
+   pager's own pointer-events-auto. Portrait with tiles below the fold still
+   needs vertical scrolling. Landscape never sets data-portrait-scroll. */
+html[data-dashboard-edit][data-portrait-scroll] [data-dashboard-pager] {
+  pointer-events: auto;
+}
+
+/* A view-mode swipe that starts on a card has to pan the portrait scroller
+   vertically and still move between pages horizontally. Inline touch-action: none
+   on the wrappers would otherwise swallow both. Edit mode is excluded so drag
+   and resize keep working. Child sliders set their own touch-action; it is not
+   inherited. */
+html[data-portrait-scroll]:not([data-dashboard-edit]) [data-dashboard-page] .card-plot-in {
+  touch-action: pan-x pan-y !important;
+}
+
 /* Title/text cards often sit in the header band. Let taps reach the card,
    while header controls stay clickable. */
 html[data-dashboard-edit] [data-app-header] {
@@ -306,7 +322,8 @@ html[data-dashboard-edit] .card-plot-in.card-plot-played {
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   }
 
-  html[data-glass-density="off"] :is([class*="backdrop-blur-xl"], [class*="backdrop-blur-2xl"]),
+  /* Same :not() chain as the remap above, so this rule out-ranks it (0,5,1 vs 0,4,0). */
+  html[data-glass-density="off"] :is([class*="backdrop-blur-xl"], [class*="backdrop-blur-2xl"]):not(.sidebar-glass):not(.header-chrome-glass):not(.header-chrome-glass-over-media),
   html[data-glass-density="off"] .glass-card,
   html[data-glass-density="off"] .glass-surface,
   html[data-glass-density="off"] .sidebar-glass,
@@ -648,4 +665,24 @@ html.dark:has(.settings-page-bg) body {
 
 .dark .tile-added-highlight {
   box-shadow: 0 0 0 3px #8357be, 0 0 0 9px rgba(131, 87, 190, 0.25);
+}
+
+/*
+ * 44px touch target for the ⋮ in tiles, without changing the icon, its look or the layout.
+ * In the components layer so Tailwind's `absolute` on an already positioned ⋮ still wins.
+ */
+@layer components {
+  .tile-kebab-hit {
+    position: relative;
+  }
+
+  .tile-kebab-hit::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
 }

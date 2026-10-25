@@ -147,7 +147,7 @@ export function ChoreCardWidget({ childId, showPoints = true, title, onMoreClick
         <ListTodo className="h-4 w-4 text-indigo-500" />
         <span className="flex-1 text-[1.2rem] font-semibold tracking-tight text-gray-800 dark:text-white">{title || t("cardType.chore_card")}</span>
         {onMoreClick && (
-          <button onClick={onMoreClick} className="rounded-lg p-1 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10">
+          <button onClick={onMoreClick} className="tile-kebab-hit rounded-lg p-1 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10">
             <MoreVertical className="h-4 w-4" />
           </button>
         )}

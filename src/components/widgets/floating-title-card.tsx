@@ -233,7 +233,7 @@ export function FloatingTitleCard({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onEdit(widgetId); }}
-              className="shrink-0 p-1.5 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10 dark:text-gray-400"
+              className="tile-kebab-hit shrink-0 p-1.5 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10 dark:text-gray-400"
               aria-label={t("common.options")}
             >
               <MoreVertical className="h-4 w-4" />

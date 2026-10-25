@@ -145,7 +145,7 @@ export function SensorCardWidget({
             type="button"
             onClick={(e) => { e.stopPropagation(); onMoreClick(); }}
             className={cn(
-              "shrink-0 rounded-lg p-1.5 transition-colors",
+              "tile-kebab-hit shrink-0 rounded-lg p-1.5 transition-colors",
               tinted
                 ? "text-white/70 hover:bg-white/10 hover:text-white"
                 : "text-gray-400 hover:bg-black/5 hover:text-gray-700 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
