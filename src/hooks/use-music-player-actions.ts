@@ -176,6 +176,7 @@ export function useMusicPlayerActions() {
   return {
     queueControl,
     seekTo,
+    setVolumeLevel,
     volumeUp,
     volumeDown,
     volumeMute,

@@ -29,6 +29,7 @@ import { useSpeakerPairing, resolveEntityId } from "@/hooks/use-speaker-pairing"
 import { MusicNowPlayingOverlay } from "@/components/music-now-playing-overlay";
 import { MusicQueuePanel } from "@/components/music-queue-panel";
 import { getItemImageUrl, getImageSrc, formatDuration, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
+import { describeNowPlaying } from "@/lib/music-now-playing";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
@@ -152,44 +153,12 @@ export function MusicPlayerBarContent({
   const playingMediaPlayer = Object.values(states).find(
     (e) => e.entity_id.startsWith("media_player.") && (e.state === "playing" || e.state === "paused")
   );
-  const haArtist = (playingMediaPlayer?.attributes?.media_artist as string)?.trim() || "";
-  const haTitle = (playingMediaPlayer?.attributes?.media_title as string)?.trim() || "";
-
   const cur = queueState?.current_item as (MASearchItem & { artist?: string; stream_title?: string }) | undefined;
   const coverSrc = cur ? getImageSrc(getItemImageUrl(cur), musicAssistant.baseUrl, musicAssistant.token) : null;
-  const hasStreamTitle = typeof cur?.stream_title === "string" && cur.stream_title.trim().length > 0;
-  const stationName = typeof cur?.name === "string" ? cur.name.trim() : "";
-  let artistLine =
-    cur?.artists != null
-      ? Array.isArray(cur.artists)
-        ? (cur.artists as { name?: string }[]).map((a) => a?.name).filter(Boolean).join(", ")
-        : typeof (cur?.artists as { name?: string })?.name === "string"
-          ? (cur.artists as { name: string }).name
-          : ""
-      : typeof cur?.artist === "string"
-        ? cur.artist.trim()
-        : "";
-  let titleLine =
-    hasStreamTitle
-      ? cur!.stream_title!.trim()
-      : stationName
-        ? stationName
-        : "";
-  if (hasStreamTitle && stationName && !artistLine) {
-    artistLine = stationName;
-  }
-  if (titleLine && !artistLine && !hasStreamTitle) {
-    const combined = titleLine;
-    const sep = combined.match(/\s*[\-\u2013\u2014]\s+|\s*:\s+/)?.index;
-    if (typeof sep === "number" && sep > 0) {
-      artistLine = combined.slice(0, sep).trim();
-      titleLine = combined.slice(sep).replace(/^\s*[\-\u2013\u2014:]+\s*/, "").trim();
-    }
-  }
-  /* Bij speaker-switch: MA queueState (cur) is gekoppeld aan selectedQueueId en update direct.
-     HA media_player kan een andere speaker tonen of vertraagd zijn. Prioriteer MA (cur), vul alleen aan met HA. */
-  if (haArtist && !artistLine) artistLine = haArtist;
-  if (haTitle && !titleLine) titleLine = haTitle;
+  const { title: titleLine, artist: artistLine } = describeNowPlaying(cur, {
+    title: playingMediaPlayer?.attributes?.media_title as string | undefined,
+    artist: playingMediaPlayer?.attributes?.media_artist as string | undefined,
+  });
 
   const currentPlayer = selectablePlayers.find((player) => player.queue_id === selectedQueueId) ?? null;
   const groupedWithCurrent = (() => {
