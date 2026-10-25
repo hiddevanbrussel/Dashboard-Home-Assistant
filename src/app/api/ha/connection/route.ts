@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateConnectionInput } from "@/lib/validation";
-import { encrypt } from "@/lib/encrypt";
+import { clearEncryptionCache, encrypt } from "@/lib/encrypt";
 import { prisma } from "@/lib/prisma";
 import { getHaConnection, getHaConnectionStatus } from "@/lib/db";
 import { getAddonHaConfig, isSupervisorBaseUrl } from "@/lib/ha/addon";
@@ -99,6 +99,7 @@ export async function POST(request: Request) {
   }
   try {
     await prisma.connection.deleteMany({});
+    clearEncryptionCache();
     const encryptedToken = encrypt(validated.data.token);
     const conn = await prisma.connection.create({
       data: {

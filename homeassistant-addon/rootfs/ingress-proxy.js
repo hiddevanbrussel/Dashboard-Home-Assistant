@@ -9,10 +9,20 @@
  * payloads) uses length-prefixed `T` rows. Naïve string replace expands paths
  * without updating those lengths → client `createFromReadableStream` hits
  * "Connection closed." Flight bodies are rewritten length-aware.
+ *
+ * Compression: upstream is always fetched with Accept-Encoding: identity so
+ * the body stays plain text for the rewrite. After rewriting, the proxy
+ * gzips (or brotli, when the client prefers it) and sets Content-Encoding
+ * plus Vary: Accept-Encoding. The standalone Next server compresses direct
+ * :3000 traffic itself and is asked for identity here, so the body is
+ * compressed exactly once.
  */
 "use strict";
 
 const http = require("http");
+const zlib = require("zlib");
+
+const COMPRESS_THRESHOLD = 1024;
 
 // Line-buffer logs in Docker (non-TTY); otherwise Open Web UI traffic looks silent.
 if (process.stdout._handle && typeof process.stdout._handle.setBlocking === "function") {
@@ -442,10 +452,132 @@ function stripHopByHop(headers) {
   return out;
 }
 
+function encodingQuality(acceptEncoding, name) {
+  if (!acceptEncoding) return 0;
+  let star = 0;
+  let specific = null;
+  for (const part of String(acceptEncoding).split(",")) {
+    const pieces = part
+      .trim()
+      .split(";")
+      .map((piece) => piece.trim())
+      .filter((piece) => piece.length > 0);
+    if (pieces.length === 0) continue;
+    const enc = pieces[0].toLowerCase();
+    let q = 1;
+    for (let i = 1; i < pieces.length; i++) {
+      const param = pieces[i];
+      if (!param.toLowerCase().startsWith("q=")) continue;
+      const parsed = Number(param.slice(2));
+      q = Number.isFinite(parsed) ? parsed : 0;
+    }
+    if (enc === name) specific = q;
+    else if (enc === "*") star = q;
+  }
+  return specific === null ? star : specific;
+}
+
+/** Gzip wins ties. Brotli only when the client prefers it or rejects gzip. */
+function chooseContentEncoding(acceptEncoding) {
+  const gzip = encodingQuality(acceptEncoding, "gzip");
+  const br = encodingQuality(acceptEncoding, "br");
+  if (gzip > 0 && gzip >= br) return "gzip";
+  if (br > 0) return "br";
+  return null;
+}
+
+function isCompressibleContentType(contentType) {
+  if (!contentType) return false;
+  const ct = String(contentType).toLowerCase().split(";")[0].trim();
+  if (!ct || ct === "text/event-stream" || ct.startsWith("multipart/")) return false;
+  if (ct.includes("svg")) return true;
+  if (
+    ct.startsWith("image/") ||
+    ct.startsWith("audio/") ||
+    ct.startsWith("video/") ||
+    ct.startsWith("font/") ||
+    ct.includes("woff") ||
+    ct.includes("octet-stream") ||
+    ct.includes("wasm") ||
+    ct.includes("protobuf")
+  ) {
+    return false;
+  }
+  return ct.startsWith("text/") || ct.includes("json") || ct.includes("javascript") || ct.includes("xml");
+}
+
+function headerValue(headers, name) {
+  const want = name.toLowerCase();
+  for (const key of Object.keys(headers)) {
+    if (key.toLowerCase() === want) return headers[key];
+  }
+  return undefined;
+}
+
+function appendAcceptEncodingVary(current) {
+  if (current == null || current === "") return "Accept-Encoding";
+  const text = Array.isArray(current) ? current.join(", ") : String(current);
+  if (text.trim() === "*") return "*";
+  const parts = text.split(",").map((part) => part.trim().toLowerCase());
+  if (parts.includes("accept-encoding")) return text;
+  return `${text}, Accept-Encoding`;
+}
+
+/**
+ * Compress a rewritten upstream body. `headers` must already be stripped of
+ * hop-by-hop fields (including any upstream content-encoding). Returns a new
+ * header set with Content-Length, and Content-Encoding + Vary when encoded.
+ */
+function gzipProxiedBody(body, headers, acceptEncoding) {
+  const out = { ...headers };
+  const encoding = chooseContentEncoding(
+    Array.isArray(acceptEncoding) ? acceptEncoding.join(", ") : acceptEncoding
+  );
+  const type = headerValue(out, "content-type");
+  const existing = String(headerValue(out, "content-encoding") || "")
+    .trim()
+    .toLowerCase();
+  const cacheControl = String(headerValue(out, "cache-control") || "");
+  const noTransform = /(?:^|,)\s*no-transform\s*(?:,|$)/i.test(cacheControl);
+  const gzipMagic = body.length >= 2 && body[0] === 0x1f && body[1] === 0x8b;
+  const canEncode =
+    Boolean(encoding) &&
+    isCompressibleContentType(type) &&
+    !noTransform &&
+    !gzipMagic &&
+    (!existing || existing === "identity") &&
+    body.length >= COMPRESS_THRESHOLD;
+
+  if (canEncode) {
+    const compressed =
+      encoding === "br"
+        ? zlib.brotliCompressSync(body, {
+            params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 1 },
+          })
+        : zlib.gzipSync(body, { level: 6 });
+    if (compressed.length < body.length) {
+      out["content-encoding"] = encoding;
+      out.vary = appendAcceptEncodingVary(headerValue(out, "vary"));
+      out["content-length"] = String(compressed.length);
+      return { body: compressed, headers: out, encoded: encoding };
+    }
+  }
+
+  const alreadyEncoded = Boolean(existing) && existing !== "identity";
+  if (!alreadyEncoded && isCompressibleContentType(type) && body.length >= COMPRESS_THRESHOLD && !noTransform) {
+    out.vary = appendAcceptEncodingVary(headerValue(out, "vary"));
+  }
+  if (!alreadyEncoded) delete out["content-encoding"];
+  out["content-length"] = String(body.length);
+  return { body, headers: out, encoded: null };
+}
+
 function forwardRequestHeaders(req) {
   const headers = stripHopByHop(req.headers);
   // Always target Next by upstream host — public Host confuses some builds.
   headers.host = `${UPSTREAM_HOST}:${UPSTREAM_PORT}`;
+  // Identity so Next does not encode the body before path rewrite. The
+  // proxy compresses once, after rewriting, based on the client's header.
   headers["accept-encoding"] = "identity";
   const ingressSecret = process.env.INGRESS_AUTH_SECRET || "";
   if (ingressSecret) headers["x-dashboard-ingress"] = ingressSecret;
@@ -463,6 +595,7 @@ function logAccess(ip, method, url, status, bytes, ingressPath, ms) {
 const server = http.createServer((req, res) => {
   const started = Date.now();
   const ip = clientIp(req);
+  const clientAcceptEncoding = req.headers["accept-encoding"];
   const ingressPath = (req.headers["x-ingress-path"] || "").replace(/\/+$/, "") || "";
 
   // Always log — if Open Web UI 404s with zero lines, HA never reached us.
@@ -509,7 +642,7 @@ const server = http.createServer((req, res) => {
           }
         }
 
-        const outHeaders = stripHopByHop(proxyRes.headers);
+        let outHeaders = stripHopByHop(proxyRes.headers);
         if (outHeaders.location) {
           outHeaders.location = rewriteLocation(String(outHeaders.location), ingressPath);
         }
@@ -531,7 +664,9 @@ const server = http.createServer((req, res) => {
             return s;
           });
         }
-        outHeaders["content-length"] = String(Buffer.byteLength(body));
+        const prepared = gzipProxiedBody(body, outHeaders, clientAcceptEncoding);
+        body = prepared.body;
+        outHeaders = prepared.headers;
 
         const status = proxyRes.statusCode || 502;
         res.writeHead(status, outHeaders);
@@ -573,6 +708,8 @@ module.exports = {
   rewriteLinkHeader,
   shouldRewrite,
   upstreamPath,
+  gzipProxiedBody,
+  chooseContentEncoding,
   clientIp,
   isAllowed,
   SUPERVISOR_INGRESS_IP,

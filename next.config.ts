@@ -16,6 +16,15 @@ const basePath = process.env.NEXT_BASE_PATH || "";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // App Router responses are chunked. Next flushes headers before the body
+  // length is known, so the built-in compression middleware skips them
+  // (no Content-Encoding on /api/ha/state). Gzip/br is applied once in
+  // installResponseCompression for the standalone server (Docker `node
+  // server.js`, and the add-on Next process behind nginx). The ingress
+  // proxy asks for identity so it can rewrite paths, then compresses the
+  // rewritten body. Leaving this on would gzip a second time for responses
+  // that do have Content-Length, such as static files.
+  compress: false,
   basePath: basePath || undefined,
   serverExternalPackages: ["onnxruntime-web", "openwakeword-web"],
   env: {

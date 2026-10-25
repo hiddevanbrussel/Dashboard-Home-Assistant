@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { encrypt } from "@/lib/encrypt";
+import { clearEncryptionCache, encrypt } from "@/lib/encrypt";
 import { prisma } from "@/lib/prisma";
 import {
   createLongLivedAccessToken,
@@ -111,6 +111,7 @@ export async function GET(request: Request) {
     }
 
     await prisma.connection.deleteMany({});
+    clearEncryptionCache();
     await prisma.connection.create({
       data: {
         baseUrl: state.ha,

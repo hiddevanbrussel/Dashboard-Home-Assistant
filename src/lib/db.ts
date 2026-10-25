@@ -4,7 +4,7 @@
  */
 
 import { prisma } from "./prisma";
-import { decrypt, encrypt } from "./encrypt";
+import { clearEncryptionCache, decrypt, encrypt } from "./encrypt";
 import {
   getAddonHaConfig,
   isHaAddon,
@@ -66,10 +66,12 @@ async function resolveStoredToken(
     const resolved = await resolveOAuthAccessToken({ haBaseUrl: baseUrl, encoded: raw });
     if (!resolved) return null;
     if (resolved.encodedToPersist && process.env.APP_SECRET && process.env.APP_SECRET.length >= 16) {
+      clearEncryptionCache();
+      const encryptedToken = encrypt(resolved.encodedToPersist);
       await prisma.connection
         .update({
           where: { id: connectionId },
-          data: { encryptedToken: encrypt(resolved.encodedToPersist) },
+          data: { encryptedToken },
         })
         .catch((err) => {
           console.error("[ha] failed to persist refreshed oauth token:", err);
