@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.8] - 2026-10-25
+
+No breaking changes: existing configs, dashboards, volumes and localStorage keep working.
+
+### Fixed
+
+- The Docker image starts without a `/data` volume. Before, a bare `docker run` stopped with a Prisma "Permission denied" error; volumes owned by root keep working too (#314, fixes #279).
+
 ## [0.5.7] - 2026-10-25
 
 No breaking changes: existing configs, dashboards and localStorage keep working.
