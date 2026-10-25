@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.10] - 2026-10-26
+
+No breaking changes: existing configs, dashboards and localStorage keep working.
+
+### Fixed
+
+- The Team Tracker and trash cards have the same shadow as the climate card, so they no longer fade away on a white background (#320).
+
 ## [0.5.9] - 2026-10-25
 
 No breaking changes: existing configs, dashboards and localStorage keep working. Your language choice is kept.
