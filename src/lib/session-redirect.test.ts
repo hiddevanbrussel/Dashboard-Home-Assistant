@@ -53,6 +53,10 @@ describe("session redirect", () => {
       expect(postLoginTarget("/rooms", "/api/hassio_ingress/token/login")).toBe(
         "/api/hassio_ingress/token/rooms"
       );
+      // #283: HA routes /api/hassio_ingress/{token}/{path}, so the ingress root keeps its slash.
+      expect(postLoginTarget("/", "/api/hassio_ingress/token/login")).toBe("/api/hassio_ingress/token/");
+      expect(postLoginTarget(null, "/api/hassio_ingress/token/login")).toBe("/api/hassio_ingress/token/");
+      expect(postLoginTarget("/login", "/api/hassio_ingress/token/login")).toBe("/api/hassio_ingress/token/");
       expect(unauthorizedLoginLocation("http://internal/api/children")).toBe(
         "/__ha_ingress__/login?next=%2Fapi%2Fchildren"
       );
