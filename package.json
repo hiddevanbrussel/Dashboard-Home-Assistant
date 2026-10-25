@@ -1,6 +1,6 @@
 {
   "name": "home-assistant-dashboard-builder",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "private": true,
   "license": "GPL-3.0-only",
   "scripts": {
