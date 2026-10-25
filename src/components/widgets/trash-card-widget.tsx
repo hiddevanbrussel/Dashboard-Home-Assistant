@@ -280,7 +280,7 @@ export const TrashCardWidget = memo(function TrashCardWidget({
   return (
     <div
       className={cn(
-        "glass-surface relative h-full w-full min-h-0 overflow-hidden rounded-[1.35rem] text-[#1B2437] shadow-[0_12px_36px_rgba(15,23,42,0.08)] dark:text-white dark:shadow-[0_12px_36px_rgba(0,0,0,0.35)]",
+        "glass-surface relative h-full w-full min-h-0 overflow-hidden rounded-[1.35rem] text-[#1B2437] shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:text-white dark:shadow-[0_18px_50px_rgba(0,0,0,0.65)]",
         className
       )}
       style={{ width: "100%", height: "100%" }}
