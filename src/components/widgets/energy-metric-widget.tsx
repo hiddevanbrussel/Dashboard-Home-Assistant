@@ -78,7 +78,7 @@ export function EnergyMetricWidget({
             e.stopPropagation();
             onMoreClick();
           }}
-          className="absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-black/35 text-white/90 backdrop-blur-sm hover:bg-black/50"
+          className="tile-kebab-hit absolute -right-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-black/35 text-white/90 backdrop-blur-sm hover:bg-black/50"
           aria-label={t("editPanel.editTile")}
         >
           <MoreVertical className="h-3.5 w-3.5" />

@@ -376,7 +376,7 @@ export function LightCardWidget({
         onMoreClick();
       }}
       className={cn(
-        "shrink-0 rounded-full p-1 opacity-70 transition-colors",
+        "tile-kebab-hit shrink-0 rounded-full p-1 opacity-70 transition-colors",
         isOn ? "text-gray-600 hover:bg-black/5 hover:opacity-100" : "text-gray-500 hover:bg-black/5 hover:opacity-100 dark:text-white/80 dark:hover:bg-white/10"
       )}
       aria-label={t("lightCard.options")}

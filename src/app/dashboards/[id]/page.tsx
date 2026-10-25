@@ -5,13 +5,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/app-shell";
 import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
 import { CardDefinitionModal } from "@/components/card-definition-modal";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal, flushSync } from "react-dom";
 import ReactGridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import { ArrowLeft, RobotVacuum, CalendarDays, Check, Timer, Trash2, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
-import { ArrowRightLeft, ArrowUpToLine } from "lucide-react";
+import { ArrowLeft, RobotVacuum, CalendarDays, Check, Timer, Trash2, ChevronDown, ChevronUp, CircleDot, CloudSun, Fuel, Gauge, Home, Image as ImageIcon, Layers, LayoutGrid, Lightbulb, ListTodo, Music2, Pencil, Plus, ShieldCheck, SlidersHorizontal, Sun, Thermometer, Trophy, Type, Video, X, Zap } from "lucide-react";
+import { ArrowRightLeft, ArrowUpToLine, Copy } from "lucide-react";
 import { TileMenu, anchorFromElement, type TileMenuAnchor, type TileMenuItem } from "@/components/layout/tile-menu";
 import { HeaderStatPills } from "@/components/layout/header-stat-pills";
 import { TOPBAR_PILL_MAX, canPinMore, ensureGridPosition, moveToGrid, moveToTopbar, topbarPills } from "@/lib/topbar-pills";
@@ -98,6 +98,10 @@ import { cn, generateId } from "@/lib/utils";
 import { cssUrl } from "@/lib/base-path";
 import { DashboardPager } from "@/components/dashboard-pager";
 import { UndoToast, UNDO_TOAST_DURATION_MS } from "@/components/undo-toast";
+import { LinkedRoomList } from "@/components/rooms/linked-room-list";
+import { RoomPanel, toPanelRoom } from "@/components/rooms/room-panel";
+import { reduceRoomCardLink } from "@/lib/room-catalog";
+import { writeRoomDeleteHandoff } from "@/lib/room-removal";
 import {
   addTileHistoryDepth,
   backAddTileHistory,
@@ -120,7 +124,16 @@ import {
   TILE_SIDEBAR_INSET_PX,
   type TileRect,
 } from "@/lib/tile-placement";
-import { forgetTilePosition, writeTilePosition } from "@/lib/tile-position-storage";
+import { forgetTilePosition, tilePositionStorageKey, writeTilePosition } from "@/lib/tile-position-storage";
+import {
+  duplicateTileTitle,
+  readSavedTilePosition,
+  removeTileWithSnapshot,
+  restoreRemovedTile,
+  restoreSavedTilePosition,
+  type RemovedTileSnapshot,
+  type SavedTilePosition,
+} from "@/lib/tile-menu-actions";
 import {
   clampPageIndex,
   DASHBOARD_MAX_PAGES,
@@ -139,6 +152,8 @@ import {
   type PageSnapshot,
   type PendingPageRemoval,
 } from "@/lib/dashboard-page-removal";
+import { DashboardLayoutNotice } from "@/components/dashboard-layout-notice";
+import { useFloatingOrientation } from "@/hooks/use-floating-orientation";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
   clampClimateCardHeight,
@@ -460,68 +475,6 @@ function MoveCardToRoomSection({
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-function LinkedRoomSelect({
-  value,
-  onChange,
-  t,
-}: {
-  value?: string;
-  onChange: (areaId: string | undefined) => void;
-  t: (key: string) => string;
-}) {
-  const [rooms, setRooms] = useState<RoomListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/room-dashboards")
-      .then((res) => res.json())
-      .then((list: RoomListItem[]) => setRooms(Array.isArray(list) ? list : []))
-      .catch(() => setRooms([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return <p className="text-sm text-gray-500 dark:text-gray-400">{t("editPanel.loading")}</p>;
-  }
-
-  if (rooms.length === 0) {
-    return (
-      <div>
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-          {t("editPanel.linkedRoom")}
-        </label>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("editPanel.linkedRoomEmpty")}</p>
-      </div>
-    );
-  }
-
-  const selectedMissing = Boolean(value && !rooms.some((r) => r.areaId === value));
-
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
-        {t("editPanel.linkedRoom")}
-      </label>
-      <select
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value || undefined)}
-        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-      >
-        <option value="">{t("editPanel.linkedRoomNone")}</option>
-        {selectedMissing && value ? (
-          <option value={value}>{value}</option>
-        ) : null}
-        {rooms.map((r) => (
-          <option key={r.areaId} value={r.areaId}>
-            {r.name || r.areaId}
-          </option>
-        ))}
-      </select>
-      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("editPanel.linkedRoomHint")}</p>
     </div>
   );
 }
@@ -991,9 +944,32 @@ export default function DashboardEditPage() {
   const closeTileMenu = useCallback(() => setTileMenu(null), []);
   /** Last pointerdown on a floating stat pill: anchor for onEdit, which gets no event. */
   const statPillTapRef = useRef<{ id: string; el: Element | null; x: number; y: number } | null>(null);
+  /** Last tapped tile (any type): anchor for the ⋮ menu, since onEdit gets no event. */
+  const lastTileTapRef = useRef<Element | null>(null);
+  /** Tile removed from the ⋮ menu, kept for the 5-second undo. */
+  const [removedTile, setRemovedTile] = useState<{
+    snapshot: RemovedTileSnapshot<WidgetConfig, LayoutItem>;
+    position: SavedTilePosition | null;
+  } | null>(null);
   useEffect(() => {
-    if (!editMode) setTileMenu(null);
+    if (!editMode) {
+      setTileMenu(null);
+      setRemovedTile(null);
+    }
   }, [editMode]);
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const tile = (e.target as Element | null)?.closest?.(".card-plot-in, .react-grid-item");
+      if (tile) lastTileTapRef.current = tile;
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, []);
+  useEffect(() => {
+    if (!removedTile) return;
+    const timer = window.setTimeout(() => setRemovedTile(null), UNDO_TOAST_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [removedTile]);
   /** When editing a card_group, id of the child pill being edited (null = editing group itself). */
   const [editingGroupChildId, setEditingGroupChildId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
@@ -1140,55 +1116,14 @@ export default function DashboardEditPage() {
     title: string;
   } | null>(null);
   const [definitionModalEntities, setDefinitionModalEntities] = useState<HaEntity[]>([]);
-  const [roomBackgroundOpen, setRoomBackgroundOpen] = useState(false);
-  const [uploadingRoomBackground, setUploadingRoomBackground] = useState(false);
+  const [roomPanelOpen, setRoomPanelOpen] = useState(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const roomBackgroundInputRef = useRef<HTMLInputElement>(null);
   const pendingAddRef = useRef<string | null>(null);
   const placedStorageRef = useRef<{ widgetId: string; key: string } | null>(null);
   const syncAddTileRef = useRef<(stack: AddTileStep[]) => void>(() => {});
   const addTileButtonRef = useRef<HTMLButtonElement>(null);
   const addTileDialogRef = useRef<HTMLDivElement>(null);
   const LONG_PRESS_MS = 500;
-
-  async function handleRoomBackgroundUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !areaId) return;
-    e.target.value = "";
-    setUploadingRoomBackground(true);
-    try {
-      const formData = new FormData();
-      formData.set("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Upload failed");
-      await fetch(apiBase, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ background: json.url }),
-      });
-      queryClient.invalidateQueries({ queryKey: ["room-dashboard", areaId] });
-      window.dispatchEvent(new Event("page-background-changed"));
-    } finally {
-      setUploadingRoomBackground(false);
-      setRoomBackgroundOpen(false);
-    }
-  }
-
-  async function handleRoomBackgroundRemove() {
-    if (!areaId) return;
-    try {
-      await fetch(apiBase, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ background: null }),
-      });
-      queryClient.invalidateQueries({ queryKey: ["room-dashboard", areaId] });
-      window.dispatchEvent(new Event("page-background-changed"));
-    } finally {
-      setRoomBackgroundOpen(false);
-    }
-  }
 
   function clearLongPressTimer() {
     if (longPressTimerRef.current != null) {
@@ -1588,6 +1523,18 @@ export default function DashboardEditPage() {
     if (error && id) router.replace(isRoomMode ? "/rooms" : "/dashboards");
   }, [error, id, isRoomMode, router]);
 
+  // Stat pills pinned to the top bar (#301) are parked: their positions are kept, but they take no space.
+  const orientationWidgets = useMemo(
+    () => widgets.map((w) => (w.placement === "topbar" ? { ...w, parked: true } : w)),
+    [widgets]
+  );
+  const floatingLayout = useFloatingOrientation({
+    dashboardId: id,
+    ready: initialized,
+    widgets: orientationWidgets,
+    editMode,
+  });
+
   const saveMutation = useMutation({
     mutationFn: async (payload: {
       layout: Layout;
@@ -1676,6 +1623,7 @@ export default function DashboardEditPage() {
     const pendingId = pendingAddRef.current;
     if (pendingId) dropPendingTile();
     if (addTileHistoryDepth() > 0) discardAddTileHistory();
+    floatingLayout.commitEdits();
     setEditingWidgetId(null);
     setEditingGroupChildId(null);
     setEditMode(false);
@@ -2119,14 +2067,51 @@ export default function DashboardEditPage() {
     setTileMenu({ widgetId, anchor: anchorFromElement(target) });
   }
 
+  /** ⋮ on any tile: open the tile menu at the tile that was just tapped (or focused). */
+  function openTileMenu(widgetId: string) {
+    const focused = document.activeElement?.closest?.(".card-plot-in, .react-grid-item") ?? null;
+    const target = lastTileTapRef.current?.isConnected ? lastTileTapRef.current : focused;
+    const anchor: TileMenuAnchor = target
+      ? anchorFromElement(target)
+      : { left: window.innerWidth / 2, right: window.innerWidth / 2, top: window.innerHeight / 3, bottom: window.innerHeight / 3 };
+    setTileMenu({ widgetId, anchor });
+  }
+
+  const tileMenuHandler = (widgetId: string) => (editMode ? () => openTileMenu(widgetId) : undefined);
+
+  /** Remove from the ⋮ menu: gone at once, back with Ongedaan maken for 5 seconds. Saved with Klaar, as before. */
+  function handleRemoveTileWithUndo(widgetId: string) {
+    const removed = removeTileWithSnapshot(widgets, layout, widgetId);
+    if (!removed.snapshot) return;
+    setWidgets(removed.widgets);
+    setLayout(removed.layout);
+    const position =
+      typeof window !== "undefined"
+        ? readSavedTilePosition(window.localStorage, tilePositionStorageKey(removed.snapshot.widget.type, id, widgetId)?.key)
+        : null;
+    setRemovedTile({ snapshot: removed.snapshot, position });
+  }
+
+  function handleUndoRemoveTile() {
+    if (!removedTile) return;
+    // Removal prunes the stored position; write it back first so the tile returns where it was.
+    if (typeof window !== "undefined") restoreSavedTilePosition(window.localStorage, removedTile.position);
+    const restored = restoreRemovedTile(widgets, layout, removedTile.snapshot);
+    setWidgets(restored.widgets);
+    setLayout(restored.layout);
+    setRemovedTile(null);
+  }
+
   function handleDuplicateTile(widgetId: string): string | undefined {
     const original = widgets.find((w) => w.id === widgetId);
     if (!original) return undefined;
     const newId = generateId();
+    // A copy of a pill in the top bar goes to the grid, so it never counts against the bar's maximum.
+    const { placement: _placement, topbar_order: _topbarOrder, ...source } = original;
     const duplicated: WidgetConfig = {
-      ...original,
+      ...source,
       id: newId,
-      title: `${original.title ?? ""} (kopie)`.trim() || original.title,
+      title: duplicateTileTitle(original.title, t("editPanel.copySuffix")) || original.title,
       ...((original.type === "card_group" || original.type === "smart_stack") &&
         original.children && {
           children: original.children.map((c) => ({
@@ -2145,6 +2130,12 @@ export default function DashboardEditPage() {
           w: 4,
           h: original.type === "text_card" ? 1 : 2,
         };
+    // Floating copy: write the first free spot before it mounts, like Tegel toevoegen, so it does not land on the original.
+    if (typeof window !== "undefined") {
+      const sameType = widgets.filter((w) => w.type === original.type).length;
+      const slot = placeNewTile(original.type, sameType);
+      writeTilePosition(window.localStorage, original.type, id, newId, { left: slot.left, bottom: slot.bottom });
+    }
     const newWidgets = [...widgets, duplicated];
     const newLayout = [...layout, newLayoutItem];
     setWidgets(newWidgets);
@@ -2409,54 +2400,42 @@ export default function DashboardEditPage() {
     );
   }
 
-  const roomBackground = (data as { background?: string | null })?.background ?? null;
-
   const headerEndAction = (
     <>
-      {isRoomMode && areaId && (
-        <div className="relative">
+      {isRoomMode && areaId && data ? (
+        <>
           <button
             type="button"
-            onClick={() => setRoomBackgroundOpen((v) => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-            aria-label={t("editPanel.roomBackground")}
-            title={t("editPanel.roomBackground")}
+            onClick={() => setRoomPanelOpen(true)}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-gray-800 ring-1 ring-gray-300 hover:bg-gray-100 dark:text-gray-100 dark:ring-white/20 dark:hover:bg-white/10"
+            aria-label={t("roomsUi.roomSettings")}
+            title={t("roomsUi.roomSettings")}
           >
-            <ImageIcon className="h-4 w-4" aria-hidden />
+            <SlidersHorizontal className="h-5 w-5" aria-hidden />
           </button>
-          {roomBackgroundOpen && (
-                <>
-                  <div className="fixed inset-0 z-[299]" aria-hidden onClick={() => setRoomBackgroundOpen(false)} />
-                  <div className="absolute right-0 top-full z-[300] mt-1 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-white/10 dark:bg-gray-900">
-                    <input
-                      ref={roomBackgroundInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleRoomBackgroundUpload}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => roomBackgroundInputRef.current?.click()}
-                      disabled={uploadingRoomBackground}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10 disabled:opacity-50"
-                    >
-                      {uploadingRoomBackground ? t("editPanel.uploading") : t("editPanel.uploadImage")}
-                    </button>
-                    {roomBackground && (
-                      <button
-                        type="button"
-                        onClick={handleRoomBackgroundRemove}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                      >
-                        {t("editPanel.removeBackground")}
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+          {roomPanelOpen ? (
+            <RoomPanel
+              mode="edit"
+              room={toPanelRoom(areaId, data)}
+              onClose={() => setRoomPanelOpen(false)}
+              onSaved={() => {
+                setRoomPanelOpen(false);
+                queryClient.invalidateQueries({ queryKey: ["room-dashboard", areaId] });
+                window.dispatchEvent(new Event("page-background-changed"));
+              }}
+              onDelete={(room) => {
+                setRoomPanelOpen(false);
+                writeRoomDeleteHandoff(window.sessionStorage, {
+                  areaId: room.areaId,
+                  name: room.name,
+                  commitAt: Date.now() + UNDO_TOAST_DURATION_MS,
+                });
+                router.push("/rooms");
+              }}
+            />
+          ) : null}
+        </>
+      ) : null}
       {editMode ? (
         <>
             <button
@@ -2782,14 +2761,24 @@ export default function DashboardEditPage() {
       icon: Pencil,
       onSelect: () => setEditingWidgetId(pillId),
     });
-    if (tileMenuWidget.placement === "topbar") {
+    tileMenuItems.push({
+      key: "duplicate",
+      label: t("editPanel.duplicateCard"),
+      icon: Copy,
+      onSelect: () => {
+        handleDuplicateTile(pillId);
+      },
+    });
+    // Only stat pills can go to the top bar.
+    const isPill = tileMenuWidget.type === "stat_pill_card";
+    if (isPill && tileMenuWidget.placement === "topbar") {
       tileMenuItems.push({
         key: "toGrid",
         label: t("tileMenu.toGrid"),
         icon: LayoutGrid,
         onSelect: () => handleTopbarMove(pillId, "grid"),
       });
-    } else {
+    } else if (isPill) {
       const full = !canPinMore(widgets);
       tileMenuItems.push({
         key: "toTopbar",
@@ -2804,6 +2793,12 @@ export default function DashboardEditPage() {
         onSelect: () => handleTopbarMove(pillId, "topbar"),
       });
     }
+    tileMenuItems.push({
+      key: "remove",
+      label: t("editPanel.removeCard"),
+      icon: Trash2,
+      onSelect: () => handleRemoveTileWithUndo(pillId),
+    });
   }
 
   return (
@@ -2946,7 +2941,7 @@ export default function DashboardEditPage() {
                       demo_theme={w.demo_theme}
                       width={w.width}
                       height={w.height}
-                      onMoreClick={editMode ? () => setEditingWidgetId(w.id) : undefined}
+                      onMoreClick={tileMenuHandler(w.id)}
                     />
                   </div>
                 </div>
@@ -2955,6 +2950,14 @@ export default function DashboardEditPage() {
           </ReactGridLayout>
         </div>
 
+        {removedTile && editMode && !pageUndoOpen && typeof document !== "undefined" && createPortal(
+          <UndoToast
+            message={t("tileMenu.removed")}
+            actionLabel={t("dashboardPages.undo")}
+            onAction={handleUndoRemoveTile}
+          />,
+          document.body
+        )}
         {pageUndoOpen && editMode && typeof document !== "undefined" && createPortal(
           <UndoToast
             message={t("dashboardPages.removed")}
@@ -2963,11 +2966,16 @@ export default function DashboardEditPage() {
           />,
           document.body
         )}
+        {floatingLayout.notice ? (
+          <DashboardLayoutNotice message={t(floatingLayout.notice)} onDismiss={floatingLayout.dismissNotice} />
+        ) : null}
         <DashboardPager
+          key={floatingLayout.epoch}
           pageCount={pageCount}
           page={dashboardPage}
           onPageChange={setDashboardPage}
           editMode={editMode}
+          verticalOverflowPx={floatingLayout.scrollOverflowPx}
           onAddPage={editMode ? handleAddDashboardPage : undefined}
           onRemovePage={editMode ? handleRemoveDashboardPage : undefined}
         >
@@ -3009,7 +3017,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(w.id)
+                  ? () => openTileMenu(w.id)
                   : undefined
               }
               onRemove={
@@ -3043,7 +3051,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? (id) => setEditingWidgetId(id) : undefined}
+              onEdit={editMode ? (cardId) => openTileMenu(cardId) : undefined}
               onRemove={editMode ? (id) => handleRemoveTile(id) : undefined}
               onResize={editMode ? (size) => handleClimateCardResize(pageIndex, size) : undefined}
             />
@@ -3078,7 +3086,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={() => {
                 setEditMode(true);
-                setEditingWidgetId(w.id);
+                openTileMenu(w.id);
               }}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
@@ -3102,7 +3110,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={() => {
                 setEditMode(true);
-                setEditingWidgetId(w.id);
+                openTileMenu(w.id);
               }}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
@@ -3121,7 +3129,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstSolar.id)
+                  ? () => openTileMenu(firstSolar.id)
                   : undefined
               }
               onRemove={
@@ -3149,7 +3157,7 @@ export default function DashboardEditPage() {
               storageScope={id}
               widgetId={w.id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleEnergyMonitorCardResize(w.id, size) : undefined}
             />
@@ -3169,7 +3177,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstPowerUsage.id)
+                  ? () => openTileMenu(firstPowerUsage.id)
                   : undefined
               }
               onRemove={
@@ -3194,7 +3202,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={`${id}-${w.id}`}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3262,7 +3270,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3288,7 +3296,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstWeather.id)
+                  ? () => openTileMenu(firstWeather.id)
                   : undefined
               }
               onRemove={
@@ -3318,7 +3326,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(w.id)
+                  ? () => openTileMenu(w.id)
                   : undefined
               }
               onRemove={
@@ -3348,7 +3356,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(w.id)
+                  ? () => openTileMenu(w.id)
                   : undefined
               }
               onResize={editMode ? (size) => handleTeamtrackerCardResize(w.id, size) : undefined}
@@ -3370,7 +3378,7 @@ export default function DashboardEditPage() {
               onEnterEditMode={() => setEditMode(true)}
               onEdit={
                 editMode
-                  ? () => setEditingWidgetId(firstVacuum.id)
+                  ? () => openTileMenu(firstVacuum.id)
                   : undefined
               }
               onRemove={
@@ -3400,7 +3408,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleVacuumCardResize(w.id, size) : undefined}
             />
@@ -3419,7 +3427,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3454,7 +3462,7 @@ export default function DashboardEditPage() {
                   index: roomCards.findIndex((x) => x.id === ow.id),
                 }))}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onCardClick={
                 !editMode
@@ -3495,7 +3503,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleNutsCardResize(w.id, size) : undefined}
             />
@@ -3517,7 +3525,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3539,7 +3547,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3554,7 +3562,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(g.id) : undefined}
+              onEdit={tileMenuHandler(g.id)}
               onRemove={editMode ? () => handleRemoveTile(g.id) : undefined}
             />
           ))}
@@ -3569,7 +3577,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
             />
           ))}
 
@@ -3589,7 +3597,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleCalendarCardResize(w.id, size) : undefined}
             />
@@ -3607,7 +3615,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
             />
           ))}
@@ -3630,7 +3638,7 @@ export default function DashboardEditPage() {
               editMode={editMode}
               storageScope={id}
               onEnterEditMode={() => setEditMode(true)}
-              onEdit={editMode ? () => setEditingWidgetId(w.id) : undefined}
+              onEdit={tileMenuHandler(w.id)}
               onRemove={editMode ? () => handleRemoveTile(w.id) : undefined}
               onResize={editMode ? (size) => handleTrashCardResize(w.id, size) : undefined}
             />
@@ -3662,7 +3670,7 @@ export default function DashboardEditPage() {
                       ? t("editPanel.editCardInGroup")
                       : t("editPanel.editCardGroup")
                     : editingWidget.type === "room_card"
-                      ? t("editPanel.editRoom")
+                      ? t("roomsUi.editRoomTile")
                       : editingWidget.type === "power_usage_card"
                         ? t("editPanel.editPowerUsage")
                         : editingWidget.type === "device_consumption_card"
@@ -4663,10 +4671,14 @@ export default function DashboardEditPage() {
                     </div>
                     {editTab === "entiteiten" && (
                       <div className="space-y-4">
-                        <LinkedRoomSelect
+                        <LinkedRoomList
                           value={editForm.area_id}
-                          onChange={(areaId) => setEditForm((prev) => ({ ...prev, area_id: areaId ?? "" }))}
-                          t={t}
+                          onChange={(areaId) =>
+                            setEditForm((prev) => reduceRoomCardLink(prev, { type: "select", areaId }))
+                          }
+                          onAdopt={(room) =>
+                            setEditForm((prev) => reduceRoomCardLink(prev, { type: "adopt", room }))
+                          }
                         />
                         <div>
                           <EntitySelectWithSearch

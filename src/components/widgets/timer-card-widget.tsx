@@ -35,7 +35,7 @@ export function TimerCardWidget({
           <button
             type="button"
             onClick={onMoreClick}
-            className="rounded-lg p-1 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
+            className="tile-kebab-hit rounded-lg p-1 text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
             aria-label={t("common.options")}
           >
             <MoreVertical className="h-4 w-4" />

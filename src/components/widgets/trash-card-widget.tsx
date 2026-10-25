@@ -296,7 +296,7 @@ export const TrashCardWidget = memo(function TrashCardWidget({
             onMoreClick();
           }}
           className={cn(
-            "absolute z-[4] rounded-lg p-1.5 text-[#1B2437]/30 transition-colors hover:bg-black/5 hover:text-[#1B2437]/65 dark:text-white/30 dark:hover:bg-white/10 dark:hover:text-white/65",
+            "tile-kebab-hit absolute z-[4] rounded-lg p-1.5 text-[#1B2437]/30 transition-colors hover:bg-black/5 hover:text-[#1B2437]/65 dark:text-white/30 dark:hover:bg-white/10 dark:hover:text-white/65",
             compact ? "right-2 top-2" : "right-2.5 top-2.5"
           )}
           aria-label={t("common.options")}

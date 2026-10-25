@@ -1,20 +1,23 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Backpack, Trash2, Dog, Book, Shirt, BedDouble, Utensils, ShoppingCart, Star, Brush, Wrench, Smile, Bike, Sprout,
   IceCreamCone, CakeSlice, Sandwich,
-  X, Plus, Pencil, ListTodo, ChevronLeft, Trophy, Eye, EyeOff, Gift, Search,
+  X, Plus, Pencil, ListTodo, ChevronLeft, Trophy, Gift, Search,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { CelebrationSheet, type CelebrationState } from "@/components/family/celebration-sheet";
 import { ChildTaskBoard } from "@/components/family/child-task-board";
+import { UndoToast, UNDO_TOAST_DURATION_MS } from "@/components/undo-toast";
 import { useTranslation } from "@/hooks/use-translation";
+import { remainingVisibleTodayChores, savedCompletionId, shouldCelebrateCompletingToday } from "@/lib/family-task-completion";
+import { clampPointsBalance } from "@/lib/points-balance";
 import { cn } from "@/lib/utils";
 import { localDateKey } from "@/lib/local-date";
-import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode } from "@/stores/dashboard-settings-store";
+import { getEditModeAllowed, getEditModePasscode, checkEditModePasscode, getEveningHour } from "@/stores/dashboard-settings-store";
 import type { ChildRecord, ChoreRecord, ChoreCompletionsResponse, ScoresResponse, ChoreFrequency, RewardRecord, StreaksResponse, BalancesResponse } from "@/lib/chores-types";
 
 // ── icon picker ──────────────────────────────────────────────────────────────
@@ -260,34 +263,56 @@ function EditPanel({ onClose }: EditPanelProps) {
     });
   }
 
-  return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-[380px] flex-col border-l border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
-      {/* header */}
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-        <div className="flex gap-2">
+  if (typeof document === "undefined") return null;
+
+  const tabClass = (active: boolean) =>
+    cn(
+      "h-11 flex-1 rounded-full px-3 text-sm font-semibold transition-colors",
+      active
+        ? "bg-white text-gray-900 shadow-sm dark:bg-[#8357be] dark:text-white"
+        : "text-gray-700 dark:text-gray-300",
+    );
+
+  return createPortal(
+    <>
+    <div className="fixed inset-0 z-[90] bg-black/30" aria-hidden onClick={onClose} />
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("family.edit")}
+      className="fixed inset-y-0 right-0 z-[91] flex w-full max-w-[400px] flex-col bg-white shadow-[0_16px_40px_rgba(0,0,0,0.25)] dark:bg-[#1b1a21] dark:shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
+    >
+      <div className="flex items-center justify-between gap-2 border-b border-gray-200 px-3 py-2 dark:border-white/10">
+        <div className="flex flex-1 gap-0.5 rounded-full bg-gray-100 p-0.5 dark:bg-white/[0.06]" role="tablist">
           <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "children"}
             onClick={() => { setTab("children"); setEditingChildId(null); setEditingChoreId(null); }}
-            className={cn("rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-              tab === "children" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800")}
+            className={tabClass(tab === "children")}
           >
             {t("family.children")}
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "chores"}
             onClick={() => { setTab("chores"); setEditingChildId(null); setEditingChoreId(null); }}
-            className={cn("rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-              tab === "chores" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800")}
+            className={tabClass(tab === "chores")}
           >
             {t("family.chores")}
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "rewards"}
             onClick={() => { setTab("rewards"); setEditingChildId(null); setEditingChoreId(null); setEditingRewardId(null); }}
-            className={cn("rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-              tab === "rewards" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800")}
+            className={tabClass(tab === "rewards")}
           >
             {t("family.rewards")}
           </button>
         </div>
-        <button onClick={onClose} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+        <button type="button" onClick={onClose} aria-label={t("editPanel.close")} className="flex h-11 w-11 items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -298,23 +323,23 @@ function EditPanel({ onClose }: EditPanelProps) {
           <div className="flex flex-col gap-3">
             {editingChildId !== null ? (
               <div className="flex flex-col gap-3">
-                <button onClick={cancelChild} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                <button onClick={cancelChild} className="flex h-11 items-center gap-1 text-sm font-semibold text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-white">
                   <ChevronLeft className="h-4 w-4" /> {t("family.cancel")}
                 </button>
                 <div className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.childName")}</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.childName")}</label>
                     <input
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 dark:border-white/15 dark:bg-white/[0.04] dark:text-white"
                       value={childForm.name}
                       onChange={(e) => setChildForm((f) => ({ ...f, name: e.target.value }))}
                       placeholder={t("family.childNamePlaceholder")}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.childEmoji")}</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.childEmoji")}</label>
                     <input
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 dark:border-white/15 dark:bg-white/[0.04] dark:text-white"
                       value={childForm.emoji}
                       onChange={(e) => setChildForm((f) => ({ ...f, emoji: e.target.value }))}
                       placeholder={t("family.childEmojiPlaceholder")}
@@ -322,13 +347,13 @@ function EditPanel({ onClose }: EditPanelProps) {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.childColor")}</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.childColor")}</label>
                     <div className="flex flex-wrap gap-2">
                       {COLOR_PRESETS.map((c) => (
                         <button
                           key={c}
                           onClick={() => setChildForm((f) => ({ ...f, color: c }))}
-                          className={cn("h-7 w-7 rounded-full transition-transform", childForm.color === c && "scale-125 ring-2 ring-offset-2 ring-gray-400")}
+                          className={cn("h-11 w-11 rounded-full transition-transform", childForm.color === c && "scale-125 ring-2 ring-offset-2 ring-gray-400")}
                           style={{ background: c }}
                         />
                       ))}
@@ -338,14 +363,14 @@ function EditPanel({ onClose }: EditPanelProps) {
                     <button
                       onClick={() => saveChildMutation.mutate()}
                       disabled={!childForm.name.trim() || saveChildMutation.isPending}
-                      className="flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                      className="h-11 flex-1 rounded-full bg-brand text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 dark:bg-[#8357be]"
                     >
                       {t("family.save")}
                     </button>
                     {editingChildId !== "new" && (
                       <button
                         onClick={() => { if (confirm(t("family.confirmDelete"))) deleteChildMutation.mutate(editingChildId); }}
-                        className="rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                        className="h-11 rounded-full border border-red-300 px-4 text-sm font-semibold text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20"
                       >
                         {t("family.delete")}
                       </button>
@@ -361,14 +386,14 @@ function EditPanel({ onClose }: EditPanelProps) {
                       {child.emoji ?? "👤"}
                     </div>
                     <span className="flex-1 text-sm font-medium text-gray-800 dark:text-white">{child.name}</span>
-                    <button onClick={() => openEditChild(child)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <button onClick={() => openEditChild(child)} className="flex h-11 w-11 items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10">
                       <Pencil className="h-4 w-4" />
                     </button>
                   </div>
                 ))}
                 <button
                   onClick={openNewChild}
-                  className="flex items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:hover:border-indigo-500"
+                  className="flex min-h-11 items-center gap-2 rounded-full border-2 border-dashed border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:border-brand hover:text-brand dark:border-white/20 dark:text-gray-200 dark:hover:border-[#8357be]"
                 >
                   <Plus className="h-4 w-4" /> {t("family.addChild")}
                 </button>
@@ -382,35 +407,35 @@ function EditPanel({ onClose }: EditPanelProps) {
           <div className="flex flex-col gap-3">
             {editingChoreId !== null ? (
               <div className="flex flex-col gap-3">
-                <button onClick={cancelChore} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                <button onClick={cancelChore} className="flex h-11 items-center gap-1 text-sm font-semibold text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-white">
                   <ChevronLeft className="h-4 w-4" /> {t("family.cancel")}
                 </button>
                 <div className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreTitle")}</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.choreTitle")}</label>
                     <input
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 dark:border-white/15 dark:bg-white/[0.04] dark:text-white"
                       value={choreForm.title}
                       onChange={(e) => setChoreForm((f) => ({ ...f, title: e.target.value }))}
                       placeholder={t("family.choreTitlePlaceholder")}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.chorePoints")}</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.chorePoints")}</label>
                     <input
                       type="number"
                       min={1}
                       max={100}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 dark:border-white/15 dark:bg-white/[0.04] dark:text-white"
                       value={choreForm.points}
                       onChange={(e) => setChoreForm((f) => ({ ...f, points: Math.max(1, Math.min(100, parseInt(e.target.value) || 1)) }))}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreFrequency")}</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.choreFrequency")}</label>
                     <div className="flex flex-col gap-1">
                       {(["daily", "weekdays", "weekly"] as const).map((freq) => (
-                        <label key={freq} className="flex cursor-pointer items-start gap-2 rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <label key={freq} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 hover:bg-gray-50 dark:hover:bg-white/5">
                           <input
                             type="radio"
                             name="frequency"
@@ -426,7 +451,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                   </div>
                   {(choreForm.frequency === "daily" || choreForm.frequency === "weekdays") && !choreForm.shared && (
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreTimesPerDay")}</label>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.choreTimesPerDay")}</label>
                       <div className="flex gap-2">
                         {([
                           [1, "family.timesPerDay.once"],
@@ -438,10 +463,10 @@ function EditPanel({ onClose }: EditPanelProps) {
                             type="button"
                             onClick={() => setChoreForm((f) => ({ ...f, timesPerDay: n }))}
                             className={cn(
-                              "flex-1 rounded-lg border-2 py-2 text-sm font-medium transition-all",
+                              "h-11 flex-1 rounded-full border-2 px-2 text-sm font-semibold transition-all",
                               choreForm.timesPerDay === n
                                 ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
-                                : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-400"
+                                : "border-gray-300 text-gray-700 dark:border-white/15 dark:text-gray-300"
                             )}
                           >
                             {t(labelKey)}
@@ -450,30 +475,30 @@ function EditPanel({ onClose }: EditPanelProps) {
                       </div>
                     </div>
                   )}
-                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+                  <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-gray-200 px-3 hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5">
                     <input
                       type="checkbox"
                       className="mt-0.5 shrink-0"
                       checked={choreForm.shared}
                       onChange={(e) => setChoreForm((f) => ({ ...f, shared: e.target.checked, timesPerDay: e.target.checked ? 1 : f.timesPerDay }))}
                     />
-                    <span className="text-xs text-gray-700 dark:text-gray-300">{t("family.choreShared")}</span>
+                    <span className="text-sm text-gray-800 dark:text-gray-100">{t("family.choreShared")}</span>
                   </label>
-                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-red-200 p-3 hover:bg-red-50 dark:border-red-800/40 dark:hover:bg-red-900/10">
+                  <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-red-200 px-3 hover:bg-red-50 dark:border-red-800/40 dark:hover:bg-red-900/10">
                     <input
                       type="checkbox"
                       className="mt-0.5 shrink-0"
                       checked={choreForm.penalty}
                       onChange={(e) => setChoreForm((f) => ({ ...f, penalty: e.target.checked }))}
                     />
-                    <span className="text-xs text-gray-700 dark:text-gray-300">{t("family.chorePenalty")}</span>
+                    <span className="text-sm text-gray-800 dark:text-gray-100">{t("family.chorePenalty")}</span>
                   </label>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreIcon")}</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.choreIcon")}</label>
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => setChoreForm((f) => ({ ...f, icon: null }))}
-                        className={cn("flex h-9 w-9 items-center justify-center rounded-lg border-2 transition-all",
+                        className={cn("flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-all",
                           choreForm.icon === null ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30" : "border-gray-200 dark:border-gray-700")}
                       >
                         <X className="h-4 w-4 text-gray-400" />
@@ -482,7 +507,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                         <button
                           key={name}
                           onClick={() => setChoreForm((f) => ({ ...f, icon: name }))}
-                          className={cn("flex h-9 w-9 items-center justify-center rounded-lg border-2 transition-all",
+                          className={cn("flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-all",
                             choreForm.icon === name ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600" : "border-gray-200 text-gray-500 dark:border-gray-700")}
                         >
                           <Icon className="h-4 w-4" />
@@ -492,9 +517,9 @@ function EditPanel({ onClose }: EditPanelProps) {
                   </div>
                   {children.length > 0 && (
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.choreForWho")}</label>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.choreForWho")}</label>
                       <div className="flex flex-col gap-1">
-                        <label className="flex cursor-pointer items-center gap-2 rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 hover:bg-gray-50 dark:hover:bg-white/5">
                           <input
                             type="checkbox"
                             checked={choreForm.childIds === null}
@@ -503,7 +528,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                           <span className="text-sm text-gray-700 dark:text-gray-300">{t("family.allChildren")}</span>
                         </label>
                         {children.map((child) => (
-                          <label key={child.id} className="flex cursor-pointer items-center gap-2 rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <label key={child.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 hover:bg-gray-50 dark:hover:bg-white/5">
                             <input
                               type="checkbox"
                               checked={choreForm.childIds === null || choreForm.childIds.includes(child.id)}
@@ -519,14 +544,14 @@ function EditPanel({ onClose }: EditPanelProps) {
                     <button
                       onClick={() => saveChoreMutation.mutate()}
                       disabled={!choreForm.title.trim() || saveChoreMutation.isPending}
-                      className="flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                      className="h-11 flex-1 rounded-full bg-brand text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 dark:bg-[#8357be]"
                     >
                       {t("family.save")}
                     </button>
                     {editingChoreId !== "new" && (
                       <button
                         onClick={() => { if (confirm(t("family.confirmDelete"))) deleteChoreMutation.mutate(editingChoreId); }}
-                        className="rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                        className="h-11 rounded-full border border-red-300 px-4 text-sm font-semibold text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20"
                       >
                         {t("family.delete")}
                       </button>
@@ -541,16 +566,16 @@ function EditPanel({ onClose }: EditPanelProps) {
                     <ChoreIcon name={chore.icon} className="h-5 w-5 text-gray-400" />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-gray-800 dark:text-white">{chore.title}</p>
-                      <p className="text-xs text-gray-400">{chore.points} pt · {t(`family.frequency.${chore.frequency}`).split(" (")[0]}{(chore.timesPerDay ?? 1) > 1 ? ` · ${t("family.timesPerDay.twice")}` : ""}{chore.shared ? " · gedeeld" : ""}{chore.penalty ? " · straf" : ""}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{chore.points} pt · {t(`family.frequency.${chore.frequency}`).split(" (")[0]}{(chore.timesPerDay ?? 1) > 1 ? ` · ${t("family.timesPerDay.twice")}` : ""}{chore.shared ? " · gedeeld" : ""}{chore.penalty ? " · straf" : ""}</p>
                     </div>
-                    <button onClick={() => openEditChore(chore)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <button onClick={() => openEditChore(chore)} className="flex h-11 w-11 items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10">
                       <Pencil className="h-4 w-4" />
                     </button>
                   </div>
                 ))}
                 <button
                   onClick={openNewChore}
-                  className="flex items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:hover:border-indigo-500"
+                  className="flex min-h-11 items-center gap-2 rounded-full border-2 border-dashed border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:border-brand hover:text-brand dark:border-white/20 dark:text-gray-200 dark:hover:border-[#8357be]"
                 >
                   <Plus className="h-4 w-4" /> {t("family.addChore")}
                 </button>
@@ -564,36 +589,36 @@ function EditPanel({ onClose }: EditPanelProps) {
           <div className="flex flex-col gap-3">
             {editingRewardId !== null ? (
               <div className="flex flex-col gap-3">
-                <button onClick={cancelReward} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                <button onClick={cancelReward} className="flex h-11 items-center gap-1 text-sm font-semibold text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-white">
                   <ChevronLeft className="h-4 w-4" /> {t("family.cancel")}
                 </button>
                 <div className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.rewardTitle")}</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.rewardTitle")}</label>
                     <input
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 dark:border-white/15 dark:bg-white/[0.04] dark:text-white"
                       value={rewardForm.title}
                       onChange={(e) => setRewardForm((f) => ({ ...f, title: e.target.value }))}
                       placeholder={t("family.rewardPlaceholder")}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.rewardCost")}</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.rewardCost")}</label>
                     <input
                       type="number"
                       min={1}
                       max={9999}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 dark:border-white/15 dark:bg-white/[0.04] dark:text-white"
                       value={rewardForm.pointsCost}
                       onChange={(e) => setRewardForm((f) => ({ ...f, pointsCost: Math.max(1, parseInt(e.target.value) || 1) }))}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500">{t("family.rewardIcon")}</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("family.rewardIcon")}</label>
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => setRewardForm((f) => ({ ...f, icon: null }))}
-                        className={cn("flex h-9 w-9 items-center justify-center rounded-lg border-2 transition-all",
+                        className={cn("flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-all",
                           rewardForm.icon === null ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30" : "border-gray-200 dark:border-gray-700")}
                       >
                         <X className="h-4 w-4 text-gray-400" />
@@ -602,7 +627,7 @@ function EditPanel({ onClose }: EditPanelProps) {
                         <button
                           key={name}
                           onClick={() => setRewardForm((f) => ({ ...f, icon: name }))}
-                          className={cn("flex h-9 w-9 items-center justify-center rounded-lg border-2 transition-all",
+                          className={cn("flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-all",
                             rewardForm.icon === name ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600" : "border-gray-200 text-gray-500 dark:border-gray-700")}
                         >
                           <Icon className="h-4 w-4" />
@@ -614,14 +639,14 @@ function EditPanel({ onClose }: EditPanelProps) {
                     <button
                       onClick={() => saveRewardMutation.mutate()}
                       disabled={!rewardForm.title.trim() || saveRewardMutation.isPending}
-                      className="flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                      className="h-11 flex-1 rounded-full bg-brand text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 dark:bg-[#8357be]"
                     >
                       {t("family.save")}
                     </button>
                     {editingRewardId !== "new" && (
                       <button
                         onClick={() => { if (confirm(t("family.confirmDelete"))) deleteRewardMutation.mutate(editingRewardId); }}
-                        className="rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                        className="h-11 rounded-full border border-red-300 px-4 text-sm font-semibold text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20"
                       >
                         {t("family.delete")}
                       </button>
@@ -636,16 +661,16 @@ function EditPanel({ onClose }: EditPanelProps) {
                     <RewardIcon name={reward.icon} className="h-5 w-5 text-gray-400" />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-gray-800 dark:text-white">{reward.title}</p>
-                      <p className="text-xs text-gray-400">{reward.pointsCost} pt</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{reward.pointsCost} pt</p>
                     </div>
-                    <button onClick={() => openEditReward(reward)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <button onClick={() => openEditReward(reward)} className="flex h-11 w-11 items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10">
                       <Pencil className="h-4 w-4" />
                     </button>
                   </div>
                 ))}
                 <button
                   onClick={openNewReward}
-                  className="flex items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-500 hover:border-indigo-400 hover:text-indigo-600 dark:border-gray-600 dark:hover:border-indigo-500"
+                  className="flex min-h-11 items-center gap-2 rounded-full border-2 border-dashed border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:border-brand hover:text-brand dark:border-white/20 dark:text-gray-200 dark:hover:border-[#8357be]"
                 >
                   <Plus className="h-4 w-4" /> {t("family.addReward")}
                 </button>
@@ -655,6 +680,9 @@ function EditPanel({ onClose }: EditPanelProps) {
         )}
       </div>
     </div>
+    </>
+    ,
+    document.body,
   );
 }
 
@@ -683,10 +711,10 @@ function Scoreboard() {
             key={p}
             onClick={() => setPeriod(p)}
             className={cn(
-              "rounded-xl px-4 py-2 text-sm font-medium transition-colors",
+              "h-11 rounded-full px-4 text-sm font-semibold transition-colors",
               period === p
-                ? "bg-indigo-600 text-white"
-                : "bg-white/60 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-white/80 dark:hover:bg-white/10"
+                ? "bg-white text-gray-900 shadow-sm dark:bg-[#8357be] dark:text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/[0.06] dark:text-gray-300"
             )}
           >
             {t(`family.scoreboard.${p}`)}
@@ -703,7 +731,7 @@ function Scoreboard() {
       {!isLoading && children.every((c) => c.points === 0) && (
         <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
           <Trophy className="h-10 w-10 text-gray-300" />
-          <p className="text-gray-500 dark:text-gray-400">{t("family.scoreboard.noData")}</p>
+          <p className="text-gray-600 dark:text-gray-300">{t("family.scoreboard.noData")}</p>
         </div>
       )}
 
@@ -754,9 +782,9 @@ export default function FamilyPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [activeChildIndex, setActiveChildIndex] = useState(0);
   const [view, setView] = useState<"tasks" | "scoreboard" | "rewards">("tasks");
-  const [showCompleted, setShowCompleted] = useState(false);
   const [taskQuery, setTaskQuery] = useState("");
   const [celebration, setCelebration] = useState<CelebrationState | null>(null);
+  const [undo, setUndo] = useState<{ completionId: string; title: string; points: number } | null>(null);
   const [passcodeModalOpen, setPasscodeModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState<string | null>(null);
@@ -794,18 +822,23 @@ export default function FamilyPage() {
     queryFn: () => fetch("/api/rewards").then((r) => r.json()),
   });
 
-  const children = data?.children ?? [];
+  const children = useMemo(() => data?.children ?? [], [data]);
   const streakMap = new Map((streaksData?.streaks ?? []).map((s) => [s.childId, s.streak]));
   const balanceMap = new Map((balancesData?.balances ?? []).map((b) => [b.childId, b]));
   const rewards = rewardsData ?? [];
 
   const completeMutation = useMutation({
-    mutationFn: ({ choreId, childId, frequency }: { choreId: string; childId: string; frequency: string }) =>
-      fetch("/api/chore-completions", {
+    mutationFn: async ({ choreId, childId, frequency }: { choreId: string; childId: string; frequency: string; title: string; points: number; childName: string; celebrate: boolean }) => {
+      const response = await fetch("/api/chore-completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ choreId, childId, frequency, date: todayDate }),
-      }).then((r) => r.json()),
+      });
+      const data = await response.json().catch(() => ({})) as { id?: string };
+      const id = savedCompletionId(response.ok, data.id);
+      if (!id) throw new Error("save failed");
+      return { id };
+    },
     onMutate: async ({ choreId, childId }) => {
       await queryClient.cancelQueries({ queryKey: ["chore-completions", todayDate] });
       const prev = queryClient.getQueryData<ChoreCompletionsResponse>(["chore-completions", todayDate]);
@@ -836,6 +869,28 @@ export default function FamilyPage() {
       });
       return { prev };
     },
+    onSuccess: (data, vars) => {
+      queryClient.setQueryData<ChoreCompletionsResponse>(["chore-completions", todayDate], (old) => {
+        if (!old) return old;
+        return {
+          children: old.children.map((child) => {
+            if (child.id !== vars.childId) return child;
+            return {
+              ...child,
+              chores: child.chores.map((chore) =>
+                chore.choreId === vars.choreId
+                  ? { ...chore, completionId: data.id, completedAt: new Date().toISOString() }
+                  : chore,
+              ),
+            };
+          }),
+        };
+      });
+      setUndo({ completionId: data.id, title: vars.title, points: vars.points });
+      if (vars.celebrate) {
+        setCelebration({ points: vars.points, title: vars.title, childName: vars.childName });
+      }
+    },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(["chore-completions", todayDate], ctx.prev);
     },
@@ -846,12 +901,15 @@ export default function FamilyPage() {
   });
 
   const uncompleteMutation = useMutation({
-    mutationFn: (completionId: string) =>
-      fetch("/api/chore-completions", {
+    mutationFn: async (completionId: string) => {
+      const response = await fetch("/api/chore-completions", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: completionId }),
-      }).then((r) => r.json()),
+      });
+      if (!response.ok) throw new Error("undo failed");
+      return response.json();
+    },
     onMutate: async (completionId) => {
       await queryClient.cancelQueries({ queryKey: ["chore-completions", todayDate] });
       const prev = queryClient.getQueryData<ChoreCompletionsResponse>(["chore-completions", todayDate]);
@@ -894,15 +952,40 @@ export default function FamilyPage() {
   const handleComplete = useCallback((choreId: string, childId: string, frequency: string) => {
     const child = children.find((c) => c.id === childId);
     const chore = child?.chores.find((ch) => ch.choreId === choreId);
-    if (child && chore && !chore.penalty) {
-      setCelebration({ points: chore.points, title: chore.title, childName: child.name });
-    }
-    completeMutation.mutate({ choreId, childId, frequency });
+    const hour = new Date().getHours();
+    const eveningHour = getEveningHour();
+    const remaining = child && chore
+      ? remainingVisibleTodayChores(child.chores, choreId, hour, eveningHour)
+      : 1;
+    completeMutation.mutate({
+      choreId,
+      childId,
+      frequency,
+      title: chore?.title ?? "",
+      points: chore?.points ?? 0,
+      childName: child?.name ?? "",
+      celebrate: chore ? shouldCelebrateCompletingToday(chore, remaining, hour, eveningHour) : false,
+    });
   }, [completeMutation, children]);
 
   const handleUncomplete = useCallback((completionId: string) => {
+    if (!completionId || completionId === "optimistic") return;
+    setUndo((current) => (current?.completionId === completionId ? null : current));
     uncompleteMutation.mutate(completionId);
   }, [uncompleteMutation]);
+
+  const handleUndo = useCallback(() => {
+    if (!undo) return;
+    const completionId = undo.completionId;
+    setUndo(null);
+    uncompleteMutation.mutate(completionId);
+  }, [undo, uncompleteMutation]);
+
+  useEffect(() => {
+    if (!undo || celebration) return;
+    const timer = window.setTimeout(() => setUndo(null), UNDO_TOAST_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [undo, celebration]);
 
   const [claimedRewardId, setClaimedRewardId] = useState<string | null>(null);
   const [selectedRewardChildId, setSelectedRewardChildId] = useState<string | null>(null);
@@ -946,83 +1029,60 @@ export default function FamilyPage() {
       <div className="flex h-full flex-col">
         {/* page header */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("family.yourTasks")}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("family.title")}</h1>
           <div className="flex flex-wrap items-center gap-3">
             {view === "tasks" && children.length > 0 ? (
-              <label className="flex h-10 w-56 items-center gap-2 rounded-full bg-white px-3 shadow-sm ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
-                <Search className="h-4 w-4 text-gray-400" aria-hidden />
+              <label className="flex h-11 w-56 items-center gap-2 rounded-full bg-white px-4 shadow-sm ring-1 ring-black/5 dark:bg-[#1b1a21] dark:ring-white/10">
+                <Search className="h-4 w-4 text-gray-600 dark:text-gray-300" aria-hidden />
                 <input
                   type="search"
                   value={taskQuery}
                   onChange={(e) => setTaskQuery(e.target.value)}
                   placeholder={t("family.searchPlaceholder")}
-                  className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 outline-none dark:text-white"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-600 outline-none dark:text-white dark:placeholder-gray-300"
                   aria-label={t("family.searchPlaceholder")}
                 />
               </label>
             ) : null}
-            <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
-              <button
-                onClick={() => setView("tasks")}
-                className={cn(
-                  "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
-                  view === "tasks"
-                    ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400"
-                )}
-              >
-                <ListTodo className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setView("scoreboard")}
-                className={cn(
-                  "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
-                  view === "scoreboard"
-                    ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400"
-                )}
-              >
-                <Trophy className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setView("rewards")}
-                className={cn(
-                  "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
-                  view === "rewards"
-                    ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400"
-                )}
-              >
-                <Gift className="h-4 w-4" />
-              </button>
-              {view === "tasks" && (
+            <div className="flex gap-0.5 rounded-full bg-gray-100 p-0.5 dark:bg-white/[0.06]" role="tablist">
+              {([
+                ["tasks", ListTodo, t("family.chores")],
+                ["scoreboard", Trophy, t("family.scoreboard")],
+                ["rewards", Gift, t("family.rewards")],
+              ] as const).map(([id, Icon, label]) => (
                 <button
-                  onClick={() => setShowCompleted((v) => !v)}
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === id}
+                  onClick={() => setView(id)}
                   className={cn(
-                    "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
-                    showCompleted
-                      ? "text-gray-500 dark:text-gray-400"
-                      : "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                    "flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors",
+                    view === id
+                      ? "bg-white text-gray-900 shadow-sm dark:bg-[#8357be] dark:text-white"
+                      : "text-gray-700 dark:text-gray-300",
                   )}
-                  title={showCompleted ? t("family.hideCompletedChores") : t("family.showCompletedChores")}
                 >
-                  {showCompleted ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  <Icon className="h-4 w-4" aria-hidden />
+                  {label}
                 </button>
-              )}
+              ))}
             </div>
           {view === "tasks" && (
             editOpen ? (
               <button
+                type="button"
                 onClick={() => setEditOpen(false)}
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+                className="flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 hover:bg-white dark:text-white dark:ring-white/20 dark:hover:bg-white/5"
               >
                 {t("family.done")}
               </button>
             ) : getEditModeAllowed() ? (
               <>
                 <button
+                  type="button"
                   onClick={openEditWithPasscode}
-                  className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+                  className="flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 hover:bg-white dark:text-white dark:ring-white/20 dark:hover:bg-white/5"
                 >
                   {t("family.edit")}
                 </button>
@@ -1053,8 +1113,8 @@ export default function FamilyPage() {
                       />
                       {passcodeError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{passcodeError}</p>}
                       <div className="mt-4 flex justify-end gap-2">
-                        <button type="button" onClick={() => { setPasscodeModalOpen(false); setPasscodeError(null); setPasscodeInput(""); }} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10">{t("editPanel.close")}</button>
-                        <button type="button" onClick={() => { if (checkEditModePasscode(passcodeInput)) { setEditOpen(true); setPasscodeModalOpen(false); setPasscodeInput(""); setPasscodeError(null); } else setPasscodeError(t("settings.dashboard.wrongPasscode")); }} className="rounded-lg px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">{t("settings.dashboard.unlock")}</button>
+                        <button type="button" onClick={() => { setPasscodeModalOpen(false); setPasscodeError(null); setPasscodeInput(""); }} className="inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10">{t("editPanel.close")}</button>
+                        <button type="button" onClick={() => { if (checkEditModePasscode(passcodeInput)) { setEditOpen(true); setPasscodeModalOpen(false); setPasscodeInput(""); setPasscodeError(null); } else setPasscodeError(t("settings.dashboard.wrongPasscode")); }} className="inline-flex h-11 items-center rounded-full bg-brand px-4 text-sm font-semibold text-white hover:opacity-90 dark:bg-[#8357be]">{t("settings.dashboard.unlock")}</button>
                       </div>
                     </div>
                   </div>,
@@ -1078,7 +1138,7 @@ export default function FamilyPage() {
           const activeChildId = selectedRewardChildId ?? children[0]?.id ?? null;
           const activeChild = children.find((c) => c.id === activeChildId) ?? null;
           const bal = activeChildId ? balanceMap.get(activeChildId) : null;
-          const balance = bal?.balance ?? 0;
+          const balance = clampPointsBalance(bal?.balance ?? 0, 0);
           return (
             <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 flex flex-col gap-4">
               {/* child selector with balances */}
@@ -1086,14 +1146,14 @@ export default function FamilyPage() {
                 <div className="flex flex-wrap gap-2">
                   {children.map((child) => {
                     const childBal = balanceMap.get(child.id);
-                    const childBalance = childBal?.balance ?? 0;
+                    const childBalance = clampPointsBalance(childBal?.balance ?? 0, 0);
                     const isActive = child.id === activeChildId;
                     return (
                       <button
                         key={child.id}
                         onClick={() => setSelectedRewardChildId(child.id)}
                         className={cn(
-                          "flex items-center gap-2 rounded-2xl px-4 py-2.5 transition-all",
+                          "flex min-h-11 items-center gap-2 rounded-2xl px-4 py-2 transition-all",
                           isActive
                             ? "shadow-sm"
                             : "bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10"
@@ -1105,7 +1165,7 @@ export default function FamilyPage() {
                           <span className={cn("text-sm font-semibold leading-tight", isActive ? "text-white" : "text-gray-800 dark:text-white")}>
                             {child.name}
                           </span>
-                          <span className={cn("text-xs leading-tight", isActive ? "text-white/80" : "text-gray-400")}>
+                          <span className={cn("text-xs leading-tight", isActive ? "text-white/80" : "text-gray-600 dark:text-gray-300")}>
                             {childBalance} pt
                           </span>
                         </div>
@@ -1119,8 +1179,8 @@ export default function FamilyPage() {
               {rewards.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                   <Gift className="h-12 w-12 text-gray-300" />
-                  <p className="text-gray-500 dark:text-gray-400">{t("family.rewards.noRewards")}</p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500">{t("family.rewards.addRewards")}</p>
+                  <p className="text-gray-600 dark:text-gray-300">{t("family.rewards.noRewards")}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{t("family.rewards.addRewards")}</p>
                 </div>
               ) : activeChild && (
                 <div className="flex flex-col gap-2">
@@ -1147,7 +1207,7 @@ export default function FamilyPage() {
                           disabled={!canAfford || claimMutation.isPending}
                           onClick={() => claimMutation.mutate({ rewardId: reward.id, childId: activeChild.id })}
                           className={cn(
-                            "shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                            "inline-flex h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold transition-all",
                             justClaimed
                               ? "bg-green-500 text-white"
                               : canAfford
@@ -1169,7 +1229,7 @@ export default function FamilyPage() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-red-500 dark:text-red-400">{t("family.givePenalty")}</p>
                   <div className="flex gap-2">
                     <div className="flex flex-col gap-1 flex-1">
-                      <label className="text-xs text-gray-500 dark:text-gray-400">{t("family.reasonOptional")}</label>
+                      <label className="text-sm text-gray-600 dark:text-gray-300">{t("family.reasonOptional")}</label>
                       <input
                         className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm dark:text-white"
                         placeholder={t("family.penaltyReasonPlaceholder")}
@@ -1178,7 +1238,7 @@ export default function FamilyPage() {
                       />
                     </div>
                     <div className="flex flex-col gap-1 w-20">
-                      <label className="text-xs text-gray-500 dark:text-gray-400">{t("family.chorePoints")}</label>
+                      <label className="text-sm text-gray-600 dark:text-gray-300">{t("family.chorePoints")}</label>
                       <input
                         type="number"
                         min={1}
@@ -1218,10 +1278,22 @@ export default function FamilyPage() {
 
             {/* empty state */}
             {!isLoading && children.length === 0 && (
-              <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
-                <ListTodo className="h-12 w-12 text-gray-300" />
-                <p className="text-gray-500 dark:text-gray-400">{t("family.noChildren")}</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t("family.addChildren")}</p>
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F4F2FA] dark:bg-white/[0.06]">
+                  <ListTodo className="h-7 w-7 text-brand dark:text-[#c4b5fd]" />
+                </span>
+                <p className="text-base font-semibold text-gray-900 dark:text-white">{t("familyX.emptyTitle")}</p>
+                <p className="max-w-sm text-sm text-gray-600 dark:text-gray-300">{t("familyX.emptyBody")}</p>
+                {getEditModeAllowed() ? (
+                  <button
+                    type="button"
+                    onClick={openEditWithPasscode}
+                    className="mt-3 flex h-11 items-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-white hover:opacity-90 dark:bg-[#8357be]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t("family.addChild")}
+                  </button>
+                ) : null}
               </div>
             )}
 
@@ -1233,7 +1305,7 @@ export default function FamilyPage() {
                     key={child.id}
                     onClick={() => setActiveChildIndex(i)}
                     className={cn(
-                      "flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                      "flex h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors",
                       activeChildIndex === i
                         ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                         : "bg-white text-gray-600 shadow-sm ring-1 ring-black/5 hover:bg-gray-50 dark:bg-white/5 dark:text-gray-300 dark:ring-white/10"
@@ -1258,8 +1330,7 @@ export default function FamilyPage() {
                       key={children[activeChildIndex].id}
                       child={children[activeChildIndex]}
                       streak={streakMap.get(children[activeChildIndex].id) ?? 0}
-                      balance={balanceMap.get(children[activeChildIndex].id)?.balance ?? children[activeChildIndex].weekPoints}
-                      showCompleted={showCompleted}
+                      balance={clampPointsBalance(balanceMap.get(children[activeChildIndex].id)?.balance ?? children[activeChildIndex].weekPoints, 0)}
                       query={taskQuery}
                       onComplete={handleComplete}
                       onUncomplete={handleUncomplete}
@@ -1272,8 +1343,7 @@ export default function FamilyPage() {
                       key={child.id}
                       child={child}
                       streak={streakMap.get(child.id) ?? 0}
-                      balance={balanceMap.get(child.id)?.balance ?? child.weekPoints}
-                      showCompleted={showCompleted}
+                      balance={clampPointsBalance(balanceMap.get(child.id)?.balance ?? child.weekPoints, 0)}
                       query={taskQuery}
                       onComplete={handleComplete}
                       onUncomplete={handleUncomplete}
@@ -1290,6 +1360,16 @@ export default function FamilyPage() {
       {/* edit panel overlay */}
       {editOpen && <EditPanel onClose={() => setEditOpen(false)} />}
       <CelebrationSheet celebration={celebration} onClose={() => setCelebration(null)} t={t} />
+      {undo && !celebration && typeof document !== "undefined"
+        ? createPortal(
+            <UndoToast
+              message={t("familyX.checked").replace("{task}", undo.title).replace("{n}", String(undo.points))}
+              actionLabel={t("dashboardPages.undo")}
+              onAction={handleUndo}
+            />,
+            document.body,
+          )
+        : null}
     </AppShell>
   );
 }

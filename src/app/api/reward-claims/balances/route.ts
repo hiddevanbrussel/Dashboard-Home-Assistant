@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { BalancesResponse } from "@/lib/chores-types";
+import { clampPointsBalance } from "@/lib/points-balance";
 import { requireApiAuth } from "@/lib/require-api-auth";
 
 function parseChildIds(raw: string | null): string[] | null {
@@ -51,7 +52,7 @@ export async function GET() {
       childId: child.id,
       earned,
       spent,
-      balance: earned - spent,
+      balance: clampPointsBalance(earned, spent),
     };
   });
 

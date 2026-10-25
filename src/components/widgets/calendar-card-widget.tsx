@@ -240,7 +240,7 @@ export function CalendarCardWidget({
           type="button"
           data-no-drag
           onClick={onMoreClick}
-          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
+          className="tile-kebab-hit absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-black/5 dark:hover:bg-white/10"
           aria-label={t("editPanel.editTile")}
         >
           <MoreVertical className="h-4 w-4" />

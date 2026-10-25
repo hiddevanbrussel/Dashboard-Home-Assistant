@@ -19,6 +19,10 @@ type EntitySelectWithSearchProps = {
   emptyOption?: string;
   className?: string;
   inputClassName?: string;
+  /** Replaces the default label classes. Omit to keep the shared control unchanged. */
+  labelClassName?: string;
+  /** Replaces the default select classes. Omit to keep the shared control unchanged. */
+  selectClassName?: string;
 };
 
 export function EntitySelectWithSearch({
@@ -31,6 +35,8 @@ export function EntitySelectWithSearch({
   emptyOption,
   className = "",
   inputClassName = "",
+  labelClassName,
+  selectClassName,
 }: EntitySelectWithSearchProps) {
   const { t } = useTranslation();
   const resolvedPlaceholder = placeholder ?? t("editPanel.searchEntity");
@@ -60,7 +66,11 @@ export function EntitySelectWithSearch({
   return (
     <div className={className}>
       {label && (
-        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+        <label
+          className={
+            labelClassName ?? "mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400"
+          }
+        >
           {label}
         </label>
       )}
@@ -74,7 +84,10 @@ export function EntitySelectWithSearch({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+        className={
+          selectClassName ??
+          "w-full rounded border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+        }
       >
         <option value="">{resolvedEmptyOption}</option>
         {filtered.map((e) => (

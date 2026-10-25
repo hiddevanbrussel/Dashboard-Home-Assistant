@@ -162,7 +162,7 @@ export function SmartStackWidget({
               e.stopPropagation();
               onMoreClick();
             }}
-            className="pointer-events-auto rounded-lg bg-black/35 p-1 text-white/80 backdrop-blur-sm hover:bg-black/50 hover:text-white dark:bg-black/50"
+            className="tile-kebab-hit pointer-events-auto rounded-lg bg-black/35 p-1 text-white/80 backdrop-blur-sm hover:bg-black/50 hover:text-white dark:bg-black/50"
             aria-label={t("common.options")}
           >
             <MoreVertical className="h-4 w-4" aria-hidden />

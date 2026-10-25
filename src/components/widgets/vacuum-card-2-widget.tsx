@@ -233,7 +233,7 @@ export function VacuumCard2Widget({
                   e.stopPropagation();
                   onMoreClick();
                 }}
-                className="ml-0.5 shrink-0 rounded-lg p-1 text-[#1B2437]/40 hover:bg-black/5 hover:text-[#1B2437]/70 dark:text-white/45 dark:hover:bg-white/10 dark:hover:text-white"
+                className="tile-kebab-hit ml-0.5 shrink-0 rounded-lg p-1 text-[#1B2437]/40 hover:bg-black/5 hover:text-[#1B2437]/70 dark:text-white/45 dark:hover:bg-white/10 dark:hover:text-white"
                 aria-label={t("common.options")}
               >
                 <MoreVertical className={cn(isDense ? "h-4 w-4" : "h-5 w-5")} aria-hidden />

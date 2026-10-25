@@ -528,7 +528,7 @@ export function ClimateCard2Widget({
                     e.stopPropagation();
                     onMoreClick();
                   }}
-                  className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="tile-kebab-hit rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
                   aria-label={t("climateCard.moreOptions")}
                 >
                   <MoreVertical className="h-4 w-4" aria-hidden />
@@ -686,7 +686,7 @@ export function ClimateCard2Widget({
                     e.stopPropagation();
                     onMoreClick();
                   }}
-                  className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="tile-kebab-hit rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
                   aria-label={t("climateCard.moreOptions")}
                 >
                   <MoreVertical className={cn(isDense ? "h-4 w-4" : "h-5 w-5")} aria-hidden />

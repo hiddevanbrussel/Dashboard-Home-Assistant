@@ -1,11 +1,45 @@
 # Changelog
 
+## [0.5.5] - 2026-10-25
+
+No breaking changes: existing configs, dashboards and localStorage keep working.
+
+### Added
+
+- Every tile has a tile menu in edit mode (⋮ → Edit tile, Duplicate tile, Remove tile). A duplicate lands on the first free spot with "(copy)" after its name; removing can be undone for 5 seconds and the tile comes back in the same place (#309).
+
+### Changed
+
+- The ⋮ button on every tile has a 44px touch area, without changing how it looks (#308).
+
+### Fixed
+
+- Icon buttons in the room panel are read out by name instead of the icon's code name (#307).
+- Glass effect Off now also turns off the blur on tiles that set their own blur (#307).
+
+## [0.5.4] - 2026-10-24
+
+No breaking changes: existing configs, dashboards and localStorage keep working.
+
+### Added
+
+- Tasks v2 on the family page: task cards one per row in portrait and two in landscape, ticking off with a 5-second undo, a celebration when all of today's tasks are done, and a points balance that never goes below zero (#298, #304).
+- Rooms page v1: room tiles with temperature and humidity, floor tabs with counts, one room panel for name, floor, background, icon, colour and sensors, deleting with a 5-second undo, and linking a dashboard room tile from a list (#299).
+- Tiles no longer overlap in portrait: portrait and landscape keep their own tile positions. Landscape stays exactly as it was; portrait is laid out once and tiles are pushed apart when you tap Done or rotate (#296).
+
+### Fixed
+
+- The undo message is no longer cut off in portrait (#298, #304).
+- Weekly tasks no longer trigger the "all done today" celebration (#298, #304).
+- Stat pills pinned to the top bar keep their positions in both orientations and take no space in portrait (#296).
+
 ## [0.5.3] - 2026-10-24
 
 No breaking changes: existing configs, dashboards and localStorage keep working.
 
 ### Added
 
+- Add tile, phase 1: a new tile lands on the first free spot on screen (never behind the sidebar) and glows for 4 seconds with an undo toast. Each step of the add dialog goes back with the back button or Escape, touch targets are 44px, and the list stays above the on-screen keyboard (#290).
 - Stat pills can be pinned to the top bar from a new tile menu in edit mode (⋮ → Move to top bar), and moved back to the grid. Up to 4 per dashboard or room; in portrait the bar shows one pill plus a "+N" chip (#301).
 - An empty dashboard or room page explains itself and offers one Add tile button. Home without a dashboard shows a translated welcome card (#302).
 
@@ -14,6 +48,15 @@ No breaking changes: existing configs, dashboards and localStorage keep working.
 - The top-bar clock shows hours and minutes only, in the app language, and updates once a minute (#302).
 - The top-bar temperature can only be tapped in edit mode, where it opens the weather picker. In normal use it is plain text (#302).
 - Top-bar buttons and the weather picker's close button have 44px touch targets, without changing the bar height (#302).
+- Dutch copy calls tiles "Tegel" everywhere: add, edit, name, remove, duplicate and move to another room. English is unchanged (#293).
+
+### Fixed
+
+- Chores: between 00:00 and 02:00 "today" still counted as yesterday. The chores card now follows the local calendar day (#297).
+
+### Security
+
+- The Music Assistant proxy only forwards the commands the dashboard itself uses; admin commands such as `config/*` are refused with 403, and rejected commands are logged without tokens (#295).
 
 ## [0.5.2] - 2026-10-22
 

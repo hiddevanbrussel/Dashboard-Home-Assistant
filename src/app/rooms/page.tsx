@@ -1,1006 +1,564 @@
 "use client";
 
-import { cssUrl } from "@/lib/base-path";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Check, DoorOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
-import { Check, DoorOpen, Image as ImageIcon, Pencil, Plus, X } from "lucide-react";
+import { RoomPanel, type PanelRoom } from "@/components/rooms/room-panel";
+import { RoomTile } from "@/components/rooms/room-tile";
+import { UndoToast, UNDO_TOAST_DURATION_MS } from "@/components/undo-toast";
 import { useTranslation } from "@/hooks/use-translation";
+import { floorLabelKey, groupRoomsByFloor } from "@/lib/room-catalog";
+import {
+  clearRoomDeleteHandoff,
+  readRoomDeleteHandoff,
+  stepRoomList,
+  visibleRooms,
+  type RoomDeleteHandoff,
+  type RoomListAction,
+  type RoomListEffect,
+  type RoomListState,
+} from "@/lib/room-removal";
 import { cn } from "@/lib/utils";
-import { CARD_ICONS } from "@/components/widgets/card-icons";
-import { RoomPreviewCard } from "@/components/widgets/room-preview-card";
-import { EntitySelectWithSearch } from "@/components/entity-select-with-search";
-import { checkEditModePasscode, getEditModeAllowed, getEditModePasscode } from "@/stores/dashboard-settings-store";
+import {
+  checkEditModePasscode,
+  getEditModeAllowed,
+  getEditModePasscode,
+} from "@/stores/dashboard-settings-store";
 
-const ROOM_ICON_OPTIONS = ["trees", "popcorn", "utensils-crossed", "towel-rack", "baby", "rocket", "gamepad", "tent-tree", "footprints", "eye-closed", "drill", "shelving-unit", "tool-case"] as const;
+type RoomItem = PanelRoom & { createdAt: string };
 
-type RoomItem = { areaId: string; name: string; icon?: string | null; iconBackgroundColor?: string | null; floor?: string | null; background?: string | null; temperatureEntityId?: string | null; humidityEntityId?: string | null; createdAt: string };
+const EMPTY_LIST: RoomListState<RoomItem> = { rooms: [], pending: null, deleting: [] };
 
-/** Floor options for create form. Value is stored; order is for display. */
-const FLOOR_OPTIONS = [
-  { value: "", labelKey: "rooms.floorOther" as const },
-  { value: "Kelder", labelKey: "rooms.floorBasement" as const },
-  { value: "Begane grond", labelKey: "rooms.floorGround" as const },
-  { value: "1e verdieping", labelKey: "rooms.floor1st" as const },
-  { value: "2e verdieping", labelKey: "rooms.floor2nd" as const },
-  { value: "3e verdieping", labelKey: "rooms.floor3rd" as const },
-  { value: "Zolder", labelKey: "rooms.floorAttic" as const },
-] as const;
+let handoffOwners = 0;
+let stagedHandoff: RoomDeleteHandoff | null | undefined;
 
-/** Order for grouping floors. Earlier = higher in list. Unknown floors go last. */
-const FLOOR_ORDER = ["Kelder", "Begane grond", "1e verdieping", "2e verdieping", "3e verdieping", "Zolder"];
-
-function groupRoomsByFloor(rooms: RoomItem[]): { floor: string; rooms: RoomItem[] }[] {
-  const byFloor = new Map<string, RoomItem[]>();
-  for (const r of rooms) {
-    const key = r.floor?.trim() || "";
-    if (!byFloor.has(key)) byFloor.set(key, []);
-    byFloor.get(key)!.push(r);
+function consumeHandoff(): RoomDeleteHandoff | null {
+  if (stagedHandoff === undefined) {
+    stagedHandoff = readRoomDeleteHandoff(window.sessionStorage);
+    if (stagedHandoff) clearRoomDeleteHandoff(window.sessionStorage);
   }
-  const result: { floor: string; rooms: RoomItem[] }[] = [];
-  for (const f of FLOOR_ORDER) {
-    if (byFloor.has(f)) {
-      result.push({ floor: f, rooms: byFloor.get(f)! });
-      byFloor.delete(f);
-    }
-  }
-  byFloor.forEach((rooms, floor) => {
-    result.push({ floor, rooms });
-  });
-  return result;
+  return stagedHandoff;
+}
+
+function releaseHandoff() {
+  stagedHandoff = undefined;
+}
+
+function placeholderRoom(areaId: string, name: string): RoomItem {
+  return {
+    areaId,
+    name,
+    icon: null,
+    iconBackgroundColor: null,
+    floor: null,
+    background: null,
+    temperatureEntityId: null,
+    humidityEntityId: null,
+    createdAt: "",
+  };
 }
 
 export default function RoomsPage() {
   const { t } = useTranslation();
-  const [rooms, setRooms] = useState<RoomItem[]>([]);
+  const [list, setList] = useState<RoomListState<RoomItem>>(EMPTY_LIST);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newId, setNewId] = useState("");
-  const [newIcon, setNewIcon] = useState<string>(ROOM_ICON_OPTIONS[0]);
-  const [newIconBackgroundColor, setNewIconBackgroundColor] = useState<string>("#3B82F6");
-  const [newFloor, setNewFloor] = useState<string>("");
-  const [newCustomFloor, setNewCustomFloor] = useState("");
-  const [newBackgroundFile, setNewBackgroundFile] = useState<File | null>(null);
-  const [newBackgroundPreview, setNewBackgroundPreview] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingRoom, setEditingRoom] = useState<RoomItem | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editIcon, setEditIcon] = useState<string>(ROOM_ICON_OPTIONS[0]);
-  const [editIconBackgroundColor, setEditIconBackgroundColor] = useState<string>("#3B82F6");
-  const [editBackgroundFile, setEditBackgroundFile] = useState<File | null>(null);
-  const [editBackgroundPreview, setEditBackgroundPreview] = useState<string | null>(null);
-  const [editFloor, setEditFloor] = useState("");
-  const [editCustomFloor, setEditCustomFloor] = useState("");
-  const [editTemperatureEntityId, setEditTemperatureEntityId] = useState("");
-  const [editHumidityEntityId, setEditHumidityEntityId] = useState("");
-  const [editEntities, setEditEntities] = useState<{ entity_id: string; attributes?: Record<string, unknown> }[]>([]);
-  const [updating, setUpdating] = useState(false);
-  const [updateError, setUpdateError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [editPasscodeModalOpen, setEditPasscodeModalOpen] = useState(false);
-  const [editPasscodeInput, setEditPasscodeInput] = useState("");
-  const [editPasscodeError, setEditPasscodeError] = useState<string | null>(null);
+  const [panel, setPanel] = useState<{ mode: "add" | "edit"; room?: RoomItem } | null>(null);
+  const [menu, setMenu] = useState<{ room: RoomItem; top: number; left: number } | null>(null);
+  const [undoMs, setUndoMs] = useState(UNDO_TOAST_DURATION_MS);
   const [floorIndex, setFloorIndex] = useState(0);
-  const [pendingFloor, setPendingFloor] = useState<string | null>(null);
-  const floorScrollerRef = useRef<HTMLDivElement>(null);
-  const floorDragRef = useRef<{
-    id: number;
-    x: number;
-    left: number;
-    claimed: boolean;
-  } | null>(null);
-  const floorDragClaimedRef = useRef(false);
+  const [passOpen, setPassOpen] = useState(false);
+  const [pass, setPass] = useState("");
+  const [passError, setPassError] = useState<string | null>(null);
+  const listRef = useRef(list);
+  const commitRef = useRef<() => void>(() => {});
+  const runEffectsRef = useRef<(effects: RoomListEffect[]) => void>(() => {});
+  const afterPass = useRef<(() => void) | null>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const pendingFloor = useRef<string | null>(null);
+  listRef.current = list;
+
+  const dispatch = useCallback((action: RoomListAction<RoomItem>) => {
+    const result = stepRoomList(listRef.current, action);
+    listRef.current = result.state;
+    setList(result.state);
+    return result.effects;
+  }, []);
+
+  const settleDelete = useCallback(
+    async (areaId: string) => {
+      try {
+        await fetch(`/api/room-dashboards/${encodeURIComponent(areaId)}`, { method: "DELETE" });
+      } catch {
+        // The reload below shows the room again when the server still has it.
+      }
+      try {
+        const response = await fetch("/api/room-dashboards");
+        if (!response.ok) throw new Error("load");
+        const data: unknown = await response.json();
+        dispatch({
+          type: "settled",
+          areaId,
+          rooms: Array.isArray(data) ? (data as RoomItem[]) : [],
+        });
+        setError(null);
+      } catch {
+        dispatch({ type: "settled", areaId, rooms: listRef.current.rooms });
+        setError(t("rooms.loadError"));
+      }
+    },
+    [dispatch, t]
+  );
+
+  const runEffects = useCallback(
+    (effects: RoomListEffect[]) => {
+      for (const effect of effects) {
+        switch (effect.type) {
+          case "delete":
+            void settleDelete(effect.areaId);
+            break;
+          default: {
+            const exhaustive: never = effect.type;
+            void exhaustive;
+          }
+        }
+      }
+    },
+    [settleDelete]
+  );
+  runEffectsRef.current = runEffects;
+
+  const load = useCallback(() => {
+    setLoading(true);
+    fetch("/api/room-dashboards")
+      .then((response) => {
+        if (!response.ok) throw new Error("load");
+        return response.json();
+      })
+      .then((data: unknown) => {
+        dispatch({ type: "loaded", rooms: Array.isArray(data) ? (data as RoomItem[]) : [] });
+        setError(null);
+      })
+      .catch(() => setError(t("rooms.loadError")))
+      .finally(() => setLoading(false));
+  }, [dispatch, t]);
 
   useEffect(() => {
-    if (!editModalOpen) return;
-    fetch("/api/ha/entities")
-      .then((r) => r.json())
-      .then((data) => (Array.isArray(data) ? setEditEntities(data) : setEditEntities([])))
-      .catch(() => setEditEntities([]));
-  }, [editModalOpen]);
+    load();
+  }, [load]);
 
-  const loadRooms = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    fetch("/api/room-dashboards")
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to load rooms");
-        return r.json();
-      })
-      .then((data: RoomItem[]) => {
-        setRooms(Array.isArray(data) ? data : []);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Something went wrong"))
-      .finally(() => setLoading(false));
+  useEffect(() => {
+    handoffOwners += 1;
+    const handoff = consumeHandoff();
+    if (handoff) {
+      const effects = dispatch({
+        type: "remove",
+        room: placeholderRoom(handoff.areaId, handoff.name),
+      });
+      runEffectsRef.current(effects);
+      const remaining = handoff.commitAt - Date.now();
+      if (remaining <= 0) {
+        runEffectsRef.current(dispatch({ type: "commit" }));
+      } else {
+        setUndoMs(remaining);
+      }
+    }
+    return () => {
+      handoffOwners -= 1;
+      window.setTimeout(() => {
+        if (handoffOwners === 0) releaseHandoff();
+      }, 0);
+    };
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!list.pending) return;
+    const timer = window.setTimeout(() => commitRef.current(), undoMs);
+    return () => window.clearTimeout(timer);
+    // The timer restarts only when the pending room changes. A new object for the same room must not reset the 5s window.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list.pending?.areaId, undoMs]);
+
+  const rooms = visibleRooms(list);
+  const floors = groupRoomsByFloor(rooms);
+  const active = floors.length === 0 ? 0 : Math.min(floorIndex, floors.length - 1);
+
+  const goTo = useCallback((index: number) => {
+    setFloorIndex(index);
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    scroller.scrollTo({ left: index * scroller.clientWidth, behavior: "smooth" });
   }, []);
 
   useEffect(() => {
-    loadRooms();
-  }, [loadRooms]);
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setCreateError(null);
-    setCreating(true);
-    try {
-      let backgroundUrl: string | undefined;
-      if (newBackgroundFile) {
-        const formData = new FormData();
-        formData.set("file", newBackgroundFile);
-        const upRes = await fetch("/api/upload", { method: "POST", body: formData });
-        const upJson = await upRes.json();
-        if (!upRes.ok) throw new Error(upJson?.error ?? "Upload failed");
-        backgroundUrl = upJson.url;
-      }
-      const res = await fetch("/api/room-dashboards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newName.trim(),
-          id: newId.trim() || undefined,
-          icon: newIcon || undefined,
-          iconBackgroundColor: newIconBackgroundColor || undefined,
-          floor: newFloor.trim()
-            ? newFloor.trim()
-            : newCustomFloor.trim() || undefined,
-          background: backgroundUrl,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setCreateError(data?.error ?? "Failed to create room");
-        return;
-      }
-      const createdFloor = newFloor.trim()
-        ? newFloor.trim()
-        : newCustomFloor.trim() || "";
-      setAddModalOpen(false);
-      setNewName("");
-      setNewId("");
-      setNewIcon(ROOM_ICON_OPTIONS[0]);
-      setNewIconBackgroundColor("#3B82F6");
-      setNewFloor("");
-      setNewCustomFloor("");
-      setNewBackgroundFile(null);
-      setNewBackgroundPreview(null);
-      setPendingFloor(createdFloor);
-      loadRooms();
-    } catch {
-      setCreateError(t("rooms.genericError"));
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  function openEditModal(r: RoomItem) {
-    setEditingRoom(r);
-    setEditName(r.name);
-    setEditIcon((r.icon as string) || ROOM_ICON_OPTIONS[0]);
-    setEditIconBackgroundColor((r.iconBackgroundColor as string) || "#3B82F6");
-    setEditBackgroundFile(null);
-    setEditBackgroundPreview(r.background || null);
-    const isPreset = FLOOR_ORDER.includes(r.floor || "");
-    setEditFloor(isPreset ? (r.floor || "") : "");
-    setEditCustomFloor(isPreset ? "" : (r.floor || ""));
-    setEditTemperatureEntityId(r.temperatureEntityId ?? "");
-    setEditHumidityEntityId(r.humidityEntityId ?? "");
-    setUpdateError(null);
-    setEditModalOpen(true);
-  }
-
-  async function handleUpdate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editingRoom) return;
-    setUpdateError(null);
-    setUpdating(true);
-    try {
-      let backgroundUrl: string | null | undefined;
-      if (editBackgroundFile) {
-        const formData = new FormData();
-        formData.set("file", editBackgroundFile);
-        const upRes = await fetch("/api/upload", { method: "POST", body: formData });
-        const upJson = await upRes.json();
-        if (!upRes.ok) throw new Error(upJson?.error ?? "Upload failed");
-        backgroundUrl = upJson.url;
-      } else {
-        backgroundUrl = editBackgroundPreview ?? null;
-      }
-      const floorValue = editFloor.trim()
-        ? editFloor.trim()
-        : editCustomFloor.trim() || undefined;
-      const res = await fetch(`/api/room-dashboards/${encodeURIComponent(editingRoom.areaId)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editName.trim(),
-          icon: editIcon || undefined,
-          iconBackgroundColor: editIconBackgroundColor || undefined,
-          floor: floorValue,
-          background: backgroundUrl,
-          temperatureEntityId: editTemperatureEntityId.trim() || null,
-          humidityEntityId: editHumidityEntityId.trim() || null,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setUpdateError(data?.error ?? "Failed to update room");
-        return;
-      }
-      setEditModalOpen(false);
-      setEditingRoom(null);
-      setEditBackgroundFile(null);
-      setEditBackgroundPreview(null);
-      setPendingFloor(floorValue ?? "");
-      loadRooms();
-    } catch {
-      setUpdateError(t("rooms.genericError"));
-    } finally {
-      setUpdating(false);
-    }
-  }
-
-  async function handleDelete(areaId: string, e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm(t("rooms.deleteConfirm"))) return;
-    try {
-      await fetch(`/api/room-dashboards/${encodeURIComponent(areaId)}`, {
-        method: "DELETE",
-      });
-      loadRooms();
-    } catch {
-      // ignore
-    }
-  }
-
-  const floorsWithRooms = groupRoomsByFloor(rooms);
-  const getFloorLabel = (floor: string) => {
-    if (!floor) return t("rooms.floorOther");
-    const opt = FLOOR_OPTIONS.find((o) => o.value === floor);
-    return opt ? t(opt.labelKey) : floor;
-  };
-  const floorTabs = floorsWithRooms.map(({ floor }) => ({
-    key: floor || "_",
-    label: getFloorLabel(floor || ""),
-    floor: floor || "",
-  }));
-  const activeFloorIndex = Math.max(0, Math.min(floorIndex, Math.max(0, floorsWithRooms.length - 1)));
-  const activeFloor = floorsWithRooms[activeFloorIndex]?.floor ?? "";
-
-  const goToFloor = useCallback((index: number, behavior: ScrollBehavior = "smooth") => {
-    const max = Math.max(0, floorsWithRooms.length - 1);
-    const clamped = Math.max(0, Math.min(max, index));
-    setFloorIndex(clamped);
-    const root = floorScrollerRef.current;
-    if (!root) return;
-    root.scrollTo({ left: clamped * root.clientWidth, behavior });
-  }, [floorsWithRooms.length]);
+    if (floorIndex !== active) setFloorIndex(active);
+  }, [active, floorIndex]);
 
   useEffect(() => {
-    if (floorIndex !== activeFloorIndex) setFloorIndex(activeFloorIndex);
-  }, [activeFloorIndex, floorIndex]);
+    const target = pendingFloor.current;
+    if (target == null || loading) return;
+    const index = groupRoomsByFloor(visibleRooms(list)).findIndex((group) => group.floor === target);
+    pendingFloor.current = null;
+    if (index >= 0) goTo(index);
+  }, [list, loading, goTo]);
 
   useEffect(() => {
-    if (pendingFloor == null || floorsWithRooms.length === 0) return;
-    const i = floorsWithRooms.findIndex(({ floor }) => (floor || "") === pendingFloor);
-    if (i >= 0) goToFloor(i, "auto");
-    setPendingFloor(null);
-  }, [floorsWithRooms, goToFloor, pendingFloor]);
-
-  useEffect(() => {
-    const root = floorScrollerRef.current;
-    if (!root) return;
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
     const onResize = () => {
-      root.scrollTo({ left: activeFloorIndex * root.clientWidth, behavior: "auto" });
+      scroller.scrollTo({ left: active * scroller.clientWidth, behavior: "auto" });
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [activeFloorIndex]);
+  }, [active]);
 
-  const openAddModal = () => {
-    setAddModalOpen(true);
-    setCreateError(null);
-    setNewName("");
-    setNewId("");
-    setNewIcon(ROOM_ICON_OPTIONS[0]);
-    setNewIconBackgroundColor("#3B82F6");
-    const isPreset = FLOOR_ORDER.includes(activeFloor);
-    setNewFloor(isPreset ? activeFloor : "");
-    setNewCustomFloor(isPreset ? "" : activeFloor);
-    setNewBackgroundFile(null);
-    setNewBackgroundPreview(null);
-  };
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenu(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menu]);
 
-  function requestEditMode() {
-    const passcode = getEditModePasscode().trim();
-    if (passcode) {
-      setEditPasscodeInput("");
-      setEditPasscodeError(null);
-      setEditPasscodeModalOpen(true);
+  function floorLabel(floor: string) {
+    const key = floorLabelKey(floor);
+    return key ? t(key) : floor || t("rooms.floorOther");
+  }
+
+  function withEdit(after?: () => void) {
+    if (!getEditModeAllowed()) return;
+    if (editMode) {
+      after?.();
+      return;
+    }
+    if (getEditModePasscode().trim()) {
+      afterPass.current = after ?? null;
+      setPass("");
+      setPassError(null);
+      setPassOpen(true);
       return;
     }
     setEditMode(true);
+    after?.();
   }
 
-  return (
-    <AppShell
-      activeTab="/rooms"
-      contentNoScroll
-      headerEndAction={
-        editMode ? (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={openAddModal}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-white shadow-sm transition-opacity hover:opacity-90"
-              aria-label={t("rooms.addRoom")}
-            >
-              <Plus className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditMode(false)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-white/10 dark:text-gray-200 dark:hover:bg-white/20"
-              aria-label={t("editPanel.doneEditing")}
-            >
-              <Check className="h-5 w-5" />
-            </button>
-          </div>
-        ) : getEditModeAllowed() ? (
-          <button
-            type="button"
-            onClick={requestEditMode}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-white shadow-sm transition-opacity hover:opacity-90"
-            aria-label={t("editPanel.editDashboard")}
-          >
-            <Pencil className="h-5 w-5" />
-          </button>
-        ) : undefined
-      }
+  function requestDelete(room: RoomItem) {
+    setMenu(null);
+    setPanel(null);
+    setUndoMs(UNDO_TOAST_DURATION_MS);
+    runEffects(dispatch({ type: "remove", room }));
+  }
+
+  function undoDelete() {
+    dispatch({ type: "undo" });
+  }
+
+  commitRef.current = () => {
+    runEffects(dispatch({ type: "commit" }));
+  };
+
+  function submitPass() {
+    if (!checkEditModePasscode(pass)) {
+      setPassError(t("settings.dashboard.wrongPasscode"));
+      return;
+    }
+    setEditMode(true);
+    setPassOpen(false);
+    const next = afterPass.current;
+    afterPass.current = null;
+    next?.();
+  }
+
+  const header = editMode ? (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setPanel({ mode: "add" })}
+        className="inline-flex h-11 items-center gap-1.5 rounded-full bg-brand px-4 text-sm font-semibold text-white dark:bg-[#8357be]"
+      >
+        <Plus className="h-5 w-5" aria-hidden />
+        {t("rooms.addRoom")}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setEditMode(false);
+          setMenu(null);
+        }}
+        className="inline-flex h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 dark:text-white dark:ring-white/25"
+      >
+        <Check className="h-5 w-5" aria-hidden />
+        {t("editPanel.done")}
+      </button>
+    </div>
+  ) : getEditModeAllowed() ? (
+    <button
+      type="button"
+      onClick={() => withEdit()}
+      className="flex h-11 w-11 items-center justify-center rounded-full bg-brand text-white dark:bg-[#8357be]"
+      aria-label={t("roomsUi.edit")}
     >
+      <Pencil className="h-5 w-5" />
+    </button>
+  ) : undefined;
+
+  return (
+    <AppShell activeTab="/rooms" contentNoScroll headerEndAction={header}>
       <div data-rooms-page className="flex min-h-0 flex-1 flex-col gap-5 px-2 md:px-4">
-        <div className="flex shrink-0 flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
-              {t("rooms.title")}
-            </h1>
-          </div>
-          {floorTabs.length > 1 && (
-            <div className="flex flex-wrap gap-0.5 rounded-full bg-black/5 p-0.5 dark:bg-white/5" role="tablist" aria-label={t("rooms.floors")}>
-              {floorTabs.map(({ key, label }, index) => (
-                <button
-                  key={key}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeFloorIndex === index}
-                  onClick={() => goToFloor(index)}
-                  className={cn(
-                    "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                    activeFloorIndex === index
-                      ? "bg-white text-gray-900 shadow-sm dark:bg-white/15 dark:text-white"
-                      : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-4">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
+            {t("rooms.title")}
+          </h1>
+          {floors.length > 1 ? (
+            <div
+              className="flex flex-wrap gap-1 rounded-full bg-black/[0.06] p-1 dark:bg-white/[0.08]"
+              role="tablist"
+              aria-label={t("rooms.floors")}
+            >
+              {floors.map(({ floor, rooms: onFloor }, index) => {
+                const selected = active === index;
+                return (
+                  <button
+                    key={floor || "_"}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => goTo(index)}
+                    className={cn(
+                      "inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold",
+                      selected
+                        ? "bg-white text-gray-900 shadow-sm dark:bg-[#8357be] dark:text-white"
+                        : "text-gray-800 dark:text-gray-100"
+                    )}
+                  >
+                    <span>{floorLabel(floor)}</span>
+                    <span className={selected ? "text-gray-700 dark:text-white" : "text-gray-700 dark:text-gray-200"}>
+                      {onFloor.length}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          )}
+          ) : null}
         </div>
 
-        {loading && (
-          <div className="flex justify-center py-12">
-            <div
-              className="h-8 w-8 animate-spin rounded-full border-2 border-accent-yellow dark:border-accent-green border-t-transparent"
-              aria-hidden
-            />
+        {loading && list.rooms.length === 0 ? (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4" aria-busy="true">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-[176px] animate-pulse rounded-3xl bg-black/[0.06] dark:bg-white/[0.06]" />
+            ))}
           </div>
-        )}
+        ) : null}
 
-        {error && !loading && (
-          <div className="rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-800 dark:text-red-200">
-            {error}
+        {error && !loading ? (
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-red-50 px-4 py-2 text-sm text-red-800 dark:bg-red-500/10 dark:text-red-200">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={load}
+              className="inline-flex h-11 items-center rounded-full px-4 font-semibold ring-1 ring-red-300 dark:ring-red-300/50"
+            >
+              {t("roomsUi.retry")}
+            </button>
           </div>
-        )}
+        ) : null}
 
-        {!loading && !error && rooms.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-3xl bg-black/[0.03] py-16 px-6 text-center dark:bg-white/5">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 text-brand dark:bg-brand/30 dark:text-white">
+        {!loading && !error && rooms.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-16 text-center ring-1 ring-black/5 dark:bg-[#1b1a21] dark:ring-white/10">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 text-brand dark:bg-[#8357be]/30 dark:text-white">
               <DoorOpen className="h-7 w-7" />
             </div>
-            <p className="text-base font-semibold tracking-tight text-gray-900 dark:text-white">
-              {t("rooms.empty")}
-            </p>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-              {t(editMode ? "rooms.emptyHint" : "rooms.emptyHintEdit")}
-            </p>
-            {editMode ? (
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">{t("rooms.empty")}</p>
+            <p className="mt-2 max-w-sm text-sm text-gray-700 dark:text-gray-200">{t("roomsUi.emptyBody")}</p>
+            {getEditModeAllowed() ? (
               <button
                 type="button"
-                onClick={openAddModal}
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90"
+                onClick={() => withEdit(() => setPanel({ mode: "add" }))}
+                className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-white dark:bg-[#8357be]"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5" aria-hidden />
                 {t("rooms.addRoom")}
               </button>
             ) : null}
           </div>
-        )}
+        ) : null}
 
-        {!loading && !error && rooms.length > 0 && (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div
-              ref={floorScrollerRef}
-              className="flex min-h-0 min-w-0 w-full flex-1 cursor-grab snap-x snap-mandatory overflow-x-auto overflow-y-hidden outline-none scrollbar-hide overscroll-x-contain touch-pan-x active:cursor-grabbing"
-              tabIndex={0}
-              onPointerDown={(e) => {
-                if (e.button !== 0) return;
-                const target = e.target as HTMLElement;
-                if (target.closest("button")) return;
-                floorDragClaimedRef.current = false;
-                floorDragRef.current = {
-                  id: e.pointerId,
-                  x: e.clientX,
-                  left: e.currentTarget.scrollLeft,
-                  claimed: false,
-                };
-              }}
-              onPointerMove={(e) => {
-                const drag = floorDragRef.current;
-                const root = e.currentTarget;
-                if (!drag || drag.id !== e.pointerId) return;
-                const dx = e.clientX - drag.x;
-                if (!drag.claimed && Math.abs(dx) < 12) return;
-                if (!drag.claimed) {
-                  drag.claimed = true;
-                  floorDragClaimedRef.current = true;
-                  root.setPointerCapture(e.pointerId);
-                }
-                root.scrollLeft = drag.left - dx;
-              }}
-              onPointerUp={(e) => {
-                const drag = floorDragRef.current;
-                floorDragRef.current = null;
-                if (!drag?.claimed) return;
-                const root = e.currentTarget;
-                if (root.clientWidth <= 0) return;
-                goToFloor(Math.round(root.scrollLeft / root.clientWidth));
-              }}
-              onPointerCancel={() => {
-                floorDragRef.current = null;
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "ArrowRight") {
-                  e.preventDefault();
-                  goToFloor(activeFloorIndex + 1);
-                } else if (e.key === "ArrowLeft") {
-                  e.preventDefault();
-                  goToFloor(activeFloorIndex - 1);
-                }
-              }}
-              onClickCapture={(e) => {
-                if (!floorDragClaimedRef.current) return;
-                floorDragClaimedRef.current = false;
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onScroll={(e) => {
-                const root = e.currentTarget;
-                if (root.clientWidth <= 0) return;
-                const next = Math.round(root.scrollLeft / root.clientWidth);
-                if (next !== floorIndex) setFloorIndex(next);
-              }}
-            >
-              {floorsWithRooms.map(({ floor, rooms: floorRooms }, index) => (
-                <section
-                  key={floor || "_"}
-                  className="box-border flex h-full w-full min-w-full shrink-0 basis-full snap-start flex-col overflow-y-auto pb-4"
-                  aria-hidden={activeFloorIndex !== index}
-                >
-                  <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/45">
-                    {getFloorLabel(floor || "")}
-                  </h3>
-                  <div className="flex flex-wrap gap-5">
-                    {floorRooms.map((r) => (
-                      <RoomPreviewCard
-                        key={r.areaId}
-                        areaId={r.areaId}
-                        name={r.name}
-                        icon={r.icon}
-                        iconBackgroundColor={r.iconBackgroundColor}
-                        background={r.background}
-                        onEdit={
-                          editMode
-                            ? (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openEditModal(r);
-                              }
-                            : undefined
-                        }
-                        onDelete={editMode ? (e) => handleDelete(r.areaId, e) : undefined}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-            {floorsWithRooms.length > 1 ? (
-              <div className="flex shrink-0 justify-center pb-1 pt-3">
-                <div className="flex items-center gap-1.5" role="tablist" aria-label={t("rooms.floors")}>
-                  {floorTabs.map(({ key, label }, index) => (
-                    <button
-                      key={key}
-                      type="button"
-                      role="tab"
-                      aria-selected={activeFloorIndex === index}
-                      aria-label={t("rooms.floorN")
-                        .replace("{floor}", label)
-                        .replace("{n}", String(index + 1))
-                        .replace("{total}", String(floorTabs.length))}
-                      onClick={() => goToFloor(index)}
-                      className={cn(
-                        "h-2 rounded-full transition-all duration-300",
-                        activeFloorIndex === index
-                          ? "w-5 bg-brand"
-                          : "w-2 bg-black/25 hover:bg-black/40 dark:bg-white/35 dark:hover:bg-white/55"
-                      )}
+        {rooms.length > 0 ? (
+          <div
+            ref={scrollerRef}
+            className="flex min-h-0 w-full flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden scrollbar-hide overscroll-x-contain"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowRight") {
+                event.preventDefault();
+                goTo(active + 1);
+              } else if (event.key === "ArrowLeft") {
+                event.preventDefault();
+                goTo(active - 1);
+              }
+            }}
+            onScroll={(event) => {
+              const scroller = event.currentTarget;
+              if (scroller.clientWidth <= 0) return;
+              const next = Math.round(scroller.scrollLeft / scroller.clientWidth);
+              if (next !== floorIndex) setFloorIndex(next);
+            }}
+          >
+            {floors.map(({ floor, rooms: onFloor }, index) => (
+              <section
+                key={floor || "_"}
+                aria-hidden={active !== index}
+                className="box-border h-full w-full min-w-full shrink-0 snap-start overflow-y-auto pb-24"
+              >
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+                  {onFloor.map((room) => (
+                    <RoomTile
+                      key={room.areaId}
+                      room={room}
+                      editMode={editMode}
+                      onEdit={() => setPanel({ mode: "edit", room })}
+                      onMore={(rect) => {
+                        const width = 224;
+                        const left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
+                        const top = Math.min(rect.bottom + 6, window.innerHeight - 112);
+                        setMenu({ room, top, left });
+                      }}
                     />
                   ))}
+                  {editMode ? (
+                    <button
+                      type="button"
+                      onClick={() => setPanel({ mode: "add" })}
+                      className="flex h-[176px] flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-gray-500 text-sm font-semibold text-gray-800 dark:border-white/40 dark:text-gray-100"
+                    >
+                      <Plus className="h-6 w-6" aria-hidden />
+                      {t("rooms.addRoom")}
+                    </button>
+                  ) : null}
                 </div>
-              </div>
-            ) : null}
+              </section>
+            ))}
           </div>
-        )}
+        ) : null}
       </div>
 
-      {addModalOpen && typeof document !== "undefined" && (
-        <div className="fixed inset-0 z-[200]" aria-modal="true" role="dialog">
-          <div
-            className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
-            aria-hidden
-            onClick={() => !creating && setAddModalOpen(false)}
-          />
-          <div
-            className="fixed top-4 right-4 bottom-4 z-[201] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white dark:bg-gray-900 dark:border-white/10 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-white/50 dark:border-white/10">
-              <h3 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{t("rooms.addRoom")}</h3>
-              <button
-                type="button"
-                onClick={() => !creating && setAddModalOpen(false)}
-                className="p-1.5 rounded-full text-gray-500 hover:bg-black/5 dark:hover:bg-white/10 dark:text-gray-400"
-                aria-label={t("rooms.cancel")}
+      {menu && typeof document !== "undefined"
+        ? createPortal(
+            <>
+              <div className="fixed inset-0 z-[250]" onClick={() => setMenu(null)} aria-hidden />
+              <div
+                role="menu"
+                className="fixed z-[251] w-56 overflow-hidden rounded-2xl bg-white py-1 shadow-xl ring-1 ring-black/10 dark:bg-[#1b1a21] dark:ring-white/10"
+                style={{ top: menu.top, left: menu.left }}
               >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form onSubmit={handleCreate} className="flex flex-1 min-h-0 flex-col overflow-hidden">
-              <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.roomName")}
-                </label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder={t("rooms.roomNamePlaceholder")}
-                  required
-                  className="w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.icon")}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {ROOM_ICON_OPTIONS.map((iconKey) => {
-                    const Icon = CARD_ICONS[iconKey];
-                    return (
-                      <button
-                        key={iconKey}
-                        type="button"
-                        onClick={() => setNewIcon(iconKey)}
-                        className={`flex h-10 w-10 items-center justify-center rounded-2xl border-2 transition-colors ${
-                          newIcon === iconKey
-                            ? "border-brand bg-brand/10 text-brand"
-                            : "border-gray-200 dark:border-white/20 text-gray-500 hover:border-gray-300 dark:hover:border-white/30"
-                        }`}
-                        title={iconKey}
-                      >
-                        {Icon && <Icon className="h-5 w-5" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.iconBackgroundColor")}
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={newIconBackgroundColor && /^#[0-9A-Fa-f]{6}$/.test(newIconBackgroundColor) ? newIconBackgroundColor : "#3B82F6"}
-                    onChange={(e) => setNewIconBackgroundColor(e.target.value)}
-                    className="h-10 w-14 cursor-pointer rounded-2xl border border-white/60 dark:border-white/20"
-                  />
-                  <input
-                    type="text"
-                    value={newIconBackgroundColor ?? ""}
-                    onChange={(e) => setNewIconBackgroundColor(e.target.value)}
-                    placeholder="#3B82F6"
-                    className="flex-1 rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.floor")}
-                </label>
-                <select
-                  value={newFloor}
-                  onChange={(e) => setNewFloor(e.target.value)}
-                  className="w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
-                >
-                  {FLOOR_OPTIONS.map((opt) => (
-                    <option key={opt.value || "_"} value={opt.value}>
-                      {t(opt.labelKey)}
-                    </option>
-                  ))}
-                </select>
-                {!newFloor && (
-                  <input
-                    type="text"
-                    value={newCustomFloor}
-                    onChange={(e) => setNewCustomFloor(e.target.value)}
-                    placeholder={t("rooms.floorPlaceholder")}
-                    className="mt-2 w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
-                  />
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.background")}
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  id="room-bg-create"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setNewBackgroundFile(file);
-                      setNewBackgroundPreview(URL.createObjectURL(file));
-                    }
-                    e.target.value = "";
-                  }}
-                />
-                <div className="flex items-center gap-3">
-                  {newBackgroundPreview ? (
-                    <>
-                      <div
-                        className="h-16 w-24 shrink-0 rounded-2xl bg-cover bg-center"
-                        style={{ backgroundImage: cssUrl(newBackgroundPreview) }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNewBackgroundFile(null);
-                          setNewBackgroundPreview(null);
-                        }}
-                        className="text-sm text-red-600 dark:text-red-400 hover:underline"
-                      >
-                        {t("rooms.backgroundRemove")}
-                      </button>
-                    </>
-                  ) : (
-                    <label
-                      htmlFor="room-bg-create"
-                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-brand hover:text-brand"
-                    >
-                      <ImageIcon className="h-6 w-6" aria-hidden />
-                    </label>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.roomId")}
-                </label>
-                <input
-                  type="text"
-                  value={newId}
-                  onChange={(e) => setNewId(e.target.value)}
-                  placeholder={t("rooms.roomIdPlaceholder")}
-                  className="w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t("rooms.roomIdHint")}
-                </p>
-              </div>
-              {createError && (
-                <p className="text-sm text-red-600 dark:text-red-400">{createError}</p>
-              )}
-              </div>
-              <div className="shrink-0 flex justify-end gap-2 p-5 pt-4 border-t border-white/50 dark:border-white/10">
                 <button
+                  role="menuitem"
                   type="button"
-                  onClick={() => !creating && setAddModalOpen(false)}
-                  className="rounded-full border border-white/60 bg-white/40 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
+                  onClick={() => {
+                    setPanel({ mode: "edit", room: menu.room });
+                    setMenu(null);
+                  }}
+                  className="flex h-12 w-full items-center gap-3 px-4 text-left text-sm font-medium text-gray-900 hover:bg-black/5 dark:text-white dark:hover:bg-white/10"
                 >
-                  {t("rooms.cancel")}
+                  <Pencil className="h-5 w-5 text-gray-700 dark:text-gray-200" aria-hidden />
+                  {t("rooms.editRoom")}
                 </button>
                 <button
-                  type="submit"
-                  disabled={creating || !newName.trim()}
-                  className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
+                  role="menuitem"
+                  type="button"
+                  onClick={() => requestDelete(menu.room)}
+                  className="flex h-12 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
                 >
-                  {creating ? "…" : t("rooms.create")}
+                  <Trash2 className="h-5 w-5" aria-hidden />
+                  {t("rooms.delete")}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </>,
+            document.body
+          )
+        : null}
 
-      {editModalOpen && editingRoom && typeof document !== "undefined" && (
-        <div className="fixed inset-0 z-[200]" aria-modal="true" role="dialog">
-          <div
-            className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
-            aria-hidden
-            onClick={() => !updating && setEditModalOpen(false)}
-          />
-          <div
-            className="fixed top-4 right-4 bottom-4 z-[201] w-full max-w-md animate-slide-in-right flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white dark:bg-gray-900 dark:border-white/10 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="shrink-0 flex items-center justify-between p-5 pb-3 border-b border-white/50 dark:border-white/10">
-              <h3 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{t("rooms.editRoom")}</h3>
-              <button
-                type="button"
-                onClick={() => !updating && setEditModalOpen(false)}
-                className="p-1.5 rounded-full text-gray-500 hover:bg-black/5 dark:hover:bg-white/10 dark:text-gray-400"
-                aria-label={t("rooms.cancel")}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form onSubmit={handleUpdate} className="flex flex-1 min-h-0 flex-col overflow-hidden">
-              <div className="flex-1 min-h-0 overflow-y-auto p-5 pt-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.roomName")}
-                </label>
+      {panel ? (
+        <RoomPanel
+          mode={panel.mode}
+          room={panel.room}
+          defaultFloor={floors[active]?.floor}
+          onClose={() => setPanel(null)}
+          onSaved={(floor) => {
+            setPanel(null);
+            pendingFloor.current = floor;
+            load();
+          }}
+          onDelete={(room) => requestDelete(room as RoomItem)}
+        />
+      ) : null}
+
+      {list.pending && typeof document !== "undefined"
+        ? createPortal(
+            <div data-room-undo>
+              <UndoToast
+                message={t("roomsUi.deleted").replace("{room}", list.pending.name)}
+                actionLabel={t("editPanel.undo")}
+                onAction={undoDelete}
+              />
+            </div>,
+            document.body
+          )
+        : null}
+
+      {passOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 z-[300]" role="dialog" aria-modal="true">
+              <div className="absolute inset-0 bg-black/40" onClick={() => setPassOpen(false)} aria-hidden />
+              <div className="fixed left-1/2 top-1/2 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-3xl bg-white p-5 shadow-2xl dark:bg-[#1b1a21]">
+                <h3 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">
+                  {t("settings.dashboard.enterPasscode")}
+                </h3>
                 <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder={t("rooms.roomNamePlaceholder")}
-                  required
-                  className="w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.icon")}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {ROOM_ICON_OPTIONS.map((iconKey) => {
-                    const Icon = CARD_ICONS[iconKey];
-                    return (
-                      <button
-                        key={iconKey}
-                        type="button"
-                        onClick={() => setEditIcon(iconKey)}
-                        className={`flex h-10 w-10 items-center justify-center rounded-2xl border-2 transition-colors ${
-                          editIcon === iconKey
-                            ? "border-brand bg-brand/10 text-brand"
-                            : "border-gray-200 dark:border-white/20 text-gray-500 hover:border-gray-300 dark:hover:border-white/30"
-                        }`}
-                        title={iconKey}
-                      >
-                        {Icon && <Icon className="h-5 w-5" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.iconBackgroundColor")}
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={editIconBackgroundColor && /^#[0-9A-Fa-f]{6}$/.test(editIconBackgroundColor) ? editIconBackgroundColor : "#3B82F6"}
-                    onChange={(e) => setEditIconBackgroundColor(e.target.value)}
-                    className="h-10 w-14 cursor-pointer rounded-2xl border border-white/60 dark:border-white/20"
-                  />
-                  <input
-                    type="text"
-                    value={editIconBackgroundColor ?? ""}
-                    onChange={(e) => setEditIconBackgroundColor(e.target.value)}
-                    placeholder="#3B82F6"
-                    className="flex-1 rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.floor")}
-                </label>
-                <select
-                  value={editFloor}
-                  onChange={(e) => setEditFloor(e.target.value)}
-                  className="w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
-                >
-                  {FLOOR_OPTIONS.map((opt) => (
-                    <option key={opt.value || "_"} value={opt.value}>
-                      {t(opt.labelKey)}
-                    </option>
-                  ))}
-                </select>
-                {!editFloor && (
-                  <input
-                    type="text"
-                    value={editCustomFloor}
-                    onChange={(e) => setEditCustomFloor(e.target.value)}
-                    placeholder={t("rooms.floorPlaceholder")}
-                    className="mt-2 w-full rounded-2xl bg-black/[0.04] px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:bg-white/5 dark:text-white"
-                  />
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.temperatureEntity")}
-                </label>
-                <EntitySelectWithSearch
-                  entities={editEntities}
-                  value={editTemperatureEntityId}
-                  onChange={setEditTemperatureEntityId}
-                  filter={(e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("climate.")}
-                  placeholder={t("rooms.entitySearchPlaceholder")}
-                  emptyOption={t("rooms.entityNone")}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.humidityEntity")}
-                </label>
-                <EntitySelectWithSearch
-                  entities={editEntities}
-                  value={editHumidityEntityId}
-                  onChange={setEditHumidityEntityId}
-                  filter={(e) => e.entity_id.startsWith("sensor.") || e.entity_id.startsWith("climate.")}
-                  placeholder={t("rooms.entitySearchPlaceholder")}
-                  emptyOption={t("rooms.entityNone")}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  {t("rooms.background")}
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  id="room-bg-edit"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setEditBackgroundFile(file);
-                      setEditBackgroundPreview(URL.createObjectURL(file));
-                    }
-                    e.target.value = "";
+                  type="password"
+                  autoFocus
+                  value={pass}
+                  onChange={(event) => {
+                    setPass(event.target.value);
+                    setPassError(null);
                   }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      submitPass();
+                    }
+                  }}
+                  placeholder={t("settings.dashboard.editModePasscodePlaceholder")}
+                  className="h-12 w-full rounded-2xl bg-gray-100 px-4 text-gray-900 dark:bg-white/5 dark:text-white"
+                  autoComplete="off"
                 />
-                <div className="flex items-center gap-3">
-                  {editBackgroundPreview ? (
-                    <>
-                      <div
-                        className="h-16 w-24 shrink-0 rounded-2xl bg-cover bg-center"
-                        style={{ backgroundImage: cssUrl(editBackgroundPreview) }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditBackgroundFile(null);
-                          setEditBackgroundPreview(null);
-                        }}
-                        className="text-sm text-red-600 dark:text-red-400 hover:underline"
-                      >
-                        {t("rooms.backgroundRemove")}
-                      </button>
-                    </>
-                  ) : (
-                    <label
-                      htmlFor="room-bg-edit"
-                      className="flex h-16 w-24 cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 dark:border-white/20 text-gray-500 hover:border-brand hover:text-brand"
-                    >
-                      <ImageIcon className="h-6 w-6" aria-hidden />
-                    </label>
-                  )}
+                {passError ? (
+                  <p className="mt-2 text-sm font-medium text-red-700 dark:text-red-300">{passError}</p>
+                ) : null}
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPassOpen(false)}
+                    className="inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold text-gray-800 ring-1 ring-gray-300 dark:text-gray-100 dark:ring-white/25"
+                  >
+                    {t("rooms.cancel")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitPass}
+                    className="inline-flex h-11 items-center rounded-full bg-brand px-4 text-sm font-semibold text-white dark:bg-[#8357be]"
+                  >
+                    {t("editPanel.done")}
+                  </button>
                 </div>
               </div>
-              {updateError && (
-                <p className="text-sm text-red-600 dark:text-red-400">{updateError}</p>
-              )}
-              </div>
-              <div className="shrink-0 flex justify-end gap-2 p-5 pt-4 border-t border-white/50 dark:border-white/10">
-                <button
-                  type="button"
-                  onClick={() => !updating && setEditModalOpen(false)}
-                  className="rounded-full border border-white/60 bg-white/40 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
-                >
-                  {t("rooms.cancel")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={updating || !editName.trim()}
-                  className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
-                >
-                  {updating ? "…" : t("rooms.save")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {editPasscodeModalOpen && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[300]" aria-modal="true" role="dialog">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm dark:bg-black/60"
-            aria-hidden
-            onClick={() => {
-              setEditPasscodeModalOpen(false);
-              setEditPasscodeError(null);
-              setEditPasscodeInput("");
-            }}
-          />
-          <div className="fixed left-1/2 top-1/2 z-[301] w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-white/10 dark:bg-gray-900">
-            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {t("settings.dashboard.enterPasscode")}
-            </h3>
-            <input
-              type="password"
-              value={editPasscodeInput}
-              onChange={(e) => {
-                setEditPasscodeInput(e.target.value);
-                setEditPasscodeError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                e.preventDefault();
-                if (checkEditModePasscode(editPasscodeInput)) {
-                  setEditMode(true);
-                  setEditPasscodeModalOpen(false);
-                  setEditPasscodeInput("");
-                  setEditPasscodeError(null);
-                } else {
-                  setEditPasscodeError(t("settings.dashboard.wrongPasscode"));
-                }
-              }}
-              placeholder={t("settings.dashboard.editModePasscodePlaceholder")}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-500 dark:border-white/20 dark:bg-white/5 dark:text-gray-200"
-              autoFocus
-              autoComplete="off"
-            />
-            {editPasscodeError ? (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{editPasscodeError}</p>
-            ) : null}
-          </div>
-        </div>,
-        document.body
-      )}
+            </div>,
+            document.body
+          )
+        : null}
     </AppShell>
   );
 }
