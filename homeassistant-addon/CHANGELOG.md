@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.9] - 2026-10-25
+
+No breaking changes: existing configs, dashboards and localStorage keep working. Your language choice is kept.
+
+### Fixed
+
+- No more React hydration error #418 on every page. The server and the browser now render the same language: the choice is mirrored in a cookie, and the runtime default (add-on option or Docker env) is passed to the browser (#316, fixes #278).
+- `<html lang>` follows the chosen language instead of always `en` (#316, fixes #284).
+- Leftover English in Dutch: "Entity" is now "Entiteit", and the onboarding no longer starts with "My dashboard" (#316, fixes #280).
+- Add-on direct port: the redirect on `/` stays on your own port when the host port is not 3000 (#317, fixes #281).
+- Add-on ingress: after login the address keeps its trailing slash, as Home Assistant's ingress route needs (#317, fixes #283).
+- Light cards, stat pills and energy monitors inside a smart stack have a glass background instead of an empty area (#318).
+
 ## [0.5.8] - 2026-10-25
 
 No breaking changes: existing configs, dashboards, volumes and localStorage keep working.
