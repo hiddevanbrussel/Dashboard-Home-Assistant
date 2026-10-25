@@ -59,6 +59,8 @@ RUN chmod +x docker-entrypoint.sh
 
 # Maak de image-cache map aan en geef nextjs schrijfrechten
 RUN mkdir -p /app/.next/cache && chown -R nextjs:nodejs /app/.next/cache
+# /data bestaat ook zonder volume, zodat een kale `docker run` kan starten (#279). Een gemount volume vervangt deze map.
+RUN mkdir -p /data/uploads && chown -R nextjs:nodejs /data
 
 EXPOSE 3000
 
