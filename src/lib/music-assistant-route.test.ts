@@ -39,8 +39,11 @@ const ALLOWED = [
   "music/recently_played_items",
   "music/search",
   "player_queues/all",
+  "player_queues/clear",
+  "player_queues/delete_item",
   "player_queues/dont_stop_the_music",
   "player_queues/get",
+  "player_queues/items",
   "player_queues/next",
   "player_queues/pause",
   "player_queues/play",
@@ -208,6 +211,27 @@ describe("music assistant command allowlist", () => {
     expect(line).not.toContain(SERVER_TOKEN);
     expect(line).not.toContain("Bearer");
     expect(line).not.toContain("authorization");
+  });
+
+  it.each([
+    "player_queues/move_item",
+    "player_queues/repeat",
+    "player_queues/items_x",
+    "player_queues/clear/extra",
+    "player_queues/items/extra",
+    "player_queues/delete_item/extra",
+  ])("rejects unlisted player queue command %j with 403", async (command) => {
+    const res = await post(clientBody(command));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "Command not allowed" });
+    expect(callMaServer).not.toHaveBeenCalled();
+    expect(boundMusicAssistant).not.toHaveBeenCalled();
+    const line = String(warn.mock.calls[0]?.[0]);
+    expect(line).toBe(`[music-assistant] rejected command: ${JSON.stringify(command)}`);
+    expect(line).not.toContain(TOKEN);
+    expect(line).not.toContain(HEADER_SECRET);
+    expect(line).not.toContain(ARGS_SECRET);
+    expect(line).not.toContain(SERVER_TOKEN);
   });
 
   it.each([

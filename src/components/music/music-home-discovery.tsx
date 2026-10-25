@@ -94,7 +94,7 @@ export function MusicHomeDiscovery({
   return (
     <div className="space-y-5 pb-8 pt-1">
       <header className="px-1">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">{listenNow}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand dark:text-[rgb(var(--brand-nav))]">{listenNow}</p>
         <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl dark:text-white">
           {greeting}
         </h1>
@@ -184,7 +184,7 @@ export function MusicHomeDiscovery({
                   type="button"
                   onClick={spotlight.onPlay}
                   disabled={spotlight.disabled || spotlight.pending}
-                  className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm font-semibold text-gray-900 shadow-lg transition-transform hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50"
+                  className="mt-2.5 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-gray-900 shadow-lg transition-transform hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50"
                 >
                   {spotlight.pending ? (
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" aria-hidden />
@@ -227,7 +227,7 @@ export function MusicHomeDiscovery({
                     {item.title}
                   </span>
                   {item.subtitle ? (
-                    <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400">
+                    <span className="mt-0.5 block truncate text-xs text-gray-600 dark:text-gray-300">
                       {item.subtitle}
                     </span>
                   ) : null}
@@ -298,7 +298,7 @@ export function MusicHomeDiscovery({
                       {shelf.variant !== "circle" ? (
                         <span
                           className={cn(
-                            "absolute bottom-2 right-2 h-10 w-10 items-center justify-center rounded-full bg-brand text-white shadow-lg",
+                            "absolute bottom-2 right-2 h-11 w-11 items-center justify-center rounded-full bg-brand text-white shadow-lg dark:bg-brand-muted",
                             item.pending ? "flex" : "hidden group-hover:flex group-focus-visible:flex group-active:flex"
                           )}
                         >
@@ -312,7 +312,7 @@ export function MusicHomeDiscovery({
                     </div>
                     <p className="mt-2 truncate text-sm font-semibold text-gray-900 dark:text-white">{item.title}</p>
                     {item.subtitle ? (
-                      <p className="truncate text-xs text-gray-500 dark:text-gray-400">{item.subtitle}</p>
+                      <p className="truncate text-xs text-gray-600 dark:text-gray-300">{item.subtitle}</p>
                     ) : null}
                   </button>
                 ))}
@@ -323,7 +323,7 @@ export function MusicHomeDiscovery({
       })}
 
       {!hasContent && emptyLabel ? (
-        <p className="px-1 text-sm text-gray-500 dark:text-gray-400">{emptyLabel}</p>
+        <p className="px-1 text-sm text-gray-600 dark:text-gray-300">{emptyLabel}</p>
       ) : null}
     </div>
   );
@@ -344,7 +344,7 @@ function SectionHeading({
         <button
           type="button"
           onClick={onSeeAll}
-          className="flex min-w-0 items-center gap-1 text-left text-lg font-bold text-gray-900 hover:opacity-80 dark:text-white"
+          className="flex min-h-11 min-w-0 items-center gap-1 text-left text-lg font-bold text-gray-900 hover:opacity-80 dark:text-white"
         >
           <span className="truncate">{title}</span>
           <ChevronRight className="h-5 w-5 shrink-0 opacity-60" aria-hidden />
@@ -356,7 +356,7 @@ function SectionHeading({
         <button
           type="button"
           onClick={onSeeAll}
-          className="shrink-0 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+          className="-mr-2 inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
         >
           {seeAllLabel}
         </button>
