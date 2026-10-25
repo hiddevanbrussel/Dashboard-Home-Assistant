@@ -43,6 +43,21 @@ export const SMART_STACK_CHILD_TYPES = [
 
 export type SmartStackChildType = (typeof SMART_STACK_CHILD_TYPES)[number];
 
+/**
+ * Slides that paint no surface of their own (a transparent light card, a small pill,
+ * an energy monitor without entity). In a stack they get a glass backing, or the slide
+ * looks empty. Every other type already draws its own card.
+ */
+export const SMART_STACK_GLASS_BACKED_TYPES: readonly SmartStackChildType[] = [
+  "light_card",
+  "stat_pill_card",
+  "energy_monitor_card",
+];
+
+export function needsSmartStackGlassBacking(type: string): boolean {
+  return (SMART_STACK_GLASS_BACKED_TYPES as readonly string[]).includes(type);
+}
+
 export function isSmartStackChildType(type: string): type is SmartStackChildType {
   return (SMART_STACK_CHILD_TYPES as readonly string[]).includes(type);
 }

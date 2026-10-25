@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   buildSmartStackChildUpdates,
@@ -6,6 +8,9 @@ import {
   clampSmartStackWidth,
   isSmartStackAutoplayEnabled,
   isSmartStackChildType,
+  needsSmartStackGlassBacking,
+  SMART_STACK_CHILD_TYPES,
+  SMART_STACK_GLASS_BACKED_TYPES,
   normalizeSmartStackIndex,
   SMART_STACK_DEFAULT_AUTOPLAY,
   SMART_STACK_DEFAULT_INTERVAL_SEC,
@@ -171,5 +176,26 @@ describe("smart-stack helpers", () => {
       title: "A",
       icon: "Zap",
     });
+  });
+});
+
+describe("smart stack slide backgrounds", () => {
+  it("backs exactly the slides without a surface of their own", () => {
+    expect([...SMART_STACK_GLASS_BACKED_TYPES].sort()).toEqual(["energy_monitor_card", "light_card", "stat_pill_card"]);
+    expect(needsSmartStackGlassBacking("light_card")).toBe(true);
+    expect(needsSmartStackGlassBacking("media_card")).toBe(false);
+    for (const type of SMART_STACK_GLASS_BACKED_TYPES) expect(SMART_STACK_CHILD_TYPES).toContain(type);
+  });
+
+  it("renders each backed type inside the glass wrapper, and the others without it", () => {
+    const source = readFileSync(join(process.cwd(), "src/components/widgets/smart-stack-child.tsx"), "utf8").replace(/\r\n/g, "\n");
+    const caseBody = (type: string) => {
+      const start = source.indexOf(`case "${type}":`);
+      const next = source.indexOf("case \"", start + 6);
+      return source.slice(start, next < 0 ? undefined : next);
+    };
+    for (const type of SMART_STACK_CHILD_TYPES) {
+      expect(caseBody(type).includes("data-stack-glass")).toBe(needsSmartStackGlassBacking(type));
+    }
   });
 });

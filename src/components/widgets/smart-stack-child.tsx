@@ -78,6 +78,8 @@ export function SmartStackChild({
   }
 
   const fill = cn("h-full w-full min-h-0", className);
+  /** Glass backing for slides without a surface of their own (see SMART_STACK_GLASS_BACKED_TYPES). */
+  const glassBacked = cn(fill, "glass-surface overflow-hidden rounded-2xl shadow-xl");
 
   switch (child.type) {
     case "climate_card_2":
@@ -139,13 +141,15 @@ export function SmartStackChild({
       );
     case "light_card":
       return (
-        <LightCardWidget
-          title={title}
-          entity_id={child.entity_id ?? ""}
-          icon={child.icon}
-          card_layout={child.card_layout === "square" ? "square" : "horizontal"}
-          className={fill}
-        />
+        <div className={glassBacked} data-stack-glass>
+          <LightCardWidget
+            title={title}
+            entity_id={child.entity_id ?? ""}
+            icon={child.icon}
+            card_layout={child.card_layout === "square" ? "square" : "horizontal"}
+            className="h-full w-full min-h-0"
+          />
+        </div>
       );
     case "media_card":
       return (
@@ -165,15 +169,17 @@ export function SmartStackChild({
         </div>
       );
     case "stat_pill_card":
+      // The pill keeps its own size, centred on the glass.
       return (
-        <StatPillCardWidget
-          title={title}
-          entity_id={child.entity_id ?? ""}
-          label={child.label}
-          icon={child.icon}
-          color={(child.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
-          className={fill}
-        />
+        <div className={cn(glassBacked, "flex items-center justify-center p-4")} data-stack-glass>
+          <StatPillCardWidget
+            title={title}
+            entity_id={child.entity_id ?? ""}
+            label={child.label}
+            icon={child.icon}
+            color={(child.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
+          />
+        </div>
       );
     case "sensor_card":
       return (
@@ -189,14 +195,16 @@ export function SmartStackChild({
       );
     case "energy_monitor_card":
       return (
-        <EnergyMonitorCardWidget
-          title={title}
-          entity_id={child.entity_id}
-          background_image={child.background_image}
-          background_image_dark={child.background_image_dark}
-          image_conditions={child.image_conditions as ImageCondition[] | undefined}
-          className={fill}
-        />
+        <div className={glassBacked} data-stack-glass>
+          <EnergyMonitorCardWidget
+            title={title}
+            entity_id={child.entity_id}
+            background_image={child.background_image}
+            background_image_dark={child.background_image_dark}
+            image_conditions={child.image_conditions as ImageCondition[] | undefined}
+            className="h-full w-full min-h-0"
+          />
+        </div>
       );
     case "teamtracker_card":
       return (
