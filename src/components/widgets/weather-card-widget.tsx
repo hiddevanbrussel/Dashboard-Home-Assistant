@@ -14,8 +14,7 @@ import type { WeatherCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-import { useTranslation } from "@/hooks/use-translation";
-import { useLanguageStore } from "@/stores/language-store";
+import { useActiveLanguage, useTranslation } from "@/hooks/use-translation";
 import {
   formatPrecipitationMm,
   formatWindSummary,
@@ -122,7 +121,7 @@ export function WeatherCardWidget({
   height?: number;
 }) {
   const { t } = useTranslation();
-  const language = useLanguageStore((s) => s.language);
+  const language = useActiveLanguage();
   const locale = language === "nl" ? "nl" : "en";
   const entity = useEntityStateStore((s) => s.getState(entity_id));
   const aqiEntity = useEntityStateStore((s) =>

@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, Droplets } from "lucide-react";
 import { WeatherColorIcon } from "@/components/weather/weather-color-icon";
 import { WeatherConditionBackdrop } from "@/components/weather/weather-condition-backdrop";
-import { useTranslation } from "@/hooks/use-translation";
-import { useLanguageStore } from "@/stores/language-store";
+import { useActiveLanguage, useTranslation } from "@/hooks/use-translation";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import {
   formatForecastHour,
@@ -44,7 +43,7 @@ export function WeatherSheetPanel({
   daily?: WeatherForecastItem[];
 }) {
   const { t } = useTranslation();
-  const language = useLanguageStore((s) => s.language);
+  const language = useActiveLanguage();
   const locale = language === "nl" ? "nl-NL" : "en-GB";
   const entity = useEntityStateStore((s) => s.getState(entityId));
   const hasOverride = hourlyOverride != null && dailyOverride != null;
