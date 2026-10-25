@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.6] - 2026-10-25
+
+No breaking changes: existing configs, dashboards and localStorage keep working. The stored encryption format is unchanged.
+
+### Added
+
+- Music Assistant v1: view the queue, remove one item or clear the whole queue, each with a 5-second undo. Radio has its own tab, and Music shows in the menu whenever Music Assistant is on or Home Assistant has media players (#300).
+
+### Changed
+
+- The player bar keeps volume as − and + buttons, and all music controls have 44px touch targets (#300).
+- API responses are compressed with gzip or brotli, also when Next.js streams them; in the add-on the ingress proxy compresses once after rewriting paths. A 25 KB dashboard response now travels as about 4 KB (#294).
+- The Home Assistant token is no longer decrypted with a slow key derivation on every request; the key and token stay in memory until a new token is saved (#294).
+
 ## [0.5.5] - 2026-10-25
 
 No breaking changes: existing configs, dashboards and localStorage keep working.
