@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.7] - 2026-10-25
+
+No breaking changes: existing configs, dashboards and localStorage keep working.
+
+### Changed
+
+- The music page has a full-width player bar at the bottom again: cover, title and artist, favourite, shuffle, previous, play/pause, next, keep playing, mute, a volume slider, the queue and a button for the large player. It replaces the small chip in the corner (#312).
+
 ## [0.5.6] - 2026-10-25
 
 No breaking changes: existing configs, dashboards and localStorage keep working. The stored encryption format is unchanged.
