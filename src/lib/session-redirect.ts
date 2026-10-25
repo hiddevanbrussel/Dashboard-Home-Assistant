@@ -103,7 +103,9 @@ export function postLoginTarget(nextParam: string | null | undefined, pathname =
   const prefixed = within === "/" ? baked || "/" : withBasePath(within);
   const live = detectBrowserBasePath(pathname, baked);
   if (baked && live && live !== baked && (prefixed === baked || prefixed.startsWith(`${baked}/`))) {
-    return `${live}${prefixed.slice(baked.length)}`;
+    // HA only routes /api/hassio_ingress/{token}/{path}: the ingress root needs its slash (#283),
+    // as the ingress proxy writes it. Upstream it still maps to bare /__ha_ingress__, so no 308 loop.
+    return `${live}${prefixed.slice(baked.length) || "/"}`;
   }
   return prefixed;
 }
