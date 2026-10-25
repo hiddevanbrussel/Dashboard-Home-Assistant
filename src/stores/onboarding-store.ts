@@ -228,7 +228,8 @@ const initialState = {
   rooms: [] as RoomState[],
   template: "overview" as TemplateId,
   dashboardId: null as string | null,
-  dashboardName: "My dashboard",
+  // Empty: the steps fall back to the translated default name.
+  dashboardName: "",
   widgets: [] as WidgetConfig[],
 };
 

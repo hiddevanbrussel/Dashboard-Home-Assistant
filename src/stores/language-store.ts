@@ -1,16 +1,20 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { languageCookie, parseLanguage, type Language } from "@/lib/language";
 
-export type Language = "en" | "nl";
+export type { Language } from "@/lib/language";
 
 function getDefaultLanguage(): Language {
-  const env = process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE?.toLowerCase();
-  if (env === "nl" || env === "en") return env;
-  return "en";
+  return parseLanguage(process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE) ?? "en";
 }
 
 type LanguageStore = {
   language: Language;
+  /**
+   * False until LanguageBootstrap has settled the language after mount. Until then
+   * useTranslation renders the server's language, so hydration matches (#278).
+   */
+  ready: boolean;
   setLanguage: (lang: Language) => void;
 };
 
@@ -18,11 +22,20 @@ export const useLanguageStore = create<LanguageStore>()(
   persist(
     (set) => ({
       language: getDefaultLanguage(),
-      setLanguage: (language) => set({ language }),
+      ready: false,
+      setLanguage: (language) => {
+        set({ language, ready: true });
+        if (typeof document !== "undefined") {
+          document.cookie = languageCookie(language);
+          document.documentElement.lang = language;
+        }
+      },
     }),
     {
       name: "dashboard-language",
       partialize: (s) => ({ language: s.language }),
+      // Reading localStorage while the store is created would change the first client render.
+      skipHydration: true,
     }
   )
 );

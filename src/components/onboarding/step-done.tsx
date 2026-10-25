@@ -5,11 +5,14 @@ import { OnboardingFullscreenLayout } from "./onboarding-fullscreen-layout";
 import { useOnboardingStore } from "@/stores/onboarding-store";
 import { setOnboardingCompleted } from "@/lib/onboarding-completed";
 import { useState } from "react";
+import { useTranslation } from "@/hooks/use-translation";
 
 export function StepDone() {
   const router = useRouter();
   const { rooms, dashboardId: storedDashboardId, dashboardName: storedDashboardName } =
     useOnboardingStore();
+  const { t } = useTranslation();
+  const dashboardName = storedDashboardName.trim() || t("onboarding.name.default");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +31,7 @@ export function StepDone() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              name: storedDashboardName || "My dashboard",
+              name: dashboardName,
               theme: "auto",
             }),
           });
@@ -63,7 +66,7 @@ export function StepDone() {
     >
       <div className="space-y-4 max-w-md">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Dashboard name: <strong>{storedDashboardName || "My dashboard"}</strong>
+          Dashboard name: <strong>{dashboardName}</strong>
           <br />
           Rooms: {rooms.length}
         </p>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import localFont from "next/font/local";
 import { montserrat } from "@/fonts/montserrat/montserrat";
@@ -12,6 +12,8 @@ import { GlobalMusicBar } from "@/components/global-music-bar";
 import { BasePathScript } from "@/components/base-path-script";
 import { SecretMigrator } from "@/components/secret-migrator";
 import { AuthFetchGuard } from "@/components/auth-fetch-guard";
+import { LanguageBootstrap } from "@/components/language-bootstrap";
+import { LANGUAGE_COOKIE, parseLanguage, resolveLanguage } from "@/lib/language";
 import { isPublicPage, pathnameForAuth, requestIsAuthorized } from "@/lib/auth-policy";
 import { withBasePath } from "@/lib/base-path";
 import { safeNextPath } from "@/lib/session-redirect";
@@ -78,27 +80,33 @@ export default async function RootLayout({
     }
   }
 
+  // Runtime value (add-on option / Docker env), not the build-time inline the client bundle sees.
+  const languageCookieValue = (await cookies()).get(LANGUAGE_COOKIE)?.value;
+  const language = resolveLanguage(languageCookieValue, process.env.NEXT_PUBLIC_DEFAULT_LANGUAGE);
+
   return (
-    <html lang="en" className={montserrat.variable} suppressHydrationWarning>
+    <html lang={language} className={montserrat.variable} suppressHydrationWarning>
       <body className={`relative ${googleSans.className}`}>
         <BasePathScript />
         <AuthFetchGuard />
-        {publicPage ? (
-          <div className="relative min-h-screen">{children}</div>
-        ) : (
-          <Providers>
-            <SecretMigrator>
-              <OnboardingGuard>
-                <MusicPlayerProvider>
-                  <PageBackgroundProvider>
-                    <div className="relative min-h-screen">{children}</div>
-                  </PageBackgroundProvider>
-                  <GlobalMusicBar />
-                </MusicPlayerProvider>
-              </OnboardingGuard>
-            </SecretMigrator>
-          </Providers>
-        )}
+        <LanguageBootstrap language={language} fromCookie={parseLanguage(languageCookieValue) != null}>
+          {publicPage ? (
+            <div className="relative min-h-screen">{children}</div>
+          ) : (
+            <Providers>
+              <SecretMigrator>
+                <OnboardingGuard>
+                  <MusicPlayerProvider>
+                    <PageBackgroundProvider>
+                      <div className="relative min-h-screen">{children}</div>
+                    </PageBackgroundProvider>
+                    <GlobalMusicBar />
+                  </MusicPlayerProvider>
+                </OnboardingGuard>
+              </SecretMigrator>
+            </Providers>
+          )}
+        </LanguageBootstrap>
       </body>
     </html>
   );

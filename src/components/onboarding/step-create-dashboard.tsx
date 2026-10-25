@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useOnboardingStore } from "@/stores/onboarding-store";
 import { useThemeStore } from "@/stores/theme-store";
+import { useTranslation } from "@/hooks/use-translation";
 
 const gradientLight =
   "linear-gradient(135deg, rgba(246,210,92,0.4) 0%, rgba(180,139,255,0.3) 50%, rgba(100,120,140,0.5) 100%)";
@@ -15,10 +16,12 @@ export function StepCreateDashboard() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const resolved = useThemeStore((s) => s.resolved);
+  const { t } = useTranslation();
+  const defaultName = t("onboarding.name.default");
   const bg = resolved === "dark" ? gradientDark : gradientLight;
 
   async function handleCreate() {
-    const name = dashboardName.trim() || "My dashboard";
+    const name = dashboardName.trim() || defaultName;
     setCreating(true);
     setError(null);
     try {
@@ -68,7 +71,7 @@ export function StepCreateDashboard() {
             type="text"
             value={dashboardName}
             onChange={(e) => setDashboardName(e.target.value)}
-            placeholder="My dashboard"
+            placeholder={defaultName}
             className="w-full rounded-xl border border-gray-300 dark:border-white/20 bg-white dark:bg-white/10 px-4 py-3 text-base text-gray-900 dark:text-white placeholder:text-gray-500"
             disabled={!!dashboardId}
           />
