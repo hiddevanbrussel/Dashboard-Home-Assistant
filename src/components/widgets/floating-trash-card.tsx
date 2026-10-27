@@ -10,6 +10,7 @@ import {
   isFloatingCardNoDragTarget,
   snapToGrid,
 } from "@/lib/floating-card-grid";
+import { TILE_HAIRLINE_DARK } from "@/lib/tile-hairline";
 import { TrashCardWidget } from "./trash-card-widget";
 import {
   TRASH_CARD_DEFAULT_HEIGHT,
@@ -338,6 +339,7 @@ export function FloatingTrashCard({
       onDragStart={(event) => event.preventDefault()}
       className={cn(
         "card-plot-in fixed z-30 outline-none [-webkit-user-drag:none] rounded-[1.35rem] shadow-tile dark:shadow-tile-dark",
+        TILE_HAIRLINE_DARK,
         editMode && !isResizing && "cursor-grab touch-none select-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle",
         // Backdrop blur is expensive while the card moves.

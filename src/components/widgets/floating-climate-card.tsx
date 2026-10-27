@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { TILE_HAIRLINE_DARK } from "@/lib/tile-hairline";
 import { ClimateCard2Widget } from "./climate-card-2-widget";
 import {
   clampClimateCardHeight,
@@ -317,6 +318,7 @@ export function FloatingClimateCard({
     <div
       className={cn(
         "card-plot-in fixed z-30 rounded-2xl bg-transparent shadow-[0_18px_50px_rgba(15,23,42,0.12)] dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]",
+        TILE_HAIRLINE_DARK,
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}

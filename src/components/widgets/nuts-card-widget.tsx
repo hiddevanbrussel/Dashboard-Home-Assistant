@@ -230,6 +230,7 @@ export function NutsCardWidget({
           {onMoreClick && (
             <button
               type="button"
+              data-no-drag
               onClick={(e) => {
                 e.stopPropagation();
                 onMoreClick();
