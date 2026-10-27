@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { TILE_HAIRLINE_DARK } from "@/lib/tile-hairline";
 import { TeamtrackerCardWidget } from "./teamtracker-card-widget";
 import {
   clampTeamtrackerCardHeight,
@@ -313,6 +314,7 @@ export function FloatingTeamtrackerCard({
       ref={cardElRef}
       className={cn(
         "card-plot-in fixed z-40 rounded-[1.35rem] shadow-tile dark:shadow-tile-dark",
+        TILE_HAIRLINE_DARK,
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}

@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
+import { TILE_HAIRLINE_DARK } from "@/lib/tile-hairline";
 import { WeatherCardWidget } from "./weather-card-widget";
 import { WeatherBottomSheet } from "@/components/weather/weather-bottom-sheet";
 import { isVacuumCardTap } from "@/lib/vacuum-card";
@@ -322,7 +323,9 @@ export function FloatingWeatherCard({
       className={cn(
         "card-plot-in fixed z-30 rounded-[1.75rem]",
         // shadow-tile is generated after shadow-none, so edit mode replaces the shadow.
+        // Edit mode squares this outer top; the clip below keeps the visible 1.75rem radius.
         editMode ? "rounded-t-none shadow-none" : "shadow-tile dark:shadow-tile-dark",
+        !editMode && TILE_HAIRLINE_DARK,
         !editMode && "cursor-pointer",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle"
@@ -354,7 +357,8 @@ export function FloatingWeatherCard({
       <div
         className={cn(
           "flex h-full min-h-0 flex-col overflow-hidden rounded-[1.75rem]",
-          editMode && "[&>div]:rounded-t-none [&>div]:shadow-none"
+          editMode && "[&>div]:rounded-t-none [&>div]:shadow-none",
+          editMode && TILE_HAIRLINE_DARK
         )}
       >
         <WeatherCardWidget
