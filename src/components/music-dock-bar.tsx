@@ -8,7 +8,6 @@ import {
   Donut,
   Heart,
   ListMusic,
-  Maximize2,
   Pause,
   Play,
   Shuffle,
@@ -22,6 +21,7 @@ import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerActions } from "@/hooks/use-music-player-actions";
 import { useTranslation } from "@/hooks/use-translation";
+import { MusicNowPlayingOverlay } from "@/components/music-now-playing-overlay";
 import { MusicQueuePanel } from "@/components/music-queue-panel";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { getImageSrc, getItemImageUrl, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
@@ -34,9 +34,9 @@ const TOGGLE_ON = "bg-accent-yellow text-gray-900 dark:bg-accent-green";
 
 /**
  * Full-width player bar docked at the bottom of /music: now playing, transport,
- * volume, queue, and a button that opens the large floating player.
+ * volume and queue. A tap on the cover or title opens Now playing.
  */
-export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
+export function MusicDockBar() {
   const { t } = useTranslation();
   const { queueState, selectedQueueId, maPlayers } = useMusicPlayerStore();
   const musicAssistant = useMusicAssistantStore();
@@ -61,6 +61,7 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
   const [volumeDraft, setVolumeDraft] = useState<number | null>(null);
   const [favoritedUri, setFavoritedUri] = useState<string | null>(null);
   const [favoritePending, setFavoritePending] = useState(false);
+  const [nowPlayingOpen, setNowPlayingOpen] = useState(false);
 
   const states = useEntityStateStore((s) => s.states);
   const playingMediaPlayer = Object.values(states).find(
@@ -76,6 +77,8 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
   const favoriteUri = nowPlayingFavoriteUri(cur);
   const favorited = favoriteUri != null && favoriteUri === favoritedUri;
   const isPlaying = queueState?.state === "playing";
+  const position = queueState?.position ?? 0;
+  const duration = queueState?.duration ?? 0;
   const currentItemId = typeof cur?.queue_item_id === "string" ? cur.queue_item_id : null;
   const playerName = (() => {
     const player = maPlayers.find((p) => p.queue_id === selectedQueueId);
@@ -154,7 +157,7 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
-          onClick={onExpand}
+          onClick={() => setNowPlayingOpen(true)}
           className="flex min-h-11 min-w-0 items-center gap-3 rounded-2xl pr-1 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-yellow dark:focus-visible:ring-accent-green"
           aria-label={t("music.nowPlayingOpen")}
         >
@@ -231,7 +234,7 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
         </button>
       </div>
 
-      {/* Right: volume, queue, open the large player */}
+      {/* Right: volume and queue */}
       <div className="flex min-w-0 items-center justify-end gap-1">
         <button
           type="button"
@@ -279,9 +282,6 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
             <ListMusic className="h-5 w-5" aria-hidden />
           </button>
         ) : null}
-        <button type="button" onClick={onExpand} className={ICON_BUTTON} aria-label={t("music.expandPlayer")}>
-          <Maximize2 className="h-5 w-5" aria-hidden />
-        </button>
       </div>
 
       {queuePos && selectedQueueId && typeof document !== "undefined"
@@ -297,6 +297,26 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
             document.body
           )
         : null}
+      <MusicNowPlayingOverlay
+        open={nowPlayingOpen}
+        onClose={() => setNowPlayingOpen(false)}
+        coverSrc={coverSrc}
+        title={title || "—"}
+        artist={artist || "—"}
+        isPlaying={isPlaying}
+        position={position}
+        duration={duration}
+        onPlayPause={() => queueControl(isPlaying ? "pause" : "play")}
+        onPrevious={() => queueControl("previous")}
+        onNext={() => queueControl("next")}
+        labels={{
+          close: t("music.close"),
+          play: t("music.play"),
+          pause: t("music.pause"),
+          previous: t("music.previous"),
+          next: t("music.next"),
+        }}
+      />
     </footer>
   );
 }

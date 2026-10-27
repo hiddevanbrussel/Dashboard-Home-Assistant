@@ -74,4 +74,13 @@ describe("music page player bar", () => {
     expect(dock).toContain("setVolumeLevel(next)");
     expect(dock).not.toContain("player_queues/repeat");
   });
+
+  it("opens now playing from the cover and no longer expands the sheet", () => {
+    const dock = source("src/components/music-dock-bar.tsx");
+    expect(dock).not.toContain("onExpand");
+    expect(dock).not.toContain("Maximize2");
+    expect(dock).toContain("MusicNowPlayingOverlay");
+    const bar = source("src/components/global-music-bar.tsx");
+    expect(bar).not.toContain("onExpand=");
+  });
 });

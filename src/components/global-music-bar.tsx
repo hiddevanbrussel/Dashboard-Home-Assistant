@@ -12,7 +12,7 @@ import { shouldIgnoreVacuumSheetBackdropClose } from "@/lib/vacuum-card";
 
 /**
  * Music Assistant player as an inset floating sheet (not an always-on bottom tab).
- * Opens from the dashboard media card, and from the docked bar on /music.
+ * The sheet opens only from the dashboard cards.
  */
 export function GlobalMusicBar() {
   const pathname = usePathname();
@@ -91,10 +91,10 @@ export function GlobalMusicBar() {
         )
       : null;
 
-  /** On /music the player stays docked at the bottom; the expand button opens the large sheet. */
+  /** On /music the player stays docked. The sheet opens only from the dashboard cards. */
   const musicPageDock =
     onMusicPage && !playerBarExpanded && typeof document !== "undefined"
-      ? createPortal(<MusicDockBar onExpand={() => setPlayerBarExpanded(true)} />, document.body)
+      ? createPortal(<MusicDockBar />, document.body)
       : null;
 
   return (
