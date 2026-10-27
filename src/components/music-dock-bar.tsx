@@ -21,12 +21,15 @@ import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerActions } from "@/hooks/use-music-player-actions";
 import { useTranslation } from "@/hooks/use-translation";
+import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
 import { MusicNowPlayingOverlay } from "@/components/music-now-playing-overlay";
 import { MusicQueuePanel } from "@/components/music-queue-panel";
 import { MusicSpeakerPicker } from "@/components/music-speaker-picker";
+import { MusicVolumeSlider } from "@/components/music-volume-slider";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { getImageSrc, getItemImageUrl, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
-import { clampVolume, describeNowPlaying, nowPlayingFavoriteUri } from "@/lib/music-now-playing";
+import { describeNowPlaying, nowPlayingFavoriteUri } from "@/lib/music-now-playing";
+import { displayedVolume } from "@/lib/music-volume";
 import { cn } from "@/lib/utils";
 
 const ICON_BUTTON =
@@ -44,6 +47,7 @@ export function MusicDockBar() {
   const {
     queueControl,
     setVolumeLevel,
+    stepVolume,
     volume,
     volumeMuted,
     volumeMute,
@@ -58,7 +62,11 @@ export function MusicDockBar() {
 
   const queueButtonRef = useRef<HTMLButtonElement>(null);
   const queuePanelRef = useRef<HTMLDivElement>(null);
+  const volumeButtonRef = useRef<HTMLButtonElement>(null);
+  const volumePanelRef = useRef<HTMLDivElement>(null);
+  const volumeDraftRef = useRef<number | null>(null);
   const [queuePos, setQueuePos] = useState<{ bottom: number; right: number } | null>(null);
+  const [volumePos, setVolumePos] = useState<{ bottom: number; right: number } | null>(null);
   const [volumeDraft, setVolumeDraft] = useState<number | null>(null);
   const [favoritedUri, setFavoritedUri] = useState<string | null>(null);
   const [favoritePending, setFavoritePending] = useState(false);
@@ -90,7 +98,7 @@ export function MusicDockBar() {
     const player = maPlayers.find((p) => p.queue_id === selectedQueueId);
     return typeof player?.display_name === "string" ? player.display_name : "";
   })();
-  const shownVolume = volumeDraft ?? (volumeMuted ? 0 : volume);
+  const shownVolume = volumeDraft ?? displayedVolume(volume, volumeMuted);
 
   useEffect(() => {
     if (!queuePos) return;
@@ -112,10 +120,36 @@ export function MusicDockBar() {
     };
   }, [queuePos]);
 
+  useEffect(() => {
+    if (!volumePos) return;
+    const close = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (volumeButtonRef.current?.contains(target) || volumePanelRef.current?.contains(target)) return;
+      setVolumePos(null);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setVolumePos(null);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", onKey, true);
+    };
+  }, [volumePos]);
+
+  function rememberDraft(next: number) {
+    volumeDraftRef.current = next;
+    setVolumeDraft(next);
+  }
+
   /** Send the slider value once, when the finger or key is released, not on every step. */
   function commitVolume() {
-    if (volumeDraft == null) return;
-    const next = volumeDraft;
+    if (volumeDraftRef.current == null) return;
+    const next = volumeDraftRef.current;
+    volumeDraftRef.current = null;
     setVolumeDraft(null);
     if (next !== volume || volumeMuted) setVolumeLevel(next);
   }
@@ -135,11 +169,34 @@ export function MusicDockBar() {
 
   function openSpeaker(variant: "chip" | "icon") {
     setQueuePos(null);
+    setVolumePos(null);
     setSpeakerOpen(variant);
+  }
+
+  function toggleVolumePanel() {
+    setSpeakerOpen(null);
+    setQueuePos(null);
+    if (volumePos) {
+      setVolumePos(null);
+      return;
+    }
+    const rect = volumeButtonRef.current?.getBoundingClientRect();
+    setVolumePos(
+      rect
+        ? { bottom: Math.max(8, window.innerHeight - rect.top + 12), right: Math.max(12, window.innerWidth - rect.right) }
+        : { bottom: 96, right: 12 }
+    );
+  }
+
+  function changeVolumeBy(delta: number) {
+    volumeDraftRef.current = null;
+    setVolumeDraft(null);
+    stepVolume(delta);
   }
 
   function toggleQueue() {
     setSpeakerOpen(null);
+    setVolumePos(null);
     if (queuePos) {
       setQueuePos(null);
       return;
@@ -264,40 +321,43 @@ export function MusicDockBar() {
             />
           </>
         ) : null}
-        <button
-          type="button"
-          onClick={volumeMute}
-          disabled={volumePending}
-          className={ICON_BUTTON}
-          aria-label={volumeMuted ? t("music.volumeUnmute") : t("music.volumeMute")}
-          aria-pressed={volumeMuted}
-        >
-          {volumeMuted ? <VolumeX className="h-5 w-5" aria-hidden /> : <Volume2 className="h-5 w-5" aria-hidden />}
-        </button>
-        <div className="relative hidden h-11 w-28 items-center md:flex lg:w-32">
-          <div className="pointer-events-none absolute inset-x-0 h-1.5 rounded-full bg-gray-300/80 dark:bg-white/20" aria-hidden>
-            <div className="h-full rounded-full bg-gray-800 dark:bg-white/90" style={{ width: `${shownVolume}%` }} />
+        <div className="hidden items-center gap-1 landscape:lg:flex">
+          <button
+            type="button"
+            onClick={volumeMute}
+            disabled={volumePending}
+            className={ICON_BUTTON}
+            aria-label={volumeMuted ? t("music.volumeUnmute") : t("music.volumeMute")}
+            aria-pressed={volumeMuted}
+          >
+            {volumeMuted ? <VolumeX className="h-5 w-5" aria-hidden /> : <Volume2 className="h-5 w-5" aria-hidden />}
+          </button>
+          <div className="w-40 shrink-0">
+            <MusicVolumeSlider
+              value={shownVolume}
+              width={160}
+              disabled={!selectedQueueId}
+              label={t("music.volume")}
+              onDraft={rememberDraft}
+              onCommit={commitVolume}
+            />
           </div>
-          <span
-            className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 rounded-full bg-gray-800 shadow ring-2 ring-white dark:bg-white dark:ring-gray-900"
-            style={{ left: `${shownVolume}%` }}
-            aria-hidden
-          />
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={shownVolume}
-            disabled={!selectedQueueId}
-            onChange={(event) => setVolumeDraft(clampVolume(Number(event.target.value)))}
-            onPointerUp={commitVolume}
-            onKeyUp={commitVolume}
-            onBlur={commitVolume}
-            className="absolute inset-0 h-11 w-full cursor-pointer appearance-none opacity-0 disabled:cursor-default"
-            aria-label={t("music.volume")}
-          />
+          <span className="w-8 text-sm font-bold tabular-nums">{shownVolume}</span>
         </div>
+        <button
+          ref={volumeButtonRef}
+          type="button"
+          onClick={toggleVolumePanel}
+          className={cn(
+            "flex h-11 min-w-11 items-center justify-center rounded-full px-2.5 text-sm font-bold tabular-nums outline-none ring-1 ring-gray-500 landscape:lg:hidden dark:ring-white/40",
+            FOCUS_RING_BRAND,
+            volumePos && "bg-gray-300/80 text-gray-900 dark:bg-white/20 dark:text-white"
+          )}
+          aria-label={t("music.volumeButton").replace("{n}", String(shownVolume))}
+          aria-expanded={volumePos != null}
+        >
+          🔊 {shownVolume}
+        </button>
         {selectedQueueId ? (
           <button
             ref={queueButtonRef}
@@ -322,6 +382,76 @@ export function MusicDockBar() {
               position={queuePos}
               panelRef={queuePanelRef}
             />,
+            document.body
+          )
+        : null}
+      {volumePos && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={volumePanelRef}
+              className="fixed z-[320] w-[300px] rounded-2xl bg-white/95 p-3 shadow-2xl ring-1 ring-black/10 dark:bg-[#1b1a21] dark:ring-white/10"
+              style={{ bottom: volumePos.bottom, right: volumePos.right }}
+              data-no-page-swipe
+              role="dialog"
+              aria-label={t("music.volumePanelTitle").replace("{name}", playerName || "—")}
+              onClick={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                    {t("music.volumePanelTitle").replace("{name}", playerName || "—")}
+                  </p>
+                  <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-white">
+                    {t("music.volumePercent").replace("{n}", String(shownVolume))}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={volumeMute}
+                  disabled={volumePending}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-700 hover:bg-gray-200/80 disabled:opacity-50 dark:text-white/90 dark:hover:bg-white/10"
+                  aria-label={volumeMuted ? t("music.volumeUnmute") : t("music.volumeMute")}
+                  aria-pressed={volumeMuted}
+                >
+                  {volumeMuted ? <VolumeX className="h-5 w-5" aria-hidden /> : <Volume2 className="h-5 w-5" aria-hidden />}
+                </button>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => changeVolumeBy(-5)}
+                  disabled={volumePending || !selectedQueueId}
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-gray-800 outline-none ring-1 ring-gray-500 disabled:opacity-50 dark:text-white/90 dark:ring-white/40",
+                    FOCUS_RING_BRAND
+                  )}
+                  aria-label={t("music.volumeDown")}
+                >
+                  −
+                </button>
+                <MusicVolumeSlider
+                  value={shownVolume}
+                  width={170}
+                  disabled={!selectedQueueId}
+                  label={t("music.volume")}
+                  onDraft={rememberDraft}
+                  onCommit={commitVolume}
+                />
+                <button
+                  type="button"
+                  onClick={() => changeVolumeBy(5)}
+                  disabled={volumePending || !selectedQueueId}
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-gray-800 outline-none ring-1 ring-gray-500 disabled:opacity-50 dark:text-white/90 dark:ring-white/40",
+                    FOCUS_RING_BRAND
+                  )}
+                  aria-label={t("music.volumeUp")}
+                >
+                  +
+                </button>
+              </div>
+            </div>,
             document.body
           )
         : null}

@@ -1,17 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSpeakerPairing } from "@/hooks/use-speaker-pairing";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
+import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND } from "@/lib/music-assistant-commands";
+import { groupLeaderQueueId } from "@/lib/ma-group-leader";
+import { stepVolume as steppedVolume } from "@/lib/music-volume";
 import { readPreloadedPlayerVolume } from "@/lib/player-volume";
 import { playUiClick } from "@/lib/ui-click";
 
 export function useMusicPlayerActions() {
   const musicAssistant = useMusicAssistantStore();
-  const { selectedQueueId, queueState, setQueueState } = useMusicPlayerStore();
+  const { selectedQueueId, maPlayers, queueState, setQueueState } = useMusicPlayerStore();
+  const states = useEntityStateStore((s) => s.states);
+  const { entityMap } = useSpeakerPairing({ enabled: true });
+  const volumeTargetId = groupLeaderQueueId(selectedQueueId, maPlayers, entityMap, states) ?? selectedQueueId;
   const [volume, setVolume] = useState(80);
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
   const [volumePending, setVolumePending] = useState(false);
   const [volumeMuted, setVolumeMuted] = useState(false);
   const [seekPending, setSeekPending] = useState(false);
@@ -21,9 +30,9 @@ export function useMusicPlayerActions() {
   const [shufflePending, setShufflePending] = useState(false);
 
   useEffect(() => {
-    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !selectedQueueId) return;
+    if (!musicAssistant.enabled || !musicAssistant.baseUrl || !volumeTargetId) return;
     callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, MUSIC_ASSISTANT_PLAYER_VOLUME_COMMAND, {
-      player_id: selectedQueueId,
+      player_id: volumeTargetId,
     })
       .then((data: unknown) => {
         const next = readPreloadedPlayerVolume(data);
@@ -31,7 +40,7 @@ export function useMusicPlayerActions() {
         if (next.muted != null) setVolumeMuted(next.muted);
       })
       .catch(() => {});
-  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, selectedQueueId]);
+  }, [musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, volumeTargetId]);
 
   const queueControl = useCallback(
     (action: "previous" | "play" | "pause" | "next") => {
@@ -76,19 +85,41 @@ export function useMusicPlayerActions() {
 
   const setVolumeLevel = useCallback(
     (pct: number) => {
-      if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+      if (!volumeTargetId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
       const level = Math.max(0, Math.min(100, pct)) / 100;
-      setVolume(Math.round(pct));
+      const next = Math.round(pct);
+      volumeRef.current = next;
+      setVolume(next);
+      setVolumeMuted(false);
       setVolumePending(true);
       callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_set", {
-        player_id: selectedQueueId,
+        player_id: volumeTargetId,
         volume_level: level,
       })
         .then(() => {})
         .catch(() => {})
         .finally(() => setVolumePending(false));
     },
-    [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
+    [volumeTargetId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
+  );
+
+  const stepVolume = useCallback(
+    (delta: number) => {
+      if (!volumeTargetId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+      const next = steppedVolume(volumeRef.current, delta);
+      volumeRef.current = next;
+      setVolume(next);
+      setVolumeMuted(false);
+      setVolumePending(true);
+      callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_set", {
+        player_id: volumeTargetId,
+        volume_level: next / 100,
+      })
+        .then(() => {})
+        .catch(() => {})
+        .finally(() => setVolumePending(false));
+    },
+    [volumeTargetId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]
   );
 
   const volumeUp = useCallback(() => {
@@ -114,11 +145,11 @@ export function useMusicPlayerActions() {
   }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token]);
 
   const volumeMute = useCallback(() => {
-    if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
+    if (!volumeTargetId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
     const nextMuted = !volumeMuted;
     setVolumePending(true);
     callMusicAssistant(musicAssistant.baseUrl, musicAssistant.token, "players/cmd/volume_mute", {
-      player_id: selectedQueueId,
+      player_id: volumeTargetId,
       muted: nextMuted,
     })
       .then((data: unknown) => {
@@ -127,7 +158,7 @@ export function useMusicPlayerActions() {
       })
       .catch(() => {})
       .finally(() => setVolumePending(false));
-  }, [selectedQueueId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, volumeMuted]);
+  }, [volumeTargetId, musicAssistant.enabled, musicAssistant.baseUrl, musicAssistant.token, volumeMuted]);
 
   const toggleDontStopTheMusic = useCallback(() => {
     if (!selectedQueueId || !musicAssistant.enabled || !musicAssistant.baseUrl) return;
@@ -177,6 +208,7 @@ export function useMusicPlayerActions() {
     queueControl,
     seekTo,
     setVolumeLevel,
+    stepVolume,
     volumeUp,
     volumeDown,
     volumeMute,

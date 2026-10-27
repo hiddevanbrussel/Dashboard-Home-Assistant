@@ -68,11 +68,30 @@ describe("music page player bar", () => {
   });
 
   it("sends the volume once on release, through the allowed volume_set command", () => {
+    const slider = source("src/components/music-volume-slider.tsx");
     const dock = source("src/components/music-dock-bar.tsx");
-    expect(dock).toContain("onPointerUp={commitVolume}");
-    expect(dock).toContain("onKeyUp={commitVolume}");
-    expect(dock).toContain("setVolumeLevel(next)");
+    const actions = source("src/hooks/use-music-player-actions.ts");
+    expect(slider).toContain("onPointerUp={onPointerUp}");
+    expect(slider).toContain("onKeyUp={onCommit}");
+    expect(actions).toContain("setVolumeLevel");
+    expect(actions).toContain("players/cmd/volume_set");
     expect(dock).not.toContain("player_queues/repeat");
+    expect(actions).not.toContain("player_queues/repeat");
+    expect(dock).toContain("w-40");
+    expect(dock).toContain("shrink-0");
+    expect(slider).toContain("h-2");
+    expect(slider).toContain("h-6 w-6");
+    expect(slider).toContain("h-11");
+    expect(slider).toContain("bg-gray-500");
+    expect(slider).toContain("dark:bg-white/40");
+    expect(dock).toContain("landscape:lg:flex");
+    expect(dock).toContain("landscape:lg:hidden");
+    expect(slider).toContain("FOCUS_RING_BRAND");
+    expect(slider).toContain("outline-none");
+    expect(dock).toContain("FOCUS_RING_BRAND");
+    expect(dock).toContain("🔊");
+    expect(dock).toContain('aria-label={t("music.volumeDown")}');
+    expect(dock).toContain('aria-label={t("music.volumeUp")}');
   });
 
   it("opens now playing from the cover and no longer expands the sheet", () => {
