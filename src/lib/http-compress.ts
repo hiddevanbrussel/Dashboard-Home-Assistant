@@ -1,12 +1,18 @@
 /**
- * Gzip (or brotli, when the client does not accept gzip) for the standalone
- * Node server: `next start` / Docker `node server.js`, and the add-on Next
- * process behind nginx on :3000.
+ * Gzip (or brotli, when the client does not accept gzip) for API responses
+ * on the standalone Node server: `next start` / Docker `node server.js`,
+ * and the add-on Next process behind nginx on :3000.
  *
- * Next's built-in `compress` middleware is off (see next.config.ts). App
- * Router responses are chunked and headers are flushed before the body size
- * is known, so that middleware skips them. This hook buffers the body until
- * `end`, then sets `Content-Encoding` and `Vary: Accept-Encoding` once.
+ * Only `${basePath}/api` and `${basePath}/api/...` are compressed. `basePath`
+ * is `NEXT_BASE_PATH` or `NEXT_PUBLIC_BASE_PATH` (see next.config.ts). A
+ * request that a proxy already stripped to `/api/...` still matches. Every
+ * other path, including HTML documents and the RSC stream, is left untouched
+ * so App Router responses keep streaming. `text/html` and `text/x-component`
+ * are never buffered, even when they are returned from an API route.
+ *
+ * Next's built-in `compress` middleware is off (see next.config.ts). For a
+ * compressible API body this hook buffers chunks until `end`, then sets
+ * `Content-Encoding` and `Vary: Accept-Encoding` once.
  *
  * The HA ingress proxy sends `Accept-Encoding: identity` upstream so it can
  * rewrite paths, and compresses the rewritten body itself. Clients that do
@@ -66,7 +72,15 @@ export function chooseContentEncoding(acceptEncoding: string | undefined): Encod
 export function isCompressibleContentType(contentType: string | undefined): boolean {
   if (!contentType) return false;
   const ct = contentType.toLowerCase().split(";")[0]?.trim() ?? "";
-  if (!ct || ct === "text/event-stream" || ct.startsWith("multipart/")) return false;
+  if (
+    !ct ||
+    ct === "text/event-stream" ||
+    ct === "text/html" ||
+    ct === "text/x-component" ||
+    ct.startsWith("multipart/")
+  ) {
+    return false;
+  }
   if (ct.includes("svg")) return true;
   if (
     ct.startsWith("image/") ||
@@ -133,10 +147,30 @@ function applyHeaders(res: ServerResponse, headers: OutgoingHttpHeaders): void {
   }
 }
 
-function attachResponseCompression(req: IncomingMessage, res: ServerResponse): void {
+/**
+ * True only for `${basePath}/api` and `${basePath}/api/...`.
+ * With an empty basePath that is `/api` and `/api/...`. When a basePath is
+ * set, an already-stripped `/api/...` still matches. The query string is
+ * ignored. `/apix`, pages, Next assets, and `undefined` are false.
+ */
+export function isCompressiblePath(url: string | undefined, basePath: string): boolean {
+  if (!url) return false;
+  const path = url.split("?")[0] ?? "";
+  if (isApiPath(path, "")) return true;
+  return basePath.length > 0 && isApiPath(path, basePath);
+}
+
+function isApiPath(path: string, basePath: string): boolean {
+  const prefix = basePath.length > 1 && basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+  const root = `${prefix}/api`;
+  return path === root || path.startsWith(`${root}/`);
+}
+
+function attachResponseCompression(req: IncomingMessage, res: ServerResponse, basePath: string): void {
   const stamped = res as StampedResponse;
   if (stamped.__dashboardGzip || res.headersSent) return;
   if (req.method === "HEAD" || req.headers.range) return;
+  if (!isCompressiblePath(req.url, basePath)) return;
   const encoding = chooseContentEncoding(acceptEncodingHeader(req));
   stamped.__dashboardGzip = true;
   if (!encoding) {
@@ -245,7 +279,9 @@ function attachResponseCompression(req: IncomingMessage, res: ServerResponse): v
   } as typeof res.end;
 }
 
-export function installResponseCompression(): () => void {
+export function installResponseCompression(options?: { basePath?: string }): () => void {
+  const basePath =
+    options?.basePath ?? (process.env.NEXT_BASE_PATH || process.env.NEXT_PUBLIC_BASE_PATH || "");
   const proto = http.Server.prototype as StampedServer;
   if (proto.__dashboardGzip) return () => undefined;
   const original = proto.emit;
@@ -254,7 +290,7 @@ export function installResponseCompression(): () => void {
       const req = args[0];
       const res = args[1];
       if (isIncomingMessage(req) && isServerResponse(res)) {
-        attachResponseCompression(req, res);
+        attachResponseCompression(req, res, basePath);
       }
     }
     return original.apply(this, [event, ...args] as Parameters<typeof original>);

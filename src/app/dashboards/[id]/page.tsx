@@ -1407,7 +1407,7 @@ export default function DashboardEditPage() {
     }
   }, [editingWidget, editingGroupChildId]);
 
-  const { data, isLoading, error } = useQuery<DashboardData & { welcomeTitle?: string | null; welcomeSubtitle?: string | null; temperatureEntityId?: string | null; humidityEntityId?: string | null }>({
+  const { data, isLoading, error } = useQuery<DashboardData & { welcomeTitle?: string | null; welcomeSubtitle?: string | null; temperatureEntityId?: string | null; humidityEntityId?: string | null; icon?: string | null; iconBackgroundColor?: string | null }>({
     queryKey: isRoomMode ? ["room-dashboard", areaId] : ["dashboard", id],
     queryFn: async () => {
       const res = await fetch(apiBase);
