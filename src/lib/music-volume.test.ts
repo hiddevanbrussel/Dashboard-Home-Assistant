@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { displayedVolume, stepVolume, trackTapVolume, volumeFigure } from "./music-volume";
+import { displayedVolume, stepVolume, trackTapVolume, volumeFigure, volumePanelText, volumeValueText } from "./music-volume";
 
 describe("music volume", () => {
   it("limits an upward track tap to +10 and lets a downward tap through", () => {
@@ -27,5 +27,13 @@ describe("music volume", () => {
     expect(volumeFigure(Number.NaN, false)).toBe("–");
     expect(volumeFigure(32, false)).toBe("32");
     expect(volumeFigure(40, true)).toBe("0");
+  });
+
+  it("announces a dash until a level or a draft exists, and hides the percent sign", () => {
+    expect(volumeValueText(null, null)).toBe("–");
+    expect(volumeValueText(null, 12)).toBeUndefined();
+    expect(volumeValueText(44, null)).toBeUndefined();
+    expect(volumePanelText("–", "{n} %")).toBe("–");
+    expect(volumePanelText("44", "{n} %")).toBe("44 %");
   });
 });

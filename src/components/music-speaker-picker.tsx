@@ -8,7 +8,7 @@ import { useSpeakerPairing, resolveEntityId } from "@/hooks/use-speaker-pairing"
 import { useTranslation } from "@/hooks/use-translation";
 import { groupMemberIds } from "@/lib/ma-group-leader";
 import { writeStoredQueueId } from "@/lib/music-selected-player";
-import { speakerStatus, type SpeakerDot } from "@/lib/music-speaker-status";
+import { speakerRowAriaLabel, speakerStatus, type SpeakerDot } from "@/lib/music-speaker-status";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
@@ -214,8 +214,19 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
                     inGroupAsMember: playingAlongAsMember(entityId, haState, states),
                   });
                   const statusLabel = t(status.labelKey);
-                  const rowLabel = t("music.speakerRowLabel").replace("{name}", name).replace("{status}", statusLabel);
                   const selected = player.queue_id === selectedQueueId;
+                  const groupWith =
+                    selected && groupedWithCurrent > 0
+                      ? t("music.groupWith").replace("{n}", String(groupedWithCurrent))
+                      : null;
+                  const rowLabel = speakerRowAriaLabel({
+                    name,
+                    status: statusLabel,
+                    groupWith,
+                    selected,
+                    rowTemplate: t("music.speakerRowLabel"),
+                    selectedSuffix: t("music.speakerSelectedSuffix"),
+                  });
                   const isGrouped = entityId ? groupMembers.has(entityId) : false;
                   const canJoin = !!entityId && !!activeEntityId && !isGrouped && !selected;
                   const canUnjoin = !!entityId && isGrouped && !selected;
@@ -234,21 +245,17 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
                           FOCUS_RING_BRAND,
                           selected && "bg-[#4700B5]/[0.06] dark:bg-[#8357be]/20"
                         )}
-                        aria-label={selected ? `${rowLabel}${t("music.speakerSelectedSuffix")}` : rowLabel}
+                        aria-label={rowLabel}
                       >
                         <Speaker className="h-5 w-5 shrink-0 text-gray-700 dark:text-white/80" aria-hidden />
                         <span className="min-w-0 flex-1">
-                          <span className="flex min-w-0 items-baseline gap-1">
-                            <span className="truncate text-sm font-medium text-gray-900 dark:text-white">{name}</span>
-                            {selected && groupedWithCurrent > 0 ? (
-                              <span className="shrink-0 text-xs text-gray-600 dark:text-gray-400">
-                                · {t("music.groupWith").replace("{n}", String(groupedWithCurrent))}
-                              </span>
-                            ) : null}
-                          </span>
+                          <span className="block truncate text-sm font-medium text-gray-900 dark:text-white">{name}</span>
                           <span className="flex items-center gap-1.5">
                             <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT_CLASS[status.dot])} aria-hidden />
-                            <span className="truncate text-xs text-gray-600 dark:text-gray-400">{statusLabel}</span>
+                            <span className="truncate text-xs text-gray-600 dark:text-gray-400">
+                              {statusLabel}
+                              {groupWith ? ` · ${groupWith}` : null}
+                            </span>
                           </span>
                         </span>
                         {selected ? (

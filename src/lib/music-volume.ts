@@ -23,3 +23,16 @@ export function volumeFigure(volume: number | null, muted: boolean): string {
   if (volume == null || !Number.isFinite(volume)) return "–";
   return String(displayedVolume(volume, muted));
 }
+
+/** Screen reader text while the level is still unknown. A draft replaces it. */
+export function volumeValueText(volume: number | null, draft: number | null): string | undefined {
+  if (draft != null) return undefined;
+  if (volume == null || !Number.isFinite(volume)) return "–";
+  return undefined;
+}
+
+/** Panel heading. An unknown level is a dash, without a percent sign. */
+export function volumePanelText(figure: string, percentTemplate: string): string {
+  if (figure === "–") return "–";
+  return percentTemplate.replace("{n}", figure);
+}

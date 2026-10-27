@@ -104,6 +104,9 @@ describe("music page player bar", () => {
     expect(dock).toContain("🔊");
     expect(dock).toContain('aria-label={t("music.volumeDown")}');
     expect(dock).toContain('aria-label={t("music.volumeUp")}');
+    expect(dock).toContain("inline-block w-[2ch] text-right");
+    expect(dock).toContain("volumePanelText");
+    expect(slider).toContain("aria-valuetext={valueText}");
   });
 
   it("opens now playing from the cover and no longer expands the sheet", () => {
@@ -135,6 +138,8 @@ describe("music page player bar", () => {
     expect(picker).toContain("bg-[#4700B5]/[0.06]");
     expect(picker).toContain("dark:bg-[#8357be]/20");
     expect(picker).toContain('t("music.groupWith")');
+    expect(picker).toContain("speakerRowAriaLabel");
+    expect(picker).toContain("aria-label={rowLabel}");
     expect(picker).toContain('status.code !== "off"');
     expect(picker).toContain("buttonRef.current?.focus()");
     expect(picker).toContain('data-speaker-row={selected ? "active" : ""}');
@@ -154,6 +159,9 @@ describe("music page player bar", () => {
     expect(overlay).toContain("onSeek(Number(e.target.value))");
     expect(overlay).toContain("labels.position");
     expect(overlay).toContain("h-11");
+    expect(overlay).toContain("bg-white/40");
+    expect(overlay).toContain("peer-focus-visible:ring-2 ring-white ring-offset-2 ring-offset-black/40");
+    expect(overlay).not.toContain("bg-white/15");
     expect(dock).toContain("onSeek={seekTo}");
     expect(dock).not.toContain('type="range"');
     expect(dock).not.toContain("player_queues/seek");

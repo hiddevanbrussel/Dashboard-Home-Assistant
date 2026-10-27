@@ -70,3 +70,20 @@ export function speakerStatus(
     }
   }
 }
+
+/**
+ * Row label for the speaker list. The group note follows the status:
+ * "Keuken, Speelt · met 1 andere".
+ */
+export function speakerRowAriaLabel(input: {
+  name: string;
+  status: string;
+  groupWith: string | null;
+  selected: boolean;
+  rowTemplate: string;
+  selectedSuffix: string;
+}): string {
+  const statusText = input.groupWith ? `${input.status} · ${input.groupWith}` : input.status;
+  const row = input.rowTemplate.replace("{name}", input.name).replace("{status}", statusText);
+  return input.selected ? `${row}${input.selectedSuffix}` : row;
+}

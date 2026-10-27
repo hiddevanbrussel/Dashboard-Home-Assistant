@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getTranslations } from "./i18n";
-import { speakerStatus } from "./music-speaker-status";
+import { speakerRowAriaLabel, speakerStatus } from "./music-speaker-status";
 
 const nl = getTranslations("nl");
 
@@ -44,5 +44,20 @@ describe("speakerStatus", () => {
     expect(speakerStatus("paused").dimmed).toBe(false);
     expect(speakerStatus("idle").dimmed).toBe(false);
     expect(speakerStatus("off").dimmed).toBe(false);
+  });
+});
+
+describe("speaker row aria label", () => {
+  it("puts the group note after the status, including when the row is selected", () => {
+    const shared = {
+      name: "Keuken",
+      status: "Speelt",
+      rowTemplate: nl["music.speakerRowLabel"],
+      selectedSuffix: nl["music.speakerSelectedSuffix"],
+    };
+    expect(
+      speakerRowAriaLabel({ ...shared, groupWith: nl["music.groupWith"].replace("{n}", "1"), selected: true })
+    ).toBe("Keuken, Speelt · met 1 andere, geselecteerd");
+    expect(speakerRowAriaLabel({ ...shared, groupWith: null, selected: false })).toBe("Keuken, Speelt");
   });
 });

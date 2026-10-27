@@ -29,7 +29,7 @@ import { MusicVolumeSlider } from "@/components/music-volume-slider";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { getImageSrc, getItemImageUrl, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
 import { describeNowPlaying, nowPlayingFavoriteUri } from "@/lib/music-now-playing";
-import { displayedVolume, volumeFigure } from "@/lib/music-volume";
+import { displayedVolume, volumeFigure, volumePanelText, volumeValueText } from "@/lib/music-volume";
 import { cn } from "@/lib/utils";
 
 const ICON_BUTTON =
@@ -103,6 +103,7 @@ export function MusicDockBar() {
   })();
   const sliderValue = volumeDraft ?? (volume == null ? 0 : displayedVolume(volume, volumeMuted));
   const volumeLabel = volumeDraft != null ? String(volumeDraft) : volumeFigure(volume, volumeMuted);
+  const volumeAnnounced = volumeValueText(volume, volumeDraft);
 
   useEffect(() => {
     if (!queuePos) return;
@@ -344,6 +345,7 @@ export function MusicDockBar() {
               width={160}
               disabled={!selectedQueueId}
               label={t("music.volume")}
+              valueText={volumeAnnounced}
               onDraft={rememberDraft}
               onCommit={commitVolume}
             />
@@ -362,7 +364,7 @@ export function MusicDockBar() {
           aria-label={t("music.volumeButton").replace("{n}", volumeLabel)}
           aria-expanded={volumePos != null}
         >
-          🔊 {volumeLabel}
+          🔊 <span className="inline-block w-[2ch] text-right">{volumeLabel}</span>
         </button>
         {selectedQueueId ? (
           <button
@@ -409,7 +411,7 @@ export function MusicDockBar() {
                     {t("music.volumePanelTitle").replace("{name}", playerName || "—")}
                   </p>
                   <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-white">
-                    {t("music.volumePercent").replace("{n}", volumeLabel)}
+                    {volumePanelText(volumeLabel, t("music.volumePercent"))}
                   </p>
                 </div>
                 <button
@@ -445,6 +447,7 @@ export function MusicDockBar() {
                   width={170}
                   disabled={!selectedQueueId}
                   label={t("music.volume")}
+                  valueText={volumeAnnounced}
                   onDraft={rememberDraft}
                   onCommit={commitVolume}
                 />

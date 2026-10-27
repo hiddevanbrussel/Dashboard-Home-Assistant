@@ -11,6 +11,7 @@ type MusicVolumeSliderProps = {
   width: number;
   disabled?: boolean;
   label: string;
+  valueText?: string;
   onDraft: (value: number) => void;
   onCommit: () => void;
 };
@@ -19,7 +20,15 @@ type MusicVolumeSliderProps = {
  * Custom volume slider. A drag starts on the thumb. A tap on the track uses
  * trackTapVolume. The parent commits once, on release.
  */
-export function MusicVolumeSlider({ value, width, disabled = false, label, onDraft, onCommit }: MusicVolumeSliderProps) {
+export function MusicVolumeSlider({
+  value,
+  width,
+  disabled = false,
+  label,
+  valueText,
+  onDraft,
+  onCommit,
+}: MusicVolumeSliderProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const live = useRef(value);
@@ -105,6 +114,7 @@ export function MusicVolumeSlider({ value, width, disabled = false, label, onDra
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={shown}
+      aria-valuetext={valueText}
       aria-label={label}
       aria-disabled={disabled || undefined}
       className={cn("relative flex h-11 items-center rounded-full outline-none", FOCUS_RING_BRAND, disabled && "opacity-50")}
