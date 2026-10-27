@@ -41,3 +41,24 @@ describe("shadow-tile token", () => {
     expect(source("nuts-card-widget.tsx")).toContain("shadow-xl");
   });
 });
+
+function rootAndClip(file: string): { root: string; clip: string } {
+  const src = source(file);
+  const marker = src.indexOf('"card-plot-in fixed');
+  const rootStart = src.lastIndexOf("className={cn(", marker);
+  const rootEnd = src.indexOf(")}", marker);
+  const clipAt = src.indexOf("className=", rootEnd);
+  return {
+    root: src.slice(rootStart, rootEnd),
+    clip: src.slice(clipAt, src.indexOf(">", clipAt)),
+  };
+}
+
+describe("floating tile shadow on the wrapper", () => {
+  it("Team Tracker shadows the root and clips in the same radius", () => {
+    const { root, clip } = rootAndClip("floating-teamtracker-card.tsx");
+    expect(root).toContain("rounded-[1.35rem] shadow-tile dark:shadow-tile-dark");
+    expect(clip).toContain("overflow-hidden");
+    expect(clip).toContain("rounded-[1.35rem]");
+  });
+});

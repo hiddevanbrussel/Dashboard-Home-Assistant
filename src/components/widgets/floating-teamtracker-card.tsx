@@ -312,7 +312,7 @@ export function FloatingTeamtrackerCard({
     <div
       ref={cardElRef}
       className={cn(
-        "card-plot-in fixed z-40",
+        "card-plot-in fixed z-40 rounded-[1.35rem] shadow-tile dark:shadow-tile-dark",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle"
       )}
@@ -337,7 +337,7 @@ export function FloatingTeamtrackerCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className="h-full w-full overflow-hidden" style={{ width: totalWidth, height: totalHeight }}>
+      <div className="h-full w-full overflow-hidden rounded-[1.35rem]" style={{ width: totalWidth, height: totalHeight }}>
         <TeamtrackerCardWidget
           title={title}
           entity_id={entity_id}
