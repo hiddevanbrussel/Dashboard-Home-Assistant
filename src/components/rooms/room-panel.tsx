@@ -75,6 +75,13 @@ export function toPanelRoom(
   };
 }
 
+export function roomPanelInitialIconColor(room?: PanelRoom | null): { icon: string; color: string } {
+  return {
+    icon: room?.icon || ROOM_ICON_OPTIONS[0],
+    color: room?.iconBackgroundColor || ROOM_ICON_COLOR_DEFAULT,
+  };
+}
+
 export function RoomPanel({
   mode,
   room,
@@ -94,8 +101,8 @@ export function RoomPanel({
   const initialFloor = room ? (room.floor ?? "") : (defaultFloor ?? "");
   const presetFloor = ROOM_FLOORS.some((floor) => floor.value === initialFloor);
   const [name, setName] = useState(room?.name ?? "");
-  const [icon, setIcon] = useState(room?.icon || ROOM_ICON_OPTIONS[0]);
-  const [color, setColor] = useState(room?.iconBackgroundColor || ROOM_ICON_COLOR_DEFAULT);
+  const [icon, setIcon] = useState(roomPanelInitialIconColor(room).icon);
+  const [color, setColor] = useState(roomPanelInitialIconColor(room).color);
   const [floor, setFloor] = useState(presetFloor ? initialFloor : initialFloor ? "__other" : "");
   const [customFloor, setCustomFloor] = useState(presetFloor ? "" : initialFloor);
   const [background, setBackground] = useState<string | null>(room?.background ?? null);

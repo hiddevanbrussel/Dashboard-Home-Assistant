@@ -31,6 +31,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
     areaId: rd.areaId,
     name: rd.name ?? rd.areaId,
     floor: rd.floor ?? null,
+    icon: rd.icon ?? null,
+    iconBackgroundColor: rd.iconBackgroundColor ?? null,
     layout: rd.layout,
     widgets: rd.widgets,
     background: rd.background,
