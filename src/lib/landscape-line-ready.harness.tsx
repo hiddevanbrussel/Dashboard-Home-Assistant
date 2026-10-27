@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { cardDefaultPosition } from "@/lib/floating-card-defaults";
 import { formatLayoutNotice, useFloatingOrientation } from "@/hooks/use-floating-orientation";
 import { getTranslations } from "@/lib/i18n";
-import type { FloatingWidgetInput } from "@/lib/floating-orientation-layout";
+import { floatingStorageKey, type FloatingWidgetInput } from "@/lib/floating-orientation-layout";
 
 const VIEW = { width: 1280, height: 800 };
 const DRAGGED = '{"left": 400, "bottom": 300}';
@@ -11,17 +11,152 @@ const DRAGGED = '{"left": 400, "bottom": 300}';
 const DRAGGED_CLEAR = '{"left": 96, "bottom": 96}';
 const SCALED = '{"left": 1000, "bottom": 40}';
 
-type Mode = "late" | "fresh" | "polluted" | "few";
+type Mode = "late" | "fresh" | "polluted" | "few" | "shift" | "crowd" | "beside" | "row";
 
 function readMode(): Mode {
   const params = new URLSearchParams(window.location.search);
+  if (params.has("shift")) return "shift";
+  if (params.has("beside")) return "beside";
+  if (params.has("row")) return "row";
+  if (params.has("crowd")) return "crowd";
   if (params.has("late")) return "late";
   if (params.has("polluted")) return "polluted";
   if (params.has("few")) return "few";
   return "fresh";
 }
 
+const SHIFT: FloatingWidgetInput[] = ["a", "b", "c", "d"].map((id) => ({
+  id,
+  type: "text_card",
+  page: 0,
+  width: 280,
+  height: 120,
+}));
+
+const CROWD: FloatingWidgetInput[] = [
+  { id: "l01", type: "text_card", page: 0, width: 700, height: 200 },
+  { id: "speaker", type: "text_card", page: 0, width: 700, height: 200 },
+  { id: "l02", type: "text_card", page: 0, width: 700, height: 200 },
+  { id: "l03", type: "text_card", page: 0, width: 700, height: 200 },
+  { id: "l04", type: "text_card", page: 0, width: 700, height: 200 },
+  { id: "l05", type: "text_card", page: 0, width: 700, height: 200 },
+  { id: "s01", type: "text_card", page: 0, width: 700, height: 180 },
+  { id: "s02", type: "text_card", page: 0, width: 700, height: 180 },
+  { id: "s03", type: "text_card", page: 0, width: 700, height: 180 },
+  { id: "s04", type: "text_card", page: 0, width: 700, height: 180 },
+  { id: "breed", type: "text_card", page: 0, width: 760, height: 200 },
+  { id: "klimaat", type: "text_card", page: 0, width: 760, height: 220 },
+];
+
+let activeMode: Mode = "fresh";
+
+function wantsEleven(): boolean {
+  return new URLSearchParams(window.location.search).has("eleven");
+}
+
+function dashboardIdFor(mode: Mode): string {
+  if (mode === "shift" && wantsEleven()) return "room-row";
+  if (mode === "shift") return "room-h1";
+  if (mode === "crowd") return "room-h2";
+  if (mode === "beside") return "room-beside";
+  if (mode === "row") return "room-row";
+  return "room-h8";
+}
+
+function textKey(scope: string, id: string): string {
+  return `dashboard.floatingTextCardPosition.${scope}.${id}`;
+}
+
+function rowWidgets(): FloatingWidgetInput[] {
+  return [
+    ...Array.from({ length: 6 }, (_, index) => ({
+      id: `lamp${index + 1}`,
+      type: "light_card",
+      page: 0,
+      card_layout: "horizontal" as const,
+      width: 240,
+      height: 70,
+    })),
+    ...Array.from({ length: 3 }, (_, index) => ({
+      id: `sensor${index + 1}`,
+      type: "sensor_card",
+      page: 0,
+      width: 260,
+      height: 108,
+    })),
+    { id: "a-speaker", type: "media_card", page: 0, width: 280, height: 340 },
+    { id: "wide", type: "text_card", page: 0, width: 640, height: 72 },
+  ];
+}
+
+function besideWidgets(): FloatingWidgetInput[] {
+  const scaled = new URLSearchParams(window.location.search).get("scale") === "1";
+  return [
+    { id: "lamp", type: "light_card", page: 0, card_layout: "horizontal", width: 240, height: 70 },
+    {
+      id: "speaker",
+      type: "media_card",
+      page: 0,
+      width: scaled ? 312 : 280,
+      height: scaled ? 356 : 340,
+      ...(scaled ? { scale: 1.2 } : {}),
+    },
+  ];
+}
+
+/** main-192 and the fd7f1e1 band, remapped onto the row widget ids. No wide tile. */
+const ELEVEN_PRESETS: Record<string, { line: number; spots: Record<string, { left: number; bottom: number }> }> = {
+  main192: {
+    line: 192,
+    spots: {
+      lamp1: { left: 96, bottom: 528 },
+      lamp2: { left: 352, bottom: 528 },
+      lamp3: { left: 608, bottom: 528 },
+      lamp4: { left: 864, bottom: 528 },
+      lamp5: { left: 96, bottom: 432 },
+      lamp6: { left: 352, bottom: 432 },
+      sensor1: { left: 608, bottom: 400 },
+      sensor2: { left: 896, bottom: 400 },
+      sensor3: { left: 96, bottom: 304 },
+      "a-speaker": { left: 384, bottom: 32 },
+    },
+  },
+  fd7: {
+    line: 208,
+    spots: {
+      lamp1: { left: 688, bottom: 304 },
+      lamp2: { left: 944, bottom: 304 },
+      lamp3: { left: 96, bottom: 208 },
+      lamp4: { left: 688, bottom: 208 },
+      lamp5: { left: 96, bottom: 432 },
+      lamp6: { left: 352, bottom: 432 },
+      sensor1: { left: 608, bottom: 400 },
+      sensor2: { left: 896, bottom: 400 },
+      sensor3: { left: 96, bottom: 304 },
+      "a-speaker": { left: 384, bottom: 32 },
+    },
+  },
+};
+
 function buildWidgets(mode: Mode): FloatingWidgetInput[] {
+  if (mode === "shift" && wantsEleven()) return rowWidgets();
+  if (mode === "shift") return SHIFT.map((widget) => ({ ...widget }));
+  if (mode === "row") return rowWidgets();
+  if (mode === "beside") return besideWidgets();
+  if (mode === "crowd") {
+    const scaled = localStorage.getItem("crowd-scale") === "1";
+    const list = CROWD.map((widget) => ({ ...widget }));
+    if (scaled) {
+      const speaker = list.find((widget) => widget.id === "speaker");
+      if (speaker) {
+        speaker.scale = 1.2;
+        speaker.width = (speaker.width ?? 700) + 32;
+        speaker.height = (speaker.height ?? 200) + 16;
+      }
+    }
+    if (new URLSearchParams(window.location.search).has("shuffle")) list.reverse();
+    return list;
+  }
   if (mode === "few") {
     return [
       { id: "s0", type: "sensor_card", page: 0 },
@@ -46,12 +181,81 @@ function wideKey(): string {
 }
 
 function storageKey(widget: FloatingWidgetInput): string {
+  if (activeMode === "crowd" || (activeMode === "shift" && !wantsEleven())) {
+    return textKey(dashboardIdFor(activeMode), widget.id);
+  }
+  if (activeMode === "beside" || activeMode === "row" || (activeMode === "shift" && wantsEleven())) {
+    return floatingStorageKey(widget.type, dashboardIdFor(activeMode), widget.id) ?? sensorKey(widget.id);
+  }
   return widget.type === "text_card" ? wideKey() : sensorKey(widget.id);
+}
+
+function seedElevenPreset(name: string, widgets: readonly FloatingWidgetInput[]) {
+  const preset = ELEVEN_PRESETS[name];
+  if (!preset) return;
+  const landscape: Record<string, string> = {};
+  const auto: Record<string, string> = {};
+  for (const widget of widgets) {
+    const spot = preset.spots[widget.id];
+    if (!spot) continue;
+    const key = storageKey(widget);
+    const raw = JSON.stringify(spot);
+    localStorage.setItem(key, raw);
+    landscape[key] = raw;
+    auto[key] = raw;
+  }
+  localStorage.setItem(
+    `dashboard.floatingLayout.v1.${dashboardIdFor(activeMode)}`,
+    JSON.stringify({
+      v: 1,
+      active: "landscape",
+      landscape,
+      portrait: null,
+      portraitBron: null,
+      landscapeTop: preset.line,
+      auto,
+    })
+  );
 }
 
 function seed(mode: Mode, widgets: readonly FloatingWidgetInput[]) {
   if (new URLSearchParams(window.location.search).has("keep")) return;
   localStorage.clear();
+  if (mode === "shift" && wantsEleven()) {
+    const preset = new URLSearchParams(window.location.search).get("preset");
+    if (preset) seedElevenPreset(preset, widgets);
+    return;
+  }
+  if (mode === "shift" || mode === "crowd" || mode === "row") return;
+  if (mode === "beside") {
+    const params = new URLSearchParams(window.location.search);
+    const gap = Number(params.get("gap") ?? "16");
+    const scaled = params.get("scale") === "1";
+    const speakerW = scaled ? 312 : 280;
+    const speakerH = scaled ? 356 : 340;
+    const speakerLeft = 496;
+    const lampLeft = speakerLeft - 240 - gap;
+    const line = 218;
+    const speakerRaw = JSON.stringify({ left: speakerLeft, bottom: VIEW.height - line - speakerH });
+    const lampRaw = JSON.stringify({ left: lampLeft, bottom: VIEW.height - line - 70 });
+    const scope = dashboardIdFor("beside");
+    const speakerKey = floatingStorageKey("media_card", scope, "speaker");
+    const lampKey = floatingStorageKey("light_card", scope, "lamp");
+    if (!speakerKey || !lampKey) return;
+    localStorage.setItem(speakerKey, speakerRaw);
+    localStorage.setItem(lampKey, lampRaw);
+    const auto = scaled ? undefined : { [speakerKey]: speakerRaw };
+    localStorage.setItem(`dashboard.floatingLayout.v1.${scope}`, JSON.stringify({
+      v: 1,
+      active: "landscape",
+      landscape: { [speakerKey]: speakerRaw, [lampKey]: lampRaw },
+      portrait: null,
+      portraitBron: null,
+      landscapeTop: 208,
+      ...(auto ? { auto } : {}),
+    }));
+    return;
+  }
   localStorage.setItem(sensorKey("s0"), mode === "polluted" ? DRAGGED_CLEAR : DRAGGED);
   if (mode !== "polluted") return;
   const scaled = widgets.find((widget) => widget.id === "s1");
@@ -75,8 +279,8 @@ function seed(mode: Mode, widgets: readonly FloatingWidgetInput[]) {
 function FakeCard({ widget }: { widget: FloatingWidgetInput }) {
   const key = storageKey(widget);
   const wide = widget.type === "text_card";
-  const width = wide ? 640 : 260;
-  const height = wide ? 72 : 108;
+  const width = typeof widget.width === "number" ? widget.width : wide ? 640 : 260;
+  const height = typeof widget.height === "number" ? widget.height : wide ? 72 : 108;
   useEffect(() => {
     if (localStorage.getItem(key) != null) return;
     const bad = wide ? JSON.stringify({ left: 0, bottom: 680 }) : JSON.stringify({ left: 512, bottom: 336 });
@@ -98,9 +302,53 @@ function FakeCard({ widget }: { widget: FloatingWidgetInput }) {
   return <div data-tile={widget.id} style={style} />;
 }
 
-function App({ mode, widgets }: { mode: Mode; widgets: FloatingWidgetInput[] }) {
+function ShiftChrome() {
+  const delay = Number(new URLSearchParams(window.location.search).get("delay") ?? "0");
+  const [pageBottom, setPageBottom] = useState(160);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setPageBottom(192), delay);
+    return () => window.clearTimeout(timer);
+  }, [delay]);
+  return (
+    <>
+      <div data-app-header style={{ position: "absolute", left: 0, top: 0, width: VIEW.width, height: 64 }} />
+      <div data-app-heading-edit style={{ position: "absolute", left: 0, top: 64, width: VIEW.width, height: 112 }} />
+      <div data-app-page-heading style={{ position: "absolute", left: 0, top: 64, width: VIEW.width, height: pageBottom - 64 }}>
+        <a id="back" href="/rooms" aria-label="Terug" style={{ position: "absolute", left: 16, top: 32, width: 36, height: 36 }}>
+          Terug
+        </a>
+      </div>
+    </>
+  );
+}
+
+function App({ mode, widgets: initialWidgets }: { mode: Mode; widgets: FloatingWidgetInput[] }) {
+  const [widgets, setWidgets] = useState(initialWidgets);
+  const dashboardId = dashboardIdFor(mode);
+  useEffect(() => {
+    if (mode !== "crowd") return;
+    const apply = () => {
+      const prefix = `dashboard.floatingTextCardPosition.${dashboardId}.`;
+      const keys = Object.keys(localStorage).filter((key) => key.startsWith(prefix));
+      const speakerKey = textKey(dashboardId, "speaker");
+      const dragKey = keys.find((key) => key !== speakerKey) ?? keys[0];
+      if (dragKey) localStorage.setItem(dragKey, JSON.stringify({ left: 96, bottom: 48 }));
+      localStorage.setItem("crowd-drag", dragKey ?? "");
+      localStorage.setItem("crowd-scale", "1");
+      setWidgets((current) =>
+        current.map((widget) =>
+          widget.id === "speaker"
+            ? { ...widget, scale: 1.2, width: (widget.width ?? 700) + 32, height: (widget.height ?? 200) + 16 }
+            : widget
+        )
+      );
+      window.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+    };
+    (window as unknown as { __applyUserEdit?: () => void }).__applyUserEdit = apply;
+  }, [dashboardId, mode]);
   const layout = useFloatingOrientation({
-    dashboardId: "room-h8",
+    dashboardId,
     ready: true,
     widgets,
     editMode: false,
@@ -116,17 +364,48 @@ function App({ mode, widgets }: { mode: Mode; widgets: FloatingWidgetInput[] }) 
     document.documentElement.dataset.phase = headed ? "headed" : "waiting";
     document.documentElement.dataset.writes = String(writes.length);
     document.documentElement.dataset.hidden = String(layout.hiddenCount);
+    document.documentElement.dataset.hiddenIds = [...layout.withheldIds].sort().join(",");
     document.documentElement.dataset.own = localStorage.getItem(sensorKey("s0")) ?? "";
     document.documentElement.dataset.scaled = localStorage.getItem(sensorKey("s1")) ?? "";
     document.documentElement.dataset.wide = localStorage.getItem(wideKey()) ?? "";
-    if (!headed) return;
+    const layoutRaw = localStorage.getItem(`dashboard.floatingLayout.v1.${dashboardId}`);
+    let line = "";
+    if (layoutRaw) {
+      try {
+        const parsed = JSON.parse(layoutRaw) as { landscapeTop?: number };
+        line = parsed.landscapeTop === undefined ? "" : String(parsed.landscapeTop);
+      } catch {
+        line = "";
+      }
+    }
+    document.documentElement.dataset.line = line;
+    const tops = [...document.querySelectorAll("[data-tile]")].map((node) => {
+      const rect = node.getBoundingClientRect();
+      return `${node.getAttribute("data-tile") ?? ""}:${Math.round(rect.top)}`;
+    });
+    tops.sort();
+    document.documentElement.dataset.tops = tops.join("|");
+    document.documentElement.dataset.positions = widgets
+      .map((widget) => `${widget.id}=${localStorage.getItem(storageKey(widget)) ?? ""}`)
+      .sort()
+      .join("\n");
+    if (mode === "shift") {
+      document.documentElement.dataset.settled = line === "208" ? "1" : "";
+      return;
+    }
+    // The heading node can appear a frame before the line is stored. Settled
+    // waits for that write so a reload check cannot read the card default.
+    if (!headed || line === "") return;
     document.documentElement.dataset.settled = "1";
   });
   const shown = widgets.filter((widget) => !layout.withheldIds.includes(widget.id));
   return (
     <>
-      <div data-app-header style={{ position: "absolute", left: 0, top: 0, width: VIEW.width, height: 64 }} />
-      {mode !== "late" ? (
+      {mode === "shift" ? <ShiftChrome /> : <div data-app-header style={{ position: "absolute", left: 0, top: 0, width: VIEW.width, height: 64 }} />}
+      {mode === "crowd" || mode === "beside" || mode === "row" ? (
+        <div data-app-heading-edit style={{ position: "absolute", left: 0, top: 64, width: VIEW.width, height: 112 }} />
+      ) : null}
+      {mode !== "late" && mode !== "shift" ? (
         <div data-app-page-heading style={{ position: "absolute", left: 0, top: 64, width: VIEW.width, height: 128 }}>
           <a id="back" href="/rooms" aria-label="Terug" style={{ position: "absolute", left: 16, top: 32, width: 36, height: 36 }}>
             Terug
@@ -148,6 +427,7 @@ function App({ mode, widgets }: { mode: Mode; widgets: FloatingWidgetInput[] }) 
 
 try {
   const mode = readMode();
+  activeMode = mode;
   const widgets = buildWidgets(mode);
   seed(mode, widgets);
   const root = document.getElementById("root");

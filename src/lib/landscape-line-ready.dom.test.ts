@@ -334,3 +334,327 @@ describe("landscape line is definitive before cards write (H8)", () => {
     }
   }, 90_000);
 });
+
+const DELAYS = [0, 20, 40, 80, 120, 200, 300, 400, 600, 800];
+
+function harnessPlugin(pluginBuild: { onResolve: (options: { filter: RegExp }, callback: (args: { path: string }) => { path: string }) => void }) {
+  pluginBuild.onResolve({ filter: /^@\// }, (args) => {
+    const base = path.join(process.cwd(), "src", args.path.slice(2));
+    const file = [base, `${base}.ts`, `${base}.tsx`, `${base}.js`, `${base}.jsx`].find((candidate) => {
+      try {
+        return statSync(candidate).isFile();
+      } catch {
+        return false;
+      }
+    });
+    const index = file
+      ? file
+      : [`${base}/index.ts`, `${base}/index.tsx`, `${base}/index.js`].find((candidate) => {
+          try {
+            return statSync(candidate).isFile();
+          } catch {
+            return false;
+          }
+        });
+    return { path: index ?? base };
+  });
+}
+
+async function bundleHarness(): Promise<{ file: string; cleanup: () => Promise<void> }> {
+  const htmlDir = await mkdtemp(path.join(tmpdir(), "landscape-line-html-"));
+  const bundle = path.join(htmlDir, "harness.js");
+  await build({
+    entryPoints: [path.join(process.cwd(), "src/lib/landscape-line-ready.harness.tsx")],
+    bundle: true,
+    format: "iife",
+    outfile: bundle,
+    platform: "browser",
+    jsx: "automatic",
+    define: { "process.env.NODE_ENV": '"production"' },
+    plugins: [{ name: "at-alias", setup: harnessPlugin }],
+  });
+  const file = path.join(htmlDir, "index.html");
+  const html = `<!doctype html><html><head><meta charset="utf-8" /><script>window.__boot="";window.addEventListener("error",function(event){window.__boot=String(event.message)+"\\n"+String(event.error&&event.error.stack||"").slice(0,1500);});</script></head><body style="margin:0"><div id="root"></div><script src="harness.js"></script></body></html>`;
+  await writeFile(file, html);
+  return { file, cleanup: () => rm(htmlDir, { recursive: true, force: true }).catch(() => undefined) };
+}
+
+function tileTopsAtLeast(tops: string, line: number): void {
+  const parts = tops.split("|").filter((part) => part.length > 0);
+  expect(parts.length).toBeGreaterThan(0);
+  for (const part of parts) {
+    const top = Number(part.slice(part.lastIndexOf(":") + 1));
+    expect(top, part).toBeGreaterThanOrEqual(line);
+  }
+}
+
+describe("stable landscape line and automatic tiles (H1, H2)", () => {
+  it("stores 208 on every fresh load and keeps tile tops across a reload", async () => {
+    const { file, cleanup } = await bundleHarness();
+    try {
+      await withChrome(async (send, wait) => {
+        const open = async (query: string) => {
+          const loaded = wait("Page.loadEventFired");
+          await send("Page.navigate", { url: `file://${file}?${query}` });
+          await loaded;
+          await evaluate(
+            send,
+            waitFor(
+              `(() => { const page = document.querySelector("[data-app-page-heading]"); const bottom = page ? page.getBoundingClientRect().bottom : 0; return bottom >= 191 && document.documentElement.dataset.line === "208" && document.documentElement.dataset.settled === "1" && document.documentElement.dataset.tops; })()`
+            )
+          );
+          const boot = await evaluate<string>(send, `document.documentElement.dataset.boot || window.__boot || ""`);
+          if (boot) throw new Error(boot);
+          await evaluate(send, `new Promise((resolve) => setTimeout(resolve, 300))`);
+        };
+        for (const delay of DELAYS) {
+          await open(`shift=1&delay=${delay}`);
+          const fresh = await evaluate<{ line: string; tops: string; positions: string }>(
+            send,
+            `({ line: document.documentElement.dataset.line || "", tops: document.documentElement.dataset.tops || "", positions: document.documentElement.dataset.positions || "" })`
+          );
+          expect(fresh.line, `delay ${delay}`).toBe("208");
+          tileTopsAtLeast(fresh.tops, 208);
+          await open(`shift=1&delay=${delay}&keep=1`);
+          const again = await evaluate<{ line: string; tops: string; positions: string }>(
+            send,
+            `({ line: document.documentElement.dataset.line || "", tops: document.documentElement.dataset.tops || "", positions: document.documentElement.dataset.positions || "" })`
+          );
+          expect(again.line, `reload ${delay}`).toBe("208");
+          expect(again.tops, `reload ${delay}`).toBe(fresh.tops);
+          expect(again.positions, `reload ${delay}`).toBe(fresh.positions);
+        }
+      });
+    } finally {
+      await cleanup();
+    }
+  }, 120_000);
+
+  it("keeps the other automatic tiles and the same hidden tile after a drag and a scale", async () => {
+    const { file, cleanup } = await bundleHarness();
+    try {
+      await withChrome(async (send, wait) => {
+        const open = async (query: string) => {
+          const loaded = wait("Page.loadEventFired");
+          await send("Page.navigate", { url: `file://${file}?${query}` });
+          await loaded;
+          await evaluate(
+            send,
+            waitFor(
+              `document.documentElement.dataset.line === "208" && document.documentElement.dataset.positions && document.documentElement.dataset.settled === "1"`
+            )
+          );
+          const boot = await evaluate<string>(send, `document.documentElement.dataset.boot || window.__boot || ""`);
+          if (boot) throw new Error(boot);
+        };
+        const read = () =>
+          evaluate<{ line: string; positions: string; hidden: string; drag: string }>(
+            send,
+            `({
+              line: document.documentElement.dataset.line || "",
+              positions: document.documentElement.dataset.positions || "",
+              hidden: document.documentElement.dataset.hiddenIds || "",
+              drag: localStorage.getItem("crowd-drag") || ""
+            })`
+          );
+        await open("crowd=1");
+        const before = await read();
+        expect(before.line).toBe("208");
+        expect(before.hidden.length).toBeGreaterThan(0);
+        await evaluate(send, `window.__applyUserEdit && window.__applyUserEdit()`);
+        await evaluate(
+          send,
+          waitFor(
+            `document.documentElement.dataset.line === "208" && (localStorage.getItem("crowd-drag") || "").length > 0 && document.documentElement.dataset.positions !== ${JSON.stringify(before.positions)}`
+          )
+        );
+        await evaluate(
+          send,
+          `new Promise((resolve, reject) => {
+            const started = performance.now();
+            let last = "";
+            let stable = 0;
+            const tick = () => {
+              const now = document.documentElement.dataset.positions || "";
+              if (now && now === last && document.documentElement.dataset.line === "208") stable += 1;
+              else stable = 0;
+              last = now;
+              if (stable >= 4) resolve(true);
+              else if (performance.now() - started > 8000) reject(new Error("positions did not settle"));
+              else requestAnimationFrame(tick);
+            };
+            tick();
+          })`
+        );
+        const edited = await read();
+        expect(edited.line).toBe("208");
+        expect(edited.hidden.length).toBeGreaterThan(0);
+        const draggedId = edited.drag.split(".").pop() ?? "";
+        expect(draggedId.length).toBeGreaterThan(0);
+        const draggedLine = edited.positions.split("\n").find((line) => line.startsWith(`${draggedId}=`));
+        expect(draggedLine).toBe(`${draggedId}={"left":96,"bottom":48}`);
+        const reloads = ["crowd=1&keep=1", "crowd=1&keep=1&shuffle=1", "crowd=1&keep=1"];
+        for (const query of reloads) {
+          await open(query);
+          const next = await read();
+          expect(next.line).toBe("208");
+          expect(next.positions).toBe(edited.positions);
+          expect(next.hidden).toBe(edited.hidden);
+        }
+      });
+    } finally {
+      await cleanup();
+    }
+  }, 90_000);
+});
+
+type TileBox = { id: string; x: number; y: number; w: number; h: number };
+
+function readTiles(): string {
+  return `(() => {
+    const nodes = [...document.querySelectorAll("[data-tile]")];
+    return nodes.flatMap((node) => {
+      const rect = node.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return [];
+      return [{ id: node.getAttribute("data-tile"), x: Math.round(rect.left), y: Math.round(rect.top), w: Math.round(rect.width), h: Math.round(rect.height) }];
+    });
+  })()`;
+}
+
+describe("speaker clearance and dashboard order", () => {
+  it("keeps the speaker visible when a lamp is adjacent or 16px beside it", async () => {
+    const { file, cleanup } = await bundleHarness();
+    try {
+      await withChrome(async (send, wait) => {
+        const open = async (query: string) => {
+          const loaded = wait("Page.loadEventFired");
+          await send("Page.navigate", { url: `file://${file}?${query}` });
+          await loaded;
+          await evaluate(
+            send,
+            waitFor(
+              `document.documentElement.dataset.line === "208" && document.querySelector("[data-tile=speaker]") && document.querySelector("[data-tile=lamp]")`
+            )
+          );
+          const boot = await evaluate<string>(send, `document.documentElement.dataset.boot || window.__boot || ""`);
+          if (boot) throw new Error(boot);
+        };
+        for (const gap of [16, 0]) {
+          await open(`beside=1&gap=${gap}`);
+          const fresh = await evaluate<TileBox[]>(send, readTiles());
+          const speaker = fresh.find((box) => box.id === "speaker");
+          const lamp = fresh.find((box) => box.id === "lamp");
+          expect(speaker, `gap ${gap}`).toMatchObject({ x: 496, y: 218 });
+          expect(lamp, `gap ${gap}`).toMatchObject({ x: 496 - 240 - gap, y: 218 });
+          for (let pass = 0; pass < 3; pass += 1) {
+            await open(`beside=1&gap=${gap}&keep=1`);
+            const again = await evaluate<TileBox[]>(send, readTiles());
+            expect(again.find((box) => box.id === "speaker"), `reload ${gap} ${pass}`).toMatchObject({ x: 496, y: 218 });
+            expect(again.find((box) => box.id === "lamp"), `reload ${gap} ${pass}`).toMatchObject({ x: 496 - 240 - gap, y: 218 });
+          }
+        }
+        await open("beside=1&gap=0&scale=1");
+        const scaled = await evaluate<TileBox[]>(send, readTiles());
+        expect(scaled.find((box) => box.id === "speaker")).toMatchObject({ x: 496, y: 218, w: 312 });
+      });
+    } finally {
+      await cleanup();
+    }
+  }, 90_000);
+
+  it("places eleven landscape tiles in dashboard order on the line", async () => {
+    const { file, cleanup } = await bundleHarness();
+    try {
+      await withChrome(async (send, wait) => {
+        const open = async (query: string) => {
+          const loaded = wait("Page.loadEventFired");
+          await send("Page.navigate", { url: `file://${file}?${query}` });
+          await loaded;
+          await evaluate(
+            send,
+            waitFor(
+              `document.documentElement.dataset.line === "208" && document.querySelector("[data-tile=lamp1]") && document.querySelector("[data-tile=a-speaker]")`
+            )
+          );
+          const boot = await evaluate<string>(send, `document.documentElement.dataset.boot || window.__boot || ""`);
+          if (boot) throw new Error(boot);
+        };
+        await open("row=1");
+        const fresh = await evaluate<TileBox[]>(send, readTiles());
+        const lamp1 = fresh.find((box) => box.id === "lamp1");
+        expect(lamp1).toMatchObject({ x: 96, y: 218, w: 240, h: 70 });
+        const row = fresh.filter((box) => box.y === 218).sort((a, b) => a.x - b.x);
+        expect(row.map((box) => box.id)).toEqual(["lamp1", "lamp2", "lamp3", "lamp4"]);
+        const lamp5 = fresh.find((box) => box.id === "lamp5");
+        const lamp6 = fresh.find((box) => box.id === "lamp6");
+        if (!lamp1 || !lamp5 || !lamp6) throw new Error("lamp row missing");
+        expect(lamp5.y).toBeGreaterThan(lamp1.y);
+        expect(lamp6.x).toBeGreaterThan(lamp5.x);
+        expect(Math.min(...fresh.map((box) => box.y))).toBe(218);
+        await open("row=1&keep=1");
+        const again = await evaluate<TileBox[]>(send, readTiles());
+        expect(again).toEqual(fresh);
+      });
+    } finally {
+      await cleanup();
+    }
+  }, 60_000);
+
+  it("re-places eleven tiles after the heading drops, cold and from stored main-192 and fd7 layouts", async () => {
+    const { file, cleanup } = await bundleHarness();
+    try {
+      await withChrome(async (send, wait) => {
+        const open = async (query: string) => {
+          const loaded = wait("Page.loadEventFired");
+          await send("Page.navigate", { url: `file://${file}?${query}` });
+          await loaded;
+          await evaluate(
+            send,
+            waitFor(
+              `document.documentElement.dataset.line === "208" && document.documentElement.dataset.settled === "1" && document.querySelector("[data-tile=lamp1]") && document.querySelector("[data-tile=a-speaker]")`
+            )
+          );
+          const boot = await evaluate<string>(send, `document.documentElement.dataset.boot || window.__boot || ""`);
+          if (boot) throw new Error(boot);
+          await evaluate(send, `new Promise((resolve) => setTimeout(resolve, 300))`);
+        };
+        const expectMain208 = (boxes: TileBox[], label: string) => {
+          const lamp1 = boxes.find((box) => box.id === "lamp1");
+          expect(lamp1, label).toMatchObject({ x: 96, y: 218, w: 240, h: 70 });
+          const row = boxes.filter((box) => box.y === 218).sort((a, b) => a.x - b.x);
+          expect(row.map((box) => box.id), label).toEqual(["lamp1", "lamp2", "lamp3", "lamp4"]);
+          const lamp5 = boxes.find((box) => box.id === "lamp5");
+          const lamp6 = boxes.find((box) => box.id === "lamp6");
+          if (!lamp1 || !lamp5 || !lamp6) throw new Error(`${label}: lamp row missing`);
+          expect(lamp5.y, label).toBeGreaterThan(lamp1.y);
+          expect(lamp6.x, label).toBeGreaterThan(lamp5.x);
+          expect(lamp6.y, label).toBe(lamp5.y);
+          expect(boxes.find((box) => box.id === "a-speaker"), label).toMatchObject({ x: 368, y: 428 });
+          expect(Math.min(...boxes.map((box) => box.y)), label).toBe(218);
+        };
+        const coldQuery = "shift=1&eleven=1&delay=100";
+        await open(coldQuery);
+        const cold = await evaluate<TileBox[]>(send, readTiles());
+        const coldLine = await evaluate<string>(send, `document.documentElement.dataset.line || ""`);
+        expect(coldLine).toBe("208");
+        expectMain208(cold, "cold");
+        await open(`${coldQuery}&keep=1`);
+        const coldAgain = await evaluate<TileBox[]>(send, readTiles());
+        expect(coldAgain).toEqual(cold);
+        for (const preset of ["main192", "fd7"]) {
+          await open(`${coldQuery}&preset=${preset}`);
+          const loaded = await evaluate<TileBox[]>(send, readTiles());
+          const line = await evaluate<string>(send, `document.documentElement.dataset.line || ""`);
+          expect(line, preset).toBe("208");
+          expectMain208(loaded, preset);
+          expect(loaded, preset).toEqual(cold);
+          await open(`${coldQuery}&keep=1`);
+          const again = await evaluate<TileBox[]>(send, readTiles());
+          expect(again, `${preset} reload`).toEqual(loaded);
+        }
+      });
+    } finally {
+      await cleanup();
+    }
+  }, 90_000);
+});

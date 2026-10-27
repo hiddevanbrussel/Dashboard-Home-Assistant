@@ -14,6 +14,7 @@ import {
   firstFit,
   floatingStoragePrefixes,
   floatingTilesFromWidgets,
+  type FloatingWidgetInput,
   layoutStorageKey,
   measuredSizeOverrides,
   consumeLayoutNotice,
@@ -2337,5 +2338,279 @@ describe("card defaults written before the heading (H8)", () => {
     expect(run(storage, list).wrote).toBe(false);
     expect(snapshotActive(storage, list)).toEqual(saved);
     expect(storage.getItem(scaled.key)).toBe(scaledRaw);
+  });
+});
+
+describe("stable landscape line and automatic tiles (H1, H2)", () => {
+  const ROOM = "room-h1h2";
+  const LINE = 208;
+
+  function wide(id: string, w: number, h: number): FloatingTile {
+    return tile(id, `dashboard.floatingTextCardPosition.${ROOM}.${id}`, {
+      w,
+      h,
+      legacyTopOffset: h,
+    });
+  }
+
+  function crowd(): FloatingTile[] {
+    return [
+      wide("l01", 700, 200),
+      wide("speaker", 700, 200),
+      wide("l02", 700, 200),
+      wide("l03", 700, 200),
+      wide("l04", 700, 200),
+      wide("l05", 700, 200),
+      wide("s01", 700, 180),
+      wide("s02", 700, 180),
+      wide("s03", 700, 180),
+      wide("s04", 700, 180),
+      wide("breed", 760, 200),
+      wide("klimaat", 760, 220),
+    ];
+  }
+
+  function run(storage: MemoryStorage, tiles: readonly FloatingTile[], topInset = LINE) {
+    return reconcileFloatingLayout({
+      storage,
+      dashboardId: ROOM,
+      orientation: "landscape",
+      viewport: LANDSCAPE,
+      tiles,
+      push: false,
+      reportNotice: true,
+      rederive: false,
+      mounted: true,
+      topInset,
+    });
+  }
+
+  function hiddenIds(tiles: readonly FloatingTile[], storage: MemoryStorage): string[] {
+    return tiles.filter((entry) => storage.getItem(entry.key) == null).map((entry) => entry.id).sort();
+  }
+
+  function boxesOf(tiles: readonly FloatingTile[], storage: MemoryStorage) {
+    return tiles.flatMap((entry) => {
+      const raw = storage.getItem(entry.key);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as { left: number; bottom: number };
+      return [{
+        id: entry.id,
+        x: parsed.left,
+        y: LANDSCAPE.height - parsed.bottom - entry.h,
+        w: entry.w,
+        h: entry.h,
+      }];
+    });
+  }
+
+  function elevenWidgets(): FloatingWidgetInput[] {
+    return [
+      ...Array.from({ length: 6 }, (_, index) => ({
+        id: `lamp${index + 1}`,
+        type: "light_card",
+        page: 0,
+        card_layout: "horizontal" as const,
+      })),
+      ...Array.from({ length: 3 }, (_, index) => ({
+        id: `sensor${index + 1}`,
+        type: "sensor_card",
+        page: 0,
+      })),
+      { id: "a-speaker", type: "media_card", page: 0 },
+      { id: "wide", type: "text_card", page: 0, width: 640, height: 72 },
+    ];
+  }
+
+  it("places eleven tiles in dashboard order with the first row on the line", () => {
+    const tiles = floatingTilesFromWidgets(elevenWidgets(), ROOM, LANDSCAPE);
+    const storage = new MemoryStorage();
+    run(storage, tiles);
+    const boxes = boxesOf(tiles, storage);
+    const lamp1 = boxes.find((box) => box.id === "lamp1");
+    expect(lamp1).toEqual({ id: "lamp1", x: 96, y: LINE + 10, w: 240, h: 70 });
+    const top = Math.min(...boxes.map((box) => box.y));
+    expect(top).toBe(LINE + 10);
+    const row = boxes.filter((box) => box.y === LINE + 10).sort((a, b) => a.x - b.x);
+    expect(row.map((box) => box.id)).toEqual(["lamp1", "lamp2", "lamp3", "lamp4"]);
+    const speaker = boxes.find((box) => box.id === "a-speaker");
+    expect(speaker).toBeTruthy();
+    expect(speaker && speaker.x).not.toBe(96);
+    const lamp5 = boxes.find((box) => box.id === "lamp5");
+    const lamp6 = boxes.find((box) => box.id === "lamp6");
+    if (!lamp1 || !lamp5 || !lamp6) throw new Error("lamp row missing");
+    expect(lamp5.y).toBeGreaterThan(lamp1.y);
+    expect(lamp6.y).toBe(lamp5.y);
+    expect(lamp6.x).toBeGreaterThan(lamp5.x);
+    expect(overlapPairs(boxes, "pixels")).toEqual([]);
+  });
+
+  it("re-places every automatic tile when a stored 192 line moves to 208 and none is owned", () => {
+    const tiles = floatingTilesFromWidgets(elevenWidgets(), ROOM, LANDSCAPE);
+    const fresh = new MemoryStorage();
+    run(fresh, tiles, LINE);
+    const stored = new MemoryStorage();
+    run(stored, tiles, 192);
+    const saved = JSON.parse(stored.getItem(layoutStorageKey(ROOM)) ?? "{}") as { landscapeTop?: number };
+    expect(saved.landscapeTop).toBe(192);
+    expect(snapshotActive(stored, tiles)).not.toEqual(snapshotActive(fresh, tiles));
+    run(stored, tiles, LINE);
+    expect(snapshotActive(stored, tiles)).toEqual(snapshotActive(fresh, tiles));
+    const after = JSON.parse(stored.getItem(layoutStorageKey(ROOM)) ?? "{}") as { landscapeTop?: number };
+    expect(after.landscapeTop).toBe(LINE);
+  });
+
+  it("keeps fitting automatic tiles when the line moves down and one tile was dragged", () => {
+    const tiles = floatingTilesFromWidgets(elevenWidgets(), ROOM, LANDSCAPE);
+    const fresh = new MemoryStorage();
+    run(fresh, tiles, LINE);
+    const storage = new MemoryStorage();
+    run(storage, tiles, 192);
+    const placed = boxesOf(tiles, storage);
+    const fitting = tiles.filter((entry) => {
+      const box = placed.find((item) => item.id === entry.id);
+      return box != null && box.y >= LINE;
+    });
+    const dragged = tiles.find((entry) => entry.id === "lamp1");
+    if (!dragged) throw new Error("lamp1 missing");
+    const keptTiles = fitting.filter((entry) => entry.id !== dragged.id);
+    expect(keptTiles.length).toBeGreaterThan(0);
+    const draggedRaw = JSON.stringify({ left: 1000, bottom: 700 });
+    storage.setItem(dragged.key, draggedRaw);
+    const kept = snapshotActive(storage, keptTiles);
+    expect(kept).not.toEqual(snapshotActive(fresh, keptTiles));
+    run(storage, tiles, LINE);
+    expect(storage.getItem(dragged.key)).toBe(draggedRaw);
+    expect(snapshotActive(storage, keptTiles)).toEqual(kept);
+  });
+
+  function parkBeside(gap: number, speakerScaled = false) {
+    const speaker = tile("speaker", `dashboard.floatingMediaCardPosition.${ROOM}.speaker`, {
+      w: speakerScaled ? 312 : 280,
+      h: speakerScaled ? 356 : 340,
+      legacyTopOffset: 200,
+      ...(speakerScaled ? { defaultSize: false } : {}),
+    });
+    const lamp = tile("lamp", `dashboard.floatingLightCardPosition.${ROOM}.lamp`, {
+      w: 240,
+      h: 70,
+      legacyTopOffset: 80,
+    });
+    const speakerLeft = 496;
+    const lampLeft = speakerLeft - lamp.w - gap;
+    const speakerBottom = LANDSCAPE.height - (LINE + 10) - speaker.h;
+    const lampBottom = LANDSCAPE.height - (LINE + 10) - lamp.h;
+    const speakerRaw = JSON.stringify({ left: speakerLeft, bottom: speakerBottom });
+    const lampRaw = JSON.stringify({ left: lampLeft, bottom: lampBottom });
+    const storage = new MemoryStorage();
+    const positions = { [speaker.key]: speakerRaw, [lamp.key]: lampRaw };
+    seed(storage, positions);
+    storage.setItem(layoutStorageKey(ROOM), JSON.stringify({
+      v: 1,
+      active: "landscape",
+      landscape: positions,
+      portrait: null,
+      portraitBron: null,
+      landscapeTop: LINE,
+      auto: speakerScaled ? undefined : { [speaker.key]: speakerRaw },
+    }));
+    return { storage, speaker, lamp, speakerRaw, lampRaw };
+  }
+
+  it("keeps an automatic speaker that is adjacent or 16px beside a dragged lamp", () => {
+    for (const gap of [16, 0]) {
+      const parked = parkBeside(gap);
+      run(parked.storage, [parked.lamp, parked.speaker]);
+      expect(parked.storage.getItem(parked.speaker.key), `gap ${gap}`).toBe(parked.speakerRaw);
+      expect(parked.storage.getItem(parked.lamp.key), `gap ${gap}`).toBe(parked.lampRaw);
+      for (let pass = 0; pass < 3; pass += 1) {
+        expect(run(parked.storage, [parked.lamp, parked.speaker]).wrote, `reload ${gap} ${pass}`).toBe(false);
+        expect(parked.storage.getItem(parked.speaker.key)).toBe(parked.speakerRaw);
+      }
+    }
+    const scaled = parkBeside(0, true);
+    run(scaled.storage, [scaled.lamp, scaled.speaker]);
+    expect(scaled.storage.getItem(scaled.speaker.key)).toBe(scaled.speakerRaw);
+    const overlap = parkBeside(-1);
+    run(overlap.storage, [overlap.lamp, overlap.speaker]);
+    expect(overlap.storage.getItem(overlap.lamp.key)).toBe(overlap.lampRaw);
+    expect(overlap.storage.getItem(overlap.speaker.key)).not.toBe(overlap.speakerRaw);
+  });
+
+  it("keeps the other automatic tiles and the same hidden tile after a drag and a scale", () => {
+    const tiles = crowd();
+    const storage = new MemoryStorage();
+    run(storage, tiles);
+    const placed = tiles.filter((entry) => storage.getItem(entry.key) != null);
+    const dragged = placed.find((entry) => entry.id === "l01") ?? placed[0];
+    const scaled = placed.find((entry) => entry.id !== dragged?.id);
+    if (!dragged || !scaled) throw new Error("need two placed tiles");
+    const draggedRaw = JSON.stringify({ left: 16, bottom: 48 });
+    const scaledRaw = storage.getItem(scaled.key);
+    storage.setItem(dragged.key, draggedRaw);
+    scaled.defaultSize = false;
+    scaled.w += 32;
+    scaled.h += 16;
+    run(storage, tiles);
+    expect(storage.getItem(dragged.key)).toBe(draggedRaw);
+    expect(storage.getItem(scaled.key)).toBe(scaledRaw);
+    const others = tiles.filter((entry) => entry.id !== dragged.id && entry.id !== scaled.id);
+    const kept = snapshotActive(storage, others);
+    const hidden = hiddenIds(tiles, storage);
+    const automatic = boxesOf(others, storage);
+    expect(overlapPairs(automatic, "pixels")).toEqual([]);
+    for (let pass = 0; pass < 3; pass += 1) {
+      const order = pass % 2 === 0 ? [...tiles].reverse() : tiles;
+      expect(run(storage, order).wrote).toBe(false);
+      expect(storage.getItem(dragged.key)).toBe(draggedRaw);
+      expect(storage.getItem(scaled.key)).toBeTruthy();
+      expect(snapshotActive(storage, others)).toEqual(kept);
+      expect(hiddenIds(tiles, storage)).toEqual(hidden);
+    }
+  });
+
+  it("corrects a stored 192 line to 208 and leaves fitting tiles where they are", () => {
+    const own = wide("l01", 400, 120);
+    const scaled = wide("speaker", 400, 120);
+    scaled.defaultSize = false;
+    const fits = wide("l02", 400, 120);
+    const above = wide("breed", 400, 120);
+    const ownRaw = JSON.stringify({ left: 96, bottom: 640 });
+    const scaledRaw = JSON.stringify({ left: 96, bottom: 200 });
+    const fitRaw = JSON.stringify({ left: 520, bottom: 472 });
+    const aboveRaw = JSON.stringify({ left: 96, bottom: 488 });
+    const positions = {
+      [own.key]: ownRaw,
+      [scaled.key]: scaledRaw,
+      [fits.key]: fitRaw,
+      [above.key]: aboveRaw,
+    };
+    const storage = new MemoryStorage();
+    seed(storage, positions);
+    storage.setItem(layoutStorageKey(ROOM), JSON.stringify({
+      v: 1,
+      active: "landscape",
+      landscape: positions,
+      portrait: null,
+      portraitBron: null,
+      landscapeTop: 192,
+      auto: { [fits.key]: fitRaw, [above.key]: aboveRaw, [scaled.key]: scaledRaw },
+    }));
+    const tiles = [above, own, scaled, fits];
+    const corrected = run(storage, [...tiles].reverse());
+    expect(corrected.wrote).toBe(true);
+    expect(storage.getItem(own.key)).toBe(ownRaw);
+    expect(storage.getItem(scaled.key)).toBe(scaledRaw);
+    expect(storage.getItem(fits.key)).toBe(fitRaw);
+    expect(storage.getItem(above.key)).not.toBe(aboveRaw);
+    const saved = JSON.parse(storage.getItem(layoutStorageKey(ROOM)) ?? "{}") as { landscapeTop?: number };
+    expect(saved.landscapeTop).toBe(LINE);
+    const aboveBox = boxesOf([above], storage)[0];
+    if (aboveBox) expect(aboveBox.y).toBeGreaterThanOrEqual(LINE);
+    expect(overlapPairs(boxesOf(tiles, storage), "pixels")).toEqual([]);
+    const after = snapshotActive(storage, tiles);
+    expect(run(storage, tiles).wrote).toBe(false);
+    expect(run(storage, [...tiles].reverse()).wrote).toBe(false);
+    expect(snapshotActive(storage, tiles)).toEqual(after);
   });
 });

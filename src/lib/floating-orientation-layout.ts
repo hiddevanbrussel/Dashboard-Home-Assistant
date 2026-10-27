@@ -996,6 +996,7 @@ export function placeMissingTiles(
   for (const page of pages) {
     const missing = tiles.filter((tile) => tile.page === page && !(tile.key in next));
     if (missing.length === 0) continue;
+    // Caller order is the dashboard order. Sorting by id moves the first row.
     const fixed = tiles.flatMap((tile) => {
       if (tile.page !== page && !tile.shared) return [];
       const raw = next[tile.key];
@@ -1305,10 +1306,67 @@ function sameAuto(a: Record<string, string> | undefined, b: Record<string, strin
   return sameMap(a ?? {}, b ?? {});
 }
 
+function storedBox(tile: FloatingTile, raw: string, viewportHeight: number): Box | null {
+  const parsed = parseStoredPosition(raw, tile.legacyTopOffset, viewportHeight);
+  if (!parsed) return null;
+  return {
+    x: parsed.left,
+    y: viewportHeight - parsed.bottom - tile.h,
+    w: tile.w,
+    h: tile.h,
+  };
+}
+
+/** Above the heading line, or past the bottom of the viewport. */
+function outsideLandscapeBand(box: Box, margin: number, viewportHeight: number): boolean {
+  if (box.y + 0.5 < margin) return true;
+  return box.y + box.h > viewportHeight + 0.5;
+}
+
+/**
+ * Automatic spots that still clear the line and the tiles we keep.
+ * Only a real rectangle overlap drops a tile. Touching edges and the delete-badge
+ * margin do not. The earlier tile in dashboard order wins a real overlap.
+ * A dragged or scaled tile is not in `owned` and stays where it was.
+ */
+function automaticTilesToDrop(
+  positions: Record<string, string>,
+  owned: Record<string, string>,
+  tiles: readonly FloatingTile[],
+  margin: number,
+  viewport: { width: number; height: number }
+): Set<string> {
+  const seen = new Set<string>();
+  const fixed: Box[] = [];
+  const automatic: { id: string; key: string; box: Box }[] = [];
+  for (const tile of tiles) {
+    if (seen.has(tile.key)) continue;
+    seen.add(tile.key);
+    const raw = positions[tile.key];
+    if (!raw) continue;
+    const box = storedBox(tile, raw, viewport.height);
+    if (!box) continue;
+    if (owned[tile.key] === raw && !tile.parked) automatic.push({ id: tile.id, key: tile.key, box });
+    else fixed.push(box);
+  }
+  const drop = new Set<string>();
+  for (const tile of automatic) {
+    const collides = fixed.some((other) => rectsIntersect(tile.box, other));
+    if (collides || outsideLandscapeBand(tile.box, margin, viewport.height)) {
+      drop.add(tile.key);
+      continue;
+    }
+    fixed.push(tile.box);
+  }
+  return drop;
+}
+
 /**
  * Landscape placement, including a later header line.
- * Tiles this pass (or an earlier pass) placed automatically move when the line
- * changes. A tile the user moved or scaled keeps its stored string.
+ * An automatic spot that still fits is kept. Only a tile with no spot, or an
+ * automatic tile that crosses the line or another tile, is placed again.
+ * A line that moved down re-places every automatic tile on a page where nobody
+ * dragged or scaled one. A tile the user moved or scaled keeps its stored string.
  */
 function applyLandscapePlacement(
   positions: Record<string, string>,
@@ -1328,9 +1386,28 @@ function applyLandscapePlacement(
   for (const key of scaled) delete owned[key];
 
   const lineChanged = landscapeTop !== undefined && landscapeTop !== margin;
+  const drop = automaticTilesToDrop(positions, owned, tiles, margin, viewport);
+  if (landscapeTop !== undefined && margin > landscapeTop) {
+    // Main 94b678f: a line that moved down re-places the automatic tiles of a page.
+    // Only a page with a dragged or scaled tile keeps its automatic spots (H2).
+    const ownPages = new Set<number>();
+    let ownShared = false;
+    for (const tile of placing) {
+      const raw = positions[tile.key];
+      if (!raw || owned[tile.key] === raw) continue;
+      if (!scaled.has(tile.key) && isExactCardDefault(tile, positions, viewport)) continue;
+      if (tile.shared) ownShared = true;
+      else ownPages.add(tile.page);
+    }
+    for (const tile of placing) {
+      if (owned[tile.key] !== positions[tile.key]) continue;
+      if (ownShared || ownPages.has(tile.page)) continue;
+      drop.add(tile.key);
+    }
+  }
   const base: Record<string, string> = {};
   for (const [key, value] of Object.entries(positions)) {
-    if (lineChanged && owned[key] === value) continue;
+    if (drop.has(key)) continue;
     base[key] = value;
   }
   const placed = placeMissingTiles(base, landscapeTilesToPlace(base, tiles, placing), viewport, topInset, true);
