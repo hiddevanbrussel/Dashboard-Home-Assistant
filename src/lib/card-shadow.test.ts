@@ -97,4 +97,10 @@ describe("floating tile shadow on the wrapper", () => {
     expect(clip).toContain("[&>div]:rounded-t-none [&>div]:shadow-none");
     expect(clip).not.toContain("rounded-2xl");
   });
+
+  it("nuts shadows the root and clips in the same radius", () => {
+    const { root, clip } = rootAndClip("floating-nuts-card.tsx");
+    expect(root).toContain("rounded-2xl shadow-tile dark:shadow-tile-dark");
+    expect(clip).toContain("overflow-hidden rounded-2xl");
+  });
 });
