@@ -66,6 +66,22 @@ const TILE_POSITION_SHAPES: Record<string, KeyShape> = {
   device_consumption_card: { kind: "device", prefix: "dashboard.floatingDeviceConsumptionCardPosition" },
 };
 
+/**
+ * Only the first card of these types is shown per page
+ * (src/app/dashboards/[id]/page.tsx:3279, :3120, :3167, :3367).
+ * vacuum_card_2 is per tile. climate_card and climate_card_2 are bundled.
+ */
+const SINGLETON_TILE_TYPES = new Set([
+  "weather_card",
+  "solar_card",
+  "power_usage_card",
+  "vacuum_card",
+]);
+
+export function isSingletonTileType(type: string): boolean {
+  return SINGLETON_TILE_TYPES.has(type);
+}
+
 const SHARED_GROUP: Record<string, string> = {
   weather_card: "weather",
   solar_card: "solar",

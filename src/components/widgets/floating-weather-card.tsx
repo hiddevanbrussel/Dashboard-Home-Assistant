@@ -320,7 +320,9 @@ export function FloatingWeatherCard({
   return (
     <div
       className={cn(
-        "card-plot-in fixed z-30",
+        "card-plot-in fixed z-30 rounded-[1.75rem]",
+        // shadow-tile is generated after shadow-none, so edit mode replaces the shadow.
+        editMode ? "rounded-t-none shadow-none" : "shadow-tile dark:shadow-tile-dark",
         !editMode && "cursor-pointer",
         editMode && !isResizing && "cursor-grab touch-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle"
@@ -351,7 +353,7 @@ export function FloatingWeatherCard({
     >
       <div
         className={cn(
-          "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl",
+          "flex h-full min-h-0 flex-col overflow-hidden rounded-[1.75rem]",
           editMode && "[&>div]:rounded-t-none [&>div]:shadow-none"
         )}
       >
