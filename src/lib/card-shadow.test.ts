@@ -42,16 +42,30 @@ describe("shadow-tile token", () => {
   });
 });
 
+function classNameAt(src: string, at: number): string {
+  const opener = src[at + "className=".length];
+  if (opener === '"') {
+    const end = src.indexOf('"', at + "className=".length + 1);
+    return src.slice(at, end + 1);
+  }
+  let depth = 0;
+  for (let i = at + "className=".length; i < src.length; i++) {
+    if (src[i] === "{") depth++;
+    else if (src[i] === "}") {
+      depth--;
+      if (depth === 0) return src.slice(at, i + 1);
+    }
+  }
+  return src.slice(at);
+}
+
 function rootAndClip(file: string): { root: string; clip: string } {
   const src = source(file);
   const marker = src.indexOf('"card-plot-in fixed');
   const rootStart = src.lastIndexOf("className={cn(", marker);
-  const rootEnd = src.indexOf(")}", marker);
-  const clipAt = src.indexOf("className=", rootEnd);
-  return {
-    root: src.slice(rootStart, rootEnd),
-    clip: src.slice(clipAt, src.indexOf(">", clipAt)),
-  };
+  const root = classNameAt(src, rootStart);
+  const clipAt = src.indexOf("className=", rootStart + root.length);
+  return { root, clip: classNameAt(src, clipAt) };
 }
 
 describe("floating tile shadow on the wrapper", () => {
@@ -71,5 +85,16 @@ describe("floating tile shadow on the wrapper", () => {
     expect(clip).toContain("rounded-[1.35rem]");
     expect(clip).not.toContain("rounded-2xl");
     expect(src).toContain('contain: "layout paint"');
+  });
+
+  it("weather shadows the root and drops that shadow in edit mode", () => {
+    const { root, clip } = rootAndClip("floating-weather-card.tsx");
+    expect(root).toContain("rounded-[1.75rem]");
+    expect(root).toContain("shadow-tile dark:shadow-tile-dark");
+    expect(root).toContain('editMode ? "rounded-t-none shadow-none"');
+    expect(clip).toContain("overflow-hidden");
+    expect(clip).toContain("rounded-[1.75rem]");
+    expect(clip).toContain("[&>div]:rounded-t-none [&>div]:shadow-none");
+    expect(clip).not.toContain("rounded-2xl");
   });
 });
