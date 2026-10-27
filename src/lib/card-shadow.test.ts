@@ -61,4 +61,15 @@ describe("floating tile shadow on the wrapper", () => {
     expect(clip).toContain("overflow-hidden");
     expect(clip).toContain("rounded-[1.35rem]");
   });
+
+  it("trash shadows the root, clips in the same radius, and keeps layout paint", () => {
+    const src = source("floating-trash-card.tsx");
+    const { root, clip } = rootAndClip("floating-trash-card.tsx");
+    expect(root).toContain("rounded-[1.35rem] shadow-tile dark:shadow-tile-dark");
+    expect(root).toContain("[&_.glass-surface]:![backdrop-filter:none]");
+    expect(clip).toContain("overflow-hidden");
+    expect(clip).toContain("rounded-[1.35rem]");
+    expect(clip).not.toContain("rounded-2xl");
+    expect(src).toContain('contain: "layout paint"');
+  });
 });
