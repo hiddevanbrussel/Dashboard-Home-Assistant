@@ -80,7 +80,8 @@ function withOverrides(tiles: readonly FloatingTile[], overrides: Record<string,
   if (Object.keys(overrides).length === 0) return [...tiles];
   return tiles.map((tile) => {
     const override = overrides[tile.key];
-    return override ? { ...tile, w: override.w, h: override.h } : tile;
+    // A measured size is a user scale. Leave a stored card default where it is.
+    return override ? { ...tile, w: override.w, h: override.h, defaultSize: false } : tile;
   });
 }
 
@@ -124,7 +125,10 @@ export function useFloatingOrientation({
   const tilesRef = useRef<FloatingTile[]>([]);
 
   const orientation = currentOrientation(viewport.width, viewport.height);
-  const tiles = withOverrides(dashboardId ? floatingTilesFromWidgets(widgets, dashboardId) : [], sizeOverrides);
+  const tiles = withOverrides(
+    dashboardId ? floatingTilesFromWidgets(widgets, dashboardId, viewport) : [],
+    sizeOverrides
+  );
   tilesRef.current = tiles;
   // `parked` is in the signature so pinning or unpinning a tile reconciles again.
   const tileSig = tiles.map((tile) => `${tile.key}:${tile.page}:${tile.w}x${tile.h}${tile.parked ? ":parked" : ""}`).join("|");

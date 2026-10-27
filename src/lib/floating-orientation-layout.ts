@@ -9,6 +9,8 @@
  * same value. Landscape bytes live in the layout record, not in the active key.
  */
 import { snapToGrid } from "@/lib/floating-card-grid";
+import { cardDefaultPosition } from "@/lib/floating-card-defaults";
+import { TILE_SIDEBAR_INSET_PX } from "@/lib/tile-placement";
 import {
   clampCalendarCardHeight,
   clampCalendarCardWidth,
@@ -135,6 +137,16 @@ export type FloatingTile = {
    * but it is ignored for placing, pushing and overlap/below-fold checks.
    */
   parked?: boolean;
+  /**
+   * First-mount position of a light or sensor card for the current viewport.
+   * Only those two types set it. Reconcile uses it to recognize a stored card default.
+   */
+  cardDefault?: { left: number; bottom: number };
+  /**
+   * False when the widget width, height, or scale differs from the standard size.
+   * A scaled tile is never moved off a stored card default.
+   */
+  defaultSize?: boolean;
 };
 
 /** Tiles that take part in placing and pushing (everything that is not parked). */
@@ -153,6 +165,8 @@ export type FloatingWidgetInput = {
   display_mode?: string;
   /** See `FloatingTile.parked`. */
   parked?: boolean;
+  /** User scale. 1 and absent both mean the card was not scaled. */
+  scale?: number;
 };
 
 type KeyShape = "scope" | "widget" | "id";
@@ -241,18 +255,27 @@ export function floatingStorageKey(type: string, scope: string, widgetId: string
   return `${entry.prefix}${dot}${scope}.${widgetId}`;
 }
 
-export function floatingTilesFromWidgets(widgets: readonly FloatingWidgetInput[], scope: string): FloatingTile[] {
+export function floatingTilesFromWidgets(
+  widgets: readonly FloatingWidgetInput[],
+  scope: string,
+  viewport?: { width: number; height: number }
+): FloatingTile[] {
   const tiles: FloatingTile[] = [];
+  // Same order as the dashboard render: filter by type and page, keep widgets order.
+  // page.tsx light map is widgetIndex i (around 3096-3097); sensor map is the same (around 3257-3258).
+  const indexOnPage = new Map<string, number>();
   for (const widget of widgets) {
     const entry = SPEC_BY_TYPE.get(widget.type);
     const key = floatingStorageKey(widget.type, scope, widget.id);
     if (!entry || !key) continue;
     const size = sizeForWidget(widget);
     const legacyTopOffset = entry.legacyTopOffset > 0 ? entry.legacyTopOffset : size.h;
+    const page = pageOf(widget.page);
+    const cardDefault = cardDefaultForWidget(widget, page, size, viewport, indexOnPage);
     tiles.push({
       id: widget.id,
       key,
-      page: pageOf(widget.page),
+      page,
       shared: entry.shared,
       persistsClamp: entry.persistsClamp,
       w: size.w,
@@ -260,9 +283,35 @@ export function floatingTilesFromWidgets(widgets: readonly FloatingWidgetInput[]
       bottomInset: entry.bottomInset,
       legacyTopOffset,
       ...(widget.parked ? { parked: true } : {}),
+      ...(cardDefault ? { cardDefault: cardDefault.position, defaultSize: cardDefault.defaultSize } : {}),
     });
   }
   return tiles;
+}
+
+function cardDefaultForWidget(
+  widget: FloatingWidgetInput,
+  page: number,
+  size: { w: number; h: number },
+  viewport: { width: number; height: number } | undefined,
+  indexOnPage: Map<string, number>
+): { position: { left: number; bottom: number }; defaultSize: boolean } | null {
+  if (widget.type !== "light_card" && widget.type !== "sensor_card") return null;
+  const bucket = `${widget.type}:${page}`;
+  const index = indexOnPage.get(bucket) ?? 0;
+  indexOnPage.set(bucket, index + 1);
+  if (!viewport || viewport.width <= 0 || viewport.height <= 0) return null;
+  const position = cardDefaultPosition(widget.type, index, size, viewport);
+  if (!position) return null;
+  return { position, defaultSize: widgetHasDefaultSize(widget, size) };
+}
+
+/** True when width, height, and scale still match the sizeForWidget standard. */
+function widgetHasDefaultSize(widget: FloatingWidgetInput, standard: { w: number; h: number }): boolean {
+  if (typeof widget.scale === "number" && Number.isFinite(widget.scale) && widget.scale !== 1) return false;
+  if (typeof widget.width === "number" && Number.isFinite(widget.width) && widget.width > 0 && widget.width !== standard.w) return false;
+  if (typeof widget.height === "number" && Number.isFinite(widget.height) && widget.height > 0 && widget.height !== standard.h) return false;
+  return true;
 }
 
 function pageOf(page: number | undefined): number {
@@ -1055,6 +1104,68 @@ function landscapeTilesToPlace(
   return [...placing, ...parkedObstacles];
 }
 
+/**
+ * Landscape only. A light or sensor tile is placed again when its stored point
+ * is still the card default, the user did not scale it, and it sits under the
+ * rail or overlaps another tile on the same page. Every other key is copied through.
+ */
+function relocateStoredCardDefaults(
+  positions: Record<string, string>,
+  tiles: readonly FloatingTile[],
+  placing: readonly FloatingTile[],
+  viewport: { width: number; height: number }
+): Record<string, string> {
+  const drop = new Set<string>();
+  for (const tile of placing) {
+    if (tile.defaultSize === false || !tile.cardDefault) continue;
+    const raw = positions[tile.key];
+    if (!raw) continue;
+    const parsed = parseStoredPosition(raw, tile.legacyTopOffset, viewport.height);
+    if (!parsed) continue;
+    if (parsed.left !== tile.cardDefault.left || parsed.bottom !== tile.cardDefault.bottom) continue;
+    const underRail = parsed.left < TILE_SIDEBAR_INSET_PX;
+    if (!underRail && !overlapsTileOnPage(tile, parsed, placing, positions, viewport)) continue;
+    drop.add(tile.key);
+  }
+  if (drop.size === 0) return positions;
+  const stripped: Record<string, string> = {};
+  for (const [key, value] of Object.entries(positions)) {
+    if (!drop.has(key)) stripped[key] = value;
+  }
+  return placeMissingTiles(stripped, landscapeTilesToPlace(stripped, tiles, placing), viewport);
+}
+
+function overlapsTileOnPage(
+  tile: FloatingTile,
+  parsed: { left: number; bottom: number },
+  placing: readonly FloatingTile[],
+  positions: Record<string, string>,
+  viewport: { width: number; height: number }
+): boolean {
+  const box = {
+    x: parsed.left,
+    y: viewport.height - parsed.bottom - tile.h,
+    w: tile.w,
+    h: tile.h,
+  };
+  for (const other of placing) {
+    if (other.key === tile.key) continue;
+    if (other.page !== tile.page && !other.shared && !tile.shared) continue;
+    const raw = positions[other.key];
+    if (!raw) continue;
+    const otherParsed = parseStoredPosition(raw, other.legacyTopOffset, viewport.height);
+    if (!otherParsed) continue;
+    const otherBox = {
+      x: otherParsed.left,
+      y: viewport.height - otherParsed.bottom - other.h,
+      w: other.w,
+      h: other.h,
+    };
+    if (visuallyOverlaps(box, otherBox)) return true;
+  }
+  return false;
+}
+
 function swappedViewport(viewport: { width: number; height: number }): { width: number; height: number } {
   return { width: viewport.height, height: viewport.width };
 }
@@ -1106,11 +1217,24 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
   const placing = placingTiles(tiles);
   let layout = readFloatingLayout(storage, dashboardId);
   // No record yet: landscape storage stays untouched when every placing tile
-  // already has a key. A missing key is placed beside the rail, as in portrait.
+  // already has a key and none of those keys is still a card default under the
+  // rail or in an overlap. A missing key is placed beside the rail, as in portrait.
   if (!layout && (orientation === "landscape" || tiles.length === 0)) {
     const missingLandscapeKey =
       orientation === "landscape" && placing.some((tile) => storage.getItem(tile.key) == null);
-    if (!missingLandscapeKey) return EMPTY_RESULT;
+    let defaultsNeedMove = false;
+    if (orientation === "landscape" && !missingLandscapeKey) {
+      const positions: Record<string, string> = {};
+      for (const tile of tiles) {
+        const value = storage.getItem(tile.key);
+        if (value != null) positions[tile.key] = value;
+      }
+      defaultsNeedMove = !sameMap(
+        relocateStoredCardDefaults(positions, tiles, placing, viewport),
+        positions
+      );
+    }
+    if (!missingLandscapeKey && !defaultsNeedMove) return EMPTY_RESULT;
   }
 
   const landscapeViewport = orientation === "landscape" ? viewport : swappedViewport(viewport);
@@ -1168,6 +1292,7 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
         landscapeTilesToPlace(layout.landscape, tiles, placing),
         viewport
       );
+      layout.landscape = relocateStoredCardDefaults(layout.landscape, tiles, placing, viewport);
     }
     const next = orientation === "portrait" ? layout.portrait ?? {} : layout.landscape;
     const previous = orientation === "portrait" ? layout.landscape : layout.portrait;
@@ -1243,6 +1368,14 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
     if (!sameMap(placed, layout.landscape)) {
       layout.landscape = placed;
       if (applyPositions(storage, null, placed)) {
+        wrote = true;
+        remount = input.mounted;
+      }
+    }
+    const corrected = relocateStoredCardDefaults(layout.landscape, tiles, placing, viewport);
+    if (!sameMap(corrected, layout.landscape)) {
+      layout.landscape = corrected;
+      if (applyPositions(storage, null, corrected)) {
         wrote = true;
         remount = input.mounted;
       }

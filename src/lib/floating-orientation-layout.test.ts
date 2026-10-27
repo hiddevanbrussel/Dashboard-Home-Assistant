@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DashboardLayoutNoticeView } from "@/components/dashboard-layout-notice";
 import { DASHBOARD_PAGE_UNDO_TOAST_BOTTOM_PX } from "@/components/dashboard-page-undo-toast";
+import { cardDefaultPosition } from "@/lib/floating-card-defaults";
 import { snapToGrid } from "@/lib/floating-card-grid";
 import { readFloatingPositions, restoreFloatingPositions, type PositionStorage } from "@/lib/dashboard-page-removal";
 import { getTranslations } from "@/lib/i18n";
@@ -12,6 +13,7 @@ import {
   blocksPlacement,
   firstFit,
   floatingStoragePrefixes,
+  floatingTilesFromWidgets,
   layoutStorageKey,
   measuredSizeOverrides,
   consumeLayoutNotice,
@@ -1142,5 +1144,177 @@ describe("landscape missing positions (N1)", () => {
     const saved = savedLayout(storage);
     expect(saved?.landscape[climate.key]).toBe(climateRaw);
     expect(saved?.landscape[pill.key]).toBe(pillRaw);
+  });
+});
+
+describe("stored card defaults (N1)", () => {
+  const ROOM = "room-qa_woonkamer";
+  const sensorSize = { w: 260, h: 108 };
+  const lampSize = { w: 240, h: 70 };
+  const sensorDefault = cardDefaultPosition("sensor_card", 0, sensorSize, LANDSCAPE);
+  const lampDefault = cardDefaultPosition("light_card", 0, lampSize, LANDSCAPE);
+  const sensorRaw = JSON.stringify(sensorDefault);
+  const lampRaw = JSON.stringify(lampDefault);
+
+  function sensorTile(defaultSize = true): FloatingTile {
+    return tile("Temperatuur", `dashboard.floatingSensorCardPosition.${ROOM}.sensor`, {
+      ...sensorSize,
+      legacyTopOffset: 200,
+      cardDefault: sensorDefault ?? undefined,
+      defaultSize,
+    });
+  }
+
+  function lampTile(defaultSize = true): FloatingTile {
+    return tile("Plafondlamp", `dashboard.floatingLightCardPosition.${ROOM}.lamp`, {
+      ...lampSize,
+      legacyTopOffset: 80,
+      cardDefault: lampDefault ?? undefined,
+      defaultSize,
+    });
+  }
+
+  function run(
+    storage: MemoryStorage,
+    tiles: readonly FloatingTile[],
+    orientation: "landscape" | "portrait" = "landscape"
+  ) {
+    return reconcileFloatingLayout({
+      storage,
+      dashboardId: ROOM,
+      orientation,
+      viewport: orientation === "landscape" ? LANDSCAPE : PORTRAIT,
+      tiles,
+      push: false,
+      reportNotice: false,
+      rederive: false,
+      mounted: true,
+    });
+  }
+
+  function remember(storage: MemoryStorage, positions: Record<string, string>) {
+    seed(storage, positions);
+    storage.setItem(layoutStorageKey(ROOM), JSON.stringify({
+      v: 1,
+      active: "landscape",
+      landscape: { ...positions },
+      portrait: null,
+      portraitBron: null,
+    }));
+  }
+
+  function gapPairs(tiles: readonly FloatingTile[], positions: Record<string, string>) {
+    const placed = tiles.flatMap((entry) => {
+      const raw = positions[entry.key];
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as { left: number; bottom: number };
+      return [{
+        id: entry.id,
+        x: parsed.left,
+        y: LANDSCAPE.height - parsed.bottom - entry.h,
+        w: entry.w,
+        h: entry.h,
+      }];
+    });
+    return overlapPairs(placed, "gap");
+  }
+
+  it("moves a sensor and lamp that are still on the card default", () => {
+    const storage = new MemoryStorage();
+    const sensor = sensorTile();
+    const lamp = lampTile();
+    seed(storage, { [sensor.key]: sensorRaw, [lamp.key]: lampRaw });
+    const result = run(storage, [sensor, lamp]);
+    expect(result.wrote).toBe(true);
+    const positions = snapshotActive(storage, [sensor, lamp]);
+    expect(gapPairs([sensor, lamp], positions)).toEqual([]);
+    for (const raw of Object.values(positions)) {
+      expect((JSON.parse(raw) as { left: number }).left).toBeGreaterThanOrEqual(96);
+    }
+    const again = run(storage, [sensor, lamp]);
+    expect(again.wrote).toBe(false);
+    expect(snapshotActive(storage, [sensor, lamp])).toEqual(positions);
+  });
+
+  it("leaves a scaled lamp on the card default", () => {
+    const storage = new MemoryStorage();
+    const sensor = sensorTile();
+    const lamp = lampTile(false);
+    seed(storage, { [sensor.key]: sensorRaw, [lamp.key]: lampRaw });
+    run(storage, [sensor, lamp]);
+    expect(storage.getItem(lamp.key)).toBe(lampRaw);
+    const sensorNow = storage.getItem(sensor.key);
+    expect(sensorNow).toBeTruthy();
+    expect((JSON.parse(sensorNow ?? "") as { left: number }).left).toBeGreaterThanOrEqual(96);
+    expect(gapPairs([sensor, lamp], snapshotActive(storage, [sensor, lamp]))).toEqual([]);
+  });
+
+  it("leaves a lamp that was placed under the rail but not on the card default", () => {
+    const storage = new MemoryStorage();
+    const sensor = sensorTile();
+    const lamp = lampTile();
+    const placed = {
+      [sensor.key]: '{"left":96,"bottom":400}',
+      [lamp.key]: '{"left":0,"bottom":640}',
+    };
+    remember(storage, placed);
+    const result = run(storage, [sensor, lamp]);
+    expect(result.wrote).toBe(false);
+    expect(storage.getItem(lamp.key)).toBe(placed[lamp.key]);
+    expect(storage.getItem(sensor.key)).toBe(placed[sensor.key]);
+  });
+
+  it("leaves two tiles that overlap on purpose away from the card default", () => {
+    const storage = new MemoryStorage();
+    const sensor = sensorTile();
+    const lamp = lampTile();
+    const placed = {
+      [sensor.key]: '{"left":400,"bottom":200}',
+      [lamp.key]: '{"left":480,"bottom":220}',
+    };
+    remember(storage, placed);
+    const result = run(storage, [sensor, lamp]);
+    expect(result.wrote).toBe(false);
+    expect(storage.getItem(sensor.key)).toBe(placed[sensor.key]);
+    expect(storage.getItem(lamp.key)).toBe(placed[lamp.key]);
+    expect(gapPairs([sensor, lamp], placed)).not.toEqual([]);
+  });
+
+  it("keeps stored card defaults in the landscape master while portrait is open", () => {
+    const storage = new MemoryStorage();
+    const sensor = sensorTile();
+    const lamp = lampTile();
+    seed(storage, { [sensor.key]: sensorRaw, [lamp.key]: lampRaw });
+    run(storage, [sensor, lamp], "portrait");
+    const saved = JSON.parse(storage.getItem(layoutStorageKey(ROOM)) ?? "") as {
+      active: string;
+      landscape: Record<string, string>;
+    };
+    expect(saved.active).toBe("portrait");
+    expect(saved.landscape[sensor.key]).toBe(sensorRaw);
+    expect(saved.landscape[lamp.key]).toBe(lampRaw);
+  });
+
+  it("numbers light and sensor defaults per type per page and flags a scaled widget", () => {
+    const tiles = floatingTilesFromWidgets([
+      { id: "media", type: "media_card", page: 0 },
+      { id: "sensor-0", type: "sensor_card", page: 0 },
+      { id: "lamp-0", type: "light_card", page: 0 },
+      { id: "lamp-1", type: "light_card", page: 0, scale: 1.5 },
+      { id: "sensor-wide", type: "sensor_card", page: 0, width: 400 },
+      { id: "sensor-page-1", type: "sensor_card", page: 1 },
+    ], ROOM, LANDSCAPE);
+    const byId = Object.fromEntries(tiles.map((entry) => [entry.id, entry]));
+    expect(byId.media.cardDefault).toBeUndefined();
+    expect(byId["sensor-0"].cardDefault).toEqual({ left: 0, bottom: 336 });
+    expect(byId["sensor-0"].defaultSize).toBe(true);
+    expect(byId["lamp-0"].cardDefault).toEqual({ left: 32, bottom: 368 });
+    expect(byId["lamp-0"].defaultSize).toBe(true);
+    expect(byId["lamp-1"].cardDefault).toEqual({ left: 288, bottom: 368 });
+    expect(byId["lamp-1"].defaultSize).toBe(false);
+    expect(byId["sensor-wide"].defaultSize).toBe(false);
+    expect(byId["sensor-wide"].cardDefault).toEqual({ left: 272, bottom: 336 });
+    expect(byId["sensor-page-1"].cardDefault).toEqual({ left: 0, bottom: 336 });
+    expect(byId["sensor-page-1"].defaultSize).toBe(true);
   });
 });
