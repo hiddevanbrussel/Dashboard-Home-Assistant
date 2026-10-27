@@ -164,7 +164,8 @@ html[data-portrait-scroll]:not([data-dashboard-edit]) [data-dashboard-page] .car
 }
 
 /* Title/text cards often sit in the header band. Let taps reach the card,
-   while header controls stay clickable. */
+   while header controls stay clickable. The pinned pill slot is a div, not a
+   button, so it is listed here too; the hit area stays the existing 44px slot. */
 html[data-dashboard-edit] [data-app-header] {
   pointer-events: none;
 }
@@ -172,7 +173,8 @@ html[data-dashboard-edit] [data-app-header] {
 html[data-dashboard-edit] [data-app-header] button,
 html[data-dashboard-edit] [data-app-header] a,
 html[data-dashboard-edit] [data-app-header] input,
-html[data-dashboard-edit] [data-app-header] [role="button"] {
+html[data-dashboard-edit] [data-app-header] [role="button"],
+html[data-dashboard-edit] [data-app-header] [data-header-statpill-id] {
   pointer-events: auto;
 }
 
