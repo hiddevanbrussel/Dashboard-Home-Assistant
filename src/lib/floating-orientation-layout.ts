@@ -317,12 +317,17 @@ function cardDefaultForWidget(
   viewport: { width: number; height: number } | undefined,
   indexOnPage: Map<string, number>
 ): { position: { left: number; bottom: number }; defaultSize: boolean } | null {
-  if (widget.type !== "light_card" && widget.type !== "sensor_card") return null;
-  const bucket = `${widget.type}:${page}`;
+  const text =
+    widget.type === "text_card" ||
+    widget.type === "title_card" ||
+    widget.type === "title_only_card" ||
+    widget.type === "subtitle_card";
+  if (widget.type !== "light_card" && widget.type !== "sensor_card" && !text) return null;
+  const bucket = text ? `text:${page}` : `${widget.type}:${page}`;
   const index = indexOnPage.get(bucket) ?? 0;
   indexOnPage.set(bucket, index + 1);
   if (!viewport || viewport.width <= 0 || viewport.height <= 0) return null;
-  const position = cardDefaultPosition(widget.type, index, size, viewport);
+  const position = cardDefaultPosition(text ? "text_card" : widget.type, index, size, viewport);
   if (!position) return null;
   return { position, defaultSize: widgetHasDefaultSize(widget, size) };
 }
@@ -1203,8 +1208,8 @@ function landscapeTilesToPlace(
 }
 
 /**
- * Landscape only. A light or sensor tile is placed again when its stored point
- * is still the card default and the user did not scale it, and either it sits
+ * Landscape only. A tile with a card default is placed again when its stored point
+ * is still that default and the user did not scale it, and either it sits
  * under the rail, or every tile it overlaps is also still on that exact default.
  * A default that overlaps a tile the user placed stays where it is.
  * Every other key is copied through.

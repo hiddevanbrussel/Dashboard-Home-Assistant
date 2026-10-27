@@ -2968,9 +2968,16 @@ export default function DashboardEditPage() {
           />,
           document.body
         )}
-        {floatingLayout.notice ? (
+        {floatingLayout.notice &&
+        (floatingLayout.notice !== "dashboardLayout.landscapeOverlap" || floatingLayout.hiddenCount > 0) ? (
           <DashboardLayoutNotice
-            message={formatLayoutNotice(floatingLayout.notice, floatingLayout.noticeCount, t)}
+            message={formatLayoutNotice(
+              floatingLayout.notice,
+              floatingLayout.notice === "dashboardLayout.landscapeOverlap"
+                ? floatingLayout.hiddenCount
+                : floatingLayout.noticeCount,
+              t
+            )}
             onDismiss={floatingLayout.dismissNotice}
           />
         ) : null}

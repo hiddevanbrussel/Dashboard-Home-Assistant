@@ -18,6 +18,12 @@ describe("card default position", () => {
     expect(lamp?.left).toBe(32 + 240 + 16);
   });
 
+  it("caps a later sensor on the same spot the card writes, and a wide text tile at the top", () => {
+    expect(cardDefaultPosition("sensor_card", 2, { w: 260, h: 108 }, VIEWPORT)).toEqual({ left: 512, bottom: 336 });
+    expect(cardDefaultPosition("sensor_card", 7, { w: 260, h: 108 }, VIEWPORT)).toEqual({ left: 512, bottom: 336 });
+    expect(cardDefaultPosition("text_card", 0, { w: 640, h: 72 }, VIEWPORT)).toEqual({ left: 0, bottom: 680 });
+  });
+
   it("returns null for every other widget type", () => {
     expect(cardDefaultPosition("media_card", 0, { w: 280, h: 340 }, VIEWPORT)).toBeNull();
     expect(cardDefaultPosition("climate_card", 0, { w: 300, h: 340 }, VIEWPORT)).toBeNull();

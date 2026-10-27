@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   formatLayoutNotice,
   landscapeLineReady,
+  landscapeTileIsOwn,
+  landscapeWithheldIds,
   LAYOUT_NOTICE_MS,
   measurePlacementInset,
   readPlacementLine,
   reportLayoutNotice,
+  visibleLayoutNotice,
 } from "@/hooks/use-floating-orientation";
 import { getTranslations } from "@/lib/i18n";
 import { reconcileFloatingLayout, type FloatingTile } from "@/lib/floating-orientation-layout";
@@ -172,6 +175,53 @@ describe("fixed line without a heading (H6)", () => {
   });
 });
 
+describe("withhold until the landscape line is definitive (H8)", () => {
+  const sensor = {
+    id: "sensor",
+    key: "dashboard.floatingSensorCardPosition.h8.sensor",
+    page: 0,
+    shared: false,
+    persistsClamp: false,
+    w: 260,
+    h: 108,
+    bottomInset: 0,
+    legacyTopOffset: 200,
+    cardDefault: { left: 512, bottom: 336 },
+    defaultSize: true,
+  };
+
+  it("keeps a card default out until the line is ready and shows a dragged tile at once", () => {
+    const readDefault = () => '{"left":512,"bottom":336}';
+    const dragged = '{"left": 400, "bottom": 300}';
+    expect(landscapeTileIsOwn(sensor, readDefault)).toBe(false);
+    expect(landscapeTileIsOwn(sensor, () => dragged)).toBe(true);
+    expect(landscapeTileIsOwn({ ...sensor, defaultSize: false }, readDefault)).toBe(true);
+    expect(landscapeTileIsOwn(sensor, () => null)).toBe(false);
+    const waiting = landscapeWithheldIds({
+      orientation: "landscape",
+      landscapeReady: false,
+      viewport: { width: 1280, height: 800 },
+      tiles: [sensor],
+      read: readDefault,
+    });
+    expect(waiting).toEqual(["sensor"]);
+    expect(landscapeWithheldIds({
+      orientation: "landscape",
+      landscapeReady: false,
+      viewport: { width: 1280, height: 800 },
+      tiles: [sensor],
+      read: () => dragged,
+    })).toEqual([]);
+    expect(landscapeWithheldIds({
+      orientation: "portrait",
+      landscapeReady: false,
+      viewport: { width: 800, height: 1280 },
+      tiles: [sensor],
+      read: () => null,
+    })).toEqual([]);
+  });
+});
+
 describe("landscape notice text (H9)", () => {
   it("uses a singular sentence for one tile and keeps the notice for 8 seconds", () => {
     const nl = getTranslations("nl");
@@ -193,6 +243,9 @@ describe("landscape notice text (H9)", () => {
       nl["dashboardLayout.portraitBelowFold"]
     );
     expect(LAYOUT_NOTICE_MS).toBe(8000);
+    expect(visibleLayoutNotice("landscape-overlap", 0)).toBeNull();
+    expect(visibleLayoutNotice("landscape-overlap", 8)).toBe("landscape-overlap");
+    expect(visibleLayoutNotice("portrait-below-fold", 0)).toBe("portrait-below-fold");
   });
 });
 

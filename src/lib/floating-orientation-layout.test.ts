@@ -2229,3 +2229,113 @@ describe("definitive landscape line (H8)", () => {
     expect(tiles.every((entry) => storage.getItem(entry.key))).toBe(true);
   });
 });
+
+describe("card defaults written before the heading (H8)", () => {
+  const ROOM = "room-h8-defaults";
+  const LINE = 208;
+  const HEADING = { id: "heading", x: 0, y: 64, w: 1280, h: 128 };
+
+  function widgets() {
+    return [
+      ...Array.from({ length: 26 }, (_, index) => ({
+        id: `s${index}`,
+        type: "sensor_card",
+        page: 0,
+      })),
+      { id: "wide", type: "text_card", page: 0, width: 640, height: 72 },
+    ];
+  }
+
+  function tiles() {
+    return floatingTilesFromWidgets(widgets(), ROOM, LANDSCAPE);
+  }
+
+  function run(storage: MemoryStorage, list: ReturnType<typeof tiles>) {
+    return reconcileFloatingLayout({
+      storage,
+      dashboardId: ROOM,
+      orientation: "landscape",
+      viewport: LANDSCAPE,
+      tiles: list,
+      push: false,
+      reportNotice: true,
+      rederive: false,
+      mounted: true,
+      topInset: LINE,
+    });
+  }
+
+  function boxesOf(list: ReturnType<typeof tiles>, storage: MemoryStorage) {
+    return list.flatMap((entry) => {
+      const raw = storage.getItem(entry.key);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as { left: number; bottom: number };
+      return [{
+        id: entry.id,
+        x: parsed.left,
+        y: LANDSCAPE.height - parsed.bottom - entry.h,
+        w: entry.w,
+        h: entry.h,
+      }];
+    });
+  }
+
+  function expectClear(list: ReturnType<typeof tiles>, storage: MemoryStorage) {
+    const placed = boxesOf(list, storage);
+    expect(overlapPairs(placed, "pixels")).toEqual([]);
+    expect(overlapPairs([...placed, HEADING], "pixels").some((pair) => pair.includes("heading"))).toBe(false);
+    for (const box of placed) {
+      if (box.id === "own" || box.id === "scaled") continue;
+      expect(box.y).toBeGreaterThanOrEqual(LINE);
+    }
+  }
+
+  it("places 26 sensors and a wide tile from empty storage without overlap, including after reload", () => {
+    const storage = new MemoryStorage();
+    const list = tiles();
+    const own = list[0];
+    const dragged = '{"left": 400, "bottom": 300}';
+    storage.setItem(own.key, dragged);
+    run(storage, list);
+    expect(storage.getItem(own.key)).toBe(dragged);
+    expect(storage.getItem(list.find((entry) => entry.id === "wide")?.key ?? "")).not.toBe(
+      JSON.stringify({ left: 0, bottom: 680 })
+    );
+    expectClear(list, storage);
+    const saved = snapshotActive(storage, list);
+    expect(run(storage, list).wrote).toBe(false);
+    expect(snapshotActive(storage, list)).toEqual(saved);
+    expectClear(list, storage);
+  });
+
+  it("clears polluted card defaults {0,680} and {512,336} and keeps a scaled tile", () => {
+    const storage = new MemoryStorage();
+    const list = tiles();
+    const scaled = list[1];
+    scaled.defaultSize = false;
+    const scaledRaw = '{"left": 1000, "bottom": 40}';
+    storage.setItem(scaled.key, scaledRaw);
+    for (const entry of list) {
+      if (entry.id === "s1") continue;
+      const position = entry.cardDefault ?? cardDefaultPosition("text_card", 0, { w: 640, h: 72 }, LANDSCAPE);
+      if (!position) continue;
+      storage.setItem(entry.key, JSON.stringify(position));
+    }
+    expect(storage.getItem(list.find((entry) => entry.id === "wide")?.key ?? "")).toBe(
+      JSON.stringify({ left: 0, bottom: 680 })
+    );
+    expect(storage.getItem(list.find((entry) => entry.id === "s2")?.key ?? "")).toBe(
+      JSON.stringify({ left: 512, bottom: 336 })
+    );
+    run(storage, list);
+    expect(storage.getItem(scaled.key)).toBe(scaledRaw);
+    expect(storage.getItem(list.find((entry) => entry.id === "wide")?.key ?? "")).not.toBe(
+      JSON.stringify({ left: 0, bottom: 680 })
+    );
+    expectClear(list, storage);
+    const saved = snapshotActive(storage, list);
+    expect(run(storage, list).wrote).toBe(false);
+    expect(snapshotActive(storage, list)).toEqual(saved);
+    expect(storage.getItem(scaled.key)).toBe(scaledRaw);
+  });
+});

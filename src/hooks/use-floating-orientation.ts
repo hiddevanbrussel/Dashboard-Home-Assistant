@@ -108,6 +108,52 @@ export function landscapeLineReady(line: PlacementLine, expectsHeading: boolean)
   return !expectsHeading;
 }
 
+/** A dragged string or a scaled tile. An exact card default is the card's own write, not the user's. */
+export function landscapeTileIsOwn(tile: FloatingTile, read: (key: string) => string | null): boolean {
+  const raw = read(tile.key);
+  if (raw == null) return false;
+  if (tile.defaultSize === false) return true;
+  if (!tile.cardDefault) return true;
+  try {
+    const parsed = JSON.parse(raw) as { left?: number; bottom?: number };
+    if (typeof parsed.left !== "number" || typeof parsed.bottom !== "number") return true;
+    if (parsed.left === tile.cardDefault.left && parsed.bottom === tile.cardDefault.bottom) return false;
+  } catch {
+    return true;
+  }
+  return true;
+}
+
+/** Tiles the page must not mount. Before the line is definitive, every tile without its own spot stays out. */
+export function landscapeWithheldIds(input: {
+  orientation: Orientation;
+  landscapeReady: boolean;
+  viewport: { width: number; height: number };
+  tiles: readonly FloatingTile[];
+  read: (key: string) => string | null;
+}): string[] {
+  if (input.viewport.width <= 0 || input.viewport.height <= 0 || input.orientation !== "landscape") return [];
+  return placingTiles(input.tiles).flatMap((tile) => {
+    if (!input.landscapeReady) return landscapeTileIsOwn(tile, input.read) ? [] : [tile.id];
+    return input.read(tile.key) == null ? [tile.id] : [];
+  });
+}
+
+/** The landscape sentence is about hidden tiles. Zero hidden tiles leaves the notice off. */
+export function visibleLayoutNotice(notice: LayoutNotice | null, hiddenCount: number): LayoutNotice | null {
+  if (notice == null) return null;
+  switch (notice) {
+    case "landscape-overlap":
+      return hiddenCount > 0 ? notice : null;
+    case "portrait-below-fold":
+      return notice;
+    default: {
+      const exhaustive: never = notice;
+      return exhaustive;
+    }
+  }
+}
+
 /** Landscape overlap is reported on a fresh landscape load, not only after a rotation. */
 export function reportLayoutNotice(input: {
   previous: Orientation | null;
@@ -226,6 +272,8 @@ export function useFloatingOrientation({
   scrollOverflowPx: number;
   notice: FloatingLayoutNoticeKey | null;
   noticeCount: number;
+  /** Placing tiles with no landscape slot once the line is definitive. */
+  hiddenCount: number;
   dismissNotice: () => void;
   commitEdits: () => void;
   /** Landscape tiles with no stored slot. The page does not mount them. */
@@ -251,8 +299,10 @@ export function useFloatingOrientation({
   const tilesRef = useRef<FloatingTile[]>([]);
 
   const orientation = currentOrientation(viewport.width, viewport.height);
+  const windowViewport = typeof window === "undefined" ? null : readViewport();
+  const tileViewport = viewport.width > 0 ? viewport : windowViewport ?? viewport;
   const tiles = withOverrides(
-    dashboardId ? floatingTilesFromWidgets(widgets, dashboardId, viewport) : [],
+    dashboardId ? floatingTilesFromWidgets(widgets, dashboardId, tileViewport) : [],
     sizeOverrides
   );
   tilesRef.current = tiles;
@@ -311,12 +361,13 @@ export function useFloatingOrientation({
       orientation === "landscape"
         ? placingTiles(tiles).filter((tile) => window.localStorage.getItem(tile.key) == null).length
         : 0;
+    const shown = visibleLayoutNotice(visible, unplacedCount);
     if (previous !== null && previous !== orientation) {
-      setNotice(visible ? noticeKey(visible) : null);
-      setNoticeCount(visible === "landscape-overlap" ? unplacedCount : 0);
-    } else if (visible) {
-      setNotice(noticeKey(visible));
-      setNoticeCount(visible === "landscape-overlap" ? unplacedCount : 0);
+      setNotice(shown ? noticeKey(shown) : null);
+      setNoticeCount(shown === "landscape-overlap" ? unplacedCount : 0);
+    } else if (shown) {
+      setNotice(noticeKey(shown));
+      setNoticeCount(shown === "landscape-overlap" ? unplacedCount : 0);
     }
   }
 
@@ -329,6 +380,12 @@ export function useFloatingOrientation({
       setHeading((current) => (sameHeading(current, next) ? current : next));
     };
     const sync = () => {
+      const nextViewport = readViewport();
+      if (currentOrientation(nextViewport.width, nextViewport.height) === "landscape") {
+        setViewport((current) =>
+          current.width === nextViewport.width && current.height === nextViewport.height ? current : nextViewport
+        );
+      }
       const node = placementElement(document);
       if (node !== watching) {
         resize?.disconnect();
@@ -529,10 +586,25 @@ export function useFloatingOrientation({
 
   const dismissNotice = () => setNotice(null);
 
+  const gateViewport = viewport.width > 0 || viewport.height > 0 ? viewport : windowViewport ?? viewport;
+  const gateOrientation =
+    viewport.width > 0 || viewport.height > 0
+      ? orientation
+      : currentOrientation(gateViewport.width, gateViewport.height);
   const withheldIds =
-    typeof window !== "undefined" && landscapeReady && viewport.width > 0 && viewport.height > 0 && orientation === "landscape"
-      ? placingTiles(tiles).flatMap((tile) => (window.localStorage.getItem(tile.key) == null ? [tile.id] : []))
-      : [];
+    typeof window === "undefined"
+      ? []
+      : landscapeWithheldIds({
+          orientation: gateOrientation,
+          landscapeReady: gateOrientation !== "landscape" || landscapeLineReady(heading, expectsHeading),
+          viewport: gateViewport,
+          tiles,
+          read: (key) => window.localStorage.getItem(key),
+        });
+  const hiddenCount =
+    typeof window !== "undefined" && landscapeReady && orientation === "landscape" && viewport.width > 0 && viewport.height > 0
+      ? placingTiles(tiles).filter((tile) => window.localStorage.getItem(tile.key) == null).length
+      : 0;
 
-  return { epoch, scrollOverflowPx, notice, noticeCount, dismissNotice, commitEdits, withheldIds };
+  return { epoch, scrollOverflowPx, notice, noticeCount, hiddenCount, dismissNotice, commitEdits, withheldIds };
 }

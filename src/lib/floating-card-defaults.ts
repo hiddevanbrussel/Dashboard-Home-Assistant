@@ -1,7 +1,7 @@
 import { snapToGrid } from "@/lib/floating-card-grid";
 
 /**
- * Position a light or sensor card writes on first mount when no key is stored.
+ * Position a card writes on first mount when no key is stored.
  *
  * Sensor formula: `defaultPosition` in floating-sensor-card.tsx:44-50.
  * Sensor snap bounds: the init effect at floating-sensor-card.tsx:120-133
@@ -9,9 +9,11 @@ import { snapToGrid } from "@/lib/floating-card-grid";
  * Light formula: `defaultPosition` in floating-light-card.tsx:49-56.
  * Light snap bounds: the init effect at floating-light-card.tsx:122-138
  * (`maxLeft = innerWidth - width`, `maxBottom = innerHeight - height`).
+ * Text formula: `defaultPositionForWidth` in floating-text-card.tsx:16-27,
+ * snapped with `maxBottom = innerHeight - 120`.
  * `size` is that width and height. Snap itself is `snapToGrid` in
  * src/lib/floating-card-grid.ts:14-27.
- * Other widget types have no card default and return null.
+ * Types without a first-mount formula return null.
  */
 export function cardDefaultPosition(
   type: string,
@@ -24,6 +26,11 @@ export function cardDefaultPosition(
       return snapSensorDefault(indexOnPage, size.w, viewport);
     case "light_card":
       return snapLightDefault(indexOnPage, size, viewport);
+    case "text_card":
+    case "title_card":
+    case "title_only_card":
+    case "subtitle_card":
+      return snapTextDefault(indexOnPage, size.w, viewport);
     default:
       return null;
   }
@@ -39,6 +46,25 @@ function snapSensorDefault(
   const offset = indexOnPage * (cardWidth + 16);
   return snapToGrid(
     { left: Math.min(offset, maxLeft / 2), bottom: maxBottom / 2 },
+    { maxLeft, maxBottom }
+  );
+}
+
+function snapTextDefault(
+  indexOnPage: number,
+  cardWidth: number,
+  viewport: { width: number; height: number }
+): { left: number; bottom: number } {
+  const maxLeft = viewport.width - cardWidth;
+  const maxBottom = viewport.height - 120;
+  const cols = 3;
+  const row = Math.floor(indexOnPage / cols);
+  const col = indexOnPage % cols;
+  return snapToGrid(
+    {
+      left: Math.max(0, Math.min(col * Math.max(1, maxLeft / (cols - 1)), maxLeft)),
+      bottom: Math.max(0, maxBottom - row * 80),
+    },
     { maxLeft, maxBottom }
   );
 }
