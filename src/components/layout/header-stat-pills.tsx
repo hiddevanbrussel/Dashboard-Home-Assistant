@@ -47,6 +47,7 @@ function PinnedPill({
           color={(widget.color as "amber" | "purple" | "emerald" | "red") ?? "amber"}
           conditions={widget.conditions as SensorCondition[] | undefined}
           size={(widget.size as "sm" | "md" | "lg") ?? "md"}
+          className={editMode ? "pr-4" : undefined}
           onMoreClick={editMode ? open : undefined}
         />
       </div>

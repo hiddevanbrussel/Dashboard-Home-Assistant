@@ -34,8 +34,20 @@ describe("44px touch target on the ⋮ in tiles", () => {
     expect(layer).toMatch(/\.tile-kebab-hit::after\s*\{[^}]*content:\s*"";/);
     expect(layer).toMatch(/width:\s*max\(100%,\s*44px\)/);
     expect(layer).toMatch(/height:\s*max\(100%,\s*44px\)/);
+    // Padding grows the border box past the 44px edge so ±22px is inside it.
+    expect(layer).toMatch(/box-sizing:\s*content-box/);
+    expect(layer).toMatch(/padding:\s*4px/);
     // No background, border or shadow: the hit area must not be visible.
     const after = layer.match(/\.tile-kebab-hit::after\s*\{([^}]*)\}/)?.[1] ?? "";
     expect(after).not.toMatch(/background|border|box-shadow/);
+  });
+
+  it("lets the header ⋮ stack above the next pill by splitting the edit wiggle", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+    expect(css).toContain("html[data-dashboard-edit] [data-header-statpill-id] > .animate-edit-wiggle");
+    expect(css).toMatch(
+      /html\[data-dashboard-edit\] \[data-header-statpill-id\] > \.animate-edit-wiggle \{\s*animation:\s*none;/
+    );
+    expect(css).toContain("html[data-dashboard-edit] [data-header-statpill-id] .tile-kebab-hit");
   });
 });

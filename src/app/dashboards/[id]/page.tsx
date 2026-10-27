@@ -124,7 +124,7 @@ import {
   TILE_SIDEBAR_INSET_PX,
   type TileRect,
 } from "@/lib/tile-placement";
-import { forgetTilePosition, tilePositionStorageKey, writeTilePosition } from "@/lib/tile-position-storage";
+import { forgetTilePosition, isSingletonTileType, tilePositionStorageKey, writeTilePosition } from "@/lib/tile-position-storage";
 import {
   duplicateTileTitle,
   readSavedTilePosition,
@@ -2106,6 +2106,7 @@ export default function DashboardEditPage() {
   function handleDuplicateTile(widgetId: string): string | undefined {
     const original = widgets.find((w) => w.id === widgetId);
     if (!original) return undefined;
+    if (isSingletonTileType(original.type)) return undefined;
     const newId = generateId();
     // A copy of a pill in the top bar goes to the grid, so it never counts against the bar's maximum.
     const { placement: _placement, topbar_order: _topbarOrder, ...source } = original;
@@ -2762,14 +2763,16 @@ export default function DashboardEditPage() {
       icon: Pencil,
       onSelect: () => setEditingWidgetId(pillId),
     });
-    tileMenuItems.push({
-      key: "duplicate",
-      label: t("editPanel.duplicateCard"),
-      icon: Copy,
-      onSelect: () => {
-        handleDuplicateTile(pillId);
-      },
-    });
+    if (!isSingletonTileType(tileMenuWidget.type)) {
+      tileMenuItems.push({
+        key: "duplicate",
+        label: t("editPanel.duplicateCard"),
+        icon: Copy,
+        onSelect: () => {
+          handleDuplicateTile(pillId);
+        },
+      });
+    }
     // Only stat pills can go to the top bar.
     const isPill = tileMenuWidget.type === "stat_pill_card";
     if (isPill && tileMenuWidget.placement === "topbar") {
@@ -7698,7 +7701,7 @@ aria-label={t("editPanel.removeCondition")}
                   >
                     {t("editPanel.cancel")}
                   </button>
-                  {!addingTile && (
+                  {!addingTile && !isSingletonTileType(editingWidget.type) && (
                   <button
                     type="button"
                     onClick={() => {

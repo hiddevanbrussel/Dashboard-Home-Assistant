@@ -337,7 +337,7 @@ export function FloatingTrashCard({
       draggable={false}
       onDragStart={(event) => event.preventDefault()}
       className={cn(
-        "card-plot-in fixed z-30 outline-none [-webkit-user-drag:none]",
+        "card-plot-in fixed z-30 outline-none [-webkit-user-drag:none] rounded-[1.35rem] shadow-tile dark:shadow-tile-dark",
         editMode && !isResizing && "cursor-grab touch-none select-none active:cursor-grabbing",
         editMode && !isDragging && !isResizing && "animate-edit-wiggle",
         // Backdrop blur is expensive while the card moves.
@@ -366,7 +366,7 @@ export function FloatingTrashCard({
         onPointerCancel: handlePointerUp,
       })}
     >
-      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl">
+      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[1.35rem]">
         <TrashCardWidget
           title={widget.title}
           entity_id={widget.entity_id}

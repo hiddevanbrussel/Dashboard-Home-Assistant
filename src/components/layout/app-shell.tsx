@@ -341,12 +341,15 @@ export function AppShell({
   }, [pathname]);
 
   useEffect(() => {
+    const root = document.documentElement;
+    const clearChromeVar = () => root.style.removeProperty("--app-chrome-height");
     if (hideHeader) {
       setChromeHeight(0);
-      return;
+      clearChromeVar();
+      return clearChromeVar;
     }
     const el = chromeRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    if (!el || typeof ResizeObserver === "undefined") return clearChromeVar;
     // Measure interactive header rows only — exclude the CSS fade padding under the bar.
     const update = () => {
       const header = el.querySelector<HTMLElement>("[data-app-header]");
@@ -354,7 +357,10 @@ export function AppShell({
       const h =
         (header?.getBoundingClientRect().height ?? 0) +
         (sub?.getBoundingClientRect().height ?? 0);
-      setChromeHeight(Math.ceil(h));
+      const height = Math.ceil(h);
+      setChromeHeight(height);
+      if (height === 0) clearChromeVar();
+      else root.style.setProperty("--app-chrome-height", `${height}px`);
     };
     update();
     const ro = new ResizeObserver(update);
@@ -363,7 +369,10 @@ export function AppShell({
     const sub = el.querySelector("[data-app-subheader]");
     if (header) ro.observe(header);
     if (sub) ro.observe(sub);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      clearChromeVar();
+    };
   }, [hideHeader, headerBelowAction, headerContentLight]);
 
   const effectiveTempEntity =

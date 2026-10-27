@@ -42,6 +42,8 @@ const config: Config = {
       boxShadow: {
         glass: "0 8px 32px rgba(15, 23, 42, 0.08)",
         "glass-dark": "0 8px 32px rgba(0, 0, 0, 0.35)",
+        tile: "0 18px 50px rgba(15, 23, 42, 0.12)",
+        "tile-dark": "0 18px 50px rgba(0, 0, 0, 0.45)",
       },
       backdropBlur: {
         glass: "12px",
