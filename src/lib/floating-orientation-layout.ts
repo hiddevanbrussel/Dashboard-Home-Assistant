@@ -558,11 +558,19 @@ export function firstFit(
   tiles: readonly FitInput[],
   viewport: { width: number; height: number },
   fixed: readonly Box[] = [],
-  marginTop: number = MARGIN_TOP
+  marginTop: number = MARGIN_TOP,
+  onScreen = false
 ): PlacedTile[] {
   const obstacles: Box[] = fixed.map((box) => ({ ...box }));
   const placed: PlacedTile[] = [];
   for (const tile of tiles) {
+    if (onScreen) {
+      const settled = placeOnScreen(tile, viewport, obstacles, marginTop);
+      if (!settled) continue;
+      placed.push(settled);
+      obstacles.push(settled);
+      continue;
+    }
     const spot = findSpot(tile, viewport, obstacles, marginTop);
     let y = spot.y;
     let bottom = floorBottom(viewport.height, y, tile.h);
@@ -612,6 +620,58 @@ function findSpot(
     }
   }
   return { x: MARGIN_LEFT, y: yLimit };
+}
+
+/**
+ * Landscape only. A free on-screen cell: left at or past the rail margin, under
+ * the header line, bottom on or above the fold. Never a below-fold spot that a
+ * card would clamp back to 0 and stack on another tile.
+ * The gap rule is tried first. A pixel-clear cell is used when that is the
+ * only on-screen place. No cell means the caller leaves the key unset and
+ * the landscape overlap notice reports it.
+ */
+function placeOnScreen(
+  tile: FitInput,
+  viewport: { width: number; height: number },
+  obstacles: readonly Box[],
+  marginTop: number
+): PlacedTile | null {
+  const maxX = viewport.width - MARGIN_RIGHT - tile.w;
+  const yMax = viewport.height - tile.h;
+  if (maxX < MARGIN_LEFT || yMax < marginTop) return null;
+  const gapSpot = scanOnScreen(tile, viewport, obstacles, marginTop, maxX, yMax, true);
+  if (gapSpot) return gapSpot;
+  return scanOnScreen(tile, viewport, obstacles, marginTop, maxX, yMax, false);
+}
+
+function scanOnScreen(
+  tile: FitInput,
+  viewport: { width: number; height: number },
+  obstacles: readonly Box[],
+  marginTop: number,
+  maxX: number,
+  yMax: number,
+  requireGap: boolean
+): PlacedTile | null {
+  for (let y = marginTop; y <= yMax; y += GRID) {
+    for (let x = MARGIN_LEFT; x <= maxX; x += GRID) {
+      if (requireGap ? hits(tile, x, y, obstacles) : overlapsBox(tile, x, y, obstacles)) continue;
+      const bottom = floorBottom(viewport.height, y, tile.h);
+      const nextY = viewport.height - bottom - tile.h;
+      if (bottom < 0 || nextY < marginTop) continue;
+      if (requireGap ? hits(tile, x, nextY, obstacles) : overlapsBox(tile, x, nextY, obstacles)) continue;
+      const settled = settleClamp(tile, x, bottom, viewport);
+      if (settled.bottom < 0 || settled.y < marginTop || settled.left < MARGIN_LEFT) continue;
+      if (requireGap ? hits(tile, settled.x, settled.y, obstacles) : overlapsBox(tile, settled.x, settled.y, obstacles)) continue;
+      return settled;
+    }
+  }
+  return null;
+}
+
+function overlapsBox(tile: FitInput, x: number, y: number, obstacles: readonly Box[]): boolean {
+  const box = { x, y, w: tile.w, h: tile.h };
+  return obstacles.some((obstacle) => visuallyOverlaps(box, obstacle));
 }
 
 function hits(tile: FitInput, x: number, y: number, obstacles: readonly Box[]): boolean {
@@ -922,7 +982,8 @@ export function placeMissingTiles(
   positions: Record<string, string>,
   tiles: readonly FloatingTile[],
   portrait: { width: number; height: number },
-  topInset?: number
+  topInset?: number,
+  onScreen = false
 ): Record<string, string> {
   const marginTop = landscapeMarginTop(topInset);
   const next = { ...positions };
@@ -948,7 +1009,8 @@ export function placeMissingTiles(
       })),
       portrait,
       fixed,
-      marginTop
+      marginTop,
+      onScreen
     );
     for (const item of fitted) next[item.id] = positionString(item.left, item.bottom);
   }
@@ -1171,7 +1233,7 @@ function relocateStoredCardDefaults(
   for (const [key, value] of Object.entries(positions)) {
     if (!drop.has(key)) stripped[key] = value;
   }
-  return placeMissingTiles(stripped, landscapeTilesToPlace(stripped, tiles, placing), viewport, topInset);
+  return placeMissingTiles(stripped, landscapeTilesToPlace(stripped, tiles, placing), viewport, topInset, true);
 }
 
 function isExactCardDefault(
@@ -1266,7 +1328,7 @@ function applyLandscapePlacement(
     if (lineChanged && owned[key] === value) continue;
     base[key] = value;
   }
-  const placed = placeMissingTiles(base, landscapeTilesToPlace(base, tiles, placing), viewport, topInset);
+  const placed = placeMissingTiles(base, landscapeTilesToPlace(base, tiles, placing), viewport, topInset, true);
   const corrected = relocateStoredCardDefaults(placed, tiles, placing, viewport, topInset);
   const unchanged = sameMap(corrected, positions);
   if (unchanged && !lineChanged) {
@@ -1522,7 +1584,12 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
     }
   }
 
-  if (orientation === "landscape" && input.reportNotice && landscapeOverlaps(layout.landscape, placing, viewport)) {
+  const landscapeUnplaced = orientation === "landscape" && placing.some((tile) => !(tile.key in layout.landscape));
+  if (
+    orientation === "landscape" &&
+    input.reportNotice &&
+    (landscapeOverlaps(layout.landscape, placing, viewport) || landscapeUnplaced)
+  ) {
     notice = "landscape-overlap";
   }
   if (orientation === "portrait" && layout.portrait && input.reportNotice && portraitBelowFold(layout.portrait, placing, viewport)) {

@@ -1692,3 +1692,196 @@ describe("card-default overlap (P1)", () => {
     expect(run(storage, [sensor, lamp]).wrote).toBe(false);
   });
 });
+
+describe("landscape stays on screen (H5)", () => {
+  const ROOM = "room-h5-fold";
+  const LINE = 208;
+  const WIDE_W = 640;
+  const WIDE_H = 160;
+
+  function rawAt(left: number, top: number, height: number): string {
+    return JSON.stringify({ left, bottom: LANDSCAPE.height - top - height });
+  }
+
+  function boxesOf(tiles: readonly FloatingTile[], positions: Record<string, string>) {
+    return tiles.flatMap((entry) => {
+      const raw = positions[entry.key];
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as { left: number; bottom: number };
+      return [{
+        id: entry.id,
+        x: parsed.left,
+        y: LANDSCAPE.height - parsed.bottom - entry.h,
+        w: entry.w,
+        h: entry.h,
+      }];
+    });
+  }
+
+  function run(
+    storage: MemoryStorage,
+    tiles: readonly FloatingTile[],
+    reportNotice: boolean
+  ) {
+    return reconcileFloatingLayout({
+      storage,
+      dashboardId: ROOM,
+      orientation: "landscape",
+      viewport: LANDSCAPE,
+      tiles,
+      push: false,
+      reportNotice,
+      rederive: false,
+      mounted: true,
+      topInset: LINE,
+    });
+  }
+
+  // Eleven tiles fill the left side. Their right edge stops 12px before the
+  // only cell a 640px tile can still use, so the 16px gap rule misses it and
+  // the old scan stored a below-fold bottom.
+  function crowdedEleven(): { tiles: FloatingTile[]; stored: Record<string, string>; wide: FloatingTile } {
+    const tiles: FloatingTile[] = [];
+    const stored: Record<string, string> = {};
+    const leftTops = [208, 288, 368, 448, 528, 608, 688];
+    for (const [index, top] of leftTops.entries()) {
+      const entry = tile(`Links${index}`, `dashboard.floatingSensorCardPosition.${ROOM}.l${index}`, {
+        w: 240,
+        h: 64,
+        legacyTopOffset: 200,
+      });
+      tiles.push(entry);
+      stored[entry.key] = rawAt(96, top, 64);
+    }
+    const wall: { top: number; h: number; spaced?: boolean }[] = [
+      { top: 208, h: 144 },
+      { top: 368, h: 144, spaced: true },
+      { top: 528, h: 144 },
+      { top: 688, h: 112 },
+    ];
+    for (const [index, band] of wall.entries()) {
+      const entry = tile(`Muur${index}`, `dashboard.floatingLightCardPosition.${ROOM}.w${index}`, {
+        w: 260,
+        h: band.h,
+        legacyTopOffset: 80,
+        defaultSize: index === 0 ? false : undefined,
+      });
+      tiles.push(entry);
+      const bottom = LANDSCAPE.height - band.top - band.h;
+      stored[entry.key] = band.spaced
+        ? `{"left": 352, "bottom": ${bottom}}`
+        : JSON.stringify({ left: 352, bottom });
+    }
+    const wide = tile("Breed", `dashboard.floatingMediaCardPosition.${ROOM}.wide`, {
+      w: WIDE_W,
+      h: WIDE_H,
+      legacyTopOffset: 200,
+    });
+    return { tiles, stored, wide };
+  }
+
+  it("places a 640px tile on screen beside 11 tiles under the 208 line", () => {
+    const storage = new MemoryStorage();
+    const { tiles, stored, wide } = crowdedEleven();
+    seed(storage, stored);
+    const result = run(storage, [...tiles, wide], true);
+    expect(result.wrote).toBe(true);
+    expect(result.notice).toBeNull();
+    for (const [key, value] of Object.entries(stored)) expect(storage.getItem(key)).toBe(value);
+    const wideRaw = storage.getItem(wide.key);
+    expect(wideRaw).toBe(JSON.stringify({ left: 624, bottom: 432 }));
+    const positions = snapshotActive(storage, [...tiles, wide]);
+    const placed = boxesOf([...tiles, wide], positions);
+    expect(placed).toHaveLength(12);
+    expect(overlapPairs(placed, "pixels")).toEqual([]);
+    for (const box of placed) {
+      const bottom = LANDSCAPE.height - box.y - box.h;
+      expect(bottom).toBeGreaterThanOrEqual(0);
+      expect(box.y).toBeGreaterThanOrEqual(LINE);
+      expect(box.y + box.h).toBeLessThanOrEqual(LANDSCAPE.height);
+      expect(box.x).toBeGreaterThanOrEqual(96);
+    }
+    expect(run(storage, [...tiles, wide], true).wrote).toBe(false);
+  });
+
+  it("does not clamp a 640px tile onto the speaker when the screen is full", () => {
+    const storage = new MemoryStorage();
+    const tiles: FloatingTile[] = [];
+    const stored: Record<string, string> = {};
+    const cols = [0, 320, 640, 960];
+    const rows = [200, 400, 600];
+    for (const top of rows) {
+      for (const left of cols) {
+        if (left === 960 && top === 600) continue;
+        const speaker = left === 320 && top === 600;
+        const entry = tile(
+          speaker ? "Speaker" : `Vol${left}-${top}`,
+          speaker
+            ? `dashboard.floatingMediaCardPosition.${ROOM}.speaker`
+            : `dashboard.floatingSensorCardPosition.${ROOM}.s${left}-${top}`,
+          { w: speaker ? 280 : 320, h: speaker ? 79 : 200, legacyTopOffset: 200 }
+        );
+        tiles.push(entry);
+        stored[entry.key] = JSON.stringify({
+          left,
+          bottom: LANDSCAPE.height - top - (speaker ? 79 : 200),
+        });
+      }
+    }
+    expect(tiles).toHaveLength(11);
+    const wide = tile("Breed", `dashboard.floatingMediaCardPosition.${ROOM}.wide`, {
+      w: WIDE_W,
+      h: 200,
+      legacyTopOffset: 200,
+    });
+    seed(storage, stored);
+    const speaker = tiles.find((entry) => entry.id === "Speaker");
+    expect(speaker).toBeTruthy();
+    const result = run(storage, [...tiles, wide], true);
+    expect(result.notice).toBe("landscape-overlap");
+    expect(storage.getItem(wide.key)).toBeNull();
+    expect(storage.getItem(speaker?.key ?? "")).toBe(stored[speaker?.key ?? ""]);
+    for (const [key, value] of Object.entries(stored)) expect(storage.getItem(key)).toBe(value);
+    const layout = JSON.parse(storage.getItem(layoutStorageKey(ROOM)) ?? "{}") as {
+      landscape?: Record<string, string>;
+    };
+    expect(layout.landscape?.[wide.key]).toBeUndefined();
+    for (const value of Object.values(layout.landscape ?? {})) {
+      expect((JSON.parse(value) as { bottom: number }).bottom).toBeGreaterThanOrEqual(0);
+    }
+    const placed = boxesOf(tiles, snapshotActive(storage, tiles));
+    const wideAtFold = { id: "clamped", x: 96, y: LANDSCAPE.height - 200, w: WIDE_W, h: 200 };
+    expect(overlapPairs([...placed, wideAtFold], "pixels").some((pair) => pair.includes("clamped"))).toBe(true);
+  });
+
+  it("still stores a portrait tile below the fold", () => {
+    const storage = new MemoryStorage();
+    const tiles = Array.from({ length: 8 }, (_, index) =>
+      tile(`Staand${index}`, `dashboard.floatingSensorCardPosition.portrait-fold.${index}`, {
+        w: 640,
+        h: 400,
+        legacyTopOffset: 200,
+      })
+    );
+    const result = reconcileFloatingLayout({
+      storage,
+      dashboardId: "portrait-fold",
+      orientation: "portrait",
+      viewport: PORTRAIT,
+      tiles,
+      push: false,
+      reportNotice: true,
+      rederive: false,
+      mounted: true,
+      topInset: LINE,
+    });
+    const bottoms = tiles.flatMap((entry) => {
+      const raw = storage.getItem(entry.key);
+      if (!raw) return [];
+      return [(JSON.parse(raw) as { bottom: number }).bottom];
+    });
+    expect(bottoms.some((bottom) => bottom < 0)).toBe(true);
+    expect(result.notice).toBe("portrait-below-fold");
+    expect(result.scrollOverflowPx).toBeGreaterThan(0);
+  });
+});
