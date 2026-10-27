@@ -94,6 +94,11 @@ type AppShellProps = {
   hideWelcome?: boolean;
   /** When true, show inputs to edit welcome title/subtitle (edit mode). */
   welcomeEditable?: boolean;
+  /**
+   * The welcome title can be edited. Keep an off-screen edit-heading box so
+   * landscape tiles sit under that line even while edit mode is off.
+   */
+  reserveEditHeading?: boolean;
   /** Called when user changes welcome title or subtitle. */
   onWelcomeChange?: (value: { title: string; subtitle: string }) => void;
   /** Entity ID for temperature shown in header. If not set, uses chosen value from localStorage or default. Set to null to hide. */
@@ -263,6 +268,7 @@ export function AppShell({
   welcomeSubtitle: welcomeSubtitleProp,
   hideWelcome = false,
   welcomeEditable = false,
+  reserveEditHeading = false,
   onWelcomeChange,
   temperatureEntityId,
   welcomeEntityIds,
@@ -609,8 +615,20 @@ export function AppShell({
         {(showWelcomeInHeader || backHref) && (
         <div
           data-app-page-heading
-          className="flex shrink-0 items-center justify-between gap-4 px-4 py-4 sm:px-6"
+          className="relative flex shrink-0 items-center justify-between gap-4 px-4 py-4 sm:px-6"
         >
+          {reserveEditHeading && showWelcomeInHeader ? (
+            <div
+              data-app-heading-edit
+              aria-hidden="true"
+              className="pointer-events-none invisible absolute left-0 right-0 top-0 flex items-center px-4 py-4 sm:px-6"
+            >
+              <div className="min-w-0 max-w-md flex-1 space-y-2">
+                <div className="block w-full border border-transparent px-2 py-1 text-2xl font-bold md:text-3xl">{"\u00a0"}</div>
+                <div className="block w-full border border-transparent px-2 py-1 text-base font-normal md:text-lg">{"\u00a0"}</div>
+              </div>
+            </div>
+          ) : null}
           <div className="min-w-0 flex-1 flex items-center gap-3">
             {backHref && (
               <Link

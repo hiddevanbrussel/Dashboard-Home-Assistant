@@ -2821,6 +2821,7 @@ export default function DashboardEditPage() {
         hideWelcome={false}
         headerEditMode={editMode}
         welcomeEditable={editMode}
+        reserveEditHeading
         onWelcomeChange={editMode ? ({ title, subtitle }) => {
           setWelcomeTitle(title);
           setWelcomeSubtitle(subtitle);

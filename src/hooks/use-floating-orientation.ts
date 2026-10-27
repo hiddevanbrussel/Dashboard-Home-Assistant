@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   consumeLayoutNotice,
   currentOrientation,
@@ -44,20 +44,38 @@ function readViewport(): Viewport {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
+const PLACEMENT_SELECTORS = ["[data-app-heading-edit]", "[data-app-page-heading]", "[data-app-header]"] as const;
+
 /**
- * Placement line under the page heading (back button and title), plus GAP.
- * `[data-app-header]` is only the fallback when that heading is absent.
- * Returns undefined when nothing is on screen yet, so placement stays at MARGIN_TOP.
+ * Element whose bottom is the landscape placement line, measured after layout.
+ * An editable title exposes `[data-app-heading-edit]` (the edit-heading box),
+ * including while edit mode is off, so the line does not jump when that mode toggles.
+ * Otherwise the visible heading, then the fixed chrome bar.
  */
-function readPlacementInset(): number | undefined {
-  if (typeof document === "undefined") return undefined;
-  const node =
-    document.querySelector<HTMLElement>("[data-app-page-heading]") ??
-    document.querySelector<HTMLElement>("[data-app-header]");
+export function placementElement(root: ParentNode): HTMLElement | null {
+  for (const selector of PLACEMENT_SELECTORS) {
+    const node = root.querySelector<HTMLElement>(selector);
+    if (!node) continue;
+    const bottom = node.getBoundingClientRect().bottom;
+    if (!Number.isFinite(bottom) || bottom <= 0) continue;
+    return node;
+  }
+  return null;
+}
+
+/** Header bottom plus GAP, snapped. Undefined when nothing on screen has a box yet. */
+export function measurePlacementInset(root: ParentNode): number | undefined {
+  const node = placementElement(root);
   if (!node) return undefined;
-  const bottom = node.getBoundingClientRect().bottom;
-  if (!Number.isFinite(bottom) || bottom <= 0) return undefined;
-  return landscapeMarginTop(bottom + GAP);
+  return landscapeMarginTop(node.getBoundingClientRect().bottom + GAP);
+}
+
+type HeadingWatch = { phase: "pending" } | { phase: "absent" } | { phase: "ready"; inset: number };
+
+function sameHeading(current: HeadingWatch, next: HeadingWatch): boolean {
+  if (current.phase !== next.phase) return false;
+  if (current.phase === "ready" && next.phase === "ready") return current.inset === next.inset;
+  return true;
 }
 
 function noticeKey(notice: LayoutNotice): FloatingLayoutNoticeKey {
@@ -137,8 +155,8 @@ export function useFloatingOrientation({
   const pointerDownRef = useRef(false);
   const deferredRef = useRef(false);
   const lastSigRef = useRef("");
-  const nonEditInsetRef = useRef<number | undefined>(undefined);
   const orientationRef = useRef<Orientation | null>(null);
+  const [heading, setHeading] = useState<HeadingWatch>({ phase: "pending" });
   const sizeSigRef = useRef("");
   const measuredRef = useRef(false);
   const tilesRef = useRef<FloatingTile[]>([]);
@@ -152,12 +170,12 @@ export function useFloatingOrientation({
   // `parked` is in the signature so pinning or unpinning a tile reconciles again.
   const tileSig = tiles.map((tile) => `${tile.key}:${tile.page}:${tile.w}x${tile.h}${tile.parked ? ":parked" : ""}`).join("|");
   const sizeSig = tiles.map((tile) => `${tile.key}:${tile.w}x${tile.h}`).join("|");
-  // Edit mode grows the heading. Keep the last non-edit inset so a new tile
-  // uses that line and stored tiles are not placed again when the mode toggles.
-  const measuredInset = readPlacementInset();
-  if (!editMode && measuredInset != null) nonEditInsetRef.current = measuredInset;
-  const topInset = editMode ? (nonEditInsetRef.current ?? measuredInset) : measuredInset;
-  const sig = `${dashboardId ?? ""}|${ready ? 1 : 0}|${orientation}|${viewport.width}x${viewport.height}|${tileSig}|${topInset ?? ""}|${generation}`;
+  // Landscape waits until useLayoutEffect has seen the heading (or seen that there is none).
+  // The edit sizer, when present, is the line outside edit mode too, so toggling it does not move tiles.
+  const topInset = orientation === "landscape" && heading.phase === "ready" ? heading.inset : undefined;
+  const landscapeReady = orientation !== "landscape" || heading.phase !== "pending";
+  const headingSig = heading.phase === "ready" ? `ready:${heading.inset}` : heading.phase;
+  const sig = `${dashboardId ?? ""}|${ready ? 1 : 0}|${orientation}|${viewport.width}x${viewport.height}|${tileSig}|${headingSig}|${generation}`;
 
   if (
     ready &&
@@ -165,6 +183,7 @@ export function useFloatingOrientation({
     viewport.width > 0 &&
     viewport.height > 0 &&
     typeof window !== "undefined" &&
+    landscapeReady &&
     !pointerDownRef.current &&
     lastSigRef.current !== sig
   ) {
@@ -198,6 +217,38 @@ export function useFloatingOrientation({
     if (previous !== null && previous !== orientation) setNotice(visible ? noticeKey(visible) : null);
     else if (visible) setNotice(noticeKey(visible));
   }
+
+  useLayoutEffect(() => {
+    if (typeof document === "undefined") return;
+    let resize: ResizeObserver | null = null;
+    let watching: HTMLElement | null = null;
+
+    const publish = (next: HeadingWatch) => {
+      setHeading((current) => (sameHeading(current, next) ? current : next));
+    };
+    const sync = () => {
+      const node = placementElement(document);
+      if (node !== watching) {
+        resize?.disconnect();
+        resize = null;
+        watching = node;
+        if (node && typeof ResizeObserver !== "undefined") {
+          resize = new ResizeObserver(() => sync());
+          resize.observe(node);
+        }
+      }
+      const inset = measurePlacementInset(document);
+      publish(inset == null ? { phase: "absent" } : { phase: "ready", inset });
+    };
+
+    sync();
+    const mutations = typeof MutationObserver === "undefined" ? null : new MutationObserver(() => sync());
+    if (mutations && document.body) mutations.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      resize?.disconnect();
+      mutations?.disconnect();
+    };
+  }, [dashboardId]);
 
   useEffect(() => {
     const onResize = () => {

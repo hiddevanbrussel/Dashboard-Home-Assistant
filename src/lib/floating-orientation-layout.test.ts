@@ -1449,3 +1449,246 @@ describe("landscape header clearance (O1)", () => {
     expect(storage.getItem(sensor.key)).toBe(raw);
   });
 });
+
+describe("header line after layout (H1, H2)", () => {
+  const ROOM = "room-qa_header";
+
+  function roomTiles(scaledLamp = false): FloatingTile[] {
+    return [
+      tile("Temperatuur", `dashboard.floatingSensorCardPosition.${ROOM}.sensor`, { w: 260, h: 108, legacyTopOffset: 200 }),
+      tile("Plafondlamp", `dashboard.floatingLightCardPosition.${ROOM}.lamp`, {
+        w: 240,
+        h: 70,
+        legacyTopOffset: 80,
+        defaultSize: !scaledLamp,
+      }),
+      tile("Media", `dashboard.floatingMediaCardPosition.${ROOM}.media`, { w: 280, h: 340, legacyTopOffset: 200 }),
+    ];
+  }
+
+  function run(
+    storage: MemoryStorage,
+    orientation: "landscape" | "portrait",
+    tiles: readonly FloatingTile[],
+    topInset?: number
+  ) {
+    return reconcileFloatingLayout({
+      storage,
+      dashboardId: ROOM,
+      orientation,
+      viewport: orientation === "landscape" ? LANDSCAPE : PORTRAIT,
+      tiles,
+      push: false,
+      reportNotice: false,
+      rederive: false,
+      mounted: true,
+      topInset,
+    });
+  }
+
+  function tops(tiles: readonly FloatingTile[], positions: Record<string, string>, height: number): number[] {
+    return tiles.map((entry) => {
+      const parsed = JSON.parse(positions[entry.key] ?? "") as { bottom: number };
+      return height - parsed.bottom - entry.h;
+    });
+  }
+
+  it("re-places untouched tiles when a later measurement grows the line", () => {
+    const storage = new MemoryStorage();
+    const tiles = roomTiles();
+    run(storage, "landscape", tiles, 80);
+    const early = snapshotActive(storage, tiles);
+    expect(Math.min(...tops(tiles, early, LANDSCAPE.height))).toBeLessThan(160);
+
+    const grown = run(storage, "landscape", tiles, 160);
+    expect(grown.wrote).toBe(true);
+    const positions = snapshotActive(storage, tiles);
+    for (const top of tops(tiles, positions, LANDSCAPE.height)) {
+      expect(top).toBeGreaterThanOrEqual(160);
+    }
+    expect(overlapPairs(tiles.flatMap((entry) => {
+      const parsed = JSON.parse(positions[entry.key] ?? "") as { left: number; bottom: number };
+      return [{ id: entry.id, x: parsed.left, y: LANDSCAPE.height - parsed.bottom - entry.h, w: entry.w, h: entry.h }];
+    }), "gap")).toEqual([]);
+
+    const again = run(storage, "landscape", tiles, 160);
+    expect(again.wrote).toBe(false);
+    expect(snapshotActive(storage, tiles)).toEqual(positions);
+  });
+
+  it("keeps a moved tile and a scaled tile when the line grows", () => {
+    const storage = new MemoryStorage();
+    const tiles = roomTiles(true);
+    const [sensor, lamp] = tiles;
+    run(storage, "landscape", tiles, 80);
+    const lampRaw = storage.getItem(lamp.key);
+    const placedTop = 40;
+    const userRaw = JSON.stringify({ left: 400, bottom: LANDSCAPE.height - placedTop - sensor.h });
+    storage.setItem(sensor.key, userRaw);
+
+    const grown = run(storage, "landscape", tiles, 160);
+    expect(grown.wrote).toBe(true);
+    expect(storage.getItem(sensor.key)).toBe(userRaw);
+    expect(storage.getItem(lamp.key)).toBe(lampRaw);
+    const media = tiles[2];
+    const mediaTop = LANDSCAPE.height - (JSON.parse(storage.getItem(media.key) ?? "") as { bottom: number }).bottom - media.h;
+    expect(mediaTop).toBeGreaterThanOrEqual(160);
+
+    const again = run(storage, "landscape", tiles, 160);
+    expect(again.wrote).toBe(false);
+    expect(storage.getItem(sensor.key)).toBe(userRaw);
+    expect(storage.getItem(lamp.key)).toBe(lampRaw);
+  });
+
+  it("keeps portrait positions when the header line is passed", () => {
+    const tiles = roomTiles();
+    const plain = new MemoryStorage();
+    const withInset = new MemoryStorage();
+    run(plain, "portrait", tiles);
+    run(withInset, "portrait", tiles, 208);
+    const before = snapshotActive(plain, tiles);
+    expect(snapshotActive(withInset, tiles)).toEqual(before);
+    expect(Math.min(...tops(tiles, before, PORTRAIT.height))).toBeLessThan(160);
+    expect(run(withInset, "portrait", tiles, 208).wrote).toBe(false);
+  });
+
+  it("places new landscape tiles under the edit heading line", () => {
+    const storage = new MemoryStorage();
+    const tiles = roomTiles();
+    const result = run(storage, "landscape", tiles, 208);
+    expect(result.wrote).toBe(true);
+    for (const top of tops(tiles, snapshotActive(storage, tiles), LANDSCAPE.height)) {
+      expect(top).toBeGreaterThanOrEqual(208);
+    }
+    expect(run(storage, "landscape", tiles, 208).wrote).toBe(false);
+  });
+});
+
+describe("card-default overlap (P1)", () => {
+  const ROOM = "room-qa_overlap";
+  const sensorSize = { w: 260, h: 108 };
+  const lampSize = { w: 240, h: 70 };
+
+  function run(storage: MemoryStorage, tiles: readonly FloatingTile[]) {
+    return reconcileFloatingLayout({
+      storage,
+      dashboardId: ROOM,
+      orientation: "landscape",
+      viewport: LANDSCAPE,
+      tiles,
+      push: false,
+      reportNotice: false,
+      rederive: false,
+      mounted: true,
+    });
+  }
+
+  function remember(storage: MemoryStorage, positions: Record<string, string>) {
+    seed(storage, positions);
+    storage.setItem(layoutStorageKey(ROOM), JSON.stringify({
+      v: 1,
+      active: "landscape",
+      landscape: { ...positions },
+      portrait: null,
+      portraitBron: null,
+    }));
+  }
+
+  it("moves two card defaults that overlap away from the rail", () => {
+    const storage = new MemoryStorage();
+    const buitenDefault = cardDefaultPosition("sensor_card", 1, sensorSize, LANDSCAPE);
+    const keukenDefault = cardDefaultPosition("light_card", 1, lampSize, LANDSCAPE);
+    expect(keukenDefault).toEqual({ left: 288, bottom: 368 });
+    expect(buitenDefault).toEqual({ left: 272, bottom: 336 });
+    const buiten = tile("Buiten", `dashboard.floatingSensorCardPosition.${ROOM}.buiten`, {
+      ...sensorSize,
+      legacyTopOffset: 200,
+      cardDefault: buitenDefault ?? undefined,
+      defaultSize: true,
+    });
+    const keuken = tile("Keuken", `dashboard.floatingLightCardPosition.${ROOM}.keuken`, {
+      ...lampSize,
+      legacyTopOffset: 80,
+      cardDefault: keukenDefault ?? undefined,
+      defaultSize: true,
+    });
+    const raw = {
+      [buiten.key]: JSON.stringify(buitenDefault),
+      [keuken.key]: JSON.stringify(keukenDefault),
+    };
+    seed(storage, raw);
+    const result = run(storage, [buiten, keuken]);
+    expect(result.wrote).toBe(true);
+    expect(storage.getItem(buiten.key)).not.toBe(raw[buiten.key]);
+    expect(storage.getItem(keuken.key)).not.toBe(raw[keuken.key]);
+    for (const key of [buiten.key, keuken.key]) {
+      expect((JSON.parse(storage.getItem(key) ?? "") as { left: number }).left).toBeGreaterThanOrEqual(96);
+    }
+    const positions = snapshotActive(storage, [buiten, keuken]);
+    const boxes = [buiten, keuken].map((entry) => {
+      const parsed = JSON.parse(positions[entry.key]) as { left: number; bottom: number };
+      return { id: entry.id, x: parsed.left, y: LANDSCAPE.height - parsed.bottom - entry.h, w: entry.w, h: entry.h };
+    });
+    expect(overlapPairs(boxes, "gap")).toEqual([]);
+    expect(run(storage, [buiten, keuken]).wrote).toBe(false);
+  });
+
+  it("leaves Keuken on 288/368 when it overlaps a Buiten that is not on its default", () => {
+    const storage = new MemoryStorage();
+    const keukenDefault = { left: 288, bottom: 368 };
+    const buitenDefault = { left: 0, bottom: 336 };
+    const keuken = tile("Keuken", `dashboard.floatingLightCardPosition.${ROOM}.keuken`, {
+      ...lampSize,
+      legacyTopOffset: 80,
+      cardDefault: keukenDefault,
+      defaultSize: true,
+    });
+    const buiten = tile("Buiten", `dashboard.floatingSensorCardPosition.${ROOM}.buiten`, {
+      ...sensorSize,
+      legacyTopOffset: 200,
+      cardDefault: buitenDefault,
+      defaultSize: true,
+    });
+    const placed = {
+      [keuken.key]: JSON.stringify(keukenDefault),
+      [buiten.key]: JSON.stringify({ left: 240, bottom: 360 }),
+    };
+    const before = [keuken, buiten].map((entry) => {
+      const parsed = JSON.parse(placed[entry.key]) as { left: number; bottom: number };
+      return { id: entry.id, x: parsed.left, y: LANDSCAPE.height - parsed.bottom - entry.h, w: entry.w, h: entry.h };
+    });
+    expect(overlapPairs(before, "pixels")).not.toEqual([]);
+    remember(storage, placed);
+    const result = run(storage, [keuken, buiten]);
+    expect(result.wrote).toBe(false);
+    expect(storage.getItem(keuken.key)).toBe(placed[keuken.key]);
+    expect(storage.getItem(buiten.key)).toBe(placed[buiten.key]);
+  });
+
+  it("still moves a card default that sits under the rail beside a placed tile", () => {
+    const storage = new MemoryStorage();
+    const sensorDefault = { left: 0, bottom: 336 };
+    const sensor = tile("Buiten", `dashboard.floatingSensorCardPosition.${ROOM}.rail`, {
+      ...sensorSize,
+      legacyTopOffset: 200,
+      cardDefault: sensorDefault,
+      defaultSize: true,
+    });
+    const lamp = tile("Keuken", `dashboard.floatingLightCardPosition.${ROOM}.placed`, {
+      ...lampSize,
+      legacyTopOffset: 80,
+      cardDefault: { left: 288, bottom: 368 },
+      defaultSize: true,
+    });
+    const lampRaw = JSON.stringify({ left: 32, bottom: 300 });
+    seed(storage, {
+      [sensor.key]: JSON.stringify(sensorDefault),
+      [lamp.key]: lampRaw,
+    });
+    const result = run(storage, [sensor, lamp]);
+    expect(result.wrote).toBe(true);
+    expect(storage.getItem(lamp.key)).toBe(lampRaw);
+    expect((JSON.parse(storage.getItem(sensor.key) ?? "") as { left: number }).left).toBeGreaterThanOrEqual(96);
+    expect(run(storage, [sensor, lamp]).wrote).toBe(false);
+  });
+});
