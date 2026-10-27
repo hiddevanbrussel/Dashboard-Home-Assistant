@@ -182,8 +182,8 @@ describe("fixed line without a heading (H6)", () => {
     const viewPositions = placePair(view);
     const editPositions = placePair(edit);
     expect(editPositions).toEqual(viewPositions);
-    expect(viewPositions.sensor).toEqual({ left: 352, bottom: 608 });
-    expect(viewPositions.lamp).toEqual({ left: 96, bottom: 640 });
+    expect(viewPositions.sensor).toEqual({ left: 96, bottom: 608 });
+    expect(viewPositions.lamp).toEqual({ left: 384, bottom: 640 });
   });
 });
 

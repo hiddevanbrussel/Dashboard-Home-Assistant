@@ -14,6 +14,7 @@ import {
   firstFit,
   floatingStoragePrefixes,
   floatingTilesFromWidgets,
+  type FloatingWidgetInput,
   layoutStorageKey,
   measuredSizeOverrides,
   consumeLayoutNotice,
@@ -2200,13 +2201,13 @@ describe("definitive landscape line (H8)", () => {
       legacyTopOffset: 80,
     });
     run(storage, [sensor, lamp], "landscape", undefined);
-    expect(storage.getItem(sensor.key)).toBe(JSON.stringify({ left: 352, bottom: 608 }));
-    expect(storage.getItem(lamp.key)).toBe(JSON.stringify({ left: 96, bottom: 640 }));
+    expect(storage.getItem(sensor.key)).toBe(JSON.stringify({ left: 96, bottom: 608 }));
+    expect(storage.getItem(lamp.key)).toBe(JSON.stringify({ left: 384, bottom: 640 }));
     expect(layoutOf(storage).landscapeTop).toBe(80);
     const again = run(storage, [sensor, lamp], "landscape", 80);
     expect(again.wrote).toBe(false);
-    expect(storage.getItem(sensor.key)).toBe(JSON.stringify({ left: 352, bottom: 608 }));
-    expect(storage.getItem(lamp.key)).toBe(JSON.stringify({ left: 96, bottom: 640 }));
+    expect(storage.getItem(sensor.key)).toBe(JSON.stringify({ left: 96, bottom: 608 }));
+    expect(storage.getItem(lamp.key)).toBe(JSON.stringify({ left: 384, bottom: 640 }));
   });
 
   it("still stores a portrait tile below the fold", () => {
@@ -2403,20 +2404,98 @@ describe("stable landscape line and automatic tiles (H1, H2)", () => {
     });
   }
 
-  it("places the same spots and hides the same tiles when the list order is reversed", () => {
-    const tiles = crowd();
-    const forward = new MemoryStorage();
-    const backward = new MemoryStorage();
-    run(forward, tiles);
-    run(backward, [...tiles].reverse());
-    expect(snapshotActive(backward, tiles)).toEqual(snapshotActive(forward, tiles));
-    const hidden = hiddenIds(tiles, forward);
-    expect(hidden.length).toBeGreaterThan(0);
-    expect(hiddenIds(tiles, backward)).toEqual(hidden);
-    const placed = boxesOf(tiles, forward);
-    expect(overlapPairs(placed, "pixels")).toEqual([]);
-    for (const box of placed) expect(box.y).toBeGreaterThanOrEqual(LINE);
-    expect(JSON.parse(forward.getItem(layoutStorageKey(ROOM)) ?? "{}").landscapeTop).toBe(LINE);
+  function elevenWidgets(): FloatingWidgetInput[] {
+    return [
+      ...Array.from({ length: 6 }, (_, index) => ({
+        id: `lamp${index + 1}`,
+        type: "light_card",
+        page: 0,
+        card_layout: "horizontal" as const,
+      })),
+      ...Array.from({ length: 3 }, (_, index) => ({
+        id: `sensor${index + 1}`,
+        type: "sensor_card",
+        page: 0,
+      })),
+      { id: "a-speaker", type: "media_card", page: 0 },
+      { id: "wide", type: "text_card", page: 0, width: 640, height: 72 },
+    ];
+  }
+
+  it("places eleven tiles in dashboard order with the first row on the line", () => {
+    const tiles = floatingTilesFromWidgets(elevenWidgets(), ROOM, LANDSCAPE);
+    const storage = new MemoryStorage();
+    run(storage, tiles);
+    const boxes = boxesOf(tiles, storage);
+    const lamp1 = boxes.find((box) => box.id === "lamp1");
+    expect(lamp1).toEqual({ id: "lamp1", x: 96, y: LINE + 10, w: 240, h: 70 });
+    const top = Math.min(...boxes.map((box) => box.y));
+    expect(top).toBe(LINE + 10);
+    const row = boxes.filter((box) => box.y === LINE + 10).sort((a, b) => a.x - b.x);
+    expect(row.map((box) => box.id)).toEqual(["lamp1", "lamp2", "lamp3", "lamp4"]);
+    const speaker = boxes.find((box) => box.id === "a-speaker");
+    expect(speaker).toBeTruthy();
+    expect(speaker && speaker.x).not.toBe(96);
+    const lamp5 = boxes.find((box) => box.id === "lamp5");
+    const lamp6 = boxes.find((box) => box.id === "lamp6");
+    if (!lamp1 || !lamp5 || !lamp6) throw new Error("lamp row missing");
+    expect(lamp5.y).toBeGreaterThan(lamp1.y);
+    expect(lamp6.y).toBe(lamp5.y);
+    expect(lamp6.x).toBeGreaterThan(lamp5.x);
+    expect(overlapPairs(boxes, "pixels")).toEqual([]);
+  });
+
+  function parkBeside(gap: number, speakerScaled = false) {
+    const speaker = tile("speaker", `dashboard.floatingMediaCardPosition.${ROOM}.speaker`, {
+      w: speakerScaled ? 312 : 280,
+      h: speakerScaled ? 356 : 340,
+      legacyTopOffset: 200,
+      ...(speakerScaled ? { defaultSize: false } : {}),
+    });
+    const lamp = tile("lamp", `dashboard.floatingLightCardPosition.${ROOM}.lamp`, {
+      w: 240,
+      h: 70,
+      legacyTopOffset: 80,
+    });
+    const speakerLeft = 496;
+    const lampLeft = speakerLeft - lamp.w - gap;
+    const speakerBottom = LANDSCAPE.height - (LINE + 10) - speaker.h;
+    const lampBottom = LANDSCAPE.height - (LINE + 10) - lamp.h;
+    const speakerRaw = JSON.stringify({ left: speakerLeft, bottom: speakerBottom });
+    const lampRaw = JSON.stringify({ left: lampLeft, bottom: lampBottom });
+    const storage = new MemoryStorage();
+    const positions = { [speaker.key]: speakerRaw, [lamp.key]: lampRaw };
+    seed(storage, positions);
+    storage.setItem(layoutStorageKey(ROOM), JSON.stringify({
+      v: 1,
+      active: "landscape",
+      landscape: positions,
+      portrait: null,
+      portraitBron: null,
+      landscapeTop: LINE,
+      auto: speakerScaled ? undefined : { [speaker.key]: speakerRaw },
+    }));
+    return { storage, speaker, lamp, speakerRaw, lampRaw };
+  }
+
+  it("keeps an automatic speaker that is adjacent or 16px beside a dragged lamp", () => {
+    for (const gap of [16, 0]) {
+      const parked = parkBeside(gap);
+      run(parked.storage, [parked.lamp, parked.speaker]);
+      expect(parked.storage.getItem(parked.speaker.key), `gap ${gap}`).toBe(parked.speakerRaw);
+      expect(parked.storage.getItem(parked.lamp.key), `gap ${gap}`).toBe(parked.lampRaw);
+      for (let pass = 0; pass < 3; pass += 1) {
+        expect(run(parked.storage, [parked.lamp, parked.speaker]).wrote, `reload ${gap} ${pass}`).toBe(false);
+        expect(parked.storage.getItem(parked.speaker.key)).toBe(parked.speakerRaw);
+      }
+    }
+    const scaled = parkBeside(0, true);
+    run(scaled.storage, [scaled.lamp, scaled.speaker]);
+    expect(scaled.storage.getItem(scaled.speaker.key)).toBe(scaled.speakerRaw);
+    const overlap = parkBeside(-1);
+    run(overlap.storage, [overlap.lamp, overlap.speaker]);
+    expect(overlap.storage.getItem(overlap.lamp.key)).toBe(overlap.lampRaw);
+    expect(overlap.storage.getItem(overlap.speaker.key)).not.toBe(overlap.speakerRaw);
   });
 
   it("keeps the other automatic tiles and the same hidden tile after a drag and a scale", () => {

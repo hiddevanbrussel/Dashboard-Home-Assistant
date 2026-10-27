@@ -507,3 +507,96 @@ describe("stable landscape line and automatic tiles (H1, H2)", () => {
     }
   }, 90_000);
 });
+
+type TileBox = { id: string; x: number; y: number; w: number; h: number };
+
+function readTiles(): string {
+  return `(() => {
+    const nodes = [...document.querySelectorAll("[data-tile]")];
+    return nodes.flatMap((node) => {
+      const rect = node.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return [];
+      return [{ id: node.getAttribute("data-tile"), x: Math.round(rect.left), y: Math.round(rect.top), w: Math.round(rect.width), h: Math.round(rect.height) }];
+    });
+  })()`;
+}
+
+describe("speaker clearance and dashboard order", () => {
+  it("keeps the speaker visible when a lamp is adjacent or 16px beside it", async () => {
+    const { file, cleanup } = await bundleHarness();
+    try {
+      await withChrome(async (send, wait) => {
+        const open = async (query: string) => {
+          const loaded = wait("Page.loadEventFired");
+          await send("Page.navigate", { url: `file://${file}?${query}` });
+          await loaded;
+          await evaluate(
+            send,
+            waitFor(
+              `document.documentElement.dataset.line === "208" && document.querySelector("[data-tile=speaker]") && document.querySelector("[data-tile=lamp]")`
+            )
+          );
+          const boot = await evaluate<string>(send, `document.documentElement.dataset.boot || window.__boot || ""`);
+          if (boot) throw new Error(boot);
+        };
+        for (const gap of [16, 0]) {
+          await open(`beside=1&gap=${gap}`);
+          const fresh = await evaluate<TileBox[]>(send, readTiles());
+          const speaker = fresh.find((box) => box.id === "speaker");
+          const lamp = fresh.find((box) => box.id === "lamp");
+          expect(speaker, `gap ${gap}`).toMatchObject({ x: 496, y: 218 });
+          expect(lamp, `gap ${gap}`).toMatchObject({ x: 496 - 240 - gap, y: 218 });
+          for (let pass = 0; pass < 3; pass += 1) {
+            await open(`beside=1&gap=${gap}&keep=1`);
+            const again = await evaluate<TileBox[]>(send, readTiles());
+            expect(again.find((box) => box.id === "speaker"), `reload ${gap} ${pass}`).toMatchObject({ x: 496, y: 218 });
+            expect(again.find((box) => box.id === "lamp"), `reload ${gap} ${pass}`).toMatchObject({ x: 496 - 240 - gap, y: 218 });
+          }
+        }
+        await open("beside=1&gap=0&scale=1");
+        const scaled = await evaluate<TileBox[]>(send, readTiles());
+        expect(scaled.find((box) => box.id === "speaker")).toMatchObject({ x: 496, y: 218, w: 312 });
+      });
+    } finally {
+      await cleanup();
+    }
+  }, 90_000);
+
+  it("places eleven landscape tiles in dashboard order on the line", async () => {
+    const { file, cleanup } = await bundleHarness();
+    try {
+      await withChrome(async (send, wait) => {
+        const open = async (query: string) => {
+          const loaded = wait("Page.loadEventFired");
+          await send("Page.navigate", { url: `file://${file}?${query}` });
+          await loaded;
+          await evaluate(
+            send,
+            waitFor(
+              `document.documentElement.dataset.line === "208" && document.querySelector("[data-tile=lamp1]") && document.querySelector("[data-tile=a-speaker]")`
+            )
+          );
+          const boot = await evaluate<string>(send, `document.documentElement.dataset.boot || window.__boot || ""`);
+          if (boot) throw new Error(boot);
+        };
+        await open("row=1");
+        const fresh = await evaluate<TileBox[]>(send, readTiles());
+        const lamp1 = fresh.find((box) => box.id === "lamp1");
+        expect(lamp1).toMatchObject({ x: 96, y: 218, w: 240, h: 70 });
+        const row = fresh.filter((box) => box.y === 218).sort((a, b) => a.x - b.x);
+        expect(row.map((box) => box.id)).toEqual(["lamp1", "lamp2", "lamp3", "lamp4"]);
+        const lamp5 = fresh.find((box) => box.id === "lamp5");
+        const lamp6 = fresh.find((box) => box.id === "lamp6");
+        if (!lamp1 || !lamp5 || !lamp6) throw new Error("lamp row missing");
+        expect(lamp5.y).toBeGreaterThan(lamp1.y);
+        expect(lamp6.x).toBeGreaterThan(lamp5.x);
+        expect(Math.min(...fresh.map((box) => box.y))).toBe(218);
+        await open("row=1&keep=1");
+        const again = await evaluate<TileBox[]>(send, readTiles());
+        expect(again).toEqual(fresh);
+      });
+    } finally {
+      await cleanup();
+    }
+  }, 60_000);
+});

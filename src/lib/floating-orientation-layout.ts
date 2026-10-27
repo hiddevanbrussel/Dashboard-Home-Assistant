@@ -983,12 +983,6 @@ function landscapeBox(tile: StoredTile, landscapeHeight: number): Box | null {
   return { x: parsed.left, y, w: tile.w, h: tile.h };
 }
 
-function compareTileId(a: { id: string }, b: { id: string }): number {
-  if (a.id < b.id) return -1;
-  if (a.id > b.id) return 1;
-  return 0;
-}
-
 export function placeMissingTiles(
   positions: Record<string, string>,
   tiles: readonly FloatingTile[],
@@ -1002,9 +996,7 @@ export function placeMissingTiles(
   for (const page of pages) {
     const missing = tiles.filter((tile) => tile.page === page && !(tile.key in next));
     if (missing.length === 0) continue;
-    // Landscape placement order is the tile id, so a hidden tile does not
-    // depend on render or mount order. Portrait keeps the caller's order.
-    const ordered = onScreen ? [...missing].sort(compareTileId) : missing;
+    // Caller order is the dashboard order. Sorting by id moves the first row.
     const fixed = tiles.flatMap((tile) => {
       if (tile.page !== page && !tile.shared) return [];
       const raw = next[tile.key];
@@ -1014,7 +1006,7 @@ export function placeMissingTiles(
       return [{ x: parsed.left, y: portrait.height - parsed.bottom - tile.h, w: tile.w, h: tile.h }];
     });
     const fitted = firstFit(
-      ordered.map((tile) => ({
+      missing.map((tile) => ({
         id: tile.key,
         w: tile.w,
         h: tile.h,
@@ -1333,7 +1325,8 @@ function outsideLandscapeBand(box: Box, margin: number, viewportHeight: number):
 
 /**
  * Automatic spots that still clear the line and the tiles we keep.
- * The lower id wins a real overlap, so the hidden tile does not follow mount order.
+ * Only a real rectangle overlap drops a tile. Touching edges and the delete-badge
+ * margin do not. The earlier tile in dashboard order wins a real overlap.
  * A dragged or scaled tile is not in `owned` and stays where it was.
  */
 function automaticTilesToDrop(
@@ -1356,10 +1349,9 @@ function automaticTilesToDrop(
     if (owned[tile.key] === raw && !tile.parked) automatic.push({ id: tile.id, key: tile.key, box });
     else fixed.push(box);
   }
-  automatic.sort(compareTileId);
   const drop = new Set<string>();
   for (const tile of automatic) {
-    const collides = fixed.some((other) => visuallyOverlaps(tile.box, other));
+    const collides = fixed.some((other) => rectsIntersect(tile.box, other));
     if (collides || outsideLandscapeBand(tile.box, margin, viewport.height)) {
       drop.add(tile.key);
       continue;

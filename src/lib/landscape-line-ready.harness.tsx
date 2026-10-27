@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { cardDefaultPosition } from "@/lib/floating-card-defaults";
 import { formatLayoutNotice, useFloatingOrientation } from "@/hooks/use-floating-orientation";
 import { getTranslations } from "@/lib/i18n";
-import type { FloatingWidgetInput } from "@/lib/floating-orientation-layout";
+import { floatingStorageKey, type FloatingWidgetInput } from "@/lib/floating-orientation-layout";
 
 const VIEW = { width: 1280, height: 800 };
 const DRAGGED = '{"left": 400, "bottom": 300}';
@@ -11,11 +11,13 @@ const DRAGGED = '{"left": 400, "bottom": 300}';
 const DRAGGED_CLEAR = '{"left": 96, "bottom": 96}';
 const SCALED = '{"left": 1000, "bottom": 40}';
 
-type Mode = "late" | "fresh" | "polluted" | "few" | "shift" | "crowd";
+type Mode = "late" | "fresh" | "polluted" | "few" | "shift" | "crowd" | "beside" | "row";
 
 function readMode(): Mode {
   const params = new URLSearchParams(window.location.search);
   if (params.has("shift")) return "shift";
+  if (params.has("beside")) return "beside";
+  if (params.has("row")) return "row";
   if (params.has("crowd")) return "crowd";
   if (params.has("late")) return "late";
   if (params.has("polluted")) return "polluted";
@@ -51,6 +53,8 @@ let activeMode: Mode = "fresh";
 function dashboardIdFor(mode: Mode): string {
   if (mode === "shift") return "room-h1";
   if (mode === "crowd") return "room-h2";
+  if (mode === "beside") return "room-beside";
+  if (mode === "row") return "room-row";
   return "room-h8";
 }
 
@@ -58,8 +62,47 @@ function textKey(scope: string, id: string): string {
   return `dashboard.floatingTextCardPosition.${scope}.${id}`;
 }
 
+function rowWidgets(): FloatingWidgetInput[] {
+  return [
+    ...Array.from({ length: 6 }, (_, index) => ({
+      id: `lamp${index + 1}`,
+      type: "light_card",
+      page: 0,
+      card_layout: "horizontal" as const,
+      width: 240,
+      height: 70,
+    })),
+    ...Array.from({ length: 3 }, (_, index) => ({
+      id: `sensor${index + 1}`,
+      type: "sensor_card",
+      page: 0,
+      width: 260,
+      height: 108,
+    })),
+    { id: "a-speaker", type: "media_card", page: 0, width: 280, height: 340 },
+    { id: "wide", type: "text_card", page: 0, width: 640, height: 72 },
+  ];
+}
+
+function besideWidgets(): FloatingWidgetInput[] {
+  const scaled = new URLSearchParams(window.location.search).get("scale") === "1";
+  return [
+    { id: "lamp", type: "light_card", page: 0, card_layout: "horizontal", width: 240, height: 70 },
+    {
+      id: "speaker",
+      type: "media_card",
+      page: 0,
+      width: scaled ? 312 : 280,
+      height: scaled ? 356 : 340,
+      ...(scaled ? { scale: 1.2 } : {}),
+    },
+  ];
+}
+
 function buildWidgets(mode: Mode): FloatingWidgetInput[] {
   if (mode === "shift") return SHIFT.map((widget) => ({ ...widget }));
+  if (mode === "row") return rowWidgets();
+  if (mode === "beside") return besideWidgets();
   if (mode === "crowd") {
     const scaled = localStorage.getItem("crowd-scale") === "1";
     const list = CROWD.map((widget) => ({ ...widget }));
@@ -99,13 +142,45 @@ function wideKey(): string {
 
 function storageKey(widget: FloatingWidgetInput): string {
   if (activeMode === "shift" || activeMode === "crowd") return textKey(dashboardIdFor(activeMode), widget.id);
+  if (activeMode === "beside" || activeMode === "row") {
+    return floatingStorageKey(widget.type, dashboardIdFor(activeMode), widget.id) ?? sensorKey(widget.id);
+  }
   return widget.type === "text_card" ? wideKey() : sensorKey(widget.id);
 }
 
 function seed(mode: Mode, widgets: readonly FloatingWidgetInput[]) {
   if (new URLSearchParams(window.location.search).has("keep")) return;
   localStorage.clear();
-  if (mode === "shift" || mode === "crowd") return;
+  if (mode === "shift" || mode === "crowd" || mode === "row") return;
+  if (mode === "beside") {
+    const params = new URLSearchParams(window.location.search);
+    const gap = Number(params.get("gap") ?? "16");
+    const scaled = params.get("scale") === "1";
+    const speakerW = scaled ? 312 : 280;
+    const speakerH = scaled ? 356 : 340;
+    const speakerLeft = 496;
+    const lampLeft = speakerLeft - 240 - gap;
+    const line = 218;
+    const speakerRaw = JSON.stringify({ left: speakerLeft, bottom: VIEW.height - line - speakerH });
+    const lampRaw = JSON.stringify({ left: lampLeft, bottom: VIEW.height - line - 70 });
+    const scope = dashboardIdFor("beside");
+    const speakerKey = floatingStorageKey("media_card", scope, "speaker");
+    const lampKey = floatingStorageKey("light_card", scope, "lamp");
+    if (!speakerKey || !lampKey) return;
+    localStorage.setItem(speakerKey, speakerRaw);
+    localStorage.setItem(lampKey, lampRaw);
+    const auto = scaled ? undefined : { [speakerKey]: speakerRaw };
+    localStorage.setItem(`dashboard.floatingLayout.v1.${scope}`, JSON.stringify({
+      v: 1,
+      active: "landscape",
+      landscape: { [speakerKey]: speakerRaw, [lampKey]: lampRaw },
+      portrait: null,
+      portraitBron: null,
+      landscapeTop: 208,
+      ...(auto ? { auto } : {}),
+    }));
+    return;
+  }
   localStorage.setItem(sensorKey("s0"), mode === "polluted" ? DRAGGED_CLEAR : DRAGGED);
   if (mode !== "polluted") return;
   const scaled = widgets.find((widget) => widget.id === "s1");
@@ -252,7 +327,7 @@ function App({ mode, widgets: initialWidgets }: { mode: Mode; widgets: FloatingW
   return (
     <>
       {mode === "shift" ? <ShiftChrome /> : <div data-app-header style={{ position: "absolute", left: 0, top: 0, width: VIEW.width, height: 64 }} />}
-      {mode === "crowd" ? (
+      {mode === "crowd" || mode === "beside" || mode === "row" ? (
         <div data-app-heading-edit style={{ position: "absolute", left: 0, top: 64, width: VIEW.width, height: 112 }} />
       ) : null}
       {mode !== "late" && mode !== "shift" ? (
