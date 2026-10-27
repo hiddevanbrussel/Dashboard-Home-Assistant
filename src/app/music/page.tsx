@@ -1683,7 +1683,7 @@ export default function MusicPage() {
         {/* Spacer for fixed chrome: top header + secondary music nav */}
         <div
           className="shrink-0"
-          style={{ height: "calc(var(--app-chrome-height, 6.85rem) + 1.5rem)" }}
+          style={{ height: "calc(var(--app-chrome-height, 6.85rem) + 0.5rem)" }}
           aria-hidden
         />
         {error && (

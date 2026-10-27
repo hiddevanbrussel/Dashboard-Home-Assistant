@@ -683,8 +683,58 @@ html.dark:has(.settings-page-bg) body {
     position: absolute;
     left: 50%;
     top: 50%;
+    /* Content box stays 44px. Padding puts ±22px inside the hit square:
+       elementFromPoint on the exact edge of a 44px square falls outside it.
+       No fill, so the control stays invisible and the same size. */
+    box-sizing: content-box;
     width: max(100%, 44px);
     height: max(100%, 44px);
+    padding: 4px;
     transform: translate(-50%, -50%);
   }
+}
+
+/* Edit wiggle uses transform, which traps the ⋮ (z-10) under the next pill and
+   the add-tile button. Wiggle the pill face and the ⋮ on their own so the ⋮
+   stacks above those neighbours. At rest both keyframes are identity. */
+html[data-dashboard-edit] [data-header-statpill-id] > .animate-edit-wiggle {
+  animation: none;
+}
+
+html[data-dashboard-edit] [data-header-statpill-id] > .animate-edit-wiggle > div > :not(.tile-kebab-hit),
+html[data-dashboard-edit] [data-header-statpill-id] .tile-kebab-hit {
+  animation: edit-wiggle 1.1s ease-in-out infinite;
+}
+
+/* The header ⋮ center sits 20.5px under the screen edge, so 22px above that
+   center is outside the viewport. 4px of extra padding below drops the
+   border-box center by 2px without moving the painted disk (::before). */
+html[data-dashboard-edit] [data-header-statpill-id] .tile-kebab-hit {
+  padding-bottom: 8px;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+html[data-dashboard-edit] [data-header-statpill-id] .tile-kebab-hit::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background-color: rgb(255 255 255 / 0.9);
+  box-shadow:
+    rgb(255 255 255) 0 0 0 0,
+    rgb(0 0 0 / 0.05) 0 0 0 1px,
+    rgb(0 0 0 / 0.05) 0 1px 2px 0;
+  pointer-events: none;
+}
+
+html.dark[data-dashboard-edit] [data-header-statpill-id] .tile-kebab-hit::before {
+  background-color: rgb(24 24 27);
+  box-shadow:
+    rgb(255 255 255) 0 0 0 0,
+    rgb(255 255 255 / 0.1) 0 0 0 1px,
+    rgb(0 0 0 / 0.05) 0 1px 2px 0;
 }

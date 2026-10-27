@@ -8,7 +8,7 @@ describe("music chrome spacer", () => {
   it("uses the measured chrome height instead of a fixed 6.85rem block", () => {
     expect(music).not.toContain("h-[6.85rem]");
     expect(music).toContain("var(--app-chrome-height");
-    expect(music).toContain('style={{ height: "calc(var(--app-chrome-height, 6.85rem) + 1.5rem)" }}');
+    expect(music).toContain('style={{ height: "calc(var(--app-chrome-height, 6.85rem) + 0.5rem)" }}');
   });
 
   it("publishes and removes --app-chrome-height from the document element", () => {
