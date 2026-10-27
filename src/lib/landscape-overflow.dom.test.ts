@@ -8,6 +8,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import WebSocket from "ws";
 import { describe, expect, it } from "vitest";
 import { DashboardLayoutNoticeView } from "@/components/dashboard-layout-notice";
+import { formatLayoutNotice } from "@/hooks/use-floating-orientation";
 import { getTranslations } from "@/lib/i18n";
 import {
   overlapPairs,
@@ -198,9 +199,14 @@ describe("26 landscape tiles leave Back reachable (H7)", () => {
     }
 
     const nl = getTranslations("nl");
+    const message = formatLayoutNotice(
+      "dashboardLayout.landscapeOverlap",
+      hidden.length,
+      (key) => nl[key] ?? key
+    );
     const notice = renderToStaticMarkup(
       createElement(DashboardLayoutNoticeView, {
-        message: nl["dashboardLayout.landscapeOverlap"],
+        message,
         onDismiss: () => {},
       })
     );
@@ -258,7 +264,8 @@ describe("26 landscape tiles leave Back reachable (H7)", () => {
       });
       expect(hit?.isBack).toBe(true);
       expect(hit?.label).toBe(nl["rooms.back"]);
-      expect(hit?.notice).toContain(nl["dashboardLayout.landscapeOverlap"]);
+      expect(hit?.notice).toContain(message);
+      expect(hit?.notice).not.toContain("{n}");
       expect(hit?.hiddenInDom).toBe(0);
     } finally {
       await rm(dir, { recursive: true, force: true });

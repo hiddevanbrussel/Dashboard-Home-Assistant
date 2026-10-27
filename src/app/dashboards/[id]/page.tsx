@@ -153,7 +153,7 @@ import {
   type PendingPageRemoval,
 } from "@/lib/dashboard-page-removal";
 import { DashboardLayoutNotice } from "@/components/dashboard-layout-notice";
-import { useFloatingOrientation } from "@/hooks/use-floating-orientation";
+import { formatLayoutNotice, useFloatingOrientation } from "@/hooks/use-floating-orientation";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
   clampClimateCardHeight,
@@ -1533,6 +1533,7 @@ export default function DashboardEditPage() {
     ready: initialized,
     widgets: orientationWidgets,
     editMode,
+    expectsHeading: Boolean(welcomeTitle || welcomeSubtitle) || isRoomMode,
   });
 
   const saveMutation = useMutation({
@@ -2968,7 +2969,10 @@ export default function DashboardEditPage() {
           document.body
         )}
         {floatingLayout.notice ? (
-          <DashboardLayoutNotice message={t(floatingLayout.notice)} onDismiss={floatingLayout.dismissNotice} />
+          <DashboardLayoutNotice
+            message={formatLayoutNotice(floatingLayout.notice, floatingLayout.noticeCount, t)}
+            onDismiss={floatingLayout.dismissNotice}
+          />
         ) : null}
         <DashboardPager
           key={floatingLayout.epoch}

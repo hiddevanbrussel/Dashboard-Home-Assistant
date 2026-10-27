@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { measurePlacementInset, reportLayoutNotice } from "@/hooks/use-floating-orientation";
+import {
+  formatLayoutNotice,
+  landscapeLineReady,
+  LAYOUT_NOTICE_MS,
+  measurePlacementInset,
+  readPlacementLine,
+  reportLayoutNotice,
+} from "@/hooks/use-floating-orientation";
+import { getTranslations } from "@/lib/i18n";
 import { reconcileFloatingLayout, type FloatingTile } from "@/lib/floating-orientation-layout";
 import type { PositionStorage } from "@/lib/dashboard-page-removal";
 
@@ -55,6 +63,34 @@ describe("placement inset after layout", () => {
       "[data-app-heading-edit]": 0,
       "[data-app-page-heading]": 158,
     }))).toBe(176);
+  });
+
+  it("does not fall through to the chrome bar while a heading has no box", () => {
+    expect(measurePlacementInset(root({
+      "[data-app-heading-edit]": 0,
+      "[data-app-header]": 80,
+    }))).toBeUndefined();
+    expect(readPlacementLine(root({
+      "[data-app-page-heading]": 0,
+      "[data-app-header]": 64,
+    })).phase).toBe("provisional");
+  });
+});
+
+describe("definitive landscape line (H8)", () => {
+  it("keeps chrome-only 80 provisional while a heading is still expected", () => {
+    const chrome = readPlacementLine(root({ "[data-app-header]": 64 }));
+    expect(chrome).toEqual({ phase: "ready", inset: 80, source: "chrome" });
+    expect(landscapeLineReady(chrome, false)).toBe(true);
+    expect(landscapeLineReady(chrome, true)).toBe(false);
+    const heading = readPlacementLine(root({
+      "[data-app-page-heading]": 192,
+      "[data-app-header]": 80,
+    }));
+    expect(heading).toEqual({ phase: "ready", inset: 208, source: "heading" });
+    expect(landscapeLineReady(heading, true)).toBe(true);
+    expect(landscapeLineReady({ phase: "pending" }, false)).toBe(false);
+    expect(landscapeLineReady({ phase: "provisional" }, false)).toBe(false);
   });
 });
 
@@ -133,6 +169,30 @@ describe("fixed line without a heading (H6)", () => {
     expect(editPositions).toEqual(viewPositions);
     expect(viewPositions.sensor).toEqual({ left: 96, bottom: 608 });
     expect(viewPositions.lamp).toEqual({ left: 384, bottom: 640 });
+  });
+});
+
+describe("landscape notice text (H9)", () => {
+  it("uses a singular sentence for one tile and keeps the notice for 8 seconds", () => {
+    const nl = getTranslations("nl");
+    const en = getTranslations("en");
+    const translate = (dict: Record<string, string>) => (key: string) => dict[key] ?? key;
+    expect(formatLayoutNotice("dashboardLayout.landscapeOverlap", 1, translate(nl))).toBe(
+      "1 tegel past niet in liggende stand. Draai naar staand om hem te zien."
+    );
+    expect(formatLayoutNotice("dashboardLayout.landscapeOverlap", 1, translate(en))).toBe(
+      "1 tile doesn't fit in landscape. Rotate to portrait to see it."
+    );
+    expect(formatLayoutNotice("dashboardLayout.landscapeOverlap", 10, translate(nl))).toBe(
+      "10 tegels passen niet in liggende stand. Draai naar staand om ze te zien."
+    );
+    expect(formatLayoutNotice("dashboardLayout.landscapeOverlap", 10, translate(en))).toBe(
+      "10 tiles don't fit in landscape. Rotate to portrait to see them."
+    );
+    expect(formatLayoutNotice("dashboardLayout.portraitBelowFold", 3, translate(nl))).toBe(
+      nl["dashboardLayout.portraitBelowFold"]
+    );
+    expect(LAYOUT_NOTICE_MS).toBe(8000);
   });
 });
 

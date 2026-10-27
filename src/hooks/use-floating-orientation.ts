@@ -45,42 +45,67 @@ function readViewport(): Viewport {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
-const PLACEMENT_SELECTORS = ["[data-app-heading-edit]", "[data-app-page-heading]", "[data-app-header]"] as const;
+const HEADING_SELECTORS = ["[data-app-heading-edit]", "[data-app-page-heading]"] as const;
+const HEADER_SELECTOR = "[data-app-header]";
 
-type PlacementSelector = (typeof PLACEMENT_SELECTORS)[number];
+function boxBottom(node: HTMLElement): number {
+  const bottom = node.getBoundingClientRect().bottom;
+  return Number.isFinite(bottom) ? bottom : 0;
+}
 
-function placementMatch(root: ParentNode): { node: HTMLElement; selector: PlacementSelector } | null {
-  for (const selector of PLACEMENT_SELECTORS) {
+export type PlacementLine =
+  | { phase: "pending" }
+  | { phase: "provisional" }
+  | { phase: "ready"; inset: number; source: "heading" | "chrome" };
+
+/**
+ * Landscape line after layout.
+ * A heading node that has no box yet is provisional: the chrome bar is not the line.
+ * The chrome bar alone is the fixed 80px line, and only when no heading node exists.
+ */
+export function readPlacementLine(root: ParentNode): PlacementLine {
+  let sawHeading = false;
+  for (const selector of HEADING_SELECTORS) {
     const node = root.querySelector<HTMLElement>(selector);
     if (!node) continue;
-    const bottom = node.getBoundingClientRect().bottom;
-    if (!Number.isFinite(bottom) || bottom <= 0) continue;
-    return { node, selector };
+    sawHeading = true;
+    const bottom = boxBottom(node);
+    if (bottom <= 0) continue;
+    return { phase: "ready", inset: landscapeMarginTop(bottom + GAP), source: "heading" };
   }
-  return null;
+  if (sawHeading) return { phase: "provisional" };
+  const header = root.querySelector<HTMLElement>(HEADER_SELECTOR);
+  if (!header || boxBottom(header) <= 0) return { phase: "pending" };
+  return { phase: "ready", inset: MARGIN_TOP, source: "chrome" };
 }
 
 /**
- * Element whose bottom is the landscape placement line, measured after layout.
- * An editable title exposes `[data-app-heading-edit]` (the edit-heading box),
- * including while edit mode is off, so the line does not jump when that mode toggles.
- * Otherwise the visible heading. The chrome bar is only a signal that no heading
- * is on screen; its height is not the line.
+ * Node whose size can move the line. A heading is watched even before it has a box,
+ * so a later layout is not missed. The chrome bar is watched only when no heading exists.
  */
 export function placementElement(root: ParentNode): HTMLElement | null {
-  return placementMatch(root)?.node ?? null;
+  for (const selector of HEADING_SELECTORS) {
+    const node = root.querySelector<HTMLElement>(selector);
+    if (node) return node;
+  }
+  return root.querySelector<HTMLElement>(HEADER_SELECTOR);
 }
 
 /**
  * Heading bottom plus GAP, snapped. With only the chrome bar, the line is fixed
  * at MARGIN_TOP: that bar grows in edit mode and must not move tiles.
- * Undefined when nothing on screen has a box yet.
+ * Undefined while the line is still provisional or nothing has a box yet.
  */
 export function measurePlacementInset(root: ParentNode): number | undefined {
-  const match = placementMatch(root);
-  if (!match) return undefined;
-  if (match.selector === "[data-app-header]") return MARGIN_TOP;
-  return landscapeMarginTop(match.node.getBoundingClientRect().bottom + GAP);
+  const line = readPlacementLine(root);
+  return line.phase === "ready" ? line.inset : undefined;
+}
+
+/** Chrome-only 80px is definitive when the page will not render a heading. */
+export function landscapeLineReady(line: PlacementLine, expectsHeading: boolean): boolean {
+  if (line.phase !== "ready") return false;
+  if (line.source === "heading") return true;
+  return !expectsHeading;
 }
 
 /** Landscape overlap is reported on a fresh landscape load, not only after a rotation. */
@@ -101,12 +126,38 @@ export function reportLayoutNotice(input: {
   );
 }
 
-type HeadingWatch = { phase: "pending" } | { phase: "absent" } | { phase: "ready"; inset: number };
+type HeadingWatch = PlacementLine;
 
 function sameHeading(current: HeadingWatch, next: HeadingWatch): boolean {
   if (current.phase !== next.phase) return false;
-  if (current.phase === "ready" && next.phase === "ready") return current.inset === next.inset;
+  if (current.phase === "ready" && next.phase === "ready") {
+    return current.inset === next.inset && current.source === next.source;
+  }
   return true;
+}
+
+/** How long the layout notice stays on screen. */
+export const LAYOUT_NOTICE_MS = 8000;
+
+export function formatLayoutNotice(
+  key: FloatingLayoutNoticeKey,
+  count: number,
+  translate: (key: string) => string
+): string {
+  switch (key) {
+    case "dashboardLayout.landscapeOverlap": {
+      const template = translate(
+        count === 1 ? "dashboardLayout.landscapeOverlapOne" : "dashboardLayout.landscapeOverlap"
+      );
+      return template.replace("{n}", String(count));
+    }
+    case "dashboardLayout.portraitBelowFold":
+      return translate(key);
+    default: {
+      const exhaustive: never = key;
+      return exhaustive;
+    }
+  }
 }
 
 function noticeKey(notice: LayoutNotice): FloatingLayoutNoticeKey {
@@ -162,15 +213,19 @@ export function useFloatingOrientation({
   ready,
   widgets,
   editMode,
+  expectsHeading,
 }: {
   dashboardId: string | undefined;
   ready: boolean;
   widgets: readonly FloatingWidgetInput[];
   editMode: boolean;
+  /** True when this page renders a heading once its data is on screen. */
+  expectsHeading: boolean;
 }): {
   epoch: number;
   scrollOverflowPx: number;
   notice: FloatingLayoutNoticeKey | null;
+  noticeCount: number;
   dismissNotice: () => void;
   commitEdits: () => void;
   /** Landscape tiles with no stored slot. The page does not mount them. */
@@ -179,6 +234,7 @@ export function useFloatingOrientation({
   const [epoch, setEpoch] = useState(0);
   const [scrollOverflowPx, setScrollOverflowPx] = useState(0);
   const [notice, setNotice] = useState<FloatingLayoutNoticeKey | null>(null);
+  const [noticeCount, setNoticeCount] = useState(0);
   const [generation, setGeneration] = useState(0);
   const [viewport, setViewport] = useState<Viewport>({ width: 0, height: 0 });
   const [sizeOverrides, setSizeOverrides] = useState<Record<string, { w: number; h: number }>>({});
@@ -203,11 +259,11 @@ export function useFloatingOrientation({
   // `parked` is in the signature so pinning or unpinning a tile reconciles again.
   const tileSig = tiles.map((tile) => `${tile.key}:${tile.page}:${tile.w}x${tile.h}${tile.parked ? ":parked" : ""}`).join("|");
   const sizeSig = tiles.map((tile) => `${tile.key}:${tile.w}x${tile.h}`).join("|");
-  // Landscape waits until useLayoutEffect has seen the heading (or seen that there is none).
-  // The edit sizer, when present, is the line outside edit mode too, so toggling it does not move tiles.
+  // Landscape waits until the line is definitive. A heading the page will show, or a heading
+  // node that has no box yet, is not the chrome line of 80. Portrait does not wait.
   const topInset = orientation === "landscape" && heading.phase === "ready" ? heading.inset : undefined;
-  const landscapeReady = orientation !== "landscape" || heading.phase !== "pending";
-  const headingSig = heading.phase === "ready" ? `ready:${heading.inset}` : heading.phase;
+  const landscapeReady = orientation !== "landscape" || landscapeLineReady(heading, expectsHeading);
+  const headingSig = heading.phase === "ready" ? `ready:${heading.source}:${heading.inset}` : heading.phase;
   const sig = `${dashboardId ?? ""}|${ready ? 1 : 0}|${orientation}|${viewport.width}x${viewport.height}|${tileSig}|${headingSig}|${generation}`;
 
   if (
@@ -251,8 +307,17 @@ export function useFloatingOrientation({
     if (result.remount) setEpoch((value) => value + 1);
     if (result.scrollOverflowPx !== scrollOverflowPx) setScrollOverflowPx(result.scrollOverflowPx);
     const visible = consumeLayoutNotice(result.notice, window.sessionStorage);
-    if (previous !== null && previous !== orientation) setNotice(visible ? noticeKey(visible) : null);
-    else if (visible) setNotice(noticeKey(visible));
+    const unplacedCount =
+      orientation === "landscape"
+        ? placingTiles(tiles).filter((tile) => window.localStorage.getItem(tile.key) == null).length
+        : 0;
+    if (previous !== null && previous !== orientation) {
+      setNotice(visible ? noticeKey(visible) : null);
+      setNoticeCount(visible === "landscape-overlap" ? unplacedCount : 0);
+    } else if (visible) {
+      setNotice(noticeKey(visible));
+      setNoticeCount(visible === "landscape-overlap" ? unplacedCount : 0);
+    }
   }
 
   useLayoutEffect(() => {
@@ -274,8 +339,7 @@ export function useFloatingOrientation({
           resize.observe(node);
         }
       }
-      const inset = measurePlacementInset(document);
-      publish(inset == null ? { phase: "absent" } : { phase: "ready", inset });
+      publish(readPlacementLine(document));
     };
 
     sync();
@@ -285,7 +349,7 @@ export function useFloatingOrientation({
       resize?.disconnect();
       mutations?.disconnect();
     };
-  }, [dashboardId]);
+  }, [dashboardId, ready, expectsHeading]);
 
   useEffect(() => {
     const onResize = () => {
@@ -343,7 +407,7 @@ export function useFloatingOrientation({
 
   useEffect(() => {
     if (!notice) return;
-    const timer = window.setTimeout(() => setNotice(null), 8000);
+    const timer = window.setTimeout(() => setNotice(null), LAYOUT_NOTICE_MS);
     return () => window.clearTimeout(timer);
   }, [notice]);
 
@@ -470,5 +534,5 @@ export function useFloatingOrientation({
       ? placingTiles(tiles).flatMap((tile) => (window.localStorage.getItem(tile.key) == null ? [tile.id] : []))
       : [];
 
-  return { epoch, scrollOverflowPx, notice, dismissNotice, commitEdits, withheldIds };
+  return { epoch, scrollOverflowPx, notice, noticeCount, dismissNotice, commitEdits, withheldIds };
 }

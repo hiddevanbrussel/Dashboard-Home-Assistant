@@ -1574,8 +1574,11 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
     const positionsChanged = !sameMap(applied.positions, layout.landscape);
     const metaChanged = applied.landscapeTop !== layout.landscapeTop || !sameAuto(applied.auto, layout.auto);
     if (positionsChanged || metaChanged) {
+      // Drop stored spots of automatic tiles that no longer fit, so a later
+      // snapshot cannot treat the old line as a position the user chose.
+      const storedBefore = layout.landscape;
       assignLandscapePlacement(layout, applied);
-      if (positionsChanged && applyPositions(storage, null, applied.positions)) {
+      if (positionsChanged && applyPositions(storage, storedBefore, applied.positions)) {
         wrote = true;
         remount = input.mounted;
       } else if (metaChanged) {
