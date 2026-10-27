@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.5.11] - DATUM
+## [0.5.11] - 2026-10-28
 
 No settings or dashboards are removed. Two things you will notice: the expand button (⤢) in the music bar on /music is gone (tap the cover to open 'Now playing'), and in landscape, light and sensor tiles still at their default spot under the side rail move once to a free spot; tiles that don't fit in landscape are hidden with a notice.
 
