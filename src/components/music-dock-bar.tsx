@@ -23,6 +23,7 @@ import { useMusicPlayerActions } from "@/hooks/use-music-player-actions";
 import { useTranslation } from "@/hooks/use-translation";
 import { MusicNowPlayingOverlay } from "@/components/music-now-playing-overlay";
 import { MusicQueuePanel } from "@/components/music-queue-panel";
+import { MusicSpeakerPicker } from "@/components/music-speaker-picker";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { getImageSrc, getItemImageUrl, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
 import { clampVolume, describeNowPlaying, nowPlayingFavoriteUri } from "@/lib/music-now-playing";
@@ -62,6 +63,7 @@ export function MusicDockBar() {
   const [favoritedUri, setFavoritedUri] = useState<string | null>(null);
   const [favoritePending, setFavoritePending] = useState(false);
   const [nowPlayingOpen, setNowPlayingOpen] = useState(false);
+  const [speakerOpen, setSpeakerOpen] = useState<"chip" | "icon" | null>(null);
 
   const states = useEntityStateStore((s) => s.states);
   const playingMediaPlayer = Object.values(states).find(
@@ -80,6 +82,10 @@ export function MusicDockBar() {
   const position = queueState?.position ?? 0;
   const duration = queueState?.duration ?? 0;
   const currentItemId = typeof cur?.queue_item_id === "string" ? cur.queue_item_id : null;
+  const allowedIds = musicAssistant.allowedSpeakerIds;
+  const selectablePlayers =
+    allowedIds.length > 0 ? maPlayers.filter((player) => allowedIds.includes(player.queue_id)) : maPlayers;
+  const showSpeakerPicker = musicAssistant.allowSpeakerSelection && selectablePlayers.length > 1;
   const playerName = (() => {
     const player = maPlayers.find((p) => p.queue_id === selectedQueueId);
     return typeof player?.display_name === "string" ? player.display_name : "";
@@ -127,7 +133,13 @@ export function MusicDockBar() {
     }
   }
 
+  function openSpeaker(variant: "chip" | "icon") {
+    setQueuePos(null);
+    setSpeakerOpen(variant);
+  }
+
   function toggleQueue() {
+    setSpeakerOpen(null);
     if (queuePos) {
       setQueuePos(null);
       return;
@@ -234,8 +246,24 @@ export function MusicDockBar() {
         </button>
       </div>
 
-      {/* Right: volume and queue */}
+      {/* Right: speaker, volume and queue */}
       <div className="flex min-w-0 items-center justify-end gap-1">
+        {showSpeakerPicker ? (
+          <>
+            <MusicSpeakerPicker
+              variant="chip"
+              className="hidden landscape:lg:flex"
+              open={speakerOpen === "chip"}
+              onOpenChange={(next) => (next ? openSpeaker("chip") : setSpeakerOpen(null))}
+            />
+            <MusicSpeakerPicker
+              variant="icon"
+              className="flex landscape:lg:hidden"
+              open={speakerOpen === "icon"}
+              onOpenChange={(next) => (next ? openSpeaker("icon") : setSpeakerOpen(null))}
+            />
+          </>
+        ) : null}
         <button
           type="button"
           onClick={volumeMute}

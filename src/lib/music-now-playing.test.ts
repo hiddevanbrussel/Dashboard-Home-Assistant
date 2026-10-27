@@ -83,4 +83,16 @@ describe("music page player bar", () => {
     const bar = source("src/components/global-music-bar.tsx");
     expect(bar).not.toContain("onExpand=");
   });
+
+  it("shares the speaker picker and keeps the focus ring on its controls", () => {
+    const dock = source("src/components/music-dock-bar.tsx");
+    expect(dock).toContain("MusicSpeakerPicker");
+    expect(dock).toContain("allowSpeakerSelection");
+    const player = source("src/components/music-player-bar-content.tsx");
+    expect(player).toContain("MusicSpeakerPicker");
+    expect(player).not.toContain("music.switchTo");
+    const picker = source("src/components/music-speaker-picker.tsx");
+    expect(picker).toContain("FOCUS_RING_BRAND");
+    expect(picker).toContain("outline-none");
+  });
 });
