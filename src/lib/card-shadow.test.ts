@@ -178,7 +178,7 @@ describe("climate and nuts ⋮", () => {
     const buttons = kebabButtons("climate-card-2-widget.tsx");
     expect(buttons).toHaveLength(2);
     for (const markup of buttons) {
-      expect(markup).toContain("tile-kebab-hit");
+      expect(markup).toContain("tile-kebab-hit z-10");
       expect(markup).toContain("rounded-lg p-1");
       expect(markup).not.toMatch(/\bh-11\b|\bw-11\b|\bmin-h-\[44px\]|\bmin-w-\[44px\]/);
     }

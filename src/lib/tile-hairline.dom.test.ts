@@ -61,11 +61,12 @@ const FIXTURE = `<!doctype html>
         <h2>Klimaat</h2>
         <div class="flex shrink-0 items-center gap-1 pt-0.5">
           <button type="button" class="inline-flex items-center rounded-full px-1 py-0.5">power</button>
-          <button type="button" data-kebab="climate" class="tile-kebab-hit rounded-lg p-1">
+          <button type="button" data-kebab="climate" class="tile-kebab-hit z-10 rounded-lg p-1">
             <svg class="h-4 w-4" viewBox="0 0 24 24"></svg>
           </button>
         </div>
       </div>
+      <div data-fill class="relative min-h-0 flex-1"></div>
     </div>
     <button type="button" data-handle="climate" data-no-drag aria-label="resize" class="absolute -bottom-0.5 -right-0.5 z-30 flex h-6 w-6 items-center justify-center">+</button>
   </div>
@@ -108,6 +109,8 @@ const PROBE = `(() => {
     const kcy = kr.top + kr.height / 2;
     const handle = card.querySelector("[data-handle]");
     const hr = handle.getBoundingClientRect();
+    const fill = card.querySelector("[data-fill]");
+    const fr = fill ? fill.getBoundingClientRect() : null;
     const inside = Math.min(rect.width, rect.height, Math.max(radius * 0.55, 12));
     return {
       id: card.id,
@@ -122,6 +125,8 @@ const PROBE = `(() => {
       afterInset: [after.top, after.right, after.bottom, after.left],
       rect: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
       kebab: { x: kcx, y: kcy },
+      kebabZ: getComputedStyle(kebab).zIndex,
+      siblingCoversDown: !!(fr && kcx >= fr.left && kcx <= fr.right && kcy + 22 >= fr.top && kcy + 22 <= fr.bottom),
       hits: {
         top: point(rect.left + rect.width / 2, rect.top + 1),
         right: point(rect.right - 1, rect.top + rect.height / 2),
@@ -151,6 +156,8 @@ type CardReport = {
   afterInset: string[];
   rect: { x: number; y: number; w: number; h: number };
   kebab: { x: number; y: number };
+  kebabZ: string;
+  siblingCoversDown: boolean;
   hits: Record<string, string>;
 };
 
@@ -252,6 +259,13 @@ function assertCards(cards: CardReport[], theme: "light" | "dark") {
   expect(weatherEdit?.outerRadius).toBe("0px 0px 28px 28px");
   expect(weatherEdit?.afterRadius).toBe("28px");
   expect(weatherEdit?.outerAfterShadow).toBe("none");
+  const climate = cards.find((card) => card.id === "climate");
+  expect(climate?.kebabZ).toBe("10");
+  expect(climate?.siblingCoversDown, "a sibling covers the climate ⋮ below its center").toBe(true);
+  for (const dir of ["kebabL", "kebabR", "kebabU", "kebabD"] as const) {
+    expect(climate?.hits[dir], `climate ${dir}`).toBe("kebab:climate");
+  }
+  expect(climate?.hits.handle, "climate scale handle").toBe("handle:climate");
 }
 
 describe.skipIf(!CHROME)("dark tile hairline", () => {
