@@ -1681,7 +1681,11 @@ export default function MusicPage() {
           <OfflinePill />
         </div>
         {/* Spacer for fixed chrome: top header + secondary music nav */}
-        <div className="h-[6.85rem] shrink-0" aria-hidden />
+        <div
+          className="shrink-0"
+          style={{ height: "calc(var(--app-chrome-height, 6.85rem) + 1.5rem)" }}
+          aria-hidden
+        />
         {error && (
           <div
             className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-200"
