@@ -1040,6 +1040,21 @@ function sameMap(a: Record<string, string> | null, b: Record<string, string> | n
   return aKeys.every((key) => a[key] === b[key]);
 }
 
+/**
+ * Tiles passed to placeMissingTiles for a landscape fill.
+ * Parked tiles are not given a slot, but a stored position still blocks one,
+ * the same way placeMissingTiles already blocks a shared key.
+ */
+function landscapeTilesToPlace(
+  positions: Record<string, string>,
+  tiles: readonly FloatingTile[],
+  placing: readonly FloatingTile[]
+): readonly FloatingTile[] {
+  const parkedObstacles = tiles.filter((tile) => tile.parked && tile.key in positions);
+  if (parkedObstacles.length === 0) return placing;
+  return [...placing, ...parkedObstacles];
+}
+
 function swappedViewport(viewport: { width: number; height: number }): { width: number; height: number } {
   return { width: viewport.height, height: viewport.width };
 }
@@ -1090,7 +1105,13 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
   const liveKeys = new Set(tiles.map((tile) => tile.key));
   const placing = placingTiles(tiles);
   let layout = readFloatingLayout(storage, dashboardId);
-  if (!layout && (orientation === "landscape" || tiles.length === 0)) return EMPTY_RESULT;
+  // No record yet: landscape storage stays untouched when every placing tile
+  // already has a key. A missing key is placed beside the rail, as in portrait.
+  if (!layout && (orientation === "landscape" || tiles.length === 0)) {
+    const missingLandscapeKey =
+      orientation === "landscape" && placing.some((tile) => storage.getItem(tile.key) == null);
+    if (!missingLandscapeKey) return EMPTY_RESULT;
+  }
 
   const landscapeViewport = orientation === "landscape" ? viewport : swappedViewport(viewport);
   const portraitViewport = orientation === "portrait" ? viewport : swappedViewport(viewport);
@@ -1140,6 +1161,13 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
         if (pushed.belowFold && input.reportNotice) notice = "portrait-below-fold";
         if (input.anchorKeys && input.anchorKeys.size > 0) layout.portraitBron = "gebruiker";
       }
+    }
+    if (orientation === "landscape") {
+      layout.landscape = placeMissingTiles(
+        layout.landscape,
+        landscapeTilesToPlace(layout.landscape, tiles, placing),
+        viewport
+      );
     }
     const next = orientation === "portrait" ? layout.portrait ?? {} : layout.landscape;
     const previous = orientation === "portrait" ? layout.landscape : layout.portrait;
@@ -1206,6 +1234,18 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
     } else if (!sameMap(current, layout.landscape)) {
       layout.landscape = current;
       wrote = true;
+    }
+    const placed = placeMissingTiles(
+      layout.landscape,
+      landscapeTilesToPlace(layout.landscape, tiles, placing),
+      viewport
+    );
+    if (!sameMap(placed, layout.landscape)) {
+      layout.landscape = placed;
+      if (applyPositions(storage, null, placed)) {
+        wrote = true;
+        remount = input.mounted;
+      }
     }
   }
 
