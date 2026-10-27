@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   forgetTilePosition,
+  isSingletonTileType,
   serializeTilePosition,
   sharedPositionStillUsed,
   tilePositionStorageKey,
@@ -130,5 +132,35 @@ describe("tile position storage keys", () => {
     expect(sharedPositionStillUsed("weather_card", ["light_card"])).toBe(false);
     expect(sharedPositionStillUsed("light_card", ["light_card"])).toBe(false);
     expect(sharedPositionStillUsed("vacuum_card", ["vacuum_card_2"])).toBe(false);
+  });
+});
+
+describe("isSingletonTileType", () => {
+  it("is true for the four types that only render the first card per page", () => {
+    expect(isSingletonTileType("weather_card")).toBe(true);
+    expect(isSingletonTileType("solar_card")).toBe(true);
+    expect(isSingletonTileType("power_usage_card")).toBe(true);
+    expect(isSingletonTileType("vacuum_card")).toBe(true);
+  });
+
+  it("is false for vacuum v2, climate, and every other type", () => {
+    expect(isSingletonTileType("vacuum_card_2")).toBe(false);
+    expect(isSingletonTileType("climate_card")).toBe(false);
+    expect(isSingletonTileType("climate_card_2")).toBe(false);
+    expect(isSingletonTileType("light_card")).toBe(false);
+    expect(isSingletonTileType("stat_pill_card")).toBe(false);
+  });
+});
+
+describe("duplicate is hidden for singleton tiles", () => {
+  const page = readFileSync("src/app/dashboards/[id]/page.tsx", "utf8");
+
+  it("guards the duplicate menu item and handleDuplicateTile", () => {
+    expect(page).toMatch(
+      /if \(!isSingletonTileType\(tileMenuWidget\.type\)\) \{\s*tileMenuItems\.push\(\{\s*key: "duplicate"/
+    );
+    const handler = page.slice(page.indexOf("function handleDuplicateTile"), page.indexOf("function handleUpdateTile"));
+    expect(handler).toContain("if (isSingletonTileType(original.type)) return undefined;");
+    expect(page).toContain("!addingTile && !isSingletonTileType(editingWidget.type)");
   });
 });
