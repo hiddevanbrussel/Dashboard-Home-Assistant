@@ -1885,3 +1885,129 @@ describe("landscape stays on screen (H5)", () => {
     expect(result.scrollOverflowPx).toBeGreaterThan(0);
   });
 });
+
+describe("landscape tile with no slot (H7)", () => {
+  const ROOM = "room-h7-full";
+  const LINE = 208;
+
+  function many(count: number): FloatingTile[] {
+    return Array.from({ length: count }, (_, index) =>
+      tile(`T${index}`, `dashboard.floatingSensorCardPosition.${ROOM}.t${index}`, {
+        w: 260,
+        h: 108,
+        legacyTopOffset: 200,
+      })
+    );
+  }
+
+  function run(
+    storage: MemoryStorage,
+    tiles: readonly FloatingTile[],
+    orientation: "landscape" | "portrait",
+    reportNotice: boolean
+  ) {
+    return reconcileFloatingLayout({
+      storage,
+      dashboardId: ROOM,
+      orientation,
+      viewport: orientation === "landscape" ? LANDSCAPE : PORTRAIT,
+      tiles,
+      push: false,
+      reportNotice,
+      rederive: false,
+      mounted: true,
+      topInset: orientation === "landscape" ? LINE : undefined,
+    });
+  }
+
+  function boxesOf(tiles: readonly FloatingTile[], storage: MemoryStorage, height: number) {
+    return tiles.flatMap((entry) => {
+      const raw = storage.getItem(entry.key);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as { left: number; bottom: number };
+      return [{
+        id: entry.id,
+        x: parsed.left,
+        y: height - parsed.bottom - entry.h,
+        w: entry.w,
+        h: entry.h,
+      }];
+    });
+  }
+
+  it("hides tiles that do not fit, keeps a dragged tile and a scaled tile, and brings one back", () => {
+    const storage = new MemoryStorage();
+    const tiles = many(26);
+    const dragged = tiles[0];
+    const scaled = tiles[1];
+    scaled.defaultSize = false;
+    scaled.cardDefault = { left: 0, bottom: 336 };
+    const draggedRaw = '{"left": 400, "bottom": 300}';
+    const scaledRaw = JSON.stringify({ left: 0, bottom: 336 });
+    seed(storage, { [dragged.key]: draggedRaw, [scaled.key]: scaledRaw });
+
+    const result = run(storage, tiles, "landscape", true);
+    expect(result.notice).toBe("landscape-overlap");
+    expect(storage.getItem(dragged.key)).toBe(draggedRaw);
+    expect(storage.getItem(scaled.key)).toBe(scaledRaw);
+
+    const placed = boxesOf(tiles, storage, LANDSCAPE.height);
+    const missing = tiles.filter((entry) => storage.getItem(entry.key) == null);
+    expect(missing.length).toBeGreaterThan(0);
+    expect(placed.length + missing.length).toBe(tiles.length);
+    expect(overlapPairs(placed, "pixels")).toEqual([]);
+    for (const box of placed) {
+      if (box.id === dragged.id || box.id === scaled.id) continue;
+      expect(box.y).toBeGreaterThanOrEqual(LINE);
+      expect(box.x).toBeGreaterThanOrEqual(96);
+      expect(LANDSCAPE.height - box.y - box.h).toBeGreaterThanOrEqual(0);
+    }
+    const heading = { id: "heading", x: 0, y: 64, w: 1280, h: 128 };
+    expect(overlapPairs([...placed, heading], "pixels").some((pair) => pair.includes("heading"))).toBe(false);
+
+    const layout = JSON.parse(storage.getItem(layoutStorageKey(ROOM)) ?? "{}") as {
+      landscape: Record<string, string>;
+    };
+    for (const entry of missing) expect(layout.landscape[entry.key]).toBeUndefined();
+    for (const value of Object.values(layout.landscape)) {
+      expect((JSON.parse(value) as { bottom: number }).bottom).toBeGreaterThanOrEqual(0);
+    }
+
+    const waiting = missing[0];
+    const kept = tiles.filter((entry) => entry === waiting || entry === dragged || entry === scaled);
+    const again = run(storage, kept, "landscape", true);
+    expect(again.notice).toBeNull();
+    expect(storage.getItem(waiting.key)).toBeTruthy();
+    expect(storage.getItem(dragged.key)).toBe(draggedRaw);
+    expect(storage.getItem(scaled.key)).toBe(scaledRaw);
+    const returned = boxesOf(kept, storage, LANDSCAPE.height);
+    expect(overlapPairs(returned, "pixels")).toEqual([]);
+  });
+
+  it("gives a withheld landscape tile a portrait position and keeps that position", () => {
+    const storage = new MemoryStorage();
+    const tiles = many(26);
+    run(storage, tiles, "landscape", true);
+    const missing = tiles.filter((entry) => storage.getItem(entry.key) == null);
+    expect(missing.length).toBeGreaterThan(0);
+    const portrait = run(storage, tiles, "portrait", false);
+    expect(portrait.notice).toBeNull();
+    for (const entry of tiles) expect(storage.getItem(entry.key)).toBeTruthy();
+    const saved = JSON.parse(storage.getItem(layoutStorageKey(ROOM)) ?? "{}") as {
+      portrait: Record<string, string>;
+    };
+    const portraitCopy = { ...saved.portrait };
+    for (const entry of missing) expect(portraitCopy[entry.key]).toBeTruthy();
+
+    run(storage, tiles, "landscape", false);
+    const back = JSON.parse(storage.getItem(layoutStorageKey(ROOM)) ?? "{}") as {
+      portrait: Record<string, string>;
+      landscape: Record<string, string>;
+    };
+    for (const entry of missing) {
+      expect(storage.getItem(entry.key)).toBeNull();
+      expect(back.landscape[entry.key]).toBeUndefined();
+      expect(back.portrait[entry.key]).toBe(portraitCopy[entry.key]);
+    }
+  });
+});

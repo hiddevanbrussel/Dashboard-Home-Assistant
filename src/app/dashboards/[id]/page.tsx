@@ -2981,14 +2981,20 @@ export default function DashboardEditPage() {
           onRemovePage={editMode ? handleRemoveDashboardPage : undefined}
         >
           {(pageIndex) => {
-          const pageWidgets = pendingAddId
+          const sourceWidgets = pendingAddId
             ? widgets.filter((widget) => widget.id !== pendingAddId)
             : widgets;
+          // A landscape tile with no slot is not mounted, so it cannot save a card default.
+          const withheld = floatingLayout.withheldIds;
+          const pageWidgets = withheld.length === 0
+            ? sourceWidgets
+            : sourceWidgets.filter((widget) => !withheld.includes(widget.id));
           return (
             <>
         {/* A tile that is being added (pendingAddId) is not in pageWidgets, so it does not count.
-            Neither does a stat pill pinned to the top bar (#301, `placement: "topbar"`). */}
-        {!pageWidgets.some(
+            Neither does a stat pill pinned to the top bar (#301, `placement: "topbar"`).
+            A withheld tile still counts: the page is not empty. */}
+        {!sourceWidgets.some(
           (w) => widgetPage(w) === pageIndex && (w as { placement?: string }).placement !== "topbar"
         ) && (
           // The pager layer is pointer-events-none (taps fall through to the page); only the card takes them.

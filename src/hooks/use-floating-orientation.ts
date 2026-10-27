@@ -7,6 +7,7 @@ import {
   floatingTilesFromWidgets,
   GAP,
   landscapeMarginTop,
+  MARGIN_TOP,
   measuredSizeOverrides,
   placingTiles,
   readFloatingLayout,
@@ -46,28 +47,58 @@ function readViewport(): Viewport {
 
 const PLACEMENT_SELECTORS = ["[data-app-heading-edit]", "[data-app-page-heading]", "[data-app-header]"] as const;
 
-/**
- * Element whose bottom is the landscape placement line, measured after layout.
- * An editable title exposes `[data-app-heading-edit]` (the edit-heading box),
- * including while edit mode is off, so the line does not jump when that mode toggles.
- * Otherwise the visible heading, then the fixed chrome bar.
- */
-export function placementElement(root: ParentNode): HTMLElement | null {
+type PlacementSelector = (typeof PLACEMENT_SELECTORS)[number];
+
+function placementMatch(root: ParentNode): { node: HTMLElement; selector: PlacementSelector } | null {
   for (const selector of PLACEMENT_SELECTORS) {
     const node = root.querySelector<HTMLElement>(selector);
     if (!node) continue;
     const bottom = node.getBoundingClientRect().bottom;
     if (!Number.isFinite(bottom) || bottom <= 0) continue;
-    return node;
+    return { node, selector };
   }
   return null;
 }
 
-/** Header bottom plus GAP, snapped. Undefined when nothing on screen has a box yet. */
+/**
+ * Element whose bottom is the landscape placement line, measured after layout.
+ * An editable title exposes `[data-app-heading-edit]` (the edit-heading box),
+ * including while edit mode is off, so the line does not jump when that mode toggles.
+ * Otherwise the visible heading. The chrome bar is only a signal that no heading
+ * is on screen; its height is not the line.
+ */
+export function placementElement(root: ParentNode): HTMLElement | null {
+  return placementMatch(root)?.node ?? null;
+}
+
+/**
+ * Heading bottom plus GAP, snapped. With only the chrome bar, the line is fixed
+ * at MARGIN_TOP: that bar grows in edit mode and must not move tiles.
+ * Undefined when nothing on screen has a box yet.
+ */
 export function measurePlacementInset(root: ParentNode): number | undefined {
-  const node = placementElement(root);
-  if (!node) return undefined;
-  return landscapeMarginTop(node.getBoundingClientRect().bottom + GAP);
+  const match = placementMatch(root);
+  if (!match) return undefined;
+  if (match.selector === "[data-app-header]") return MARGIN_TOP;
+  return landscapeMarginTop(match.node.getBoundingClientRect().bottom + GAP);
+}
+
+/** Landscape overlap is reported on a fresh landscape load, not only after a rotation. */
+export function reportLayoutNotice(input: {
+  previous: Orientation | null;
+  orientation: Orientation;
+  sizesChanged: boolean;
+  actionReport: boolean;
+}): boolean {
+  const enteringPortrait = input.previous === "landscape" && input.orientation === "portrait";
+  const leavingPortrait = input.previous === "portrait" && input.orientation === "landscape";
+  const freshLandscape = input.previous === null && input.orientation === "landscape";
+  return (
+    input.actionReport ||
+    enteringPortrait ||
+    leavingPortrait ||
+    (input.orientation === "landscape" && (input.sizesChanged || freshLandscape))
+  );
 }
 
 type HeadingWatch = { phase: "pending" } | { phase: "absent" } | { phase: "ready"; inset: number };
@@ -142,6 +173,8 @@ export function useFloatingOrientation({
   notice: FloatingLayoutNoticeKey | null;
   dismissNotice: () => void;
   commitEdits: () => void;
+  /** Landscape tiles with no stored slot. The page does not mount them. */
+  withheldIds: readonly string[];
 } {
   const [epoch, setEpoch] = useState(0);
   const [scrollOverflowPx, setScrollOverflowPx] = useState(0);
@@ -191,7 +224,6 @@ export function useFloatingOrientation({
     actionRef.current = IDLE_ACTION;
     const previous = orientationRef.current;
     const enteringPortrait = previous === "landscape" && orientation === "portrait";
-    const leavingPortrait = previous === "portrait" && orientation === "landscape";
     const sizesChanged = sizeSigRef.current.length > 0 && sizeSigRef.current !== sizeSig;
     const push = action.push || enteringPortrait;
     const anchors = action.anchors ?? (push ? anchorsSince(baselineRef.current, tiles) : undefined);
@@ -202,7 +234,12 @@ export function useFloatingOrientation({
       viewport,
       tiles,
       push,
-      reportNotice: action.report || enteringPortrait || leavingPortrait || (orientation === "landscape" && sizesChanged),
+      reportNotice: reportLayoutNotice({
+        previous,
+        orientation,
+        sizesChanged,
+        actionReport: action.report,
+      }),
       anchorKeys: anchors,
       rederive: action.rederive,
       mounted: cardsMountedRef.current,
@@ -428,5 +465,10 @@ export function useFloatingOrientation({
 
   const dismissNotice = () => setNotice(null);
 
-  return { epoch, scrollOverflowPx, notice, dismissNotice, commitEdits };
+  const withheldIds =
+    typeof window !== "undefined" && landscapeReady && viewport.width > 0 && viewport.height > 0 && orientation === "landscape"
+      ? placingTiles(tiles).flatMap((tile) => (window.localStorage.getItem(tile.key) == null ? [tile.id] : []))
+      : [];
+
+  return { epoch, scrollOverflowPx, notice, dismissNotice, commitEdits, withheldIds };
 }
