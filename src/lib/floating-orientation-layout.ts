@@ -1365,7 +1365,8 @@ function automaticTilesToDrop(
  * Landscape placement, including a later header line.
  * An automatic spot that still fits is kept. Only a tile with no spot, or an
  * automatic tile that crosses the line or another tile, is placed again.
- * A tile the user moved or scaled keeps its stored string.
+ * A line that moved down re-places every automatic tile on a page where nobody
+ * dragged or scaled one. A tile the user moved or scaled keeps its stored string.
  */
 function applyLandscapePlacement(
   positions: Record<string, string>,
@@ -1386,6 +1387,24 @@ function applyLandscapePlacement(
 
   const lineChanged = landscapeTop !== undefined && landscapeTop !== margin;
   const drop = automaticTilesToDrop(positions, owned, tiles, margin, viewport);
+  if (landscapeTop !== undefined && margin > landscapeTop) {
+    // Main 94b678f: a line that moved down re-places the automatic tiles of a page.
+    // Only a page with a dragged or scaled tile keeps its automatic spots (H2).
+    const ownPages = new Set<number>();
+    let ownShared = false;
+    for (const tile of placing) {
+      const raw = positions[tile.key];
+      if (!raw || owned[tile.key] === raw) continue;
+      if (!scaled.has(tile.key) && isExactCardDefault(tile, positions, viewport)) continue;
+      if (tile.shared) ownShared = true;
+      else ownPages.add(tile.page);
+    }
+    for (const tile of placing) {
+      if (owned[tile.key] !== positions[tile.key]) continue;
+      if (ownShared || ownPages.has(tile.page)) continue;
+      drop.add(tile.key);
+    }
+  }
   const base: Record<string, string> = {};
   for (const [key, value] of Object.entries(positions)) {
     if (drop.has(key)) continue;

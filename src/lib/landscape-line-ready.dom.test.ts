@@ -599,4 +599,62 @@ describe("speaker clearance and dashboard order", () => {
       await cleanup();
     }
   }, 60_000);
+
+  it("re-places eleven tiles after the heading drops, cold and from stored main-192 and fd7 layouts", async () => {
+    const { file, cleanup } = await bundleHarness();
+    try {
+      await withChrome(async (send, wait) => {
+        const open = async (query: string) => {
+          const loaded = wait("Page.loadEventFired");
+          await send("Page.navigate", { url: `file://${file}?${query}` });
+          await loaded;
+          await evaluate(
+            send,
+            waitFor(
+              `document.documentElement.dataset.line === "208" && document.documentElement.dataset.settled === "1" && document.querySelector("[data-tile=lamp1]") && document.querySelector("[data-tile=a-speaker]")`
+            )
+          );
+          const boot = await evaluate<string>(send, `document.documentElement.dataset.boot || window.__boot || ""`);
+          if (boot) throw new Error(boot);
+          await evaluate(send, `new Promise((resolve) => setTimeout(resolve, 300))`);
+        };
+        const expectMain208 = (boxes: TileBox[], label: string) => {
+          const lamp1 = boxes.find((box) => box.id === "lamp1");
+          expect(lamp1, label).toMatchObject({ x: 96, y: 218, w: 240, h: 70 });
+          const row = boxes.filter((box) => box.y === 218).sort((a, b) => a.x - b.x);
+          expect(row.map((box) => box.id), label).toEqual(["lamp1", "lamp2", "lamp3", "lamp4"]);
+          const lamp5 = boxes.find((box) => box.id === "lamp5");
+          const lamp6 = boxes.find((box) => box.id === "lamp6");
+          if (!lamp1 || !lamp5 || !lamp6) throw new Error(`${label}: lamp row missing`);
+          expect(lamp5.y, label).toBeGreaterThan(lamp1.y);
+          expect(lamp6.x, label).toBeGreaterThan(lamp5.x);
+          expect(lamp6.y, label).toBe(lamp5.y);
+          expect(boxes.find((box) => box.id === "a-speaker"), label).toMatchObject({ x: 368, y: 428 });
+          expect(Math.min(...boxes.map((box) => box.y)), label).toBe(218);
+        };
+        const coldQuery = "shift=1&eleven=1&delay=100";
+        await open(coldQuery);
+        const cold = await evaluate<TileBox[]>(send, readTiles());
+        const coldLine = await evaluate<string>(send, `document.documentElement.dataset.line || ""`);
+        expect(coldLine).toBe("208");
+        expectMain208(cold, "cold");
+        await open(`${coldQuery}&keep=1`);
+        const coldAgain = await evaluate<TileBox[]>(send, readTiles());
+        expect(coldAgain).toEqual(cold);
+        for (const preset of ["main192", "fd7"]) {
+          await open(`${coldQuery}&preset=${preset}`);
+          const loaded = await evaluate<TileBox[]>(send, readTiles());
+          const line = await evaluate<string>(send, `document.documentElement.dataset.line || ""`);
+          expect(line, preset).toBe("208");
+          expectMain208(loaded, preset);
+          expect(loaded, preset).toEqual(cold);
+          await open(`${coldQuery}&keep=1`);
+          const again = await evaluate<TileBox[]>(send, readTiles());
+          expect(again, `${preset} reload`).toEqual(loaded);
+        }
+      });
+    } finally {
+      await cleanup();
+    }
+  }, 90_000);
 });

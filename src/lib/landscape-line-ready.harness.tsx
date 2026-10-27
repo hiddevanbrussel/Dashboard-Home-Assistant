@@ -50,7 +50,12 @@ const CROWD: FloatingWidgetInput[] = [
 
 let activeMode: Mode = "fresh";
 
+function wantsEleven(): boolean {
+  return new URLSearchParams(window.location.search).has("eleven");
+}
+
 function dashboardIdFor(mode: Mode): string {
+  if (mode === "shift" && wantsEleven()) return "room-row";
   if (mode === "shift") return "room-h1";
   if (mode === "crowd") return "room-h2";
   if (mode === "beside") return "room-beside";
@@ -99,7 +104,42 @@ function besideWidgets(): FloatingWidgetInput[] {
   ];
 }
 
+/** main-192 and the fd7f1e1 band, remapped onto the row widget ids. No wide tile. */
+const ELEVEN_PRESETS: Record<string, { line: number; spots: Record<string, { left: number; bottom: number }> }> = {
+  main192: {
+    line: 192,
+    spots: {
+      lamp1: { left: 96, bottom: 528 },
+      lamp2: { left: 352, bottom: 528 },
+      lamp3: { left: 608, bottom: 528 },
+      lamp4: { left: 864, bottom: 528 },
+      lamp5: { left: 96, bottom: 432 },
+      lamp6: { left: 352, bottom: 432 },
+      sensor1: { left: 608, bottom: 400 },
+      sensor2: { left: 896, bottom: 400 },
+      sensor3: { left: 96, bottom: 304 },
+      "a-speaker": { left: 384, bottom: 32 },
+    },
+  },
+  fd7: {
+    line: 208,
+    spots: {
+      lamp1: { left: 688, bottom: 304 },
+      lamp2: { left: 944, bottom: 304 },
+      lamp3: { left: 96, bottom: 208 },
+      lamp4: { left: 688, bottom: 208 },
+      lamp5: { left: 96, bottom: 432 },
+      lamp6: { left: 352, bottom: 432 },
+      sensor1: { left: 608, bottom: 400 },
+      sensor2: { left: 896, bottom: 400 },
+      sensor3: { left: 96, bottom: 304 },
+      "a-speaker": { left: 384, bottom: 32 },
+    },
+  },
+};
+
 function buildWidgets(mode: Mode): FloatingWidgetInput[] {
+  if (mode === "shift" && wantsEleven()) return rowWidgets();
   if (mode === "shift") return SHIFT.map((widget) => ({ ...widget }));
   if (mode === "row") return rowWidgets();
   if (mode === "beside") return besideWidgets();
@@ -141,16 +181,51 @@ function wideKey(): string {
 }
 
 function storageKey(widget: FloatingWidgetInput): string {
-  if (activeMode === "shift" || activeMode === "crowd") return textKey(dashboardIdFor(activeMode), widget.id);
-  if (activeMode === "beside" || activeMode === "row") {
+  if (activeMode === "crowd" || (activeMode === "shift" && !wantsEleven())) {
+    return textKey(dashboardIdFor(activeMode), widget.id);
+  }
+  if (activeMode === "beside" || activeMode === "row" || (activeMode === "shift" && wantsEleven())) {
     return floatingStorageKey(widget.type, dashboardIdFor(activeMode), widget.id) ?? sensorKey(widget.id);
   }
   return widget.type === "text_card" ? wideKey() : sensorKey(widget.id);
 }
 
+function seedElevenPreset(name: string, widgets: readonly FloatingWidgetInput[]) {
+  const preset = ELEVEN_PRESETS[name];
+  if (!preset) return;
+  const landscape: Record<string, string> = {};
+  const auto: Record<string, string> = {};
+  for (const widget of widgets) {
+    const spot = preset.spots[widget.id];
+    if (!spot) continue;
+    const key = storageKey(widget);
+    const raw = JSON.stringify(spot);
+    localStorage.setItem(key, raw);
+    landscape[key] = raw;
+    auto[key] = raw;
+  }
+  localStorage.setItem(
+    `dashboard.floatingLayout.v1.${dashboardIdFor(activeMode)}`,
+    JSON.stringify({
+      v: 1,
+      active: "landscape",
+      landscape,
+      portrait: null,
+      portraitBron: null,
+      landscapeTop: preset.line,
+      auto,
+    })
+  );
+}
+
 function seed(mode: Mode, widgets: readonly FloatingWidgetInput[]) {
   if (new URLSearchParams(window.location.search).has("keep")) return;
   localStorage.clear();
+  if (mode === "shift" && wantsEleven()) {
+    const preset = new URLSearchParams(window.location.search).get("preset");
+    if (preset) seedElevenPreset(preset, widgets);
+    return;
+  }
   if (mode === "shift" || mode === "crowd" || mode === "row") return;
   if (mode === "beside") {
     const params = new URLSearchParams(window.location.search);

@@ -2445,6 +2445,45 @@ describe("stable landscape line and automatic tiles (H1, H2)", () => {
     expect(overlapPairs(boxes, "pixels")).toEqual([]);
   });
 
+  it("re-places every automatic tile when a stored 192 line moves to 208 and none is owned", () => {
+    const tiles = floatingTilesFromWidgets(elevenWidgets(), ROOM, LANDSCAPE);
+    const fresh = new MemoryStorage();
+    run(fresh, tiles, LINE);
+    const stored = new MemoryStorage();
+    run(stored, tiles, 192);
+    const saved = JSON.parse(stored.getItem(layoutStorageKey(ROOM)) ?? "{}") as { landscapeTop?: number };
+    expect(saved.landscapeTop).toBe(192);
+    expect(snapshotActive(stored, tiles)).not.toEqual(snapshotActive(fresh, tiles));
+    run(stored, tiles, LINE);
+    expect(snapshotActive(stored, tiles)).toEqual(snapshotActive(fresh, tiles));
+    const after = JSON.parse(stored.getItem(layoutStorageKey(ROOM)) ?? "{}") as { landscapeTop?: number };
+    expect(after.landscapeTop).toBe(LINE);
+  });
+
+  it("keeps fitting automatic tiles when the line moves down and one tile was dragged", () => {
+    const tiles = floatingTilesFromWidgets(elevenWidgets(), ROOM, LANDSCAPE);
+    const fresh = new MemoryStorage();
+    run(fresh, tiles, LINE);
+    const storage = new MemoryStorage();
+    run(storage, tiles, 192);
+    const placed = boxesOf(tiles, storage);
+    const fitting = tiles.filter((entry) => {
+      const box = placed.find((item) => item.id === entry.id);
+      return box != null && box.y >= LINE;
+    });
+    const dragged = tiles.find((entry) => entry.id === "lamp1");
+    if (!dragged) throw new Error("lamp1 missing");
+    const keptTiles = fitting.filter((entry) => entry.id !== dragged.id);
+    expect(keptTiles.length).toBeGreaterThan(0);
+    const draggedRaw = JSON.stringify({ left: 1000, bottom: 700 });
+    storage.setItem(dragged.key, draggedRaw);
+    const kept = snapshotActive(storage, keptTiles);
+    expect(kept).not.toEqual(snapshotActive(fresh, keptTiles));
+    run(storage, tiles, LINE);
+    expect(storage.getItem(dragged.key)).toBe(draggedRaw);
+    expect(snapshotActive(storage, keptTiles)).toEqual(kept);
+  });
+
   function parkBeside(gap: number, speakerScaled = false) {
     const speaker = tile("speaker", `dashboard.floatingMediaCardPosition.${ROOM}.speaker`, {
       w: speakerScaled ? 312 : 280,
