@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore, type MAPlayer, type QueueState } from "@/stores/music-player-store";
 import { callMusicAssistant } from "@/lib/music-assistant";
+import { readStoredQueueId, resolveInitialQueueId } from "@/lib/music-selected-player";
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_INTERVAL_PLAYING_MS = 1000; // vaker bij afspelen o.a. voor radio stream metadata
@@ -45,13 +46,10 @@ export function MusicPlayerProvider({ children }: { children: React.ReactNode })
   }, [isDevPreview, musicAssistant, setMaPlayers, setQueueState]);
 
   useEffect(() => {
-    if (maPlayers.length > 0 && !selectedQueueId) {
-      const allowed = musicAssistant.allowedSpeakerIds;
-      const first = allowed.length > 0
-        ? maPlayers.find((p) => allowed.includes(p.queue_id)) ?? maPlayers[0]
-        : maPlayers[0];
-      if (first) setSelectedQueueId(first.queue_id);
-    }
+    if (maPlayers.length === 0 || selectedQueueId) return;
+    const stored = typeof window === "undefined" ? null : readStoredQueueId(window.localStorage);
+    const next = resolveInitialQueueId(stored, maPlayers, musicAssistant.allowedSpeakerIds);
+    if (next) setSelectedQueueId(next);
   }, [maPlayers, selectedQueueId, musicAssistant.allowedSpeakerIds, setSelectedQueueId]);
 
   useEffect(() => {

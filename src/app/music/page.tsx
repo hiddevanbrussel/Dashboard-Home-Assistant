@@ -18,6 +18,7 @@ import { Music2, Search, Play, Pause, Disc3, User, SkipBack, SkipForward, Volume
 import { useMusicAssistantStore, hydrateMusicAssistantStore, type MusicSectionId } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore } from "@/stores/music-player-store";
 import { fetchMusicAssistantHome } from "@/lib/music-assistant";
+import { readStoredQueueId, resolveInitialQueueId } from "@/lib/music-selected-player";
 import { getMaItemParams } from "@/lib/ma-item-params";
 import { generatedCoverDataUri } from "@/lib/generated-cover";
 import { useTranslation } from "@/hooks/use-translation";
@@ -621,10 +622,11 @@ export default function MusicPage() {
   useEffect(() => {
     if (maPlayers.length === 0) return;
     const ids = new Set(maPlayers.map((p) => p.queue_id));
-    if (!selectedQueueId || !ids.has(selectedQueueId)) {
-      setSelectedQueueId(maPlayers[0].queue_id);
-    }
-  }, [maPlayers, selectedQueueId, setSelectedQueueId]);
+    if (selectedQueueId && ids.has(selectedQueueId)) return;
+    const stored = typeof window === "undefined" ? null : readStoredQueueId(window.localStorage);
+    const next = resolveInitialQueueId(stored, maPlayers, musicAssistant.allowedSpeakerIds);
+    if (next && next !== selectedQueueId) setSelectedQueueId(next);
+  }, [maPlayers, selectedQueueId, setSelectedQueueId, musicAssistant.allowedSpeakerIds]);
 
   useEffect(() => {
     const tick = () => {
@@ -641,10 +643,11 @@ export default function MusicPage() {
   useEffect(() => {
     if (selectablePlayers.length === 0) return;
     const inSelectable = selectablePlayers.some((p) => p.queue_id === selectedQueueId);
-    if (!selectedQueueId || !inSelectable) {
-      setSelectedQueueId(selectablePlayers[0].queue_id);
-    }
-  }, [selectablePlayers, selectedQueueId, setSelectedQueueId]);
+    if (selectedQueueId && inSelectable) return;
+    const stored = typeof window === "undefined" ? null : readStoredQueueId(window.localStorage);
+    const next = resolveInitialQueueId(stored, selectablePlayers, musicAssistant.allowedSpeakerIds);
+    if (next && next !== selectedQueueId) setSelectedQueueId(next);
+  }, [selectablePlayers, selectedQueueId, setSelectedQueueId, musicAssistant.allowedSpeakerIds]);
 
   useEffect(() => {
     if (!selectedAlbum || !musicAssistant.enabled || !musicAssistant.baseUrl) {

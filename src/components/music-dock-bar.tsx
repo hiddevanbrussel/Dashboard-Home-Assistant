@@ -8,7 +8,6 @@ import {
   Donut,
   Heart,
   ListMusic,
-  Maximize2,
   Pause,
   Play,
   Shuffle,
@@ -22,10 +21,15 @@ import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerActions } from "@/hooks/use-music-player-actions";
 import { useTranslation } from "@/hooks/use-translation";
+import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
+import { MusicNowPlayingOverlay } from "@/components/music-now-playing-overlay";
 import { MusicQueuePanel } from "@/components/music-queue-panel";
+import { MusicSpeakerPicker } from "@/components/music-speaker-picker";
+import { MusicVolumeSlider } from "@/components/music-volume-slider";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { getImageSrc, getItemImageUrl, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
-import { clampVolume, describeNowPlaying, nowPlayingFavoriteUri } from "@/lib/music-now-playing";
+import { describeNowPlaying, nowPlayingFavoriteUri } from "@/lib/music-now-playing";
+import { displayedVolume, volumeFigure, volumePanelText, volumeValueText } from "@/lib/music-volume";
 import { cn } from "@/lib/utils";
 
 const ICON_BUTTON =
@@ -34,15 +38,18 @@ const TOGGLE_ON = "bg-accent-yellow text-gray-900 dark:bg-accent-green";
 
 /**
  * Full-width player bar docked at the bottom of /music: now playing, transport,
- * volume, queue, and a button that opens the large floating player.
+ * volume and queue. A tap on the cover or title opens Now playing.
  */
-export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
+export function MusicDockBar() {
   const { t } = useTranslation();
   const { queueState, selectedQueueId, maPlayers } = useMusicPlayerStore();
   const musicAssistant = useMusicAssistantStore();
   const {
     queueControl,
+    seekTo,
+    seekPending,
     setVolumeLevel,
+    stepVolume,
     volume,
     volumeMuted,
     volumeMute,
@@ -57,10 +64,17 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
 
   const queueButtonRef = useRef<HTMLButtonElement>(null);
   const queuePanelRef = useRef<HTMLDivElement>(null);
+  const volumeButtonRef = useRef<HTMLButtonElement>(null);
+  const volumeDownRef = useRef<HTMLButtonElement>(null);
+  const volumePanelRef = useRef<HTMLDivElement>(null);
+  const volumeDraftRef = useRef<number | null>(null);
   const [queuePos, setQueuePos] = useState<{ bottom: number; right: number } | null>(null);
+  const [volumePos, setVolumePos] = useState<{ bottom: number; right: number } | null>(null);
   const [volumeDraft, setVolumeDraft] = useState<number | null>(null);
   const [favoritedUri, setFavoritedUri] = useState<string | null>(null);
   const [favoritePending, setFavoritePending] = useState(false);
+  const [nowPlayingOpen, setNowPlayingOpen] = useState(false);
+  const [speakerOpen, setSpeakerOpen] = useState<"chip" | "icon" | null>(null);
 
   const states = useEntityStateStore((s) => s.states);
   const playingMediaPlayer = Object.values(states).find(
@@ -76,12 +90,20 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
   const favoriteUri = nowPlayingFavoriteUri(cur);
   const favorited = favoriteUri != null && favoriteUri === favoritedUri;
   const isPlaying = queueState?.state === "playing";
+  const position = queueState?.position ?? 0;
+  const duration = queueState?.duration ?? 0;
   const currentItemId = typeof cur?.queue_item_id === "string" ? cur.queue_item_id : null;
+  const allowedIds = musicAssistant.allowedSpeakerIds;
+  const selectablePlayers =
+    allowedIds.length > 0 ? maPlayers.filter((player) => allowedIds.includes(player.queue_id)) : maPlayers;
+  const showSpeakerPicker = musicAssistant.allowSpeakerSelection && selectablePlayers.length > 1;
   const playerName = (() => {
     const player = maPlayers.find((p) => p.queue_id === selectedQueueId);
     return typeof player?.display_name === "string" ? player.display_name : "";
   })();
-  const shownVolume = volumeDraft ?? (volumeMuted ? 0 : volume);
+  const sliderValue = volumeDraft ?? (volume == null ? 0 : displayedVolume(volume, volumeMuted));
+  const volumeLabel = volumeDraft != null ? String(volumeDraft) : volumeFigure(volume, volumeMuted);
+  const volumeAnnounced = volumeValueText(volume, volumeDraft);
 
   useEffect(() => {
     if (!queuePos) return;
@@ -103,10 +125,38 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
     };
   }, [queuePos]);
 
+  useEffect(() => {
+    if (!volumePos) return;
+    volumeDownRef.current?.focus();
+    const close = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (volumeButtonRef.current?.contains(target) || volumePanelRef.current?.contains(target)) return;
+      setVolumePos(null);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      volumeButtonRef.current?.focus();
+      setVolumePos(null);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", onKey, true);
+    };
+  }, [volumePos]);
+
+  function rememberDraft(next: number) {
+    volumeDraftRef.current = next;
+    setVolumeDraft(next);
+  }
+
   /** Send the slider value once, when the finger or key is released, not on every step. */
   function commitVolume() {
-    if (volumeDraft == null) return;
-    const next = volumeDraft;
+    if (volumeDraftRef.current == null) return;
+    const next = volumeDraftRef.current;
+    volumeDraftRef.current = null;
     setVolumeDraft(null);
     if (next !== volume || volumeMuted) setVolumeLevel(next);
   }
@@ -124,7 +174,36 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
     }
   }
 
+  function openSpeaker(variant: "chip" | "icon") {
+    setQueuePos(null);
+    setVolumePos(null);
+    setSpeakerOpen(variant);
+  }
+
+  function toggleVolumePanel() {
+    setSpeakerOpen(null);
+    setQueuePos(null);
+    if (volumePos) {
+      setVolumePos(null);
+      return;
+    }
+    const rect = volumeButtonRef.current?.getBoundingClientRect();
+    setVolumePos(
+      rect
+        ? { bottom: Math.max(8, window.innerHeight - rect.top + 12), right: Math.max(12, window.innerWidth - rect.right) }
+        : { bottom: 96, right: 12 }
+    );
+  }
+
+  function changeVolumeBy(delta: number) {
+    volumeDraftRef.current = null;
+    setVolumeDraft(null);
+    stepVolume(delta);
+  }
+
   function toggleQueue() {
+    setSpeakerOpen(null);
+    setVolumePos(null);
     if (queuePos) {
       setQueuePos(null);
       return;
@@ -154,7 +233,7 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
-          onClick={onExpand}
+          onClick={() => setNowPlayingOpen(true)}
           className="flex min-h-11 min-w-0 items-center gap-3 rounded-2xl pr-1 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-yellow dark:focus-visible:ring-accent-green"
           aria-label={t("music.nowPlayingOpen")}
         >
@@ -231,42 +310,62 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
         </button>
       </div>
 
-      {/* Right: volume, queue, open the large player */}
+      {/* Right: speaker, volume and queue */}
       <div className="flex min-w-0 items-center justify-end gap-1">
-        <button
-          type="button"
-          onClick={volumeMute}
-          disabled={volumePending}
-          className={ICON_BUTTON}
-          aria-label={volumeMuted ? t("music.volumeUnmute") : t("music.volumeMute")}
-          aria-pressed={volumeMuted}
-        >
-          {volumeMuted ? <VolumeX className="h-5 w-5" aria-hidden /> : <Volume2 className="h-5 w-5" aria-hidden />}
-        </button>
-        <div className="relative hidden h-11 w-28 items-center md:flex lg:w-32">
-          <div className="pointer-events-none absolute inset-x-0 h-1.5 rounded-full bg-gray-300/80 dark:bg-white/20" aria-hidden>
-            <div className="h-full rounded-full bg-gray-800 dark:bg-white/90" style={{ width: `${shownVolume}%` }} />
+        {showSpeakerPicker ? (
+          <>
+            <MusicSpeakerPicker
+              variant="chip"
+              className="hidden landscape:xl:flex"
+              open={speakerOpen === "chip"}
+              onOpenChange={(next) => (next ? openSpeaker("chip") : setSpeakerOpen(null))}
+            />
+            <MusicSpeakerPicker
+              variant="icon"
+              className="flex landscape:xl:hidden"
+              open={speakerOpen === "icon"}
+              onOpenChange={(next) => (next ? openSpeaker("icon") : setSpeakerOpen(null))}
+            />
+          </>
+        ) : null}
+        <div className="hidden items-center gap-1 landscape:lg:flex">
+          <button
+            type="button"
+            onClick={volumeMute}
+            disabled={volumePending}
+            className={ICON_BUTTON}
+            aria-label={volumeMuted ? t("music.volumeUnmute") : t("music.volumeMute")}
+            aria-pressed={volumeMuted}
+          >
+            {volumeMuted ? <VolumeX className="h-5 w-5" aria-hidden /> : <Volume2 className="h-5 w-5" aria-hidden />}
+          </button>
+          <div className="w-40 shrink-0">
+            <MusicVolumeSlider
+              value={sliderValue}
+              width={160}
+              disabled={!selectedQueueId}
+              label={t("music.volume")}
+              valueText={volumeAnnounced}
+              onDraft={rememberDraft}
+              onCommit={commitVolume}
+            />
           </div>
-          <span
-            className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 rounded-full bg-gray-800 shadow ring-2 ring-white dark:bg-white dark:ring-gray-900"
-            style={{ left: `${shownVolume}%` }}
-            aria-hidden
-          />
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={shownVolume}
-            disabled={!selectedQueueId}
-            onChange={(event) => setVolumeDraft(clampVolume(Number(event.target.value)))}
-            onPointerUp={commitVolume}
-            onKeyUp={commitVolume}
-            onBlur={commitVolume}
-            className="absolute inset-0 h-11 w-full cursor-pointer appearance-none opacity-0 disabled:cursor-default"
-            aria-label={t("music.volume")}
-          />
+          <span className="w-8 text-sm font-bold tabular-nums">{volumeLabel}</span>
         </div>
+        <button
+          ref={volumeButtonRef}
+          type="button"
+          onClick={toggleVolumePanel}
+          className={cn(
+            "flex h-11 min-w-11 items-center justify-center rounded-full px-2.5 text-sm font-bold tabular-nums outline-none ring-1 ring-gray-500 landscape:lg:hidden dark:ring-white/40",
+            FOCUS_RING_BRAND,
+            volumePos && "bg-gray-300/80 text-gray-900 dark:bg-white/20 dark:text-white"
+          )}
+          aria-label={t("music.volumeButton").replace("{n}", volumeLabel)}
+          aria-expanded={volumePos != null}
+        >
+          🔊 <span className="inline-block w-[2ch] text-right">{volumeLabel}</span>
+        </button>
         {selectedQueueId ? (
           <button
             ref={queueButtonRef}
@@ -279,9 +378,6 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
             <ListMusic className="h-5 w-5" aria-hidden />
           </button>
         ) : null}
-        <button type="button" onClick={onExpand} className={ICON_BUTTON} aria-label={t("music.expandPlayer")}>
-          <Maximize2 className="h-5 w-5" aria-hidden />
-        </button>
       </div>
 
       {queuePos && selectedQueueId && typeof document !== "undefined"
@@ -297,6 +393,104 @@ export function MusicDockBar({ onExpand }: { onExpand: () => void }) {
             document.body
           )
         : null}
+      {volumePos && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={volumePanelRef}
+              className="fixed z-[320] w-[300px] rounded-2xl bg-white/95 p-3 shadow-2xl ring-1 ring-black/10 dark:bg-[#1b1a21] dark:ring-white/10"
+              style={{ bottom: volumePos.bottom, right: volumePos.right }}
+              data-no-page-swipe
+              role="dialog"
+              aria-label={t("music.volumePanelTitle").replace("{name}", playerName || "—")}
+              onClick={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                    {t("music.volumePanelTitle").replace("{name}", playerName || "—")}
+                  </p>
+                  <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-white">
+                    {volumePanelText(volumeLabel, t("music.volumePercent"))}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={volumeMute}
+                  disabled={!selectedQueueId}
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-700 outline-none hover:bg-gray-200/80 disabled:opacity-50 dark:text-white/90 dark:hover:bg-white/10",
+                    FOCUS_RING_BRAND
+                  )}
+                  aria-label={volumeMuted ? t("music.volumeUnmute") : t("music.volumeMute")}
+                  aria-pressed={volumeMuted}
+                >
+                  {volumeMuted ? <VolumeX className="h-5 w-5" aria-hidden /> : <Volume2 className="h-5 w-5" aria-hidden />}
+                </button>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  ref={volumeDownRef}
+                  type="button"
+                  onClick={() => changeVolumeBy(-5)}
+                  disabled={!selectedQueueId}
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-gray-800 outline-none ring-1 ring-gray-500 disabled:opacity-50 dark:text-white/90 dark:ring-white/40",
+                    FOCUS_RING_BRAND
+                  )}
+                  aria-label={t("music.volumeDown")}
+                >
+                  −
+                </button>
+                <MusicVolumeSlider
+                  value={sliderValue}
+                  width={170}
+                  disabled={!selectedQueueId}
+                  label={t("music.volume")}
+                  valueText={volumeAnnounced}
+                  onDraft={rememberDraft}
+                  onCommit={commitVolume}
+                />
+                <button
+                  type="button"
+                  onClick={() => changeVolumeBy(5)}
+                  disabled={!selectedQueueId}
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-gray-800 outline-none ring-1 ring-gray-500 disabled:opacity-50 dark:text-white/90 dark:ring-white/40",
+                    FOCUS_RING_BRAND
+                  )}
+                  aria-label={t("music.volumeUp")}
+                >
+                  +
+                </button>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
+      <MusicNowPlayingOverlay
+        open={nowPlayingOpen}
+        onClose={() => setNowPlayingOpen(false)}
+        coverSrc={coverSrc}
+        title={title || "—"}
+        artist={artist || "—"}
+        isPlaying={isPlaying}
+        position={position}
+        duration={duration}
+        onPlayPause={() => queueControl(isPlaying ? "pause" : "play")}
+        onPrevious={() => queueControl("previous")}
+        onNext={() => queueControl("next")}
+        onSeek={seekTo}
+        seekDisabled={seekPending}
+        labels={{
+          close: t("music.close"),
+          play: t("music.play"),
+          pause: t("music.pause"),
+          previous: t("music.previous"),
+          next: t("music.next"),
+          position: t("music.position"),
+        }}
+      />
     </footer>
   );
 }

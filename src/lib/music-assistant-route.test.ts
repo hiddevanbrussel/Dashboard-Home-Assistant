@@ -51,6 +51,8 @@ const ALLOWED = [
   "player_queues/previous",
   "player_queues/seek",
   "player_queues/shuffle",
+  "players/all",
+  "players/cmd/group_volume",
   "players/cmd/volume_down",
   "players/cmd/volume_mute",
   "players/cmd/volume_set",

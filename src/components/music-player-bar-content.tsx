@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
@@ -17,8 +17,6 @@ import {
   VolumeX,
   Volume2,
   ChevronDown,
-  Users,
-  Check,
   ListMusic,
 } from "lucide-react";
 import { useMusicPlayerStore, type MAPlayer } from "@/stores/music-player-store";
@@ -27,6 +25,7 @@ import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useMusicPlayerActions } from "@/hooks/use-music-player-actions";
 import { useSpeakerPairing, resolveEntityId } from "@/hooks/use-speaker-pairing";
 import { MusicNowPlayingOverlay } from "@/components/music-now-playing-overlay";
+import { MusicSpeakerPicker } from "@/components/music-speaker-picker";
 import { MusicQueuePanel } from "@/components/music-queue-panel";
 import { getItemImageUrl, getImageSrc, formatDuration, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
 import { describeNowPlaying } from "@/lib/music-now-playing";
@@ -59,17 +58,14 @@ export function MusicPlayerBarContent({
 }: MusicPlayerBarContentProps) {
   const isFloating = variant === "floating";
   const { t } = useTranslation();
-  const speakerButtonRef = useRef<HTMLButtonElement>(null);
-  const speakerPanelRef = useRef<HTMLDivElement>(null);
-  const [speakerPopoverOpen, setSpeakerPopoverOpen] = useState(false);
-  const [speakerPopoverPos, setSpeakerPopoverPos] = useState<{ bottom: number; right: number } | null>(null);
+  const [speakerOpen, setSpeakerOpen] = useState(false);
   const [nowPlayingOpen, setNowPlayingOpen] = useState(false);
   const queueButtonRef = useRef<HTMLButtonElement>(null);
   const queuePanelRef = useRef<HTMLDivElement>(null);
   const [queueOpen, setQueueOpen] = useState(false);
   const [queuePos, setQueuePos] = useState<{ bottom: number; right: number } | null>(null);
 
-  const { maPlayers, queueState, selectedQueueId, setSelectedQueueId } = useMusicPlayerStore();
+  const { maPlayers, queueState, selectedQueueId } = useMusicPlayerStore();
   const musicAssistant = useMusicAssistantStore();
   const {
     queueControl,
@@ -95,48 +91,20 @@ export function MusicPlayerBarContent({
   const allowedIds = musicAssistant.allowedSpeakerIds;
   const selectablePlayers = allowedIds.length > 0 ? maPlayers.filter((p) => allowedIds.includes(p.queue_id)) : maPlayers;
 
-  const { entityMap, groupMembers, joinUnjoinPending, handleJoin, handleUnjoin } = useSpeakerPairing({
+  const { entityMap, groupMembers } = useSpeakerPairing({
     enabled: true,
   });
 
-  const updateSpeakerPopoverPos = useCallback(() => {
-    const btn = speakerButtonRef.current;
-    if (!btn) return;
-    const r = btn.getBoundingClientRect();
-    setSpeakerPopoverPos({
-      // Sit just above the speaker button (panel grows upward).
-      bottom: Math.max(8, window.innerHeight - r.top + 8),
-      right: Math.max(8, window.innerWidth - r.right),
-    });
-  }, []);
-
   useEffect(() => {
-    if (!speakerPopoverOpen) {
-      setSpeakerPopoverPos(null);
-      return;
-    }
-    updateSpeakerPopoverPos();
-    window.addEventListener("resize", updateSpeakerPopoverPos);
-    window.addEventListener("scroll", updateSpeakerPopoverPos, true);
-    return () => {
-      window.removeEventListener("resize", updateSpeakerPopoverPos);
-      window.removeEventListener("scroll", updateSpeakerPopoverPos, true);
-    };
-  }, [speakerPopoverOpen, updateSpeakerPopoverPos]);
-
-  useEffect(() => {
-    if (!speakerPopoverOpen && !queueOpen) return;
-    const close = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (speakerButtonRef.current?.contains(target) || speakerPanelRef.current?.contains(target)) return;
+    if (!queueOpen) return;
+    const close = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (queueButtonRef.current?.contains(target) || queuePanelRef.current?.contains(target)) return;
-      setSpeakerPopoverOpen(false);
       setQueueOpen(false);
     };
-    // mousedown: avoids racing the opening click; works for portaled panel outside the sheet.
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
-  }, [speakerPopoverOpen, queueOpen]);
+  }, [queueOpen]);
 
   useEffect(() => {
     if (!queueOpen) return;
@@ -183,10 +151,10 @@ export function MusicPlayerBarContent({
       className={cn(
         "relative flex flex-col overflow-visible",
         isFloating
-          ? cn(speakerPopoverOpen ? "z-[200]" : "z-10")
+          ? cn(speakerOpen ? "z-[200]" : "z-10")
           : cn(
               "fixed bottom-0 left-0 right-0 border-t border-gray-200/60 dark:border-white/10",
-              speakerPopoverOpen ? "z-[200]" : "z-40",
+              speakerOpen ? "z-[200]" : "z-40",
               animateOpen && "animate-music-bar-in"
             )
       )}
@@ -392,141 +360,14 @@ export function MusicPlayerBarContent({
             </button>
           )}
           {allowSpeakerSelection && selectablePlayers.length > 0 && (
-            <div className="relative">
-              <button
-                ref={speakerButtonRef}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (speakerPopoverOpen) {
-                    setSpeakerPopoverOpen(false);
-                    return;
-                  }
-                  setQueueOpen(false);
-                  updateSpeakerPopoverPos();
-                  setSpeakerPopoverOpen(true);
-                }}
-                className={cn(
-                  "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors",
-                  speakerPopoverOpen ? "bg-gray-300/80 dark:bg-white/20 text-gray-900 dark:text-white" : "text-gray-700 dark:text-white/90 hover:bg-gray-200/80 dark:hover:bg-white/10"
-                )}
-                aria-label={t("music.choosePlayer")}
-                aria-expanded={speakerPopoverOpen}
-              >
-                <Speaker className="h-5 w-5" />
-                {groupedWithCurrent > 0 ? (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gray-900 px-1 text-[11px] font-semibold leading-none text-white ring-2 ring-white dark:bg-white dark:text-gray-900 dark:ring-gray-900" aria-hidden>
-                    +{groupedWithCurrent}
-                  </span>
-                ) : null}
-              </button>
-              {speakerPopoverOpen &&
-                speakerPopoverPos &&
-                typeof document !== "undefined" &&
-                createPortal(
-                  (() => {
-                    const mainPlayer = selectablePlayers.find((p) => p.queue_id === selectedQueueId) ?? null;
-                    const mainEntityId = mainPlayer ? resolveEntityId(mainPlayer, entityMap) : null;
-                    const otherPlayers = selectablePlayers.filter((p) => p.queue_id !== selectedQueueId);
-                    const isActive = queueState?.state === "playing" || queueState?.state === "paused";
-                    return (
-                      <div
-                        ref={speakerPanelRef}
-                        className="fixed z-[320] w-[min(340px,calc(100vw-24px))] max-h-[min(62vh,480px)] overflow-y-auto rounded-2xl border border-white/60 bg-white/95 p-2 shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-[#1b1a21] dark:backdrop-blur-none"
-                        style={{
-                          bottom: speakerPopoverPos.bottom,
-                          right: speakerPopoverPos.right,
-                        }}
-                        data-no-page-swipe
-                        role="dialog"
-                        aria-label={t("music.choosePlayer")}
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => e.stopPropagation()}
-                      >
-                        <p className="px-2 pb-1 pt-1.5 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-white/65">
-                          {t("music.mainSpeaker")}
-                        </p>
-                        {mainPlayer ? (
-                          <div className="flex min-h-12 items-center gap-3 rounded-xl bg-black/[0.05] px-3 dark:bg-white/[0.08]">
-                            <Speaker className="h-5 w-5 shrink-0 text-gray-800 dark:text-white/90" aria-hidden />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-semibold text-gray-900 dark:text-white">{playerLabel(mainPlayer)}</span>
-                              <span className="block text-xs text-gray-600 dark:text-white/70">
-                                {isActive ? t("music.playing") : t("music.speakerIdle")}
-                                {groupedWithCurrent > 0
-                                  ? ` · ${t("music.groupWith").replace("{n}", String(groupedWithCurrent))}`
-                                  : ""}
-                              </span>
-                            </span>
-                            <Check className="h-5 w-5 shrink-0 text-gray-900 dark:text-white" aria-hidden />
-                          </div>
-                        ) : (
-                          <p className="px-2 py-2 text-sm text-gray-600 dark:text-white/70">{t("music.noActiveSpeaker")}</p>
-                        )}
-                        {otherPlayers.length > 0 ? (
-                          <>
-                            <p className="px-2 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-white/65">
-                              {t("music.otherSpeakers")}
-                            </p>
-                            <div className="space-y-0.5">
-                              {otherPlayers.map((p) => {
-                                const entityId = resolveEntityId(p, entityMap);
-                                const isGrouped = entityId ? groupMembers.has(entityId) : false;
-                                const canJoin = !!entityId && !!mainEntityId && !isGrouped;
-                                const canUnjoin = !!entityId && isGrouped;
-                                return (
-                                  <div key={p.queue_id} className="flex min-h-12 items-center gap-1 rounded-xl pl-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedQueueId(p.queue_id);
-                                        setSpeakerPopoverOpen(false);
-                                      }}
-                                      className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-xl px-2 text-left"
-                                      aria-label={`${t("music.switchTo")} ${playerLabel(p)}`}
-                                    >
-                                      <Speaker className="h-5 w-5 shrink-0 text-gray-600 dark:text-white/70" aria-hidden />
-                                      <span className="min-w-0 flex-1">
-                                        <span className="block truncate text-sm font-medium text-gray-900 dark:text-white">{playerLabel(p)}</span>
-                                        <span className="block text-xs text-gray-600 dark:text-white/70">
-                                          {isGrouped ? t("music.playsAlong") : t("music.tapToSwitch")}
-                                        </span>
-                                      </span>
-                                    </button>
-                                    {canJoin || canUnjoin ? (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (canUnjoin && entityId) handleUnjoin(entityId);
-                                          else if (mainEntityId && entityId) handleJoin([mainEntityId, entityId]);
-                                        }}
-                                        disabled={joinUnjoinPending}
-                                        aria-pressed={isGrouped}
-                                        className={cn(
-                                          "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition-colors disabled:opacity-50",
-                                          isGrouped
-                                            ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                                            : "text-gray-800 ring-1 ring-inset ring-gray-400 hover:bg-black/[0.04] dark:text-white/90 dark:ring-white/40 dark:hover:bg-white/10"
-                                        )}
-                                        title={isGrouped ? t("music.unjoinSpeaker") : t("music.joinSpeakers")}
-                                      >
-                                        {isGrouped ? <Check className="h-4 w-4" aria-hidden /> : <Users className="h-4 w-4" aria-hidden />}
-                                        {isGrouped ? t("music.grouped") : t("music.group")}
-                                      </button>
-                                    ) : null}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </>
-                        ) : null}
-                      </div>
-                    );
-                  })(),
-                  document.body
-                )}
-            </div>
+            <MusicSpeakerPicker
+              variant="icon"
+              open={speakerOpen}
+              onOpenChange={(next) => {
+                setSpeakerOpen(next);
+                if (next) setQueueOpen(false);
+              }}
+            />
           )}
           {selectedQueueId ? (
             <button
@@ -534,7 +375,7 @@ export function MusicPlayerBarContent({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setSpeakerPopoverOpen(false);
+                setSpeakerOpen(false);
                 if (queueOpen) {
                   setQueueOpen(false);
                   return;
@@ -618,12 +459,15 @@ export function MusicPlayerBarContent({
         onPlayPause={() => queueControl(isPlaying ? "pause" : "play")}
         onPrevious={() => queueControl("previous")}
         onNext={() => queueControl("next")}
+        onSeek={seekTo}
+        seekDisabled={seekPending}
         labels={{
           close: t("music.close"),
           play: t("music.play"),
           pause: t("music.pause"),
           previous: t("music.previous"),
           next: t("music.next"),
+          position: t("music.position"),
         }}
       />
     </Root>
