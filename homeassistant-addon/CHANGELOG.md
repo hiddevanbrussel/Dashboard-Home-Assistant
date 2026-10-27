@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.5.11] - DATUM
+
+No settings or dashboards are removed. Two things you will notice: the expand button (⤢) in the music bar on /music is gone (tap the cover to open 'Now playing'), and in landscape, light and sensor tiles still at their default spot under the side rail move once to a free spot; tiles that don't fit in landscape are hidden with a notice.
+
+### Added
+
+- Music bar on /music: a speaker picker. In landscape it shows the speaker's name, in portrait an icon. The list shows whether each speaker is playing, paused, idle or off, and lets you group speakers. The music doesn't move; you only switch which speaker the bar controls, and the choice is remembered on this device. The setting 'Show speaker selection on music page' now works: when it's off, or there is only one speaker, the button is hidden (#325).
+- Music bar: a new volume control. Landscape has a slider with the number next to it; a tap on the track raises the volume by at most 10, lowering works in one tap. Portrait has a volume button that opens a panel with − and + in steps of 5, a slider and mute. With grouped speakers the volume goes to the whole group. Two extra Music Assistant commands are on the allowlist for the speaker list and group volume (#325).
+
+### Changed
+
+- Music bar: the expand button (⤢) is gone. Tapping the cover or title opens 'Now playing', where you can seek smoothly without losing focus. In the full player the speaker list is now called 'Control speaker' and shows each speaker's status (#325).
+- Landscape: new tiles without a position of their own go to a free spot next to the side rail, below the page title and not on top of each other. The back button and title stay tappable, also in edit mode. Tiles no longer jump when you tap Edit or shift after reloading or dragging, and the line below the header stays fixed. Tiles you moved or resized yourself stay where they are; nothing changes in portrait (#323, #326).
+
+### Fixed
+
+- Pages load step by step again, with the loading screen first, instead of being fully prepared before you saw anything (since 0.5.2). Only the Home Assistant data is still compressed (#322, follow-up to #294).
+- Room settings: pressing Save no longer resets the icon and colour to the default (trees, purple); the panel shows your own icon and colour straight away (#322, follow-up to #299).
+- Top bar in edit mode: tapping a pill opens the tile menu again, not just the ⋮, and the ⋮ no longer covers the value, as with "54 %" or "15.6 °C" (#324).
+- Weather, Solar, Power usage and Vacuum (v1) no longer offer 'Duplicate card', which made a copy you never saw. Copies made earlier still exist (#324).
+- Music page with the glass effect off: the header no longer covers 'Listen now'; the content now starts below it (#324).
+- The shadow added in 0.5.10 is no longer cut off on Team Tracker, trash, weather and utilities cards; the grey patch in the Team Tracker corner and the light edge in the trash and weather corners are gone (#324).
+
+### Known issue
+
+- Landscape: if you deliberately drag a tile over another in edit mode and tap Done, the covered tile moves to a free spot. Nothing is lost; this will be fixed in a future version.
+
 ## [0.5.10] - 2026-10-26
 
 No breaking changes: existing configs, dashboards and localStorage keep working.
