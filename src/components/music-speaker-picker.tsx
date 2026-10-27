@@ -15,8 +15,8 @@ import { useMusicAssistantStore } from "@/stores/music-assistant-store";
 import { useMusicPlayerStore, type MAPlayer } from "@/stores/music-player-store";
 
 const DOT_CLASS: Record<SpeakerDot, string> = {
-  green: "bg-green-600 dark:bg-green-400",
-  amber: "bg-amber-600 dark:bg-amber-400",
+  green: "bg-green-700 dark:bg-green-400",
+  amber: "bg-amber-700 dark:bg-amber-400",
   gray: "bg-gray-500 dark:bg-gray-400",
   ring: "ring-[1.5px] ring-gray-500 dark:ring-white/60",
 };
@@ -55,6 +55,7 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ bottom: number; right: number } | null>(null);
+  const focusedOpen = useRef(false);
 
   const { maPlayers, selectedQueueId, setSelectedQueueId } = useMusicPlayerStore();
   const allowedIds = useMusicAssistantStore((s) => s.allowedSpeakerIds);
@@ -106,6 +107,18 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
   }, [open, updatePosition]);
 
   useEffect(() => {
+    if (!open) {
+      focusedOpen.current = false;
+      return;
+    }
+    if (!position || focusedOpen.current) return;
+    focusedOpen.current = true;
+    const active = panelRef.current?.querySelector<HTMLButtonElement>("[data-speaker-row='active']");
+    const first = panelRef.current?.querySelector<HTMLButtonElement>("[data-speaker-row]");
+    (active ?? first)?.focus();
+  }, [open, position]);
+
+  useEffect(() => {
     if (!open) return;
     const close = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -115,6 +128,7 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.stopPropagation();
+      buttonRef.current?.focus();
       onOpenChange(false);
     };
     document.addEventListener("mousedown", close);
@@ -128,6 +142,7 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
   function choose(queueId: string) {
     setSelectedQueueId(queueId);
     if (typeof window !== "undefined") writeStoredQueueId(window.localStorage, queueId);
+    buttonRef.current?.focus();
     onOpenChange(false);
   }
 
@@ -163,7 +178,7 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
       >
         <Speaker className="h-5 w-5 shrink-0" aria-hidden />
         {variant === "chip" ? (
-          <span className="max-w-[150px] truncate text-sm font-medium">{activeName || "—"}</span>
+          <span className="max-w-[120px] truncate text-sm font-medium">{activeName || "—"}</span>
         ) : null}
         {groupedWithCurrent > 0 ? (
           <span
@@ -204,6 +219,7 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
                   const isGrouped = entityId ? groupMembers.has(entityId) : false;
                   const canJoin = !!entityId && !!activeEntityId && !isGrouped && !selected;
                   const canUnjoin = !!entityId && isGrouped && !selected;
+                  const groupable = status.code !== "off" && (canJoin || canUnjoin);
                   return (
                     <div
                       key={player.queue_id}
@@ -211,16 +227,25 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
                     >
                       <button
                         type="button"
+                        data-speaker-row={selected ? "active" : ""}
                         onClick={() => choose(player.queue_id)}
                         className={cn(
                           "flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl px-2 text-left outline-none",
                           FOCUS_RING_BRAND,
-                          selected && "bg-black/[0.05] dark:bg-white/[0.08]"
+                          selected && "bg-[#4700B5]/[0.06] dark:bg-[#8357be]/20"
                         )}
                         aria-label={selected ? `${rowLabel}${t("music.speakerSelectedSuffix")}` : rowLabel}
                       >
+                        <Speaker className="h-5 w-5 shrink-0 text-gray-700 dark:text-white/80" aria-hidden />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-gray-900 dark:text-white">{name}</span>
+                          <span className="flex min-w-0 items-baseline gap-1">
+                            <span className="truncate text-sm font-medium text-gray-900 dark:text-white">{name}</span>
+                            {selected && groupedWithCurrent > 0 ? (
+                              <span className="shrink-0 text-xs text-gray-600 dark:text-gray-400">
+                                · {t("music.groupWith").replace("{n}", String(groupedWithCurrent))}
+                              </span>
+                            ) : null}
+                          </span>
                           <span className="flex items-center gap-1.5">
                             <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT_CLASS[status.dot])} aria-hidden />
                             <span className="truncate text-xs text-gray-600 dark:text-gray-400">{statusLabel}</span>
@@ -230,7 +255,7 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
                           <Check className="h-5 w-5 shrink-0 text-[#4700B5] dark:text-[#B59ED8]" aria-hidden />
                         ) : null}
                       </button>
-                      {canJoin || canUnjoin ? (
+                      {groupable ? (
                         <button
                           type="button"
                           onClick={(event) => {
@@ -245,7 +270,7 @@ export function MusicSpeakerPicker({ variant, open, onOpenChange, className }: M
                             FOCUS_RING_BRAND,
                             isGrouped
                               ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                              : "text-gray-800 ring-1 ring-inset ring-gray-400 hover:bg-black/[0.04] dark:text-white/90 dark:ring-white/40 dark:hover:bg-white/10"
+                              : "text-gray-800 ring-1 ring-inset ring-gray-500 hover:bg-black/[0.04] dark:text-white/90 dark:ring-white/40 dark:hover:bg-white/10"
                           )}
                           title={isGrouped ? t("music.unjoinSpeaker") : t("music.joinSpeakers")}
                         >

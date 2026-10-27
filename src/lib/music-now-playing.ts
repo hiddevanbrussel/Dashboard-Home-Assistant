@@ -74,3 +74,17 @@ export function clampVolume(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.round(Math.min(100, Math.max(0, value)));
 }
+
+/** `player_queues/seek` for the Now playing screen. Position is seconds. */
+export function seekPayload(
+  queueId: string,
+  positionSeconds: number
+): { command: "player_queues/seek"; args: { queue_id: string; position: number } } {
+  return {
+    command: "player_queues/seek",
+    args: {
+      queue_id: queueId,
+      position: Number.isFinite(positionSeconds) ? positionSeconds : 0,
+    },
+  };
+}

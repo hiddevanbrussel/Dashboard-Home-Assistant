@@ -29,7 +29,7 @@ import { MusicVolumeSlider } from "@/components/music-volume-slider";
 import { callMusicAssistant } from "@/lib/music-assistant";
 import { getImageSrc, getItemImageUrl, MUSIC_IMAGE_BLUR, type MASearchItem } from "@/lib/music-item-image";
 import { describeNowPlaying, nowPlayingFavoriteUri } from "@/lib/music-now-playing";
-import { displayedVolume } from "@/lib/music-volume";
+import { displayedVolume, volumeFigure } from "@/lib/music-volume";
 import { cn } from "@/lib/utils";
 
 const ICON_BUTTON =
@@ -46,6 +46,8 @@ export function MusicDockBar() {
   const musicAssistant = useMusicAssistantStore();
   const {
     queueControl,
+    seekTo,
+    seekPending,
     setVolumeLevel,
     stepVolume,
     volume,
@@ -63,6 +65,7 @@ export function MusicDockBar() {
   const queueButtonRef = useRef<HTMLButtonElement>(null);
   const queuePanelRef = useRef<HTMLDivElement>(null);
   const volumeButtonRef = useRef<HTMLButtonElement>(null);
+  const volumeDownRef = useRef<HTMLButtonElement>(null);
   const volumePanelRef = useRef<HTMLDivElement>(null);
   const volumeDraftRef = useRef<number | null>(null);
   const [queuePos, setQueuePos] = useState<{ bottom: number; right: number } | null>(null);
@@ -98,7 +101,8 @@ export function MusicDockBar() {
     const player = maPlayers.find((p) => p.queue_id === selectedQueueId);
     return typeof player?.display_name === "string" ? player.display_name : "";
   })();
-  const shownVolume = volumeDraft ?? displayedVolume(volume, volumeMuted);
+  const sliderValue = volumeDraft ?? (volume == null ? 0 : displayedVolume(volume, volumeMuted));
+  const volumeLabel = volumeDraft != null ? String(volumeDraft) : volumeFigure(volume, volumeMuted);
 
   useEffect(() => {
     if (!queuePos) return;
@@ -122,6 +126,7 @@ export function MusicDockBar() {
 
   useEffect(() => {
     if (!volumePos) return;
+    volumeDownRef.current?.focus();
     const close = (event: MouseEvent) => {
       const target = event.target as Node;
       if (volumeButtonRef.current?.contains(target) || volumePanelRef.current?.contains(target)) return;
@@ -130,6 +135,7 @@ export function MusicDockBar() {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.stopPropagation();
+      volumeButtonRef.current?.focus();
       setVolumePos(null);
     };
     document.addEventListener("mousedown", close);
@@ -309,13 +315,13 @@ export function MusicDockBar() {
           <>
             <MusicSpeakerPicker
               variant="chip"
-              className="hidden landscape:lg:flex"
+              className="hidden landscape:xl:flex"
               open={speakerOpen === "chip"}
               onOpenChange={(next) => (next ? openSpeaker("chip") : setSpeakerOpen(null))}
             />
             <MusicSpeakerPicker
               variant="icon"
-              className="flex landscape:lg:hidden"
+              className="flex landscape:xl:hidden"
               open={speakerOpen === "icon"}
               onOpenChange={(next) => (next ? openSpeaker("icon") : setSpeakerOpen(null))}
             />
@@ -334,7 +340,7 @@ export function MusicDockBar() {
           </button>
           <div className="w-40 shrink-0">
             <MusicVolumeSlider
-              value={shownVolume}
+              value={sliderValue}
               width={160}
               disabled={!selectedQueueId}
               label={t("music.volume")}
@@ -342,7 +348,7 @@ export function MusicDockBar() {
               onCommit={commitVolume}
             />
           </div>
-          <span className="w-8 text-sm font-bold tabular-nums">{shownVolume}</span>
+          <span className="w-8 text-sm font-bold tabular-nums">{volumeLabel}</span>
         </div>
         <button
           ref={volumeButtonRef}
@@ -353,10 +359,10 @@ export function MusicDockBar() {
             FOCUS_RING_BRAND,
             volumePos && "bg-gray-300/80 text-gray-900 dark:bg-white/20 dark:text-white"
           )}
-          aria-label={t("music.volumeButton").replace("{n}", String(shownVolume))}
+          aria-label={t("music.volumeButton").replace("{n}", volumeLabel)}
           aria-expanded={volumePos != null}
         >
-          🔊 {shownVolume}
+          🔊 {volumeLabel}
         </button>
         {selectedQueueId ? (
           <button
@@ -403,14 +409,17 @@ export function MusicDockBar() {
                     {t("music.volumePanelTitle").replace("{name}", playerName || "—")}
                   </p>
                   <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-white">
-                    {t("music.volumePercent").replace("{n}", String(shownVolume))}
+                    {t("music.volumePercent").replace("{n}", volumeLabel)}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={volumeMute}
-                  disabled={volumePending}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-700 hover:bg-gray-200/80 disabled:opacity-50 dark:text-white/90 dark:hover:bg-white/10"
+                  disabled={!selectedQueueId}
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-700 outline-none hover:bg-gray-200/80 disabled:opacity-50 dark:text-white/90 dark:hover:bg-white/10",
+                    FOCUS_RING_BRAND
+                  )}
                   aria-label={volumeMuted ? t("music.volumeUnmute") : t("music.volumeMute")}
                   aria-pressed={volumeMuted}
                 >
@@ -419,9 +428,10 @@ export function MusicDockBar() {
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <button
+                  ref={volumeDownRef}
                   type="button"
                   onClick={() => changeVolumeBy(-5)}
-                  disabled={volumePending || !selectedQueueId}
+                  disabled={!selectedQueueId}
                   className={cn(
                     "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-gray-800 outline-none ring-1 ring-gray-500 disabled:opacity-50 dark:text-white/90 dark:ring-white/40",
                     FOCUS_RING_BRAND
@@ -431,7 +441,7 @@ export function MusicDockBar() {
                   −
                 </button>
                 <MusicVolumeSlider
-                  value={shownVolume}
+                  value={sliderValue}
                   width={170}
                   disabled={!selectedQueueId}
                   label={t("music.volume")}
@@ -441,7 +451,7 @@ export function MusicDockBar() {
                 <button
                   type="button"
                   onClick={() => changeVolumeBy(5)}
-                  disabled={volumePending || !selectedQueueId}
+                  disabled={!selectedQueueId}
                   className={cn(
                     "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-gray-800 outline-none ring-1 ring-gray-500 disabled:opacity-50 dark:text-white/90 dark:ring-white/40",
                     FOCUS_RING_BRAND
@@ -467,12 +477,15 @@ export function MusicDockBar() {
         onPlayPause={() => queueControl(isPlaying ? "pause" : "play")}
         onPrevious={() => queueControl("previous")}
         onNext={() => queueControl("next")}
+        onSeek={seekTo}
+        seekDisabled={seekPending}
         labels={{
           close: t("music.close"),
           play: t("music.play"),
           pause: t("music.pause"),
           previous: t("music.previous"),
           next: t("music.next"),
+          position: t("music.position"),
         }}
       />
     </footer>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { displayedVolume, stepVolume, trackTapVolume } from "./music-volume";
+import { displayedVolume, stepVolume, trackTapVolume, volumeFigure } from "./music-volume";
 
 describe("music volume", () => {
   it("limits an upward track tap to +10 and lets a downward tap through", () => {
@@ -20,5 +20,12 @@ describe("music volume", () => {
     expect(trackTapVolume(32, Number.NaN)).toBe(0);
     expect(stepVolume(Number.NaN, 5)).toBe(0);
     expect(displayedVolume(Number.NaN, false)).toBe(0);
+  });
+
+  it("shows a dash when the level is unknown and never fills in 80", () => {
+    expect(volumeFigure(null, false)).toBe("–");
+    expect(volumeFigure(Number.NaN, false)).toBe("–");
+    expect(volumeFigure(32, false)).toBe("32");
+    expect(volumeFigure(40, true)).toBe("0");
   });
 });

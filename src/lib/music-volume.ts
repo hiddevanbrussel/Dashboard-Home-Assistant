@@ -17,3 +17,9 @@ export function displayedVolume(volume: number, muted: boolean): number {
   if (muted) return 0;
   return clampVolume(volume);
 }
+
+/** Shown next to the slider. Unknown stays a dash; 80 is never filled in. */
+export function volumeFigure(volume: number | null, muted: boolean): string {
+  if (volume == null || !Number.isFinite(volume)) return "–";
+  return String(displayedVolume(volume, muted));
+}

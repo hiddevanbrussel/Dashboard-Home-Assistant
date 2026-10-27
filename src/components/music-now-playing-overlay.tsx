@@ -18,12 +18,15 @@ type Props = {
   onPlayPause: () => void;
   onPrevious: () => void;
   onNext: () => void;
+  onSeek: (positionSeconds: number) => void;
+  seekDisabled?: boolean;
   labels: {
     close: string;
     play: string;
     pause: string;
     previous: string;
     next: string;
+    position: string;
   };
 };
 
@@ -39,6 +42,8 @@ export function MusicNowPlayingOverlay({
   onPlayPause,
   onPrevious,
   onNext,
+  onSeek,
+  seekDisabled = false,
   labels,
 }: Props) {
   const [mounted, setMounted] = useState(false);
@@ -154,18 +159,34 @@ export function MusicNowPlayingOverlay({
           </button>
         </div>
 
-        {duration > 0 ? (
-          <div className="flex w-full max-w-md items-center gap-3 text-xs tabular-nums text-white/60">
-            <span className="w-10 shrink-0">{formatClock(position)}</span>
-            <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/15">
+        <div className="flex w-full max-w-md items-center gap-3 text-xs tabular-nums text-white/60">
+          <span className="w-10 shrink-0">{formatClock(position)}</span>
+          <div className="relative flex h-11 min-w-0 flex-1 items-center">
+            <div className="pointer-events-none absolute inset-x-0 h-1 overflow-hidden rounded-full bg-white/15" aria-hidden>
               <div
-                className="h-full rounded-full bg-white/80 transition-[width] duration-300"
-                style={{ width: `${Math.min(100, (position / duration) * 100)}%` }}
+                className="h-full rounded-full bg-white/80"
+                style={{ width: `${duration > 0 ? Math.min(100, (position / duration) * 100) : 0}%` }}
               />
             </div>
-            <span className="w-10 shrink-0 text-right">{formatClock(duration)}</span>
+            <span
+              className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 rounded-full bg-white shadow ring-2 ring-black/40"
+              style={{ left: `${duration > 0 ? Math.min(100, (position / duration) * 100) : 0}%` }}
+              aria-hidden
+            />
+            <input
+              type="range"
+              min={0}
+              max={duration || 100}
+              value={duration > 0 ? Math.min(position, duration) : 0}
+              step={1}
+              disabled={seekDisabled || duration <= 0}
+              onChange={(e) => onSeek(Number(e.target.value))}
+              className="absolute inset-0 h-11 w-full cursor-pointer appearance-none opacity-0 disabled:cursor-default"
+              aria-label={labels.position}
+            />
           </div>
-        ) : null}
+          <span className="w-10 shrink-0 text-right">{formatClock(duration)}</span>
+        </div>
       </div>
     </div>,
     document.body

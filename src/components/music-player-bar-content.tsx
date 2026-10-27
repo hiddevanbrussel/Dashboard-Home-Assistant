@@ -459,12 +459,15 @@ export function MusicPlayerBarContent({
         onPlayPause={() => queueControl(isPlaying ? "pause" : "play")}
         onPrevious={() => queueControl("previous")}
         onNext={() => queueControl("next")}
+        onSeek={seekTo}
+        seekDisabled={seekPending}
         labels={{
           close: t("music.close"),
           play: t("music.play"),
           pause: t("music.pause"),
           previous: t("music.previous"),
           next: t("music.next"),
+          position: t("music.position"),
         }}
       />
     </Root>
