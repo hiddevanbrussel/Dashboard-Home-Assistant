@@ -156,7 +156,13 @@ describe("music page player bar", () => {
     const dock = source("src/components/music-dock-bar.tsx");
     expect(actions).toContain("seekPayload(selectedQueueId, positionSeconds)");
     expect(overlay).toContain('type="range"');
-    expect(overlay).toContain("onSeek(Number(e.target.value))");
+    expect(overlay).not.toContain("onSeek(Number(e.target.value))");
+    expect(overlay).not.toContain("disabled={seekDisabled");
+    expect(overlay).toContain("aria-busy={seekDisabled ? true : undefined}");
+    expect(overlay).toContain("onPointerUp={finishDrag}");
+    expect(overlay).toContain("onTouchEnd={finishDrag}");
+    expect(overlay).toContain('addEventListener("change"');
+    expect(overlay).toContain("SEEK_KEY_DEBOUNCE_MS = 300");
     expect(overlay).toContain("labels.position");
     expect(overlay).toContain("h-11");
     expect(overlay).toContain("bg-white/40");

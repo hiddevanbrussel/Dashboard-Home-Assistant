@@ -1,10 +1,270 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { Disc3, Pause, Play, SkipBack, SkipForward, X } from "lucide-react";
 import { MUSIC_IMAGE_BLUR } from "@/lib/music-item-image";
+
+const SEEK_KEY_DEBOUNCE_MS = 300;
+const SEEK_STEP_SECONDS = 1;
+const SEEK_PAGE_STEPS = 10;
+
+type SeekKey =
+  | "ArrowLeft"
+  | "ArrowRight"
+  | "ArrowUp"
+  | "ArrowDown"
+  | "Home"
+  | "End"
+  | "PageUp"
+  | "PageDown";
+
+function isSeekKey(key: string): key is SeekKey {
+  switch (key) {
+    case "ArrowLeft":
+    case "ArrowRight":
+    case "ArrowUp":
+    case "ArrowDown":
+    case "Home":
+    case "End":
+    case "PageUp":
+    case "PageDown":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function clampSeek(value: number, duration: number): number {
+  if (!(duration > 0) || !Number.isFinite(value)) return 0;
+  return Math.min(duration, Math.max(0, value));
+}
+
+function seekKeyPosition(key: SeekKey, current: number, duration: number): number {
+  switch (key) {
+    case "ArrowRight":
+    case "ArrowUp":
+      return clampSeek(current + SEEK_STEP_SECONDS, duration);
+    case "ArrowLeft":
+    case "ArrowDown":
+      return clampSeek(current - SEEK_STEP_SECONDS, duration);
+    case "PageUp":
+      return clampSeek(current + SEEK_STEP_SECONDS * SEEK_PAGE_STEPS, duration);
+    case "PageDown":
+      return clampSeek(current - SEEK_STEP_SECONDS * SEEK_PAGE_STEPS, duration);
+    case "Home":
+      return 0;
+    case "End":
+      return duration > 0 ? duration : 0;
+    default: {
+      const exhaustive: never = key;
+      return exhaustive;
+    }
+  }
+}
+
+function positionsMatch(reported: number, committed: number): boolean {
+  return Number.isFinite(reported) && Math.round(reported) === Math.round(committed);
+}
+
+function trackPercent(value: number, duration: number): number {
+  if (!(duration > 0)) return 0;
+  return Math.min(100, (value / duration) * 100);
+}
+
+type SeekProps = {
+  position: number;
+  duration: number;
+  seekDisabled: boolean;
+  label: string;
+  onSeek: (positionSeconds: number) => void;
+};
+
+function NowPlayingSeek({ position, duration, seekDisabled, label, onSeek }: SeekProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const onSeekRef = useRef(onSeek);
+  const positionRef = useRef(position);
+  const durationRef = useRef(duration);
+  const localRef = useRef<number | null>(null);
+  const gestureRef = useRef(0);
+  const sawInputRef = useRef(false);
+  const draggingRef = useRef(false);
+  const committedRef = useRef(false);
+  const pendingRef = useRef<number | null>(null);
+  const sawBusyRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finishDragRef = useRef<() => void>(() => {});
+  const [local, setLocal] = useState<number | null>(null);
+
+  onSeekRef.current = onSeek;
+  positionRef.current = position;
+  durationRef.current = duration;
+
+  function remember(seconds: number) {
+    localRef.current = seconds;
+    gestureRef.current = seconds;
+    setLocal(seconds);
+  }
+
+  function clearDebounce() {
+    if (debounceRef.current == null) return;
+    clearTimeout(debounceRef.current);
+    debounceRef.current = null;
+  }
+
+  function commitSeek(seconds: number) {
+    const clamped = clampSeek(seconds, durationRef.current);
+    pendingRef.current = clamped;
+    sawBusyRef.current = false;
+    remember(clamped);
+    onSeekRef.current(clamped);
+  }
+
+  function beginDrag(event?: ReactPointerEvent<HTMLInputElement>) {
+    if (!(durationRef.current > 0) || draggingRef.current) return;
+    clearDebounce();
+    draggingRef.current = true;
+    committedRef.current = false;
+    sawInputRef.current = false;
+    const start = localRef.current ?? clampSeek(positionRef.current, durationRef.current);
+    gestureRef.current = start;
+    remember(start);
+    const el = event?.currentTarget;
+    if (el && typeof event?.pointerId === "number") {
+      try {
+        el.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer capture is missing in some test environments; pointerup still commits.
+      }
+    }
+  }
+
+  function valueAtRelease(): number {
+    const limit = durationRef.current;
+    if (sawInputRef.current) return clampSeek(gestureRef.current, limit);
+    const el = inputRef.current;
+    const fromDom = el ? Number(el.value) : gestureRef.current;
+    return clampSeek(Number.isFinite(fromDom) ? fromDom : gestureRef.current, limit);
+  }
+
+  function finishDrag() {
+    if (!draggingRef.current || committedRef.current) return;
+    draggingRef.current = false;
+    committedRef.current = true;
+    clearDebounce();
+    commitSeek(valueAtRelease());
+  }
+
+  finishDragRef.current = finishDrag;
+
+  function onSliderInput(event: ChangeEvent<HTMLInputElement>) {
+    const next = clampSeek(Number(event.target.value), durationRef.current);
+    sawInputRef.current = true;
+    remember(next);
+  }
+
+  function onSliderKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (!isSeekKey(event.key) || !(durationRef.current > 0)) return;
+    event.preventDefault();
+    draggingRef.current = false;
+    committedRef.current = true;
+    const current = localRef.current ?? clampSeek(positionRef.current, durationRef.current);
+    const next = seekKeyPosition(event.key, current, durationRef.current);
+    sawInputRef.current = true;
+    remember(next);
+    clearDebounce();
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      commitSeek(localRef.current ?? next);
+    }, SEEK_KEY_DEBOUNCE_MS);
+  }
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const onNativeChange = () => {
+      if (!draggingRef.current) return;
+      finishDragRef.current();
+    };
+    el.addEventListener("change", onNativeChange);
+    return () => el.removeEventListener("change", onNativeChange);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current != null) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (draggingRef.current || debounceRef.current != null) return;
+    if (localRef.current == null || pendingRef.current == null) return;
+    if (positionsMatch(position, pendingRef.current)) {
+      pendingRef.current = null;
+      sawBusyRef.current = false;
+      localRef.current = null;
+      setLocal(null);
+      return;
+    }
+    if (seekDisabled) {
+      sawBusyRef.current = true;
+      return;
+    }
+    // Seek finished without the reported position landing on the commit.
+    if (!sawBusyRef.current) return;
+    pendingRef.current = null;
+    sawBusyRef.current = false;
+    localRef.current = null;
+    setLocal(null);
+  }, [position, seekDisabled]);
+
+  const shown = clampSeek(local ?? position, duration);
+  const percent = trackPercent(shown, duration);
+
+  return (
+    <div className="flex w-full max-w-md items-center gap-3 text-xs tabular-nums text-white/60">
+      <span className="w-10 shrink-0">{formatClock(shown)}</span>
+      <div className="relative flex h-11 min-w-0 flex-1 items-center">
+        <input
+          ref={inputRef}
+          type="range"
+          min={0}
+          max={duration || 100}
+          value={shown}
+          step={SEEK_STEP_SECONDS}
+          disabled={!(duration > 0)}
+          aria-busy={seekDisabled ? true : undefined}
+          aria-label={label}
+          onPointerDown={beginDrag}
+          onPointerUp={finishDrag}
+          onPointerCancel={finishDrag}
+          onTouchStart={() => beginDrag()}
+          onTouchEnd={finishDrag}
+          onChange={onSliderInput}
+          onKeyDown={onSliderKeyDown}
+          className="peer absolute inset-0 h-11 w-full cursor-pointer appearance-none opacity-0 disabled:cursor-default"
+        />
+        <div className="pointer-events-none absolute inset-x-0 h-1 overflow-hidden rounded-full bg-white/40" aria-hidden>
+          <div className="h-full rounded-full bg-white" style={{ width: `${percent}%` }} />
+        </div>
+        <span
+          className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 rounded-full bg-white shadow peer-focus-visible:ring-2 ring-white ring-offset-2 ring-offset-black/40"
+          style={{ left: `${percent}%` }}
+          aria-hidden
+        />
+      </div>
+      <span className="w-10 shrink-0 text-right">{formatClock(duration)}</span>
+    </div>
+  );
+}
 
 type Props = {
   open: boolean;
@@ -159,34 +419,13 @@ export function MusicNowPlayingOverlay({
           </button>
         </div>
 
-        <div className="flex w-full max-w-md items-center gap-3 text-xs tabular-nums text-white/60">
-          <span className="w-10 shrink-0">{formatClock(position)}</span>
-          <div className="relative flex h-11 min-w-0 flex-1 items-center">
-            <input
-              type="range"
-              min={0}
-              max={duration || 100}
-              value={duration > 0 ? Math.min(position, duration) : 0}
-              step={1}
-              disabled={seekDisabled || duration <= 0}
-              onChange={(e) => onSeek(Number(e.target.value))}
-              className="peer absolute inset-0 h-11 w-full cursor-pointer appearance-none opacity-0 disabled:cursor-default"
-              aria-label={labels.position}
-            />
-            <div className="pointer-events-none absolute inset-x-0 h-1 overflow-hidden rounded-full bg-white/40" aria-hidden>
-              <div
-                className="h-full rounded-full bg-white"
-                style={{ width: `${duration > 0 ? Math.min(100, (position / duration) * 100) : 0}%` }}
-              />
-            </div>
-            <span
-              className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 rounded-full bg-white shadow peer-focus-visible:ring-2 ring-white ring-offset-2 ring-offset-black/40"
-              style={{ left: `${duration > 0 ? Math.min(100, (position / duration) * 100) : 0}%` }}
-              aria-hidden
-            />
-          </div>
-          <span className="w-10 shrink-0 text-right">{formatClock(duration)}</span>
-        </div>
+        <NowPlayingSeek
+          position={position}
+          duration={duration}
+          seekDisabled={seekDisabled}
+          label={labels.position}
+          onSeek={onSeek}
+        />
       </div>
     </div>,
     document.body
