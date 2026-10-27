@@ -41,7 +41,7 @@ const FIXTURE = `<!doctype html>
                   </span>
                 </div>
                 <button type="button" data-kebab="p1" aria-label="options" class="tile-kebab-hit absolute -right-1.5 -top-1.5 z-10 rounded-full bg-white/90 p-1 text-gray-500 shadow-sm ring-1 ring-black/5 dark:bg-zinc-900 dark:text-gray-300 dark:ring-white/10">
-                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24"></svg>
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"></circle></svg>
                 </button>
               </div>
             </div>
@@ -57,7 +57,7 @@ const FIXTURE = `<!doctype html>
                   </span>
                 </div>
                 <button type="button" data-kebab="p2" aria-label="options" class="tile-kebab-hit absolute -right-1.5 -top-1.5 z-10 rounded-full bg-white/90 p-1 text-gray-500 shadow-sm ring-1 ring-black/5 dark:bg-zinc-900 dark:text-gray-300 dark:ring-white/10">
-                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24"></svg>
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"></circle></svg>
                 </button>
               </div>
             </div>
@@ -249,6 +249,34 @@ describe.skipIf(!CHROME)("⋮ elementFromPoint at ±22px", () => {
         await send("Runtime.evaluate", {
           expression: "document.querySelector('[data-kebab=p1]').style.animation='none'",
         });
+        const lightHeader = await evalString(
+          send,
+          "getComputedStyle(document.querySelector('.header-chrome-glass')).backgroundColor"
+        );
+        const lightIcon = await iconPaint(send);
+        expect(lightIcon.position, "header ⋮ svg stacks above the disk").toBe("relative");
+        expect(lightIcon.beforePosition).toBe("absolute");
+        expect(lightIcon.svgZ).toBe("auto");
+        expect(lightIcon.beforeZ).toBe("auto");
+        expect(lightIcon.color).toBe("rgb(107, 114, 128)");
+        expect(near(lightIcon.pixel, [107, 114, 128]), `light ⋮ center ${lightIcon.pixel}`).toBe(true);
+        await send("Runtime.evaluate", { expression: "document.documentElement.classList.add('dark')" });
+        const darkColor = await pollString(
+          send,
+          "getComputedStyle(document.querySelector('[data-kebab=p1] > svg')).color",
+          "rgb(209, 213, 219)"
+        );
+        expect(darkColor, "dark ⋮ color").toBe("rgb(209, 213, 219)");
+        const darkIcon = await iconPaint(send);
+        expect(darkIcon.position).toBe("relative");
+        expect(near(darkIcon.pixel, [209, 213, 219]), `dark ⋮ center ${darkIcon.pixel}`).toBe(true);
+        await send("Runtime.evaluate", { expression: "document.documentElement.classList.remove('dark')" });
+        const restoredHeader = await pollString(
+          send,
+          "getComputedStyle(document.querySelector('.header-chrome-glass')).backgroundColor",
+          lightHeader
+        );
+        expect(restoredHeader, "header glass settled").toBe(lightHeader);
         const boxes = (await send("Runtime.evaluate", {
           expression: `(() => {
             const r = document.querySelector('[data-kebab=p1]').getBoundingClientRect();
@@ -293,6 +321,86 @@ async function shot(
     clip: { ...clip, scale: 1 },
   })) as { data: string };
   return Buffer.from(result.data, "base64");
+}
+
+type IconPaint = {
+  position: string;
+  beforePosition: string;
+  svgZ: string;
+  beforeZ: string;
+  color: string;
+  pixel: number[];
+};
+
+const ICON_PAINT = `(() => {
+  const svg = document.querySelector('[data-kebab=p1] > svg');
+  const r = svg.getBoundingClientRect();
+  const before = getComputedStyle(svg.parentElement, '::before');
+  return {
+    position: getComputedStyle(svg).position,
+    beforePosition: before.position,
+    svgZ: getComputedStyle(svg).zIndex,
+    beforeZ: before.zIndex,
+    color: getComputedStyle(svg).color,
+    x: r.x,
+    y: r.y,
+    w: r.width,
+    h: r.height,
+  };
+})()`;
+
+async function evalString(
+  send: (method: string, params?: Record<string, unknown>) => Promise<unknown>,
+  expression: string
+): Promise<string> {
+  const evaluated = (await send("Runtime.evaluate", { expression, returnByValue: true })) as {
+    result?: { value?: string };
+  };
+  return evaluated.result?.value ?? "";
+}
+
+async function pollString(
+  send: (method: string, params?: Record<string, unknown>) => Promise<unknown>,
+  expression: string,
+  expected: string
+): Promise<string> {
+  let value = "";
+  for (let i = 0; i < 40 && value !== expected; i++) {
+    value = await evalString(send, expression);
+    if (value !== expected) await delay(25);
+  }
+  return value;
+}
+
+async function iconPaint(
+  send: (method: string, params?: Record<string, unknown>) => Promise<unknown>
+): Promise<IconPaint> {
+  const evaluated = (await send("Runtime.evaluate", {
+    expression: ICON_PAINT,
+    returnByValue: true,
+  })) as { result?: { value?: IconPaint & { x: number; y: number; w: number; h: number } } };
+  const box = evaluated.result!.value!;
+  const png = await shot(send, { x: box.x, y: box.y, width: box.w, height: box.h });
+  return {
+    position: box.position,
+    beforePosition: box.beforePosition,
+    svgZ: box.svgZ,
+    beforeZ: box.beforeZ,
+    color: box.color,
+    pixel: await centerPixel(png),
+  };
+}
+
+function near(pixel: number[], expected: number[], tolerance = 24): boolean {
+  return expected.every((channel, i) => Math.abs(pixel[i] - channel) <= tolerance);
+}
+
+async function centerPixel(png: Buffer): Promise<number[]> {
+  const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const x = Math.floor(info.width / 2);
+  const y = Math.floor(info.height / 2);
+  const i = (y * info.width + x) * 4;
+  return [data[i], data[i + 1], data[i + 2], data[i + 3]];
 }
 
 async function countChangedPixels(a: Buffer, b: Buffer): Promise<number> {

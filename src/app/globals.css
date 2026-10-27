@@ -738,3 +738,10 @@ html.dark[data-dashboard-edit] [data-header-statpill-id] .tile-kebab-hit::before
     rgb(255 255 255 / 0.1) 0 0 0 1px,
     rgb(0 0 0 / 0.05) 0 1px 2px 0;
 }
+
+/* The edit-mode disk is an absolute ::before, which paints over a static svg.
+   Relative puts the icon back on top. No offset, so the glyph and the 44px
+   hit zone stay where they are. */
+[data-header-statpill-id] .tile-kebab-hit > svg {
+  position: relative;
+}
