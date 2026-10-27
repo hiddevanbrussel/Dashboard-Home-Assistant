@@ -153,7 +153,7 @@ import {
   type PendingPageRemoval,
 } from "@/lib/dashboard-page-removal";
 import { DashboardLayoutNotice } from "@/components/dashboard-layout-notice";
-import { useFloatingOrientation } from "@/hooks/use-floating-orientation";
+import { formatLayoutNotice, useFloatingOrientation } from "@/hooks/use-floating-orientation";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import {
   clampClimateCardHeight,
@@ -1533,6 +1533,7 @@ export default function DashboardEditPage() {
     ready: initialized,
     widgets: orientationWidgets,
     editMode,
+    expectsHeading: Boolean(welcomeTitle || welcomeSubtitle) || isRoomMode,
   });
 
   const saveMutation = useMutation({
@@ -2824,6 +2825,7 @@ export default function DashboardEditPage() {
         hideWelcome={false}
         headerEditMode={editMode}
         welcomeEditable={editMode}
+        reserveEditHeading
         onWelcomeChange={editMode ? ({ title, subtitle }) => {
           setWelcomeTitle(title);
           setWelcomeSubtitle(subtitle);
@@ -2969,8 +2971,18 @@ export default function DashboardEditPage() {
           />,
           document.body
         )}
-        {floatingLayout.notice ? (
-          <DashboardLayoutNotice message={t(floatingLayout.notice)} onDismiss={floatingLayout.dismissNotice} />
+        {floatingLayout.notice &&
+        (floatingLayout.notice !== "dashboardLayout.landscapeOverlap" || floatingLayout.hiddenCount > 0) ? (
+          <DashboardLayoutNotice
+            message={formatLayoutNotice(
+              floatingLayout.notice,
+              floatingLayout.notice === "dashboardLayout.landscapeOverlap"
+                ? floatingLayout.hiddenCount
+                : floatingLayout.noticeCount,
+              t
+            )}
+            onDismiss={floatingLayout.dismissNotice}
+          />
         ) : null}
         <DashboardPager
           key={floatingLayout.epoch}
@@ -2983,14 +2995,20 @@ export default function DashboardEditPage() {
           onRemovePage={editMode ? handleRemoveDashboardPage : undefined}
         >
           {(pageIndex) => {
-          const pageWidgets = pendingAddId
+          const sourceWidgets = pendingAddId
             ? widgets.filter((widget) => widget.id !== pendingAddId)
             : widgets;
+          // A landscape tile with no slot is not mounted, so it cannot save a card default.
+          const withheld = floatingLayout.withheldIds;
+          const pageWidgets = withheld.length === 0
+            ? sourceWidgets
+            : sourceWidgets.filter((widget) => !withheld.includes(widget.id));
           return (
             <>
         {/* A tile that is being added (pendingAddId) is not in pageWidgets, so it does not count.
-            Neither does a stat pill pinned to the top bar (#301, `placement: "topbar"`). */}
-        {!pageWidgets.some(
+            Neither does a stat pill pinned to the top bar (#301, `placement: "topbar"`).
+            A withheld tile still counts: the page is not empty. */}
+        {!sourceWidgets.some(
           (w) => widgetPage(w) === pageIndex && (w as { placement?: string }).placement !== "topbar"
         ) && (
           // The pager layer is pointer-events-none (taps fall through to the page); only the card takes them.

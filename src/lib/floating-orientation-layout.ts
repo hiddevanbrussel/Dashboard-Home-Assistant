@@ -9,6 +9,8 @@
  * same value. Landscape bytes live in the layout record, not in the active key.
  */
 import { snapToGrid } from "@/lib/floating-card-grid";
+import { cardDefaultPosition } from "@/lib/floating-card-defaults";
+import { TILE_SIDEBAR_INSET_PX } from "@/lib/tile-placement";
 import {
   clampCalendarCardHeight,
   clampCalendarCardWidth,
@@ -89,6 +91,17 @@ export const GAP = 16;
 export const MARGIN_LEFT = 96;
 export const MARGIN_RIGHT = 16;
 export const MARGIN_TOP = 80;
+
+/**
+ * Landscape placement top. `topInset` is the header bottom plus GAP.
+ * A missing or shorter measurement stays on MARGIN_TOP, snapped up onto the grid.
+ * Portrait placement does not call this.
+ */
+export function landscapeMarginTop(topInset: number | undefined): number {
+  if (topInset == null || !Number.isFinite(topInset)) return MARGIN_TOP;
+  const bounded = Math.max(MARGIN_TOP, topInset);
+  return Math.ceil(bounded / GRID) * GRID;
+}
 /** Delete control sits about 10px outside the top and right of the card. */
 export const REMOVE_BADGE_OUTSET_PX = 10;
 /** Page bar is 28px. On-screen tiles stay at least 32px above the viewport bottom. */
@@ -106,6 +119,16 @@ export type FloatingLayoutV1 = {
   landscape: Record<string, string>;
   portrait: Record<string, string> | null;
   portraitBron: PortraitSource | null;
+  /**
+   * Landscape placement line last used for automatic tiles.
+   * Absent on older records; those stored tiles are left where they are.
+   */
+  landscapeTop?: number;
+  /**
+   * Positions last written by automatic landscape placement.
+   * A stored string that differs is a tile the user moved, and it stays put.
+   */
+  auto?: Record<string, string>;
 };
 
 export type Box = { x: number; y: number; w: number; h: number };
@@ -135,6 +158,16 @@ export type FloatingTile = {
    * but it is ignored for placing, pushing and overlap/below-fold checks.
    */
   parked?: boolean;
+  /**
+   * First-mount position of a light or sensor card for the current viewport.
+   * Only those two types set it. Reconcile uses it to recognize a stored card default.
+   */
+  cardDefault?: { left: number; bottom: number };
+  /**
+   * False when the widget width, height, or scale differs from the standard size.
+   * A scaled tile is never moved off a stored card default.
+   */
+  defaultSize?: boolean;
 };
 
 /** Tiles that take part in placing and pushing (everything that is not parked). */
@@ -153,6 +186,8 @@ export type FloatingWidgetInput = {
   display_mode?: string;
   /** See `FloatingTile.parked`. */
   parked?: boolean;
+  /** User scale. 1 and absent both mean the card was not scaled. */
+  scale?: number;
 };
 
 type KeyShape = "scope" | "widget" | "id";
@@ -241,18 +276,27 @@ export function floatingStorageKey(type: string, scope: string, widgetId: string
   return `${entry.prefix}${dot}${scope}.${widgetId}`;
 }
 
-export function floatingTilesFromWidgets(widgets: readonly FloatingWidgetInput[], scope: string): FloatingTile[] {
+export function floatingTilesFromWidgets(
+  widgets: readonly FloatingWidgetInput[],
+  scope: string,
+  viewport?: { width: number; height: number }
+): FloatingTile[] {
   const tiles: FloatingTile[] = [];
+  // Same order as the dashboard render: filter by type and page, keep widgets order.
+  // page.tsx light map is widgetIndex i (around 3096-3097); sensor map is the same (around 3257-3258).
+  const indexOnPage = new Map<string, number>();
   for (const widget of widgets) {
     const entry = SPEC_BY_TYPE.get(widget.type);
     const key = floatingStorageKey(widget.type, scope, widget.id);
     if (!entry || !key) continue;
     const size = sizeForWidget(widget);
     const legacyTopOffset = entry.legacyTopOffset > 0 ? entry.legacyTopOffset : size.h;
+    const page = pageOf(widget.page);
+    const cardDefault = cardDefaultForWidget(widget, page, size, viewport, indexOnPage);
     tiles.push({
       id: widget.id,
       key,
-      page: pageOf(widget.page),
+      page,
       shared: entry.shared,
       persistsClamp: entry.persistsClamp,
       w: size.w,
@@ -260,9 +304,40 @@ export function floatingTilesFromWidgets(widgets: readonly FloatingWidgetInput[]
       bottomInset: entry.bottomInset,
       legacyTopOffset,
       ...(widget.parked ? { parked: true } : {}),
+      ...(cardDefault ? { cardDefault: cardDefault.position, defaultSize: cardDefault.defaultSize } : {}),
     });
   }
   return tiles;
+}
+
+function cardDefaultForWidget(
+  widget: FloatingWidgetInput,
+  page: number,
+  size: { w: number; h: number },
+  viewport: { width: number; height: number } | undefined,
+  indexOnPage: Map<string, number>
+): { position: { left: number; bottom: number }; defaultSize: boolean } | null {
+  const text =
+    widget.type === "text_card" ||
+    widget.type === "title_card" ||
+    widget.type === "title_only_card" ||
+    widget.type === "subtitle_card";
+  if (widget.type !== "light_card" && widget.type !== "sensor_card" && !text) return null;
+  const bucket = text ? `text:${page}` : `${widget.type}:${page}`;
+  const index = indexOnPage.get(bucket) ?? 0;
+  indexOnPage.set(bucket, index + 1);
+  if (!viewport || viewport.width <= 0 || viewport.height <= 0) return null;
+  const position = cardDefaultPosition(text ? "text_card" : widget.type, index, size, viewport);
+  if (!position) return null;
+  return { position, defaultSize: widgetHasDefaultSize(widget, size) };
+}
+
+/** True when width, height, and scale still match the sizeForWidget standard. */
+function widgetHasDefaultSize(widget: FloatingWidgetInput, standard: { w: number; h: number }): boolean {
+  if (typeof widget.scale === "number" && Number.isFinite(widget.scale) && widget.scale !== 1) return false;
+  if (typeof widget.width === "number" && Number.isFinite(widget.width) && widget.width > 0 && widget.width !== standard.w) return false;
+  if (typeof widget.height === "number" && Number.isFinite(widget.height) && widget.height > 0 && widget.height !== standard.h) return false;
+  return true;
 }
 
 function pageOf(page: number | undefined): number {
@@ -487,12 +562,21 @@ type FitInput = { id: string; w: number; h: number; persistsClamp?: boolean; bot
 export function firstFit(
   tiles: readonly FitInput[],
   viewport: { width: number; height: number },
-  fixed: readonly Box[] = []
+  fixed: readonly Box[] = [],
+  marginTop: number = MARGIN_TOP,
+  onScreen = false
 ): PlacedTile[] {
   const obstacles: Box[] = fixed.map((box) => ({ ...box }));
   const placed: PlacedTile[] = [];
   for (const tile of tiles) {
-    const spot = findSpot(tile, viewport, obstacles);
+    if (onScreen) {
+      const settled = placeOnScreen(tile, viewport, obstacles, marginTop);
+      if (!settled) continue;
+      placed.push(settled);
+      obstacles.push(settled);
+      continue;
+    }
+    const spot = findSpot(tile, viewport, obstacles, marginTop);
     let y = spot.y;
     let bottom = floorBottom(viewport.height, y, tile.h);
     y = viewport.height - bottom - tile.h;
@@ -517,25 +601,82 @@ export function firstFit(
   return placed;
 }
 
-function findSpot(tile: FitInput, viewport: { width: number; height: number }, obstacles: readonly Box[]): { x: number; y: number } {
+function findSpot(
+  tile: FitInput,
+  viewport: { width: number; height: number },
+  obstacles: readonly Box[],
+  marginTop: number
+): { x: number; y: number } {
   const maxX = viewport.width - MARGIN_RIGHT - tile.w;
   if (maxX < MARGIN_LEFT) {
     const maxLeft = Math.max(0, viewport.width - tile.w);
     const preferred = Math.min(MARGIN_LEFT, maxLeft);
     const x = Math.floor(preferred / GRID) * GRID;
-    const yLimit = Math.max(viewport.height * 4, MARGIN_TOP);
-    for (let y = MARGIN_TOP; y <= yLimit; y += GRID) {
+    const yLimit = Math.max(viewport.height * 4, marginTop);
+    for (let y = marginTop; y <= yLimit; y += GRID) {
       if (!hits(tile, x, y, obstacles)) return { x, y };
     }
-    return { x, y: MARGIN_TOP };
+    return { x, y: marginTop };
   }
-  const yLimit = Math.max(viewport.height * 4, MARGIN_TOP);
-  for (let y = MARGIN_TOP; y <= yLimit; y += GRID) {
+  const yLimit = Math.max(viewport.height * 4, marginTop);
+  for (let y = marginTop; y <= yLimit; y += GRID) {
     for (let x = MARGIN_LEFT; x <= maxX; x += GRID) {
       if (!hits(tile, x, y, obstacles)) return { x, y };
     }
   }
   return { x: MARGIN_LEFT, y: yLimit };
+}
+
+/**
+ * Landscape only. A free on-screen cell: left at or past the rail margin, under
+ * the header line, bottom on or above the fold. Never a below-fold spot that a
+ * card would clamp back to 0 and stack on another tile.
+ * The gap rule is tried first. A pixel-clear cell is used when that is the
+ * only on-screen place. No cell means the caller leaves the key unset and
+ * the landscape overlap notice reports it.
+ */
+function placeOnScreen(
+  tile: FitInput,
+  viewport: { width: number; height: number },
+  obstacles: readonly Box[],
+  marginTop: number
+): PlacedTile | null {
+  const maxX = viewport.width - MARGIN_RIGHT - tile.w;
+  const yMax = viewport.height - tile.h;
+  if (maxX < MARGIN_LEFT || yMax < marginTop) return null;
+  const gapSpot = scanOnScreen(tile, viewport, obstacles, marginTop, maxX, yMax, true);
+  if (gapSpot) return gapSpot;
+  return scanOnScreen(tile, viewport, obstacles, marginTop, maxX, yMax, false);
+}
+
+function scanOnScreen(
+  tile: FitInput,
+  viewport: { width: number; height: number },
+  obstacles: readonly Box[],
+  marginTop: number,
+  maxX: number,
+  yMax: number,
+  requireGap: boolean
+): PlacedTile | null {
+  for (let y = marginTop; y <= yMax; y += GRID) {
+    for (let x = MARGIN_LEFT; x <= maxX; x += GRID) {
+      if (requireGap ? hits(tile, x, y, obstacles) : overlapsBox(tile, x, y, obstacles)) continue;
+      const bottom = floorBottom(viewport.height, y, tile.h);
+      const nextY = viewport.height - bottom - tile.h;
+      if (bottom < 0 || nextY < marginTop) continue;
+      if (requireGap ? hits(tile, x, nextY, obstacles) : overlapsBox(tile, x, nextY, obstacles)) continue;
+      const settled = settleClamp(tile, x, bottom, viewport);
+      if (settled.bottom < 0 || settled.y < marginTop || settled.left < MARGIN_LEFT) continue;
+      if (requireGap ? hits(tile, settled.x, settled.y, obstacles) : overlapsBox(tile, settled.x, settled.y, obstacles)) continue;
+      return settled;
+    }
+  }
+  return null;
+}
+
+function overlapsBox(tile: FitInput, x: number, y: number, obstacles: readonly Box[]): boolean {
+  const box = { x, y, w: tile.w, h: tile.h };
+  return obstacles.some((obstacle) => visuallyOverlaps(box, obstacle));
 }
 
 function hits(tile: FitInput, x: number, y: number, obstacles: readonly Box[]): boolean {
@@ -845,8 +986,11 @@ function landscapeBox(tile: StoredTile, landscapeHeight: number): Box | null {
 export function placeMissingTiles(
   positions: Record<string, string>,
   tiles: readonly FloatingTile[],
-  portrait: { width: number; height: number }
+  portrait: { width: number; height: number },
+  topInset?: number,
+  onScreen = false
 ): Record<string, string> {
+  const marginTop = landscapeMarginTop(topInset);
   const next = { ...positions };
   const pages = [...new Set(tiles.map((tile) => tile.page))].sort((a, b) => a - b);
   for (const page of pages) {
@@ -869,7 +1013,9 @@ export function placeMissingTiles(
         bottomInset: tile.bottomInset,
       })),
       portrait,
-      fixed
+      fixed,
+      marginTop,
+      onScreen
     );
     for (const item of fitted) next[item.id] = positionString(item.left, item.bottom);
   }
@@ -952,12 +1098,18 @@ export function readFloatingLayout(storage: PositionStorage, dashboardId: string
     const parsed = JSON.parse(raw) as FloatingLayoutV1;
     if (parsed?.v !== 1 || (parsed.active !== "landscape" && parsed.active !== "portrait")) return null;
     if (!parsed.landscape || typeof parsed.landscape !== "object") return null;
+    const auto = readAuto(parsed.auto);
+    const landscapeTop = typeof parsed.landscapeTop === "number" && Number.isFinite(parsed.landscapeTop)
+      ? parsed.landscapeTop
+      : undefined;
     return {
       v: 1,
       active: parsed.active,
       landscape: { ...parsed.landscape },
       portrait: parsed.portrait ? { ...parsed.portrait } : null,
       portraitBron: parsed.portraitBron === "afgeleid" || parsed.portraitBron === "gebruiker" ? parsed.portraitBron : null,
+      ...(landscapeTop !== undefined ? { landscapeTop } : {}),
+      ...(auto ? { auto } : {}),
     };
   } catch {
     return null;
@@ -1040,6 +1192,179 @@ function sameMap(a: Record<string, string> | null, b: Record<string, string> | n
   return aKeys.every((key) => a[key] === b[key]);
 }
 
+/**
+ * Tiles passed to placeMissingTiles for a landscape fill.
+ * Parked tiles are not given a slot, but a stored position still blocks one,
+ * the same way placeMissingTiles already blocks a shared key.
+ */
+function landscapeTilesToPlace(
+  positions: Record<string, string>,
+  tiles: readonly FloatingTile[],
+  placing: readonly FloatingTile[]
+): readonly FloatingTile[] {
+  const parkedObstacles = tiles.filter((tile) => tile.parked && tile.key in positions);
+  if (parkedObstacles.length === 0) return placing;
+  return [...placing, ...parkedObstacles];
+}
+
+/**
+ * Landscape only. A tile with a card default is placed again when its stored point
+ * is still that default and the user did not scale it, and either it sits
+ * under the rail, or every tile it overlaps is also still on that exact default.
+ * A default that overlaps a tile the user placed stays where it is.
+ * Every other key is copied through.
+ */
+function relocateStoredCardDefaults(
+  positions: Record<string, string>,
+  tiles: readonly FloatingTile[],
+  placing: readonly FloatingTile[],
+  viewport: { width: number; height: number },
+  topInset?: number
+): Record<string, string> {
+  const drop = new Set<string>();
+  for (const tile of placing) {
+    if (tile.defaultSize === false || !tile.cardDefault) continue;
+    const raw = positions[tile.key];
+    if (!raw) continue;
+    const parsed = parseStoredPosition(raw, tile.legacyTopOffset, viewport.height);
+    if (!parsed) continue;
+    if (parsed.left !== tile.cardDefault.left || parsed.bottom !== tile.cardDefault.bottom) continue;
+    const underRail = parsed.left < TILE_SIDEBAR_INSET_PX;
+    if (!underRail && !overlapsOnlyExactDefaults(tile, parsed, placing, positions, viewport)) continue;
+    drop.add(tile.key);
+  }
+  if (drop.size === 0) return positions;
+  const stripped: Record<string, string> = {};
+  for (const [key, value] of Object.entries(positions)) {
+    if (!drop.has(key)) stripped[key] = value;
+  }
+  return placeMissingTiles(stripped, landscapeTilesToPlace(stripped, tiles, placing), viewport, topInset, true);
+}
+
+function isExactCardDefault(
+  tile: FloatingTile,
+  positions: Record<string, string>,
+  viewport: { width: number; height: number }
+): boolean {
+  if (tile.defaultSize === false || !tile.cardDefault) return false;
+  const raw = positions[tile.key];
+  if (!raw) return false;
+  const parsed = parseStoredPosition(raw, tile.legacyTopOffset, viewport.height);
+  if (!parsed) return false;
+  return parsed.left === tile.cardDefault.left && parsed.bottom === tile.cardDefault.bottom;
+}
+
+/** Overlap move only when every overlapping tile is still on its exact card default. */
+function overlapsOnlyExactDefaults(
+  tile: FloatingTile,
+  parsed: { left: number; bottom: number },
+  placing: readonly FloatingTile[],
+  positions: Record<string, string>,
+  viewport: { width: number; height: number }
+): boolean {
+  const box = {
+    x: parsed.left,
+    y: viewport.height - parsed.bottom - tile.h,
+    w: tile.w,
+    h: tile.h,
+  };
+  let found = false;
+  for (const other of placing) {
+    if (other.key === tile.key) continue;
+    if (other.page !== tile.page && !other.shared && !tile.shared) continue;
+    const raw = positions[other.key];
+    if (!raw) continue;
+    const otherParsed = parseStoredPosition(raw, other.legacyTopOffset, viewport.height);
+    if (!otherParsed) continue;
+    const otherBox = {
+      x: otherParsed.left,
+      y: viewport.height - otherParsed.bottom - other.h,
+      w: other.w,
+      h: other.h,
+    };
+    if (!visuallyOverlaps(box, otherBox)) continue;
+    found = true;
+    if (!isExactCardDefault(other, positions, viewport)) return false;
+  }
+  return found;
+}
+
+function readAuto(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const auto: Record<string, string> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof raw === "string") auto[key] = raw;
+  }
+  return Object.keys(auto).length > 0 ? auto : undefined;
+}
+
+function sameAuto(a: Record<string, string> | undefined, b: Record<string, string> | undefined): boolean {
+  const aEmpty = !a || Object.keys(a).length === 0;
+  const bEmpty = !b || Object.keys(b).length === 0;
+  if (aEmpty && bEmpty) return true;
+  return sameMap(a ?? {}, b ?? {});
+}
+
+/**
+ * Landscape placement, including a later header line.
+ * Tiles this pass (or an earlier pass) placed automatically move when the line
+ * changes. A tile the user moved or scaled keeps its stored string.
+ */
+function applyLandscapePlacement(
+  positions: Record<string, string>,
+  auto: Record<string, string> | undefined,
+  landscapeTop: number | undefined,
+  tiles: readonly FloatingTile[],
+  placing: readonly FloatingTile[],
+  viewport: { width: number; height: number },
+  topInset: number | undefined
+): { positions: Record<string, string>; auto?: Record<string, string>; landscapeTop?: number } {
+  const margin = landscapeMarginTop(topInset);
+  const owned: Record<string, string> = {};
+  for (const [key, value] of Object.entries(auto ?? {})) {
+    if (positions[key] === value) owned[key] = value;
+  }
+  const scaled = new Set(placing.filter((tile) => tile.defaultSize === false).map((tile) => tile.key));
+  for (const key of scaled) delete owned[key];
+
+  const lineChanged = landscapeTop !== undefined && landscapeTop !== margin;
+  const base: Record<string, string> = {};
+  for (const [key, value] of Object.entries(positions)) {
+    if (lineChanged && owned[key] === value) continue;
+    base[key] = value;
+  }
+  const placed = placeMissingTiles(base, landscapeTilesToPlace(base, tiles, placing), viewport, topInset, true);
+  const corrected = relocateStoredCardDefaults(placed, tiles, placing, viewport, topInset);
+  const unchanged = sameMap(corrected, positions);
+  if (unchanged && !lineChanged) {
+    return { positions, auto, landscapeTop };
+  }
+
+  const nextAuto: Record<string, string> = {};
+  for (const [key, value] of Object.entries(owned)) {
+    if (corrected[key] === value) nextAuto[key] = value;
+  }
+  for (const tile of placing) {
+    if (tile.defaultSize === false) continue;
+    const now = corrected[tile.key];
+    if (!now || positions[tile.key] === now) continue;
+    nextAuto[tile.key] = now;
+  }
+  const autoOut = Object.keys(nextAuto).length > 0 ? nextAuto : undefined;
+  return { positions: corrected, auto: autoOut, landscapeTop: margin };
+}
+
+function assignLandscapePlacement(
+  layout: FloatingLayoutV1,
+  applied: { positions: Record<string, string>; auto?: Record<string, string>; landscapeTop?: number }
+): void {
+  layout.landscape = applied.positions;
+  if (applied.landscapeTop === undefined) delete layout.landscapeTop;
+  else layout.landscapeTop = applied.landscapeTop;
+  if (!applied.auto) delete layout.auto;
+  else layout.auto = applied.auto;
+}
+
 function swappedViewport(viewport: { width: number; height: number }): { width: number; height: number } {
   return { width: viewport.height, height: viewport.width };
 }
@@ -1055,6 +1380,8 @@ export type ReconcileInput = {
   anchorKeys?: ReadonlySet<string>;
   rederive: boolean;
   mounted: boolean;
+  /** Header bottom plus GAP. Landscape placement only; portrait ignores it. */
+  topInset?: number;
 };
 
 export type ReconcileResult = {
@@ -1090,7 +1417,26 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
   const liveKeys = new Set(tiles.map((tile) => tile.key));
   const placing = placingTiles(tiles);
   let layout = readFloatingLayout(storage, dashboardId);
-  if (!layout && (orientation === "landscape" || tiles.length === 0)) return EMPTY_RESULT;
+  // No record yet: landscape storage stays untouched when every placing tile
+  // already has a key and none of those keys is still a card default under the
+  // rail or in an overlap. A missing key is placed beside the rail, as in portrait.
+  if (!layout && (orientation === "landscape" || tiles.length === 0)) {
+    const missingLandscapeKey =
+      orientation === "landscape" && placing.some((tile) => storage.getItem(tile.key) == null);
+    let defaultsNeedMove = false;
+    if (orientation === "landscape" && !missingLandscapeKey) {
+      const positions: Record<string, string> = {};
+      for (const tile of tiles) {
+        const value = storage.getItem(tile.key);
+        if (value != null) positions[tile.key] = value;
+      }
+      defaultsNeedMove = !sameMap(
+        relocateStoredCardDefaults(positions, tiles, placing, viewport, input.topInset),
+        positions
+      );
+    }
+    if (!missingLandscapeKey && !defaultsNeedMove) return EMPTY_RESULT;
+  }
 
   const landscapeViewport = orientation === "landscape" ? viewport : swappedViewport(viewport);
   const portraitViewport = orientation === "portrait" ? viewport : swappedViewport(viewport);
@@ -1140,6 +1486,20 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
         if (pushed.belowFold && input.reportNotice) notice = "portrait-below-fold";
         if (input.anchorKeys && input.anchorKeys.size > 0) layout.portraitBron = "gebruiker";
       }
+    }
+    if (orientation === "landscape") {
+      assignLandscapePlacement(
+        layout,
+        applyLandscapePlacement(
+          layout.landscape,
+          layout.auto,
+          layout.landscapeTop,
+          tiles,
+          placing,
+          viewport,
+          input.topInset
+        )
+      );
     }
     const next = orientation === "portrait" ? layout.portrait ?? {} : layout.landscape;
     const previous = orientation === "portrait" ? layout.landscape : layout.portrait;
@@ -1207,9 +1567,37 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
       layout.landscape = current;
       wrote = true;
     }
+    const applied = applyLandscapePlacement(
+      layout.landscape,
+      layout.auto,
+      layout.landscapeTop,
+      tiles,
+      placing,
+      viewport,
+      input.topInset
+    );
+    const positionsChanged = !sameMap(applied.positions, layout.landscape);
+    const metaChanged = applied.landscapeTop !== layout.landscapeTop || !sameAuto(applied.auto, layout.auto);
+    if (positionsChanged || metaChanged) {
+      // Drop stored spots of automatic tiles that no longer fit, so a later
+      // snapshot cannot treat the old line as a position the user chose.
+      const storedBefore = layout.landscape;
+      assignLandscapePlacement(layout, applied);
+      if (positionsChanged && applyPositions(storage, storedBefore, applied.positions)) {
+        wrote = true;
+        remount = input.mounted;
+      } else if (metaChanged) {
+        wrote = true;
+      }
+    }
   }
 
-  if (orientation === "landscape" && input.reportNotice && landscapeOverlaps(layout.landscape, placing, viewport)) {
+  const landscapeUnplaced = orientation === "landscape" && placing.some((tile) => !(tile.key in layout.landscape));
+  if (
+    orientation === "landscape" &&
+    input.reportNotice &&
+    (landscapeOverlaps(layout.landscape, placing, viewport) || landscapeUnplaced)
+  ) {
     notice = "landscape-overlap";
   }
   if (orientation === "portrait" && layout.portrait && input.reportNotice && portraitBelowFold(layout.portrait, placing, viewport)) {

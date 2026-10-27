@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   consumeLayoutNotice,
   currentOrientation,
   floatingTilesFromWidgets,
+  GAP,
+  landscapeMarginTop,
+  MARGIN_TOP,
   measuredSizeOverrides,
   placingTiles,
   readFloatingLayout,
@@ -40,6 +43,167 @@ type Viewport = { width: number; height: number };
 function readViewport(): Viewport {
   if (typeof window === "undefined") return { width: 0, height: 0 };
   return { width: window.innerWidth, height: window.innerHeight };
+}
+
+const HEADING_SELECTORS = ["[data-app-heading-edit]", "[data-app-page-heading]"] as const;
+const HEADER_SELECTOR = "[data-app-header]";
+
+function boxBottom(node: HTMLElement): number {
+  const bottom = node.getBoundingClientRect().bottom;
+  return Number.isFinite(bottom) ? bottom : 0;
+}
+
+export type PlacementLine =
+  | { phase: "pending" }
+  | { phase: "provisional" }
+  | { phase: "ready"; inset: number; source: "heading" | "chrome" };
+
+/**
+ * Landscape line after layout.
+ * A heading node that has no box yet is provisional: the chrome bar is not the line.
+ * The chrome bar alone is the fixed 80px line, and only when no heading node exists.
+ */
+export function readPlacementLine(root: ParentNode): PlacementLine {
+  let sawHeading = false;
+  for (const selector of HEADING_SELECTORS) {
+    const node = root.querySelector<HTMLElement>(selector);
+    if (!node) continue;
+    sawHeading = true;
+    const bottom = boxBottom(node);
+    if (bottom <= 0) continue;
+    return { phase: "ready", inset: landscapeMarginTop(bottom + GAP), source: "heading" };
+  }
+  if (sawHeading) return { phase: "provisional" };
+  const header = root.querySelector<HTMLElement>(HEADER_SELECTOR);
+  if (!header || boxBottom(header) <= 0) return { phase: "pending" };
+  return { phase: "ready", inset: MARGIN_TOP, source: "chrome" };
+}
+
+/**
+ * Node whose size can move the line. A heading is watched even before it has a box,
+ * so a later layout is not missed. The chrome bar is watched only when no heading exists.
+ */
+export function placementElement(root: ParentNode): HTMLElement | null {
+  for (const selector of HEADING_SELECTORS) {
+    const node = root.querySelector<HTMLElement>(selector);
+    if (node) return node;
+  }
+  return root.querySelector<HTMLElement>(HEADER_SELECTOR);
+}
+
+/**
+ * Heading bottom plus GAP, snapped. With only the chrome bar, the line is fixed
+ * at MARGIN_TOP: that bar grows in edit mode and must not move tiles.
+ * Undefined while the line is still provisional or nothing has a box yet.
+ */
+export function measurePlacementInset(root: ParentNode): number | undefined {
+  const line = readPlacementLine(root);
+  return line.phase === "ready" ? line.inset : undefined;
+}
+
+/** Chrome-only 80px is definitive when the page will not render a heading. */
+export function landscapeLineReady(line: PlacementLine, expectsHeading: boolean): boolean {
+  if (line.phase !== "ready") return false;
+  if (line.source === "heading") return true;
+  return !expectsHeading;
+}
+
+/** A dragged string or a scaled tile. An exact card default is the card's own write, not the user's. */
+export function landscapeTileIsOwn(tile: FloatingTile, read: (key: string) => string | null): boolean {
+  const raw = read(tile.key);
+  if (raw == null) return false;
+  if (tile.defaultSize === false) return true;
+  if (!tile.cardDefault) return true;
+  try {
+    const parsed = JSON.parse(raw) as { left?: number; bottom?: number };
+    if (typeof parsed.left !== "number" || typeof parsed.bottom !== "number") return true;
+    if (parsed.left === tile.cardDefault.left && parsed.bottom === tile.cardDefault.bottom) return false;
+  } catch {
+    return true;
+  }
+  return true;
+}
+
+/** Tiles the page must not mount. Before the line is definitive, every tile without its own spot stays out. */
+export function landscapeWithheldIds(input: {
+  orientation: Orientation;
+  landscapeReady: boolean;
+  viewport: { width: number; height: number };
+  tiles: readonly FloatingTile[];
+  read: (key: string) => string | null;
+}): string[] {
+  if (input.viewport.width <= 0 || input.viewport.height <= 0 || input.orientation !== "landscape") return [];
+  return placingTiles(input.tiles).flatMap((tile) => {
+    if (!input.landscapeReady) return landscapeTileIsOwn(tile, input.read) ? [] : [tile.id];
+    return input.read(tile.key) == null ? [tile.id] : [];
+  });
+}
+
+/** The landscape sentence is about hidden tiles. Zero hidden tiles leaves the notice off. */
+export function visibleLayoutNotice(notice: LayoutNotice | null, hiddenCount: number): LayoutNotice | null {
+  if (notice == null) return null;
+  switch (notice) {
+    case "landscape-overlap":
+      return hiddenCount > 0 ? notice : null;
+    case "portrait-below-fold":
+      return notice;
+    default: {
+      const exhaustive: never = notice;
+      return exhaustive;
+    }
+  }
+}
+
+/** Landscape overlap is reported on a fresh landscape load, not only after a rotation. */
+export function reportLayoutNotice(input: {
+  previous: Orientation | null;
+  orientation: Orientation;
+  sizesChanged: boolean;
+  actionReport: boolean;
+}): boolean {
+  const enteringPortrait = input.previous === "landscape" && input.orientation === "portrait";
+  const leavingPortrait = input.previous === "portrait" && input.orientation === "landscape";
+  const freshLandscape = input.previous === null && input.orientation === "landscape";
+  return (
+    input.actionReport ||
+    enteringPortrait ||
+    leavingPortrait ||
+    (input.orientation === "landscape" && (input.sizesChanged || freshLandscape))
+  );
+}
+
+type HeadingWatch = PlacementLine;
+
+function sameHeading(current: HeadingWatch, next: HeadingWatch): boolean {
+  if (current.phase !== next.phase) return false;
+  if (current.phase === "ready" && next.phase === "ready") {
+    return current.inset === next.inset && current.source === next.source;
+  }
+  return true;
+}
+
+/** How long the layout notice stays on screen. */
+export const LAYOUT_NOTICE_MS = 8000;
+
+export function formatLayoutNotice(
+  key: FloatingLayoutNoticeKey,
+  count: number,
+  translate: (key: string) => string
+): string {
+  switch (key) {
+    case "dashboardLayout.landscapeOverlap": {
+      const template = translate(
+        count === 1 ? "dashboardLayout.landscapeOverlapOne" : "dashboardLayout.landscapeOverlap"
+      );
+      return template.replace("{n}", String(count));
+    }
+    case "dashboardLayout.portraitBelowFold":
+      return translate(key);
+    default: {
+      const exhaustive: never = key;
+      return exhaustive;
+    }
+  }
 }
 
 function noticeKey(notice: LayoutNotice): FloatingLayoutNoticeKey {
@@ -80,7 +244,8 @@ function withOverrides(tiles: readonly FloatingTile[], overrides: Record<string,
   if (Object.keys(overrides).length === 0) return [...tiles];
   return tiles.map((tile) => {
     const override = overrides[tile.key];
-    return override ? { ...tile, w: override.w, h: override.h } : tile;
+    // A measured size is a user scale. Leave a stored card default where it is.
+    return override ? { ...tile, w: override.w, h: override.h, defaultSize: false } : tile;
   });
 }
 
@@ -94,21 +259,30 @@ export function useFloatingOrientation({
   ready,
   widgets,
   editMode,
+  expectsHeading,
 }: {
   dashboardId: string | undefined;
   ready: boolean;
   widgets: readonly FloatingWidgetInput[];
   editMode: boolean;
+  /** True when this page renders a heading once its data is on screen. */
+  expectsHeading: boolean;
 }): {
   epoch: number;
   scrollOverflowPx: number;
   notice: FloatingLayoutNoticeKey | null;
+  noticeCount: number;
+  /** Placing tiles with no landscape slot once the line is definitive. */
+  hiddenCount: number;
   dismissNotice: () => void;
   commitEdits: () => void;
+  /** Landscape tiles with no stored slot. The page does not mount them. */
+  withheldIds: readonly string[];
 } {
   const [epoch, setEpoch] = useState(0);
   const [scrollOverflowPx, setScrollOverflowPx] = useState(0);
   const [notice, setNotice] = useState<FloatingLayoutNoticeKey | null>(null);
+  const [noticeCount, setNoticeCount] = useState(0);
   const [generation, setGeneration] = useState(0);
   const [viewport, setViewport] = useState<Viewport>({ width: 0, height: 0 });
   const [sizeOverrides, setSizeOverrides] = useState<Record<string, { w: number; h: number }>>({});
@@ -119,17 +293,28 @@ export function useFloatingOrientation({
   const deferredRef = useRef(false);
   const lastSigRef = useRef("");
   const orientationRef = useRef<Orientation | null>(null);
+  const [heading, setHeading] = useState<HeadingWatch>({ phase: "pending" });
   const sizeSigRef = useRef("");
   const measuredRef = useRef(false);
   const tilesRef = useRef<FloatingTile[]>([]);
 
   const orientation = currentOrientation(viewport.width, viewport.height);
-  const tiles = withOverrides(dashboardId ? floatingTilesFromWidgets(widgets, dashboardId) : [], sizeOverrides);
+  const windowViewport = typeof window === "undefined" ? null : readViewport();
+  const tileViewport = viewport.width > 0 ? viewport : windowViewport ?? viewport;
+  const tiles = withOverrides(
+    dashboardId ? floatingTilesFromWidgets(widgets, dashboardId, tileViewport) : [],
+    sizeOverrides
+  );
   tilesRef.current = tiles;
   // `parked` is in the signature so pinning or unpinning a tile reconciles again.
   const tileSig = tiles.map((tile) => `${tile.key}:${tile.page}:${tile.w}x${tile.h}${tile.parked ? ":parked" : ""}`).join("|");
   const sizeSig = tiles.map((tile) => `${tile.key}:${tile.w}x${tile.h}`).join("|");
-  const sig = `${dashboardId ?? ""}|${ready ? 1 : 0}|${orientation}|${viewport.width}x${viewport.height}|${tileSig}|${generation}`;
+  // Landscape waits until the line is definitive. A heading the page will show, or a heading
+  // node that has no box yet, is not the chrome line of 80. Portrait does not wait.
+  const topInset = orientation === "landscape" && heading.phase === "ready" ? heading.inset : undefined;
+  const landscapeReady = orientation !== "landscape" || landscapeLineReady(heading, expectsHeading);
+  const headingSig = heading.phase === "ready" ? `ready:${heading.source}:${heading.inset}` : heading.phase;
+  const sig = `${dashboardId ?? ""}|${ready ? 1 : 0}|${orientation}|${viewport.width}x${viewport.height}|${tileSig}|${headingSig}|${generation}`;
 
   if (
     ready &&
@@ -137,6 +322,7 @@ export function useFloatingOrientation({
     viewport.width > 0 &&
     viewport.height > 0 &&
     typeof window !== "undefined" &&
+    landscapeReady &&
     !pointerDownRef.current &&
     lastSigRef.current !== sig
   ) {
@@ -144,7 +330,6 @@ export function useFloatingOrientation({
     actionRef.current = IDLE_ACTION;
     const previous = orientationRef.current;
     const enteringPortrait = previous === "landscape" && orientation === "portrait";
-    const leavingPortrait = previous === "portrait" && orientation === "landscape";
     const sizesChanged = sizeSigRef.current.length > 0 && sizeSigRef.current !== sizeSig;
     const push = action.push || enteringPortrait;
     const anchors = action.anchors ?? (push ? anchorsSince(baselineRef.current, tiles) : undefined);
@@ -155,10 +340,16 @@ export function useFloatingOrientation({
       viewport,
       tiles,
       push,
-      reportNotice: action.report || enteringPortrait || leavingPortrait || (orientation === "landscape" && sizesChanged),
+      reportNotice: reportLayoutNotice({
+        previous,
+        orientation,
+        sizesChanged,
+        actionReport: action.report,
+      }),
       anchorKeys: anchors,
       rederive: action.rederive,
       mounted: cardsMountedRef.current,
+      topInset,
     });
     lastSigRef.current = sig;
     orientationRef.current = orientation;
@@ -166,9 +357,56 @@ export function useFloatingOrientation({
     if (result.remount) setEpoch((value) => value + 1);
     if (result.scrollOverflowPx !== scrollOverflowPx) setScrollOverflowPx(result.scrollOverflowPx);
     const visible = consumeLayoutNotice(result.notice, window.sessionStorage);
-    if (previous !== null && previous !== orientation) setNotice(visible ? noticeKey(visible) : null);
-    else if (visible) setNotice(noticeKey(visible));
+    const unplacedCount =
+      orientation === "landscape"
+        ? placingTiles(tiles).filter((tile) => window.localStorage.getItem(tile.key) == null).length
+        : 0;
+    const shown = visibleLayoutNotice(visible, unplacedCount);
+    if (previous !== null && previous !== orientation) {
+      setNotice(shown ? noticeKey(shown) : null);
+      setNoticeCount(shown === "landscape-overlap" ? unplacedCount : 0);
+    } else if (shown) {
+      setNotice(noticeKey(shown));
+      setNoticeCount(shown === "landscape-overlap" ? unplacedCount : 0);
+    }
   }
+
+  useLayoutEffect(() => {
+    if (typeof document === "undefined") return;
+    let resize: ResizeObserver | null = null;
+    let watching: HTMLElement | null = null;
+
+    const publish = (next: HeadingWatch) => {
+      setHeading((current) => (sameHeading(current, next) ? current : next));
+    };
+    const sync = () => {
+      const nextViewport = readViewport();
+      if (currentOrientation(nextViewport.width, nextViewport.height) === "landscape") {
+        setViewport((current) =>
+          current.width === nextViewport.width && current.height === nextViewport.height ? current : nextViewport
+        );
+      }
+      const node = placementElement(document);
+      if (node !== watching) {
+        resize?.disconnect();
+        resize = null;
+        watching = node;
+        if (node && typeof ResizeObserver !== "undefined") {
+          resize = new ResizeObserver(() => sync());
+          resize.observe(node);
+        }
+      }
+      publish(readPlacementLine(document));
+    };
+
+    sync();
+    const mutations = typeof MutationObserver === "undefined" ? null : new MutationObserver(() => sync());
+    if (mutations && document.body) mutations.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      resize?.disconnect();
+      mutations?.disconnect();
+    };
+  }, [dashboardId, ready, expectsHeading]);
 
   useEffect(() => {
     const onResize = () => {
@@ -226,7 +464,7 @@ export function useFloatingOrientation({
 
   useEffect(() => {
     if (!notice) return;
-    const timer = window.setTimeout(() => setNotice(null), 8000);
+    const timer = window.setTimeout(() => setNotice(null), LAYOUT_NOTICE_MS);
     return () => window.clearTimeout(timer);
   }, [notice]);
 
@@ -348,5 +586,25 @@ export function useFloatingOrientation({
 
   const dismissNotice = () => setNotice(null);
 
-  return { epoch, scrollOverflowPx, notice, dismissNotice, commitEdits };
+  const gateViewport = viewport.width > 0 || viewport.height > 0 ? viewport : windowViewport ?? viewport;
+  const gateOrientation =
+    viewport.width > 0 || viewport.height > 0
+      ? orientation
+      : currentOrientation(gateViewport.width, gateViewport.height);
+  const withheldIds =
+    typeof window === "undefined"
+      ? []
+      : landscapeWithheldIds({
+          orientation: gateOrientation,
+          landscapeReady: gateOrientation !== "landscape" || landscapeLineReady(heading, expectsHeading),
+          viewport: gateViewport,
+          tiles,
+          read: (key) => window.localStorage.getItem(key),
+        });
+  const hiddenCount =
+    typeof window !== "undefined" && landscapeReady && orientation === "landscape" && viewport.width > 0 && viewport.height > 0
+      ? placingTiles(tiles).filter((tile) => window.localStorage.getItem(tile.key) == null).length
+      : 0;
+
+  return { epoch, scrollOverflowPx, notice, noticeCount, hiddenCount, dismissNotice, commitEdits, withheldIds };
 }
