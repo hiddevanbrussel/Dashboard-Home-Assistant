@@ -983,6 +983,12 @@ function landscapeBox(tile: StoredTile, landscapeHeight: number): Box | null {
   return { x: parsed.left, y, w: tile.w, h: tile.h };
 }
 
+function compareTileId(a: { id: string }, b: { id: string }): number {
+  if (a.id < b.id) return -1;
+  if (a.id > b.id) return 1;
+  return 0;
+}
+
 export function placeMissingTiles(
   positions: Record<string, string>,
   tiles: readonly FloatingTile[],
@@ -996,6 +1002,9 @@ export function placeMissingTiles(
   for (const page of pages) {
     const missing = tiles.filter((tile) => tile.page === page && !(tile.key in next));
     if (missing.length === 0) continue;
+    // Landscape placement order is the tile id, so a hidden tile does not
+    // depend on render or mount order. Portrait keeps the caller's order.
+    const ordered = onScreen ? [...missing].sort(compareTileId) : missing;
     const fixed = tiles.flatMap((tile) => {
       if (tile.page !== page && !tile.shared) return [];
       const raw = next[tile.key];
@@ -1005,7 +1014,7 @@ export function placeMissingTiles(
       return [{ x: parsed.left, y: portrait.height - parsed.bottom - tile.h, w: tile.w, h: tile.h }];
     });
     const fitted = firstFit(
-      missing.map((tile) => ({
+      ordered.map((tile) => ({
         id: tile.key,
         w: tile.w,
         h: tile.h,
@@ -1305,10 +1314,66 @@ function sameAuto(a: Record<string, string> | undefined, b: Record<string, strin
   return sameMap(a ?? {}, b ?? {});
 }
 
+function storedBox(tile: FloatingTile, raw: string, viewportHeight: number): Box | null {
+  const parsed = parseStoredPosition(raw, tile.legacyTopOffset, viewportHeight);
+  if (!parsed) return null;
+  return {
+    x: parsed.left,
+    y: viewportHeight - parsed.bottom - tile.h,
+    w: tile.w,
+    h: tile.h,
+  };
+}
+
+/** Above the heading line, or past the bottom of the viewport. */
+function outsideLandscapeBand(box: Box, margin: number, viewportHeight: number): boolean {
+  if (box.y + 0.5 < margin) return true;
+  return box.y + box.h > viewportHeight + 0.5;
+}
+
+/**
+ * Automatic spots that still clear the line and the tiles we keep.
+ * The lower id wins a real overlap, so the hidden tile does not follow mount order.
+ * A dragged or scaled tile is not in `owned` and stays where it was.
+ */
+function automaticTilesToDrop(
+  positions: Record<string, string>,
+  owned: Record<string, string>,
+  tiles: readonly FloatingTile[],
+  margin: number,
+  viewport: { width: number; height: number }
+): Set<string> {
+  const seen = new Set<string>();
+  const fixed: Box[] = [];
+  const automatic: { id: string; key: string; box: Box }[] = [];
+  for (const tile of tiles) {
+    if (seen.has(tile.key)) continue;
+    seen.add(tile.key);
+    const raw = positions[tile.key];
+    if (!raw) continue;
+    const box = storedBox(tile, raw, viewport.height);
+    if (!box) continue;
+    if (owned[tile.key] === raw && !tile.parked) automatic.push({ id: tile.id, key: tile.key, box });
+    else fixed.push(box);
+  }
+  automatic.sort(compareTileId);
+  const drop = new Set<string>();
+  for (const tile of automatic) {
+    const collides = fixed.some((other) => visuallyOverlaps(tile.box, other));
+    if (collides || outsideLandscapeBand(tile.box, margin, viewport.height)) {
+      drop.add(tile.key);
+      continue;
+    }
+    fixed.push(tile.box);
+  }
+  return drop;
+}
+
 /**
  * Landscape placement, including a later header line.
- * Tiles this pass (or an earlier pass) placed automatically move when the line
- * changes. A tile the user moved or scaled keeps its stored string.
+ * An automatic spot that still fits is kept. Only a tile with no spot, or an
+ * automatic tile that crosses the line or another tile, is placed again.
+ * A tile the user moved or scaled keeps its stored string.
  */
 function applyLandscapePlacement(
   positions: Record<string, string>,
@@ -1328,9 +1393,10 @@ function applyLandscapePlacement(
   for (const key of scaled) delete owned[key];
 
   const lineChanged = landscapeTop !== undefined && landscapeTop !== margin;
+  const drop = automaticTilesToDrop(positions, owned, tiles, margin, viewport);
   const base: Record<string, string> = {};
   for (const [key, value] of Object.entries(positions)) {
-    if (lineChanged && owned[key] === value) continue;
+    if (drop.has(key)) continue;
     base[key] = value;
   }
   const placed = placeMissingTiles(base, landscapeTilesToPlace(base, tiles, placing), viewport, topInset, true);

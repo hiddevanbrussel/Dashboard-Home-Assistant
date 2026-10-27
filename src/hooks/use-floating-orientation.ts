@@ -60,35 +60,49 @@ export type PlacementLine =
 
 /**
  * Landscape line after layout.
+ * One source: the lowest heading edge plus GAP. The edit reserve and the visible
+ * heading are the same heading; a shorter reserve must not drop the 16px gap.
  * A heading node that has no box yet is provisional: the chrome bar is not the line.
  * The chrome bar alone is the fixed 80px line, and only when no heading node exists.
  */
 export function readPlacementLine(root: ParentNode): PlacementLine {
   let sawHeading = false;
+  let bottom = 0;
   for (const selector of HEADING_SELECTORS) {
     const node = root.querySelector<HTMLElement>(selector);
     if (!node) continue;
     sawHeading = true;
-    const bottom = boxBottom(node);
-    if (bottom <= 0) continue;
+    const edge = boxBottom(node);
+    if (edge > bottom) bottom = edge;
+  }
+  if (sawHeading) {
+    if (bottom <= 0) return { phase: "provisional" };
     return { phase: "ready", inset: landscapeMarginTop(bottom + GAP), source: "heading" };
   }
-  if (sawHeading) return { phase: "provisional" };
   const header = root.querySelector<HTMLElement>(HEADER_SELECTOR);
   if (!header || boxBottom(header) <= 0) return { phase: "pending" };
   return { phase: "ready", inset: MARGIN_TOP, source: "chrome" };
 }
 
 /**
- * Node whose size can move the line. A heading is watched even before it has a box,
- * so a later layout is not missed. The chrome bar is watched only when no heading exists.
+ * Nodes whose size can move the line. Every heading is watched, including one
+ * that has no box yet, so a later layout is not missed. The chrome bar is
+ * watched only when no heading exists.
  */
-export function placementElement(root: ParentNode): HTMLElement | null {
+export function placementElements(root: ParentNode): HTMLElement[] {
+  const nodes: HTMLElement[] = [];
   for (const selector of HEADING_SELECTORS) {
     const node = root.querySelector<HTMLElement>(selector);
-    if (node) return node;
+    if (node) nodes.push(node);
   }
-  return root.querySelector<HTMLElement>(HEADER_SELECTOR);
+  if (nodes.length > 0) return nodes;
+  const header = root.querySelector<HTMLElement>(HEADER_SELECTOR);
+  return header ? [header] : [];
+}
+
+/** First watched node. Kept for callers that only need a single element. */
+export function placementElement(root: ParentNode): HTMLElement | null {
+  return placementElements(root)[0] ?? null;
 }
 
 /**
@@ -374,35 +388,84 @@ export function useFloatingOrientation({
   useLayoutEffect(() => {
     if (typeof document === "undefined") return;
     let resize: ResizeObserver | null = null;
-    let watching: HTMLElement | null = null;
+    let watching: HTMLElement[] = [];
+    let last: PlacementLine | null = null;
+    let locked: PlacementLine | null = null;
+    let frame = 0;
+    let samples = 0;
+    let cancelled = false;
+    let sampling = false;
+    const fontsReady =
+      typeof document.fonts === "undefined" || document.fonts.status === "loaded";
 
     const publish = (next: HeadingWatch) => {
       setHeading((current) => (sameHeading(current, next) ? current : next));
     };
-    const sync = () => {
-      const nextViewport = readViewport();
-      if (currentOrientation(nextViewport.width, nextViewport.height) === "landscape") {
-        setViewport((current) =>
-          current.width === nextViewport.width && current.height === nextViewport.height ? current : nextViewport
-        );
-      }
-      const node = placementElement(document);
-      if (node !== watching) {
-        resize?.disconnect();
-        resize = null;
-        watching = node;
-        if (node && typeof ResizeObserver !== "undefined") {
-          resize = new ResizeObserver(() => sync());
-          resize.observe(node);
+    const bindWatch = () => {
+      const nodes = placementElements(document);
+      const sameWatch =
+        nodes.length === watching.length && nodes.every((node, index) => node === watching[index]);
+      if (sameWatch) return;
+      resize?.disconnect();
+      resize = null;
+      watching = nodes;
+      if (nodes.length === 0 || typeof ResizeObserver === "undefined") return;
+      resize = new ResizeObserver(() => sample());
+      for (const node of nodes) resize.observe(node);
+    };
+    const schedule = () => {
+      if (cancelled || frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        sample();
+      });
+    };
+    // The line is ready only after two equal measurements. A single early box
+    // (fonts or the temp line still missing) must not be stored. A later size
+    // change keeps the locked line until the new box repeats.
+    const sample = () => {
+      if (cancelled || sampling) return;
+      sampling = true;
+      try {
+        const nextViewport = readViewport();
+        if (currentOrientation(nextViewport.width, nextViewport.height) === "landscape") {
+          setViewport((current) =>
+            current.width === nextViewport.width && current.height === nextViewport.height ? current : nextViewport
+          );
         }
+        const line = readPlacementLine(document);
+        const repeated = last !== null && sameHeading(last, line);
+        last = line;
+        samples += 1;
+        bindWatch();
+        if (line.phase !== "ready") {
+          if (!locked) publish(line);
+          if (samples < 8) schedule();
+          return;
+        }
+        if (repeated || (samples >= 12 && !locked)) {
+          locked = line;
+          publish(line);
+          return;
+        }
+        if (!locked) publish({ phase: "provisional" });
+        schedule();
+      } finally {
+        sampling = false;
       }
-      publish(readPlacementLine(document));
     };
 
-    sync();
-    const mutations = typeof MutationObserver === "undefined" ? null : new MutationObserver(() => sync());
+    sample();
+    if (!fontsReady && document.fonts) {
+      void document.fonts.ready.then(() => {
+        if (!cancelled) sample();
+      });
+    }
+    const mutations = typeof MutationObserver === "undefined" ? null : new MutationObserver(() => sample());
     if (mutations && document.body) mutations.observe(document.body, { childList: true, subtree: true });
     return () => {
+      cancelled = true;
+      if (frame) window.cancelAnimationFrame(frame);
       resize?.disconnect();
       mutations?.disconnect();
     };

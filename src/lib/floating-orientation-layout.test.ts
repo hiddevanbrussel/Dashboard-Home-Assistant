@@ -2200,13 +2200,13 @@ describe("definitive landscape line (H8)", () => {
       legacyTopOffset: 80,
     });
     run(storage, [sensor, lamp], "landscape", undefined);
-    expect(storage.getItem(sensor.key)).toBe(JSON.stringify({ left: 96, bottom: 608 }));
-    expect(storage.getItem(lamp.key)).toBe(JSON.stringify({ left: 384, bottom: 640 }));
+    expect(storage.getItem(sensor.key)).toBe(JSON.stringify({ left: 352, bottom: 608 }));
+    expect(storage.getItem(lamp.key)).toBe(JSON.stringify({ left: 96, bottom: 640 }));
     expect(layoutOf(storage).landscapeTop).toBe(80);
     const again = run(storage, [sensor, lamp], "landscape", 80);
     expect(again.wrote).toBe(false);
-    expect(storage.getItem(sensor.key)).toBe(JSON.stringify({ left: 96, bottom: 608 }));
-    expect(storage.getItem(lamp.key)).toBe(JSON.stringify({ left: 384, bottom: 640 }));
+    expect(storage.getItem(sensor.key)).toBe(JSON.stringify({ left: 352, bottom: 608 }));
+    expect(storage.getItem(lamp.key)).toBe(JSON.stringify({ left: 96, bottom: 640 }));
   });
 
   it("still stores a portrait tile below the fold", () => {
@@ -2337,5 +2337,162 @@ describe("card defaults written before the heading (H8)", () => {
     expect(run(storage, list).wrote).toBe(false);
     expect(snapshotActive(storage, list)).toEqual(saved);
     expect(storage.getItem(scaled.key)).toBe(scaledRaw);
+  });
+});
+
+describe("stable landscape line and automatic tiles (H1, H2)", () => {
+  const ROOM = "room-h1h2";
+  const LINE = 208;
+
+  function wide(id: string, w: number, h: number): FloatingTile {
+    return tile(id, `dashboard.floatingTextCardPosition.${ROOM}.${id}`, {
+      w,
+      h,
+      legacyTopOffset: h,
+    });
+  }
+
+  function crowd(): FloatingTile[] {
+    return [
+      wide("l01", 700, 200),
+      wide("speaker", 700, 200),
+      wide("l02", 700, 200),
+      wide("l03", 700, 200),
+      wide("l04", 700, 200),
+      wide("l05", 700, 200),
+      wide("s01", 700, 180),
+      wide("s02", 700, 180),
+      wide("s03", 700, 180),
+      wide("s04", 700, 180),
+      wide("breed", 760, 200),
+      wide("klimaat", 760, 220),
+    ];
+  }
+
+  function run(storage: MemoryStorage, tiles: readonly FloatingTile[], topInset = LINE) {
+    return reconcileFloatingLayout({
+      storage,
+      dashboardId: ROOM,
+      orientation: "landscape",
+      viewport: LANDSCAPE,
+      tiles,
+      push: false,
+      reportNotice: true,
+      rederive: false,
+      mounted: true,
+      topInset,
+    });
+  }
+
+  function hiddenIds(tiles: readonly FloatingTile[], storage: MemoryStorage): string[] {
+    return tiles.filter((entry) => storage.getItem(entry.key) == null).map((entry) => entry.id).sort();
+  }
+
+  function boxesOf(tiles: readonly FloatingTile[], storage: MemoryStorage) {
+    return tiles.flatMap((entry) => {
+      const raw = storage.getItem(entry.key);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as { left: number; bottom: number };
+      return [{
+        id: entry.id,
+        x: parsed.left,
+        y: LANDSCAPE.height - parsed.bottom - entry.h,
+        w: entry.w,
+        h: entry.h,
+      }];
+    });
+  }
+
+  it("places the same spots and hides the same tiles when the list order is reversed", () => {
+    const tiles = crowd();
+    const forward = new MemoryStorage();
+    const backward = new MemoryStorage();
+    run(forward, tiles);
+    run(backward, [...tiles].reverse());
+    expect(snapshotActive(backward, tiles)).toEqual(snapshotActive(forward, tiles));
+    const hidden = hiddenIds(tiles, forward);
+    expect(hidden.length).toBeGreaterThan(0);
+    expect(hiddenIds(tiles, backward)).toEqual(hidden);
+    const placed = boxesOf(tiles, forward);
+    expect(overlapPairs(placed, "pixels")).toEqual([]);
+    for (const box of placed) expect(box.y).toBeGreaterThanOrEqual(LINE);
+    expect(JSON.parse(forward.getItem(layoutStorageKey(ROOM)) ?? "{}").landscapeTop).toBe(LINE);
+  });
+
+  it("keeps the other automatic tiles and the same hidden tile after a drag and a scale", () => {
+    const tiles = crowd();
+    const storage = new MemoryStorage();
+    run(storage, tiles);
+    const placed = tiles.filter((entry) => storage.getItem(entry.key) != null);
+    const dragged = placed.find((entry) => entry.id === "l01") ?? placed[0];
+    const scaled = placed.find((entry) => entry.id !== dragged?.id);
+    if (!dragged || !scaled) throw new Error("need two placed tiles");
+    const draggedRaw = JSON.stringify({ left: 16, bottom: 48 });
+    const scaledRaw = storage.getItem(scaled.key);
+    storage.setItem(dragged.key, draggedRaw);
+    scaled.defaultSize = false;
+    scaled.w += 32;
+    scaled.h += 16;
+    run(storage, tiles);
+    expect(storage.getItem(dragged.key)).toBe(draggedRaw);
+    expect(storage.getItem(scaled.key)).toBe(scaledRaw);
+    const others = tiles.filter((entry) => entry.id !== dragged.id && entry.id !== scaled.id);
+    const kept = snapshotActive(storage, others);
+    const hidden = hiddenIds(tiles, storage);
+    const automatic = boxesOf(others, storage);
+    expect(overlapPairs(automatic, "pixels")).toEqual([]);
+    for (let pass = 0; pass < 3; pass += 1) {
+      const order = pass % 2 === 0 ? [...tiles].reverse() : tiles;
+      expect(run(storage, order).wrote).toBe(false);
+      expect(storage.getItem(dragged.key)).toBe(draggedRaw);
+      expect(storage.getItem(scaled.key)).toBeTruthy();
+      expect(snapshotActive(storage, others)).toEqual(kept);
+      expect(hiddenIds(tiles, storage)).toEqual(hidden);
+    }
+  });
+
+  it("corrects a stored 192 line to 208 and leaves fitting tiles where they are", () => {
+    const own = wide("l01", 400, 120);
+    const scaled = wide("speaker", 400, 120);
+    scaled.defaultSize = false;
+    const fits = wide("l02", 400, 120);
+    const above = wide("breed", 400, 120);
+    const ownRaw = JSON.stringify({ left: 96, bottom: 640 });
+    const scaledRaw = JSON.stringify({ left: 96, bottom: 200 });
+    const fitRaw = JSON.stringify({ left: 520, bottom: 472 });
+    const aboveRaw = JSON.stringify({ left: 96, bottom: 488 });
+    const positions = {
+      [own.key]: ownRaw,
+      [scaled.key]: scaledRaw,
+      [fits.key]: fitRaw,
+      [above.key]: aboveRaw,
+    };
+    const storage = new MemoryStorage();
+    seed(storage, positions);
+    storage.setItem(layoutStorageKey(ROOM), JSON.stringify({
+      v: 1,
+      active: "landscape",
+      landscape: positions,
+      portrait: null,
+      portraitBron: null,
+      landscapeTop: 192,
+      auto: { [fits.key]: fitRaw, [above.key]: aboveRaw, [scaled.key]: scaledRaw },
+    }));
+    const tiles = [above, own, scaled, fits];
+    const corrected = run(storage, [...tiles].reverse());
+    expect(corrected.wrote).toBe(true);
+    expect(storage.getItem(own.key)).toBe(ownRaw);
+    expect(storage.getItem(scaled.key)).toBe(scaledRaw);
+    expect(storage.getItem(fits.key)).toBe(fitRaw);
+    expect(storage.getItem(above.key)).not.toBe(aboveRaw);
+    const saved = JSON.parse(storage.getItem(layoutStorageKey(ROOM)) ?? "{}") as { landscapeTop?: number };
+    expect(saved.landscapeTop).toBe(LINE);
+    const aboveBox = boxesOf([above], storage)[0];
+    if (aboveBox) expect(aboveBox.y).toBeGreaterThanOrEqual(LINE);
+    expect(overlapPairs(boxesOf(tiles, storage), "pixels")).toEqual([]);
+    const after = snapshotActive(storage, tiles);
+    expect(run(storage, tiles).wrote).toBe(false);
+    expect(run(storage, [...tiles].reverse()).wrote).toBe(false);
+    expect(snapshotActive(storage, tiles)).toEqual(after);
   });
 });

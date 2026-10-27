@@ -334,3 +334,176 @@ describe("landscape line is definitive before cards write (H8)", () => {
     }
   }, 90_000);
 });
+
+const DELAYS = [0, 20, 40, 80, 120, 200, 300, 400, 600, 800];
+
+function harnessPlugin(pluginBuild: { onResolve: (options: { filter: RegExp }, callback: (args: { path: string }) => { path: string }) => void }) {
+  pluginBuild.onResolve({ filter: /^@\// }, (args) => {
+    const base = path.join(process.cwd(), "src", args.path.slice(2));
+    const file = [base, `${base}.ts`, `${base}.tsx`, `${base}.js`, `${base}.jsx`].find((candidate) => {
+      try {
+        return statSync(candidate).isFile();
+      } catch {
+        return false;
+      }
+    });
+    const index = file
+      ? file
+      : [`${base}/index.ts`, `${base}/index.tsx`, `${base}/index.js`].find((candidate) => {
+          try {
+            return statSync(candidate).isFile();
+          } catch {
+            return false;
+          }
+        });
+    return { path: index ?? base };
+  });
+}
+
+async function bundleHarness(): Promise<{ file: string; cleanup: () => Promise<void> }> {
+  const htmlDir = await mkdtemp(path.join(tmpdir(), "landscape-line-html-"));
+  const bundle = path.join(htmlDir, "harness.js");
+  await build({
+    entryPoints: [path.join(process.cwd(), "src/lib/landscape-line-ready.harness.tsx")],
+    bundle: true,
+    format: "iife",
+    outfile: bundle,
+    platform: "browser",
+    jsx: "automatic",
+    define: { "process.env.NODE_ENV": '"production"' },
+    plugins: [{ name: "at-alias", setup: harnessPlugin }],
+  });
+  const file = path.join(htmlDir, "index.html");
+  const html = `<!doctype html><html><head><meta charset="utf-8" /><script>window.__boot="";window.addEventListener("error",function(event){window.__boot=String(event.message)+"\\n"+String(event.error&&event.error.stack||"").slice(0,1500);});</script></head><body style="margin:0"><div id="root"></div><script src="harness.js"></script></body></html>`;
+  await writeFile(file, html);
+  return { file, cleanup: () => rm(htmlDir, { recursive: true, force: true }).catch(() => undefined) };
+}
+
+function tileTopsAtLeast(tops: string, line: number): void {
+  const parts = tops.split("|").filter((part) => part.length > 0);
+  expect(parts.length).toBeGreaterThan(0);
+  for (const part of parts) {
+    const top = Number(part.slice(part.lastIndexOf(":") + 1));
+    expect(top, part).toBeGreaterThanOrEqual(line);
+  }
+}
+
+describe("stable landscape line and automatic tiles (H1, H2)", () => {
+  it("stores 208 on every fresh load and keeps tile tops across a reload", async () => {
+    const { file, cleanup } = await bundleHarness();
+    try {
+      await withChrome(async (send, wait) => {
+        const open = async (query: string) => {
+          const loaded = wait("Page.loadEventFired");
+          await send("Page.navigate", { url: `file://${file}?${query}` });
+          await loaded;
+          await evaluate(
+            send,
+            waitFor(
+              `(() => { const page = document.querySelector("[data-app-page-heading]"); const bottom = page ? page.getBoundingClientRect().bottom : 0; return bottom >= 191 && document.documentElement.dataset.line === "208" && document.documentElement.dataset.settled === "1" && document.documentElement.dataset.tops; })()`
+            )
+          );
+          const boot = await evaluate<string>(send, `document.documentElement.dataset.boot || window.__boot || ""`);
+          if (boot) throw new Error(boot);
+          await evaluate(send, `new Promise((resolve) => setTimeout(resolve, 300))`);
+        };
+        for (const delay of DELAYS) {
+          await open(`shift=1&delay=${delay}`);
+          const fresh = await evaluate<{ line: string; tops: string; positions: string }>(
+            send,
+            `({ line: document.documentElement.dataset.line || "", tops: document.documentElement.dataset.tops || "", positions: document.documentElement.dataset.positions || "" })`
+          );
+          expect(fresh.line, `delay ${delay}`).toBe("208");
+          tileTopsAtLeast(fresh.tops, 208);
+          await open(`shift=1&delay=${delay}&keep=1`);
+          const again = await evaluate<{ line: string; tops: string; positions: string }>(
+            send,
+            `({ line: document.documentElement.dataset.line || "", tops: document.documentElement.dataset.tops || "", positions: document.documentElement.dataset.positions || "" })`
+          );
+          expect(again.line, `reload ${delay}`).toBe("208");
+          expect(again.tops, `reload ${delay}`).toBe(fresh.tops);
+          expect(again.positions, `reload ${delay}`).toBe(fresh.positions);
+        }
+      });
+    } finally {
+      await cleanup();
+    }
+  }, 120_000);
+
+  it("keeps the other automatic tiles and the same hidden tile after a drag and a scale", async () => {
+    const { file, cleanup } = await bundleHarness();
+    try {
+      await withChrome(async (send, wait) => {
+        const open = async (query: string) => {
+          const loaded = wait("Page.loadEventFired");
+          await send("Page.navigate", { url: `file://${file}?${query}` });
+          await loaded;
+          await evaluate(
+            send,
+            waitFor(
+              `document.documentElement.dataset.line === "208" && document.documentElement.dataset.positions && document.documentElement.dataset.settled === "1"`
+            )
+          );
+          const boot = await evaluate<string>(send, `document.documentElement.dataset.boot || window.__boot || ""`);
+          if (boot) throw new Error(boot);
+        };
+        const read = () =>
+          evaluate<{ line: string; positions: string; hidden: string; drag: string }>(
+            send,
+            `({
+              line: document.documentElement.dataset.line || "",
+              positions: document.documentElement.dataset.positions || "",
+              hidden: document.documentElement.dataset.hiddenIds || "",
+              drag: localStorage.getItem("crowd-drag") || ""
+            })`
+          );
+        await open("crowd=1");
+        const before = await read();
+        expect(before.line).toBe("208");
+        expect(before.hidden.length).toBeGreaterThan(0);
+        await evaluate(send, `window.__applyUserEdit && window.__applyUserEdit()`);
+        await evaluate(
+          send,
+          waitFor(
+            `document.documentElement.dataset.line === "208" && (localStorage.getItem("crowd-drag") || "").length > 0 && document.documentElement.dataset.positions !== ${JSON.stringify(before.positions)}`
+          )
+        );
+        await evaluate(
+          send,
+          `new Promise((resolve, reject) => {
+            const started = performance.now();
+            let last = "";
+            let stable = 0;
+            const tick = () => {
+              const now = document.documentElement.dataset.positions || "";
+              if (now && now === last && document.documentElement.dataset.line === "208") stable += 1;
+              else stable = 0;
+              last = now;
+              if (stable >= 4) resolve(true);
+              else if (performance.now() - started > 8000) reject(new Error("positions did not settle"));
+              else requestAnimationFrame(tick);
+            };
+            tick();
+          })`
+        );
+        const edited = await read();
+        expect(edited.line).toBe("208");
+        expect(edited.hidden.length).toBeGreaterThan(0);
+        const draggedId = edited.drag.split(".").pop() ?? "";
+        expect(draggedId.length).toBeGreaterThan(0);
+        const draggedLine = edited.positions.split("\n").find((line) => line.startsWith(`${draggedId}=`));
+        expect(draggedLine).toBe(`${draggedId}={"left":96,"bottom":48}`);
+        const reloads = ["crowd=1&keep=1", "crowd=1&keep=1&shuffle=1", "crowd=1&keep=1"];
+        for (const query of reloads) {
+          await open(query);
+          const next = await read();
+          expect(next.line).toBe("208");
+          expect(next.positions).toBe(edited.positions);
+          expect(next.hidden).toBe(edited.hidden);
+        }
+      });
+    } finally {
+      await cleanup();
+    }
+  }, 90_000);
+});

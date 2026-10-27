@@ -36,6 +36,18 @@ describe("placement inset after layout", () => {
     expect(inset).toBe(208);
   });
 
+  it("uses the lower heading edge, so a short edit reserve does not drop the 16px gap", () => {
+    expect(measurePlacementInset(root({
+      "[data-app-heading-edit]": 176,
+      "[data-app-page-heading]": 192,
+      "[data-app-header]": 64,
+    }))).toBe(208);
+    expect(readPlacementLine(root({
+      "[data-app-heading-edit]": 176,
+      "[data-app-page-heading]": 192,
+    }))).toEqual({ phase: "ready", inset: 208, source: "heading" });
+  });
+
   it("uses the page heading when there is no edit box", () => {
     expect(measurePlacementInset(root({
       "[data-app-page-heading]": 142,
@@ -170,8 +182,8 @@ describe("fixed line without a heading (H6)", () => {
     const viewPositions = placePair(view);
     const editPositions = placePair(edit);
     expect(editPositions).toEqual(viewPositions);
-    expect(viewPositions.sensor).toEqual({ left: 96, bottom: 608 });
-    expect(viewPositions.lamp).toEqual({ left: 384, bottom: 640 });
+    expect(viewPositions.sensor).toEqual({ left: 352, bottom: 608 });
+    expect(viewPositions.lamp).toEqual({ left: 96, bottom: 640 });
   });
 });
 
