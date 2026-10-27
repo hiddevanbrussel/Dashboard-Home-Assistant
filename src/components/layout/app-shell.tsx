@@ -607,7 +607,10 @@ export function AppShell({
         <NewsOverlay isOpen={newsOpen} onClose={() => setNewsOpen(false)} />
 
         {(showWelcomeInHeader || backHref) && (
-        <div className="flex shrink-0 items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div
+          data-app-page-heading
+          className="flex shrink-0 items-center justify-between gap-4 px-4 py-4 sm:px-6"
+        >
           <div className="min-w-0 flex-1 flex items-center gap-3">
             {backHref && (
               <Link

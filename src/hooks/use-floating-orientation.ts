@@ -5,6 +5,8 @@ import {
   consumeLayoutNotice,
   currentOrientation,
   floatingTilesFromWidgets,
+  GAP,
+  landscapeMarginTop,
   measuredSizeOverrides,
   placingTiles,
   readFloatingLayout,
@@ -40,6 +42,22 @@ type Viewport = { width: number; height: number };
 function readViewport(): Viewport {
   if (typeof window === "undefined") return { width: 0, height: 0 };
   return { width: window.innerWidth, height: window.innerHeight };
+}
+
+/**
+ * Placement line under the page heading (back button and title), plus GAP.
+ * `[data-app-header]` is only the fallback when that heading is absent.
+ * Returns undefined when nothing is on screen yet, so placement stays at MARGIN_TOP.
+ */
+function readPlacementInset(): number | undefined {
+  if (typeof document === "undefined") return undefined;
+  const node =
+    document.querySelector<HTMLElement>("[data-app-page-heading]") ??
+    document.querySelector<HTMLElement>("[data-app-header]");
+  if (!node) return undefined;
+  const bottom = node.getBoundingClientRect().bottom;
+  if (!Number.isFinite(bottom) || bottom <= 0) return undefined;
+  return landscapeMarginTop(bottom + GAP);
 }
 
 function noticeKey(notice: LayoutNotice): FloatingLayoutNoticeKey {
@@ -119,6 +137,7 @@ export function useFloatingOrientation({
   const pointerDownRef = useRef(false);
   const deferredRef = useRef(false);
   const lastSigRef = useRef("");
+  const nonEditInsetRef = useRef<number | undefined>(undefined);
   const orientationRef = useRef<Orientation | null>(null);
   const sizeSigRef = useRef("");
   const measuredRef = useRef(false);
@@ -133,7 +152,12 @@ export function useFloatingOrientation({
   // `parked` is in the signature so pinning or unpinning a tile reconciles again.
   const tileSig = tiles.map((tile) => `${tile.key}:${tile.page}:${tile.w}x${tile.h}${tile.parked ? ":parked" : ""}`).join("|");
   const sizeSig = tiles.map((tile) => `${tile.key}:${tile.w}x${tile.h}`).join("|");
-  const sig = `${dashboardId ?? ""}|${ready ? 1 : 0}|${orientation}|${viewport.width}x${viewport.height}|${tileSig}|${generation}`;
+  // Edit mode grows the heading. Keep the last non-edit inset so a new tile
+  // uses that line and stored tiles are not placed again when the mode toggles.
+  const measuredInset = readPlacementInset();
+  if (!editMode && measuredInset != null) nonEditInsetRef.current = measuredInset;
+  const topInset = editMode ? (nonEditInsetRef.current ?? measuredInset) : measuredInset;
+  const sig = `${dashboardId ?? ""}|${ready ? 1 : 0}|${orientation}|${viewport.width}x${viewport.height}|${tileSig}|${topInset ?? ""}|${generation}`;
 
   if (
     ready &&
@@ -163,6 +187,7 @@ export function useFloatingOrientation({
       anchorKeys: anchors,
       rederive: action.rederive,
       mounted: cardsMountedRef.current,
+      topInset,
     });
     lastSigRef.current = sig;
     orientationRef.current = orientation;

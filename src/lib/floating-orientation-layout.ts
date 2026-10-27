@@ -91,6 +91,17 @@ export const GAP = 16;
 export const MARGIN_LEFT = 96;
 export const MARGIN_RIGHT = 16;
 export const MARGIN_TOP = 80;
+
+/**
+ * Landscape placement top. `topInset` is the header bottom plus GAP.
+ * A missing or shorter measurement stays on MARGIN_TOP, snapped up onto the grid.
+ * Portrait placement does not call this.
+ */
+export function landscapeMarginTop(topInset: number | undefined): number {
+  if (topInset == null || !Number.isFinite(topInset)) return MARGIN_TOP;
+  const bounded = Math.max(MARGIN_TOP, topInset);
+  return Math.ceil(bounded / GRID) * GRID;
+}
 /** Delete control sits about 10px outside the top and right of the card. */
 export const REMOVE_BADGE_OUTSET_PX = 10;
 /** Page bar is 28px. On-screen tiles stay at least 32px above the viewport bottom. */
@@ -536,12 +547,13 @@ type FitInput = { id: string; w: number; h: number; persistsClamp?: boolean; bot
 export function firstFit(
   tiles: readonly FitInput[],
   viewport: { width: number; height: number },
-  fixed: readonly Box[] = []
+  fixed: readonly Box[] = [],
+  marginTop: number = MARGIN_TOP
 ): PlacedTile[] {
   const obstacles: Box[] = fixed.map((box) => ({ ...box }));
   const placed: PlacedTile[] = [];
   for (const tile of tiles) {
-    const spot = findSpot(tile, viewport, obstacles);
+    const spot = findSpot(tile, viewport, obstacles, marginTop);
     let y = spot.y;
     let bottom = floorBottom(viewport.height, y, tile.h);
     y = viewport.height - bottom - tile.h;
@@ -566,20 +578,25 @@ export function firstFit(
   return placed;
 }
 
-function findSpot(tile: FitInput, viewport: { width: number; height: number }, obstacles: readonly Box[]): { x: number; y: number } {
+function findSpot(
+  tile: FitInput,
+  viewport: { width: number; height: number },
+  obstacles: readonly Box[],
+  marginTop: number
+): { x: number; y: number } {
   const maxX = viewport.width - MARGIN_RIGHT - tile.w;
   if (maxX < MARGIN_LEFT) {
     const maxLeft = Math.max(0, viewport.width - tile.w);
     const preferred = Math.min(MARGIN_LEFT, maxLeft);
     const x = Math.floor(preferred / GRID) * GRID;
-    const yLimit = Math.max(viewport.height * 4, MARGIN_TOP);
-    for (let y = MARGIN_TOP; y <= yLimit; y += GRID) {
+    const yLimit = Math.max(viewport.height * 4, marginTop);
+    for (let y = marginTop; y <= yLimit; y += GRID) {
       if (!hits(tile, x, y, obstacles)) return { x, y };
     }
-    return { x, y: MARGIN_TOP };
+    return { x, y: marginTop };
   }
-  const yLimit = Math.max(viewport.height * 4, MARGIN_TOP);
-  for (let y = MARGIN_TOP; y <= yLimit; y += GRID) {
+  const yLimit = Math.max(viewport.height * 4, marginTop);
+  for (let y = marginTop; y <= yLimit; y += GRID) {
     for (let x = MARGIN_LEFT; x <= maxX; x += GRID) {
       if (!hits(tile, x, y, obstacles)) return { x, y };
     }
@@ -894,8 +911,10 @@ function landscapeBox(tile: StoredTile, landscapeHeight: number): Box | null {
 export function placeMissingTiles(
   positions: Record<string, string>,
   tiles: readonly FloatingTile[],
-  portrait: { width: number; height: number }
+  portrait: { width: number; height: number },
+  topInset?: number
 ): Record<string, string> {
+  const marginTop = landscapeMarginTop(topInset);
   const next = { ...positions };
   const pages = [...new Set(tiles.map((tile) => tile.page))].sort((a, b) => a - b);
   for (const page of pages) {
@@ -918,7 +937,8 @@ export function placeMissingTiles(
         bottomInset: tile.bottomInset,
       })),
       portrait,
-      fixed
+      fixed,
+      marginTop
     );
     for (const item of fitted) next[item.id] = positionString(item.left, item.bottom);
   }
@@ -1113,7 +1133,8 @@ function relocateStoredCardDefaults(
   positions: Record<string, string>,
   tiles: readonly FloatingTile[],
   placing: readonly FloatingTile[],
-  viewport: { width: number; height: number }
+  viewport: { width: number; height: number },
+  topInset?: number
 ): Record<string, string> {
   const drop = new Set<string>();
   for (const tile of placing) {
@@ -1132,7 +1153,7 @@ function relocateStoredCardDefaults(
   for (const [key, value] of Object.entries(positions)) {
     if (!drop.has(key)) stripped[key] = value;
   }
-  return placeMissingTiles(stripped, landscapeTilesToPlace(stripped, tiles, placing), viewport);
+  return placeMissingTiles(stripped, landscapeTilesToPlace(stripped, tiles, placing), viewport, topInset);
 }
 
 function overlapsTileOnPage(
@@ -1181,6 +1202,8 @@ export type ReconcileInput = {
   anchorKeys?: ReadonlySet<string>;
   rederive: boolean;
   mounted: boolean;
+  /** Header bottom plus GAP. Landscape placement only; portrait ignores it. */
+  topInset?: number;
 };
 
 export type ReconcileResult = {
@@ -1230,7 +1253,7 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
         if (value != null) positions[tile.key] = value;
       }
       defaultsNeedMove = !sameMap(
-        relocateStoredCardDefaults(positions, tiles, placing, viewport),
+        relocateStoredCardDefaults(positions, tiles, placing, viewport, input.topInset),
         positions
       );
     }
@@ -1290,9 +1313,16 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
       layout.landscape = placeMissingTiles(
         layout.landscape,
         landscapeTilesToPlace(layout.landscape, tiles, placing),
-        viewport
+        viewport,
+        input.topInset
       );
-      layout.landscape = relocateStoredCardDefaults(layout.landscape, tiles, placing, viewport);
+      layout.landscape = relocateStoredCardDefaults(
+        layout.landscape,
+        tiles,
+        placing,
+        viewport,
+        input.topInset
+      );
     }
     const next = orientation === "portrait" ? layout.portrait ?? {} : layout.landscape;
     const previous = orientation === "portrait" ? layout.landscape : layout.portrait;
@@ -1363,7 +1393,8 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
     const placed = placeMissingTiles(
       layout.landscape,
       landscapeTilesToPlace(layout.landscape, tiles, placing),
-      viewport
+      viewport,
+      input.topInset
     );
     if (!sameMap(placed, layout.landscape)) {
       layout.landscape = placed;
@@ -1372,7 +1403,13 @@ export function reconcileFloatingLayout(input: ReconcileInput): ReconcileResult 
         remount = input.mounted;
       }
     }
-    const corrected = relocateStoredCardDefaults(layout.landscape, tiles, placing, viewport);
+    const corrected = relocateStoredCardDefaults(
+      layout.landscape,
+      tiles,
+      placing,
+      viewport,
+      input.topInset
+    );
     if (!sameMap(corrected, layout.landscape)) {
       layout.landscape = corrected;
       if (applyPositions(storage, null, corrected)) {
