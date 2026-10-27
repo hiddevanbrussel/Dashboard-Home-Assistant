@@ -6,7 +6,8 @@
  * preloads volume_level and volume_muted with that command
  * (src/hooks/use-music-player-actions.ts). It is not a prefix, so
  * config/players/save, config/providers/* and config/core/* stay blocked.
- * Volume changes use players/cmd/volume_*.
+ * Volume changes use players/cmd/volume_* and players/cmd/group_volume.
+ * The bar reads the live 0..100 level from players/all (volume_level and group_volume).
  *
  * Queue view, remove, and clear are three exact commands. `player_queues/items_x`
  * and `player_queues/clear/extra` are different strings and stay rejected.
@@ -48,6 +49,8 @@ export const MUSIC_ASSISTANT_ALLOWED_COMMANDS = [
   "player_queues/previous",
   "player_queues/seek",
   "player_queues/shuffle",
+  "players/all",
+  "players/cmd/group_volume",
   "players/cmd/volume_down",
   "players/cmd/volume_mute",
   "players/cmd/volume_set",
