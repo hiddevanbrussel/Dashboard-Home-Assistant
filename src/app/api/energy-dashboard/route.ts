@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sanitizeEnergyDashboardBackgrounds } from "@/lib/energy-dashboard";
+import { parseTopDeviceIds, sanitizeEnergyDashboardBackgrounds } from "@/lib/energy-dashboard";
 import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
@@ -46,6 +46,7 @@ export async function GET() {
       backgroundDark: sanitized.backgroundDark,
       welcomeTitle: dashboard.welcomeTitle ?? null,
       welcomeSubtitle: dashboard.welcomeSubtitle ?? null,
+      topDeviceIds: parseTopDeviceIds(dashboard.topDeviceIds),
       createdAt: dashboard.createdAt.toISOString(),
       updatedAt: dashboard.updatedAt.toISOString(),
     });
