@@ -6,7 +6,11 @@ import path from "node:path";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EnergyTopDevicesSettings, type TopDeviceEntity } from "@/components/settings/energy-top-devices-settings";
+import {
+  EnergyTopDevicesEntry,
+  EnergyTopDevicesSettings,
+  type TopDeviceEntity,
+} from "@/components/settings/energy-top-devices-settings";
 import { useLanguageStore } from "@/stores/language-store";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -152,7 +156,13 @@ describe("largest consumer picker", () => {
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
     expect(document.body.textContent).toContain("3 van 12");
-    expect(document.querySelector("mark")?.textContent).toBe("Was");
+    const mark = document.querySelector("mark");
+    expect(mark?.textContent).toBe("Was");
+    expect(mark?.className).toContain("text-inherit");
+    expect(input.className).not.toContain("focus-visible:ring");
+    expect(input.parentElement?.className).toContain("focus-within:ring-2");
+    expect(input.parentElement?.className).toContain("focus-within:ring-brand");
+    expect(input.parentElement?.className).toContain("dark:focus-within:ring-brand-muted");
     expect(document.body.textContent).toContain("Op de kaart");
     expect(document.body.textContent).not.toContain("sensor.wasmachine");
 
@@ -163,6 +173,18 @@ describe("largest consumer picker", () => {
     const available = document.querySelector("[data-available-list]")?.textContent ?? "";
     expect(available).toContain("Laadpaal");
     expect(available).not.toContain("sensor.");
+
+    await act(async () => {
+      setter?.call(input, "zzzz-geen-treffer");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(document.querySelector("[data-available-list]")?.textContent).toContain("Geen apparaat gevonden");
+
+    await act(async () => {
+      buttonByLabel("Zoekveld leegmaken").click();
+    });
+    expect(document.querySelector('input[aria-label="Zoek een apparaat"]')).toBe(document.activeElement);
+    expect(document.body.textContent).not.toContain("Geen apparaat gevonden");
   });
 
   it("hides add buttons and shows the maximum message at 5", () => {
@@ -172,6 +194,10 @@ describe("largest consumer picker", () => {
       ids: five.slice(0, 5).map((entity) => entity.entity_id),
     });
     expect(document.body.textContent).toContain("Je hebt er 5 gekozen, het maximum. Haal er eerst een weg om te wisselen.");
+    const limit = [...document.querySelectorAll("[role=status]")].find((node) =>
+      node.textContent?.includes("Je hebt er 5 gekozen")
+    );
+    expect(limit?.tagName).toBe("P");
     expect(document.body.textContent).toContain("5 van 5");
     expect([...document.querySelectorAll("button")].some((button) =>
       (button.getAttribute("aria-label") ?? "").includes("op de kaart zetten")
@@ -185,8 +211,9 @@ describe("largest consumer picker", () => {
     });
     expect(selectedText()).not.toContain("Wasmachine");
     await until(() => {
-      expect(document.querySelector("[role=status]")?.textContent).toContain("Wasmachine weggehaald");
+      expect(document.body.textContent).toContain("Wasmachine weggehaald");
     });
+    expect(document.activeElement?.getAttribute("aria-label")).toContain("Koelkast verplaatsen");
     const undo = [...document.querySelectorAll("button")].find((button) => button.textContent === "Ongedaan maken");
     if (!(undo instanceof HTMLButtonElement)) throw new Error("undo missing");
     await act(async () => {
@@ -195,6 +222,7 @@ describe("largest consumer picker", () => {
     await until(() => {
       expect(selectedText()).toContain("Wasmachine");
     });
+    expect(document.activeElement?.getAttribute("aria-label")).toContain("Wasmachine verplaatsen");
     expect(selectedText().indexOf("Warmtepomp")).toBeLessThan(selectedText().indexOf("Wasmachine"));
     expect(selectedText().indexOf("Wasmachine")).toBeLessThan(selectedText().indexOf("Koelkast"));
   });
@@ -240,6 +268,18 @@ describe("largest consumer picker", () => {
 
     render({ entities: [], ids: [] });
     expect(document.body.textContent).toContain("Nog geen apparaten in Home Assistant");
+    expect(document.body.textContent).toContain(
+      "Er zijn nog geen energiesensoren in kWh gevonden in Home Assistant."
+    );
+    expect(document.body.textContent).not.toContain("energiedashboard");
+    act(() => {
+      useLanguageStore.setState({ language: "en", ready: true });
+    });
+    render({ entities: [], ids: [] });
+    expect(document.body.textContent).toContain("No energy sensors in kWh have been found in Home Assistant yet.");
+    act(() => {
+      useLanguageStore.setState({ language: "nl", ready: true });
+    });
     expect(document.body.textContent).toContain("Instellingen › Dashboards › Energie");
     expect(document.body.textContent).toContain("Individuele apparaten");
     expect(document.body.textContent).toContain("energiesensor in kWh");
@@ -288,6 +328,54 @@ describe("largest consumer picker", () => {
     expect(document.body.textContent).toContain("Applies to all tablets");
     expect(document.body.textContent).not.toContain("Op de kaart");
     expect(document.body.textContent).not.toContain("Geldt voor alle tablets");
+  });
+
+  it("focuses the new grip after adding and the toast when the last device is removed", async () => {
+    render({ entities: devices(12) });
+    await act(async () => {
+      buttonByLabel("Laadpaal op de kaart zetten").click();
+    });
+    expect(document.activeElement?.getAttribute("aria-label")).toContain("Laadpaal verplaatsen");
+
+    render({ entities: devices(3), ids: ["sensor.warmtepomp_0"] });
+    await act(async () => {
+      buttonByLabel("Warmtepomp weghalen van de kaart").click();
+    });
+    await until(() => {
+      const undo = [...document.querySelectorAll("button")].find((button) => button.textContent === "Ongedaan maken");
+      expect(undo).toBe(document.activeElement);
+    });
+  });
+
+  it("keeps the count beside truncated names on the entry row", () => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    const long = devices(5).map((entity) => ({
+      ...entity,
+      attributes: {
+        ...entity.attributes,
+        friendly_name: `Zeer lange naam ${entity.attributes?.friendly_name ?? ""}`,
+      },
+    }));
+    act(() => {
+      root?.render(
+        createElement(EnergyTopDevicesEntry, {
+          entityIds: long.map((entity) => entity.entity_id),
+          entities: long,
+          onOpen: () => undefined,
+        })
+      );
+    });
+    const names = document.querySelector("[data-entry-names]");
+    expect(names?.className).toContain("truncate");
+    expect(names?.textContent).toContain("Zeer lange naam Warmtepomp");
+    expect(names?.textContent).not.toContain("van 5");
+    const line = names?.parentElement;
+    expect(line?.className).toContain("flex");
+    expect(line?.textContent).toContain("5 van 5");
+    expect(line?.textContent).toContain("alle tablets");
+    expect(line?.querySelector(".whitespace-nowrap")?.textContent).toBe(" · 5 van 5 · alle tablets");
   });
 
   it("keeps Dutch and English sentences in the dictionaries, not in the component", () => {

@@ -67,7 +67,7 @@ function highlightName(name: string, query: string) {
   return (
     <>
       {name.slice(0, at)}
-      <mark className="bg-transparent font-bold underline decoration-2 underline-offset-[3px]">
+      <mark className="bg-transparent font-bold text-inherit underline decoration-2 underline-offset-[3px]">
         {name.slice(at, at + needle.length)}
       </mark>
       {name.slice(at + needle.length)}
@@ -107,6 +107,9 @@ export function EnergyTopDevicesSettings({
   const selectedListRef = useRef<HTMLDivElement | null>(null);
   const gripNodes = useRef(new Map<string, HTMLButtonElement>());
   const focusGrip = useRef<string | null>(null);
+  const focusToast = useRef(false);
+  const toastHost = useRef<HTMLDivElement | null>(null);
+  const searchInput = useRef<HTMLInputElement | null>(null);
   const undoTimer = useRef<number | null>(null);
   const saveChain = useRef(Promise.resolve());
   const write = useRef(0);
@@ -137,6 +140,14 @@ export function EnergyTopDevicesSettings({
     focusGrip.current = null;
     gripNodes.current.get(id)?.focus();
   }, [ids]);
+
+  useLayoutEffect(() => {
+    if (!focusToast.current || !undo) return;
+    const button = toastHost.current?.querySelector("button");
+    if (!(button instanceof HTMLButtonElement)) return;
+    focusToast.current = false;
+    button.focus();
+  }, [undo]);
 
   const candidates = filterTopDeviceCandidates(entities);
   const showSearch = candidates.length > SEARCH_MIN_CANDIDATES;
@@ -296,6 +307,7 @@ export function EnergyTopDevicesSettings({
         }
       }
     }
+    focusGrip.current = id;
     setUndo(null);
     void save(result.ids);
   }
@@ -304,10 +316,13 @@ export function EnergyTopDevicesSettings({
     const removed = removeTopDevice(idsRef.current, id);
     if (removed.index < 0) return;
     const name = labelFor(id);
+    const nextId = idsRef.current[removed.index + 1] ?? null;
     if (grabbedId === id) setGrabbedId(null);
+    if (nextId) focusGrip.current = nextId;
     void save(removed.ids).then((ok) => {
       if (!ok) return;
       setUndo({ id, index: removed.index, name });
+      if (!nextId) focusToast.current = true;
       if (undoTimer.current != null) window.clearTimeout(undoTimer.current);
       undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_TOAST_DURATION_MS);
     });
@@ -315,7 +330,8 @@ export function EnergyTopDevicesSettings({
 
   function onUndo() {
     if (!undo) return;
-    const restored = restoreTopDevice(idsRef.current, undo.id, undo.index);
+    const restoredId = undo.id;
+    const restored = restoreTopDevice(idsRef.current, restoredId, undo.index);
     if (!restored.ok) {
       switch (restored.reason) {
         case "full":
@@ -330,6 +346,7 @@ export function EnergyTopDevicesSettings({
         }
       }
     }
+    focusGrip.current = restoredId;
     setUndo(null);
     void save(restored.ids);
   }
@@ -542,24 +559,25 @@ export function EnergyTopDevicesSettings({
             </span>
           </div>
           {showSearch ? (
-            <div className="mb-2 flex h-12 items-center gap-2 rounded-[14px] border border-[#767b85] bg-white px-3.5 focus-within:border-[#4700B5] dark:border-[#6b6b75] dark:bg-[#1b1a21] dark:focus-within:border-[#8357be]">
+            <div className="mb-2 flex h-12 items-center gap-2 rounded-[14px] border border-[#767b85] bg-white px-3.5 focus-within:border-[#4700B5] focus-within:ring-2 focus-within:ring-brand dark:border-[#6b6b75] dark:bg-[#1b1a21] dark:focus-within:border-[#8357be] dark:focus-within:ring-brand-muted">
               <Search className="h-5 w-5 shrink-0 text-[#4b5563] dark:text-[#a1a1aa]" aria-hidden />
               <input
+                ref={searchInput}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t("settings.energy.topDevices.searchPlaceholder")}
                 aria-label={t("settings.energy.topDevices.searchLabel")}
                 autoComplete="off"
-                className={cn(
-                  "h-11 min-w-0 flex-1 bg-transparent text-base text-[#111827] outline-none placeholder:text-[#4b5563] dark:text-[#f3f4f6] dark:placeholder:text-[#c4c4cc]",
-                  FOCUS_RING_BRAND
-                )}
+                className="h-11 min-w-0 flex-1 bg-transparent text-base text-[#111827] outline-none placeholder:text-[#4b5563] dark:text-[#f3f4f6] dark:placeholder:text-[#c4c4cc]"
               />
               {search ? (
                 <button
                   type="button"
                   aria-label={t("settings.energy.topDevices.clearSearch")}
-                  onClick={() => setSearch("")}
+                  onClick={() => {
+                    setSearch("");
+                    searchInput.current?.focus();
+                  }}
                   className={cn(hit, "text-[#4b5563] dark:text-[#a1a1aa]")}
                 >
                   <X className="h-5 w-5" aria-hidden />
@@ -569,12 +587,20 @@ export function EnergyTopDevicesSettings({
           ) : null}
           <div className="overflow-hidden rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white dark:border-white/10 dark:bg-[#1b1a21]">
             {full ? (
-              <p className="flex gap-3 border-b border-[rgba(17,24,39,0.08)] px-4 py-3.5 text-[15px] leading-snug text-[#111827] dark:border-white/10 dark:text-[#f3f4f6]">
+              <p
+                role="status"
+                className="flex gap-3 border-b border-[rgba(17,24,39,0.08)] px-4 py-3.5 text-[15px] leading-snug text-[#111827] dark:border-white/10 dark:text-[#f3f4f6]"
+              >
                 <Info className="mt-0.5 h-5 w-5 shrink-0 text-[#4700B5] dark:text-[#B59ED8]" aria-hidden />
                 <span>{t("settings.energy.topDevices.full")}</span>
               </p>
             ) : null}
             <div data-available-list className="max-h-80 overflow-y-auto">
+              {query && visibleAvailable.length === 0 ? (
+                <p className="px-4 py-3.5 text-[15px] leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
+                  {t("settings.energy.topDevices.noMatch")}
+                </p>
+              ) : null}
               {visibleAvailable.map((entity) => {
                 const name = labelFor(entity.entity_id);
                 const onCard = ids.includes(entity.entity_id);
@@ -615,7 +641,9 @@ export function EnergyTopDevicesSettings({
       ) : null}
 
       {undo ? (
-        <UndoToast message={text("settings.energy.topDevices.removed", { name: undo.name })} actionLabel={t("editPanel.undo")} onAction={onUndo} />
+        <div ref={toastHost}>
+          <UndoToast message={text("settings.energy.topDevices.removed", { name: undo.name })} actionLabel={t("editPanel.undo")} onAction={onUndo} />
+        </div>
       ) : null}
     </div>
   );
@@ -698,7 +726,6 @@ export function EnergyTopDevicesEntry({
             )
           )
           .join(", ");
-  const hint = `${names} · ${count} · ${t("settings.energy.topDevices.rowTablets")}`;
   return (
     <div className="mb-4">
       <p className="mb-1.5 ml-4 text-sm font-semibold text-[#4b5563] dark:text-[#a1a1aa]">
@@ -720,7 +747,14 @@ export function EnergyTopDevicesEntry({
             <span className="block text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
               {t("settings.energy.topDevices.title")}
             </span>
-            <span className="mt-0.5 block text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">{hint}</span>
+            <span className="mt-0.5 flex min-w-0 items-center text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
+              <span data-entry-names className="min-w-0 truncate">
+                {names}
+              </span>
+              <span className="shrink-0 whitespace-nowrap">
+                {` · ${count} · ${t("settings.energy.topDevices.rowTablets")}`}
+              </span>
+            </span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0 text-[#4b5563] dark:text-[#a1a1aa]" aria-hidden />
         </button>
