@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
+  parseTopDeviceIds,
   sanitizeEnergyDashboardBackgrounds,
+  serializeTopDeviceIds,
   usableEnergyBackground,
+  validateTopDeviceIds,
 } from "@/lib/energy-dashboard";
 import { requireApiAuth } from "@/lib/require-api-auth";
 
@@ -18,7 +21,16 @@ export async function PUT(
   const denied = await requireApiAuth(request);
   if (denied) return denied;
   const { id } = await params;
-  let body: {
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  const body = raw as {
     layout?: string | null;
     widgets?: string | null;
     background?: string | null;
@@ -26,11 +38,19 @@ export async function PUT(
     backgroundDark?: string | null;
     welcomeTitle?: string | null;
     welcomeSubtitle?: string | null;
-  } = {};
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    topDeviceIds?: unknown;
+  };
+  const hasTopDeviceIds = Object.prototype.hasOwnProperty.call(body, "topDeviceIds");
+  let storedTopDeviceIds: string | null | undefined;
+  if (hasTopDeviceIds) {
+    const validated = validateTopDeviceIds(body.topDeviceIds);
+    if (!validated.ok) {
+      return NextResponse.json(
+        { error: "Invalid topDeviceIds", code: validated.code },
+        { status: 400 }
+      );
+    }
+    storedTopDeviceIds = serializeTopDeviceIds(validated.ids);
   }
 
   const data = {
@@ -48,6 +68,7 @@ export async function PUT(
     }),
     ...(body.welcomeTitle !== undefined && { welcomeTitle: body.welcomeTitle }),
     ...(body.welcomeSubtitle !== undefined && { welcomeSubtitle: body.welcomeSubtitle }),
+    ...(hasTopDeviceIds && { topDeviceIds: storedTopDeviceIds ?? null }),
   };
 
   try {
@@ -78,6 +99,7 @@ export async function PUT(
         backgroundDark: backgrounds.backgroundDark,
         welcomeTitle: cleaned.welcomeTitle ?? null,
         welcomeSubtitle: cleaned.welcomeSubtitle ?? null,
+        topDeviceIds: parseTopDeviceIds(cleaned.topDeviceIds),
       });
     }
     return NextResponse.json({
@@ -89,6 +111,7 @@ export async function PUT(
       backgroundDark: backgrounds.backgroundDark,
       welcomeTitle: dashboard.welcomeTitle ?? null,
       welcomeSubtitle: dashboard.welcomeSubtitle ?? null,
+      topDeviceIds: parseTopDeviceIds(dashboard.topDeviceIds),
     });
   } catch (err) {
     console.error("[PUT /api/energy-dashboard/[id]]", err);

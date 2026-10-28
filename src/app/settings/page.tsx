@@ -42,6 +42,11 @@ import { hydrateVoiceSatelliteStore, useVoiceSatelliteStore } from "@/stores/voi
 import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { EnergyEntitySettings } from "@/components/settings/energy-entity-settings";
+import {
+  EnergyTopDevicesEntry,
+  EnergyTopDevicesSettings,
+  type TopDeviceEntitiesStatus,
+} from "@/components/settings/energy-top-devices-settings";
 import { useNewsStore } from "@/stores/news-store";
 import { RobotVacuum, Bell, BookOpen, CalendarDays, ChevronRight, DoorOpen, Hand, Images, Image as ImageIcon, Info, Languages, LayoutGrid, ListTodo, Mic, Monitor, Music2, Newspaper, Palette, Plug, X, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -195,6 +200,8 @@ export default function SettingsPage() {
   const [uploadingBgLight, setUploadingBgLight] = useState(false);
   const [uploadingBgDark, setUploadingBgDark] = useState(false);
   const [energyDashboardId, setEnergyDashboardId] = useState<string | null>(null);
+  const [topDeviceIds, setTopDeviceIds] = useState<string[]>([]);
+  const [topDevicesOpen, setTopDevicesOpen] = useState(false);
   const [energyBackgroundLight, setEnergyBackgroundLight] = useState<string | null>(null);
   const [energyBackgroundDark, setEnergyBackgroundDark] = useState<string | null>(null);
   const [uploadingEnergyBgLight, setUploadingEnergyBgLight] = useState(false);
@@ -348,6 +355,11 @@ export default function SettingsPage() {
         if (d?.id) setEnergyDashboardId(d.id);
         setEnergyBackgroundLight(d?.backgroundLight ?? null);
         setEnergyBackgroundDark(d?.backgroundDark ?? null);
+        setTopDeviceIds(
+          Array.isArray(d?.topDeviceIds)
+            ? d.topDeviceIds.filter((id: unknown): id is string => typeof id === "string")
+            : []
+        );
       })
       .catch(() => {});
   }, []);
@@ -379,8 +391,13 @@ export default function SettingsPage() {
   }
 
   useEffect(() => {
-    if (section === "homeassistant" || saveMessage === "success") loadEntities();
-  }, [saveMessage, section]);
+    const energyPage = section === "paginas" && selectedPage === "energy";
+    if (section === "homeassistant" || energyPage || saveMessage === "success") loadEntities();
+  }, [saveMessage, section, selectedPage]);
+
+  useEffect(() => {
+    if (selectedPage !== "energy" || !energyStore.enabled) setTopDevicesOpen(false);
+  }, [selectedPage, energyStore.enabled]);
 
   // Soft-discover HA when opening Connection (self-hosted only).
   useEffect(() => {
@@ -827,6 +844,20 @@ export default function SettingsPage() {
   const setGlassDensity = useGlassDensityStore((s) => s.setDensity);
   const { language, setLanguage } = useLanguageStore();
 
+  async function openTopDevices() {
+    setTopDevicesOpen(true);
+    try {
+      const res = await fetch("/api/energy-dashboard", { cache: "no-store" });
+      const data = await res.json();
+      if (data?.id) setEnergyDashboardId(data.id);
+      if (Array.isArray(data?.topDeviceIds)) {
+        setTopDeviceIds(data.topDeviceIds.filter((id: unknown): id is string => typeof id === "string"));
+      }
+    } catch {
+      /* keep the choice from the last successful read */
+    }
+  }
+
   function openSection(id: SettingsSectionId) {
     go({ sectie: id, page: null, app: null }, isPortrait ? "push" : "replace");
   }
@@ -884,17 +915,34 @@ export default function SettingsPage() {
   );
 
   const shown: SettingsSectionId = section ?? "uiterlijk";
+  const showTopDevices = topDevicesOpen && selectedPage === "energy" && energyStore.enabled;
+  const topDeviceEntitiesStatus: TopDeviceEntitiesStatus =
+    entitiesLoading || (entitiesSyncedAt == null && !entitiesError)
+      ? "loading"
+      : entitiesError && entities.length === 0
+        ? "error"
+        : "ready";
   const currentApp = selectedApp ? APP_KEYS[selectedApp] : null;
   const currentPage = selectedPage ? PAGE_KEYS[selectedPage] : null;
-  const panelTitle = currentApp
-    ? t(currentApp.labelKey)
-    : currentPage
-      ? t(currentPage.labelKey)
-      : t(SECTION_KEYS[shown]);
-  const panelDescription = t(
-    currentApp ? currentApp.descriptionKey : currentPage ? currentPage.descriptionKey : SECTION_DESCRIPTIONS[shown]
-  );
-  const subpageBackLabel = selectedApp ? t("settings.apps.back") : selectedPage ? t("settings.pages.back") : undefined;
+  const panelTitle = showTopDevices
+    ? t("settings.energy.topDevices.title")
+    : currentApp
+      ? t(currentApp.labelKey)
+      : currentPage
+        ? t(currentPage.labelKey)
+        : t(SECTION_KEYS[shown]);
+  const panelDescription = showTopDevices
+    ? t("settings.energy.topDevices.intro")
+    : t(
+        currentApp ? currentApp.descriptionKey : currentPage ? currentPage.descriptionKey : SECTION_DESCRIPTIONS[shown]
+      );
+  const subpageBackLabel = showTopDevices
+    ? t("settings.energy")
+    : selectedApp
+      ? t("settings.apps.back")
+      : selectedPage
+        ? t("settings.pages.back")
+        : undefined;
   const themeLabel = t(mode === "auto" ? "settings.theme.system" : mode === "dark" ? "settings.theme.dark" : "settings.theme.light");
   const accentLabel = t(`settings.theme.color.${accent}`);
   const enabledPageCount = (Object.keys(PAGE_KEYS) as SettingsPageId[]).filter((id) => pageEnabled[id]).length;
@@ -961,7 +1009,7 @@ export default function SettingsPage() {
         title={panelTitle}
         description={panelDescription}
         portrait={isPortrait}
-        onBack={section ? back : undefined}
+        onBack={showTopDevices ? () => setTopDevicesOpen(false) : section ? back : undefined}
         backLabel={isPortrait ? (subpageBackLabel ?? t("settings.title")) : subpageBackLabel}
       />
       {(shown === "uiterlijk" || shown === "taal" || shown === "bediening") && (
@@ -1272,7 +1320,18 @@ export default function SettingsPage() {
             </>
           )}
 
-          {shown === "paginas" && selectedPage === "energy" && (
+          {shown === "paginas" && selectedPage === "energy" && showTopDevices && (
+            <EnergyTopDevicesSettings
+              dashboardId={energyDashboardId}
+              entityIds={topDeviceIds}
+              entities={entities}
+              entitiesStatus={topDeviceEntitiesStatus}
+              onEntityIds={setTopDeviceIds}
+              onRefreshEntities={loadEntities}
+            />
+          )}
+
+          {shown === "paginas" && selectedPage === "energy" && !showTopDevices && (
             <>
               <SettingsToggle
                 checked={energyStore.enabled}
@@ -1281,6 +1340,11 @@ export default function SettingsPage() {
               />
               {energyStore.enabled ? (
                 <>
+                  <EnergyTopDevicesEntry
+                    entityIds={topDeviceIds}
+                    entities={entities}
+                    onOpen={() => void openTopDevices()}
+                  />
                   <EnergyEntitySettings entities={entities} />
                   <SettingsGroup title={t("settings.energy.backgrounds")} description={t("settings.energy.backgroundsHint")}>
                     {energyDashboardId ? (

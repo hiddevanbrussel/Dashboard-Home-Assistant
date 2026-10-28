@@ -1351,6 +1351,7 @@ export const EnergyDashboardScalarFieldEnum = {
   costPerKwh: 'costPerKwh',
   networkFeesPerDay: 'networkFeesPerDay',
   fixedDeliveryCostMonth: 'fixedDeliveryCostMonth',
+  topDeviceIds: 'topDeviceIds',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

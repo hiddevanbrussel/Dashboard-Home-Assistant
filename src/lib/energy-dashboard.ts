@@ -628,3 +628,82 @@ export function filterEnergySensors(
   }
   return fallback;
 }
+
+/** Largest-consumer choice: sensor ids only, in the order the user picked. */
+export const TOP_DEVICE_MAX = 5;
+export const TOP_DEVICE_ID_RE = /^sensor\.[a-z0-9_]+$/;
+
+export type TopDeviceIdsError = "not_array" | "too_many" | "invalid_id";
+
+/**
+ * Read a stored choice. Null, broken JSON and non-arrays become [].
+ * Invalid ids and duplicates are dropped; order is kept; at most 5.
+ */
+export function parseTopDeviceIds(raw: unknown): string[] {
+  let value = raw;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      value = JSON.parse(trimmed) as unknown;
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(value)) return [];
+  return takeValidTopDeviceIds(value);
+}
+
+/** JSON array in choice order, or null when nothing is chosen. */
+export function serializeTopDeviceIds(ids: readonly string[]): string | null {
+  const cleaned = takeValidTopDeviceIds(ids);
+  if (cleaned.length === 0) return null;
+  return JSON.stringify(cleaned);
+}
+
+/**
+ * Reject a PUT body that is not an array, contains an invalid id, or names more than 5 devices.
+ * Duplicates are removed and the first occurrence wins.
+ */
+export function validateTopDeviceIds(
+  raw: unknown
+): { ok: true; ids: string[] } | { ok: false; code: TopDeviceIdsError } {
+  if (!Array.isArray(raw)) return { ok: false, code: "not_array" };
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== "string" || !TOP_DEVICE_ID_RE.test(item)) {
+      return { ok: false, code: "invalid_id" };
+    }
+    if (seen.has(item)) continue;
+    seen.add(item);
+    ids.push(item);
+  }
+  if (ids.length > TOP_DEVICE_MAX) return { ok: false, code: "too_many" };
+  return { ok: true, ids };
+}
+
+/** Energy sensors a user can put on the Largest-consumer card. Input order is kept. */
+export function filterTopDeviceCandidates<
+  T extends { entity_id: string; attributes?: Record<string, unknown> | null },
+>(entities: readonly T[]): T[] {
+  return entities.filter((entity) => {
+    if (!TOP_DEVICE_ID_RE.test(entity.entity_id)) return false;
+    const deviceClass = String(entity.attributes?.device_class ?? "").toLowerCase();
+    const stateClass = String(entity.attributes?.state_class ?? "").toLowerCase();
+    if (deviceClass !== "energy") return false;
+    return stateClass === "total" || stateClass === "total_increasing";
+  });
+}
+
+function takeValidTopDeviceIds(value: readonly unknown[]): string[] {
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string" || !TOP_DEVICE_ID_RE.test(item) || seen.has(item)) continue;
+    seen.add(item);
+    ids.push(item);
+    if (ids.length >= TOP_DEVICE_MAX) break;
+  }
+  return ids;
+}

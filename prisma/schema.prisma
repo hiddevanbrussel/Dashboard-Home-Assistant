@@ -69,6 +69,7 @@ model EnergyDashboard {
   costPerKwh              Float?   // Energiecontract: kosten per kWh (€)
   networkFeesPerDay       Float?   // Netbeheerkosten per dag (€)
   fixedDeliveryCostMonth  Float?   // Vaste leveringskosten per maand (€)
+  topDeviceIds            String?  // JSON-array van sensor-ids; volgorde = keuzevolgorde
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 }
