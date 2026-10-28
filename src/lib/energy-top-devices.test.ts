@@ -169,7 +169,23 @@ describe("top device copy and migration", () => {
   });
 
   it("leaves existing widgets untouched versus origin/main", () => {
-    const diff = execSync("git diff origin/main -- src/components/widgets", { encoding: "utf8" });
+    try {
+      execSync("git rev-parse --verify --quiet refs/remotes/origin/main", {
+        cwd: root,
+        stdio: "ignore",
+      });
+    } catch {
+      // pull_request checkout is depth 1 and does not include origin/main.
+      execSync("git fetch --depth=1 origin refs/heads/main:refs/remotes/origin/main", {
+        cwd: root,
+        env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+        stdio: "pipe",
+      });
+    }
+    const diff = execSync("git diff origin/main -- src/components/widgets", {
+      cwd: root,
+      encoding: "utf8",
+    });
     expect(diff).toBe("");
   });
 });
