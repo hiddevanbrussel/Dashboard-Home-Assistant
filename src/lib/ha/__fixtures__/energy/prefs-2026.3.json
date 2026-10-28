@@ -1,0 +1,53 @@
+{
+  "energy_sources": [
+    {
+      "type": "grid",
+      "name": "Grid",
+      "stat_energy_from": "sensor.grid_import",
+      "stat_energy_to": "sensor.grid_export",
+      "stat_cost": "sensor.grid_cost",
+      "stat_compensation": "sensor.grid_compensation",
+      "entity_energy_price": "sensor.energy_price",
+      "number_energy_price": null,
+      "entity_energy_price_export": null,
+      "number_energy_price_export": 0.08,
+      "stat_rate": "sensor.grid_power",
+      "power_config": { "stat_rate": "sensor.grid_power", "ignored": true },
+      "cost_adjustment_day": 0.35,
+      "vendor_extension": { "keep": false }
+    },
+    {
+      "type": "solar",
+      "stat_energy_from": "sensor.solar_yield",
+      "stat_rate": "sensor.solar_power",
+      "config_entry_solar_forecast": ["forecast_entry"],
+      "unexpected": 1
+    },
+    {
+      "type": "battery",
+      "name": "Home battery",
+      "stat_energy_from": "sensor.battery_out",
+      "stat_energy_to": "sensor.battery_in",
+      "stat_rate": "sensor.battery_power",
+      "power_config": {
+        "stat_rate_from": "sensor.battery_discharge",
+        "stat_rate_to": "sensor.battery_charge"
+      },
+      "stat_soc": "sensor.battery_soc",
+      "capacity": 10.4
+    },
+    {
+      "type": "gas",
+      "stat_energy_from": "sensor.gas",
+      "number_energy_price": 1.2
+    },
+    {
+      "type": "water",
+      "stat_energy_from": "sensor.water"
+    },
+    { "type": "fusion", "stat_energy_from": "sensor.ignore_me" }
+  ],
+  "device_consumption": [{ "stat_consumption": "sensor.fridge", "name": "Fridge", "extra": true }],
+  "device_consumption_water": [{ "stat_consumption": "sensor.shower" }],
+  "future_root": true
+}

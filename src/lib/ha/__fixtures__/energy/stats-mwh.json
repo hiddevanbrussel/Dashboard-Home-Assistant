@@ -1,0 +1,5 @@
+{
+  "statistic_id": "sensor.solar_yield_mwh",
+  "unit": "MWh",
+  "points": [{ "start": "2026-01-15T00:00:00+01:00", "change": 1.25 }]
+}

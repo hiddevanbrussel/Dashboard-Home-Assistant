@@ -1,0 +1,57 @@
+{
+  "energy_sources": [
+    {
+      "type": "grid",
+      "flow_from": [
+        {
+          "stat_energy_from": "sensor.grid_import",
+          "stat_cost": "sensor.grid_cost",
+          "entity_energy_price": null,
+          "number_energy_price": null
+        },
+        {
+          "stat_energy_from": "sensor.grid_import_2",
+          "entity_energy_price": "sensor.energy_price"
+        }
+      ],
+      "flow_to": [
+        {
+          "stat_energy_to": "sensor.grid_export",
+          "stat_compensation": null,
+          "number_energy_price": 0.09
+        }
+      ],
+      "cost_adjustment_day": 0.35,
+      "vendor_extension": true
+    },
+    {
+      "type": "solar",
+      "stat_energy_from": "sensor.solar_yield",
+      "config_entry_solar_forecast": ["forecast_entry"],
+      "unexpected": 1
+    },
+    {
+      "type": "battery",
+      "stat_energy_from": "sensor.battery_out",
+      "stat_energy_to": "sensor.battery_in"
+    },
+    {
+      "type": "gas",
+      "stat_energy_from": "sensor.gas",
+      "number_energy_price": 1.2
+    },
+    {
+      "type": "water",
+      "stat_energy_from": "sensor.water"
+    },
+    {
+      "type": "fusion",
+      "stat_energy_from": "sensor.ignore_me"
+    }
+  ],
+  "device_consumption": [
+    { "stat_consumption": "sensor.fridge", "name": "Fridge", "extra": true }
+  ],
+  "device_consumption_water": [{ "stat_consumption": "sensor.shower" }],
+  "future_root": { "a": 1 }
+}
