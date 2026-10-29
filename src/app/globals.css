@@ -23,12 +23,15 @@
     --glass-border-dark: rgba(255, 255, 255, 0.08);
     /* Neutral glass fill — accent/theme color is for menu items, not surfaces. */
     --glass-fill: 255 255 255;
+    /* Opaque glass for the energy pills. No backdrop-filter. */
+    --glass-strong: rgb(255 255 255 / 0.88);
   }
 
   .dark {
     --page-bg: #0a0014;
     --card-bg: rgb(24 24 28 / 0.55);
     --glass-fill: 24 24 28;
+    --glass-strong: rgb(24 24 28 / 0.9);
     --glass-border-light: rgba(255, 255, 255, 0.10);
     --glass-border-dark: rgba(255, 255, 255, 0.12);
   }

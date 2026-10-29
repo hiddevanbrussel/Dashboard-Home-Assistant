@@ -53,6 +53,9 @@ import { useDashboardEditFlag } from "@/hooks/use-dashboard-edit-flag";
 import { cn, generateId } from "@/lib/utils";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import { EnergyPageBackground } from "@/components/energy/energy-page-background";
+import { EnergyOverview } from "@/components/energy/overview/energy-overview";
+import { EnergyTabs } from "@/components/energy/overview/energy-tabs";
+import { useEnergyTab } from "@/stores/energy-overview-store";
 import { EditPanelModal } from "./edit-panel";
 
 type LayoutItem = ReactGridLayout.Layout;
@@ -313,6 +316,7 @@ const STORAGE_SCOPE = "energy";
 
 export default function EnergyPage() {
   const { t } = useTranslation();
+  const { tab, ready: energyTabReady } = useEnergyTab();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
@@ -734,7 +738,7 @@ export default function EnergyPage() {
 
   if (isLoading || error) {
     return (
-      <AppShell activeTab="/energy" headerFixed>
+      <AppShell activeTab="/energy" headerFixed headerCenterAction={<EnergyTabs />}>
         <div className="relative min-h-[calc(100dvh-5rem)]">
           <EnergyPageBackground />
           <div className="relative z-[1] flex flex-col items-center justify-center gap-4 pt-14 py-12 px-4">
@@ -766,7 +770,13 @@ export default function EnergyPage() {
       hideWelcome={!editMode}
       welcomeEditable={editMode}
       onWelcomeChange={editMode ? ({ title, subtitle }) => { setWelcomeTitle(title); setWelcomeSubtitle(subtitle); } : undefined}
+      headerCenterAction={<EnergyTabs />}
     >
+      {!energyTabReady ? (
+        <div className="relative min-h-[calc(100dvh-5rem)]" data-energy-tab-pending />
+      ) : tab === "overview" ? (
+        <EnergyOverview />
+      ) : (
       <div
         className={cn("relative min-h-[calc(100dvh-5rem)]", editMode ? "space-y-6" : "")}
         {...(!editMode && getEditModeAllowed() && {
@@ -1153,6 +1163,7 @@ export default function EnergyPage() {
         )}
       </div>
       </div>
+      )}
     </AppShell>
   );
 }

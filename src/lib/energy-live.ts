@@ -172,6 +172,12 @@ function solarPowerNow(input: {
   return manual == null ? null : clampAtLeastZero(manual);
 }
 
+export function solarPowerKw(
+  input: Parameters<typeof solarPowerNow>[0] & { previous?: readonly number[] }
+): number | null {
+  return smooth(solarPowerNow(input), input.previous);
+}
+
 /**
  * House power. A measured consumptionEntityId wins.
  * Otherwise solar + grid + battery, clamped at zero.

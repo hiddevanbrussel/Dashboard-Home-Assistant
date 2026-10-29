@@ -1,0 +1,192 @@
+/**
+ * Which house render to show, whether the mint flow may run, and the one-line sentence.
+ * The story engine in a later step replaces the sentence. This one only picks a key.
+ */
+
+import type { EnergyModel } from "@/lib/energy-prefs";
+import type { EnergyTab } from "@/lib/energy-tab";
+
+export const HOUSE_VARIANTS = [
+  "dag-licht",
+  "dag-donker",
+  "nacht-licht",
+  "nacht-donker",
+  "zonder-licht",
+  "zonder-donker",
+] as const;
+
+export type HouseVariantId = (typeof HOUSE_VARIANTS)[number];
+
+export type HouseTheme = "light" | "dark";
+
+const FLOW_EPSILON_KW = 0.05;
+
+export function houseVariant(input: {
+  theme: HouseTheme;
+  sunAboveHorizon: boolean;
+  solarLinked: boolean;
+  batteryLinked: boolean;
+}): HouseVariantId {
+  const tone = input.theme === "dark" ? "donker" : "licht";
+  if (!input.solarLinked && !input.batteryLinked) {
+    return tone === "donker" ? "zonder-donker" : "zonder-licht";
+  }
+  if (input.sunAboveHorizon) return tone === "donker" ? "dag-donker" : "dag-licht";
+  return tone === "donker" ? "nacht-donker" : "nacht-licht";
+}
+
+/** The other time of day for the same theme. The "zonder" renders have no pair. */
+export function dayNightPair(variant: HouseVariantId): HouseVariantId | null {
+  switch (variant) {
+    case "dag-licht":
+      return "nacht-licht";
+    case "dag-donker":
+      return "nacht-donker";
+    case "nacht-licht":
+      return "dag-licht";
+    case "nacht-donker":
+      return "dag-donker";
+    case "zonder-licht":
+    case "zonder-donker":
+      return null;
+    default: {
+      const neverVariant: never = variant;
+      return neverVariant;
+    }
+  }
+}
+
+export function houseAssetPath(variant: HouseVariantId, ext: "avif" | "webp"): string {
+  return `/energy/house/huis-${variant}.${ext}`;
+}
+
+export function solarIsLinked(model: EnergyModel | null, manualPowerId: string, manualYieldId: string): boolean {
+  if (manualPowerId.trim() || manualYieldId.trim()) return true;
+  if (!model) return false;
+  return model.energySources.some(
+    (source) => source.type === "solar" && Boolean(source.statEnergyFrom || source.statRate)
+  );
+}
+
+export function batteryIsLinked(model: EnergyModel | null, manualSocId: string, manualPowerId: string): boolean {
+  if (manualSocId.trim() || manualPowerId.trim()) return true;
+  if (!model) return false;
+  return model.energySources.some((source) => {
+    if (source.type !== "battery") return false;
+    return Boolean(
+      source.statSoc || source.statRate || source.statEnergyFrom || source.statEnergyTo || source.powerConfig
+    );
+  });
+}
+
+export function gridImportIsLinked(
+  model: EnergyModel | null,
+  signedId: string,
+  importId: string
+): boolean {
+  if (signedId.trim() || importId.trim()) return true;
+  if (!model) return false;
+  return model.energySources.some(
+    (source) => source.type === "grid" && Boolean(source.statEnergyFrom || source.statRate || source.powerConfig)
+  );
+}
+
+export function gridExportIsLinked(
+  model: EnergyModel | null,
+  signedId: string,
+  exportId: string
+): boolean {
+  if (signedId.trim() || exportId.trim()) return true;
+  if (!model) return false;
+  return model.energySources.some(
+    (source) => source.type === "grid" && Boolean(source.statEnergyTo || source.statRate || source.powerConfig)
+  );
+}
+
+export type AnimateInput = {
+  reducedMotion: boolean;
+  glassOff: boolean;
+  hidden: boolean;
+  tab: EnergyTab;
+  visible: boolean;
+  flowing: boolean;
+  screensaver: boolean;
+};
+
+/** Mint dots and the panel glow run only while power flows and nothing has asked them to hold still. */
+export function shouldAnimate(input: AnimateInput): boolean {
+  if (input.reducedMotion || input.glassOff) return false;
+  if (input.hidden || input.screensaver) return false;
+  if (input.tab !== "overview" || !input.visible) return false;
+  return input.flowing;
+}
+
+export function powerIsFlowing(kilowatts: readonly (number | null)[]): boolean {
+  return kilowatts.some((value) => value != null && Math.abs(value) >= FLOW_EPSILON_KW);
+}
+
+/** Three duration steps so a 5s poll inside the same band does not restart the animation. */
+export function flowStep(kilowatts: number): 1 | 2 | 3 {
+  const value = Math.abs(kilowatts);
+  if (value >= 3) return 3;
+  if (value >= 0.8) return 2;
+  return 1;
+}
+
+export function flowDurationMs(step: 1 | 2 | 3): number {
+  switch (step) {
+    case 1:
+      return 4200;
+    case 2:
+      return 2400;
+    case 3:
+      return 1400;
+    default: {
+      const neverStep: never = step;
+      return neverStep;
+    }
+  }
+}
+
+export function strongestFlowKw(kilowatts: readonly (number | null)[]): number {
+  let best = 0;
+  for (const value of kilowatts) {
+    if (value == null) continue;
+    const abs = Math.abs(value);
+    if (abs > best) best = abs;
+  }
+  return best;
+}
+
+export function nowSentenceKey(input: {
+  solarLinked: boolean;
+  batteryLinked: boolean;
+  gridLinked: boolean;
+  solarKw: number | null;
+  batteryKw: number | null;
+  gridKw: number | null;
+}): string {
+  const linked = input.solarLinked || input.batteryLinked || input.gridLinked;
+  if (!linked) return "energy.overview.now.sentenceSetup";
+  if (input.solarKw != null && input.solarKw >= FLOW_EPSILON_KW) return "energy.overview.now.sentenceSolar";
+  if (input.batteryKw != null && input.batteryKw >= FLOW_EPSILON_KW) return "energy.overview.now.sentenceBatteryOut";
+  if (input.batteryKw != null && input.batteryKw <= -FLOW_EPSILON_KW) return "energy.overview.now.sentenceBatteryIn";
+  if (input.gridKw != null && input.gridKw >= FLOW_EPSILON_KW) return "energy.overview.now.sentenceImport";
+  if (input.gridKw != null && input.gridKw <= -FLOW_EPSILON_KW) return "energy.overview.now.sentenceExport";
+  return "energy.overview.now.sentenceIdle";
+}
+
+export function formatPowerKw(value: number, language: "nl" | "en"): string {
+  const formatted = new Intl.NumberFormat(language === "nl" ? "nl-NL" : "en-GB", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value);
+  return `${formatted} kW`;
+}
+
+export function formatSoc(value: number, language: "nl" | "en"): string {
+  const formatted = new Intl.NumberFormat(language === "nl" ? "nl-NL" : "en-GB", {
+    maximumFractionDigits: 0,
+  }).format(Math.round(value));
+  return `${formatted}%`;
+}
