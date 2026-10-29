@@ -675,33 +675,63 @@ type CachedPrefs = {
   staleUntil: number;
 };
 
-const prefsCache = new Map<string, CachedPrefs>();
+const PREFS_CACHE_PREFIX = "energy-prefs\n";
 
 export function clearEnergyPrefsCache(): void {
-  prefsCache.clear();
+  energyStatisticsCache.clear();
 }
 
 function prefsCacheKey(connectionId: string, baseUrl: string): string {
-  return `${connectionId}\n${baseUrl}`;
+  return `${PREFS_CACHE_PREFIX}${connectionId}\n${baseUrl}`;
+}
+
+function isCachedPrefs(value: unknown): value is CachedPrefs {
+  if (!value || typeof value !== "object") return false;
+  const record = value as CachedPrefs;
+  return (
+    typeof record.freshUntil === "number" &&
+    typeof record.staleUntil === "number" &&
+    !!record.model &&
+    (record.model.source === "prefs" || record.model.source === "manual")
+  );
 }
 
 function readPrefs(key: string, nowMs: number): CachedPrefs | null {
-  const hit = prefsCache.get(key);
-  if (!hit || hit.staleUntil <= nowMs) {
-    if (hit) prefsCache.delete(key);
-    return null;
-  }
+  const hit = energyStatisticsCache.get(key);
+  if (!isCachedPrefs(hit) || hit.staleUntil <= nowMs) return null;
   return hit;
 }
 
 function rememberPrefs(key: string, model: EnergyModel, catalog: string[] | null, nowMs: number): void {
-  const prev = prefsCache.get(key);
-  prefsCache.set(key, {
+  const prev = readPrefs(key, nowMs);
+  const entry: CachedPrefs = {
     model,
     catalog: catalog ?? prev?.catalog ?? null,
     freshUntil: nowMs + PREFS_FRESH_MS,
     staleUntil: nowMs + ENERGY_CACHE_CLOSED_TTL_MS,
-  });
+  };
+  energyStatisticsCache.set(key, entry, ENERGY_CACHE_CLOSED_TTL_MS);
+}
+
+/**
+ * Cached energy/get_prefs. A fresh hit opens no websocket.
+ * When Home Assistant is down, the last cached model is returned instead of failing.
+ */
+export async function loadEnergyPrefs(config: HaTimeZoneConfig, connectionId: string): Promise<EnergyModel> {
+  const nowMs = Date.now();
+  const key = prefsCacheKey(connectionId, config.baseUrl);
+  const cached = readPrefs(key, nowMs);
+  if (cached && cached.freshUntil > nowMs) return cached.model;
+  try {
+    const [prefs] = await haWsCommands(config, [{ type: "energy/get_prefs" }]);
+    if (!prefs) throw new Error("Energy prefs unavailable (error)");
+    const model = energyModelFromCommand(prefs);
+    rememberPrefs(key, model, cached?.catalog ?? null, nowMs);
+    return model;
+  } catch (error) {
+    if (cached) return cached.model;
+    throw error;
+  }
 }
 
 type PlannedStats = {

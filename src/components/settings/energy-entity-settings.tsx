@@ -27,7 +27,7 @@ const choice = cn(
 );
 
 const choiceSelected =
-  "bg-[#4700B5] text-white border-[#4700B5] dark:bg-[#8357be] dark:text-white dark:border-[#8357be]";
+  "bg-[#4700B5] text-white border-[#4700B5] dark:bg-[#8357be] dark:text-white dark:border-[#8357be] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#1b1a21]";
 
 const choiceIdle = "border-[#767b85] text-[#111827] dark:border-[#6b6b75] dark:text-[#f3f4f6]";
 
@@ -79,7 +79,7 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             onClick={() => chooseMode("signed")}
             className={cn(choice, mode === "signed" ? choiceSelected : choiceIdle)}
           >
-            {mode === "signed" ? <Check className="h-4 w-4" aria-hidden /> : null}
+            <Check className={cn("h-4 w-4 shrink-0", mode !== "signed" && "invisible")} aria-hidden />
             {t("settings.energy.liveGridSigned")}
           </button>
           <button
@@ -89,7 +89,7 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             onClick={() => chooseMode("split")}
             className={cn(choice, mode === "split" ? choiceSelected : choiceIdle)}
           >
-            {mode === "split" ? <Check className="h-4 w-4" aria-hidden /> : null}
+            <Check className={cn("h-4 w-4 shrink-0", mode !== "split" && "invisible")} aria-hidden />
             {t("settings.energy.liveGridSplit")}
           </button>
         </div>
@@ -166,7 +166,7 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             onClick={() => chooseTariff("fixed")}
             className={cn(choice, tariffMode === "fixed" ? choiceSelected : choiceIdle)}
           >
-            {tariffMode === "fixed" ? <Check className="h-4 w-4" aria-hidden /> : null}
+            <Check className={cn("h-4 w-4 shrink-0", tariffMode !== "fixed" && "invisible")} aria-hidden />
             {t("settings.energy.tariffFixed")}
           </button>
           <button
@@ -176,7 +176,7 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             onClick={() => chooseTariff("dynamic")}
             className={cn(choice, tariffMode === "dynamic" ? choiceSelected : choiceIdle)}
           >
-            {tariffMode === "dynamic" ? <Check className="h-4 w-4" aria-hidden /> : null}
+            <Check className={cn("h-4 w-4 shrink-0", tariffMode !== "dynamic" && "invisible")} aria-hidden />
             {t("settings.energy.tariffDynamic")}
           </button>
         </div>

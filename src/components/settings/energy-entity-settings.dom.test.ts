@@ -65,12 +65,20 @@ describe("energy live power and tariff settings", () => {
       expect(button.className).toContain("dark:bg-[#8357be]");
       expect(button.className).toContain("dark:text-white");
       expect(button.className).toContain("dark:border-[#8357be]");
+      expect(button.className).toContain("focus-visible:ring-offset-2");
+      expect(button.className).toContain("focus-visible:ring-offset-white");
+      expect(button.className).toContain("dark:focus-visible:ring-offset-[#1b1a21]");
       expect(button.className).toMatch(/\bh-11\b/);
       expect(button.className).toContain("focus-visible:ring-2");
+      expect(button.querySelector("svg")?.getAttribute("class") ?? "").not.toContain("invisible");
     }
     const idle = [...document.querySelectorAll('[role="radio"][aria-checked="false"]')];
     expect(idle.length).toBeGreaterThan(0);
-    for (const button of idle) expect(button.querySelector("svg")).toBeNull();
+    for (const button of idle) {
+      const icon = button.querySelector("svg")?.getAttribute("class") ?? "";
+      expect(icon).toContain("invisible");
+      expect(icon).toContain("w-4");
+    }
     const choices = [...document.querySelectorAll("[role=radio], [role=switch]")];
     expect(choices.length).toBeGreaterThanOrEqual(5);
     for (const choice of choices) {

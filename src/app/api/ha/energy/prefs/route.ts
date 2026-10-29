@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { getHaConnection } from "@/lib/db";
-import { energyModelFromCommand } from "@/lib/energy-prefs";
-import { redactSecrets } from "@/lib/energy-stats";
-import { haWsCommands } from "@/lib/ha/ws-commands";
+import { loadEnergyPrefs, redactSecrets } from "@/lib/energy-stats";
 import { requireApiAuth } from "@/lib/require-api-auth";
 
 /**
@@ -22,11 +20,8 @@ export async function GET(request: Request) {
     );
   }
   try {
-    const [prefs] = await haWsCommands(config, [{ type: "energy/get_prefs" }]);
-    if (!prefs) {
-      return NextResponse.json({ error: "Energy prefs unavailable (error)" }, { status: 502 });
-    }
-    return NextResponse.json(energyModelFromCommand(prefs));
+    const model = await loadEnergyPrefs(config, connectionId ?? config.baseUrl);
+    return NextResponse.json(model);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Energy prefs unavailable";
     return NextResponse.json({ error: redactSecrets(message, [config.token]) }, { status: 502 });

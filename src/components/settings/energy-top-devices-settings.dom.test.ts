@@ -636,8 +636,42 @@ describe("largest consumer picker", () => {
       expect(document.body.textContent).toContain("2 van 5");
       expect(document.body.textContent).toContain("Warmtepomp");
       expect(document.body.textContent).toContain("Wasmachine");
+      expect(document.activeElement).not.toBe(document.body);
+      expect(document.activeElement?.getAttribute("aria-label")).toBe("Zoek een apparaat");
     });
     expect(document.body.textContent).not.toContain("De opgeslagen keuze kon niet geladen worden.");
     expect(puts).toEqual([]);
+  });
+
+  it("shows a device_consumption name on the energy row when Home Assistant has no state", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          source: "prefs",
+          deviceConsumption: [{ statConsumption: "sensor.qa_e2b_spook", name: "QA Spookapparaat" }],
+          deviceConsumptionWater: [],
+          energySources: [],
+        }),
+      }))
+    );
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root?.render(
+        createElement(EnergyTopDevicesEntry, {
+          entityIds: ["sensor.qa_e2b_spook"],
+          entities: [],
+          onOpen: () => undefined,
+          choiceStatus: "ready",
+        })
+      );
+    });
+    await until(() => {
+      expect(document.querySelector("[data-entry-names]")?.textContent).toContain("QA Spookapparaat");
+    });
+    expect(document.body.textContent).not.toContain("Niet gevonden");
   });
 });

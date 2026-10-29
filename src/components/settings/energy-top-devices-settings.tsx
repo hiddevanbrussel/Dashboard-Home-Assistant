@@ -68,6 +68,13 @@ function sameIds(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((id, index) => id === b[index]);
 }
 
+function labelSources(entities: readonly TopDeviceEntity[], proposal: readonly ProposalDevice[]): TopDeviceEntity[] {
+  if (proposal.length === 0) return [...entities];
+  const merged = mergeProposedCandidates(entities, proposal);
+  const seen = new Set(merged.map((entity) => entity.entity_id));
+  return [...merged, ...entities.filter((entity) => !seen.has(entity.entity_id))];
+}
+
 function highlightName(name: string, query: string) {
   const needle = query.trim().toLowerCase();
   if (!needle) return name;
@@ -124,6 +131,9 @@ export function EnergyTopDevicesSettings({
   const focusToast = useRef(false);
   const toastHost = useRef<HTMLDivElement | null>(null);
   const searchInput = useRef<HTMLInputElement | null>(null);
+  const retryButton = useRef<HTMLButtonElement | null>(null);
+  const chosenHeading = useRef<HTMLHeadingElement | null>(null);
+  const retryFocus = useRef(false);
   const undoTimer = useRef<number | null>(null);
   const [prefsStatus, setPrefsStatus] = useState<"loading" | "ready" | "error">("loading");
   const [proposal, setProposal] = useState<ProposalDevice[]>([]);
@@ -219,6 +229,17 @@ export function EnergyTopDevicesSettings({
     focusGrip.current = null;
     gripNodes.current.get(id)?.focus();
   }, [ids]);
+
+  useEffect(() => {
+    if (!retryFocus.current || choiceStatus === "loading") return;
+    retryFocus.current = false;
+    if (choiceStatus === "ready") {
+      if (searchInput.current) searchInput.current.focus();
+      else chosenHeading.current?.focus();
+      return;
+    }
+    retryButton.current?.focus();
+  }, [choiceStatus]);
 
   useLayoutEffect(() => {
     if (!focusToast.current || !undo) return;
@@ -538,7 +559,11 @@ export function EnergyTopDevicesSettings({
           </p>
           <button
             type="button"
-            onClick={onRetryChoice}
+            ref={retryButton}
+            onClick={() => {
+              retryFocus.current = true;
+              onRetryChoice?.();
+            }}
             className={cn(
               "inline-flex h-11 items-center rounded-full border border-[#767b85] px-4 text-[15px] font-semibold outline-none dark:border-[#6b6b75] dark:text-[#f3f4f6]",
               FOCUS_RING_BRAND
@@ -551,7 +576,11 @@ export function EnergyTopDevicesSettings({
 
       {showChosen ? <section className="mb-4">
         <div className="mb-1.5 ml-4 flex min-h-5 items-center gap-2">
-          <h3 className="text-sm font-semibold text-[#4b5563] dark:text-[#a1a1aa]">
+          <h3
+            ref={chosenHeading}
+            tabIndex={-1}
+            className="text-sm font-semibold text-[#4b5563] outline-none dark:text-[#a1a1aa]"
+          >
             {t("settings.energy.topDevices.onCardGroup")}
           </h3>
           <span className="ml-auto flex items-center gap-1">
@@ -934,7 +963,37 @@ export function EnergyTopDevicesEntry({
   onRetry?: () => void;
 }) {
   const { t } = useTranslation();
+  const [proposal, setProposal] = useState<ProposalDevice[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/ha/energy/prefs", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("prefs");
+        return response.json() as Promise<{
+          deviceConsumption?: Array<{ statConsumption?: string | null; name?: string | null }>;
+        }>;
+      })
+      .then((body) => {
+        if (cancelled) return;
+        const devices = Array.isArray(body.deviceConsumption) ? body.deviceConsumption : [];
+        setProposal(
+          proposalFromDevices(
+            devices.map((device) => ({
+              statConsumption: typeof device.statConsumption === "string" ? device.statConsumption : null,
+              name: typeof device.name === "string" ? device.name : null,
+            }))
+          )
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setProposal([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [entityIds]);
   const count = fill(t("settings.energy.topDevices.count"), { n: entityIds.length, max: TOP_DEVICE_MAX });
+  const labelEntities = labelSources(entities, proposal);
   const names =
     entityIds.length === 0
       ? t("settings.energy.topDevices.emptyTitle")
@@ -942,7 +1001,7 @@ export function EnergyTopDevicesEntry({
           .map((id) =>
             topDeviceLabel(
               id,
-              entities,
+              labelEntities,
               t("settings.energy.topDevices.unnamed"),
               t("settings.energy.topDevices.notFound")
             )
