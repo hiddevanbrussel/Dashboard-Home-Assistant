@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   anchorPoint,
   batteryLed,
+  leaderStart,
   mintLine,
   panelPolygon,
   samplePolyline,
@@ -81,37 +82,46 @@ export function NowHeroLayers({
     const host = hostRef.current;
     const frame = host?.parentElement;
     if (!host || !frame) return;
-    const frameRect = frame.getBoundingClientRect();
-    if (frameRect.width < 1 || frameRect.height < 1) {
-      setLeaders([]);
-      return;
-    }
-    const anchorKey = {
-      solar: "zon_panelen",
-      grid: "net_voordeur",
-      battery: "batterij",
-    } as const;
-    const next: Array<{ d: string; ax: number; ay: number; off: boolean }> = [];
-    for (const kind of ["solar", "grid", "battery"] as const) {
-      const button = frame.querySelector(`[data-now-label="${kind}"]`);
-      const anchor = anchorPoint(variant, anchorKey[kind]);
-      if (!(button instanceof HTMLElement) || !anchor) continue;
-      const pill = button.getBoundingClientRect();
-      const right = kind !== "grid";
-      const top = kind === "solar";
-      const sx = (right ? pill.left + 18 : pill.right - 18) - frameRect.left;
-      const sy = (top ? pill.bottom : pill.top) - frameRect.top;
-      const ax = (anchor.x / 100) * frameRect.width;
-      const ay = (anchor.y / 100) * frameRect.height;
-      const elbow = sy + (ay > sy ? 8 : -8);
-      next.push({
-        d: `M${sx.toFixed(1)} ${sy.toFixed(1)} L${sx.toFixed(1)} ${elbow.toFixed(1)} L${ax.toFixed(1)} ${ay.toFixed(1)}`,
-        ax,
-        ay,
-        off: button.getAttribute("data-now-off") === "1",
-      });
-    }
-    setLeaders(next);
+    const stage = frame.closest("[data-now-stage]") ?? frame;
+    const measure = () => {
+      const frameRect = frame.getBoundingClientRect();
+      if (frameRect.width < 1 || frameRect.height < 1) {
+        setLeaders([]);
+        return;
+      }
+      const anchorKey = {
+        solar: "zon_panelen",
+        grid: "net_voordeur",
+        battery: "batterij",
+      } as const;
+      const next: Array<{ d: string; ax: number; ay: number; off: boolean }> = [];
+      for (const kind of ["solar", "grid", "battery"] as const) {
+        const button = stage.querySelector(`[data-now-label="${kind}"]`);
+        const anchor = anchorPoint(variant, anchorKey[kind]);
+        if (!(button instanceof HTMLElement) || !anchor) continue;
+        const pill = button.getBoundingClientRect();
+        const side = kind === "solar" ? "tr" : kind === "grid" ? "bl" : "br";
+        const start = leaderStart(pill, side);
+        const sx = start.x - frameRect.left;
+        const sy = start.y - frameRect.top;
+        const ax = (anchor.x / 100) * frameRect.width;
+        const ay = (anchor.y / 100) * frameRect.height;
+        const elbow = sy + (ay > sy ? 8 : -8);
+        next.push({
+          d: `M${sx.toFixed(1)} ${sy.toFixed(1)} L${sx.toFixed(1)} ${elbow.toFixed(1)} L${ax.toFixed(1)} ${ay.toFixed(1)}`,
+          ax,
+          ay,
+          off: button.getAttribute("data-now-off") === "1",
+        });
+      }
+      setLeaders(next);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(frame);
+    stage.querySelectorAll("[data-now-label]").forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
   }, [variant, labelSig, box.w, box.h]);
   const pointsAttr = (points: readonly Point[]) => points.map((point) => `${point.x},${point.y}`).join(" ");
 

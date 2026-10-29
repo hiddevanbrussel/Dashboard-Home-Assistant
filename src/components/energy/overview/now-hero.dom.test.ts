@@ -104,6 +104,7 @@ describe("Nu hero live values", () => {
     await until(() => {
       expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-hero")).not.toBe("pending");
     });
+    expect(document.querySelector("[data-now-house]")?.textContent).toContain("–");
     expect(document.querySelector("[data-now-label='solar']")).toBeNull();
     expect(document.querySelector("[data-now-label='battery']")).toBeNull();
     expect(document.body.textContent).not.toContain("rust");
@@ -132,6 +133,89 @@ describe("Nu hero live values", () => {
       expect(battery).toContain("levert");
       expect(battery).not.toContain("laadt");
     });
+  });
+
+  it("rounds the sentence to 50 W and keeps the pill and the house number raw", async () => {
+    useEnergyStore.getState().setEntity("gridPowerEntityId", "sensor.grid_power");
+    useEntityStateStore.getState().setStates([
+      sun,
+      solarState("730"),
+      { entity_id: "sensor.grid_power", state: "300", attributes: { unit_of_measurement: "W", device_class: "power" } },
+    ]);
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape" }));
+    });
+    await until(() => {
+      expect(document.querySelector("[data-now-label='solar'] b")?.textContent).toBe("730 W");
+      expect(document.querySelector("[data-now-house]")?.textContent).toContain("1,03");
+      expect(document.querySelector("[data-now-house]")?.textContent).not.toContain("1,05");
+      const sentence = document.querySelector("[data-now-sentence]")?.textContent ?? "";
+      expect(sentence).toContain("750 W");
+      expect(sentence).toContain("1,05 kW");
+      expect(sentence).not.toContain("730");
+    });
+    const frame = document.querySelector("[data-now-frame]");
+    const solar = document.querySelector("[data-now-label='solar']");
+    expect(frame?.contains(solar)).toBe(false);
+    expect(document.querySelector("[data-now-stage]")?.contains(solar)).toBe(true);
+    await act(async () => {
+      useEntityStateStore.getState().setStates([
+        sun,
+        solarState("740"),
+        { entity_id: "sensor.grid_power", state: "300", attributes: { unit_of_measurement: "W", device_class: "power" } },
+      ]);
+    });
+    await until(() => {
+      expect(document.querySelector("[data-now-label='solar'] b")?.textContent).toBe("740 W");
+      expect(document.querySelector("[data-now-house]")?.textContent).toContain("1,04");
+      const sentence = document.querySelector("[data-now-sentence]")?.textContent ?? "";
+      expect(sentence).toContain("750 W");
+      expect(sentence).not.toContain("740");
+    });
+  });
+
+  it("moves the battery leader when the pill gets narrower and dashes it when idle", async () => {
+    let batteryRect = new DOMRect(460.5, 480, 211.5, 50);
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      if (this.getAttribute("data-now-frame") != null) return new DOMRect(0, 80, 560, 400);
+      if (this.getAttribute("data-now-label") === "battery") return batteryRect;
+      return new DOMRect(0, 0, 0, 0);
+    };
+    try {
+      useEnergyStore.getState().setEntity("batteryPowerEntityId", "sensor.battery_power");
+      useEnergyStore.getState().setEntity("batterySocEntityId", "sensor.battery_soc");
+      useEntityStateStore.getState().setStates([
+        sun,
+        solarState("1650"),
+        { entity_id: "sensor.battery_power", state: "-700", attributes: { unit_of_measurement: "W", device_class: "power" } },
+        { entity_id: "sensor.battery_soc", state: "56", attributes: { unit_of_measurement: "%" } },
+      ]);
+      await act(async () => {
+        root?.render(createElement(NowHero, { orientation: "landscape" }));
+      });
+      await until(() => {
+        const paths = [...document.querySelectorAll("[data-now-leader] path")].map((node) => node.getAttribute("d") ?? "");
+        expect(paths.some((path) => path.startsWith("M478.5 "))).toBe(true);
+      });
+      batteryRect = new DOMRect(469.9, 480, 202.1, 50);
+      await act(async () => {
+        useEntityStateStore.getState().setStates([
+          sun,
+          solarState("1650"),
+          { entity_id: "sensor.battery_power", state: "-4", attributes: { unit_of_measurement: "W", device_class: "power" } },
+          { entity_id: "sensor.battery_soc", state: "56", attributes: { unit_of_measurement: "%" } },
+        ]);
+      });
+      await until(() => {
+        const dashed = [...document.querySelectorAll("[data-now-leader] path")].find(
+          (node) => node.getAttribute("stroke-dasharray") === "3 4"
+        );
+        expect(dashed?.getAttribute("d") ?? "").toMatch(/^M487\.9 /);
+      });
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+    }
   });
 
   it("does not load the zonder house before prefs decide the variant", async () => {

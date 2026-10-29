@@ -10,8 +10,11 @@ import {
   houseVariant,
   nowSentenceKey,
   powerIsFlowing,
+  roundSentenceKw,
   shouldAnimate,
   solarIsLinked,
+  stepHeroGates,
+  type HeroGates,
 } from "./energy-now";
 import { emptyManualModel, parseEnergyPrefs } from "./energy-prefs";
 
@@ -113,6 +116,9 @@ describe("now sentence", () => {
       nowSentenceKey({
         linked: false,
         night: false,
+        solarOn: false,
+        batteryOn: false,
+        gridOn: false,
         solarKw: null,
         batteryKw: null,
         gridKw: null,
@@ -123,6 +129,9 @@ describe("now sentence", () => {
       nowSentenceKey({
         linked: true,
         night: false,
+        solarOn: true,
+        batteryOn: true,
+        gridOn: true,
         solarKw: 1.65,
         batteryKw: -0.7,
         gridKw: -0.25,
@@ -133,11 +142,63 @@ describe("now sentence", () => {
       nowSentenceKey({
         linked: true,
         night: true,
+        solarOn: false,
+        batteryOn: true,
+        gridOn: true,
         solarKw: 0,
         batteryKw: 0.7,
         gridKw: 0.15,
         houseKw: 0.85,
       })
     ).toBe("energy.overview.now.sentenceBatteryOut");
+  });
+
+  it("rounds sentence figures to 50 W and keeps the type while the gate holds", () => {
+    expect(roundSentenceKw(0.73)).toBe(0.75);
+    expect(roundSentenceKw(0.02)).toBe(0);
+    expect(roundSentenceKw(1.65)).toBe(1.65);
+    expect(roundSentenceKw(0.045)).toBe(0.05);
+    expect(roundSentenceKw(0.055)).toBe(0.05);
+    const base = {
+      linked: true,
+      night: false,
+      solarOn: true,
+      batteryOn: false,
+      gridOn: false,
+      batteryKw: 0,
+      gridKw: 0,
+      houseKw: 1.2,
+    };
+    expect(nowSentenceKey({ ...base, solarKw: 0.045 })).toBe("energy.overview.now.sentenceSolar");
+    expect(nowSentenceKey({ ...base, solarKw: 0.055 })).toBe(nowSentenceKey({ ...base, solarKw: 0.045 }));
+    expect(nowSentenceKey({ ...base, solarOn: false, solarKw: 0.045 })).toBeNull();
+  });
+});
+
+describe("hero gates", () => {
+  const off: HeroGates = { solar: false, grid: false, battery: false };
+
+  it("does not flip while power wobbles inside the band", () => {
+    let gates = off;
+    for (const solarKw of [0.05, 0.055, 0.041, 0.05]) {
+      gates = stepHeroGates(gates, { solarKw, gridKw: 0.05, batteryKw: 0.006 });
+    }
+    expect(gates).toEqual(off);
+    gates = { solar: true, grid: true, battery: true };
+    for (const solarKw of [0.05, 0.041, 0.055]) {
+      gates = stepHeroGates(gates, { solarKw, gridKw: -0.05, batteryKw: 0.006 });
+    }
+    expect(gates).toEqual({ solar: true, grid: true, battery: true });
+  });
+
+  it("turns the battery on at 10 W and keeps it on down to 5 W", () => {
+    let gates = stepHeroGates(off, { solarKw: 0, gridKw: 0, batteryKw: 0.009 });
+    expect(gates.battery).toBe(false);
+    gates = stepHeroGates(gates, { solarKw: 0, gridKw: 0, batteryKw: 0.01 });
+    expect(gates.battery).toBe(true);
+    gates = stepHeroGates(gates, { solarKw: 0, gridKw: 0, batteryKw: 0.006 });
+    expect(gates.battery).toBe(true);
+    gates = stepHeroGates(gates, { solarKw: 0, gridKw: 0, batteryKw: 0.004 });
+    expect(gates.battery).toBe(false);
   });
 });

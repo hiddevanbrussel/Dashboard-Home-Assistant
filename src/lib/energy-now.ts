@@ -21,6 +21,42 @@ export type HouseTheme = "light" | "dark";
 
 const FLOW_EPSILON_KW = 0.05;
 
+/** Panel glow and the solar “on” gate. */
+export const SOLAR_GATE_ON_KW = 0.06;
+export const SOLAR_GATE_OFF_KW = 0.04;
+/** Grid pill around zero. Same band as the sun, so it does not blink back. */
+export const GRID_GATE_ON_KW = 0.06;
+export const GRID_GATE_OFF_KW = 0.04;
+/** Battery leaves idle at 10 W and returns below 5 W. */
+export const BATTERY_GATE_ON_KW = 0.01;
+export const BATTERY_GATE_OFF_KW = 0.005;
+
+export type HeroGates = { solar: boolean; grid: boolean; battery: boolean };
+
+/** Keep the previous on/off while the absolute power sits between the two thresholds. A missing reading turns the gate off. */
+export function holdMagnitude(active: boolean, kw: number | null, onKw: number, offKw: number): boolean {
+  if (kw == null || !Number.isFinite(kw)) return false;
+  const abs = Math.abs(kw);
+  return active ? abs >= offKw : abs >= onKw;
+}
+
+export function stepHeroGates(
+  previous: HeroGates,
+  input: { solarKw: number | null; gridKw: number | null; batteryKw: number | null }
+): HeroGates {
+  return {
+    solar: holdMagnitude(previous.solar, input.solarKw, SOLAR_GATE_ON_KW, SOLAR_GATE_OFF_KW),
+    grid: holdMagnitude(previous.grid, input.gridKw, GRID_GATE_ON_KW, GRID_GATE_OFF_KW),
+    battery: holdMagnitude(previous.battery, input.batteryKw, BATTERY_GATE_ON_KW, BATTERY_GATE_OFF_KW),
+  };
+}
+
+/** Sentence figures only. 50 W steps. Pills and the house number stay raw. */
+export function roundSentenceKw(kw: number): number {
+  const watts = Math.abs(kw) * 1000;
+  return (Math.round(watts / 50) * 50) / 1000;
+}
+
 export function houseVariant(input: {
   theme: HouseTheme;
   sunAboveHorizon: boolean;
@@ -161,24 +197,25 @@ export function strongestFlowKw(kilowatts: readonly (number | null)[]): number {
 export function nowSentenceKey(input: {
   linked: boolean;
   night: boolean;
+  solarOn: boolean;
+  batteryOn: boolean;
+  gridOn: boolean;
   solarKw: number | null;
   batteryKw: number | null;
   gridKw: number | null;
   houseKw: number | null;
 }): string | null {
   if (!input.linked) return "energy.overview.now.sentenceSetup";
-  const solar = input.solarKw ?? 0;
-  const house = input.houseKw ?? 0;
-  const discharge = input.batteryKw != null && input.batteryKw > 0.01 ? input.batteryKw : 0;
-  const imported = input.gridKw != null && input.gridKw > 0.01 ? input.gridKw : 0;
-  const exported = input.gridKw != null && input.gridKw < -0.05 ? -input.gridKw : 0;
-  if (input.night && solar < 0.01 && discharge > 0.01) return "energy.overview.now.sentenceBatteryOut";
-  if (solar >= house && solar > FLOW_EPSILON_KW && exported > FLOW_EPSILON_KW) {
-    return "energy.overview.now.sentenceCoverExport";
-  }
-  if (solar >= house && solar > FLOW_EPSILON_KW) return "energy.overview.now.sentenceCover";
-  if (solar > FLOW_EPSILON_KW) return "energy.overview.now.sentenceSolar";
-  if (imported > 0.01) return "energy.overview.now.sentenceImport";
+  const solar = input.solarOn && input.solarKw != null ? roundSentenceKw(input.solarKw) : 0;
+  const house = input.houseKw == null ? null : roundSentenceKw(input.houseKw);
+  const discharge = input.batteryOn && input.batteryKw != null && input.batteryKw > 0 ? roundSentenceKw(input.batteryKw) : 0;
+  const imported = input.gridOn && input.gridKw != null && input.gridKw > 0 ? roundSentenceKw(input.gridKw) : 0;
+  const exported = input.gridOn && input.gridKw != null && input.gridKw < 0 ? roundSentenceKw(-input.gridKw) : 0;
+  if (input.night && solar < FLOW_EPSILON_KW && discharge > 0) return "energy.overview.now.sentenceBatteryOut";
+  if (house != null && solar >= house && solar > 0 && exported > 0) return "energy.overview.now.sentenceCoverExport";
+  if (house != null && solar >= house && solar > 0) return "energy.overview.now.sentenceCover";
+  if (solar > 0) return "energy.overview.now.sentenceSolar";
+  if (imported > 0) return "energy.overview.now.sentenceImport";
   return null;
 }
 

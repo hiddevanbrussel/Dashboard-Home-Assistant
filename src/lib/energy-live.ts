@@ -188,13 +188,39 @@ export function housePowerNow(input: {
   manual: ManualLiveEntities;
   samples: LiveSamples;
 }): number | null {
-  const measured = readingKw(input.samples, input.manual.consumptionEntityId);
-  if (measured != null) return clampAtLeastZero(measured);
+  if (input.manual.consumptionEntityId.trim()) {
+    const measured = readingKw(input.samples, input.manual.consumptionEntityId);
+    return measured == null ? null : clampAtLeastZero(measured);
+  }
   const solar = solarPowerNow(input);
   const grid = gridPowerNow(input);
   const battery = batteryPowerNow(input);
+  if (linkedSolar(input) && solar == null) return null;
+  if (linkedGrid(input) && grid == null) return null;
+  if (linkedBattery(input) && battery == null) return null;
   if (solar == null && grid == null && battery == null) return null;
   return clampAtLeastZero((solar ?? 0) + (grid ?? 0) + (battery ?? 0));
+}
+
+function linkedSolar(input: Parameters<typeof solarPowerNow>[0]): boolean {
+  if (input.manual.solarPowerEntityId.trim()) return true;
+  return firstSolar(input.model)?.statRate != null;
+}
+
+function linkedGrid(input: Parameters<typeof gridPowerNow>[0]): boolean {
+  if (
+    input.manual.gridPowerEntityId.trim() ||
+    input.manual.gridImportPowerEntityId.trim() ||
+    input.manual.gridExportPowerEntityId.trim()
+  ) {
+    return true;
+  }
+  return firstGrid(input.model) != null;
+}
+
+function linkedBattery(input: Parameters<typeof batteryPowerNow>[0]): boolean {
+  if (input.manual.batteryPowerEntityId.trim()) return true;
+  return firstBattery(input.model) != null;
 }
 
 export function housePowerKw(

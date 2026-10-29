@@ -34,10 +34,13 @@ import {
   houseVariant,
   nowSentenceKey,
   powerIsFlowing,
+  roundSentenceKw,
   shouldAnimate,
   solarIsLinked,
   splitLivePower,
+  stepHeroGates,
   strongestFlowKw,
+  type HeroGates,
   type HouseVariantId,
 } from "@/lib/energy-now";
 import type { EnergyModel } from "@/lib/energy-prefs";
@@ -143,6 +146,8 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   const [model, setModel] = useState<EnergyModel | null>(null);
   const [prefsStatus, setPrefsStatus] = useState<"loading" | "ready" | "error">("loading");
   const frameRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const gatesRef = useRef<HeroGates>({ solar: false, grid: false, battery: false });
 
   useEffect(() => {
     let cancelled = false;
@@ -258,14 +263,20 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   const soc = Number.isFinite(socRaw) ? socRaw : null;
   const knownPower = (value: number | null) => (value == null || !Number.isFinite(value) ? null : formatLivePower(value, locale));
 
+  const gates = stepHeroGates(gatesRef.current, { solarKw, gridKw, batteryKw: batteryPower });
+  gatesRef.current = gates;
+
   const kinds: HeroLabelKind[] = [];
   if (solarLinked && solarKw != null) kinds.push("solar");
-  if (gridLinked && gridKw != null && Math.abs(gridKw) >= 0.05) kinds.push("grid");
+  if (gridLinked && gridKw != null && gates.grid) kinds.push("grid");
   if (batteryLinked && batteryPower != null) kinds.push("battery");
 
   const sentenceKey = nowSentenceKey({
     linked: solarLinked || batteryLinked || gridLinked,
     night,
+    solarOn: gates.solar,
+    batteryOn: gates.battery,
+    gridOn: gates.grid,
     solarKw,
     batteryKw: batteryPower,
     gridKw,
@@ -273,15 +284,17 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   });
   const sentenceKw =
     sentenceKey === "energy.overview.now.sentenceBatteryOut"
-      ? knownPower(batteryPower)
+      ? knownPower(batteryPower == null ? null : roundSentenceKw(batteryPower))
       : sentenceKey === "energy.overview.now.sentenceImport"
-        ? knownPower(gridKw != null && gridKw > 0 ? gridKw : null)
+        ? knownPower(gridKw != null && gridKw > 0 ? roundSentenceKw(gridKw) : null)
         : null;
+  const sentenceSolar = solarKw == null ? "" : knownPower(roundSentenceKw(solarKw)) ?? "";
+  const sentenceHouse = houseKw == null ? "" : knownPower(roundSentenceKw(houseKw)) ?? "";
   const sentence = sentenceKey
     ? fill(t(sentenceKey), {
         kw: sentenceKw ?? "",
-        solar: knownPower(solarKw) ?? "",
-        house: knownPower(houseKw) ?? "",
+        solar: sentenceSolar,
+        house: sentenceHouse,
       })
     : "";
 
@@ -290,9 +303,14 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   const animate = shouldAnimate({ ...motion, flowing });
   const step = flowStep(strongestFlowKw([solarKw, gridKw, batteryPower, houseKw]));
   const holdGlow = motion.reducedMotion || motion.glassOff;
-  const panelGlow = Boolean(variant?.startsWith("dag-")) && (solarKw ?? 0) >= 0.05 && !holdGlow;
-  const batteryGlow = batteryLinked && batteryPower != null && Math.abs(batteryPower) >= 0.005 && !holdGlow;
+  const panelGlow = Boolean(variant?.startsWith("dag-")) && gates.solar && !holdGlow;
+  const batteryGlow = batteryLinked && gates.battery && !holdGlow;
   const houseParts = houseKw == null ? null : splitLivePower(Math.max(houseKw, 0), locale);
+  const labelSig = [
+    `solar:${solarKw ?? ""}:${gates.solar ? 0 : 1}`,
+    `grid:${gridKw ?? ""}:${gates.grid ? 0 : 1}`,
+    `battery:${batteryPower ?? ""}:${gates.battery ? 0 : 1}:${soc ?? ""}`,
+  ].join("|");
   const dark = theme === "dark";
 
   return (
@@ -308,17 +326,20 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
             {houseParts.value}
             <small className="ml-1 text-[26px] font-semibold tracking-normal text-[#374151] dark:text-[#d1d5db]">{houseParts.unit}</small>
           </>
-        ) : null}
+        ) : (
+          "–"
+        )}
       </p>
       <p className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold text-[#374151] dark:text-[#d1d5db]">
         <House className="h-4 w-4 text-[#4700B5] dark:text-[#c4b5fd]" aria-hidden />
         {t("energy.overview.now.house")}
       </p>
-      <div className="flex min-h-0 w-full flex-1 items-center justify-center" style={{ containerType: "size" }}>
+      <div ref={stageRef} data-now-stage className="relative min-h-0 w-full flex-1">
+        <div className="absolute inset-x-0 top-16 bottom-16 flex items-center justify-center" style={{ containerType: "size" }}>
         <div
           ref={frameRef}
           data-now-frame
-          className="relative mx-auto aspect-[960/727] max-h-full max-w-full"
+          className="relative mx-auto aspect-[960/727] h-full max-h-full max-w-full"
           style={{ width: "min(100cqw, calc(100cqh * 960 / 727))" }}
         >
           {variant ? (
@@ -342,13 +363,24 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
               panelGlow={panelGlow}
               batteryGlow={batteryGlow}
               dark={dark}
-              labelSig={kinds.join(",")}
+              labelSig={labelSig}
             />
           ) : null}
-          {kinds.map((kind) => (
-            <HeroPill key={kind} kind={kind} solarKw={solarKw} gridKw={gridKw} batteryPower={batteryPower} soc={soc} night={night} />
-          ))}
         </div>
+        </div>
+        {kinds.map((kind) => (
+          <HeroPill
+            key={kind}
+            kind={kind}
+            solarKw={solarKw}
+            gridKw={gridKw}
+            batteryPower={batteryPower}
+            soc={soc}
+            night={night}
+            solarOn={gates.solar}
+            batteryOn={gates.battery}
+          />
+        ))}
       </div>
       <p data-now-sentence className="flex min-h-10 items-end justify-center text-center text-base leading-snug text-[#374151] dark:text-[#d1d5db]">
         {sentence}
@@ -364,6 +396,8 @@ function HeroPill({
   batteryPower,
   soc,
   night,
+  solarOn,
+  batteryOn,
 }: {
   kind: HeroLabelKind;
   solarKw: number | null;
@@ -371,6 +405,8 @@ function HeroPill({
   batteryPower: number | null;
   soc: number | null;
   night: boolean;
+  solarOn: boolean;
+  batteryOn: boolean;
 }) {
   const { t, language } = useTranslation();
   const locale = language === "nl" ? "nl" : "en";
@@ -382,7 +418,7 @@ function HeroPill({
   let icon = <Sun className="h-[19px] w-[19px]" aria-hidden />;
   switch (kind) {
     case "solar": {
-      const producing = solarKw != null && solarKw >= 0.01;
+      const producing = solarOn;
       value = producing ? (power(solarKw) ?? "") : night ? t("energy.overview.now.solarDown") : (power(solarKw ?? 0) ?? "");
       sub = t("energy.overview.now.solarRoof");
       tone = "text-[#92400E] dark:text-[#FCD34D]";
@@ -400,8 +436,8 @@ function HeroPill({
     }
     case "battery": {
       if (batteryPower == null) return null;
-      const charging = batteryPower <= -0.005;
-      const supplying = batteryPower >= 0.005;
+      const charging = batteryOn && batteryPower < 0;
+      const supplying = batteryOn && batteryPower > 0;
       value = soc == null ? "–" : formatSoc(soc, locale);
       sub = charging
         ? fill(t("energy.overview.now.batteryCharge"), { kw: power(batteryPower) ?? "" })

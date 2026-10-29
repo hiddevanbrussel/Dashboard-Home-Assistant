@@ -151,6 +151,26 @@ describe("energy live power", () => {
     };
     expect(housePowerNow({ model: null, manual, samples })).toBe(0);
     expect(
+      housePowerNow({
+        model: null,
+        manual,
+        samples: {
+          "sensor.grid": { value: 1.2, unit: "kW" },
+          "sensor.battery": { value: 0.75, unit: "kW" },
+        },
+      })
+    ).toBeNull();
+    expect(
+      housePowerNow({
+        model: null,
+        manual,
+        samples: {
+          "sensor.solar": { value: 1.2, unit: "kW" },
+          "sensor.grid": { value: 0.75, unit: "kW" },
+        },
+      })
+    ).toBeNull();
+    expect(
       housePowerKw({
         model: null,
         manual: { ...manual, consumptionEntityId: "sensor.house" },

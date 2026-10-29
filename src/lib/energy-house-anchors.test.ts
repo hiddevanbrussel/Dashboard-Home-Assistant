@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { NowHero } from "@/components/energy/overview/now-hero";
 import {
   HOUSE_BODY,
+  leaderStart,
   HERO_LABEL_KINDS,
   anchorPoint,
   heroImagePx,
@@ -58,6 +59,13 @@ describe("labelLayout", () => {
     expect(image.height).toBeLessThanOrEqual(560);
     const sampled = samplePolyline(mintLine("dag-licht"), 16);
     expect(sampled).toHaveLength(16);
+  });
+
+  it("moves a right-aligned leader when the pill gets narrower", () => {
+    const wide = leaderStart({ left: 460.5, right: 672, top: 400, bottom: 450 }, "br");
+    const narrow = leaderStart({ left: 469.9, right: 672, top: 400, bottom: 450 }, "br");
+    expect(wide.x).toBeCloseTo(478.5, 5);
+    expect(narrow.x).toBeCloseTo(487.9, 5);
   });
 });
 

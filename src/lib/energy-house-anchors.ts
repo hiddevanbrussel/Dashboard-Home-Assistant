@@ -265,6 +265,19 @@ export function labelOverlapsSilhouette(
   return silhouetteRings(variant).some((ring) => rectOverlapsPolygon(rect, ring));
 }
 
+/** Start of a leader on the pill edge. Right-aligned pills use left+18, so a narrower pill moves the start right. */
+export function leaderStart(
+  pill: { left: number; right: number; top: number; bottom: number },
+  side: "tr" | "bl" | "br"
+): { x: number; y: number } {
+  const right = side !== "bl";
+  const top = side === "tr";
+  return {
+    x: right ? pill.left + 18 : pill.right - 18,
+    y: top ? pill.bottom : pill.top,
+  };
+}
+
 export function isHouseVariant(value: string): value is HouseVariantId {
   return (HOUSE_VARIANTS as readonly string[]).includes(value);
 }

@@ -820,4 +820,31 @@ describe("largest consumer picker", () => {
     expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
     expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
   });
+
+  it("does not reserve the error height while the choice is loading", () => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    function renderStatus(status: "loading" | "ready" | "error") {
+      act(() => {
+        root?.render(
+          createElement(EnergyTopDevicesEntry, {
+            entityIds: [],
+            entities: [],
+            onOpen: () => undefined,
+            choiceStatus: status,
+          })
+        );
+      });
+    }
+    renderStatus("loading");
+    expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
+    expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
+    renderStatus("ready");
+    expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
+    expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
+    renderStatus("error");
+    expect(document.querySelector("[data-entry-card]")?.className).toContain("min-h-[148px]");
+    expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
+  });
 });
