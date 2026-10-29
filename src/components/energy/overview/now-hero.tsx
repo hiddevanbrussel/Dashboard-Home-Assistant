@@ -16,13 +16,9 @@ import { useTranslation } from "@/hooks/use-translation";
 import { type HeroLabelKind, type OverviewOrientation } from "@/lib/energy-house-anchors";
 import {
   batteryPowerNow,
-  batteryKw,
   gridPowerNow,
-  gridPowerKw,
   housePowerNow,
-  housePowerKw,
   solarPowerNow,
-  solarPowerKw,
   type LiveSamples,
   type ManualLiveEntities,
 } from "@/lib/energy-live";
@@ -78,12 +74,6 @@ function sampleFromState(
   if (!Number.isFinite(value)) return undefined;
   const unit = entity.attributes?.unit_of_measurement;
   return { value, unit: typeof unit === "string" ? unit : null };
-}
-
-/** Keep raw poll values, including a repeat of the same number, so the median can move on. */
-function pushRaw(previous: readonly number[], value: number | null): number[] {
-  if (value == null || !Number.isFinite(value)) return previous.slice(-3);
-  return [...previous, value].slice(-3);
 }
 
 function batteryStatSoc(model: EnergyModel | null): string {
@@ -153,7 +143,6 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   const [model, setModel] = useState<EnergyModel | null>(null);
   const [prefsStatus, setPrefsStatus] = useState<"loading" | "ready" | "error">("loading");
   const frameRef = useRef<HTMLDivElement | null>(null);
-  const previous = useRef({ solar: [] as number[], grid: [] as number[], battery: [] as number[], house: [] as number[] });
 
   useEffect(() => {
     let cancelled = false;
@@ -226,24 +215,10 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
     return next;
   }, [entities.batterySocEntityId, manual, model, states]);
 
-  const updatedAt = useEntityStateStore((state) => state.updatedAt);
-  const solarRaw = solarPowerNow({ model, manual, samples });
-  const gridRaw = gridPowerNow({ model, manual, samples });
-  const batteryRaw = batteryPowerNow({ model, manual, samples });
-  const houseRaw = housePowerNow({ model, manual, samples });
-  const solarKw = solarPowerKw({ model, manual, samples, previous: previous.current.solar });
-  const gridKw = gridPowerKw({ model, manual, samples, previous: previous.current.grid });
-  const batteryPower = batteryKw({ model, manual, samples, previous: previous.current.battery });
-  const houseKw = housePowerKw({ model, manual, samples, previous: previous.current.house });
-
-  useEffect(() => {
-    previous.current = {
-      solar: pushRaw(previous.current.solar, solarRaw),
-      grid: pushRaw(previous.current.grid, gridRaw),
-      battery: pushRaw(previous.current.battery, batteryRaw),
-      house: pushRaw(previous.current.house, houseRaw),
-    };
-  }, [updatedAt, solarRaw, gridRaw, batteryRaw, houseRaw]);
+  const solarKw = solarPowerNow({ model, manual, samples });
+  const gridKw = gridPowerNow({ model, manual, samples });
+  const batteryPower = batteryPowerNow({ model, manual, samples });
+  const houseKw = housePowerNow({ model, manual, samples });
 
   const solarLinked = solarIsLinked(model, manual.solarPowerEntityId, entities.solarYieldTodayEntityId);
   const batteryLinked = batteryIsLinked(model, entities.batterySocEntityId, manual.batteryPowerEntityId);
@@ -284,9 +259,9 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   const knownPower = (value: number | null) => (value == null || !Number.isFinite(value) ? null : formatLivePower(value, locale));
 
   const kinds: HeroLabelKind[] = [];
-  if (solarLinked) kinds.push("solar");
+  if (solarLinked && solarKw != null) kinds.push("solar");
   if (gridLinked && gridKw != null && Math.abs(gridKw) >= 0.05) kinds.push("grid");
-  if (batteryLinked) kinds.push("battery");
+  if (batteryLinked && batteryPower != null) kinds.push("battery");
 
   const sentenceKey = nowSentenceKey({
     linked: solarLinked || batteryLinked || gridLinked,
@@ -296,9 +271,15 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
     gridKw,
     houseKw,
   });
+  const sentenceKw =
+    sentenceKey === "energy.overview.now.sentenceBatteryOut"
+      ? knownPower(batteryPower)
+      : sentenceKey === "energy.overview.now.sentenceImport"
+        ? knownPower(gridKw != null && gridKw > 0 ? gridKw : null)
+        : null;
   const sentence = sentenceKey
     ? fill(t(sentenceKey), {
-        kw: knownPower(batteryPower != null && batteryPower > 0 ? batteryPower : gridKw != null ? Math.abs(gridKw) : null) ?? "",
+        kw: sentenceKw ?? "",
         solar: knownPower(solarKw) ?? "",
         house: knownPower(houseKw) ?? "",
       })
@@ -333,8 +314,13 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
         <House className="h-4 w-4 text-[#4700B5] dark:text-[#c4b5fd]" aria-hidden />
         {t("energy.overview.now.house")}
       </p>
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <div ref={frameRef} data-now-frame className="relative mx-auto aspect-[960/727] h-full max-h-full w-auto">
+      <div className="flex min-h-0 w-full flex-1 items-center justify-center" style={{ containerType: "size" }}>
+        <div
+          ref={frameRef}
+          data-now-frame
+          className="relative mx-auto aspect-[960/727] max-h-full max-w-full"
+          style={{ width: "min(100cqw, calc(100cqh * 960 / 727))" }}
+        >
           {variant ? (
             <picture>
               <source type="image/avif" srcSet={houseAssetPath(variant, "avif")} />
@@ -356,6 +342,7 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
               panelGlow={panelGlow}
               batteryGlow={batteryGlow}
               dark={dark}
+              labelSig={kinds.join(",")}
             />
           ) : null}
           {kinds.map((kind) => (
@@ -390,15 +377,15 @@ function HeroPill({
   const power = (value: number | null) => (value == null ? null : formatLivePower(Math.abs(value), locale));
   let value = "";
   let sub = "";
-  let color = "#111827";
+  let tone = "text-[#111827] dark:text-[#f3f4f6]";
   let off = false;
   let icon = <Sun className="h-[19px] w-[19px]" aria-hidden />;
   switch (kind) {
     case "solar": {
       const producing = solarKw != null && solarKw >= 0.01;
-      value = producing ? (power(solarKw) ?? "") : night ? t("energy.overview.now.solarDown") : solarKw == null ? "" : (power(0) ?? "");
+      value = producing ? (power(solarKw) ?? "") : night ? t("energy.overview.now.solarDown") : (power(solarKw ?? 0) ?? "");
       sub = t("energy.overview.now.solarRoof");
-      color = "#92400E";
+      tone = "text-[#92400E] dark:text-[#FCD34D]";
       off = !producing;
       icon = producing ? <Sun className="h-[19px] w-[19px]" aria-hidden /> : <Moon className="h-[19px] w-[19px]" aria-hidden />;
       break;
@@ -407,20 +394,21 @@ function HeroPill({
       const exporting = (gridKw ?? 0) < 0;
       value = power(gridKw) ?? "";
       sub = exporting ? t("energy.overview.now.gridBack") : t("energy.overview.now.gridFrom");
-      color = exporting ? "#047857" : "#4700B5";
+      tone = exporting ? "text-[#047857] dark:text-[#6EE7B7]" : "text-[#4700B5] dark:text-[#c4b5fd]";
       icon = <UtilityPole className="h-[19px] w-[19px]" aria-hidden />;
       break;
     }
     case "battery": {
-      const charging = batteryPower != null && batteryPower <= -0.005;
-      const supplying = batteryPower != null && batteryPower >= 0.005;
-      value = soc == null ? "" : formatSoc(soc, locale);
+      if (batteryPower == null) return null;
+      const charging = batteryPower <= -0.005;
+      const supplying = batteryPower >= 0.005;
+      value = soc == null ? "–" : formatSoc(soc, locale);
       sub = charging
         ? fill(t("energy.overview.now.batteryCharge"), { kw: power(batteryPower) ?? "" })
         : supplying
           ? fill(t("energy.overview.now.batterySupply"), { kw: power(batteryPower) ?? "" })
           : t("energy.overview.now.batteryIdle");
-      color = "#075985";
+      tone = "text-[#075985] dark:text-[#7DD3FC]";
       off = !charging && !supplying;
       icon = charging ? (
         <BatteryCharging className="h-[19px] w-[19px]" aria-hidden />
@@ -439,6 +427,7 @@ function HeroPill({
     <button
       type="button"
       data-now-label={kind}
+      data-now-off={off ? "1" : "0"}
       onClick={() => {
         // The story card opens in a later step.
       }}
@@ -449,8 +438,10 @@ function HeroPill({
       )}
     >
       <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,currentColor_14%,transparent)]"
-        style={{ color }}
+        className={cn(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,currentColor_14%,transparent)]",
+          tone
+        )}
       >
         {icon}
       </span>

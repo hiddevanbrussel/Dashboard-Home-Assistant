@@ -92,6 +92,9 @@ describe("mock-ha script", () => {
         state: "1650",
         attributes: { device_class: "power", unit_of_measurement: "W" },
       });
+      const source = readFileSync(scriptPath, "utf8");
+      expect(source).toContain('set === "no-solar"');
+      expect(source).toContain('set === "no-battery"');
     } finally {
       child.kill();
       await new Promise((resolve) => child.once("exit", resolve));

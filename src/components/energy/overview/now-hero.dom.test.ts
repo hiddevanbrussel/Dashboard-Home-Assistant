@@ -63,15 +63,74 @@ describe("Nu hero live values", () => {
     await until(() => {
       expect(document.querySelector("[data-now-label='solar'] b")?.textContent).toBe("1,65 kW");
     });
-    for (let step = 0; step < 3; step += 1) {
-      await act(async () => {
-        useEntityStateStore.getState().setStates([solarState("0"), sun]);
-      });
-    }
+    await act(async () => {
+      useEntityStateStore.getState().setStates([solarState("0"), sun]);
+    });
     await until(() => {
       const value = document.querySelector("[data-now-label='solar'] b")?.textContent ?? "";
       expect(value).toBe("0 W");
       expect(value).not.toContain("0,83");
+    });
+  });
+
+  it("uses grid power in the import sentence, not the battery", async () => {
+    useEnergyStore.getState().setEntity("gridPowerEntityId", "sensor.grid_power");
+    useEnergyStore.getState().setEntity("batteryPowerEntityId", "sensor.battery_power");
+    useEntityStateStore.getState().setStates([
+      sun,
+      { entity_id: "sensor.grid_power", state: "300", attributes: { unit_of_measurement: "W", device_class: "power" } },
+      { entity_id: "sensor.battery_power", state: "500", attributes: { unit_of_measurement: "W", device_class: "power" } },
+      { entity_id: "sensor.battery_soc", state: "40", attributes: { unit_of_measurement: "%" } },
+    ]);
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape" }));
+    });
+    await until(() => {
+      const sentence = document.querySelector("[data-now-sentence]")?.textContent ?? "";
+      expect(sentence).toContain("300 W");
+      expect(sentence).toContain("van het net");
+      expect(sentence).not.toContain("500");
+    });
+  });
+
+  it("hides a pill that has no measurement and keeps SoC with the battery direction", async () => {
+    useEnergyStore.getState().setEntity("solarPowerEntityId", "sensor.solar_power");
+    useEnergyStore.getState().setEntity("batteryPowerEntityId", "sensor.battery_power");
+    useEnergyStore.getState().setEntity("batterySocEntityId", "sensor.battery_soc");
+    useEntityStateStore.getState().setStates([sun]);
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape" }));
+    });
+    await until(() => {
+      expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-hero")).not.toBe("pending");
+    });
+    expect(document.querySelector("[data-now-label='solar']")).toBeNull();
+    expect(document.querySelector("[data-now-label='battery']")).toBeNull();
+    expect(document.body.textContent).not.toContain("rust");
+    await act(async () => {
+      useEntityStateStore.getState().setStates([
+        sun,
+        { entity_id: "sensor.battery_power", state: "-700", attributes: { unit_of_measurement: "W", device_class: "power" } },
+        { entity_id: "sensor.battery_soc", state: "56", attributes: { unit_of_measurement: "%" } },
+      ]);
+    });
+    await until(() => {
+      const battery = document.querySelector("[data-now-label='battery']")?.textContent ?? "";
+      expect(battery).toContain("56%");
+      expect(battery).toContain("laadt");
+    });
+    await act(async () => {
+      useEntityStateStore.getState().setStates([
+        sun,
+        { entity_id: "sensor.battery_power", state: "500", attributes: { unit_of_measurement: "W", device_class: "power" } },
+        { entity_id: "sensor.battery_soc", state: "40", attributes: { unit_of_measurement: "%" } },
+      ]);
+    });
+    await until(() => {
+      const battery = document.querySelector("[data-now-label='battery']")?.textContent ?? "";
+      expect(battery).toContain("40%");
+      expect(battery).toContain("levert");
+      expect(battery).not.toContain("laadt");
     });
   });
 

@@ -818,5 +818,6 @@ describe("largest consumer picker", () => {
       expect(document.activeElement).not.toBe(document.body);
     });
     expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
+    expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
   });
 });

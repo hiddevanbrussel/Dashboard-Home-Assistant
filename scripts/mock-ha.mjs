@@ -338,20 +338,24 @@ function liveStates(set) {
       state: night ? "below_horizon" : "above_horizon",
       attributes: { friendly_name: "Sun" },
     },
-    powerState("sensor.solar_power", "Solar", night ? 0 : 1650),
+    ...(set === "no-solar" ? [] : [powerState("sensor.solar_power", "Solar", night ? 0 : 1650)]),
     powerState("sensor.grid_power", "Grid", night ? 150 : -250),
-    powerState("sensor.battery_power", "Battery", night ? 700 : -700),
-    powerState("sensor.battery_discharge", "Battery discharge", night ? 700 : 0),
-    powerState("sensor.battery_charge", "Battery charge", night ? 0 : 700),
-    {
-      entity_id: "sensor.battery_soc",
-      state: night ? "23" : "56",
-      attributes: {
-        friendly_name: "Battery",
-        device_class: "battery",
-        unit_of_measurement: "%",
-      },
-    },
+    ...(set === "no-battery"
+      ? []
+      : [
+          powerState("sensor.battery_power", "Battery", night ? 700 : -700),
+          powerState("sensor.battery_discharge", "Battery discharge", night ? 700 : 0),
+          powerState("sensor.battery_charge", "Battery charge", night ? 0 : 700),
+          {
+            entity_id: "sensor.battery_soc",
+            state: night ? "23" : "56",
+            attributes: {
+              friendly_name: "Battery",
+              device_class: "battery",
+              unit_of_measurement: "%",
+            },
+          },
+        ]),
   ];
   return states;
 }

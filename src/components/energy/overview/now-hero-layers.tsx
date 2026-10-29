@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   anchorPoint,
   batteryLed,
@@ -38,6 +38,7 @@ export function NowHeroLayers({
   panelGlow,
   batteryGlow,
   dark,
+  labelSig,
 }: {
   variant: HouseVariantId;
   animate: boolean;
@@ -45,12 +46,14 @@ export function NowHeroLayers({
   panelGlow: boolean;
   batteryGlow: boolean;
   dark: boolean;
+  labelSig: string;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<SVGPolygonElement | null>(null);
   const battRef = useRef<HTMLSpanElement | null>(null);
   const dotRefs = useRef<Array<SVGCircleElement | null>>([]);
   const [box, setBox] = useState({ w: 960, h: 727 });
+  const [leaders, setLeaders] = useState<Array<{ d: string; ax: number; ay: number; off: boolean }>>([]);
 
   useEffect(() => {
     const node = hostRef.current;
@@ -73,6 +76,43 @@ export function NowHeroLayers({
   const ledRaw = batteryLed(variant);
   const ledPoint = ledRaw.length > 0 ? scale(ledRaw[0] as Point, box.w, box.h) : null;
   const battery = anchorPoint(variant, "batterij");
+
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    const frame = host?.parentElement;
+    if (!host || !frame) return;
+    const frameRect = frame.getBoundingClientRect();
+    if (frameRect.width < 1 || frameRect.height < 1) {
+      setLeaders([]);
+      return;
+    }
+    const anchorKey = {
+      solar: "zon_panelen",
+      grid: "net_voordeur",
+      battery: "batterij",
+    } as const;
+    const next: Array<{ d: string; ax: number; ay: number; off: boolean }> = [];
+    for (const kind of ["solar", "grid", "battery"] as const) {
+      const button = frame.querySelector(`[data-now-label="${kind}"]`);
+      const anchor = anchorPoint(variant, anchorKey[kind]);
+      if (!(button instanceof HTMLElement) || !anchor) continue;
+      const pill = button.getBoundingClientRect();
+      const right = kind !== "grid";
+      const top = kind === "solar";
+      const sx = (right ? pill.left + 18 : pill.right - 18) - frameRect.left;
+      const sy = (top ? pill.bottom : pill.top) - frameRect.top;
+      const ax = (anchor.x / 100) * frameRect.width;
+      const ay = (anchor.y / 100) * frameRect.height;
+      const elbow = sy + (ay > sy ? 8 : -8);
+      next.push({
+        d: `M${sx.toFixed(1)} ${sy.toFixed(1)} L${sx.toFixed(1)} ${elbow.toFixed(1)} L${ax.toFixed(1)} ${ay.toFixed(1)}`,
+        ax,
+        ay,
+        off: button.getAttribute("data-now-off") === "1",
+      });
+    }
+    setLeaders(next);
+  }, [variant, labelSig, box.w, box.h]);
   const pointsAttr = (points: readonly Point[]) => points.map((point) => `${point.x},${point.y}`).join(" ");
 
   useEffect(() => {
@@ -185,6 +225,27 @@ export function NowHeroLayers({
             />
           </>
         ) : null}
+        {leaders.map((leader) => (
+          <g key={leader.d} data-now-leader>
+            <path
+              d={leader.d}
+              fill="none"
+              stroke={dark ? "#b4b4bd" : "#4b5563"}
+              strokeWidth={1.5}
+              strokeLinejoin="round"
+              strokeDasharray={leader.off ? "3 4" : undefined}
+              opacity={leader.off ? 0.5 : 0.75}
+            />
+            <circle
+              cx={leader.ax}
+              cy={leader.ay}
+              r={4}
+              fill={dark ? "#f3f4f6" : "#111827"}
+              stroke={dark ? "#1b1a21" : "#ffffff"}
+              strokeWidth={2}
+            />
+          </g>
+        ))}
         {line.length >= 2 ? (
           <polyline
             points={pointsAttr(line)}
