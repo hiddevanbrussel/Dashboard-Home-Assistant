@@ -13,6 +13,11 @@ type NamedEntity = {
 export function topDeviceLabel(id: string, entities: readonly NamedEntity[], unnamed: string, missing: string): string {
   const entity = entities.find((item) => item.entity_id === id);
   if (!entity) return missing;
+  if (entity.attributes?.energy_unlinked === true) {
+    const name = entity.attributes.friendly_name;
+    if (typeof name === "string" && name.trim() && name.trim() !== id) return name.trim();
+    return missing;
+  }
   const label = entityLabel({
     entity_id: entity.entity_id,
     attributes: entity.attributes ?? undefined,

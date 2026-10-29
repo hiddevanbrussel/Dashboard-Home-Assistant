@@ -47,10 +47,12 @@ export function mergeProposedCandidates<
       out.push(known);
       continue;
     }
+    const name = device.name?.trim() ?? "";
     const synthetic: T = {
       entity_id: device.id,
       attributes: {
-        friendly_name: device.name ?? undefined,
+        ...(name ? { friendly_name: name } : {}),
+        energy_unlinked: true,
         device_class: "energy",
         state_class: "total_increasing",
       },

@@ -89,6 +89,38 @@ describe("energy live power and tariff settings", () => {
     expect(useEnergyStore.getState().tariffMode).toBe("fixed");
   });
 
+  it("keeps choice labels centred without changing width between selected and idle", () => {
+    render();
+    const radios = [...document.querySelectorAll('[role="radio"]')];
+    expect(radios.length).toBeGreaterThanOrEqual(4);
+    const layoutOf = (button: Element) =>
+      button.className
+        .split(/\s+/)
+        .filter((token) => token === "relative" || token === "justify-center" || token === "px-8" || token === "inline-flex" || token === "h-11")
+        .sort()
+        .join(" ");
+    const selected = radios.filter((button) => button.getAttribute("aria-checked") === "true");
+    const idle = radios.filter((button) => button.getAttribute("aria-checked") === "false");
+    expect(selected.length).toBeGreaterThan(0);
+    expect(idle.length).toBeGreaterThan(0);
+    const layout = layoutOf(selected[0] as Element);
+    expect(layout).toContain("px-8");
+    expect(layout).toContain("justify-center");
+    for (const button of radios) {
+      expect(layoutOf(button)).toBe(layout);
+      expect(button.className).not.toMatch(/\bgap-/);
+      const icon = button.querySelector("svg");
+      expect(icon?.getAttribute("class") ?? "").toContain("absolute");
+      expect(icon?.getAttribute("class") ?? "").toContain("w-4");
+    }
+    for (const button of idle) {
+      expect(button.querySelector("svg")?.getAttribute("class") ?? "").toContain("invisible");
+    }
+    for (const button of selected) {
+      expect(button.querySelector("svg")?.getAttribute("class") ?? "").not.toContain("invisible");
+    }
+  });
+
   it("shows the later price-sensor note only after dynamic is chosen", () => {
     render();
     const dynamic = [...document.querySelectorAll("button")].find((button) => button.textContent === "Dynamisch");

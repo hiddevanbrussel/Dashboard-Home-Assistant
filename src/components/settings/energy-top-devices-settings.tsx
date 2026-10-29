@@ -68,6 +68,19 @@ function sameIds(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((id, index) => id === b[index]);
 }
 
+/** Shared by the picker and the entry row: wait out the loading state, then restore focus. */
+function focusAfterChoiceRetry(
+  pending: { current: boolean },
+  status: "loading" | "ready" | "error",
+  readyTarget: HTMLElement | null,
+  errorTarget: HTMLElement | null
+) {
+  if (!pending.current || status === "loading") return;
+  pending.current = false;
+  if (status === "ready") readyTarget?.focus();
+  else errorTarget?.focus();
+}
+
 function labelSources(entities: readonly TopDeviceEntity[], proposal: readonly ProposalDevice[]): TopDeviceEntity[] {
   if (proposal.length === 0) return [...entities];
   const merged = mergeProposedCandidates(entities, proposal);
@@ -133,6 +146,8 @@ export function EnergyTopDevicesSettings({
   const searchInput = useRef<HTMLInputElement | null>(null);
   const retryButton = useRef<HTMLButtonElement | null>(null);
   const chosenHeading = useRef<HTMLHeadingElement | null>(null);
+  const setupHeading = useRef<HTMLHeadingElement | null>(null);
+  const fallbackHeading = useRef<HTMLHeadingElement | null>(null);
   const retryFocus = useRef(false);
   const undoTimer = useRef<number | null>(null);
   const [prefsStatus, setPrefsStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -229,17 +244,6 @@ export function EnergyTopDevicesSettings({
     focusGrip.current = null;
     gripNodes.current.get(id)?.focus();
   }, [ids]);
-
-  useEffect(() => {
-    if (!retryFocus.current || choiceStatus === "loading") return;
-    retryFocus.current = false;
-    if (choiceStatus === "ready") {
-      if (searchInput.current) searchInput.current.focus();
-      else chosenHeading.current?.focus();
-      return;
-    }
-    retryButton.current?.focus();
-  }, [choiceStatus]);
 
   useLayoutEffect(() => {
     if (!focusToast.current || !undo) return;
@@ -490,6 +494,18 @@ export function EnergyTopDevicesSettings({
   const showNone = choiceReady && entitiesStatus === "ready" && candidates.length === 0;
   const showAvailable = choiceReady && entitiesStatus === "ready" && candidates.length > 0 && !ordering;
   const showChosen = choiceReady && !(showNone && ids.length === 0);
+
+  useEffect(() => {
+    if (!retryFocus.current || choiceStatus === "loading") return;
+    if (choiceStatus === "ready" && prefsStatus === "loading") return;
+    const readyTarget =
+      searchInput.current ??
+      chosenHeading.current ??
+      setupHeading.current ??
+      fallbackHeading.current;
+    focusAfterChoiceRetry(retryFocus, choiceStatus, readyTarget, retryButton.current);
+  }, [choiceStatus, prefsStatus, showSearch, showChosen, setupGuide]);
+
   const kwhIds = visibleStatisticIds(visibleAvailable.map((entity) => entity.entity_id));
   const kwhKey = kwhIds.join(",");
 
@@ -535,6 +551,9 @@ export function EnergyTopDevicesSettings({
 
   return (
     <div data-top-devices-screen>
+      <h2 ref={fallbackHeading} tabIndex={-1} data-retry-fallback className="sr-only outline-none">
+        {t("settings.energy.topDevices.title")}
+      </h2>
       <p className="mb-4 ml-1 flex items-center gap-2 text-sm font-medium text-[#4b5563] dark:text-[#c4c4cc]">
         <Tablet className="h-4 w-4 shrink-0" aria-hidden />
         {t("settings.energy.topDevices.allTablets")}
@@ -753,6 +772,7 @@ export function EnergyTopDevicesSettings({
 
       {showNone ? (
         <NoneInHomeAssistant
+          headingRef={setupHeading}
           onRefresh={() => {
             onRefreshEntities();
             reloadPrefs();
@@ -896,7 +916,13 @@ export function EnergyTopDevicesSettings({
   );
 }
 
-function NoneInHomeAssistant({ onRefresh }: { onRefresh: () => void }) {
+function NoneInHomeAssistant({
+  onRefresh,
+  headingRef,
+}: {
+  onRefresh: () => void;
+  headingRef: { current: HTMLHeadingElement | null };
+}) {
   const { t } = useTranslation();
   const steps = [
     t("settings.energy.topDevices.step1"),
@@ -910,9 +936,14 @@ function NoneInHomeAssistant({ onRefresh }: { onRefresh: () => void }) {
           <PlugZap className="h-5 w-5" aria-hidden />
         </span>
         <div>
-          <p className="text-base font-semibold text-[#111827] dark:text-[#f3f4f6]">
+          <h3
+            ref={headingRef}
+            tabIndex={-1}
+            data-setup-heading
+            className="text-base font-semibold text-[#111827] outline-none dark:text-[#f3f4f6]"
+          >
             {t("settings.energy.topDevices.noneTitle")}
-          </p>
+          </h3>
           <p className="mt-1 text-[15px] leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
             {t("settings.energy.topDevices.noneBody")}
           </p>
@@ -964,6 +995,9 @@ export function EnergyTopDevicesEntry({
 }) {
   const { t } = useTranslation();
   const [proposal, setProposal] = useState<ProposalDevice[]>([]);
+  const entryButton = useRef<HTMLButtonElement | null>(null);
+  const retryButton = useRef<HTMLButtonElement | null>(null);
+  const retryFocus = useRef(false);
   useEffect(() => {
     let cancelled = false;
     fetch("/api/ha/energy/prefs", { cache: "no-store" })
@@ -992,6 +1026,9 @@ export function EnergyTopDevicesEntry({
       cancelled = true;
     };
   }, [entityIds]);
+  useEffect(() => {
+    focusAfterChoiceRetry(retryFocus, choiceStatus, entryButton.current, retryButton.current);
+  }, [choiceStatus]);
   const count = fill(t("settings.energy.topDevices.count"), { n: entityIds.length, max: TOP_DEVICE_MAX });
   const labelEntities = labelSources(entities, proposal);
   const names =
@@ -1015,6 +1052,7 @@ export function EnergyTopDevicesEntry({
       <div className="overflow-hidden rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white dark:border-white/10 dark:bg-[#1b1a21]">
         <button
           type="button"
+          ref={entryButton}
           onClick={onOpen}
           className={cn(
             "flex min-h-16 w-full items-center gap-3 px-3 py-2 text-left outline-none",
@@ -1028,20 +1066,24 @@ export function EnergyTopDevicesEntry({
             <span className="block text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
               {t("settings.energy.topDevices.title")}
             </span>
-            {choiceStatus === "ready" ? (
-              <span className="mt-0.5 flex min-w-0 items-center text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
-                <span data-entry-names className="min-w-0 truncate">
-                  {names}
+            <span data-entry-subline className="mt-0.5 block h-5 overflow-hidden">
+              {choiceStatus === "ready" ? (
+                <span className="flex h-5 min-w-0 items-center text-sm leading-5 text-[#4b5563] dark:text-[#c4c4cc]">
+                  <span data-entry-names className="min-w-0 truncate">
+                    {names}
+                  </span>
+                  <span data-entry-meta className="shrink-0 whitespace-pre">
+                    {` · ${count} · ${t("settings.energy.topDevices.rowTablets")}`}
+                  </span>
                 </span>
-                <span data-entry-meta className="shrink-0 whitespace-pre">
-                  {` · ${count} · ${t("settings.energy.topDevices.rowTablets")}`}
+              ) : choiceStatus === "loading" ? (
+                <span className="block h-5 text-sm leading-5 text-[#4b5563] dark:text-[#c4c4cc]">
+                  {t("editPanel.loading")}
                 </span>
-              </span>
-            ) : choiceStatus === "loading" ? (
-              <span className="mt-0.5 block text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
-                {t("editPanel.loading")}
-              </span>
-            ) : null}
+              ) : (
+                <span className="block h-5" />
+              )}
+            </span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0 text-[#4b5563] dark:text-[#a1a1aa]" aria-hidden />
         </button>
@@ -1052,7 +1094,11 @@ export function EnergyTopDevicesEntry({
             </p>
             <button
               type="button"
-              onClick={onRetry}
+              ref={retryButton}
+              onClick={() => {
+                retryFocus.current = true;
+                onRetry?.();
+              }}
               className={cn(
                 "inline-flex h-11 items-center rounded-full border border-[#767b85] px-4 text-[15px] font-semibold outline-none dark:border-[#6b6b75] dark:text-[#f3f4f6]",
                 FOCUS_RING_BRAND

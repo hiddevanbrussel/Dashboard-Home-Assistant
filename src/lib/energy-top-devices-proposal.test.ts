@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { energyModelFromCommand, parseEnergyPrefs } from "./energy-prefs";
+import { topDeviceLabel } from "./energy-top-devices-order";
 import {
   formatKwh1,
   listOverflows,
@@ -47,6 +48,18 @@ describe("device consumption proposal", () => {
     expect(merged.map((entity) => entity.entity_id)).toEqual(["sensor.fridge", "sensor.boiler", "sensor.oven"]);
     expect(merged[0]?.attributes?.friendly_name).toBe("Koelkast");
     expect(merged[1]?.attributes?.friendly_name).toBe("Boiler");
+  });
+
+  it("labels a nameless prefs-only device as missing and keeps a named one", () => {
+    const unnamed = mergeProposedCandidates([], [{ id: "sensor.spook", name: null }]);
+    expect(topDeviceLabel("sensor.spook", unnamed, "Energy sensor", "Not found")).toBe("Not found");
+    const named = mergeProposedCandidates([], [{ id: "sensor.spook", name: "QA Spookapparaat" }]);
+    expect(topDeviceLabel("sensor.spook", named, "Energy sensor", "Not found")).toBe("QA Spookapparaat");
+    const inHomeAssistant = mergeProposedCandidates(
+      [{ entity_id: "sensor.meter", attributes: { device_class: "energy", state_class: "total_increasing" } }],
+      []
+    );
+    expect(topDeviceLabel("sensor.meter", inHomeAssistant, "Energy sensor", "Not found")).toBe("Energy sensor");
   });
 
   it("rounds today to one decimal and asks for at most five statistic ids", () => {
