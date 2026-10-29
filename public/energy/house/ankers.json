@@ -1,0 +1,707 @@
+{
+ "uitleg": "x,y in % van de gedeelde uitsnede (crop, bronpx 1672×941) = % van de asset; dx/dy = gemeten lokale verschuiving t.o.v. dag-licht in bronpx (al meegeteld)",
+ "crop_bronpx": [
+  224,
+  32,
+  1424,
+  941
+ ],
+ "asset_px": [
+  960,
+  727
+ ],
+ "varianten": {
+  "dag-licht": {
+   "zon_panelen": {
+    "aanwezig": true,
+    "pct": [
+     55.33,
+     27.5
+    ],
+    "bronpx": [
+     888,
+     282
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 1
+   },
+   "omvormer_kastje": {
+    "aanwezig": true,
+    "pct": [
+     66.33,
+     62.6
+    ],
+    "bronpx": [
+     1020,
+     601
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 1
+   },
+   "batterij": {
+    "aanwezig": true,
+    "pct": [
+     66.33,
+     71.4
+    ],
+    "bronpx": [
+     1020,
+     681
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 1
+   },
+   "net_voordeur": {
+    "aanwezig": true,
+    "pct": [
+     53.83,
+     69.2
+    ],
+    "bronpx": [
+     870,
+     661
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 1
+   },
+   "huis": {
+    "aanwezig": true,
+    "pct": [
+     49.42,
+     50.39
+    ],
+    "bronpx": [
+     817,
+     490
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 1
+   },
+   "polygonen_pct": {
+    "panelen": [
+     [
+      34.42,
+      21.78
+     ],
+     [
+      61.92,
+      9.68
+     ],
+     [
+      76.5,
+      32.34
+     ],
+     [
+      48.42,
+      45.54
+     ]
+    ],
+    "mint_lijn_dag": [
+     [
+      76.5,
+      32.34
+     ],
+     [
+      81.0,
+      36.74
+     ],
+     [
+      80.0,
+      45.54
+     ],
+     [
+      67.67,
+      51.38
+     ],
+     [
+      67.0,
+      59.96
+     ],
+     [
+      66.33,
+      65.57
+     ],
+     [
+      66.33,
+      67.77
+     ]
+    ],
+    "mint_lijn_nacht": [
+     [
+      66.33,
+      67.99
+     ],
+     [
+      66.33,
+      65.57
+     ],
+     [
+      66.33,
+      62.6
+     ],
+     [
+      62.0,
+      62.05
+     ]
+    ],
+    "batterij_led": [
+     [
+      67.67,
+      68.21
+     ],
+     [
+      67.67,
+      74.15
+     ]
+    ]
+   },
+   "batterij_oplossing": "onderste wandkastje (2 gestapelde modules) = batterij; label rechtsonder ankert op het kastje, live LED-strook op het voorvlak toont SoC"
+  },
+  "dag-donker": {
+   "zon_panelen": {
+    "aanwezig": true,
+    "pct": [
+     55.33,
+     27.39
+    ],
+    "bronpx": [
+     888,
+     281
+    ],
+    "dx": 0,
+    "dy": -1,
+    "piek": 0.54
+   },
+   "omvormer_kastje": {
+    "aanwezig": true,
+    "pct": [
+     66.25,
+     62.6
+    ],
+    "bronpx": [
+     1019,
+     601
+    ],
+    "dx": -1,
+    "dy": 0,
+    "piek": 0.33
+   },
+   "batterij": {
+    "aanwezig": true,
+    "pct": [
+     66.33,
+     71.29
+    ],
+    "bronpx": [
+     1020,
+     680
+    ],
+    "dx": 0,
+    "dy": -1,
+    "piek": 0.31
+   },
+   "net_voordeur": {
+    "aanwezig": true,
+    "pct": [
+     53.83,
+     69.2
+    ],
+    "bronpx": [
+     870,
+     661
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 0.35
+   },
+   "huis": {
+    "aanwezig": true,
+    "pct": [
+     49.33,
+     50.28
+    ],
+    "bronpx": [
+     816,
+     489
+    ],
+    "dx": -1,
+    "dy": -1,
+    "piek": 0.16
+   },
+   "polygonen_pct": {
+    "panelen": [
+     [
+      34.42,
+      21.78
+     ],
+     [
+      61.92,
+      9.68
+     ],
+     [
+      76.5,
+      32.34
+     ],
+     [
+      48.42,
+      45.54
+     ]
+    ],
+    "mint_lijn_dag": [
+     [
+      76.5,
+      32.34
+     ],
+     [
+      81.0,
+      36.74
+     ],
+     [
+      80.0,
+      45.54
+     ],
+     [
+      67.67,
+      51.38
+     ],
+     [
+      67.0,
+      59.96
+     ],
+     [
+      66.33,
+      65.57
+     ],
+     [
+      66.33,
+      67.77
+     ]
+    ],
+    "mint_lijn_nacht": [
+     [
+      66.33,
+      67.99
+     ],
+     [
+      66.33,
+      65.57
+     ],
+     [
+      66.33,
+      62.6
+     ],
+     [
+      62.0,
+      62.05
+     ]
+    ],
+    "batterij_led": [
+     [
+      67.67,
+      68.21
+     ],
+     [
+      67.67,
+      74.15
+     ]
+    ]
+   },
+   "batterij_oplossing": "onderste wandkastje (2 gestapelde modules) = batterij; label rechtsonder ankert op het kastje, live LED-strook op het voorvlak toont SoC"
+  },
+  "nacht-licht": {
+   "zon_panelen": {
+    "aanwezig": true,
+    "pct": [
+     55.33,
+     27.39
+    ],
+    "bronpx": [
+     888,
+     281
+    ],
+    "dx": 0,
+    "dy": -1,
+    "piek": 0.47
+   },
+   "omvormer_kastje": {
+    "aanwezig": true,
+    "pct": [
+     66.25,
+     62.6
+    ],
+    "bronpx": [
+     1019,
+     601
+    ],
+    "dx": -1,
+    "dy": 0,
+    "piek": 0.19
+   },
+   "batterij": {
+    "aanwezig": true,
+    "pct": [
+     66.33,
+     71.4
+    ],
+    "bronpx": [
+     1020,
+     681
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 0.39
+   },
+   "net_voordeur": {
+    "aanwezig": true,
+    "pct": [
+     53.83,
+     69.2
+    ],
+    "bronpx": [
+     870,
+     661
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 0.34
+   },
+   "huis": {
+    "aanwezig": true,
+    "pct": [
+     49.42,
+     50.39
+    ],
+    "bronpx": [
+     817,
+     490
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 0.21
+   },
+   "polygonen_pct": {
+    "panelen": [
+     [
+      34.42,
+      21.78
+     ],
+     [
+      61.92,
+      9.68
+     ],
+     [
+      76.5,
+      32.34
+     ],
+     [
+      48.42,
+      45.54
+     ]
+    ],
+    "mint_lijn_dag": [
+     [
+      76.5,
+      32.34
+     ],
+     [
+      81.0,
+      36.74
+     ],
+     [
+      80.0,
+      45.54
+     ],
+     [
+      67.67,
+      51.38
+     ],
+     [
+      67.0,
+      59.96
+     ],
+     [
+      66.33,
+      65.57
+     ],
+     [
+      66.33,
+      67.77
+     ]
+    ],
+    "mint_lijn_nacht": [
+     [
+      66.33,
+      67.99
+     ],
+     [
+      66.33,
+      65.57
+     ],
+     [
+      66.33,
+      62.6
+     ],
+     [
+      62.0,
+      62.05
+     ]
+    ],
+    "batterij_led": [
+     [
+      67.67,
+      68.21
+     ],
+     [
+      67.67,
+      74.15
+     ]
+    ]
+   },
+   "batterij_oplossing": "onderste wandkastje (2 gestapelde modules) = batterij; label rechtsonder ankert op het kastje, live LED-strook op het voorvlak toont SoC"
+  },
+  "nacht-donker": {
+   "zon_panelen": {
+    "aanwezig": true,
+    "pct": [
+     55.42,
+     27.5
+    ],
+    "bronpx": [
+     889,
+     282
+    ],
+    "dx": 1,
+    "dy": 0,
+    "piek": 0.48
+   },
+   "omvormer_kastje": {
+    "aanwezig": true,
+    "pct": [
+     66.33,
+     62.6
+    ],
+    "bronpx": [
+     1020,
+     601
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 0.31
+   },
+   "batterij": {
+    "aanwezig": true,
+    "pct": [
+     66.33,
+     71.4
+    ],
+    "bronpx": [
+     1020,
+     681
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 0.35
+   },
+   "net_voordeur": {
+    "aanwezig": true,
+    "pct": [
+     53.83,
+     69.2
+    ],
+    "bronpx": [
+     870,
+     661
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 0.41
+   },
+   "huis": {
+    "aanwezig": true,
+    "pct": [
+     49.42,
+     50.39
+    ],
+    "bronpx": [
+     817,
+     490
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 0.27
+   },
+   "polygonen_pct": {
+    "panelen": [
+     [
+      34.42,
+      21.78
+     ],
+     [
+      61.92,
+      9.68
+     ],
+     [
+      76.5,
+      32.34
+     ],
+     [
+      48.42,
+      45.54
+     ]
+    ],
+    "mint_lijn_dag": [
+     [
+      76.5,
+      32.34
+     ],
+     [
+      81.0,
+      36.74
+     ],
+     [
+      80.0,
+      45.54
+     ],
+     [
+      67.67,
+      51.38
+     ],
+     [
+      67.0,
+      59.96
+     ],
+     [
+      66.33,
+      65.57
+     ],
+     [
+      66.33,
+      67.77
+     ]
+    ],
+    "mint_lijn_nacht": [
+     [
+      66.33,
+      67.99
+     ],
+     [
+      66.33,
+      65.57
+     ],
+     [
+      66.33,
+      62.6
+     ],
+     [
+      62.0,
+      62.05
+     ]
+    ],
+    "batterij_led": [
+     [
+      67.67,
+      68.21
+     ],
+     [
+      67.67,
+      74.15
+     ]
+    ]
+   },
+   "batterij_oplossing": "onderste wandkastje (2 gestapelde modules) = batterij; label rechtsonder ankert op het kastje, live LED-strook op het voorvlak toont SoC"
+  },
+  "zonder-licht": {
+   "zon_panelen": {
+    "aanwezig": false,
+    "opmerking": "niet in deze render (geen panelen/kastjes) → label vervalt"
+   },
+   "omvormer_kastje": {
+    "aanwezig": false,
+    "opmerking": "niet in deze render (geen panelen/kastjes) → label vervalt"
+   },
+   "batterij": {
+    "aanwezig": false,
+    "opmerking": "niet in deze render (geen panelen/kastjes) → label vervalt"
+   },
+   "net_voordeur": {
+    "aanwezig": true,
+    "pct": [
+     53.83,
+     69.31
+    ],
+    "bronpx": [
+     870,
+     662
+    ],
+    "dx": 0,
+    "dy": 1,
+    "piek": 0.31
+   },
+   "huis": {
+    "aanwezig": true,
+    "pct": [
+     49.33,
+     50.5
+    ],
+    "bronpx": [
+     816,
+     491
+    ],
+    "dx": -1,
+    "dy": 1,
+    "piek": 0.17
+   },
+   "polygonen_pct": {},
+   "batterij_oplossing": "geen batterij in beeld → batterijlabel vervalt (setup zonder batterij)"
+  },
+  "zonder-donker": {
+   "zon_panelen": {
+    "aanwezig": false,
+    "opmerking": "niet in deze render (geen panelen/kastjes) → label vervalt"
+   },
+   "omvormer_kastje": {
+    "aanwezig": false,
+    "opmerking": "niet in deze render (geen panelen/kastjes) → label vervalt"
+   },
+   "batterij": {
+    "aanwezig": false,
+    "opmerking": "niet in deze render (geen panelen/kastjes) → label vervalt"
+   },
+   "net_voordeur": {
+    "aanwezig": true,
+    "pct": [
+     53.83,
+     69.2
+    ],
+    "bronpx": [
+     870,
+     661
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 0.36
+   },
+   "huis": {
+    "aanwezig": true,
+    "pct": [
+     49.42,
+     50.39
+    ],
+    "bronpx": [
+     817,
+     490
+    ],
+    "dx": 0,
+    "dy": 0,
+    "piek": 0.19
+   },
+   "polygonen_pct": {},
+   "batterij_oplossing": "geen batterij in beeld → batterijlabel vervalt (setup zonder batterij)"
+  }
+ }
+}
