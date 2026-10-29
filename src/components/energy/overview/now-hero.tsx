@@ -34,7 +34,6 @@ import {
   houseVariant,
   nowSentenceKey,
   powerIsFlowing,
-  roundSentenceKw,
   shouldAnimate,
   solarIsLinked,
   splitLivePower,
@@ -146,7 +145,6 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   const [model, setModel] = useState<EnergyModel | null>(null);
   const [prefsStatus, setPrefsStatus] = useState<"loading" | "ready" | "error">("loading");
   const frameRef = useRef<HTMLDivElement | null>(null);
-  const stageRef = useRef<HTMLDivElement | null>(null);
   const gatesRef = useRef<HeroGates>({ solar: false, grid: false, battery: false });
 
   useEffect(() => {
@@ -284,17 +282,15 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   });
   const sentenceKw =
     sentenceKey === "energy.overview.now.sentenceBatteryOut"
-      ? knownPower(batteryPower == null ? null : roundSentenceKw(batteryPower))
+      ? knownPower(batteryPower)
       : sentenceKey === "energy.overview.now.sentenceImport"
-        ? knownPower(gridKw != null && gridKw > 0 ? roundSentenceKw(gridKw) : null)
+        ? knownPower(gridKw != null && gridKw > 0 ? gridKw : null)
         : null;
-  const sentenceSolar = solarKw == null ? "" : knownPower(roundSentenceKw(solarKw)) ?? "";
-  const sentenceHouse = houseKw == null ? "" : knownPower(roundSentenceKw(houseKw)) ?? "";
   const sentence = sentenceKey
     ? fill(t(sentenceKey), {
         kw: sentenceKw ?? "",
-        solar: sentenceSolar,
-        house: sentenceHouse,
+        solar: knownPower(solarKw) ?? "",
+        house: knownPower(houseKw) ?? "",
       })
     : "";
 
@@ -334,12 +330,11 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
         <House className="h-4 w-4 text-[#4700B5] dark:text-[#c4b5fd]" aria-hidden />
         {t("energy.overview.now.house")}
       </p>
-      <div ref={stageRef} data-now-stage className="relative min-h-0 w-full flex-1">
-        <div className="absolute inset-x-0 top-16 bottom-16 flex items-center justify-center" style={{ containerType: "size" }}>
+      <div className="flex min-h-0 w-full flex-1 items-center justify-center" style={{ containerType: "size" }}>
         <div
           ref={frameRef}
           data-now-frame
-          className="relative mx-auto aspect-[960/727] h-full max-h-full max-w-full"
+          className="relative mx-auto aspect-[960/727] max-h-full max-w-full"
           style={{ width: "min(100cqw, calc(100cqh * 960 / 727))" }}
         >
           {variant ? (
@@ -366,21 +361,20 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
               labelSig={labelSig}
             />
           ) : null}
+          {kinds.map((kind) => (
+            <HeroPill
+              key={kind}
+              kind={kind}
+              solarKw={solarKw}
+              gridKw={gridKw}
+              batteryPower={batteryPower}
+              soc={soc}
+              night={night}
+              solarOn={gates.solar}
+              batteryOn={gates.battery}
+            />
+          ))}
         </div>
-        </div>
-        {kinds.map((kind) => (
-          <HeroPill
-            key={kind}
-            kind={kind}
-            solarKw={solarKw}
-            gridKw={gridKw}
-            batteryPower={batteryPower}
-            soc={soc}
-            night={night}
-            solarOn={gates.solar}
-            batteryOn={gates.battery}
-          />
-        ))}
       </div>
       <p data-now-sentence className="flex min-h-10 items-end justify-center text-center text-base leading-snug text-[#374151] dark:text-[#d1d5db]">
         {sentence}

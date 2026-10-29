@@ -51,12 +51,6 @@ export function stepHeroGates(
   };
 }
 
-/** Sentence figures only. 50 W steps. Pills and the house number stay raw. */
-export function roundSentenceKw(kw: number): number {
-  const watts = Math.abs(kw) * 1000;
-  return (Math.round(watts / 50) * 50) / 1000;
-}
-
 export function houseVariant(input: {
   theme: HouseTheme;
   sunAboveHorizon: boolean;
@@ -206,15 +200,15 @@ export function nowSentenceKey(input: {
   houseKw: number | null;
 }): string | null {
   if (!input.linked) return "energy.overview.now.sentenceSetup";
-  const solar = input.solarOn && input.solarKw != null ? roundSentenceKw(input.solarKw) : 0;
-  const house = input.houseKw == null ? null : roundSentenceKw(input.houseKw);
-  const discharge = input.batteryOn && input.batteryKw != null && input.batteryKw > 0 ? roundSentenceKw(input.batteryKw) : 0;
-  const imported = input.gridOn && input.gridKw != null && input.gridKw > 0 ? roundSentenceKw(input.gridKw) : 0;
-  const exported = input.gridOn && input.gridKw != null && input.gridKw < 0 ? roundSentenceKw(-input.gridKw) : 0;
+  const solar = input.solarOn && input.solarKw != null ? input.solarKw : 0;
+  const house = input.houseKw;
+  const discharge = input.batteryOn && input.batteryKw != null && input.batteryKw > 0 ? input.batteryKw : 0;
+  const imported = input.gridOn && input.gridKw != null && input.gridKw > 0 ? input.gridKw : 0;
+  const exported = input.gridOn && input.gridKw != null && input.gridKw < 0 ? -input.gridKw : 0;
   if (input.night && solar < FLOW_EPSILON_KW && discharge > 0) return "energy.overview.now.sentenceBatteryOut";
   if (house != null && solar >= house && solar > 0 && exported > 0) return "energy.overview.now.sentenceCoverExport";
   if (house != null && solar >= house && solar > 0) return "energy.overview.now.sentenceCover";
-  if (solar > 0) return "energy.overview.now.sentenceSolar";
+  if (solar > 0) return house != null ? "energy.overview.now.sentenceSolar" : null;
   if (imported > 0) return "energy.overview.now.sentenceImport";
   return null;
 }

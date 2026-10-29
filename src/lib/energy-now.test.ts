@@ -10,7 +10,6 @@ import {
   houseVariant,
   nowSentenceKey,
   powerIsFlowing,
-  roundSentenceKw,
   shouldAnimate,
   solarIsLinked,
   stepHeroGates,
@@ -153,12 +152,7 @@ describe("now sentence", () => {
     ).toBe("energy.overview.now.sentenceBatteryOut");
   });
 
-  it("rounds sentence figures to 50 W and keeps the type while the gate holds", () => {
-    expect(roundSentenceKw(0.73)).toBe(0.75);
-    expect(roundSentenceKw(0.02)).toBe(0);
-    expect(roundSentenceKw(1.65)).toBe(1.65);
-    expect(roundSentenceKw(0.045)).toBe(0.05);
-    expect(roundSentenceKw(0.055)).toBe(0.05);
+  it("keeps the sentence type while the gate holds", () => {
     const base = {
       linked: true,
       night: false,
@@ -172,6 +166,22 @@ describe("now sentence", () => {
     expect(nowSentenceKey({ ...base, solarKw: 0.045 })).toBe("energy.overview.now.sentenceSolar");
     expect(nowSentenceKey({ ...base, solarKw: 0.055 })).toBe(nowSentenceKey({ ...base, solarKw: 0.045 }));
     expect(nowSentenceKey({ ...base, solarOn: false, solarKw: 0.045 })).toBeNull();
+  });
+
+  it("skips the solar sentence when the house figure is unknown", () => {
+    expect(
+      nowSentenceKey({
+        linked: true,
+        night: false,
+        solarOn: true,
+        batteryOn: false,
+        gridOn: true,
+        solarKw: 1.65,
+        batteryKw: null,
+        gridKw: 0.3,
+        houseKw: null,
+      })
+    ).toBeNull();
   });
 });
 
