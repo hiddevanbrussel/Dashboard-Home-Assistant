@@ -1,0 +1,14 @@
+[
+  { "statistic_id": "sensor.grid_import", "unit_class": "energy", "unit_of_measurement": "kWh" },
+  { "statistic_id": "sensor.grid_export", "unit_class": "energy", "unit_of_measurement": "kWh" },
+  { "statistic_id": "sensor.solar_yield", "unit_class": "energy", "unit_of_measurement": "kWh" },
+  { "statistic_id": "sensor.solar_yield_mwh", "unit_class": "energy", "unit_of_measurement": "MWh" },
+  { "statistic_id": "sensor.battery_out", "unit_class": "energy", "unit_of_measurement": "kWh" },
+  { "statistic_id": "sensor.battery_in", "unit_class": "energy", "unit_of_measurement": "kWh" },
+  { "statistic_id": "sensor.battery_soc", "unit_class": "power", "unit_of_measurement": "%" },
+  { "statistic_id": "sensor.gas", "unit_class": "volume", "unit_of_measurement": "m³" },
+  { "statistic_id": "sensor.water", "unit_class": "volume", "unit_of_measurement": "m³" },
+  { "statistic_id": "sensor.fridge", "unit_class": "energy", "unit_of_measurement": "kWh" },
+  { "statistic_id": "sensor.boiler", "unit_class": "energy", "unit_of_measurement": "kWh" },
+  { "statistic_id": "sensor.temperature", "unit_class": "temperature", "unit_of_measurement": "°C" }
+]

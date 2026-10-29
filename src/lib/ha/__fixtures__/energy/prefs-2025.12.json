@@ -1,0 +1,19 @@
+{
+  "energy_sources": [
+    {
+      "type": "grid",
+      "flow_from": [
+        { "stat_energy_from": "sensor.grid_import", "stat_cost": "sensor.grid_cost" },
+        { "stat_energy_from": "sensor.grid_import_2" }
+      ],
+      "flow_to": [{ "stat_energy_to": "sensor.grid_export", "number_energy_price": 0.09 }],
+      "power": [
+        { "stat_rate": "sensor.grid_power" },
+        { "stat_rate": "sensor.grid_power_2" },
+        { "stat_rate": "sensor.grid_power_3", "not_a_field": true }
+      ],
+      "cost_adjustment_day": 0
+    }
+  ],
+  "device_consumption": []
+}

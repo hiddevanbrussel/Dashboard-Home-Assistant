@@ -1,4 +1,4 @@
-const FALLBACK_TIME_ZONE = "Europe/Amsterdam";
+export const FALLBACK_TIME_ZONE = "Europe/Amsterdam";
 
 const DATE_PARTS: Intl.DateTimeFormatOptions = {
   calendar: "gregory",
@@ -8,7 +8,7 @@ const DATE_PARTS: Intl.DateTimeFormatOptions = {
   day: "2-digit",
 };
 
-function isValidTimeZone(timeZone: string): boolean {
+export function isValidTimeZone(timeZone: string): boolean {
   try {
     Intl.DateTimeFormat("en-US", { timeZone });
     return true;
