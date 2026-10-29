@@ -48,4 +48,15 @@ describe("getHaTimeZone", () => {
     expect(zone).toBe("Europe/Amsterdam");
     expect(zone).not.toContain(TOKEN);
   });
+
+  it("keeps a cached timezone when a later read fails", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ time_zone: "Pacific/Auckland" }), { status: 200 }))
+      .mockRejectedValueOnce(new Error("offline"));
+    vi.stubGlobal("fetch", fetchMock);
+    const config = { baseUrl: "http://ha.local:8123", token: TOKEN };
+    await expect(getHaTimeZone(config, 0)).resolves.toBe("Pacific/Auckland");
+    await expect(getHaTimeZone(config, 60 * 60 * 1000)).resolves.toBe("Pacific/Auckland");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });

@@ -11,6 +11,7 @@ import {
   EnergyTopDevicesSettings,
   type TopDeviceEntity,
 } from "@/components/settings/energy-top-devices-settings";
+import { UNDO_TOAST_DURATION_MS } from "@/components/undo-toast";
 import { useLanguageStore } from "@/stores/language-store";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -50,6 +51,9 @@ describe("largest consumer picker", () => {
   let root: Root | null = null;
   let host: HTMLDivElement | null = null;
   let entityIds: string[] = [];
+  let prefsDevices: Array<{ statConsumption: string; name: string | null }> = [];
+  let statTotal = 1.26;
+  const fetchedUrls: string[] = [];
   const onEntityIds = vi.fn((ids: string[]) => {
     entityIds = ids;
   });
@@ -58,11 +62,37 @@ describe("largest consumer picker", () => {
   beforeEach(() => {
     useLanguageStore.setState({ language: "nl", ready: true });
     entityIds = ["sensor.warmtepomp_0", "sensor.wasmachine_1", "sensor.koelkast_2"];
+    prefsDevices = [{ statConsumption: "sensor.warmtepomp_0", name: "Warmtepomp" }];
+    statTotal = 1.26;
+    fetchedUrls.length = 0;
     onEntityIds.mockClear();
     onRefreshEntities.mockClear();
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (_url: string, init?: RequestInit) => {
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const target = String(url);
+        fetchedUrls.push(target);
+        if (target.includes("/api/ha/energy/prefs")) {
+          return {
+            ok: true,
+            json: async () => ({
+              source: prefsDevices.length > 0 ? "prefs" : "manual",
+              deviceConsumption: prefsDevices,
+              deviceConsumptionWater: [],
+              energySources: [],
+            }),
+          };
+        }
+        if (target.includes("/api/ha/energy/statistics")) {
+          const devices = new URL(target, "http://localhost").searchParams.get("devices") ?? "";
+          const ids = devices.split(",").filter(Boolean);
+          return {
+            ok: true,
+            json: async () => ({
+              devices: { items: ids.map((id) => ({ id, total: statTotal, perHour: [] })) },
+            }),
+          };
+        }
         const body = JSON.parse(String(init?.body)) as { topDeviceIds: string[] };
         return {
           ok: true,
@@ -160,9 +190,11 @@ describe("largest consumer picker", () => {
     expect(mark?.textContent).toBe("Was");
     expect(mark?.className).toContain("text-inherit");
     expect(input.className).not.toContain("focus-visible:ring");
-    expect(input.parentElement?.className).toContain("focus-within:ring-2");
-    expect(input.parentElement?.className).toContain("focus-within:ring-brand");
-    expect(input.parentElement?.className).toContain("dark:focus-within:ring-brand-muted");
+    expect(input.className).toContain("focus-visible:!outline-none");
+    expect(input.parentElement?.className).toContain("has-[input:focus-visible]:ring-2");
+    expect(input.parentElement?.className).toContain("has-[input:focus-visible]:ring-brand");
+    expect(input.parentElement?.className).toContain("dark:has-[input:focus-visible]:ring-brand-muted");
+    expect(input.parentElement?.className).not.toContain("focus-within:");
     expect(document.body.textContent).toContain("Op de kaart");
     expect(document.body.textContent).not.toContain("sensor.wasmachine");
 
@@ -261,28 +293,34 @@ describe("largest consumer picker", () => {
     });
   });
 
-  it("explains the empty choice and the case with no Home Assistant devices", () => {
+  it("explains the empty choice when devices can still be chosen", () => {
     render({ entities: devices(3), ids: [] });
     expect(document.body.textContent).toContain("Nog niets gekozen");
     expect(document.body.textContent).toContain("Kies hieronder tot 5 apparaten.");
+  });
 
-    render({ entities: [], ids: [] });
-    expect(document.body.textContent).toContain("Nog geen apparaten in Home Assistant");
-    expect(document.body.textContent).toContain(
-      "Er zijn nog geen energiesensoren in kWh gevonden in Home Assistant."
-    );
-    expect(document.body.textContent).not.toContain("energiedashboard");
-    act(() => {
-      useLanguageStore.setState({ language: "en", ready: true });
+  it("shows the setup guide when prefs have no individual devices", async () => {
+    prefsDevices = [];
+    render({ entities: devices(4), ids: [] });
+    await until(() => {
+      expect(document.body.textContent).toContain("Zo stel je het in");
     });
-    render({ entities: [], ids: [] });
-    expect(document.body.textContent).toContain("No energy sensors in kWh have been found in Home Assistant yet.");
-    act(() => {
-      useLanguageStore.setState({ language: "nl", ready: true });
-    });
+    expect(document.body.textContent).toContain("energiedashboard");
     expect(document.body.textContent).toContain("Instellingen › Dashboards › Energie");
     expect(document.body.textContent).toContain("Individuele apparaten");
     expect(document.body.textContent).toContain("energiesensor in kWh");
+    expect([...document.querySelectorAll("button")].some((button) =>
+      (button.getAttribute("aria-label") ?? "").includes("op de kaart zetten")
+    )).toBe(false);
+    act(() => {
+      useLanguageStore.setState({ language: "en", ready: true });
+    });
+    render({ entities: devices(4), ids: [] });
+    expect(document.body.textContent).toContain("How to set this up");
+    expect(document.body.textContent).toContain("Individual devices are not in the Home Assistant energy dashboard yet.");
+    act(() => {
+      useLanguageStore.setState({ language: "nl", ready: true });
+    });
     const again = [...document.querySelectorAll("button")].find((button) => button.textContent?.includes("Opnieuw kijken"));
     if (!(again instanceof HTMLButtonElement)) throw new Error("refresh missing");
     expect(again.className).toMatch(/\bh-11\b/);
@@ -302,10 +340,27 @@ describe("largest consumer picker", () => {
   it("restores the previous choice when saving fails", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: false,
-        json: async () => ({ error: "Invalid topDeviceIds", code: "invalid_id" }),
-      }))
+      vi.fn(async (url: string) => {
+        const target = String(url);
+        if (target.includes("/api/ha/energy/prefs")) {
+          return {
+            ok: true,
+            json: async () => ({
+              source: "prefs",
+              deviceConsumption: prefsDevices,
+              deviceConsumptionWater: [],
+              energySources: [],
+            }),
+          };
+        }
+        if (target.includes("/api/ha/energy/statistics")) {
+          return { ok: true, json: async () => ({ devices: { items: [] } }) };
+        }
+        return {
+          ok: false,
+          json: async () => ({ error: "Invalid topDeviceIds", code: "invalid_id" }),
+        };
+      })
     );
     render({ entities: devices(12) });
     await act(async () => {
@@ -375,7 +430,9 @@ describe("largest consumer picker", () => {
     expect(line?.className).toContain("flex");
     expect(line?.textContent).toContain("5 van 5");
     expect(line?.textContent).toContain("alle tablets");
-    expect(line?.querySelector(".whitespace-nowrap")?.textContent).toBe(" · 5 van 5 · alle tablets");
+    const meta = line?.querySelector("[data-entry-meta]");
+    expect(meta?.className).toContain("whitespace-pre");
+    expect(meta?.textContent).toBe(" · 5 van 5 · alle tablets");
   });
 
   it("keeps Dutch and English sentences in the dictionaries, not in the component", () => {
@@ -387,5 +444,78 @@ describe("largest consumer picker", () => {
     expect(source).not.toContain("Op de kaart");
     expect(source).not.toContain("localStorage");
     expect(source).toContain("settings.energy.topDevices.");
+    expect(source).not.toContain("max-h-80");
+    expect(source).toContain("focus-visible:!outline-none");
+    expect(source).toContain("has-[input:focus-visible]:ring-2");
+  });
+
+  it("puts the prefs proposal first and rounds today to one decimal for five rows", async () => {
+    prefsDevices = [{ statConsumption: "sensor.airco_11", name: "Airco" }];
+    statTotal = 1.26;
+    render({ entities: devices(12) });
+    await until(() => {
+      expect(document.querySelector("[data-today-kwh]")?.textContent).toContain("vandaag 1,3 kWh");
+    });
+    const list = document.querySelector("[data-available-list]");
+    expect(list?.className).toContain("max-h-[calc(100dvh-10rem)]");
+    expect(list?.className).not.toContain("max-h-80");
+    const text = list?.textContent ?? "";
+    expect(text.indexOf("Airco")).toBeGreaterThanOrEqual(0);
+    expect(text.indexOf("Airco")).toBeLessThan(text.indexOf("Laadpaal"));
+    expect(text).toContain("Voorstel");
+    const statCall = fetchedUrls.find((url) => url.includes("/api/ha/energy/statistics"));
+    const ids = new URL(statCall ?? "http://localhost/", "http://localhost").searchParams.get("devices") ?? "";
+    expect(ids.split(",").filter(Boolean)).toHaveLength(5);
+    expect(document.querySelectorAll("[data-today-kwh]")).toHaveLength(5);
+  });
+
+  it("moves focus out of the undo toast when it closes", async () => {
+    vi.useFakeTimers();
+    try {
+      render({ entities: devices(3), ids: ["sensor.warmtepomp_0"] });
+      await act(async () => {
+        buttonByLabel("Warmtepomp weghalen van de kaart").click();
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      const undo = [...document.querySelectorAll("button")].find((button) => button.textContent === "Ongedaan maken");
+      expect(undo).toBeInstanceOf(HTMLButtonElement);
+      expect(document.activeElement).toBe(undo);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(UNDO_TOAST_DURATION_MS);
+      });
+      const screen = document.querySelector("[data-top-devices-screen]");
+      expect(document.activeElement).not.toBe(document.body);
+      expect(screen?.contains(document.activeElement)).toBe(true);
+      expect(document.body.textContent).not.toContain("Warmtepomp weggehaald");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shows a retry instead of 0 of 5 when the saved choice failed to load", () => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => {
+      root?.render(
+        createElement(EnergyTopDevicesEntry, {
+          entityIds: [],
+          entities: [],
+          onOpen: () => undefined,
+          choiceStatus: "error",
+          onRetry: onRefreshEntities,
+        })
+      );
+    });
+    expect(document.body.textContent).toContain("De opgeslagen keuze kon niet geladen worden.");
+    expect(document.body.textContent).not.toContain("0 van 5");
+    const retry = [...document.querySelectorAll("button")].find((button) => button.textContent === "Opnieuw proberen");
+    if (!(retry instanceof HTMLButtonElement)) throw new Error("retry missing");
+    expect(retry.className).toMatch(/\bh-11\b/);
+    expect(retry.className).toContain("focus-visible:ring-2");
+    act(() => {
+      retry.click();
+    });
+    expect(onRefreshEntities).toHaveBeenCalledTimes(1);
   });
 });

@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { clearEnergyStatisticsCache } from "./energy-cache";
 import {
   buildEnergyStats,
+  clearEnergyPrefsCache,
   loadEnergyStatistics,
   planStatisticRequests,
   scaleEnergyToKwh,
@@ -49,6 +50,7 @@ describe("energy statistics", () => {
 
   afterEach(() => {
     clearEnergyStatisticsCache();
+    clearEnergyPrefsCache();
     clearHaTimeZoneCache();
     manual.calls.length = 0;
     prefs.calls.length = 0;
@@ -279,6 +281,54 @@ describe("energy statistics", () => {
     });
     expect(built.emptySince).toBe(isoWithOffset(new Date(soc[1].start), "UTC"));
     expect(built.series.batterySoc[0]).toBe(meanOf(soc.map((point) => point.mean)));
+  });
+
+  it("opens one websocket for an uncached request and none for a cache hit", async () => {
+    const server = await startMockHa({ fixtureSet: "full" });
+    try {
+      const input = {
+        config: { baseUrl: server.baseUrl, token: TOKEN },
+        connectionId: "one-socket",
+        view: "day" as const,
+        offset: 0,
+        partial: false,
+        manual: null,
+        devices: "sensor.fridge",
+        now: new Date("2026-01-15T08:20:00.000Z"),
+      };
+      await loadEnergyStatistics(input);
+      expect(server.connections).toBe(1);
+      expect(server.calls.map((call) => call.type)).toContain("energy/get_prefs");
+      expect(server.calls.map((call) => call.type)).toContain("recorder/list_statistic_ids");
+      expect(server.calls.map((call) => call.type)).toContain("recorder/statistics_during_period");
+      const afterHit = server.connections;
+      await loadEnergyStatistics(input);
+      expect(server.connections).toBe(afterHit);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("serves a cached closed window when Home Assistant is down", async () => {
+    const server = await startMockHa({ fixtureSet: "full" });
+    const input = {
+      config: { baseUrl: server.baseUrl, token: TOKEN },
+      connectionId: "closed-outage",
+      view: "week" as const,
+      offset: 1,
+      partial: false,
+      manual: null,
+      devices: null,
+      now: new Date("2026-01-20T12:00:00.000Z"),
+    };
+    const first = await loadEnergyStatistics(input);
+    expect(server.connections).toBe(1);
+    expect(first.buckets.length).toBeGreaterThan(0);
+    await server.close();
+    const again = await loadEnergyStatistics(input);
+    expect(again.buckets).toEqual(first.buckets);
+    expect(again.series).toEqual(first.series);
+    expect(again.tz).toBe(first.tz);
   });
 });
 

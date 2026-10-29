@@ -5,7 +5,14 @@
  * Server-side only. Statistic ids in the query string are allowlisted before they are sent.
  */
 
-import { energyCacheKey, energyCacheTtlMs, energyStatisticsCache, hashStatisticIds } from "./energy-cache";
+import {
+  ENERGY_CACHE_CLOSED_TTL_MS,
+  ENERGY_CACHE_RUNNING_TTL_MS,
+  energyCacheKey,
+  energyCacheTtlMs,
+  energyStatisticsCache,
+  hashStatisticIds,
+} from "./energy-cache";
 import type { EnergyModel, EnergySource } from "./energy-prefs";
 import { energyModelFromCommand } from "./energy-prefs";
 import {
@@ -655,74 +662,85 @@ function commandFor(plan: StatPlan, tz: string): HaWsCommandInput {
   };
 }
 
-async function loadTables(
-  config: HaTimeZoneConfig,
-  connectionId: string,
-  plans: StatPlan[],
-  tz: string,
-  nowMs: number
-): Promise<Map<StatPlan["purpose"], StatTable>> {
-  const tables = new Map<StatPlan["purpose"], StatTable>();
-  const missing: StatPlan[] = [];
-  for (const plan of plans) {
-    const cached = energyStatisticsCache.get(cacheKeyFor(connectionId, plan, tz));
-    if (cached && typeof cached === "object") {
-      tables.set(plan.purpose, cached as StatTable);
-    } else {
-      missing.push(plan);
-    }
-  }
-  if (missing.length === 0) return tables;
-  const results = await haWsCommands(config, missing.map((plan) => commandFor(plan, tz)));
-  missing.forEach((plan, index) => {
-    const result = results[index];
-    if (!result || !result.success) {
-      const code = result && !result.success ? result.error.code : "error";
-      throw new Error(`Statistics unavailable (${code})`);
-    }
-    const parsed = parseStatisticsMap(result.result);
-    energyStatisticsCache.set(
-      cacheKeyFor(connectionId, plan, tz),
-      parsed,
-      energyCacheTtlMs(plan.start.getTime(), plan.end.getTime(), nowMs)
-    );
-    tables.set(plan.purpose, parsed);
-  });
-  return tables;
-}
-
 function tableOrEmpty(tables: Map<StatPlan["purpose"], StatTable>, purpose: StatPlan["purpose"]): StatTable {
   return tables.get(purpose) ?? {};
 }
 
-export async function loadEnergyStatistics(input: {
-  config: HaTimeZoneConfig;
-  connectionId: string;
-  view: EnergyView;
-  offset: number;
-  partial: boolean;
-  manual: string | null;
-  devices: string | null;
-  now?: Date;
-}): Promise<EnergyStatsResponse> {
-  const now = input.now ?? new Date();
-  const tz = await getHaTimeZone(input.config);
-  const range = periodRange(input.view, input.offset, tz, now);
-  const needCatalog = input.manual != null || input.devices != null;
-  const first: HaWsCommandInput[] = [{ type: "energy/get_prefs" }];
-  if (needCatalog) first.push({ type: "recorder/list_statistic_ids" });
-  const firstResults = await haWsCommands(input.config, first);
-  const prefs = firstResults[0];
-  if (!prefs) throw new Error("Energy prefs unavailable (error)");
-  const model = energyModelFromCommand(prefs);
-  const known = needCatalog ? energyStatisticIdSet(catalogResult(firstResults[1])) : new Set<string>();
+const PREFS_FRESH_MS = ENERGY_CACHE_RUNNING_TTL_MS;
+
+type CachedPrefs = {
+  model: EnergyModel;
+  catalog: string[] | null;
+  freshUntil: number;
+  staleUntil: number;
+};
+
+const prefsCache = new Map<string, CachedPrefs>();
+
+export function clearEnergyPrefsCache(): void {
+  prefsCache.clear();
+}
+
+function prefsCacheKey(connectionId: string, baseUrl: string): string {
+  return `${connectionId}\n${baseUrl}`;
+}
+
+function readPrefs(key: string, nowMs: number): CachedPrefs | null {
+  const hit = prefsCache.get(key);
+  if (!hit || hit.staleUntil <= nowMs) {
+    if (hit) prefsCache.delete(key);
+    return null;
+  }
+  return hit;
+}
+
+function rememberPrefs(key: string, model: EnergyModel, catalog: string[] | null, nowMs: number): void {
+  const prev = prefsCache.get(key);
+  prefsCache.set(key, {
+    model,
+    catalog: catalog ?? prev?.catalog ?? null,
+    freshUntil: nowMs + PREFS_FRESH_MS,
+    staleUntil: nowMs + ENERGY_CACHE_CLOSED_TTL_MS,
+  });
+}
+
+type PlannedStats = {
+  body: EnergyStatsResponse;
+  missing: StatPlan[];
+  range: PeriodRange;
+  roles: EnergyRoles;
+  deviceIds: string[];
+};
+
+function assembleStats(
+  input: {
+    connectionId: string;
+    view: EnergyView;
+    offset: number;
+    partial: boolean;
+    manual: string | null;
+    devices: string | null;
+  },
+  model: EnergyModel,
+  catalog: readonly string[] | null,
+  tz: string,
+  now: Date
+): PlannedStats {
+  const known = new Set(catalog ?? []);
   const manualIds = model.source === "manual" ? selectQueryStatisticIds(input.manual, known) : [];
   const deviceIds = input.devices != null ? selectQueryStatisticIds(input.devices, known) : [];
   const roles = rolesFromModel(model, manualIds);
+  const range = periodRange(input.view, input.offset, tz, now);
   const plans = planStatisticRequests({ range, now, tz, roles, deviceIds });
-  const tables = await loadTables(input.config, input.connectionId, plans, tz, now.getTime());
+  const tables = new Map<StatPlan["purpose"], StatTable>();
+  const missing: StatPlan[] = [];
+  for (const plan of plans) {
+    const cached = energyStatisticsCache.get(cacheKeyFor(input.connectionId, plan, tz));
+    if (cached && typeof cached === "object") tables.set(plan.purpose, cached as StatTable);
+    else missing.push(plan);
+  }
   const hourStats = tableOrEmpty(tables, "hour");
-  return buildEnergyStats({
+  const body = buildEnergyStats({
     view: input.view,
     tz,
     range,
@@ -739,6 +757,100 @@ export async function loadEnergyStatistics(input: {
     deviceStats: input.view === "day" ? hourStats : tableOrEmpty(tables, "devices"),
     socStats: tableOrEmpty(tables, "soc"),
   });
+  return { body, missing, range, roles, deviceIds };
+}
+
+function storePlans(connectionId: string, plans: readonly StatPlan[], results: readonly HaWsCommandResult[], tz: string, nowMs: number): void {
+  plans.forEach((plan, index) => {
+    const result = results[index];
+    if (!result || !result.success) {
+      const code = result && !result.success ? result.error.code : "error";
+      throw new Error(`Statistics unavailable (${code})`);
+    }
+    energyStatisticsCache.set(
+      cacheKeyFor(connectionId, plan, tz),
+      parseStatisticsMap(result.result),
+      energyCacheTtlMs(plan.start.getTime(), plan.end.getTime(), nowMs)
+    );
+  });
+}
+
+export async function loadEnergyStatistics(input: {
+  config: HaTimeZoneConfig;
+  connectionId: string;
+  view: EnergyView;
+  offset: number;
+  partial: boolean;
+  manual: string | null;
+  devices: string | null;
+  now?: Date;
+}): Promise<EnergyStatsResponse> {
+  const now = input.now ?? new Date();
+  const nowMs = Date.now();
+  const tz = await getHaTimeZone(input.config, nowMs);
+  const key = prefsCacheKey(input.connectionId, input.config.baseUrl);
+  const cached = readPrefs(key, nowMs);
+  const needCatalog = input.manual != null || input.devices != null;
+
+  if (cached && (!needCatalog || cached.catalog)) {
+    const ready = assembleStats(input, cached.model, cached.catalog, tz, now);
+    if (ready.missing.length === 0) return ready.body;
+  }
+
+  const modelIsFresh = Boolean(cached && cached.freshUntil > nowMs);
+  let model = cached?.model ?? null;
+  let catalog = cached?.catalog ?? null;
+
+  try {
+    const first: HaWsCommandInput[] = [];
+    if (!modelIsFresh) first.push({ type: "energy/get_prefs" });
+    if (needCatalog && !catalog) first.push({ type: "recorder/list_statistic_ids" });
+
+    const takeFirst = (results: readonly HaWsCommandResult[]) => {
+      let index = 0;
+      if (!modelIsFresh) {
+        const prefs = results[index];
+        index += 1;
+        if (!prefs) throw new Error("Energy prefs unavailable (error)");
+        model = energyModelFromCommand(prefs);
+      }
+      if (needCatalog && !catalog) catalog = [...energyStatisticIdSet(catalogResult(results[index]))];
+      if (!model) throw new Error("Energy prefs unavailable (error)");
+      rememberPrefs(key, model, catalog, nowMs);
+    };
+
+    if (first.length === 0) {
+      if (!model) throw new Error("Energy prefs unavailable (error)");
+      const planned = assembleStats(input, model, catalog, tz, now);
+      if (planned.missing.length > 0) {
+        const results = await haWsCommands(
+          input.config,
+          planned.missing.map((plan) => commandFor(plan, tz))
+        );
+        storePlans(input.connectionId, planned.missing, results, tz, nowMs);
+      }
+    } else {
+      let missing: StatPlan[] = [];
+      const results = await haWsCommands(input.config, first, {
+        followUp: (firstResults) => {
+          takeFirst(firstResults);
+          if (!model) return [];
+          missing = assembleStats(input, model, catalog, tz, now).missing;
+          return missing.map((plan) => commandFor(plan, tz));
+        },
+      });
+      if (missing.length > 0) storePlans(input.connectionId, missing, results.slice(first.length), tz, nowMs);
+    }
+
+    if (!model) throw new Error("Energy prefs unavailable (error)");
+    return assembleStats(input, model, catalog, tz, now).body;
+  } catch (error) {
+    if (cached && (!needCatalog || cached.catalog)) {
+      const ready = assembleStats(input, cached.model, cached.catalog, tz, now);
+      if (ready.missing.length === 0) return ready.body;
+    }
+    throw error;
+  }
 }
 
 function catalogResult(result: HaWsCommandResult | undefined): unknown {

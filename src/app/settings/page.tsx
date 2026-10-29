@@ -41,6 +41,7 @@ import { hydrateValetudoStore, useValetudoStore } from "@/stores/valetudo-store"
 import { hydrateVoiceSatelliteStore, useVoiceSatelliteStore } from "@/stores/voice-satellite-store";
 import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
+import { energyDashboardChoiceFromResponse } from "@/lib/energy-dashboard";
 import { EnergyEntitySettings } from "@/components/settings/energy-entity-settings";
 import {
   EnergyTopDevicesEntry,
@@ -201,6 +202,8 @@ export default function SettingsPage() {
   const [uploadingBgDark, setUploadingBgDark] = useState(false);
   const [energyDashboardId, setEnergyDashboardId] = useState<string | null>(null);
   const [topDeviceIds, setTopDeviceIds] = useState<string[]>([]);
+  const [energyChoiceStatus, setEnergyChoiceStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [energyChoiceAttempt, setEnergyChoiceAttempt] = useState(0);
   const [topDevicesOpen, setTopDevicesOpen] = useState(false);
   const [energyBackgroundLight, setEnergyBackgroundLight] = useState<string | null>(null);
   const [energyBackgroundDark, setEnergyBackgroundDark] = useState<string | null>(null);
@@ -349,20 +352,30 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/energy-dashboard")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.id) setEnergyDashboardId(d.id);
-        setEnergyBackgroundLight(d?.backgroundLight ?? null);
-        setEnergyBackgroundDark(d?.backgroundDark ?? null);
-        setTopDeviceIds(
-          Array.isArray(d?.topDeviceIds)
-            ? d.topDeviceIds.filter((id: unknown): id is string => typeof id === "string")
-            : []
-        );
+    let cancelled = false;
+    setEnergyChoiceStatus((current) => (current === "ready" ? "ready" : "loading"));
+    fetch("/api/energy-dashboard", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json().catch(() => null);
+        const choice = energyDashboardChoiceFromResponse(response.status, body);
+        if (!choice.ok) throw new Error("energy-dashboard");
+        return choice;
       })
-      .catch(() => {});
-  }, []);
+      .then((choice) => {
+        if (cancelled) return;
+        if (choice.id) setEnergyDashboardId(choice.id);
+        setEnergyBackgroundLight(choice.backgroundLight);
+        setEnergyBackgroundDark(choice.backgroundDark);
+        setTopDeviceIds(choice.topDeviceIds);
+        setEnergyChoiceStatus("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setEnergyChoiceStatus((current) => (current === "ready" ? "ready" : "error"));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [energyChoiceAttempt]);
 
   function loadEntities() {
     setEntitiesError(null);
@@ -848,13 +861,16 @@ export default function SettingsPage() {
     setTopDevicesOpen(true);
     try {
       const res = await fetch("/api/energy-dashboard", { cache: "no-store" });
-      const data = await res.json();
-      if (data?.id) setEnergyDashboardId(data.id);
-      if (Array.isArray(data?.topDeviceIds)) {
-        setTopDeviceIds(data.topDeviceIds.filter((id: unknown): id is string => typeof id === "string"));
-      }
+      const data = await res.json().catch(() => null);
+      const choice = energyDashboardChoiceFromResponse(res.status, data);
+      if (!choice.ok) throw new Error("energy-dashboard");
+      if (choice.id) setEnergyDashboardId(choice.id);
+      setEnergyBackgroundLight(choice.backgroundLight);
+      setEnergyBackgroundDark(choice.backgroundDark);
+      setTopDeviceIds(choice.topDeviceIds);
+      setEnergyChoiceStatus("ready");
     } catch {
-      /* keep the choice from the last successful read */
+      setEnergyChoiceStatus((current) => (current === "ready" ? "ready" : "error"));
     }
   }
 
@@ -1343,6 +1359,8 @@ export default function SettingsPage() {
                   <EnergyTopDevicesEntry
                     entityIds={topDeviceIds}
                     entities={entities}
+                    choiceStatus={energyChoiceStatus}
+                    onRetry={() => setEnergyChoiceAttempt((attempt) => attempt + 1)}
                     onOpen={() => void openTopDevices()}
                   />
                   <EnergyEntitySettings entities={entities} />

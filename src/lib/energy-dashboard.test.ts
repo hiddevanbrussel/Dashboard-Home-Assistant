@@ -19,6 +19,7 @@ import {
   matchesEnergySensorKind,
   mergeDatedSeries,
   mergeHourlySeries,
+  energyDashboardChoiceFromResponse,
   parseEnergyEntities,
   parseEntityIdList,
   parseHaNumber,
@@ -169,6 +170,22 @@ describe("energy dashboard entities", () => {
       "sensor.a",
       "sensor.b",
     ]);
+    expect(parseEnergyEntities({ solarPowerEntityId: "sensor.pv" }).gridPowerEntityId).toBe("");
+    expect(parseEnergyEntities({ gridImportPowerEntityId: " sensor.import_w " }).gridImportPowerEntityId).toBe(
+      "sensor.import_w"
+    );
+  });
+
+  it("does not turn a failed dashboard response into an empty device choice", () => {
+    expect(energyDashboardChoiceFromResponse(502, { error: "unavailable" })).toEqual({ ok: false });
+    expect(energyDashboardChoiceFromResponse(401, null)).toEqual({ ok: false });
+    expect(energyDashboardChoiceFromResponse(200, { id: "ed1", topDeviceIds: ["sensor.a", 2] })).toEqual({
+      ok: true,
+      id: "ed1",
+      topDeviceIds: ["sensor.a"],
+      backgroundLight: null,
+      backgroundDark: null,
+    });
   });
 
   it("knows when sensors are linked", () => {
