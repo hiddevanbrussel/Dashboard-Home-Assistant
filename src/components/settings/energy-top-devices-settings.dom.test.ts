@@ -454,7 +454,7 @@ describe("largest consumer picker", () => {
     statTotal = 1.26;
     render({ entities: devices(12) });
     await until(() => {
-      expect(document.querySelector("[data-today-kwh]")?.textContent).toContain("vandaag 1,3 kWh");
+      expect(document.querySelector("[data-proposal-line]")?.textContent).toBe("Voorstel · vandaag 1,3 kWh");
     });
     const list = document.querySelector("[data-available-list]");
     expect(list?.className).toContain("max-h-[calc(100dvh-10rem)]");
@@ -462,11 +462,32 @@ describe("largest consumer picker", () => {
     const text = list?.textContent ?? "";
     expect(text.indexOf("Airco")).toBeGreaterThanOrEqual(0);
     expect(text.indexOf("Airco")).toBeLessThan(text.indexOf("Laadpaal"));
-    expect(text).toContain("Voorstel");
+    const proposalLine = document.querySelector("[data-proposal-line]");
+    expect(proposalLine?.parentElement?.querySelectorAll("[data-proposal-line], [data-today-kwh]")).toHaveLength(1);
     const statCall = fetchedUrls.find((url) => url.includes("/api/ha/energy/statistics"));
     const ids = new URL(statCall ?? "http://localhost/", "http://localhost").searchParams.get("devices") ?? "";
     expect(ids.split(",").filter(Boolean)).toHaveLength(5);
-    expect(document.querySelectorAll("[data-today-kwh]")).toHaveLength(5);
+    expect(document.querySelectorAll("[data-today-kwh], [data-proposal-line]")).toHaveLength(5);
+  });
+
+  it("shows the prefs name for a proposal that has no Home Assistant state", async () => {
+    prefsDevices = [{ statConsumption: "sensor.zolder_ketel", name: "Zolderketel" }];
+    render({ entities: devices(3), ids: [] });
+    await until(() => {
+      expect(document.querySelector("[data-available-list]")?.textContent).toContain("Zolderketel");
+      expect(document.querySelector("[data-proposal-line]")?.textContent).toBe("Voorstel · vandaag 1,3 kWh");
+    });
+    expect(document.querySelector("[data-available-list]")?.textContent).not.toContain("Niet gevonden");
+  });
+
+  it("keeps a proposal line as only Voorstel when there is no kWh yet", async () => {
+    prefsDevices = [{ statConsumption: "sensor.zolder_ketel", name: "Zolderketel" }];
+    statTotal = Number.NaN;
+    render({ entities: devices(3), ids: [] });
+    await until(() => {
+      expect(document.querySelector("[data-proposal-line]")?.textContent).toBe("Voorstel");
+    });
+    expect(document.querySelector("[data-today-kwh]")).toBeNull();
   });
 
   it("moves focus out of the undo toast when it closes", async () => {

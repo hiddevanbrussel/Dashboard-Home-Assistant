@@ -50,7 +50,27 @@ describe("energy live power and tariff settings", () => {
     expect(document.body.textContent).toContain("Live vermogen net");
     expect(document.body.textContent).toContain("Tarief");
     expect(document.body.textContent).toContain("Vast");
+    expect(document.body.textContent).toContain("Standaard. Kosten rekenen met je prijs per kWh.");
+    expect(document.body.textContent).not.toContain("Vast is de standaard");
     expect(document.body.textContent).not.toContain("Prijssensor kiezen volgt.");
+    const checked = [...document.querySelectorAll('[role="radio"][aria-checked="true"]')];
+    expect(checked.map((button) => button.textContent)).toEqual(
+      expect.arrayContaining([expect.stringContaining("Eén sensor"), expect.stringContaining("Vast")])
+    );
+    for (const button of checked) {
+      expect(button.querySelector("svg[aria-hidden='true']")).toBeTruthy();
+      expect(button.className).toContain("bg-[#4700B5]");
+      expect(button.className).toContain("text-white");
+      expect(button.className).toContain("border-[#4700B5]");
+      expect(button.className).toContain("dark:bg-[#8357be]");
+      expect(button.className).toContain("dark:text-white");
+      expect(button.className).toContain("dark:border-[#8357be]");
+      expect(button.className).toMatch(/\bh-11\b/);
+      expect(button.className).toContain("focus-visible:ring-2");
+    }
+    const idle = [...document.querySelectorAll('[role="radio"][aria-checked="false"]')];
+    expect(idle.length).toBeGreaterThan(0);
+    for (const button of idle) expect(button.querySelector("svg")).toBeNull();
     const choices = [...document.querySelectorAll("[role=radio], [role=switch]")];
     expect(choices.length).toBeGreaterThanOrEqual(5);
     for (const choice of choices) {
@@ -77,5 +97,10 @@ describe("energy live power and tariff settings", () => {
     render();
     expect(document.body.textContent).toContain("Choosing a price sensor comes later.");
     expect(document.body.textContent).toContain("Live grid power");
+    expect(document.body.textContent).not.toContain("Fixed is the default");
+    const dynamicEn = [...document.querySelectorAll('[role="radio"][aria-checked="true"]')].find((button) =>
+      button.textContent?.includes("Dynamic")
+    );
+    expect(dynamicEn?.querySelector("svg")).toBeTruthy();
   });
 });

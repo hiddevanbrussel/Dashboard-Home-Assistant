@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Check } from "lucide-react";
 import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
 import {
   SettingsCheckRow,
@@ -21,9 +22,14 @@ type HaEntity = {
 };
 
 const choice = cn(
-  "inline-flex h-11 min-w-[44px] items-center justify-center rounded-xl border px-4 text-[15px] font-semibold outline-none",
+  "inline-flex h-11 min-w-[44px] items-center justify-center gap-2 rounded-xl border px-4 text-[15px] font-semibold outline-none",
   FOCUS_RING_BRAND
 );
+
+const choiceSelected =
+  "bg-[#4700B5] text-white border-[#4700B5] dark:bg-[#8357be] dark:text-white dark:border-[#8357be]";
+
+const choiceIdle = "border-[#767b85] text-[#111827] dark:border-[#6b6b75] dark:text-[#f3f4f6]";
 
 export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
   const { t } = useTranslation();
@@ -71,8 +77,9 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             role="radio"
             aria-checked={mode === "signed"}
             onClick={() => chooseMode("signed")}
-            className={cn(choice, mode === "signed" ? "border-[#4700B5] text-[#4700B5] dark:border-[#8357be] dark:text-[#B59ED8]" : "border-[#767b85] text-[#111827] dark:border-[#6b6b75] dark:text-[#f3f4f6]")}
+            className={cn(choice, mode === "signed" ? choiceSelected : choiceIdle)}
           >
+            {mode === "signed" ? <Check className="h-4 w-4" aria-hidden /> : null}
             {t("settings.energy.liveGridSigned")}
           </button>
           <button
@@ -80,8 +87,9 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             role="radio"
             aria-checked={mode === "split"}
             onClick={() => chooseMode("split")}
-            className={cn(choice, mode === "split" ? "border-[#4700B5] text-[#4700B5] dark:border-[#8357be] dark:text-[#B59ED8]" : "border-[#767b85] text-[#111827] dark:border-[#6b6b75] dark:text-[#f3f4f6]")}
+            className={cn(choice, mode === "split" ? choiceSelected : choiceIdle)}
           >
+            {mode === "split" ? <Check className="h-4 w-4" aria-hidden /> : null}
             {t("settings.energy.liveGridSplit")}
           </button>
         </div>
@@ -149,15 +157,16 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
         </button>
       </SettingsGroup>
 
-      <SettingsGroup title={t("settings.energy.tariff")} description={t("settings.energy.tariffHint")}>
+      <SettingsGroup title={t("settings.energy.tariff")}>
         <div role="radiogroup" aria-label={t("settings.energy.tariff")} className="flex flex-wrap gap-2">
           <button
             type="button"
             role="radio"
             aria-checked={tariffMode === "fixed"}
             onClick={() => chooseTariff("fixed")}
-            className={cn(choice, tariffMode === "fixed" ? "border-[#4700B5] text-[#4700B5] dark:border-[#8357be] dark:text-[#B59ED8]" : "border-[#767b85] text-[#111827] dark:border-[#6b6b75] dark:text-[#f3f4f6]")}
+            className={cn(choice, tariffMode === "fixed" ? choiceSelected : choiceIdle)}
           >
+            {tariffMode === "fixed" ? <Check className="h-4 w-4" aria-hidden /> : null}
             {t("settings.energy.tariffFixed")}
           </button>
           <button
@@ -165,8 +174,9 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             role="radio"
             aria-checked={tariffMode === "dynamic"}
             onClick={() => chooseTariff("dynamic")}
-            className={cn(choice, tariffMode === "dynamic" ? "border-[#4700B5] text-[#4700B5] dark:border-[#8357be] dark:text-[#B59ED8]" : "border-[#767b85] text-[#111827] dark:border-[#6b6b75] dark:text-[#f3f4f6]")}
+            className={cn(choice, tariffMode === "dynamic" ? choiceSelected : choiceIdle)}
           >
+            {tariffMode === "dynamic" ? <Check className="h-4 w-4" aria-hidden /> : null}
             {t("settings.energy.tariffDynamic")}
           </button>
         </div>

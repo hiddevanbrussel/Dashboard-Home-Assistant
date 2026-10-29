@@ -236,7 +236,7 @@ export function EnergyTopDevicesSettings({
     }
     return topDeviceLabel(
       id,
-      entities,
+      candidates.length > 0 ? candidates : entities,
       t("settings.energy.topDevices.unnamed"),
       t("settings.energy.topDevices.notFound")
     );
@@ -781,11 +781,14 @@ export function EnergyTopDevicesSettings({
                         {highlightName(name, query)}
                       </span>
                       {proposedIds.has(entity.entity_id) ? (
-                        <span className="block text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
-                          {t("settings.energy.topDevices.proposal")}
+                        <span data-proposal-line className="block text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
+                          {kwhIds.includes(entity.entity_id) && typeof todayKwh[entity.entity_id] === "number"
+                            ? text("settings.energy.topDevices.proposalToday", {
+                                kwh: formatKwh1(todayKwh[entity.entity_id] ?? 0, language === "nl" ? "nl" : "en"),
+                              })
+                            : t("settings.energy.topDevices.proposal")}
                         </span>
-                      ) : null}
-                      {kwhIds.includes(entity.entity_id) && typeof todayKwh[entity.entity_id] === "number" ? (
+                      ) : kwhIds.includes(entity.entity_id) && typeof todayKwh[entity.entity_id] === "number" ? (
                         <span data-today-kwh className="block text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
                           {text("settings.energy.topDevices.todayKwh", {
                             kwh: formatKwh1(todayKwh[entity.entity_id] ?? 0, language === "nl" ? "nl" : "en"),
