@@ -1,6 +1,6 @@
 /**
  * Dev-only Home Assistant stand-in for Node 20 (CI and Docker).
- *   PORT=8210 FIXTURE_SET=full|no-solar|no-battery|no-prefs|fixed-tariff|dynamic node scripts/mock-ha.mjs
+ *   PORT=8210 FIXTURE_SET=full|night|no-solar|no-battery|no-prefs|fixed-tariff|dynamic node scripts/mock-ha.mjs
  * Reads the JSON fixtures under src/lib/ha/__fixtures__/energy. Does not import TypeScript.
  * Does not log the access token.
  */
@@ -11,7 +11,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
 
-const FIXTURE_SETS = ["full", "no-solar", "no-battery", "no-prefs", "fixed-tariff", "dynamic"];
+const FIXTURE_SETS = ["full", "night", "no-solar", "no-battery", "no-prefs", "fixed-tariff", "dynamic"];
 const FIXTURE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "../src/lib/ha/__fixtures__/energy");
 const FALLBACK_TIME_ZONE = "Europe/Amsterdam";
 
@@ -312,6 +312,47 @@ function statesForFixture(set) {
     const unit = typeof row.unit_of_measurement === "string" ? row.unit_of_measurement : "kWh";
     states.push(energyState(row.statistic_id, titleFromId(row.statistic_id), unit));
   }
+  states.push(...liveStates(set));
+  return states;
+}
+
+function powerState(id, name, watts) {
+  return {
+    entity_id: id,
+    state: String(watts),
+    attributes: {
+      friendly_name: name,
+      device_class: "power",
+      state_class: "measurement",
+      unit_of_measurement: "W",
+    },
+  };
+}
+
+/** Day 14:30 and night 20:30 from the v3.5 mockup, plus sun.sun. */
+function liveStates(set) {
+  const night = set === "night";
+  const states = [
+    {
+      entity_id: "sun.sun",
+      state: night ? "below_horizon" : "above_horizon",
+      attributes: { friendly_name: "Sun" },
+    },
+    powerState("sensor.solar_power", "Solar", night ? 0 : 1650),
+    powerState("sensor.grid_power", "Grid", night ? 150 : -250),
+    powerState("sensor.battery_power", "Battery", night ? 700 : -700),
+    powerState("sensor.battery_discharge", "Battery discharge", night ? 700 : 0),
+    powerState("sensor.battery_charge", "Battery charge", night ? 0 : 700),
+    {
+      entity_id: "sensor.battery_soc",
+      state: night ? "23" : "56",
+      attributes: {
+        friendly_name: "Battery",
+        device_class: "battery",
+        unit_of_measurement: "%",
+      },
+    },
+  ];
   return states;
 }
 

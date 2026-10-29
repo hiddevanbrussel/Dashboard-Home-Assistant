@@ -54,6 +54,7 @@ function clampAtLeastZero(value: number): number {
   return value < 0 ? 0 : value;
 }
 
+/** Median of this raw sample plus earlier raw samples. Callers must not pass smoothed values. */
 function smooth(current: number | null, previous: readonly number[] | undefined): number | null {
   if (current == null || !Number.isFinite(current)) return null;
   return medianOf([...(previous ?? []), current]);
@@ -158,7 +159,7 @@ export function batteryKw(
   return smooth(batteryPowerNow(input), input.previous);
 }
 
-function solarPowerNow(input: {
+export function solarPowerNow(input: {
   model: EnergyModel | null;
   manual: Pick<ManualLiveEntities, "solarPowerEntityId">;
   samples: LiveSamples;

@@ -4,6 +4,7 @@ import {
   dayNightPair,
   flowDurationMs,
   flowStep,
+  formatLivePower,
   gridExportIsLinked,
   gridImportIsLinked,
   houseVariant,
@@ -97,36 +98,45 @@ describe("shouldAnimate", () => {
   });
 });
 
+describe("formatLivePower", () => {
+  it("uses watts below 1 kW and two decimals above", () => {
+    expect(formatLivePower(0.7, "nl")).toBe("700 W");
+    expect(formatLivePower(1.65, "nl")).toBe("1,65 kW");
+    expect(formatLivePower(0, "nl")).toBe("0 W");
+    expect(formatLivePower(1.65, "en")).toBe("1.65 kW");
+  });
+});
+
 describe("now sentence", () => {
   it("asks to link sensors when nothing is connected and otherwise picks one line", () => {
     expect(
       nowSentenceKey({
-        solarLinked: false,
-        batteryLinked: false,
-        gridLinked: false,
+        linked: false,
+        night: false,
         solarKw: null,
         batteryKw: null,
         gridKw: null,
+        houseKw: null,
       })
     ).toBe("energy.overview.now.sentenceSetup");
     expect(
       nowSentenceKey({
-        solarLinked: true,
-        batteryLinked: true,
-        gridLinked: true,
-        solarKw: 2.4,
-        batteryKw: 0.4,
-        gridKw: -0.2,
+        linked: true,
+        night: false,
+        solarKw: 1.65,
+        batteryKw: -0.7,
+        gridKw: -0.25,
+        houseKw: 0.7,
       })
-    ).toBe("energy.overview.now.sentenceSolar");
+    ).toBe("energy.overview.now.sentenceCoverExport");
     expect(
       nowSentenceKey({
-        solarLinked: false,
-        batteryLinked: true,
-        gridLinked: true,
-        solarKw: null,
-        batteryKw: 1,
-        gridKw: 0.4,
+        linked: true,
+        night: true,
+        solarKw: 0,
+        batteryKw: 0.7,
+        gridKw: 0.15,
+        houseKw: 0.85,
       })
     ).toBe("energy.overview.now.sentenceBatteryOut");
   });

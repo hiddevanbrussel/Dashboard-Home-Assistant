@@ -159,29 +159,56 @@ export function strongestFlowKw(kilowatts: readonly (number | null)[]): number {
 }
 
 export function nowSentenceKey(input: {
-  solarLinked: boolean;
-  batteryLinked: boolean;
-  gridLinked: boolean;
+  linked: boolean;
+  night: boolean;
   solarKw: number | null;
   batteryKw: number | null;
   gridKw: number | null;
-}): string {
-  const linked = input.solarLinked || input.batteryLinked || input.gridLinked;
-  if (!linked) return "energy.overview.now.sentenceSetup";
-  if (input.solarKw != null && input.solarKw >= FLOW_EPSILON_KW) return "energy.overview.now.sentenceSolar";
-  if (input.batteryKw != null && input.batteryKw >= FLOW_EPSILON_KW) return "energy.overview.now.sentenceBatteryOut";
-  if (input.batteryKw != null && input.batteryKw <= -FLOW_EPSILON_KW) return "energy.overview.now.sentenceBatteryIn";
-  if (input.gridKw != null && input.gridKw >= FLOW_EPSILON_KW) return "energy.overview.now.sentenceImport";
-  if (input.gridKw != null && input.gridKw <= -FLOW_EPSILON_KW) return "energy.overview.now.sentenceExport";
-  return "energy.overview.now.sentenceIdle";
+  houseKw: number | null;
+}): string | null {
+  if (!input.linked) return "energy.overview.now.sentenceSetup";
+  const solar = input.solarKw ?? 0;
+  const house = input.houseKw ?? 0;
+  const discharge = input.batteryKw != null && input.batteryKw > 0.01 ? input.batteryKw : 0;
+  const imported = input.gridKw != null && input.gridKw > 0.01 ? input.gridKw : 0;
+  const exported = input.gridKw != null && input.gridKw < -0.05 ? -input.gridKw : 0;
+  if (input.night && solar < 0.01 && discharge > 0.01) return "energy.overview.now.sentenceBatteryOut";
+  if (solar >= house && solar > FLOW_EPSILON_KW && exported > FLOW_EPSILON_KW) {
+    return "energy.overview.now.sentenceCoverExport";
+  }
+  if (solar >= house && solar > FLOW_EPSILON_KW) return "energy.overview.now.sentenceCover";
+  if (solar > FLOW_EPSILON_KW) return "energy.overview.now.sentenceSolar";
+  if (imported > 0.01) return "energy.overview.now.sentenceImport";
+  return null;
 }
 
-export function formatPowerKw(value: number, language: "nl" | "en"): string {
-  const formatted = new Intl.NumberFormat(language === "nl" ? "nl-NL" : "en-GB", {
+/** Watts below 1 kW, two decimals from 1 kW up to 10 kW, one decimal above that. */
+export function formatLivePower(kw: number, language: "nl" | "en"): string {
+  const locale = language === "nl" ? "nl-NL" : "en-GB";
+  const abs = Math.abs(kw);
+  if (abs < 1) {
+    const watts = Math.round(abs * 100) * 10;
+    return `${watts} W`;
+  }
+  if (abs < 10) {
+    const text = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Math.round(abs * 100) / 100);
+    return `${text} kW`;
+  }
+  const text = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
-  }).format(value);
-  return `${formatted} kW`;
+  }).format(Math.round(abs * 10) / 10);
+  return `${text} kW`;
+}
+
+export function splitLivePower(kw: number, language: "nl" | "en"): { value: string; unit: string } {
+  const text = formatLivePower(kw, language);
+  const splitAt = text.lastIndexOf(" ");
+  if (splitAt < 0) return { value: text, unit: "" };
+  return { value: text.slice(0, splitAt), unit: text.slice(splitAt + 1) };
 }
 
 export function formatSoc(value: number, language: "nl" | "en"): string {

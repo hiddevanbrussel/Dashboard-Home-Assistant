@@ -31,8 +31,8 @@ describe("labelLayout", () => {
       expect(pointInPolygon(house as { x: number; y: number }, HOUSE_BODY)).toBe(true);
       for (const orientation of orientations) {
         const labels = labelLayout(variant, orientation, HERO_LABEL_KINDS);
-        expect(labels).toHaveLength(4);
-        expect(new Set(labels.map((label) => label.kind)).size).toBe(4);
+        expect(labels).toHaveLength(3);
+        expect(new Set(labels.map((label) => label.kind)).size).toBe(3);
         for (const label of labels) {
           expect(label.heightPx).toBe(50);
           expect(label.touchWidthPx).toBeGreaterThanOrEqual(44);
@@ -40,14 +40,14 @@ describe("labelLayout", () => {
           expect(labelOverlapsSilhouette(variant, orientation, label)).toBe(false);
         }
       }
-      const two = labelLayout(variant, "portrait", ["gridImport", "gridExport"]);
-      expect(two.map((label) => label.kind)).toEqual(["gridImport", "gridExport"]);
+      const gridOnly = labelLayout(variant, "portrait", ["grid"]);
+      expect(gridOnly.map((label) => label.kind)).toEqual(["grid"]);
     }
   });
 
   it("drops a fifth kind and reads the panel and mint polygons from the anchors", () => {
     const extra = [...HERO_LABEL_KINDS, "solar"] as HeroLabelKind[];
-    expect(labelLayout("dag-licht", "landscape", extra)).toHaveLength(4);
+    expect(labelLayout("dag-licht", "landscape", extra)).toHaveLength(3);
     expect(panelPolygon("dag-licht").length).toBeGreaterThanOrEqual(3);
     expect(panelPolygon("zonder-licht")).toEqual([]);
     expect(mintLine("dag-licht").length).toBeGreaterThan(1);
@@ -104,13 +104,8 @@ describe("now hero source", () => {
 
   it("renders the hero without solar or battery labels when nothing is linked", () => {
     const html = renderToString(createElement(NowHero, { orientation: "landscape" }));
-    const avif = html.indexOf("image/avif");
-    const webp = html.indexOf("huis-zonder-licht.webp");
-    expect(avif).toBeGreaterThanOrEqual(0);
-    expect(webp).toBeGreaterThan(avif);
-    expect(html).toContain('width="960"');
-    expect(html).toContain('height="727"');
     expect(html).not.toContain("data-now-label");
-    expect(html).toContain("huis-zonder-licht");
+    expect(html).not.toContain("huis-zonder-");
+    expect(html).not.toContain("<img");
   });
 });

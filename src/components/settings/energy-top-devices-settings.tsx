@@ -1049,7 +1049,10 @@ export function EnergyTopDevicesEntry({
       <p className="mb-1.5 ml-4 text-sm font-semibold text-[#4b5563] dark:text-[#a1a1aa]">
         {t("settings.energy.topDevices.group")}
       </p>
-      <div className="overflow-hidden rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white dark:border-white/10 dark:bg-[#1b1a21]">
+      <div
+        data-entry-card
+        className="min-h-[148px] overflow-hidden rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white dark:border-white/10 dark:bg-[#1b1a21]"
+      >
         <button
           type="button"
           ref={entryButton}

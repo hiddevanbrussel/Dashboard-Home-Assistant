@@ -8,7 +8,7 @@
 import ankers from "../../public/energy/house/ankers.json";
 import { HOUSE_VARIANTS, type HouseVariantId } from "@/lib/energy-now";
 
-export const HERO_LABEL_KINDS = ["solar", "gridImport", "gridExport", "battery"] as const;
+export const HERO_LABEL_KINDS = ["solar", "grid", "battery"] as const;
 
 export type HeroLabelKind = (typeof HERO_LABEL_KINDS)[number];
 
@@ -58,10 +58,9 @@ export const HOUSE_BODY: Point[] = [
 const LABEL_HEIGHT_PX = 50;
 
 const LABEL_WIDTH_PX: Record<HeroLabelKind, number> = {
-  solar: 150,
-  gridExport: 160,
-  gridImport: 180,
-  battery: 220,
+  solar: 190,
+  grid: 220,
+  battery: 240,
 };
 
 const ASSET_WIDTH = 960;
@@ -203,6 +202,22 @@ function percentBox(originXPct: number, originYPct: number, widthPx: number, hei
   };
 }
 
+/** Sun sits top-right, the one grid label bottom-left, the battery bottom-right. */
+function labelSlot(kind: HeroLabelKind): { top: boolean; left: boolean } {
+  switch (kind) {
+    case "solar":
+      return { top: true, left: false };
+    case "grid":
+      return { top: false, left: true };
+    case "battery":
+      return { top: false, left: false };
+    default: {
+      const neverKind: never = kind;
+      return neverKind;
+    }
+  }
+}
+
 /**
  * At most four pills. Landscape is the tighter frame; boxes stay in the top and bottom gutters,
  * outside the silhouette, with a 50px height and a touch target of at least 44px.
@@ -224,10 +239,9 @@ export function labelLayout(
   for (const kind of unique) {
     const widthPx = LABEL_WIDTH_PX[kind];
     const widthPct = (widthPx / image.width) * 100;
-    const top = kind === "solar" || kind === "gridExport";
-    const left = kind === "solar" || kind === "gridImport";
-    const xPct = left ? 0 : Math.max(0, 100 - widthPct);
-    const yPct = top ? 0 : Math.max(0, 100 - heightPct);
+    const slot = labelSlot(kind);
+    const xPct = slot.left ? 0 : Math.max(0, 100 - widthPct);
+    const yPct = slot.top ? 0 : Math.max(0, 100 - heightPct);
     placed.push({
       kind,
       xPct,

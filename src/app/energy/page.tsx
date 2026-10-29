@@ -54,7 +54,7 @@ import { cn, generateId } from "@/lib/utils";
 import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import { EnergyPageBackground } from "@/components/energy/energy-page-background";
 import { EnergyOverview } from "@/components/energy/overview/energy-overview";
-import { EnergyTabs } from "@/components/energy/overview/energy-tabs";
+import { energyPanelId, energyTabId, EnergyTabs } from "@/components/energy/overview/energy-tabs";
 import { useEnergyTab } from "@/stores/energy-overview-store";
 import { EditPanelModal } from "./edit-panel";
 
@@ -320,6 +320,10 @@ export default function EnergyPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
+  useEffect(() => {
+    if (!energyTabReady) return;
+    setEditMode(false);
+  }, [tab, energyTabReady]);
   useDashboardEditFlag(editMode);
   const [editPasscodeModalOpen, setEditPasscodeModalOpen] = useState(false);
   const [editPasscodeInput, setEditPasscodeInput] = useState("");
@@ -764,7 +768,7 @@ export default function EnergyPage() {
     <AppShell
       activeTab="/energy"
       headerFixed
-      headerEndAction={headerEndAction}
+      headerEndAction={tab === "tiles" ? headerEndAction : undefined}
       welcomeTitle={welcomeTitle || undefined}
       welcomeSubtitle={welcomeSubtitle || undefined}
       hideWelcome={!editMode}
@@ -778,6 +782,9 @@ export default function EnergyPage() {
         <EnergyOverview />
       ) : (
       <div
+        id={energyPanelId("tiles")}
+        role="tabpanel"
+        aria-labelledby={energyTabId("tiles")}
         className={cn("relative min-h-[calc(100dvh-5rem)]", editMode ? "space-y-6" : "")}
         {...(!editMode && getEditModeAllowed() && {
           onPointerDown: (e: React.PointerEvent) => { if ((e.target as HTMLElement).closest?.("button, a, [role=button]")) return; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); clearLongPressTimer(); longPressTimerRef.current = setTimeout(() => { longPressTimerRef.current = null; setEditMode(true); }, LONG_PRESS_MS); },

@@ -804,6 +804,7 @@ describe("largest consumer picker", () => {
     });
     const subline = document.querySelector("[data-entry-subline]");
     expect(subline?.className).toContain("h-5");
+    expect(document.querySelector("[data-entry-card]")?.className).toContain("min-h-[148px]");
     expect(subline?.textContent?.trim()).toBe("");
     const retry = [...document.querySelectorAll("button")].find((button) => button.textContent === "Opnieuw proberen");
     if (!(retry instanceof HTMLButtonElement)) throw new Error("retry missing");
