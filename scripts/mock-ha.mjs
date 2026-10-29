@@ -271,10 +271,56 @@ function parseFixtureSet(value) {
   return "full";
 }
 
+function titleFromId(id) {
+  const slug = id.replace(/^sensor\./, "").replace(/_/g, " ");
+  return slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : id;
+}
+
+function energyState(id, name, unit) {
+  return {
+    entity_id: id,
+    state: "0",
+    attributes: {
+      friendly_name: name,
+      device_class: "energy",
+      state_class: "total_increasing",
+      unit_of_measurement: unit || "kWh",
+    },
+  };
+}
+
+/** REST states for the active fixture. device_consumption sensors keep their prefs name. */
+function statesForFixture(set) {
+  const states = [];
+  const seen = new Set();
+  if (set !== "no-prefs") {
+    const prefs = prefsForFixture(set);
+    const devices = Array.isArray(prefs.device_consumption) ? prefs.device_consumption : [];
+    for (const device of devices) {
+      if (!isRecord(device) || typeof device.stat_consumption !== "string") continue;
+      const id = device.stat_consumption.trim();
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      const name = typeof device.name === "string" && device.name.trim() ? device.name.trim() : titleFromId(id);
+      states.push(energyState(id, name, "kWh"));
+    }
+  }
+  for (const row of statisticCatalog()) {
+    if (!isRecord(row) || row.unit_class !== "energy" || typeof row.statistic_id !== "string") continue;
+    if (seen.has(row.statistic_id)) continue;
+    seen.add(row.statistic_id);
+    const unit = typeof row.unit_of_measurement === "string" ? row.unit_of_measurement : "kWh";
+    states.push(energyState(row.statistic_id, titleFromId(row.statistic_id), unit));
+  }
+  return states;
+}
+
 function startMockHa(options = {}) {
   const fixtureSet = options.fixtureSet ?? "full";
   const timeZone = options.timeZone ?? "Europe/Amsterdam";
   const sockets = new Set();
+
+  const states = statesForFixture(fixtureSet);
 
   const httpServer = createServer((request, response) => {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
@@ -286,6 +332,23 @@ function startMockHa(options = {}) {
     if (request.method === "GET" && (url.pathname === "/api/" || url.pathname === "/api")) {
       response.writeHead(200, { "content-type": "text/plain" });
       response.end("API running.");
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/api/states") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify(states));
+      return;
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/api/states/")) {
+      const entityId = decodeURIComponent(url.pathname.slice("/api/states/".length));
+      const found = states.find((item) => item.entity_id === entityId);
+      if (!found) {
+        response.writeHead(404, { "content-type": "application/json" });
+        response.end(JSON.stringify({ error: "not found" }));
+        return;
+      }
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify(found));
       return;
     }
     response.writeHead(404, { "content-type": "application/json" });

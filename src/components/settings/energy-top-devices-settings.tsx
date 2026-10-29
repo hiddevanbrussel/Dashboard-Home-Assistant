@@ -91,6 +91,8 @@ export function EnergyTopDevicesSettings({
   entitiesStatus,
   onEntityIds,
   onRefreshEntities,
+  choiceStatus = "ready",
+  onRetryChoice,
 }: {
   dashboardId: string | null;
   entityIds: string[];
@@ -98,6 +100,9 @@ export function EnergyTopDevicesSettings({
   entitiesStatus: TopDeviceEntitiesStatus;
   onEntityIds: (ids: string[]) => void;
   onRefreshEntities: () => void;
+  /** Mirrors the first GET /api/energy-dashboard. Error hides add, remove, and reorder. */
+  choiceStatus?: "loading" | "ready" | "error";
+  onRetryChoice?: () => void;
 }) {
   const { t, language } = useTranslation();
   const text = (key: string, vars?: Record<string, string | number>) =>
@@ -248,6 +253,7 @@ export function EnergyTopDevicesSettings({
   }
 
   function save(next: string[], previous = idsRef.current): Promise<boolean> {
+    if (choiceStatus !== "ready") return Promise.resolve(false);
     if (sameIds(next, previous)) return Promise.resolve(true);
     const token = ++write.current;
     idsRef.current = next;
@@ -459,9 +465,10 @@ export function EnergyTopDevicesSettings({
     ? text("settings.energy.topDevices.filtered", { n: visibleAvailable.length, total: candidates.length })
     : String(unselected.length);
 
-  const showNone = entitiesStatus === "ready" && candidates.length === 0;
-  const showAvailable = entitiesStatus === "ready" && candidates.length > 0 && !ordering;
-  const showChosen = !(showNone && ids.length === 0);
+  const choiceReady = choiceStatus === "ready";
+  const showNone = choiceReady && entitiesStatus === "ready" && candidates.length === 0;
+  const showAvailable = choiceReady && entitiesStatus === "ready" && candidates.length > 0 && !ordering;
+  const showChosen = choiceReady && !(showNone && ids.length === 0);
   const kwhIds = visibleStatisticIds(visibleAvailable.map((entity) => entity.entity_id));
   const kwhKey = kwhIds.join(",");
 
@@ -518,6 +525,28 @@ export function EnergyTopDevicesSettings({
         <p role="alert" className="mb-3 ml-1 text-sm text-[#111827] dark:text-[#f3f4f6]">
           {saveError}
         </p>
+      ) : null}
+
+      {choiceStatus === "loading" ? (
+        <p className="ml-1 text-sm text-[#4b5563] dark:text-[#c4c4cc]">{t("editPanel.loading")}</p>
+      ) : null}
+
+      {choiceStatus === "error" ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white px-4 py-4 dark:border-white/10 dark:bg-[#1b1a21]">
+          <p role="status" className="min-w-0 flex-1 text-sm leading-snug text-[#111827] dark:text-[#f3f4f6]">
+            {t("settings.energy.topDevices.loadChoiceError")}
+          </p>
+          <button
+            type="button"
+            onClick={onRetryChoice}
+            className={cn(
+              "inline-flex h-11 items-center rounded-full border border-[#767b85] px-4 text-[15px] font-semibold outline-none dark:border-[#6b6b75] dark:text-[#f3f4f6]",
+              FOCUS_RING_BRAND
+            )}
+          >
+            {t("settings.energy.topDevices.retry")}
+          </button>
+        </div>
       ) : null}
 
       {showChosen ? <section className="mb-4">

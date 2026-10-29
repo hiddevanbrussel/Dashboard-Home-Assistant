@@ -1344,6 +1344,8 @@ export default function SettingsPage() {
               entitiesStatus={topDeviceEntitiesStatus}
               onEntityIds={setTopDeviceIds}
               onRefreshEntities={loadEntities}
+              choiceStatus={energyChoiceStatus}
+              onRetryChoice={() => setEnergyChoiceAttempt((attempt) => attempt + 1)}
             />
           )}
 

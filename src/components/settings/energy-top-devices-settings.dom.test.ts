@@ -3,7 +3,7 @@
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { act, createElement } from "react";
+import { act, createElement, useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -538,5 +538,106 @@ describe("largest consumer picker", () => {
       retry.click();
     });
     expect(onRefreshEntities).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the picker closed for changes until a failed choice load succeeds", async () => {
+    let dashboardOk = false;
+    const puts: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const target = String(url);
+        if (target.includes("/api/ha/energy/prefs")) {
+          return {
+            ok: true,
+            json: async () => ({
+              source: "prefs",
+              deviceConsumption: [{ statConsumption: "sensor.warmtepomp_0", name: "Warmtepomp" }],
+              deviceConsumptionWater: [],
+              energySources: [],
+            }),
+          };
+        }
+        if (target.includes("/api/ha/energy/statistics")) {
+          return { ok: true, json: async () => ({ devices: { items: [] } }) };
+        }
+        if (init?.method === "PUT") {
+          puts.push(String(init.body));
+          return { ok: true, json: async () => ({ topDeviceIds: [] }) };
+        }
+        if (!dashboardOk) return { ok: false, status: 502, json: async () => ({ error: "down" }) };
+        return {
+          ok: true,
+          json: async () => ({ id: "ed1", topDeviceIds: ["sensor.warmtepomp_0", "sensor.wasmachine_1"] }),
+        };
+      })
+    );
+
+    function Harness() {
+      const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+      const [ids, setIds] = useState<string[]>([]);
+      const [attempt, setAttempt] = useState(0);
+      useEffect(() => {
+        let cancelled = false;
+        fetch("/api/energy-dashboard", { cache: "no-store" })
+          .then(async (response) => {
+            if (!response.ok) throw new Error("fail");
+            return response.json() as Promise<{ topDeviceIds?: string[] }>;
+          })
+          .then((body) => {
+            if (cancelled) return;
+            setIds(Array.isArray(body.topDeviceIds) ? body.topDeviceIds : []);
+            setStatus("ready");
+          })
+          .catch(() => {
+            if (!cancelled) setStatus((current) => (current === "ready" ? "ready" : "error"));
+          });
+        return () => {
+          cancelled = true;
+        };
+      }, [attempt]);
+      return createElement(EnergyTopDevicesSettings, {
+        dashboardId: "ed1",
+        entityIds: ids,
+        entities: devices(12),
+        entitiesStatus: "ready",
+        onEntityIds: setIds,
+        onRefreshEntities: () => undefined,
+        choiceStatus: status,
+        onRetryChoice: () => setAttempt((value) => value + 1),
+      });
+    }
+
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root?.render(createElement(Harness));
+    });
+    await until(() => {
+      expect(document.body.textContent).toContain("De opgeslagen keuze kon niet geladen worden.");
+    });
+    expect(document.body.textContent).not.toContain("0 van 5");
+    expect(
+      [...document.querySelectorAll("button")].some((button) =>
+        (button.getAttribute("aria-label") ?? "").includes("op de kaart zetten")
+      )
+    ).toBe(false);
+    expect(puts).toEqual([]);
+    const retry = [...document.querySelectorAll("button")].find((button) => button.textContent === "Opnieuw proberen");
+    if (!(retry instanceof HTMLButtonElement)) throw new Error("retry missing");
+    expect(retry.disabled).toBe(false);
+    expect(retry.className).toMatch(/\bh-11\b/);
+    dashboardOk = true;
+    await act(async () => {
+      retry.click();
+    });
+    await until(() => {
+      expect(document.body.textContent).toContain("2 van 5");
+      expect(document.body.textContent).toContain("Warmtepomp");
+      expect(document.body.textContent).toContain("Wasmachine");
+    });
+    expect(document.body.textContent).not.toContain("De opgeslagen keuze kon niet geladen worden.");
+    expect(puts).toEqual([]);
   });
 });
