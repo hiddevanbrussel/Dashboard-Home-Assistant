@@ -5,8 +5,10 @@ import {
   EMPTY_ENERGY_ENTITIES,
   parseEnergyEntities,
   parseEntityIdList,
+  parseTariffMode,
   type EnergyEntities,
   type EnergyEntityKey,
+  type EnergyTariffMode,
 } from "@/lib/energy-dashboard";
 
 const STORAGE_KEY_ENABLED = "dashboard.energy.enabled";
@@ -18,6 +20,8 @@ const STORAGE_KEY_GAS_NETBEHEER = "dashboard.energy.gasNetbeheerkostenPerDag";
 const STORAGE_KEY_GAS_VASTE_LEVERING = "dashboard.energy.gasVasteLeveringskostenPerMaand";
 const STORAGE_KEY_ENTITIES = "dashboard.energy.entities";
 const STORAGE_KEY_PANEL_TEMPS = "dashboard.energy.panelTempEntityIds";
+const STORAGE_KEY_GRID_INVERTED = "dashboard.energy.gridPowerInverted";
+const STORAGE_KEY_TARIFF = "dashboard.energy.tariffMode";
 
 function getStored<T>(key: string, fallback: T, parse: (s: string) => T): T {
   if (typeof window === "undefined") return fallback;
@@ -72,6 +76,14 @@ function readPanelTempEntityIds(): string[] {
   return getStored(STORAGE_KEY_PANEL_TEMPS, [], (v) => parseEntityIdList(v));
 }
 
+function readGridPowerInverted(): boolean {
+  return getStored(STORAGE_KEY_GRID_INVERTED, false, (v) => v === "true");
+}
+
+function readTariffMode(): EnergyTariffMode {
+  return getStored(STORAGE_KEY_TARIFF, "fixed", (v) => parseTariffMode(v));
+}
+
 type EnergyStore = {
   enabled: boolean;
   setEnabled: (v: boolean) => void;
@@ -97,6 +109,12 @@ type EnergyStore = {
   setEntity: (key: EnergyEntityKey, value: string) => void;
   panelTempEntityIds: string[];
   setPanelTempEntityIds: (ids: string[]) => void;
+  /** Flip the sign of the manual grid power sensor. Positive stays import unless this is on. */
+  gridPowerInverted: boolean;
+  setGridPowerInverted: (v: boolean) => void;
+  /** Fixed is the default. Dynamic is only stored after the user chooses it. */
+  tariffMode: EnergyTariffMode;
+  setTariffMode: (v: EnergyTariffMode) => void;
 };
 
 export const useEnergyStore = create<EnergyStore>((set) => ({
@@ -167,6 +185,23 @@ export const useEnergyStore = create<EnergyStore>((set) => ({
     setStoredJson(STORAGE_KEY_PANEL_TEMPS, panelTempEntityIds);
     set({ panelTempEntityIds });
   },
+  gridPowerInverted: readGridPowerInverted(),
+  setGridPowerInverted: (v) => {
+    setStored(STORAGE_KEY_GRID_INVERTED, v);
+    set({ gridPowerInverted: v });
+  },
+  tariffMode: readTariffMode(),
+  setTariffMode: (v) => {
+    const tariffMode = parseTariffMode(v);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(STORAGE_KEY_TARIFF, tariffMode);
+      } catch {
+        // ignore
+      }
+    }
+    set({ tariffMode });
+  },
 }));
 
 export function hydrateEnergyStore() {
@@ -199,5 +234,7 @@ export function hydrateEnergyStore() {
     }),
     entities: readEntities(),
     panelTempEntityIds: readPanelTempEntityIds(),
+    gridPowerInverted: readGridPowerInverted(),
+    tariffMode: readTariffMode(),
   });
 }

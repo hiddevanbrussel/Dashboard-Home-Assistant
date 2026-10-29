@@ -35,13 +35,13 @@ export async function getHaTimeZone(config: HaTimeZoneConfig, now = Date.now()):
         "Content-Type": "application/json",
       },
     });
-    if (!response.ok) return FALLBACK_TIME_ZONE;
+    if (!response.ok) return hit?.zone ?? FALLBACK_TIME_ZONE;
     const body = (await response.json()) as { time_zone?: unknown };
     const zone = typeof body.time_zone === "string" ? body.time_zone.trim() : "";
-    if (!zone || !isValidTimeZone(zone)) return FALLBACK_TIME_ZONE;
+    if (!zone || !isValidTimeZone(zone)) return hit?.zone ?? FALLBACK_TIME_ZONE;
     cache.set(baseUrl, { zone, at: now });
     return zone;
   } catch {
-    return FALLBACK_TIME_ZONE;
+    return hit?.zone ?? FALLBACK_TIME_ZONE;
   }
 }

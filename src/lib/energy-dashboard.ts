@@ -119,7 +119,10 @@ export type EnergyEntityKey =
   | "consumptionEntityId"
   | "batterySocEntityId"
   | "batteryPowerEntityId"
-  | "batteryTempEntityId";
+  | "batteryTempEntityId"
+  | "gridPowerEntityId"
+  | "gridImportPowerEntityId"
+  | "gridExportPowerEntityId";
 
 export type EnergyEntities = Record<EnergyEntityKey, string>;
 
@@ -131,6 +134,9 @@ export const ENERGY_ENTITY_KEYS: EnergyEntityKey[] = [
   "batterySocEntityId",
   "batteryPowerEntityId",
   "batteryTempEntityId",
+  "gridPowerEntityId",
+  "gridImportPowerEntityId",
+  "gridExportPowerEntityId",
 ];
 
 export const EMPTY_ENERGY_ENTITIES: EnergyEntities = {
@@ -141,7 +147,47 @@ export const EMPTY_ENERGY_ENTITIES: EnergyEntities = {
   batterySocEntityId: "",
   batteryPowerEntityId: "",
   batteryTempEntityId: "",
+  gridPowerEntityId: "",
+  gridImportPowerEntityId: "",
+  gridExportPowerEntityId: "",
 };
+
+export type EnergyTariffMode = "fixed" | "dynamic";
+
+export function parseTariffMode(raw: unknown): EnergyTariffMode {
+  return raw === "dynamic" ? "dynamic" : "fixed";
+}
+
+/**
+ * Read a GET /api/energy-dashboard body.
+ * A failed status does not invent an empty device choice.
+ */
+export function energyDashboardChoiceFromResponse(
+  status: number,
+  body: unknown
+):
+  | {
+      ok: true;
+      id: string | null;
+      topDeviceIds: string[];
+      backgroundLight: string | null;
+      backgroundDark: string | null;
+    }
+  | { ok: false } {
+  if (status < 200 || status >= 300) return { ok: false };
+  if (!body || typeof body !== "object" || Array.isArray(body)) return { ok: false };
+  const record = body as Record<string, unknown>;
+  const topDeviceIds = Array.isArray(record.topDeviceIds)
+    ? record.topDeviceIds.filter((id): id is string => typeof id === "string")
+    : [];
+  return {
+    ok: true,
+    id: typeof record.id === "string" ? record.id : null,
+    topDeviceIds,
+    backgroundLight: typeof record.backgroundLight === "string" ? record.backgroundLight : null,
+    backgroundDark: typeof record.backgroundDark === "string" ? record.backgroundDark : null,
+  };
+}
 
 export type EnergySensorKind = "energy" | "power" | "battery" | "temperature";
 

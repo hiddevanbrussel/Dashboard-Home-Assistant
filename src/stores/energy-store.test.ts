@@ -43,10 +43,33 @@ describe("energy store localStorage from main", () => {
     expect(state.gasCostPerM3).toBe(1.3);
     expect(state.gasNetbeheerkostenPerDag).toBe(0.2);
     expect(state.gasVasteLeveringskostenPerMaand).toBe(4);
-    expect(state.entities).toEqual(ENTITIES);
+    expect(state.entities).toMatchObject(ENTITIES);
+    expect(state.entities.gridPowerEntityId).toBe("");
+    expect(state.entities.gridImportPowerEntityId).toBe("");
+    expect(state.entities.gridExportPowerEntityId).toBe("");
     expect(state.panelTempEntityIds).toEqual(["sensor.panel_1", "sensor.panel_2"]);
+    expect(state.tariffMode).toBe("fixed");
+    expect(state.gridPowerInverted).toBe(false);
     expect(state).not.toHaveProperty("topDeviceIds");
     expect(localStorage.getItem("dashboard.energy.topDeviceIds")).toBeNull();
+    expect(localStorage.getItem("dashboard.energy.tariffMode")).toBeNull();
+    expect(localStorage.getItem("dashboard.energy.gridPowerInverted")).toBeNull();
     expect(JSON.stringify(localStorage)).not.toContain("topDeviceIds");
+    const storedEntities = JSON.parse(localStorage.getItem("dashboard.energy.entities") ?? "{}") as Record<string, string>;
+    expect(storedEntities).toEqual(ENTITIES);
+    expect(storedEntities).not.toHaveProperty("gridPowerEntityId");
+  });
+
+  it("defaults tariff to fixed and keeps an explicit dynamic choice", () => {
+    hydrateEnergyStore();
+    expect(useEnergyStore.getState().tariffMode).toBe("fixed");
+    localStorage.setItem("dashboard.energy.tariffMode", "dynamic");
+    localStorage.setItem("dashboard.energy.gridPowerInverted", "true");
+    hydrateEnergyStore();
+    expect(useEnergyStore.getState().tariffMode).toBe("dynamic");
+    expect(useEnergyStore.getState().gridPowerInverted).toBe(true);
+    localStorage.setItem("dashboard.energy.tariffMode", "later");
+    hydrateEnergyStore();
+    expect(useEnergyStore.getState().tariffMode).toBe("fixed");
   });
 });

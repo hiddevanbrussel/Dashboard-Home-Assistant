@@ -20,7 +20,7 @@ import {
 import { UndoToast, UNDO_TOAST_DURATION_MS } from "@/components/undo-toast";
 import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
 import { useTranslation } from "@/hooks/use-translation";
-import { filterTopDeviceCandidates, TOP_DEVICE_MAX } from "@/lib/energy-dashboard";
+import { TOP_DEVICE_MAX } from "@/lib/energy-dashboard";
 import {
   addTopDevice,
   moveTopDevice,
@@ -29,6 +29,15 @@ import {
   restoreTopDevice,
   topDeviceLabel,
 } from "@/lib/energy-top-devices-order";
+import {
+  formatKwh1,
+  listOverflows,
+  mergeProposedCandidates,
+  needsDeviceSetupGuide,
+  proposalFromDevices,
+  visibleStatisticIds,
+  type ProposalDevice,
+} from "@/lib/energy-top-devices-proposal";
 import { cn } from "@/lib/utils";
 
 const SEARCH_MIN_CANDIDATES = 8;
@@ -59,6 +68,13 @@ function sameIds(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((id, index) => id === b[index]);
 }
 
+function labelSources(entities: readonly TopDeviceEntity[], proposal: readonly ProposalDevice[]): TopDeviceEntity[] {
+  if (proposal.length === 0) return [...entities];
+  const merged = mergeProposedCandidates(entities, proposal);
+  const seen = new Set(merged.map((entity) => entity.entity_id));
+  return [...merged, ...entities.filter((entity) => !seen.has(entity.entity_id))];
+}
+
 function highlightName(name: string, query: string) {
   const needle = query.trim().toLowerCase();
   if (!needle) return name;
@@ -82,6 +98,8 @@ export function EnergyTopDevicesSettings({
   entitiesStatus,
   onEntityIds,
   onRefreshEntities,
+  choiceStatus = "ready",
+  onRetryChoice,
 }: {
   dashboardId: string | null;
   entityIds: string[];
@@ -89,8 +107,11 @@ export function EnergyTopDevicesSettings({
   entitiesStatus: TopDeviceEntitiesStatus;
   onEntityIds: (ids: string[]) => void;
   onRefreshEntities: () => void;
+  /** Mirrors the first GET /api/energy-dashboard. Error hides add, remove, and reorder. */
+  choiceStatus?: "loading" | "ready" | "error";
+  onRetryChoice?: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const text = (key: string, vars?: Record<string, string | number>) =>
     fill(t(key), vars ?? {});
   const [ids, setIds] = useState(entityIds);
@@ -110,7 +131,15 @@ export function EnergyTopDevicesSettings({
   const focusToast = useRef(false);
   const toastHost = useRef<HTMLDivElement | null>(null);
   const searchInput = useRef<HTMLInputElement | null>(null);
+  const retryButton = useRef<HTMLButtonElement | null>(null);
+  const chosenHeading = useRef<HTMLHeadingElement | null>(null);
+  const retryFocus = useRef(false);
   const undoTimer = useRef<number | null>(null);
+  const [prefsStatus, setPrefsStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [proposal, setProposal] = useState<ProposalDevice[]>([]);
+  const [todayKwh, setTodayKwh] = useState<Record<string, number>>({});
+  const [canScroll, setCanScroll] = useState(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
   const saveChain = useRef(Promise.resolve());
   const write = useRef(0);
   const syncedWrite = useRef(0);
@@ -134,12 +163,83 @@ export function EnergyTopDevicesSettings({
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    setPrefsStatus("loading");
+    fetch("/api/ha/energy/prefs", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("prefs");
+        return response.json() as Promise<{
+          deviceConsumption?: Array<{ statConsumption?: string | null; name?: string | null }>;
+        }>;
+      })
+      .then((body) => {
+        if (cancelled) return;
+        const devices = Array.isArray(body.deviceConsumption) ? body.deviceConsumption : [];
+        setProposal(
+          proposalFromDevices(
+            devices.map((device) => ({
+              statConsumption: typeof device.statConsumption === "string" ? device.statConsumption : null,
+              name: typeof device.name === "string" ? device.name : null,
+            }))
+          )
+        );
+        setPrefsStatus("ready");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setProposal([]);
+        setPrefsStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const reloadPrefs = () => {
+    setPrefsStatus("loading");
+    fetch("/api/ha/energy/prefs", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("prefs");
+        return response.json() as Promise<{
+          deviceConsumption?: Array<{ statConsumption?: string | null; name?: string | null }>;
+        }>;
+      })
+      .then((body) => {
+        const devices = Array.isArray(body.deviceConsumption) ? body.deviceConsumption : [];
+        setProposal(
+          proposalFromDevices(
+            devices.map((device) => ({
+              statConsumption: typeof device.statConsumption === "string" ? device.statConsumption : null,
+              name: typeof device.name === "string" ? device.name : null,
+            }))
+          )
+        );
+        setPrefsStatus("ready");
+      })
+      .catch(() => {
+        setProposal([]);
+        setPrefsStatus("error");
+      });
+  };
+
   useLayoutEffect(() => {
     const id = focusGrip.current;
     if (!id) return;
     focusGrip.current = null;
     gripNodes.current.get(id)?.focus();
   }, [ids]);
+
+  useEffect(() => {
+    if (!retryFocus.current || choiceStatus === "loading") return;
+    retryFocus.current = false;
+    if (choiceStatus === "ready") {
+      if (searchInput.current) searchInput.current.focus();
+      else chosenHeading.current?.focus();
+      return;
+    }
+    retryButton.current?.focus();
+  }, [choiceStatus]);
 
   useLayoutEffect(() => {
     if (!focusToast.current || !undo) return;
@@ -149,7 +249,9 @@ export function EnergyTopDevicesSettings({
     button.focus();
   }, [undo]);
 
-  const candidates = filterTopDeviceCandidates(entities);
+  const setupGuide = prefsStatus === "ready" && needsDeviceSetupGuide(proposal);
+  const candidates = setupGuide ? [] : mergeProposedCandidates(entities, prefsStatus === "ready" ? proposal : []);
+  const proposedIds = new Set(proposal.map((device) => device.id));
   const showSearch = candidates.length > SEARCH_MIN_CANDIDATES;
   const query = showSearch ? search.trim().toLowerCase() : "";
   const full = ids.length >= TOP_DEVICE_MAX;
@@ -160,7 +262,7 @@ export function EnergyTopDevicesSettings({
     }
     return topDeviceLabel(
       id,
-      entities,
+      candidates.length > 0 ? candidates : entities,
       t("settings.energy.topDevices.unnamed"),
       t("settings.energy.topDevices.notFound")
     );
@@ -172,6 +274,7 @@ export function EnergyTopDevicesSettings({
   }
 
   function save(next: string[], previous = idsRef.current): Promise<boolean> {
+    if (choiceStatus !== "ready") return Promise.resolve(false);
     if (sameIds(next, previous)) return Promise.resolve(true);
     const token = ++write.current;
     idsRef.current = next;
@@ -324,7 +427,20 @@ export function EnergyTopDevicesSettings({
       setUndo({ id, index: removed.index, name });
       if (!nextId) focusToast.current = true;
       if (undoTimer.current != null) window.clearTimeout(undoTimer.current);
-      undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_TOAST_DURATION_MS);
+      undoTimer.current = window.setTimeout(() => {
+        const active = document.activeElement;
+        const host = toastHost.current;
+        const inside = Boolean(host && active instanceof Node && host.contains(active));
+        if (inside) {
+          const search = searchInput.current;
+          if (search) search.focus();
+          else {
+            const next = document.querySelector("[data-top-devices-screen] button");
+            if (next instanceof HTMLElement) next.focus();
+          }
+        }
+        setUndo(null);
+      }, UNDO_TOAST_DURATION_MS);
     });
   }
 
@@ -370,9 +486,52 @@ export function EnergyTopDevicesSettings({
     ? text("settings.energy.topDevices.filtered", { n: visibleAvailable.length, total: candidates.length })
     : String(unselected.length);
 
-  const showNone = entitiesStatus === "ready" && candidates.length === 0;
-  const showAvailable = entitiesStatus === "ready" && candidates.length > 0 && !ordering;
-  const showChosen = !(showNone && ids.length === 0);
+  const choiceReady = choiceStatus === "ready";
+  const showNone = choiceReady && entitiesStatus === "ready" && candidates.length === 0;
+  const showAvailable = choiceReady && entitiesStatus === "ready" && candidates.length > 0 && !ordering;
+  const showChosen = choiceReady && !(showNone && ids.length === 0);
+  const kwhIds = visibleStatisticIds(visibleAvailable.map((entity) => entity.entity_id));
+  const kwhKey = kwhIds.join(",");
+
+  useEffect(() => {
+    if (!showAvailable || !kwhKey) return;
+    let cancelled = false;
+    fetch(`/api/ha/energy/statistics?view=day&devices=${encodeURIComponent(kwhKey)}`, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("statistics");
+        return response.json() as Promise<{ devices?: { items?: Array<{ id?: unknown; total?: unknown }> } }>;
+      })
+      .then((body) => {
+        if (cancelled) return;
+        const next: Record<string, number> = {};
+        for (const item of body.devices?.items ?? []) {
+          if (typeof item.id === "string" && typeof item.total === "number" && Number.isFinite(item.total)) {
+            next[item.id] = item.total;
+          }
+        }
+        setTodayKwh(next);
+      })
+      .catch(() => {
+        if (!cancelled) setTodayKwh({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [kwhKey, showAvailable]);
+
+  useLayoutEffect(() => {
+    const node = listRef.current;
+    if (!node || !showAvailable) {
+      setCanScroll(false);
+      return;
+    }
+    const measure = () => setCanScroll(listOverflows(node.scrollHeight, node.clientHeight));
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [showAvailable, kwhKey, visibleAvailable.length]);
 
   return (
     <div data-top-devices-screen>
@@ -389,9 +548,39 @@ export function EnergyTopDevicesSettings({
         </p>
       ) : null}
 
+      {choiceStatus === "loading" ? (
+        <p className="ml-1 text-sm text-[#4b5563] dark:text-[#c4c4cc]">{t("editPanel.loading")}</p>
+      ) : null}
+
+      {choiceStatus === "error" ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white px-4 py-4 dark:border-white/10 dark:bg-[#1b1a21]">
+          <p role="status" className="min-w-0 flex-1 text-sm leading-snug text-[#111827] dark:text-[#f3f4f6]">
+            {t("settings.energy.topDevices.loadChoiceError")}
+          </p>
+          <button
+            type="button"
+            ref={retryButton}
+            onClick={() => {
+              retryFocus.current = true;
+              onRetryChoice?.();
+            }}
+            className={cn(
+              "inline-flex h-11 items-center rounded-full border border-[#767b85] px-4 text-[15px] font-semibold outline-none dark:border-[#6b6b75] dark:text-[#f3f4f6]",
+              FOCUS_RING_BRAND
+            )}
+          >
+            {t("settings.energy.topDevices.retry")}
+          </button>
+        </div>
+      ) : null}
+
       {showChosen ? <section className="mb-4">
         <div className="mb-1.5 ml-4 flex min-h-5 items-center gap-2">
-          <h3 className="text-sm font-semibold text-[#4b5563] dark:text-[#a1a1aa]">
+          <h3
+            ref={chosenHeading}
+            tabIndex={-1}
+            className="text-sm font-semibold text-[#4b5563] outline-none dark:text-[#a1a1aa]"
+          >
             {t("settings.energy.topDevices.onCardGroup")}
           </h3>
           <span className="ml-auto flex items-center gap-1">
@@ -546,7 +735,30 @@ export function EnergyTopDevicesSettings({
         </section>
       ) : null}
 
-      {showNone ? <NoneInHomeAssistant onRefresh={onRefreshEntities} /> : null}
+      {prefsStatus === "error" && entitiesStatus === "ready" ? (
+        <p role="status" className="mb-3 ml-1 flex flex-wrap items-center gap-3 text-sm text-[#111827] dark:text-[#f3f4f6]">
+          <span>{t("settings.energy.topDevices.prefsError")}</span>
+          <button
+            type="button"
+            onClick={reloadPrefs}
+            className={cn(
+              "inline-flex h-11 items-center rounded-full border border-[#767b85] px-4 text-[15px] font-semibold outline-none dark:border-[#6b6b75]",
+              FOCUS_RING_BRAND
+            )}
+          >
+            {t("settings.energy.topDevices.retry")}
+          </button>
+        </p>
+      ) : null}
+
+      {showNone ? (
+        <NoneInHomeAssistant
+          onRefresh={() => {
+            onRefreshEntities();
+            reloadPrefs();
+          }}
+        />
+      ) : null}
 
       {showAvailable ? (
         <section>
@@ -559,7 +771,7 @@ export function EnergyTopDevicesSettings({
             </span>
           </div>
           {showSearch ? (
-            <div className="mb-2 flex h-12 items-center gap-2 rounded-[14px] border border-[#767b85] bg-white px-3.5 focus-within:border-[#4700B5] focus-within:ring-2 focus-within:ring-brand dark:border-[#6b6b75] dark:bg-[#1b1a21] dark:focus-within:border-[#8357be] dark:focus-within:ring-brand-muted">
+            <div className="mb-2 flex h-12 items-center gap-2 rounded-[14px] border border-[#767b85] bg-white px-3.5 has-[input:focus-visible]:border-[#4700B5] has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-brand dark:border-[#6b6b75] dark:bg-[#1b1a21] dark:has-[input:focus-visible]:border-[#8357be] dark:has-[input:focus-visible]:ring-brand-muted">
               <Search className="h-5 w-5 shrink-0 text-[#4b5563] dark:text-[#a1a1aa]" aria-hidden />
               <input
                 ref={searchInput}
@@ -568,7 +780,7 @@ export function EnergyTopDevicesSettings({
                 placeholder={t("settings.energy.topDevices.searchPlaceholder")}
                 aria-label={t("settings.energy.topDevices.searchLabel")}
                 autoComplete="off"
-                className="h-11 min-w-0 flex-1 bg-transparent text-base text-[#111827] outline-none placeholder:text-[#4b5563] dark:text-[#f3f4f6] dark:placeholder:text-[#c4c4cc]"
+                className="h-11 min-w-0 flex-1 bg-transparent text-base text-[#111827] outline-none focus-visible:!outline-none placeholder:text-[#4b5563] dark:text-[#f3f4f6] dark:placeholder:text-[#c4c4cc]"
               />
               {search ? (
                 <button
@@ -595,7 +807,17 @@ export function EnergyTopDevicesSettings({
                 <span>{t("settings.energy.topDevices.full")}</span>
               </p>
             ) : null}
-            <div data-available-list className="max-h-80 overflow-y-auto">
+            <div className="relative">
+            <div
+              ref={listRef}
+              data-available-list
+              tabIndex={0}
+              aria-label={t("settings.energy.topDevices.available")}
+              className={cn(
+                "max-h-[calc(100dvh-10rem)] overflow-y-auto outline-none focus-visible:!outline-none",
+                FOCUS_RING_BRAND
+              )}
+            >
               {query && visibleAvailable.length === 0 ? (
                 <p className="px-4 py-3.5 text-[15px] leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
                   {t("settings.energy.topDevices.noMatch")}
@@ -612,8 +834,25 @@ export function EnergyTopDevicesSettings({
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(17,24,39,0.05)] text-[#111827] dark:bg-white/[0.07] dark:text-[#f3f4f6]">
                       <Plug className="h-5 w-5" aria-hidden />
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
-                      {highlightName(name, query)}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
+                        {highlightName(name, query)}
+                      </span>
+                      {proposedIds.has(entity.entity_id) ? (
+                        <span data-proposal-line className="block text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
+                          {kwhIds.includes(entity.entity_id) && typeof todayKwh[entity.entity_id] === "number"
+                            ? text("settings.energy.topDevices.proposalToday", {
+                                kwh: formatKwh1(todayKwh[entity.entity_id] ?? 0, language === "nl" ? "nl" : "en"),
+                              })
+                            : t("settings.energy.topDevices.proposal")}
+                        </span>
+                      ) : kwhIds.includes(entity.entity_id) && typeof todayKwh[entity.entity_id] === "number" ? (
+                        <span data-today-kwh className="block text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
+                          {text("settings.energy.topDevices.todayKwh", {
+                            kwh: formatKwh1(todayKwh[entity.entity_id] ?? 0, language === "nl" ? "nl" : "en"),
+                          })}
+                        </span>
+                      ) : null}
                     </span>
                     {onCard ? (
                       <span className="inline-flex items-center gap-1 pr-2 text-sm font-semibold text-[#4700B5] dark:text-[#B59ED8]">
@@ -636,6 +875,14 @@ export function EnergyTopDevicesSettings({
                 );
               })}
             </div>
+            {canScroll ? (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent dark:from-[#1b1a21]"
+              />
+            ) : null}
+            </div>
+            {canScroll ? <p className="sr-only">{t("settings.energy.topDevices.scrollHint")}</p> : null}
           </div>
         </section>
       ) : null}
@@ -706,13 +953,47 @@ export function EnergyTopDevicesEntry({
   entityIds,
   entities,
   onOpen,
+  choiceStatus = "ready",
+  onRetry,
 }: {
   entityIds: readonly string[];
   entities: readonly TopDeviceEntity[];
   onOpen: () => void;
+  choiceStatus?: "loading" | "ready" | "error";
+  onRetry?: () => void;
 }) {
   const { t } = useTranslation();
+  const [proposal, setProposal] = useState<ProposalDevice[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/ha/energy/prefs", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("prefs");
+        return response.json() as Promise<{
+          deviceConsumption?: Array<{ statConsumption?: string | null; name?: string | null }>;
+        }>;
+      })
+      .then((body) => {
+        if (cancelled) return;
+        const devices = Array.isArray(body.deviceConsumption) ? body.deviceConsumption : [];
+        setProposal(
+          proposalFromDevices(
+            devices.map((device) => ({
+              statConsumption: typeof device.statConsumption === "string" ? device.statConsumption : null,
+              name: typeof device.name === "string" ? device.name : null,
+            }))
+          )
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setProposal([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [entityIds]);
   const count = fill(t("settings.energy.topDevices.count"), { n: entityIds.length, max: TOP_DEVICE_MAX });
+  const labelEntities = labelSources(entities, proposal);
   const names =
     entityIds.length === 0
       ? t("settings.energy.topDevices.emptyTitle")
@@ -720,7 +1001,7 @@ export function EnergyTopDevicesEntry({
           .map((id) =>
             topDeviceLabel(
               id,
-              entities,
+              labelEntities,
               t("settings.energy.topDevices.unnamed"),
               t("settings.energy.topDevices.notFound")
             )
@@ -747,17 +1028,40 @@ export function EnergyTopDevicesEntry({
             <span className="block text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
               {t("settings.energy.topDevices.title")}
             </span>
-            <span className="mt-0.5 flex min-w-0 items-center text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
-              <span data-entry-names className="min-w-0 truncate">
-                {names}
+            {choiceStatus === "ready" ? (
+              <span className="mt-0.5 flex min-w-0 items-center text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
+                <span data-entry-names className="min-w-0 truncate">
+                  {names}
+                </span>
+                <span data-entry-meta className="shrink-0 whitespace-pre">
+                  {` · ${count} · ${t("settings.energy.topDevices.rowTablets")}`}
+                </span>
               </span>
-              <span className="shrink-0 whitespace-nowrap">
-                {` · ${count} · ${t("settings.energy.topDevices.rowTablets")}`}
+            ) : choiceStatus === "loading" ? (
+              <span className="mt-0.5 block text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">
+                {t("editPanel.loading")}
               </span>
-            </span>
+            ) : null}
           </span>
           <ChevronRight className="h-5 w-5 shrink-0 text-[#4b5563] dark:text-[#a1a1aa]" aria-hidden />
         </button>
+        {choiceStatus === "error" ? (
+          <div className="flex flex-wrap items-center gap-3 px-3 pb-3">
+            <p role="status" className="min-w-0 flex-1 text-sm leading-snug text-[#111827] dark:text-[#f3f4f6]">
+              {t("settings.energy.topDevices.loadChoiceError")}
+            </p>
+            <button
+              type="button"
+              onClick={onRetry}
+              className={cn(
+                "inline-flex h-11 items-center rounded-full border border-[#767b85] px-4 text-[15px] font-semibold outline-none dark:border-[#6b6b75] dark:text-[#f3f4f6]",
+                FOCUS_RING_BRAND
+              )}
+            >
+              {t("settings.energy.topDevices.retry")}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

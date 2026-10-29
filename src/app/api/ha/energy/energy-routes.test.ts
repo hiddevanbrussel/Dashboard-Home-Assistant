@@ -125,4 +125,30 @@ describe("energy api routes", () => {
     expect(ids).not.toContain("sensor.solar_yield_mwh");
     expect(await statsResponse.text()).not.toContain(TOKEN);
   });
+
+  it("returns cached prefs without a websocket when Home Assistant is down", async () => {
+    const server = await startMockHa({ fixtureSet: "full" });
+    db.getHaConnection.mockResolvedValue({ baseUrl: server.baseUrl, token: TOKEN });
+    const headers = { cookie: sessionCookie() };
+    const first = await getPrefs(new Request("http://dashboard.local/api/ha/energy/prefs", { headers }));
+    const firstBody = await first.json();
+    expect(first.status).toBe(200);
+    expect(firstBody.source).toBe("prefs");
+    expect(server.connections).toBe(1);
+    const second = await getPrefs(new Request("http://dashboard.local/api/ha/energy/prefs", { headers }));
+    expect(second.status).toBe(200);
+    expect(await second.json()).toEqual(firstBody);
+    expect(server.connections).toBe(1);
+    await server.close();
+    const duringOutage = await getPrefs(new Request("http://dashboard.local/api/ha/energy/prefs", { headers }));
+    const outageBody = await duringOutage.text();
+    expect(duringOutage.status).toBe(200);
+    expect(JSON.parse(outageBody)).toEqual(firstBody);
+    expect(outageBody).not.toContain(TOKEN);
+    const unknown = await startMockHa({ fixtureSet: "full" });
+    await unknown.close();
+    db.getHaConnection.mockResolvedValue({ baseUrl: unknown.baseUrl, token: TOKEN });
+    const missing = await getPrefs(new Request("http://dashboard.local/api/ha/energy/prefs", { headers }));
+    expect(missing.status).toBe(502);
+  });
 });
