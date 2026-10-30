@@ -281,6 +281,40 @@ describe("Nu hero live values", () => {
     expect(document.querySelector("[data-battery-glow]")).toBeNull();
   });
 
+  it("keeps the short offline pill lines from the mockup", async () => {
+    useEnergyStore.getState().setEntity("solarPowerEntityId", "sensor.solar_power");
+    useEnergyStore.getState().setEntity("gridPowerEntityId", "sensor.grid_power");
+    useEnergyStore.getState().setEntity("batteryPowerEntityId", "sensor.battery_power");
+    useEnergyStore.getState().setEntity("batterySocEntityId", "sensor.battery_soc");
+    useEntityStateStore.getState().setStates([
+      sun,
+      solarState("700"),
+      { entity_id: "sensor.grid_power", state: "-300", attributes: { unit_of_measurement: "W", device_class: "power" } },
+      { entity_id: "sensor.battery_power", state: "500", attributes: { unit_of_measurement: "W", device_class: "power" } },
+      { entity_id: "sensor.battery_soc", state: "40", attributes: { unit_of_measurement: "%" } },
+    ]);
+    useEntityStateStore.setState({ error: "No connection", updatedAt: Date.parse("2026-10-23T16:42:00.000Z") });
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape" }));
+    });
+    await until(() => {
+      expect(document.querySelector("[data-now-offline]")?.getAttribute("data-now-offline")).toBe("1");
+      expect(document.querySelector("[data-now-label='grid'] small")?.textContent).toBe("net");
+    });
+    expect(document.querySelector("[data-now-label='battery'] small")?.textContent).toBe("batterij");
+    expect(document.querySelector("[data-now-label='solar'] small")?.textContent).toBe("zon op het dak");
+    for (const kind of ["solar", "grid", "battery"]) {
+      const pill = document.querySelector(`[data-now-label='${kind}']`);
+      expect(pill?.querySelectorAll("svg").length).toBeGreaterThanOrEqual(2);
+      const sub = pill?.querySelector("small")?.textContent ?? "";
+      expect(sub).not.toContain("terug");
+      expect(sub).not.toContain("van het net");
+      expect(sub).not.toContain("laadt");
+      expect(sub).not.toContain("levert");
+      expect(sub).not.toContain("rust");
+    }
+  });
+
   it("treats a consumption-only sensor as linked and does not ask to connect sensors", async () => {
     useEnergyStore.getState().setEntity("solarPowerEntityId", "");
     useEnergyStore.getState().setEntity("consumptionEntityId", "sensor.house_power");

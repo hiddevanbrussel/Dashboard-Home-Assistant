@@ -38,7 +38,8 @@ export function storyScrollLeft(offsetLeft: number, paddingLeft: number): number
 
 /**
  * Which card sits at the left edge. Uses the same padding correction as scrolling.
- * At max scroll the last card cannot align to the start, so that position is the last card.
+ * Max scroll is the last card only when the card before it still stops short of that edge.
+ * When both land on the same max, the nearer unclamped target wins (the earlier card).
  */
 export function storyIndexFromScroll(
   cards: readonly { offsetLeft: number }[],
@@ -47,7 +48,11 @@ export function storyIndexFromScroll(
   maxScroll = Number.POSITIVE_INFINITY
 ): number {
   if (cards.length === 0) return 0;
-  if (Number.isFinite(maxScroll) && scrollLeft >= maxScroll - 1) return cards.length - 1;
+  const atMax = Number.isFinite(maxScroll) && scrollLeft >= maxScroll - 1;
+  if (atMax && cards.length >= 2) {
+    const previous = storyScrollLeft(cards[cards.length - 2]!.offsetLeft, paddingLeft);
+    if (previous < maxScroll - 1) return cards.length - 1;
+  }
   let best = 0;
   let bestDistance = Number.POSITIVE_INFINITY;
   cards.forEach((card, index) => {
@@ -58,6 +63,24 @@ export function storyIndexFromScroll(
     }
   });
   return best;
+}
+
+export type StoryScrollHold = {
+  /** True after an arrow or a dot chose the index. A swipe clears it. */
+  fromControl: boolean;
+  heldIndex: number;
+};
+
+/** Arrow and dot clicks keep their index. A swipe uses the scroll position. */
+export function storyIndexAfterScroll(
+  cards: readonly { offsetLeft: number }[],
+  scrollLeft: number,
+  paddingLeft: number,
+  maxScroll: number,
+  hold: StoryScrollHold
+): number {
+  if (hold.fromControl) return clampStoryIndex(hold.heldIndex, cards.length);
+  return storyIndexFromScroll(cards, scrollLeft, paddingLeft, maxScroll);
 }
 
 /** Dots and arrows only when there is more than one card. */

@@ -7,7 +7,7 @@ import { StoryCardView, storyDotLabel } from "@/components/energy/overview/story
 import { useTranslation } from "@/hooks/use-translation";
 import { useEnergyOverviewData } from "@/hooks/use-energy-overview-data";
 import { buildStoryCards } from "@/lib/energy-story/cards";
-import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexFromScroll, storyPagerVisible, storyScrollLeft } from "@/lib/energy-story/carousel";
+import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexAfterScroll, storyPagerVisible, storyScrollLeft } from "@/lib/energy-story/carousel";
 import type { StoryCardModel } from "@/lib/energy-story/types";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,8 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
   const cards = useMemo(() => (facts ? buildStoryCards(facts) : []), [facts]);
   const scroller = useRef<HTMLDivElement | null>(null);
   const section = useRef<HTMLElement | null>(null);
+  const fromControl = useRef(false);
+  const heldIndex = useRef(0);
   const [index, setIndex] = useState(0);
   const [reduced, setReduced] = useState(false);
   const indexRef = useRef(0);
@@ -41,7 +43,11 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
   }, []);
 
   useEffect(() => {
-    setIndex((current) => (cards.length === 0 ? 0 : Math.min(current, cards.length - 1)));
+    setIndex((current) => {
+      const next = cards.length === 0 ? 0 : Math.min(current, cards.length - 1);
+      heldIndex.current = next;
+      return next;
+    });
   }, [cards.length]);
 
   const scrollTo = useCallback((next: number, behavior: ScrollBehavior) => {
@@ -50,6 +56,8 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
     const card = root.querySelectorAll("[data-story-card]")[next];
     if (!(card instanceof HTMLElement)) return;
     const pad = Number.parseFloat(getComputedStyle(root).paddingLeft) || 0;
+    fromControl.current = true;
+    heldIndex.current = next;
     root.scrollTo({ left: storyScrollLeft(card.offsetLeft, pad), behavior });
     setIndex(next);
   }, []);
@@ -84,6 +92,20 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
     [cards, reduced, scrollTo]
   );
 
+  useEffect(() => {
+    const root = scroller.current;
+    if (!root) return;
+    const noteSwipe = () => {
+      fromControl.current = false;
+    };
+    root.addEventListener("pointerdown", noteSwipe);
+    root.addEventListener("wheel", noteSwipe, { passive: true });
+    return () => {
+      root.removeEventListener("pointerdown", noteSwipe);
+      root.removeEventListener("wheel", noteSwipe);
+    };
+  }, [cards.length]);
+
   function onScroll() {
     const root = scroller.current;
     if (!root) return;
@@ -91,7 +113,12 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
     const measured = nodes.flatMap((node) => (node instanceof HTMLElement ? [{ offsetLeft: node.offsetLeft }] : []));
     const pad = Number.parseFloat(getComputedStyle(root).paddingLeft) || 0;
     const maxScroll = Math.max(0, root.scrollWidth - root.clientWidth);
-    setIndex(storyIndexFromScroll(measured, root.scrollLeft, pad, maxScroll));
+    setIndex(
+      storyIndexAfterScroll(measured, root.scrollLeft, pad, maxScroll, {
+        fromControl: fromControl.current,
+        heldIndex: heldIndex.current,
+      })
+    );
   }
 
   const arrows = storyArrowEnabled(index, cards.length);
@@ -133,7 +160,7 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
             })
               : null}
           </div>
-          {pager && arrows.prev ? (
+          {pager ? (
           <button
             type="button"
             data-story-prev
@@ -148,7 +175,7 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
             <ChevronLeft className="h-6 w-6" aria-hidden />
           </button>
           ) : null}
-          {pager && arrows.next ? (
+          {pager ? (
           <button
             type="button"
             data-story-next

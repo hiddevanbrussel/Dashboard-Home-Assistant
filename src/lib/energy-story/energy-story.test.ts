@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildStoryCards } from "./cards";
-import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexAfterIdle, storyIndexFromScroll, storyPagerVisible, storyScrollLeft, STORY_IDLE_MS } from "./carousel";
+import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexAfterIdle, storyIndexAfterScroll, storyIndexFromScroll, storyPagerVisible, storyScrollLeft, STORY_IDLE_MS } from "./carousel";
 import { formatKwh, largestRemainder, selfPctShown } from "./format";
 import { getTranslations } from "@/lib/i18n";
 import { heroOfflineState } from "./offline";
@@ -331,6 +331,19 @@ describe("story cards", () => {
     expect(manual.some((card) => card.kind === "hint")).toBe(false);
     expect(manual.some((card) => card.kind === "link")).toBe(true);
     expect(manual.find((card) => card.kind === "link")).toEqual({ kind: "link" });
+    const chosenManual = buildStoryCards(
+      baseFacts({
+        devices: [afternoon.devices[0]!],
+        hasDeviceConsumption: true,
+        importKwh: null,
+        weekKwh: null,
+        yesterdayImportKwh: null,
+        manualWithoutImport: true,
+      })
+    );
+    expect(chosenManual.some((card) => card.kind === "devices")).toBe(false);
+    expect(chosenManual.some((card) => card.kind === "hint")).toBe(false);
+    expect(chosenManual.find((card) => card.kind === "link")).toEqual({ kind: "link" });
   });
 
   it("does not build a price card", () => {
@@ -364,6 +377,21 @@ describe("carousel index", () => {
     ];
     expect(storyIndexFromScroll(row, 800, 16, 900)).toBe(3);
     expect(storyIndexFromScroll(row, 900, 16, 900)).toBe(4);
+    // 800×1280. Carousel portrait:w-[680px], card 332, gap 16, padding 0, five cards.
+    // Targets 0, 348, 696, 1044, 1392. scrollWidth 1724. maxScroll 1044, shared with card 3.
+    const portrait = [0, 348, 696, 1044, 1392].map((offsetLeft) => ({ offsetLeft }));
+    expect(storyIndexFromScroll(portrait, 696, 0, 1044)).toBe(2);
+    expect(storyIndexFromScroll(portrait, 1044, 0, 1044)).toBe(3);
+    expect(storyIndexAfterScroll(portrait, 1044, 0, 1044, { fromControl: true, heldIndex: 3 })).toBe(3);
+    expect(storyIndexAfterScroll(portrait, 1044, 0, 1044, { fromControl: true, heldIndex: 4 })).toBe(4);
+    // 1280×800. Content 1280 − 88 sidebar − 560 hero = 632.
+    // Landscape card 280, gap 16, padding 16. Targets 0, 296, 592, 888, 1184.
+    // scrollWidth 1496, maxScroll 864. Card 3 (888) is already past that max.
+    const landscape = [16, 312, 608, 904, 1200].map((offsetLeft) => ({ offsetLeft }));
+    expect(1496 - 632).toBe(864);
+    expect(storyIndexFromScroll(landscape, 864, 16, 864)).toBe(3);
+    expect(storyIndexAfterScroll(landscape, 864, 16, 864, { fromControl: true, heldIndex: 4 })).toBe(4);
+    expect(storyIndexFromScroll(landscape, 900, 16, 900)).toBe(4);
     expect(storyPagerVisible(1)).toBe(false);
     expect(storyPagerVisible(0)).toBe(false);
     expect(storyPagerVisible(2)).toBe(true);

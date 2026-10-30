@@ -77,9 +77,9 @@ function batteryCard(facts: StoryFacts): StoryCardModel | null {
 }
 
 function deviceCard(facts: StoryFacts): StoryCardModel | null {
+  if (facts.manualWithoutImport) return { kind: "link" };
   if (facts.devices.length === 0) {
     if (!facts.devicesKnown) return null;
-    if (!facts.hasDeviceConsumption && facts.manualWithoutImport) return { kind: "link" };
     return { kind: "hint", mode: facts.hasDeviceConsumption ? "choose" : "setup" };
   }
   const sentence = deviceSentence(facts);

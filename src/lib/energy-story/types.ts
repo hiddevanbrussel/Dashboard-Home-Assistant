@@ -22,7 +22,7 @@ export type StoryFacts = {
   hasGrid: boolean;
   /** At least one energy sensor is linked, including a consumption-only sensor. */
   linked: boolean;
-  /** Manual install with no grid-import energy. The setup hint becomes the link card. */
+  /** Manual install with no grid-import energy. The device slot becomes the link card. */
   manualWithoutImport: boolean;
   solarKwh: number | null;
   loadKwh: number | null;

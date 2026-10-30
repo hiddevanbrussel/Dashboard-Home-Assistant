@@ -78,6 +78,7 @@ describe("story card view", () => {
     });
     expect(document.body.textContent).toContain("Koppel je energiesensoren");
     expect(document.body.textContent).toContain("Naar instellingen");
+    expect(document.body.textContent).toContain("Verbruikers");
   });
 });
 
@@ -122,5 +123,11 @@ describe("overview refresh", () => {
     expect(`${cards}\n${carousel}`).not.toContain("backdrop-filter");
     expect(`${cards}\n${carousel}`).not.toContain("Vast tarief");
     expect(cards).not.toContain("@keyframes");
+    expect(cards).toContain("#B45309");
+    expect(cards).toContain("#0369A1");
+    expect(cards).toContain("#C2410C");
+    expect(cards).toContain("#DC2626");
+    expect(cards).toContain("opacity-[0.27]");
+    expect(cards).toContain("dark:opacity-90");
   });
 });

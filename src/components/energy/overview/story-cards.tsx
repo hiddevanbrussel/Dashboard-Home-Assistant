@@ -36,7 +36,15 @@ function weekdayLabel(weekday: number, language: "nl" | "en"): string {
 }
 
 function Glow({ tone }: { tone: "sun" | "grid" | "gas" | "batt" | "dear" | "brand" }) {
-  const color = {
+  const light = {
+    sun: "#B45309",
+    grid: "#4700B5",
+    gas: "#C2410C",
+    batt: "#0369A1",
+    dear: "#DC2626",
+    brand: "#4700B5",
+  }[tone];
+  const dark = {
     sun: "#FBBF24",
     grid: "#8357be",
     gas: "#FB923C",
@@ -44,12 +52,20 @@ function Glow({ tone }: { tone: "sun" | "grid" | "gas" | "batt" | "dear" | "bran
     dear: "#F87171",
     brand: "#8357be",
   }[tone];
+  const layer = "pointer-events-none absolute -left-8 -top-16 h-64 w-64";
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute -left-8 -top-16 h-64 w-64 opacity-[0.27] dark:opacity-70"
-      style={{ background: `radial-gradient(closest-side, ${color}, transparent)` }}
-    />
+    <>
+      <div
+        aria-hidden
+        className={cn(layer, "opacity-[0.27] dark:hidden")}
+        style={{ background: `radial-gradient(closest-side, ${light}, transparent)` }}
+      />
+      <div
+        aria-hidden
+        className={cn(layer, "hidden opacity-70 dark:block")}
+        style={{ background: `radial-gradient(closest-side, ${dark}, transparent)` }}
+      />
+    </>
   );
 }
 
@@ -288,7 +304,7 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
             {card.days.map((day) => (
               <div key={`${day.weekday}-${day.current ? "now" : "past"}`} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
                 <span
-                  className={cn("w-full rounded-md bg-[#4700B5] dark:bg-[#8357be]", day.current && "opacity-50 dark:opacity-70")}
+                  className={cn("w-full rounded-md bg-[#4700B5] dark:bg-[#8357be]", day.current && "opacity-50 dark:opacity-90")}
                   style={{ height: Math.max(6, Math.round((day.kwh / max) * 80)) }}
                 />
                 <span className="text-[12px] text-[#4b5563] dark:text-[#b4b4bd]">{weekdayLabel(day.weekday, lang)}</span>
