@@ -23,7 +23,8 @@ function parseOffset(raw: string | null): number | null {
  * GET /api/ha/energy/statistics?view=day|week|month|year&offset=0&partial=1
  * Statistic ids come from the parsed energy prefs.
  * Optional devices= is the user's topDeviceIds choice.
- * In manual mode, manual= accepts at most 12 sensor ids that exist as energy statistics.
+ * In manual mode, manual= is role:id (import, export, solar, battery_in, battery_out), at most 12.
+ * An id without one of those roles is ignored.
  * Anything outside that allowlist is ignored. This route never writes to Home Assistant.
  */
 export async function GET(request: Request) {

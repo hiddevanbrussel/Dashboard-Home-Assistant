@@ -285,6 +285,10 @@ describe("story sentences", () => {
     const charging = batterySentence(baseFacts({ chargesFromSolarOnly: false, emptySinceHour: null, chargeKw: 0.7 }));
     expect(text(charging?.tail ?? null, "nl")).toBe("Laadt nu met 700 W.");
     expect(text(charging?.tail ?? null, "en")).toBe("Charging at 700 W.");
+    const unscoped = baseFacts({ importKwh: null, weekKwh: null, solarKwh: 6.9, yesterdayImportKwh: null });
+    expect(gridSentence(unscoped)).toBeNull();
+    expect(weekSentence(unscoped)).toBeNull();
+    expect(solarSentence(unscoped)).toBeNull();
     const empty = batterySentence(baseFacts({ chargesFromSolarOnly: false, emptySinceHour: 22, soc: 10, chargeKw: 0 }));
     expect(text(empty?.tail ?? null, "nl")).toBe("Leeg sinds 22:00.");
   });

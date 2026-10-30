@@ -6,12 +6,16 @@ import {
   buildEnergyStats,
   clearEnergyPrefsCache,
   loadEnergyStatistics,
+  manualStatisticQuery,
   planStatisticRequests,
+  rolesFromManualQuery,
+  rolesFromModel,
   scaleEnergyToKwh,
   selectQueryStatisticIds,
   type EnergyRoles,
   type StatisticPoint,
 } from "./energy-stats";
+import { parseEnergyPrefs } from "./energy-prefs";
 import { isoWithOffset, periodRange, type PeriodRange } from "./energy-time";
 import { clearHaTimeZoneCache } from "./ha/ha-config";
 import { startMockHa, type MockHaHandle } from "./ha/mock-ha";
@@ -190,7 +194,7 @@ describe("energy statistics", () => {
       view: "day",
       offset: 1,
       partial: false,
-      manual: "sensor.grid_import",
+      manual: "import:sensor.grid_import",
       devices: null,
       now: new Date("2026-10-26T12:00:00.000Z"),
     });
@@ -207,7 +211,7 @@ describe("energy statistics", () => {
       view: "day",
       offset: 1,
       partial: false,
-      manual: "sensor.grid_import",
+      manual: "import:sensor.grid_import",
       devices: null,
       now: new Date("2027-03-29T12:00:00.000Z"),
     });
@@ -219,11 +223,12 @@ describe("energy statistics", () => {
       view: "day",
       offset: 0,
       partial: true,
-      manual: "sensor.solar_yield_mwh,sensor.temperature,sensor.NOT_VALID",
+      manual: "solar:sensor.solar_yield_mwh,sensor.temperature,sensor.NOT_VALID",
       devices: "sensor.fridge,sensor.temperature",
       now: new Date("2026-01-15T00:30:00.000Z"),
     });
-    expect(mwh.series.gridImport).toEqual([1250, 625]);
+    expect(mwh.series.solar).toEqual([1250, 625]);
+    expect(mwh.series.gridImport.every((value) => value == null)).toBe(true);
     expect(mwh.partialFrom).toBe("2026-01-14T01:30:00+01:00");
     expect(mwh.devices?.items.map((item) => item.id)).toEqual(["sensor.fridge"]);
     const requested = manual.calls
@@ -329,6 +334,78 @@ describe("energy statistics", () => {
     expect(again.buckets).toEqual(first.buckets);
     expect(again.series).toEqual(first.series);
     expect(again.tz).toBe(first.tz);
+  });
+});
+
+describe("manual statistic roles", () => {
+  const known = new Set([
+    "sensor.solar_yield",
+    "sensor.grid_export",
+    "sensor.grid_import",
+    "sensor.battery_in",
+    "sensor.battery_out",
+    "sensor.house_power",
+  ]);
+
+  it("keeps a prefs install on the energy-source roles", () => {
+    const model = parseEnergyPrefs(JSON.parse(readFileSync(path.join(FIXTURES, "prefs-2026.3.json"), "utf8")));
+    expect(rolesFromModel(model, ["sensor.solar_yield_mwh", "sensor.grid_export"])).toEqual({
+      gridImport: ["sensor.grid_import"],
+      gridExport: ["sensor.grid_export"],
+      solar: ["sensor.solar_yield"],
+      batteryIn: ["sensor.battery_in"],
+      batteryOut: ["sensor.battery_out"],
+      batterySoc: ["sensor.battery_soc"],
+      gas: ["sensor.gas"],
+      water: ["sensor.water"],
+    });
+  });
+
+  it("assigns manual roles and drops an id whose role is unknown", () => {
+    const query = manualStatisticQuery({
+      solarId: "sensor.solar_yield",
+      exportId: "sensor.grid_export",
+      importId: "sensor.grid_import",
+      batteryInId: "sensor.battery_in",
+      batteryOutId: "sensor.battery_out",
+    });
+    const roles = rolesFromManualQuery(
+      `${query},sensor.house_power,power:sensor.grid_import,solar:sensor.not_in_catalog`,
+      known
+    );
+    expect(roles.solar).toEqual(["sensor.solar_yield"]);
+    expect(roles.gridExport).toEqual(["sensor.grid_export"]);
+    expect(roles.gridImport).toEqual(["sensor.grid_import"]);
+    expect(roles.batteryIn).toEqual(["sensor.battery_in"]);
+    expect(roles.batteryOut).toEqual(["sensor.battery_out"]);
+    expect(JSON.stringify(roles)).not.toContain("sensor.house_power");
+    expect(rolesFromManualQuery("sensor.grid_import", known).gridImport).toEqual([]);
+  });
+
+  it("does not change the prefs series when a manual role is sent along", async () => {
+    const server = await startMockHa({ fixtureSet: "full" });
+    try {
+      const now = new Date("2026-01-15T08:20:00.000Z");
+      const shared = {
+        config: { baseUrl: server.baseUrl, token: TOKEN },
+        view: "day" as const,
+        offset: 0,
+        partial: false,
+        devices: null,
+        now,
+      };
+      const plain = await loadEnergyStatistics({ ...shared, connectionId: "prefs-plain", manual: null });
+      const tagged = await loadEnergyStatistics({
+        ...shared,
+        connectionId: "prefs-tagged",
+        manual: "solar:sensor.solar_yield_mwh,import:sensor.grid_import",
+      });
+      expect(tagged.buckets).toEqual(plain.buckets);
+      expect(tagged.series).toEqual(plain.series);
+      expect(tagged.devices).toEqual(plain.devices);
+    } finally {
+      await server.close();
+    }
   });
 });
 

@@ -19,6 +19,7 @@ import {
   solarIsLinked,
 } from "@/lib/energy-now";
 import type { EnergyModel } from "@/lib/energy-prefs";
+import { manualStatisticQuery } from "@/lib/energy-manual-stats";
 import type { EnergyStatsResponse } from "@/lib/energy-stats";
 import { FALLBACK_TIME_ZONE } from "@/lib/local-date";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -98,10 +99,10 @@ export function useEnergyOverviewData(): { facts: StoryFacts | null; status: "lo
   const [loaded, setLoaded] = useState<LoadState | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
-  const manualIds = [entities.solarYieldTodayEntityId, entities.gridExportEntityId, entities.consumptionEntityId].filter(
-    (id) => SENSOR_ID.test(id)
-  );
-  const manualKey = manualIds.join(",");
+  const manualKey = manualStatisticQuery({
+    solarId: entities.solarYieldTodayEntityId,
+    exportId: entities.gridExportEntityId,
+  });
 
   useEffect(() => {
     let cancelled = false;

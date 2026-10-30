@@ -76,7 +76,7 @@ describe("energy api routes", () => {
     use(bare);
     const response = await getStatistics(
       new Request(
-        "http://dashboard.local/api/ha/energy/statistics?view=day&manual=sensor.solar_yield_mwh,sensor.temperature,sensor.NOT_VALID,sensor.battery_soc&devices=sensor.fridge,bogus",
+        "http://dashboard.local/api/ha/energy/statistics?view=day&manual=sensor.solar_yield_mwh,solar:sensor.solar_yield_mwh,sensor.temperature,sensor.NOT_VALID,sensor.battery_soc&devices=sensor.fridge,bogus",
         { headers: { cookie: sessionCookie() } }
       )
     );
@@ -85,8 +85,12 @@ describe("energy api routes", () => {
     expect(body).not.toContain(TOKEN);
     expect(body).not.toContain("access_token");
     expect(body).not.toContain(bare.baseUrl);
-    const stats = JSON.parse(body) as { series: { gridImport: Array<number | null> }; devices?: { items: Array<{ id: string }> } };
-    expect(stats.series.gridImport.some((value) => value != null)).toBe(true);
+    const stats = JSON.parse(body) as {
+      series: { gridImport: Array<number | null>; solar: Array<number | null> };
+      devices?: { items: Array<{ id: string }> };
+    };
+    expect(stats.series.solar.some((value) => value != null)).toBe(true);
+    expect(stats.series.gridImport.every((value) => value == null)).toBe(true);
     expect(stats.devices?.items.map((item) => item.id)).toEqual(["sensor.fridge"]);
     const ids = bare.calls
       .filter((call) => call.type === "recorder/statistics_during_period")
