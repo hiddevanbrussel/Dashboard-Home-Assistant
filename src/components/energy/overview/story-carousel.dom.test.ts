@@ -61,8 +61,8 @@ function storyFacts(patch: Partial<StoryFacts>): StoryFacts {
   };
 }
 
-function activeDot(): string | null {
-  return document.querySelector("[data-story-dot][aria-current='true']")?.getAttribute("data-story-dot") ?? null;
+function storyIndex(): string | null {
+  return document.querySelector("[data-story-scroller]")?.getAttribute("data-story-index") ?? null;
 }
 
 function placeScroll(offsets: number[], scrollLeft: number, scrollWidth: number, clientWidth: number, paddingLeft: string) {
@@ -94,7 +94,7 @@ async function swipe() {
   });
 }
 
-describe("story pager arrows", () => {
+describe("story carousel", () => {
   let root: Root | null = null;
   let host: HTMLDivElement | null = null;
 
@@ -124,43 +124,22 @@ describe("story pager arrows", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps both arrows, grey and disabled at the edge, and does not loop", async () => {
+  it("shows the cards without a heading, dots or arrows", async () => {
     await act(async () => {
       root?.render(createElement(StoryCarousel));
     });
     expect(document.querySelectorAll("[data-story-card]")).toHaveLength(5);
-    expect(document.querySelectorAll("[data-story-dot]")).toHaveLength(5);
-    const prev = document.querySelector("[data-story-prev]");
-    const next = document.querySelector("[data-story-next]");
-    expect(prev).toBeInstanceOf(HTMLButtonElement);
-    expect(next).toBeInstanceOf(HTMLButtonElement);
-    expect((prev as HTMLButtonElement).disabled).toBe(true);
-    expect((next as HTMLButtonElement).disabled).toBe(false);
-    expect(prev?.className).toContain("disabled:text-[#9CA3AF]");
-    expect(activeDot()).toBe("0");
-
-    const forward = document.querySelector("[data-story-next]");
-    if (!(forward instanceof HTMLButtonElement)) throw new Error("next");
-    let steps = 0;
-    while (!forward.disabled && steps < 8) {
-      await act(async () => {
-        forward.click();
-      });
-      steps += 1;
-    }
-    expect(steps).toBe(4);
-    expect(activeDot()).toBe("4");
-    expect(document.querySelectorAll("[data-story-dot]")).toHaveLength(5);
-    expect(document.querySelector("[data-story-prev]")).toBeInstanceOf(HTMLButtonElement);
-    expect((document.querySelector("[data-story-next]") as HTMLButtonElement).disabled).toBe(true);
-    expect((document.querySelector("[data-story-prev]") as HTMLButtonElement).disabled).toBe(false);
-    await act(async () => {
-      forward.click();
-    });
-    expect(activeDot()).toBe("4");
+    expect(document.querySelector("[data-story-dot]")).toBeNull();
+    expect(document.querySelector("[data-story-prev]")).toBeNull();
+    expect(document.querySelector("[data-story-next]")).toBeNull();
+    const section = document.querySelector("section");
+    expect(section?.getAttribute("aria-label")).toBe("Verhaal");
+    expect(section?.textContent).not.toContain("Verhaal");
+    expect(storyIndex()).toBe("0");
+    expect(document.querySelector("[data-story-scroller]")?.className).toContain("overflow-x-auto");
   });
 
-  it("hides arrows and dots when one card is left", async () => {
+  it("still has no pager chrome when one card is left", async () => {
     overview.facts = storyFacts({ linked: false });
     await act(async () => {
       root?.render(createElement(StoryCarousel));
@@ -171,7 +150,7 @@ describe("story pager arrows", () => {
     expect(document.querySelector("[data-story-dot]")).toBeNull();
   });
 
-  it("follows a swipe to the nearest card and keeps an arrow choice at a shared max", async () => {
+  it("follows a swipe to the nearest card", async () => {
     await act(async () => {
       root?.render(createElement(StoryCarousel));
     });
@@ -181,28 +160,16 @@ describe("story pager arrows", () => {
     // Targets 0, 348, 696, 1044, 1392. maxScroll 1044 is also card 3.
     placeScroll([0, 348, 696, 1044, 1392], 1044, 1724, 680, "0px");
     await swipe();
-    expect(activeDot()).toBe("3");
-
-    const next = document.querySelector("[data-story-next]");
-    if (!(next instanceof HTMLButtonElement)) throw new Error("next");
-    await act(async () => {
-      next.click();
-    });
-    expect(activeDot()).toBe("4");
-    expect(next.disabled).toBe(true);
+    expect(storyIndex()).toBe("3");
 
     // 1280×800. Client 632px. Penultimate target 888 is past max 864, so a swipe stays on card 3.
     placeScroll([16, 312, 608, 904, 1200], 864, 1496, 632, "16px");
     await swipe();
-    expect(activeDot()).toBe("3");
-    await act(async () => {
-      next.click();
-    });
-    expect(activeDot()).toBe("4");
+    expect(storyIndex()).toBe("3");
 
     // Wider landscape track: penultimate 888 is still before max 900, so max scroll is the last card.
     placeScroll([16, 312, 608, 904, 1200], 900, 1496, 596, "16px");
     await swipe();
-    expect(activeDot()).toBe("4");
+    expect(storyIndex()).toBe("4");
   });
 });

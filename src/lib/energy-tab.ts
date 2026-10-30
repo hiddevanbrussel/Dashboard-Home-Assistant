@@ -6,6 +6,34 @@ export const ENERGY_TABS = ["overview", "tiles"] as const;
 
 export type EnergyTab = (typeof ENERGY_TABS)[number];
 
+/**
+ * One flag for My tiles on /energy.
+ * False hides the Overview / My tiles tabs and always shows the overview.
+ * The stored tab and the tile dashboard stay untouched, so setting this to true brings them back.
+ */
+export const ENERGY_MY_TILES_ENABLED: boolean = false;
+
+export type EnergyPageView = "pending" | "overview" | "tiles";
+
+/** Which /energy body to paint. The flag does not read or write the stored tab. */
+export function energyPageView(
+  stored: EnergyTab,
+  ready: boolean,
+  myTilesEnabled: boolean = ENERGY_MY_TILES_ENABLED
+): EnergyPageView {
+  if (!myTilesEnabled) return "overview";
+  if (!ready) return "pending";
+  switch (stored) {
+    case "overview":
+    case "tiles":
+      return stored;
+    default: {
+      const neverTab: never = stored;
+      return neverTab;
+    }
+  }
+}
+
 export function parseEnergyTab(raw: string | null | undefined): EnergyTab {
   if (raw === "overview" || raw === "tiles") return raw;
   return "overview";

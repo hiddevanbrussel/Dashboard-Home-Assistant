@@ -205,20 +205,30 @@ export function flowStep(kilowatts: number): 1 | 2 | 3 {
   return 1;
 }
 
+/**
+ * Roof-to-house mint flow. Durations are twice the previous 4200 / 2400 / 1400 ms.
+ * prefers-reduced-motion and glass off still skip the animation in shouldAnimate.
+ */
 export function flowDurationMs(step: 1 | 2 | 3): number {
   switch (step) {
     case 1:
-      return 4200;
+      return 8400;
     case 2:
-      return 2400;
+      return 4800;
     case 3:
-      return 1400;
+      return 2800;
     default: {
       const neverStep: never = step;
       return neverStep;
     }
   }
 }
+
+/** Dot opacity along the flow. Was 1 in the middle and 0.35 at the ends. */
+export const FLOW_DOT_OPACITY = 0.55;
+export const FLOW_DOT_EDGE_OPACITY = 0.19;
+/** Stroke opacity of the mint line. Was 0.95. */
+export const FLOW_LINE_OPACITY = 0.52;
 
 export function strongestFlowKw(kilowatts: readonly (number | null)[]): number {
   let best = 0;

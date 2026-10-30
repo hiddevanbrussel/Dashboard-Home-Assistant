@@ -18,6 +18,7 @@ export function SettingsToggle({
   label,
   description,
   compact = false,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (value: boolean) => void;
@@ -25,6 +26,8 @@ export function SettingsToggle({
   description?: string;
   /** Icon-only switch control (label stays as aria-label). */
   compact?: boolean;
+  /** Greyed out. Clicks do not change the value. */
+  disabled?: boolean;
 }) {
   return (
     <button
@@ -32,12 +35,17 @@ export function SettingsToggle({
       role="switch"
       aria-checked={checked}
       aria-label={label}
-      onClick={() => onChange(!checked)}
+      disabled={disabled}
+      onClick={() => {
+        if (disabled) return;
+        onChange(!checked);
+      }}
       className={cn(
         "text-left",
         compact
           ? "inline-flex h-11 w-16 shrink-0 items-center justify-end"
-          : "flex min-h-11 w-full items-center justify-between gap-4"
+          : "flex min-h-11 w-full items-center justify-between gap-4",
+        disabled && "cursor-not-allowed opacity-40"
       )}
     >
       {!compact ? (

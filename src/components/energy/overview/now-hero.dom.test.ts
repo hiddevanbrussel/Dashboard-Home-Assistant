@@ -4,7 +4,8 @@
 import { act, createElement, useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EnergyTabs } from "@/components/energy/overview/energy-tabs";
+import { EnergyTabList, EnergyTabs } from "@/components/energy/overview/energy-tabs";
+import { ENERGY_TAB_STORAGE_KEY } from "@/lib/energy-tab";
 import { NowHero } from "@/components/energy/overview/now-hero";
 import { useEntityStateStore, type EntityState } from "@/stores/entity-state-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
@@ -340,6 +341,22 @@ describe("Nu hero live values", () => {
   });
 });
 
+describe("stored energy tab while my tiles are hidden", () => {
+  afterEach(() => {
+    localStorage.clear();
+    useEnergyOverviewStore.setState({ tab: "overview", ready: false });
+  });
+
+  it("keeps tiles in storage and leaves the in-memory tab on the overview", () => {
+    localStorage.setItem(ENERGY_TAB_STORAGE_KEY, "tiles");
+    useEnergyOverviewStore.setState({ tab: "tiles", ready: false });
+    useEnergyOverviewStore.getState().hydrate();
+    expect(useEnergyOverviewStore.getState().tab).toBe("overview");
+    expect(useEnergyOverviewStore.getState().ready).toBe(true);
+    expect(localStorage.getItem(ENERGY_TAB_STORAGE_KEY)).toBe("tiles");
+  });
+});
+
 describe("energy tabs", () => {
   let root: Root | null = null;
   let host: HTMLDivElement | null = null;
@@ -360,11 +377,21 @@ describe("energy tabs", () => {
     host = null;
   });
 
-  it("uses a glass segment, arrow keys and aria-controls", async () => {
+  it("hides the overview and my tiles tabs", async () => {
+    await act(async () => {
+      root?.render(createElement(EnergyTabs));
+    });
+    expect(document.querySelector("[role='tablist']")).toBeNull();
+    expect(document.querySelector("[data-energy-tabs]")).toBeNull();
+    expect(document.getElementById("energy-tab-overview")).toBeNull();
+    expect(document.getElementById("energy-tab-tiles")).toBeNull();
+  });
+
+  it("keeps arrow keys on the tab list for when my tiles return", async () => {
     function Harness() {
       const [mounted, setMounted] = useState(false);
       useEffect(() => setMounted(true), []);
-      return mounted ? createElement(EnergyTabs) : null;
+      return mounted ? createElement(EnergyTabList) : null;
     }
     await act(async () => {
       root?.render(createElement(Harness));

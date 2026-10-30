@@ -10,7 +10,13 @@ import {
   samplePolyline,
   type Point,
 } from "@/lib/energy-house-anchors";
-import { flowDurationMs, type HouseVariantId } from "@/lib/energy-now";
+import {
+  FLOW_DOT_EDGE_OPACITY,
+  FLOW_DOT_OPACITY,
+  FLOW_LINE_OPACITY,
+  flowDurationMs,
+  type HouseVariantId,
+} from "@/lib/energy-now";
 
 const DOTS = 8;
 const SAMPLES = 16;
@@ -143,12 +149,12 @@ export function NowHeroLayers({
       const point = rest[index];
       if (!dot || !point) return;
       if (!animate || path.length < 2) {
-        place(dot, point, "1");
+        place(dot, point, String(FLOW_DOT_OPACITY));
         return;
       }
       const frames = cycle(path, index * 2).map((frame, frameIndex, all) => ({
         transform: `translate(${frame.x}px, ${frame.y}px)`,
-        opacity: frameIndex === 0 || frameIndex === all.length - 1 ? 0.35 : 1,
+        opacity: frameIndex === 0 || frameIndex === all.length - 1 ? FLOW_DOT_EDGE_OPACITY : FLOW_DOT_OPACITY,
       }));
       track(dot.animate(frames, { duration: flowDurationMs(step), iterations: Infinity, easing: "linear" }));
     });
@@ -266,7 +272,7 @@ export function NowHeroLayers({
             strokeWidth={2.2}
             strokeLinejoin="round"
             strokeLinecap="round"
-            opacity={0.95}
+            opacity={FLOW_LINE_OPACITY}
           />
         ) : null}
         {!offline && dotPoints.map((point, index) => (

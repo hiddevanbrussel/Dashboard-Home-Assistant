@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ENERGY_MY_TILES_ENABLED } from "@/lib/energy-tab";
 import { assembleStoryFacts, zonedDecimalHour, type StoryStatBundle } from "@/lib/energy-story/aggregate";
 import type { StoryFacts, StoryLine } from "@/lib/energy-story/types";
 import {
@@ -110,7 +111,7 @@ export function useEnergyOverviewData(): { facts: StoryFacts | null; status: "lo
 
     async function load() {
       if (typeof document !== "undefined" && document.hidden) return;
-      if (useEnergyOverviewStore.getState().tab !== "overview") return;
+      if (ENERGY_MY_TILES_ENABLED && useEnergyOverviewStore.getState().tab !== "overview") return;
       try {
         const prefs = await readJson("/api/ha/energy/prefs");
         const model = asModel(prefs);
@@ -154,7 +155,7 @@ export function useEnergyOverviewData(): { facts: StoryFacts | null; status: "lo
     function arm() {
       window.clearInterval(timer);
       if (typeof document !== "undefined" && document.hidden) return;
-      if (useEnergyOverviewStore.getState().tab !== "overview") return;
+      if (ENERGY_MY_TILES_ENABLED && useEnergyOverviewStore.getState().tab !== "overview") return;
       void load();
       timer = window.setInterval(() => void load(), OVERVIEW_REFRESH_MS);
     }

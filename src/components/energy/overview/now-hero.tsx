@@ -14,6 +14,7 @@ import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
 import { NowHeroLayers } from "@/components/energy/overview/now-hero-layers";
 import type { StoryOpenKind } from "@/components/energy/overview/story-carousel";
 import { useTranslation } from "@/hooks/use-translation";
+import { ENERGY_MY_TILES_ENABLED } from "@/lib/energy-tab";
 import { heroOfflineState, offlinePowerText } from "@/lib/energy-story/offline";
 import { type HeroLabelKind, type OverviewOrientation } from "@/lib/energy-house-anchors";
 import {
@@ -93,7 +94,8 @@ function batteryStatSoc(model: EnergyModel | null): string {
 }
 
 function useMotionFlags(frame: RefObject<HTMLElement | null>) {
-  const tab = useEnergyOverviewStore((state) => state.tab);
+  const storedTab = useEnergyOverviewStore((state) => state.tab);
+  const tab = ENERGY_MY_TILES_ENABLED ? storedTab : "overview";
   const [flags, setFlags] = useState({
     reducedMotion: false,
     glassOff: false,

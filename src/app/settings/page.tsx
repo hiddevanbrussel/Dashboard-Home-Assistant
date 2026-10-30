@@ -43,6 +43,7 @@ import { hydrateImmichStore, useImmichStore } from "@/stores/immich-store";
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { energyDashboardChoiceFromResponse } from "@/lib/energy-dashboard";
 import { EnergyEntitySettings } from "@/components/settings/energy-entity-settings";
+import { EnergyMyTilesSetting } from "@/components/settings/energy-my-tiles-setting";
 import {
   EnergyTopDevicesEntry,
   EnergyTopDevicesSettings,
@@ -1361,6 +1362,7 @@ export default function SettingsPage() {
                 onChange={energyStore.setEnabled}
                 label={t("settings.energy.enabled")}
               />
+              <EnergyMyTilesSetting />
               {energyStore.enabled ? (
                 <>
                   <EnergyTopDevicesEntry
