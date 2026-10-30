@@ -240,6 +240,8 @@ export function nowSentenceKey(input: {
   batteryKw: number | null;
   gridKw: number | null;
   houseKw: number | null;
+  /** True only when the house sensor is the sole link. */
+  consumptionOnly?: boolean;
 }): string | null {
   if (!input.linked) return "energy.overview.now.sentenceSetup";
   const solar = input.solarOn && input.solarKw != null ? input.solarKw : 0;
@@ -252,6 +254,7 @@ export function nowSentenceKey(input: {
   if (house != null && solar >= house && solar > 0) return "energy.overview.now.sentenceCover";
   if (solar > 0) return house != null ? "energy.overview.now.sentenceSolar" : null;
   if (imported > 0) return "energy.overview.now.sentenceImport";
+  if (input.consumptionOnly && house != null && house > 0) return "energy.overview.now.sentenceHouse";
   return null;
 }
 

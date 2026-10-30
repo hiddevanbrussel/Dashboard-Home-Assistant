@@ -88,7 +88,7 @@ describe("now hero source", () => {
     expect(overview).not.toContain("Verhaal volgt");
   });
 
-  it("limits the app-shell diff to hiding the header energy numbers on /energy", () => {
+  it("leaves app-shell unchanged because the energy header condition is already on main", () => {
     let diff = "";
     try {
       diff = execSync("git diff origin/main -- src/components/layout/app-shell.tsx", {
@@ -105,10 +105,7 @@ describe("now hero source", () => {
     const lines = diff
       .split("\n")
       .filter((line) => (line.startsWith("+") || line.startsWith("-")) && !line.startsWith("+++") && !line.startsWith("---"));
-    expect(lines.length).toBeGreaterThan(0);
-    for (const line of lines) {
-      expect(line).toMatch(/HeaderEnergyStats|activeTab === "\/energy"/);
-    }
+    expect(lines).toEqual([]);
   });
 
   it("renders the hero without solar or battery labels when nothing is linked", () => {

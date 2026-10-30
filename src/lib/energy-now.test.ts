@@ -157,6 +157,20 @@ describe("consumption link", () => {
         houseKw: 0.7,
       })
     ).toBeNull();
+    expect(
+      nowSentenceKey({
+        linked: true,
+        night: false,
+        solarOn: false,
+        batteryOn: false,
+        gridOn: false,
+        solarKw: null,
+        batteryKw: null,
+        gridKw: null,
+        houseKw: 0.8,
+        consumptionOnly: true,
+      })
+    ).toBe("energy.overview.now.sentenceHouse");
   });
 });
 

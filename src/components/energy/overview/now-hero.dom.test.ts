@@ -296,7 +296,10 @@ describe("Nu hero live values", () => {
     });
     expect(document.querySelector("[data-now-house]")?.textContent).toContain("700");
     const sentence = document.querySelector("[data-now-sentence]")?.textContent ?? "";
+    expect(sentence).toContain("Je huis verbruikt nu");
+    expect(sentence).toContain("700");
     expect(sentence).not.toContain("Koppel");
+    expect(document.querySelector("[data-now-offline]")?.getAttribute("data-now-offline")).toBe("0");
     expect(document.querySelector("[data-now-label='solar']")).toBeNull();
     expect(document.querySelector("[data-now-label='grid']")).toBeNull();
     expect(document.querySelector("[data-now-label='battery']")).toBeNull();

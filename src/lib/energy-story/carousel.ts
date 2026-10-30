@@ -31,8 +31,42 @@ export type IdleClock = {
   clear: (timer: ReturnType<typeof setTimeout>) => void;
 };
 
+/** Distance from the scroller's content start, after its padding. */
+export function storyScrollLeft(offsetLeft: number, paddingLeft: number): number {
+  return offsetLeft - paddingLeft;
+}
+
+/** Which card sits at the left edge. Uses the same padding correction as scrolling. */
+export function storyIndexFromScroll(
+  cards: readonly { offsetLeft: number }[],
+  scrollLeft: number,
+  paddingLeft: number
+): number {
+  let best = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  cards.forEach((card, index) => {
+    const distance = Math.abs(storyScrollLeft(card.offsetLeft, paddingLeft) - scrollLeft);
+    if (distance < bestDistance) {
+      best = index;
+      bestDistance = distance;
+    }
+  });
+  return best;
+}
+
+/**
+ * `setTimeout` must be called as a method of `window`.
+ * Passing the bare function throws Illegal invocation in Chromium.
+ */
+function windowClock(): IdleClock {
+  return {
+    schedule: (callback, ms) => window.setTimeout(callback, ms) as unknown as ReturnType<typeof setTimeout>,
+    clear: (timer) => window.clearTimeout(timer as unknown as number),
+  };
+}
+
 /** Restarts a single timer. Calling `touch` never stacks timers. */
-export function createStoryIdle(onReset: () => void, clock: IdleClock = { schedule: setTimeout, clear: clearTimeout }) {
+export function createStoryIdle(onReset: () => void, clock: IdleClock = windowClock()) {
   let timer = clock.schedule(onReset, STORY_IDLE_MS);
   return {
     touch() {

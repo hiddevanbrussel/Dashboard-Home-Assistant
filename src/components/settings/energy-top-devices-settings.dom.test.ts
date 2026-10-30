@@ -804,8 +804,9 @@ describe("largest consumer picker", () => {
     });
     const subline = document.querySelector("[data-entry-subline]");
     expect(subline?.className).toContain("h-5");
-    expect(document.querySelector("[data-entry-card]")?.className).toContain("min-h-[148px]");
-    expect(subline?.textContent?.trim()).toBe("");
+    expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
+    expect(subline?.getAttribute("role")).toBe("status");
+    expect(subline?.textContent).toContain("kon niet geladen worden");
     const retry = [...document.querySelectorAll("button")].find((button) => button.textContent === "Opnieuw proberen");
     if (!(retry instanceof HTMLButtonElement)) throw new Error("retry missing");
     await act(async () => {
@@ -821,7 +822,7 @@ describe("largest consumer picker", () => {
     expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
   });
 
-  it("reserves the error height while the choice is loading so the row does not jump", () => {
+  it("keeps loading and the choice error on the same row height", () => {
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
@@ -839,12 +840,15 @@ describe("largest consumer picker", () => {
     }
     renderStatus("loading");
     expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
-    expect(document.querySelector("[data-entry-card]")?.className).toContain("min-h-[148px]");
+    expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
     renderStatus("ready");
     expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
     expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
     renderStatus("error");
-    expect(document.querySelector("[data-entry-card]")?.className).toContain("min-h-[148px]");
+    expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
+    expect(document.querySelector("[data-entry-card] button")?.className).toContain("pr-[172px]");
     expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
+    const retry = [...document.querySelectorAll("button")].find((button) => button.textContent === "Opnieuw proberen");
+    expect(retry?.className).toContain("h-11");
   });
 });

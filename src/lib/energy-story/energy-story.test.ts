@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildStoryCards } from "./cards";
-import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexAfterIdle, STORY_IDLE_MS } from "./carousel";
+import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexAfterIdle, storyIndexFromScroll, storyScrollLeft, STORY_IDLE_MS } from "./carousel";
 import { formatKwh, largestRemainder, selfPctShown } from "./format";
 import { getTranslations } from "@/lib/i18n";
 import { heroOfflineState } from "./offline";
@@ -165,7 +165,8 @@ describe("story sentences", () => {
     expect(solar?.big).toBe("63%");
     expect(text(solar?.tail ?? null, "en")).toBe("of your usage");
     const grid = gridSentence(afternoon);
-    expect(text(grid?.lead ?? null, "nl")).toBe("Vandaag tot nu");
+    expect(text(grid?.lead ?? null, "nl")).toBe("Van het net, vandaag tot nu");
+    expect(text(grid?.lead ?? null, "en")).toBe("From the grid, today so far");
     expect(text(grid?.big ?? null, "nl")).toBe("3,5 kWh");
     expect(text(grid?.big ?? null, "en")).toBe("3.5 kWh");
     expect(text(grid?.tail ?? null, "nl")).toBe("1,3 kWh minder dan gisteren rond deze tijd.");
@@ -185,7 +186,8 @@ describe("story sentences", () => {
     expect(text(device?.tail ?? null, "nl")).toBe("25% van je verbruik tot nu.");
     expect(text(device?.tail ?? null, "en")).toBe("25% of your usage so far.");
     const week = weekSentence(afternoon);
-    expect(text(week?.lead ?? null, "nl")).toBe("Deze week tot nu");
+    expect(text(week?.lead ?? null, "nl")).toBe("Van het net, deze week tot nu");
+    expect(text(week?.lead ?? null, "en")).toBe("From the grid, this week so far");
     expect(text(week?.big ?? null, "nl")).toBe("36,7 kWh");
     expect(text(week?.big ?? null, "en")).toBe("36.7 kWh");
     expect(text(week?.tail ?? null, "nl")).toBe("5,6 kWh minder dan vorige week.");
@@ -267,6 +269,14 @@ describe("story sentences", () => {
     const quiet = peakSentence(baseFacts({ devices: [{ name: { nl: "Wasmachine", en: "Washing machine" }, kwh: 1, peakKwh: 0.4 }] }));
     expect(text(quiet?.tail ?? null, "nl")).toBe("Geen apparaat sprong eruit.");
     expect(deviceSentence(baseFacts({ devices: [{ name: { nl: "Lamp", en: "Lamp" }, kwh: 0.4, peakKwh: 0.1 }] }))).toBeNull();
+    const capped = deviceSentence(
+      baseFacts({
+        loadKwh: 3.4,
+        devices: [{ name: { nl: "Koelkast", en: "Fridge" }, kwh: 3.9, peakKwh: 0.2 }],
+      })
+    );
+    expect(text(capped?.tail ?? null, "nl")).toBe("100% van je verbruik tot nu.");
+    expect(text(capped?.tail ?? null, "en")).toBe("100% of your usage so far.");
     expect(peakSentence(baseFacts({ tariffFixed: false }))).toBeNull();
     expect(peakSentence(baseFacts({ loadKwh: 0.4 }))).toBeNull();
   });
@@ -324,10 +334,16 @@ describe("carousel index", () => {
     expect(storyArrowEnabled(0, 6)).toEqual({ prev: false, next: true });
     expect(storyArrowEnabled(5, 6)).toEqual({ prev: true, next: false });
     expect(storyIndexAfterIdle()).toBe(0);
+    expect(storyScrollLeft(688, 16)).toBe(672);
+    expect(storyScrollLeft(16, 16)).toBe(0);
+    expect(storyIndexFromScroll([{ offsetLeft: 16 }, { offsetLeft: 312 }, { offsetLeft: 608 }], 296, 16)).toBe(1);
 
     vi.useFakeTimers();
     const reset = vi.fn();
-    const idle = createStoryIdle(reset);
+    const idle = createStoryIdle(reset, {
+      schedule: (callback, ms) => setTimeout(callback, ms),
+      clear: (timer) => clearTimeout(timer),
+    });
     vi.advanceTimersByTime(STORY_IDLE_MS - 1);
     expect(reset).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
@@ -376,9 +392,21 @@ describe("offline hero", () => {
       lastAt: null,
       timeZone: zone,
     });
-    expect(unknown.offline).toBe(true);
+    expect(unknown.offline).toBe(false);
+    expect(unknown.badge).toBe("live");
     expect(unknown.houseDash).toBe(true);
-    expect(unknown.time).toBe("–");
+    expect(unknown.time).toBe("");
+    const down = heroOfflineState({
+      haReachable: false,
+      prefsReady: true,
+      linked: true,
+      hasMeasurement: true,
+      houseKw: 0.48,
+      lastAt: null,
+      timeZone: zone,
+    });
+    expect(down.offline).toBe(true);
+    expect(down.time).toBe("");
     const zero = heroOfflineState({
       haReachable: false,
       prefsReady: true,
@@ -432,6 +460,7 @@ describe("story sources", () => {
       expect(source).not.toContain("setHours(0)");
       expect(source).not.toContain("getHours()");
       expect(source).not.toContain("Vast tarief");
+      if (name === "carousel.ts") expect(source).toContain("window.setTimeout");
     }
     expect(files).not.toContain("energy-costs.ts");
   });

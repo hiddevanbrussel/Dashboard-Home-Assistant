@@ -6,9 +6,10 @@ import path from "node:path";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StoryCardView } from "@/components/energy/overview/story-cards";
 import { OVERVIEW_REFRESH_MS } from "@/hooks/use-energy-overview-data";
+import { createStoryIdle, STORY_IDLE_MS } from "@/lib/energy-story/carousel";
 import { heroOfflineState } from "@/lib/energy-story/offline";
 import { useLanguageStore } from "@/stores/language-store";
 
@@ -66,6 +67,7 @@ describe("story card view", () => {
     expect(document.querySelector("[data-story-close]")).toBeNull();
     expect(document.querySelector("a")?.getAttribute("href")).toContain("apparaten=1");
     expect(document.querySelector("a")?.className).toContain("h-11");
+    expect(document.querySelector("a")?.className).toContain("w-fit");
     expect(document.body.textContent).not.toContain("€");
     act(() => {
       root?.render(createElement(StoryCardView, { card: { kind: "hint", mode: "setup" } }));
@@ -90,6 +92,21 @@ describe("offline markup", () => {
     expect(html).toContain("data-mint=\"0\"");
     expect(html).not.toContain("€");
     expect(html).not.toContain("rust");
+  });
+});
+
+describe("story idle clock", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("starts the default timer through window.setTimeout", () => {
+    vi.useFakeTimers();
+    const reset = vi.fn();
+    const idle = createStoryIdle(reset);
+    vi.advanceTimersByTime(STORY_IDLE_MS);
+    expect(reset).toHaveBeenCalledOnce();
+    idle.stop();
   });
 });
 

@@ -1,13 +1,13 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
 import { StoryCardView, storyDotLabel } from "@/components/energy/overview/story-cards";
 import { useTranslation } from "@/hooks/use-translation";
 import { useEnergyOverviewData } from "@/hooks/use-energy-overview-data";
 import { buildStoryCards } from "@/lib/energy-story/cards";
-import { createStoryIdle, stepStoryIndex, storyArrowEnabled } from "@/lib/energy-story/carousel";
+import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexFromScroll, storyScrollLeft } from "@/lib/energy-story/carousel";
 import type { StoryCardModel } from "@/lib/energy-story/types";
 import { cn } from "@/lib/utils";
 
@@ -44,14 +44,15 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
     setIndex((current) => (cards.length === 0 ? 0 : Math.min(current, cards.length - 1)));
   }, [cards.length]);
 
-  function scrollTo(next: number, behavior: ScrollBehavior) {
+  const scrollTo = useCallback((next: number, behavior: ScrollBehavior) => {
     const root = scroller.current;
     if (!root) return;
     const card = root.querySelectorAll("[data-story-card]")[next];
     if (!(card instanceof HTMLElement)) return;
-    root.scrollTo({ left: card.offsetLeft, behavior });
+    const pad = Number.parseFloat(getComputedStyle(root).paddingLeft) || 0;
+    root.scrollTo({ left: storyScrollLeft(card.offsetLeft, pad), behavior });
     setIndex(next);
-  }
+  }, []);
 
   useEffect(() => {
     const idle = createStoryIdle(() => {
@@ -69,7 +70,7 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
       root?.removeEventListener("wheel", touch);
       root?.removeEventListener("keydown", touch);
     };
-  }, [reduced, cards.length]);
+  }, [reduced, cards.length, scrollTo]);
 
   useImperativeHandle(
     ref,
@@ -80,24 +81,16 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
         scrollTo(next, reduced ? "auto" : "smooth");
       },
     }),
-    [cards, reduced]
+    [cards, reduced, scrollTo]
   );
 
   function onScroll() {
     const root = scroller.current;
     if (!root) return;
     const nodes = [...root.querySelectorAll("[data-story-card]")];
-    let best = 0;
-    let bestDistance = Number.POSITIVE_INFINITY;
-    nodes.forEach((node, nodeIndex) => {
-      if (!(node instanceof HTMLElement)) return;
-      const distance = Math.abs(node.offsetLeft - root.scrollLeft);
-      if (distance < bestDistance) {
-        best = nodeIndex;
-        bestDistance = distance;
-      }
-    });
-    setIndex(best);
+    const measured = nodes.flatMap((node) => (node instanceof HTMLElement ? [{ offsetLeft: node.offsetLeft }] : []));
+    const pad = Number.parseFloat(getComputedStyle(root).paddingLeft) || 0;
+    setIndex(storyIndexFromScroll(measured, root.scrollLeft, pad));
   }
 
   const arrows = storyArrowEnabled(index, cards.length);
@@ -107,35 +100,13 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
     <section
       ref={section}
       aria-label={t("energy.story.region")}
-      className="flex min-h-0 min-w-0 flex-1 flex-col portrait:min-h-[420px] portrait:w-[680px]"
+      className="flex min-h-0 min-w-0 flex-1 flex-col portrait:w-[680px]"
     >
-      <div
-        ref={scroller}
-        data-story-scroller
-        onScroll={onScroll}
-        className="flex min-h-0 flex-1 snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] portrait:px-0"
-      >
-        {status === "loading" && cards.length === 0 ? <div data-story-loading className="min-h-[148px] flex-1" /> : null}
-        {cards.map((card) => (
-          <StoryCardView key={`${cardKind(card)}-${card.kind === "hint" ? card.mode : card.kind}`} card={card} />
-        ))}
-      </div>
       {cards.length > 0 ? (
-        <div className="flex items-center justify-center gap-1 px-2 pb-3">
-          <button
-            type="button"
-            data-story-prev
-            aria-label={t("energy.story.prev")}
-            disabled={!arrows.prev}
-            onClick={() => scrollTo(stepStoryIndex(index, cards.length, "prev"), behavior)}
-            className={cn(
-              "inline-flex h-11 w-11 items-center justify-center rounded-full text-[#111827] outline-none disabled:text-[#9CA3AF] dark:text-[#f3f4f6] dark:disabled:text-[#6B7280]",
-              FOCUS_RING_BRAND
-            )}
-          >
-            <ChevronLeft className="h-6 w-6" aria-hidden />
-          </button>
-          <div className="flex items-center">
+        <div className="flex h-11 shrink-0 items-center gap-2 px-4">
+          <BookOpen className="h-[18px] w-[18px] shrink-0 text-[#4700B5] dark:text-[#8357be]" aria-hidden />
+          <span className="shrink-0 text-[15px] font-semibold text-[#111827] dark:text-[#f3f4f6]">{t("energy.story.region")}</span>
+          <div className="flex min-w-0 flex-1 items-center justify-center">
             {cards.map((card, dot) => {
               const active = dot === index;
               return (
@@ -150,8 +121,8 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
                 >
                   <span
                     className={cn(
-                      "block rounded-full bg-[#4700B5] dark:bg-[#c4b5fd]",
-                      active ? "h-2 w-[22px]" : "h-2 w-2 bg-[#6B7280] dark:bg-[#9CA3AF]"
+                      "block rounded-full",
+                      active ? "h-2 w-[22px] bg-[#4700B5] dark:bg-[#c4b5fd]" : "h-2 w-2 bg-[#6B7280] dark:bg-[#9CA3AF]"
                     )}
                   />
                 </button>
@@ -160,12 +131,25 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
           </div>
           <button
             type="button"
+            data-story-prev
+            aria-label={t("energy.story.prev")}
+            disabled={!arrows.prev}
+            onClick={() => scrollTo(stepStoryIndex(index, cards.length, "prev"), behavior)}
+            className={cn(
+              "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[rgba(17,24,39,0.08)] bg-[var(--glass-strong)] text-[#111827] outline-none disabled:text-[#9CA3AF] dark:border-white/10 dark:text-[#f3f4f6] dark:disabled:text-[#6B7280]",
+              FOCUS_RING_BRAND
+            )}
+          >
+            <ChevronLeft className="h-6 w-6" aria-hidden />
+          </button>
+          <button
+            type="button"
             data-story-next
             aria-label={t("energy.story.next")}
             disabled={!arrows.next}
             onClick={() => scrollTo(stepStoryIndex(index, cards.length, "next"), behavior)}
             className={cn(
-              "inline-flex h-11 w-11 items-center justify-center rounded-full text-[#111827] outline-none disabled:text-[#9CA3AF] dark:text-[#f3f4f6] dark:disabled:text-[#6B7280]",
+              "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[rgba(17,24,39,0.08)] bg-[var(--glass-strong)] text-[#111827] outline-none disabled:text-[#9CA3AF] dark:border-white/10 dark:text-[#f3f4f6] dark:disabled:text-[#6B7280]",
               FOCUS_RING_BRAND
             )}
           >
@@ -173,6 +157,17 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
           </button>
         </div>
       ) : null}
+      <div
+        ref={scroller}
+        data-story-scroller
+        onScroll={onScroll}
+        className="relative flex min-h-0 flex-1 snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-px-4 px-4 pb-2 [scrollbar-width:none] portrait:scroll-px-0 portrait:px-0"
+      >
+        {status === "loading" && cards.length === 0 ? <div data-story-loading className="min-h-[148px] flex-1" /> : null}
+        {cards.map((card) => (
+          <StoryCardView key={`${cardKind(card)}-${card.kind === "hint" ? card.mode : card.kind}`} card={card} />
+        ))}
+      </div>
     </section>
   );
 });

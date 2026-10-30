@@ -314,18 +314,24 @@ export function NowHero({
         batteryKw: batteryPower,
         gridKw,
         houseKw,
+        consumptionOnly: consumptionLinked && !solarLinked && !batteryLinked && !gridLinked,
       });
   const sentenceKw =
     sentenceKey === "energy.overview.now.sentenceBatteryOut"
       ? knownPower(batteryPower)
       : sentenceKey === "energy.overview.now.sentenceImport"
         ? knownPower(gridKw != null && gridKw > 0 ? gridKw : null)
-        : null;
+        : sentenceKey === "energy.overview.now.sentenceHouse"
+          ? knownPower(houseKw)
+          : null;
   const sentence = presence.offline
-    ? fill(t("energy.story.offlineSentence"), { time: presence.time })
+    ? presence.time
+      ? fill(t("energy.story.offlineSentence"), { time: presence.time })
+      : t("energy.story.offlineSentenceBare")
     : sentenceKey
       ? fill(t(sentenceKey), {
           kw: sentenceKw ?? "",
+          power: sentenceKw ?? "",
           solar: knownPower(solarKw) ?? "",
           house: knownPower(houseKw) ?? "",
         })
@@ -373,7 +379,11 @@ export function NowHero({
             presence.offline ? "text-[#374151] dark:text-[#d1d5db]" : "text-[#047857] dark:text-[#6EE7B7]"
           )}
         >
-          {presence.offline ? fill(t("energy.story.offlineBadge"), { time: presence.time }) : t("energy.overview.now.live")}
+          {presence.offline
+            ? presence.time
+              ? fill(t("energy.story.offlineBadge"), { time: presence.time })
+              : t("energy.story.offlineOnly")
+            : t("energy.overview.now.live")}
         </span>
       </p>
       <p data-now-house className={cn("mt-1 text-[64px] font-bold leading-none tabular-nums tracking-tight text-[#111827] portrait:text-[56px] dark:text-[#f3f4f6]", quiet)}>
@@ -387,8 +397,16 @@ export function NowHero({
         )}
       </p>
       <p className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold text-[#374151] dark:text-[#d1d5db]">
-        <House className="h-4 w-4 text-[#4700B5] dark:text-[#c4b5fd]" aria-hidden />
-        {t("energy.overview.now.house")}
+        <House
+          className={cn(
+            "h-4 w-4",
+            presence.offline ? "text-[#4b5563] dark:text-[#b4b4bd]" : "text-[#4700B5] dark:text-[#c4b5fd]"
+          )}
+          aria-hidden
+        />
+        {presence.offline && presence.time
+          ? fill(t("energy.overview.now.houseAt"), { time: presence.time })
+          : t("energy.overview.now.house")}
       </p>
       <div className="flex min-h-0 w-full flex-1 items-center justify-center" style={{ containerType: "size" }}>
         <div
@@ -500,7 +518,11 @@ function HeroPill({
       const exporting = (gridKw ?? 0) < 0;
       const shown = offline ? offlinePowerText(gridKw, true, (kw) => power(kw) ?? "") : null;
       value = offline ? (shown ?? "–") : (power(gridKw) ?? "");
-      sub = exporting ? t("energy.overview.now.gridBack") : t("energy.overview.now.gridFrom");
+      sub = offline
+        ? t("energy.overview.now.offlineGrid")
+        : exporting
+          ? t("energy.overview.now.gridBack")
+          : t("energy.overview.now.gridFrom");
       tone = exporting ? "text-[#047857] dark:text-[#6EE7B7]" : "text-[#4700B5] dark:text-[#c4b5fd]";
       iconName = "grid";
       icon = <UtilityPole className="h-[19px] w-[19px]" aria-hidden />;
@@ -511,12 +533,12 @@ function HeroPill({
       const charging = batteryOn && batteryPower < 0;
       const supplying = batteryOn && batteryPower > 0;
       value = soc == null ? "–" : formatSoc(soc, locale);
-      sub = charging
-        ? fill(t("energy.overview.now.batteryCharge"), { kw: power(batteryPower) ?? "" })
-        : supplying
-          ? fill(t("energy.overview.now.batterySupply"), { kw: power(batteryPower) ?? "" })
-          : offline
-            ? "–"
+      sub = offline
+        ? t("energy.overview.now.offlineBattery")
+        : charging
+          ? fill(t("energy.overview.now.batteryCharge"), { kw: power(batteryPower) ?? "" })
+          : supplying
+            ? fill(t("energy.overview.now.batterySupply"), { kw: power(batteryPower) ?? "" })
             : t("energy.overview.now.batteryIdle");
       tone = "text-[#075985] dark:text-[#7DD3FC]";
       off = !charging && !supplying;

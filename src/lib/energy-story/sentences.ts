@@ -143,7 +143,7 @@ export function gridSentence(facts: StoryFacts): GridSentence | null {
   const yesterday = facts.yesterdayImportKwh;
   const around = facts.hour < 23.9;
   return {
-    lead: { nl: "Vandaag tot nu", en: "Today so far" },
+    lead: { nl: "Van het net, vandaag tot nu", en: "From the grid, today so far" },
     big: { nl: formatKwh(facts.importKwh, "nl"), en: formatKwh(facts.importKwh, "en") },
     tail: yesterday == null ? null : compareTail(facts.importKwh, yesterday, DAY_SAME_KWH, around, "day"),
   };
@@ -222,7 +222,7 @@ export function deviceSentence(facts: StoryFacts): (DeviceSentence & { topKwh: n
   const top = ranked[0];
   const load = facts.loadKwh;
   if (!top || load == null || load <= 0 || top.kwh < 0.5 || top.kwh / load < 0.1) return null;
-  const share = Math.round((top.kwh / load) * 100);
+  const share = Math.min(100, Math.round((top.kwh / load) * 100));
   const period = when(facts);
   return {
     lead: { nl: `${top.name.nl} verbruikte`, en: `${top.name.en} used` },
@@ -240,7 +240,7 @@ export function weekSentence(facts: StoryFacts): WeekSentence | null {
   if (facts.ltsDays == null || facts.ltsDays < 8 || facts.weekKwh == null) return null;
   const yesterday = facts.lastWeekKwh;
   return {
-    lead: { nl: "Deze week tot nu", en: "This week so far" },
+    lead: { nl: "Van het net, deze week tot nu", en: "From the grid, this week so far" },
     big: { nl: formatKwh(facts.weekKwh, "nl"), en: formatKwh(facts.weekKwh, "en") },
     tail: yesterday == null ? null : compareTail(facts.weekKwh, yesterday, WEEK_SAME_KWH, true, "week"),
   };

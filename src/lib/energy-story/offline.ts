@@ -40,9 +40,9 @@ export function formatClockInstant(date: Date, timeZone: string): string {
   return `${hh}:${minute}`;
 }
 
-export function isHeroOffline(input: Pick<HeroOfflineInput, "haReachable" | "prefsReady" | "linked" | "hasMeasurement">): boolean {
-  if (!input.haReachable) return true;
-  return input.prefsReady && input.linked && !input.hasMeasurement;
+/** Only a missing Home Assistant connection is offline. A linked sensor with no reading stays live. */
+export function isHeroOffline(input: Pick<HeroOfflineInput, "haReachable">): boolean {
+  return !input.haReachable;
 }
 
 export function heroOfflineState(input: HeroOfflineInput): HeroOfflineState {
@@ -60,7 +60,7 @@ export function heroOfflineState(input: HeroOfflineInput): HeroOfflineState {
       hideIdle: false,
     };
   }
-  const time = input.lastAt ? formatClockInstant(input.lastAt, input.timeZone) : "–";
+  const time = input.lastAt ? formatClockInstant(input.lastAt, input.timeZone) : "";
   return {
     offline: true,
     badge: "offline",
