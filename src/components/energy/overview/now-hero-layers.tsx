@@ -39,6 +39,7 @@ export function NowHeroLayers({
   panelGlow,
   batteryGlow,
   dark,
+  offline,
   labelSig,
 }: {
   variant: HouseVariantId;
@@ -47,6 +48,7 @@ export function NowHeroLayers({
   panelGlow: boolean;
   batteryGlow: boolean;
   dark: boolean;
+  offline: boolean;
   labelSig: string;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -111,7 +113,7 @@ export function NowHeroLayers({
           d: `M${sx.toFixed(1)} ${sy.toFixed(1)} L${sx.toFixed(1)} ${elbow.toFixed(1)} L${ax.toFixed(1)} ${ay.toFixed(1)}`,
           ax,
           ay,
-          off: button.getAttribute("data-now-off") === "1",
+          off: offline || button.getAttribute("data-now-off") === "1",
         });
       }
       setLeaders(next);
@@ -122,7 +124,7 @@ export function NowHeroLayers({
     observer.observe(frame);
     stage.querySelectorAll("[data-now-label]").forEach((node) => observer.observe(node));
     return () => observer.disconnect();
-  }, [variant, labelSig, box.w, box.h]);
+  }, [variant, labelSig, box.w, box.h, offline]);
   const pointsAttr = (points: readonly Point[]) => points.map((point) => `${point.x},${point.y}`).join(" ");
 
   useEffect(() => {
@@ -256,7 +258,7 @@ export function NowHeroLayers({
             />
           </g>
         ))}
-        {line.length >= 2 ? (
+        {!offline && line.length >= 2 ? (
           <polyline
             points={pointsAttr(line)}
             fill="none"
@@ -267,7 +269,7 @@ export function NowHeroLayers({
             opacity={0.95}
           />
         ) : null}
-        {dotPoints.map((point, index) => (
+        {!offline && dotPoints.map((point, index) => (
           <circle
             key={`${variant}-${index}`}
             ref={(node) => {
@@ -282,7 +284,7 @@ export function NowHeroLayers({
             style={{ transform: `translate(${point.x}px, ${point.y}px)` }}
           />
         ))}
-        {ledPoint ? (
+        {!offline && ledPoint ? (
           <circle
             cx={ledPoint.x}
             cy={ledPoint.y}

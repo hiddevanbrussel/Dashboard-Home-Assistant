@@ -155,6 +155,48 @@ export function powerIsFlowing(kilowatts: readonly (number | null)[]): boolean {
   return kilowatts.some((value) => value != null && Math.abs(value) >= FLOW_EPSILON_KW);
 }
 
+/** Same band as the solar glow, so noise around one threshold does not start and stop the mint line. */
+export const FLOW_GATE_ON_KW = 0.06;
+export const FLOW_GATE_OFF_KW = 0.04;
+/** The sun icon comes on at 10 W during the day. The glow gate stays at 60/40 W. */
+export const SOLAR_ICON_ON_KW = 0.01;
+
+export function peakAbsKw(kilowatts: readonly (number | null)[]): number | null {
+  let peak: number | null = null;
+  for (const value of kilowatts) {
+    if (value == null || !Number.isFinite(value)) continue;
+    const abs = Math.abs(value);
+    if (peak == null || abs > peak) peak = abs;
+  }
+  return peak;
+}
+
+/** Hysteresis only. There is no extra wait before the animation follows a real change. */
+export function stepPowerFlowing(previous: boolean, kilowatts: readonly (number | null)[]): boolean {
+  return holdMagnitude(previous, peakAbsKw(kilowatts), FLOW_GATE_ON_KW, FLOW_GATE_OFF_KW);
+}
+
+export function solarPillOn(input: { night: boolean; solarKw: number | null; gate: boolean }): boolean {
+  if (!input.night && input.solarKw != null && Number.isFinite(input.solarKw) && input.solarKw >= SOLAR_ICON_ON_KW) {
+    return true;
+  }
+  if (input.night) return input.gate;
+  return false;
+}
+
+export function consumptionIsLinked(consumptionEntityId: string): boolean {
+  return consumptionEntityId.trim().length > 0;
+}
+
+export function overviewIsLinked(input: {
+  solar: boolean;
+  battery: boolean;
+  grid: boolean;
+  consumption: boolean;
+}): boolean {
+  return input.solar || input.battery || input.grid || input.consumption;
+}
+
 /** Three duration steps so a 5s poll inside the same band does not restart the animation. */
 export function flowStep(kilowatts: number): 1 | 2 | 3 {
   const value = Math.abs(kilowatts);

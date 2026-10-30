@@ -12,7 +12,9 @@ import {
 } from "lucide-react";
 import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
 import { NowHeroLayers } from "@/components/energy/overview/now-hero-layers";
+import type { StoryOpenKind } from "@/components/energy/overview/story-carousel";
 import { useTranslation } from "@/hooks/use-translation";
+import { heroOfflineState, offlinePowerText } from "@/lib/energy-story/offline";
 import { type HeroLabelKind, type OverviewOrientation } from "@/lib/energy-house-anchors";
 import {
   batteryPowerNow,
@@ -26,6 +28,7 @@ import {
   batteryIsLinked,
   dayNightPair,
   flowStep,
+  consumptionIsLinked,
   formatLivePower,
   formatSoc,
   gridExportIsLinked,
@@ -33,11 +36,13 @@ import {
   houseAssetPath,
   houseVariant,
   nowSentenceKey,
-  powerIsFlowing,
+  overviewIsLinked,
   shouldAnimate,
   solarIsLinked,
+  solarPillOn,
   splitLivePower,
   stepHeroGates,
+  stepPowerFlowing,
   strongestFlowKw,
   type HeroGates,
   type HouseVariantId,
@@ -47,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useEnergyStore } from "@/stores/energy-store";
 import { useEnergyOverviewStore } from "@/stores/energy-overview-store";
+import { FALLBACK_TIME_ZONE } from "@/lib/local-date";
 import { useThemeStore } from "@/stores/theme-store";
 
 function fill(template: string, vars: Record<string, string>): string {
@@ -135,17 +141,26 @@ function useMotionFlags(frame: RefObject<HTMLElement | null>) {
   return { ...flags, tab };
 }
 
-export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
+export function NowHero({
+  orientation,
+  onOpenCard,
+}: {
+  orientation: OverviewOrientation;
+  onOpenCard?: (kind: StoryOpenKind) => void;
+}) {
   const { t, language } = useTranslation();
   const locale = language === "nl" ? "nl" : "en";
   const theme = useThemeStore((state) => state.resolved);
   const entities = useEnergyStore((state) => state.entities);
   const gridPowerInverted = useEnergyStore((state) => state.gridPowerInverted);
   const states = useEntityStateStore((state) => state.states);
+  const haError = useEntityStateStore((state) => state.error);
+  const updatedAt = useEntityStateStore((state) => state.updatedAt);
   const [model, setModel] = useState<EnergyModel | null>(null);
   const [prefsStatus, setPrefsStatus] = useState<"loading" | "ready" | "error">("loading");
   const frameRef = useRef<HTMLDivElement | null>(null);
   const gatesRef = useRef<HeroGates>({ solar: false, grid: false, battery: false });
+  const flowRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -228,6 +243,13 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   const importLinked = gridImportIsLinked(model, manual.gridPowerEntityId, manual.gridImportPowerEntityId);
   const exportLinked = gridExportIsLinked(model, manual.gridPowerEntityId, manual.gridExportPowerEntityId);
   const gridLinked = importLinked || exportLinked;
+  const consumptionLinked = consumptionIsLinked(entities.consumptionEntityId);
+  const linked = overviewIsLinked({
+    solar: solarLinked,
+    battery: batteryLinked,
+    grid: gridLinked,
+    consumption: consumptionLinked,
+  });
   const linksKnown = prefsStatus !== "loading" || solarLinked || batteryLinked;
   const sun = states["sun.sun"]?.state;
   const night = sun === "below_horizon";
@@ -269,39 +291,56 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   if (gridLinked && gridKw != null && gates.grid) kinds.push("grid");
   if (batteryLinked && batteryPower != null) kinds.push("battery");
 
-  const sentenceKey = nowSentenceKey({
-    linked: solarLinked || batteryLinked || gridLinked,
-    night,
-    solarOn: gates.solar,
-    batteryOn: gates.battery,
-    gridOn: gates.grid,
-    solarKw,
-    batteryKw: batteryPower,
-    gridKw,
+  const hasMeasurement = [solarKw, gridKw, batteryPower, houseKw].some((value) => value != null && Number.isFinite(value));
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIME_ZONE;
+  const presence = heroOfflineState({
+    haReachable: haError == null,
+    prefsReady: prefsStatus !== "loading",
+    linked,
+    hasMeasurement,
     houseKw,
+    lastAt: updatedAt == null ? null : new Date(updatedAt),
+    timeZone,
   });
+  const sentenceKey = presence.offline
+    ? null
+    : nowSentenceKey({
+        linked,
+        night,
+        solarOn: gates.solar,
+        batteryOn: gates.battery,
+        gridOn: gates.grid,
+        solarKw,
+        batteryKw: batteryPower,
+        gridKw,
+        houseKw,
+      });
   const sentenceKw =
     sentenceKey === "energy.overview.now.sentenceBatteryOut"
       ? knownPower(batteryPower)
       : sentenceKey === "energy.overview.now.sentenceImport"
         ? knownPower(gridKw != null && gridKw > 0 ? gridKw : null)
         : null;
-  const sentence = sentenceKey
-    ? fill(t(sentenceKey), {
-        kw: sentenceKw ?? "",
-        solar: knownPower(solarKw) ?? "",
-        house: knownPower(houseKw) ?? "",
-      })
-    : "";
+  const sentence = presence.offline
+    ? fill(t("energy.story.offlineSentence"), { time: presence.time })
+    : sentenceKey
+      ? fill(t(sentenceKey), {
+          kw: sentenceKw ?? "",
+          solar: knownPower(solarKw) ?? "",
+          house: knownPower(houseKw) ?? "",
+        })
+      : "";
 
-  const flowing = powerIsFlowing([solarKw, gridKw, batteryPower, houseKw]);
+  const flowing = presence.offline ? false : stepPowerFlowing(flowRef.current, [solarKw, gridKw, batteryPower, houseKw]);
+  flowRef.current = presence.offline ? flowRef.current : flowing;
   const motion = useMotionFlags(frameRef);
-  const animate = shouldAnimate({ ...motion, flowing });
+  const animate = presence.offline ? false : shouldAnimate({ ...motion, flowing });
   const step = flowStep(strongestFlowKw([solarKw, gridKw, batteryPower, houseKw]));
   const holdGlow = motion.reducedMotion || motion.glassOff;
-  const panelGlow = Boolean(variant?.startsWith("dag-")) && gates.solar && !holdGlow;
-  const batteryGlow = batteryLinked && gates.battery && !holdGlow;
-  const houseParts = houseKw == null ? null : splitLivePower(Math.max(houseKw, 0), locale);
+  const panelGlow = !presence.offline && Boolean(variant?.startsWith("dag-")) && gates.solar && !holdGlow;
+  const batteryGlow = !presence.offline && batteryLinked && gates.battery && !holdGlow;
+  const houseParts = presence.houseDash || houseKw == null ? null : splitLivePower(Math.max(houseKw, 0), locale);
+  const quiet = presence.offline ? "text-[#4b5563] dark:text-[#b4b4bd]" : "";
   const labelSig = [
     `solar:${solarKw ?? ""}:${gates.solar ? 0 : 1}`,
     `grid:${gridKw ?? ""}:${gates.grid ? 0 : 1}`,
@@ -310,17 +349,38 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
   const dark = theme === "dark";
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col" data-now-hero={variant ?? "pending"} data-orientation={orientation}>
+    <div
+      className="flex h-full min-h-0 w-full flex-col"
+      data-now-hero={variant ?? "pending"}
+      data-now-offline={presence.offline ? "1" : "0"}
+      data-orientation={orientation}
+    >
       <p className="flex h-6 items-center gap-2 text-[15px] font-semibold text-[#374151] dark:text-[#d1d5db]">
         <span>{t("energy.overview.now.kicker")}</span>
-        <span className="inline-block h-2 w-2 rounded-full bg-[#047857] shadow-[0_0_0_4px_rgba(4,120,87,0.25)]" aria-hidden />
-        <span className="text-sm font-semibold text-[#047857] dark:text-[#6EE7B7]">{t("energy.overview.now.live")}</span>
+        <span
+          data-now-live={presence.badge}
+          className={cn(
+            "inline-block h-2 w-2 rounded-full",
+            presence.offline
+              ? "bg-[#6B7280] shadow-[0_0_0_4px_rgba(107,114,128,0.18)] dark:bg-[#9CA3AF] dark:shadow-[0_0_0_4px_rgba(156,163,175,0.18)]"
+              : "bg-[#047857] shadow-[0_0_0_4px_rgba(4,120,87,0.25)]"
+          )}
+          aria-hidden
+        />
+        <span
+          className={cn(
+            "text-sm font-semibold",
+            presence.offline ? "text-[#374151] dark:text-[#d1d5db]" : "text-[#047857] dark:text-[#6EE7B7]"
+          )}
+        >
+          {presence.offline ? fill(t("energy.story.offlineBadge"), { time: presence.time }) : t("energy.overview.now.live")}
+        </span>
       </p>
-      <p data-now-house className="mt-1 text-[64px] font-bold leading-none tabular-nums tracking-tight text-[#111827] portrait:text-[56px] dark:text-[#f3f4f6]">
+      <p data-now-house className={cn("mt-1 text-[64px] font-bold leading-none tabular-nums tracking-tight text-[#111827] portrait:text-[56px] dark:text-[#f3f4f6]", quiet)}>
         {houseParts ? (
           <>
             {houseParts.value}
-            <small className="ml-1 text-[26px] font-semibold tracking-normal text-[#374151] dark:text-[#d1d5db]">{houseParts.unit}</small>
+            <small className={cn("ml-1 text-[26px] font-semibold tracking-normal text-[#374151] dark:text-[#d1d5db]", quiet)}>{houseParts.unit}</small>
           </>
         ) : (
           "–"
@@ -358,6 +418,7 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
               panelGlow={panelGlow}
               batteryGlow={batteryGlow}
               dark={dark}
+              offline={presence.offline}
               labelSig={labelSig}
             />
           ) : null}
@@ -372,6 +433,8 @@ export function NowHero({ orientation }: { orientation: OverviewOrientation }) {
               night={night}
               solarOn={gates.solar}
               batteryOn={gates.battery}
+              offline={presence.offline}
+              onOpen={() => onOpenCard?.(kind)}
             />
           ))}
         </div>
@@ -392,6 +455,8 @@ function HeroPill({
   night,
   solarOn,
   batteryOn,
+  offline,
+  onOpen,
 }: {
   kind: HeroLabelKind;
   solarKw: number | null;
@@ -401,6 +466,8 @@ function HeroPill({
   night: boolean;
   solarOn: boolean;
   batteryOn: boolean;
+  offline: boolean;
+  onOpen: () => void;
 }) {
   const { t, language } = useTranslation();
   const locale = language === "nl" ? "nl" : "en";
@@ -409,22 +476,33 @@ function HeroPill({
   let sub = "";
   let tone = "text-[#111827] dark:text-[#f3f4f6]";
   let off = false;
+  let iconName: "sun" | "moon" | "grid" | "battery" = "sun";
   let icon = <Sun className="h-[19px] w-[19px]" aria-hidden />;
   switch (kind) {
     case "solar": {
-      const producing = solarOn;
-      value = producing ? (power(solarKw) ?? "") : night ? t("energy.overview.now.solarDown") : (power(solarKw ?? 0) ?? "");
+      const producing = solarPillOn({ night, solarKw, gate: solarOn });
+      const shown = offline ? offlinePowerText(solarKw, true, (kw) => power(kw) ?? "") : null;
+      value = offline
+        ? (shown ?? "–")
+        : producing
+          ? (power(solarKw) ?? "")
+          : night
+            ? t("energy.overview.now.solarDown")
+            : (power(solarKw ?? 0) ?? "");
       sub = t("energy.overview.now.solarRoof");
       tone = "text-[#92400E] dark:text-[#FCD34D]";
       off = !producing;
-      icon = producing ? <Sun className="h-[19px] w-[19px]" aria-hidden /> : <Moon className="h-[19px] w-[19px]" aria-hidden />;
+      iconName = producing || !night ? "sun" : "moon";
+      icon = iconName === "sun" ? <Sun className="h-[19px] w-[19px]" aria-hidden /> : <Moon className="h-[19px] w-[19px]" aria-hidden />;
       break;
     }
     case "grid": {
       const exporting = (gridKw ?? 0) < 0;
-      value = power(gridKw) ?? "";
+      const shown = offline ? offlinePowerText(gridKw, true, (kw) => power(kw) ?? "") : null;
+      value = offline ? (shown ?? "–") : (power(gridKw) ?? "");
       sub = exporting ? t("energy.overview.now.gridBack") : t("energy.overview.now.gridFrom");
       tone = exporting ? "text-[#047857] dark:text-[#6EE7B7]" : "text-[#4700B5] dark:text-[#c4b5fd]";
+      iconName = "grid";
       icon = <UtilityPole className="h-[19px] w-[19px]" aria-hidden />;
       break;
     }
@@ -437,9 +515,12 @@ function HeroPill({
         ? fill(t("energy.overview.now.batteryCharge"), { kw: power(batteryPower) ?? "" })
         : supplying
           ? fill(t("energy.overview.now.batterySupply"), { kw: power(batteryPower) ?? "" })
-          : t("energy.overview.now.batteryIdle");
+          : offline
+            ? "–"
+            : t("energy.overview.now.batteryIdle");
       tone = "text-[#075985] dark:text-[#7DD3FC]";
       off = !charging && !supplying;
+      iconName = "battery";
       icon = charging ? (
         <BatteryCharging className="h-[19px] w-[19px]" aria-hidden />
       ) : (
@@ -458,9 +539,7 @@ function HeroPill({
       type="button"
       data-now-label={kind}
       data-now-off={off ? "1" : "0"}
-      onClick={() => {
-        // The story card opens in a later step.
-      }}
+      onClick={onOpen}
       className={cn(
         "absolute z-[5] inline-flex min-h-[50px] min-w-11 items-center gap-[9px] rounded-[16px] border border-[rgba(17,24,39,0.08)] bg-[var(--glass-strong)] py-[5px] pl-[6px] pr-[10px] text-left text-[#111827] shadow-[0_8px_22px_-12px_rgba(15,10,40,0.40)] outline-none dark:border-white/10 dark:bg-[rgba(27,26,33,0.88)] dark:text-[#f3f4f6]",
         place,
@@ -472,11 +551,12 @@ function HeroPill({
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,currentColor_14%,transparent)]",
           tone
         )}
+        data-now-icon={iconName}
       >
         {icon}
       </span>
       <span className="flex flex-col leading-none">
-        <b className={cn("text-[20px] font-bold tabular-nums tracking-tight", off && "text-[#374151] dark:text-[#d1d5db]")}>{value}</b>
+        <b className={cn("text-[20px] font-bold tabular-nums tracking-tight", (off || offline) && "text-[#4b5563] dark:text-[#b4b4bd]")}>{value}</b>
         <small className="mt-0.5 text-[13px] font-medium text-[#374151] dark:text-[#d1d5db]">{sub}</small>
       </span>
       <ChevronRight className="h-[15px] w-[15px] shrink-0 text-[#4b5563] dark:text-[#b4b4bd]" aria-hidden />

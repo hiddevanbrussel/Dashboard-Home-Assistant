@@ -83,7 +83,8 @@ describe("now hero source", () => {
     expect(hero).toContain("decoding=\"async\"");
     expect(hero).not.toContain('loading="lazy"');
     expect(hero).toContain("requestIdleCallback");
-    expect(overview).toContain("NEXT_PUBLIC_ENERGY_STORY_DEV");
+    expect(overview).toContain("StoryCarousel");
+    expect(overview).not.toContain("NEXT_PUBLIC_ENERGY_STORY_DEV");
     expect(overview).not.toContain("Verhaal volgt");
   });
 
