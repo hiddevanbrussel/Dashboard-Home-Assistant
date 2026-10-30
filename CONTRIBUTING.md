@@ -48,7 +48,7 @@ The Family pages (`/family`) talk to SQLite and can be used for a full-stack che
 1. Start from the latest `main`.
 2. Keep the branch focused on one change.
 3. Open a pull request against `main`. Say what changed and how you checked it.
-4. Run `npm test` and `npm run lint` locally. This repo’s GitHub Actions workflow builds Docker images on pushes to `main` and on version tags; it does not run the test suite on pull requests.
+4. Run `npm test` and `npm run lint` locally. Pull requests run the test suite in GitHub Actions. Docker images are published only from version tags. See [RELEASING.md](RELEASING.md).
 
 ## Code style and tests
 
@@ -59,6 +59,12 @@ Unit tests sit beside the code as `src/**/*.test.ts` (Vitest, Node environment, 
 ## Translations
 
 English and Dutch UI strings live in one file, `src/lib/i18n.ts`, in the `en` and `nl` objects. When you add or change a user-facing string, update the same key in both languages.
+
+## Releases
+
+Stable and beta image tags are described in [RELEASING.md](RELEASING.md).
+
+A beta tag (`vX.Y.Z-beta.N`) is Docker and Unraid only. It publishes `:X.Y.Z-beta.N` and `:beta`. It does not move `:latest` or the minor tag `:X.Y`, and it does not publish the Home Assistant add-on. Create the GitHub Release with `gh release create vX.Y.Z-beta.N --prerelease --latest=false`.
 
 ## License
 
