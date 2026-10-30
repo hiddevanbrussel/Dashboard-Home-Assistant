@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   batteryIsLinked,
   dayNightPair,
@@ -9,10 +9,14 @@ import {
   gridImportIsLinked,
   houseVariant,
   nowSentenceKey,
+  consumptionIsLinked,
+  overviewIsLinked,
   powerIsFlowing,
   shouldAnimate,
   solarIsLinked,
+  solarPillOn,
   stepHeroGates,
+  stepPowerFlowing,
   type HeroGates,
 } from "./energy-now";
 import { emptyManualModel, parseEnergyPrefs } from "./energy-prefs";
@@ -97,6 +101,76 @@ describe("shouldAnimate", () => {
     expect(flowDurationMs(2)).toBeGreaterThan(flowDurationMs(3));
     expect(powerIsFlowing([0, null, 0.01])).toBe(false);
     expect(powerIsFlowing([null, -0.2])).toBe(true);
+  });
+
+  it("does not flap the mint line when power wobbles around the threshold", () => {
+    vi.useFakeTimers();
+    let flowing = false;
+    const noise = [0.049, 0.051, 0.045, 0.055, 0.05];
+    for (const kw of noise) {
+      vi.advanceTimersByTime(10_000);
+      flowing = stepPowerFlowing(flowing, [kw, 0.02, null]);
+    }
+    expect(flowing).toBe(false);
+    flowing = stepPowerFlowing(false, [0.07]);
+    expect(flowing).toBe(true);
+    for (const kw of [0.05, 0.041, 0.055]) {
+      vi.advanceTimersByTime(10_000);
+      flowing = stepPowerFlowing(flowing, [kw]);
+    }
+    expect(flowing).toBe(true);
+    expect(stepPowerFlowing(true, [0.03])).toBe(false);
+    vi.useRealTimers();
+  });
+});
+
+describe("solar pill icon", () => {
+  it("shows the sun from 10 W during the day and keeps the glow gate separate", () => {
+    expect(solarPillOn({ night: false, solarKw: 0.01, gate: false })).toBe(true);
+    expect(solarPillOn({ night: false, solarKw: 0.009, gate: false })).toBe(false);
+    expect(solarPillOn({ night: false, solarKw: 0.05, gate: false })).toBe(true);
+    expect(solarPillOn({ night: true, solarKw: 0.05, gate: false })).toBe(false);
+    expect(solarPillOn({ night: true, solarKw: 0, gate: true })).toBe(true);
+  });
+});
+
+describe("consumption link", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("counts a consumption sensor as linked", () => {
+    expect(consumptionIsLinked("")).toBe(false);
+    expect(consumptionIsLinked(" sensor.house ")).toBe(true);
+    expect(overviewIsLinked({ solar: false, battery: false, grid: false, consumption: true })).toBe(true);
+    expect(overviewIsLinked({ solar: false, battery: false, grid: false, consumption: false })).toBe(false);
+    expect(
+      nowSentenceKey({
+        linked: true,
+        night: false,
+        solarOn: false,
+        batteryOn: false,
+        gridOn: false,
+        solarKw: null,
+        batteryKw: null,
+        gridKw: null,
+        houseKw: 0.7,
+      })
+    ).toBeNull();
+    expect(
+      nowSentenceKey({
+        linked: true,
+        night: false,
+        solarOn: false,
+        batteryOn: false,
+        gridOn: false,
+        solarKw: null,
+        batteryKw: null,
+        gridKw: null,
+        houseKw: 0.8,
+        consumptionOnly: true,
+      })
+    ).toBe("energy.overview.now.sentenceHouse");
   });
 });
 

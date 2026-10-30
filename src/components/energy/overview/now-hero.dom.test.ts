@@ -246,6 +246,98 @@ describe("Nu hero live values", () => {
     });
     expect(document.body.innerHTML).not.toContain("huis-zonder-");
   });
+
+  it("shows the sun icon from 50 W during the day while the glow gate is still off", async () => {
+    useEntityStateStore.getState().setStates([sun, solarState("50")]);
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape" }));
+    });
+    await until(() => {
+      expect(document.querySelector("[data-now-label='solar']")?.getAttribute("data-now-off")).toBe("0");
+    });
+    expect(document.querySelector("[data-now-icon]")?.getAttribute("data-now-icon")).toBe("sun");
+    expect(document.querySelector("[data-now-label='solar'] b")?.textContent).toBe("50 W");
+  });
+
+  it("goes offline without a zero, a mint line or the word rust", async () => {
+    useEnergyStore.getState().setEntity("solarPowerEntityId", "sensor.solar_power");
+    useEntityStateStore.getState().setStates([sun, solarState("700")]);
+    useEntityStateStore.setState({ error: "No connection", updatedAt: Date.parse("2026-10-23T16:42:00.000Z") });
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape" }));
+    });
+    await until(() => {
+      expect(document.querySelector("[data-now-offline]")?.getAttribute("data-now-offline")).toBe("1");
+    });
+    const badge = document.querySelector("[data-now-live]")?.parentElement?.textContent ?? "";
+    expect(badge).toMatch(/offline · laatst \d{2}:\d{2}/);
+    const sentence = document.querySelector("[data-now-sentence]")?.textContent ?? "";
+    expect(sentence).toContain("Home Assistant is even niet bereikbaar");
+    expect(sentence).toMatch(/\d{2}:\d{2}/);
+    expect(document.querySelector("[data-now-house]")?.textContent).not.toContain("0 W");
+    expect(document.body.textContent).not.toContain("rust");
+    expect(document.querySelector("[data-now-layers] polyline")).toBeNull();
+    expect(document.querySelector("[stroke='#10B981']")).toBeNull();
+    expect(document.querySelector("[data-battery-glow]")).toBeNull();
+  });
+
+  it("keeps the short offline pill lines from the mockup", async () => {
+    useEnergyStore.getState().setEntity("solarPowerEntityId", "sensor.solar_power");
+    useEnergyStore.getState().setEntity("gridPowerEntityId", "sensor.grid_power");
+    useEnergyStore.getState().setEntity("batteryPowerEntityId", "sensor.battery_power");
+    useEnergyStore.getState().setEntity("batterySocEntityId", "sensor.battery_soc");
+    useEntityStateStore.getState().setStates([
+      sun,
+      solarState("700"),
+      { entity_id: "sensor.grid_power", state: "-300", attributes: { unit_of_measurement: "W", device_class: "power" } },
+      { entity_id: "sensor.battery_power", state: "500", attributes: { unit_of_measurement: "W", device_class: "power" } },
+      { entity_id: "sensor.battery_soc", state: "40", attributes: { unit_of_measurement: "%" } },
+    ]);
+    useEntityStateStore.setState({ error: "No connection", updatedAt: Date.parse("2026-10-23T16:42:00.000Z") });
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape" }));
+    });
+    await until(() => {
+      expect(document.querySelector("[data-now-offline]")?.getAttribute("data-now-offline")).toBe("1");
+      expect(document.querySelector("[data-now-label='grid'] small")?.textContent).toBe("net");
+    });
+    expect(document.querySelector("[data-now-label='battery'] small")?.textContent).toBe("batterij");
+    expect(document.querySelector("[data-now-label='solar'] small")?.textContent).toBe("zon op het dak");
+    for (const kind of ["solar", "grid", "battery"]) {
+      const pill = document.querySelector(`[data-now-label='${kind}']`);
+      expect(pill?.querySelectorAll("svg").length).toBeGreaterThanOrEqual(2);
+      const sub = pill?.querySelector("small")?.textContent ?? "";
+      expect(sub).not.toContain("terug");
+      expect(sub).not.toContain("van het net");
+      expect(sub).not.toContain("laadt");
+      expect(sub).not.toContain("levert");
+      expect(sub).not.toContain("rust");
+    }
+  });
+
+  it("treats a consumption-only sensor as linked and does not ask to connect sensors", async () => {
+    useEnergyStore.getState().setEntity("solarPowerEntityId", "");
+    useEnergyStore.getState().setEntity("consumptionEntityId", "sensor.house_power");
+    useEntityStateStore.getState().setStates([
+      sun,
+      { entity_id: "sensor.house_power", state: "700", attributes: { unit_of_measurement: "W", device_class: "power" } },
+    ]);
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape" }));
+    });
+    await until(() => {
+      expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-hero")).not.toBe("pending");
+    });
+    expect(document.querySelector("[data-now-house]")?.textContent).toContain("700");
+    const sentence = document.querySelector("[data-now-sentence]")?.textContent ?? "";
+    expect(sentence).toContain("Je huis verbruikt nu");
+    expect(sentence).toContain("700");
+    expect(sentence).not.toContain("Koppel");
+    expect(document.querySelector("[data-now-offline]")?.getAttribute("data-now-offline")).toBe("0");
+    expect(document.querySelector("[data-now-label='solar']")).toBeNull();
+    expect(document.querySelector("[data-now-label='grid']")).toBeNull();
+    expect(document.querySelector("[data-now-label='battery']")).toBeNull();
+  });
 });
 
 describe("energy tabs", () => {

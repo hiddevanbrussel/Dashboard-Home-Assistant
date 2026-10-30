@@ -311,6 +311,11 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    if (params.get("apparaten") === "1" && selectedPage === "energy") setTopDevicesOpen(true);
+  }, [selectedPage]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
     if (params.get("ha_oauth") === "ok") {
       const haBase = params.get("ha_base");
       if (haBase) setBaseUrl(haBase);

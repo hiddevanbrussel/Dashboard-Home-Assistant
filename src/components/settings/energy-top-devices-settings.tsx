@@ -1051,10 +1051,7 @@ export function EnergyTopDevicesEntry({
       </p>
       <div
         data-entry-card
-        className={cn(
-          "overflow-hidden rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white dark:border-white/10 dark:bg-[#1b1a21]",
-          choiceStatus === "error" && "min-h-[148px]"
-        )}
+        className="relative overflow-hidden rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white dark:border-white/10 dark:bg-[#1b1a21]"
       >
         <button
           type="button"
@@ -1062,6 +1059,7 @@ export function EnergyTopDevicesEntry({
           onClick={onOpen}
           className={cn(
             "flex min-h-16 w-full items-center gap-3 px-3 py-2 text-left outline-none",
+            choiceStatus === "error" && "pr-[172px]",
             FOCUS_RING_BRAND
           )}
         >
@@ -1072,7 +1070,11 @@ export function EnergyTopDevicesEntry({
             <span className="block text-base font-medium text-[#111827] dark:text-[#f3f4f6]">
               {t("settings.energy.topDevices.title")}
             </span>
-            <span data-entry-subline className="mt-0.5 block h-5 overflow-hidden">
+            <span
+              data-entry-subline
+              role={choiceStatus === "error" ? "status" : undefined}
+              className="mt-0.5 block h-5 overflow-hidden"
+            >
               {choiceStatus === "ready" ? (
                 <span className="flex h-5 min-w-0 items-center text-sm leading-5 text-[#4b5563] dark:text-[#c4c4cc]">
                   <span data-entry-names className="min-w-0 truncate">
@@ -1087,32 +1089,31 @@ export function EnergyTopDevicesEntry({
                   {t("editPanel.loading")}
                 </span>
               ) : (
-                <span className="block h-5" />
+                <span className="block h-5 truncate text-sm leading-5 text-[#111827] dark:text-[#f3f4f6]">
+                  {t("settings.energy.topDevices.loadChoiceError")}
+                </span>
               )}
             </span>
           </span>
-          <ChevronRight className="h-5 w-5 shrink-0 text-[#4b5563] dark:text-[#a1a1aa]" aria-hidden />
+          {choiceStatus === "error" ? null : (
+            <ChevronRight className="h-5 w-5 shrink-0 text-[#4b5563] dark:text-[#a1a1aa]" aria-hidden />
+          )}
         </button>
         {choiceStatus === "error" ? (
-          <div className="flex flex-wrap items-center gap-3 px-3 pb-3">
-            <p role="status" className="min-w-0 flex-1 text-sm leading-snug text-[#111827] dark:text-[#f3f4f6]">
-              {t("settings.energy.topDevices.loadChoiceError")}
-            </p>
-            <button
-              type="button"
-              ref={retryButton}
-              onClick={() => {
-                retryFocus.current = true;
-                onRetry?.();
-              }}
-              className={cn(
-                "inline-flex h-11 items-center rounded-full border border-[#767b85] px-4 text-[15px] font-semibold outline-none dark:border-[#6b6b75] dark:text-[#f3f4f6]",
-                FOCUS_RING_BRAND
-              )}
-            >
-              {t("settings.energy.topDevices.retry")}
-            </button>
-          </div>
+          <button
+            type="button"
+            ref={retryButton}
+            onClick={() => {
+              retryFocus.current = true;
+              onRetry?.();
+            }}
+            className={cn(
+              "absolute right-3 top-1/2 inline-flex h-11 -translate-y-1/2 items-center rounded-full border border-[#767b85] px-4 text-[15px] font-semibold outline-none dark:border-[#6b6b75] dark:text-[#f3f4f6]",
+              FOCUS_RING_BRAND
+            )}
+          >
+            {t("settings.energy.topDevices.retry")}
+          </button>
         ) : null}
       </div>
     </div>

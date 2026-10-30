@@ -27,6 +27,7 @@ import {
   type EnergyView,
   type PeriodRange,
 } from "./energy-time";
+import { type ManualStatisticRole } from "./energy-manual-stats";
 import { getHaTimeZone, type HaTimeZoneConfig } from "./ha/ha-config";
 import { haWsCommands, type HaWsCommandInput, type HaWsCommandResult } from "./ha/ws-commands";
 
@@ -108,8 +109,10 @@ function pushId(target: string[], id: string | null): void {
   if (id) target.push(id);
 }
 
-export function rolesFromModel(model: EnergyModel, manualIds: readonly string[]): EnergyRoles {
-  const roles: EnergyRoles = {
+const MANUAL_STATISTIC_ROLE = /^(import|export|solar|battery_in|battery_out):(sensor\.[a-z0-9_]+)$/;
+
+function emptyRoles(): EnergyRoles {
+  return {
     gridImport: [],
     gridExport: [],
     solar: [],
@@ -119,8 +122,56 @@ export function rolesFromModel(model: EnergyModel, manualIds: readonly string[])
     gas: [],
     water: [],
   };
+}
+
+/**
+ * Manual installs name each statistic with a role from the linked energy sensors.
+ * `solar:sensor.yield,export:sensor.export`. An id without a known role is left out.
+ */
+export function rolesFromManualQuery(raw: string | null | undefined, known: ReadonlySet<string>): EnergyRoles {
+  const roles = emptyRoles();
+  if (!raw) return roles;
+  const seen = new Set<string>();
+  for (const part of raw.split(",")) {
+    const match = MANUAL_STATISTIC_ROLE.exec(part.trim());
+    if (!match) continue;
+    const role = match[1] as ManualStatisticRole;
+    const id = match[2];
+    if (!id || !known.has(id) || seen.has(id)) continue;
+    const assigned = seen.size;
+    if (assigned >= QUERY_STATISTIC_LIMIT) break;
+    seen.add(id);
+    switch (role) {
+      case "import":
+        roles.gridImport.push(id);
+        break;
+      case "export":
+        roles.gridExport.push(id);
+        break;
+      case "solar":
+        roles.solar.push(id);
+        break;
+      case "battery_in":
+        roles.batteryIn.push(id);
+        break;
+      case "battery_out":
+        roles.batteryOut.push(id);
+        break;
+      default: {
+        const neverRole: never = role;
+        void neverRole;
+      }
+    }
+  }
+  return roles;
+}
+
+export { manualStatisticQuery } from "./energy-manual-stats";
+
+export function rolesFromModel(model: EnergyModel, manualIds: readonly string[]): EnergyRoles {
+  const roles = emptyRoles();
   if (model.source === "manual") {
-    roles.gridImport.push(...manualIds);
+    void manualIds;
     return roles;
   }
   for (const source of model.energySources) {
@@ -757,9 +808,8 @@ function assembleStats(
   now: Date
 ): PlannedStats {
   const known = new Set(catalog ?? []);
-  const manualIds = model.source === "manual" ? selectQueryStatisticIds(input.manual, known) : [];
   const deviceIds = input.devices != null ? selectQueryStatisticIds(input.devices, known) : [];
-  const roles = rolesFromModel(model, manualIds);
+  const roles = model.source === "manual" ? rolesFromManualQuery(input.manual, known) : rolesFromModel(model, []);
   const range = periodRange(input.view, input.offset, tz, now);
   const plans = planStatisticRequests({ range, now, tz, roles, deviceIds });
   const tables = new Map<StatPlan["purpose"], StatTable>();
