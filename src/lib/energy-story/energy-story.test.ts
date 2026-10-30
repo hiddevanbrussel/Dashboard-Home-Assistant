@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildStoryCards } from "./cards";
-import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexAfterIdle, storyIndexFromScroll, storyScrollLeft, STORY_IDLE_MS } from "./carousel";
+import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexAfterIdle, storyIndexFromScroll, storyPagerVisible, storyScrollLeft, STORY_IDLE_MS } from "./carousel";
 import { formatKwh, largestRemainder, selfPctShown } from "./format";
 import { getTranslations } from "@/lib/i18n";
 import { heroOfflineState } from "./offline";
@@ -25,6 +25,7 @@ function baseFacts(patch: Partial<StoryFacts>): StoryFacts {
     hasBattery: true,
     hasGrid: true,
     linked: true,
+    manualWithoutImport: false,
     solarKwh: 6.925,
     loadKwh: 9.28,
     importKwh: 3.48,
@@ -317,6 +318,19 @@ describe("story cards", () => {
     expect(bare.map((card) => card.kind)).toEqual(["grid", "peak", "devices"]);
     const link = buildStoryCards(baseFacts({ linked: false }));
     expect(link).toEqual([{ kind: "link" }]);
+    const manual = buildStoryCards(
+      baseFacts({
+        devices: [],
+        hasDeviceConsumption: false,
+        importKwh: null,
+        weekKwh: null,
+        yesterdayImportKwh: null,
+        manualWithoutImport: true,
+      })
+    );
+    expect(manual.some((card) => card.kind === "hint")).toBe(false);
+    expect(manual.some((card) => card.kind === "link")).toBe(true);
+    expect(manual.find((card) => card.kind === "link")).toEqual({ kind: "link" });
   });
 
   it("does not build a price card", () => {
@@ -341,6 +355,18 @@ describe("carousel index", () => {
     expect(storyScrollLeft(688, 16)).toBe(672);
     expect(storyScrollLeft(16, 16)).toBe(0);
     expect(storyIndexFromScroll([{ offsetLeft: 16 }, { offsetLeft: 312 }, { offsetLeft: 608 }], 296, 16)).toBe(1);
+    const row = [
+      { offsetLeft: 16 },
+      { offsetLeft: 312 },
+      { offsetLeft: 608 },
+      { offsetLeft: 904 },
+      { offsetLeft: 1200 },
+    ];
+    expect(storyIndexFromScroll(row, 800, 16, 900)).toBe(3);
+    expect(storyIndexFromScroll(row, 900, 16, 900)).toBe(4);
+    expect(storyPagerVisible(1)).toBe(false);
+    expect(storyPagerVisible(0)).toBe(false);
+    expect(storyPagerVisible(2)).toBe(true);
 
     vi.useFakeTimers();
     const reset = vi.fn();

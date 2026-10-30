@@ -518,11 +518,7 @@ function HeroPill({
       const exporting = (gridKw ?? 0) < 0;
       const shown = offline ? offlinePowerText(gridKw, true, (kw) => power(kw) ?? "") : null;
       value = offline ? (shown ?? "–") : (power(gridKw) ?? "");
-      sub = offline
-        ? t("energy.overview.now.offlineGrid")
-        : exporting
-          ? t("energy.overview.now.gridBack")
-          : t("energy.overview.now.gridFrom");
+      sub = exporting ? t("energy.overview.now.gridBack") : t("energy.overview.now.gridFrom");
       tone = exporting ? "text-[#047857] dark:text-[#6EE7B7]" : "text-[#4700B5] dark:text-[#c4b5fd]";
       iconName = "grid";
       icon = <UtilityPole className="h-[19px] w-[19px]" aria-hidden />;
@@ -533,13 +529,11 @@ function HeroPill({
       const charging = batteryOn && batteryPower < 0;
       const supplying = batteryOn && batteryPower > 0;
       value = soc == null ? "–" : formatSoc(soc, locale);
-      sub = offline
-        ? t("energy.overview.now.offlineBattery")
-        : charging
-          ? fill(t("energy.overview.now.batteryCharge"), { kw: power(batteryPower) ?? "" })
-          : supplying
-            ? fill(t("energy.overview.now.batterySupply"), { kw: power(batteryPower) ?? "" })
-            : t("energy.overview.now.batteryIdle");
+      sub = charging
+        ? fill(t("energy.overview.now.batteryCharge"), { kw: power(batteryPower) ?? "" })
+        : supplying
+          ? fill(t("energy.overview.now.batterySupply"), { kw: power(batteryPower) ?? "" })
+          : t("energy.overview.now.batteryIdle");
       tone = "text-[#075985] dark:text-[#7DD3FC]";
       off = !charging && !supplying;
       iconName = "battery";

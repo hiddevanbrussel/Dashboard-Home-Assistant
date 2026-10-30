@@ -36,12 +36,18 @@ export function storyScrollLeft(offsetLeft: number, paddingLeft: number): number
   return offsetLeft - paddingLeft;
 }
 
-/** Which card sits at the left edge. Uses the same padding correction as scrolling. */
+/**
+ * Which card sits at the left edge. Uses the same padding correction as scrolling.
+ * At max scroll the last card cannot align to the start, so that position is the last card.
+ */
 export function storyIndexFromScroll(
   cards: readonly { offsetLeft: number }[],
   scrollLeft: number,
-  paddingLeft: number
+  paddingLeft: number,
+  maxScroll = Number.POSITIVE_INFINITY
 ): number {
+  if (cards.length === 0) return 0;
+  if (Number.isFinite(maxScroll) && scrollLeft >= maxScroll - 1) return cards.length - 1;
   let best = 0;
   let bestDistance = Number.POSITIVE_INFINITY;
   cards.forEach((card, index) => {
@@ -52,6 +58,11 @@ export function storyIndexFromScroll(
     }
   });
   return best;
+}
+
+/** Dots and arrows only when there is more than one card. */
+export function storyPagerVisible(count: number): boolean {
+  return count > 1;
 }
 
 /**

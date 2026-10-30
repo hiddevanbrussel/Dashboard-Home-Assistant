@@ -7,7 +7,7 @@ import { StoryCardView, storyDotLabel } from "@/components/energy/overview/story
 import { useTranslation } from "@/hooks/use-translation";
 import { useEnergyOverviewData } from "@/hooks/use-energy-overview-data";
 import { buildStoryCards } from "@/lib/energy-story/cards";
-import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexFromScroll, storyScrollLeft } from "@/lib/energy-story/carousel";
+import { createStoryIdle, stepStoryIndex, storyArrowEnabled, storyIndexFromScroll, storyPagerVisible, storyScrollLeft } from "@/lib/energy-story/carousel";
 import type { StoryCardModel } from "@/lib/energy-story/types";
 import { cn } from "@/lib/utils";
 
@@ -90,10 +90,12 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
     const nodes = [...root.querySelectorAll("[data-story-card]")];
     const measured = nodes.flatMap((node) => (node instanceof HTMLElement ? [{ offsetLeft: node.offsetLeft }] : []));
     const pad = Number.parseFloat(getComputedStyle(root).paddingLeft) || 0;
-    setIndex(storyIndexFromScroll(measured, root.scrollLeft, pad));
+    const maxScroll = Math.max(0, root.scrollWidth - root.clientWidth);
+    setIndex(storyIndexFromScroll(measured, root.scrollLeft, pad, maxScroll));
   }
 
   const arrows = storyArrowEnabled(index, cards.length);
+  const pager = storyPagerVisible(cards.length);
   const behavior: ScrollBehavior = reduced ? "auto" : "smooth";
 
   return (
@@ -107,7 +109,8 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
           <BookOpen className="h-[18px] w-[18px] shrink-0 text-[#4700B5] dark:text-[#8357be]" aria-hidden />
           <span className="shrink-0 text-[15px] font-semibold text-[#111827] dark:text-[#f3f4f6]">{t("energy.story.region")}</span>
           <div className="flex min-w-0 flex-1 items-center justify-center">
-            {cards.map((card, dot) => {
+            {pager
+              ? cards.map((card, dot) => {
               const active = dot === index;
               return (
                 <button
@@ -127,8 +130,10 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
                   />
                 </button>
               );
-            })}
+            })
+              : null}
           </div>
+          {pager && arrows.prev ? (
           <button
             type="button"
             data-story-prev
@@ -142,6 +147,8 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
           >
             <ChevronLeft className="h-6 w-6" aria-hidden />
           </button>
+          ) : null}
+          {pager && arrows.next ? (
           <button
             type="button"
             data-story-next
@@ -155,6 +162,7 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
           >
             <ChevronRight className="h-6 w-6" aria-hidden />
           </button>
+          ) : null}
         </div>
       ) : null}
       <div

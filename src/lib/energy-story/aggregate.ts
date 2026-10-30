@@ -209,6 +209,7 @@ export function assembleStoryFacts(input: {
   night: boolean;
   links: StoryLinkFlags;
   tariffFixed: boolean;
+  manualSource: boolean;
   hasDeviceConsumption: boolean;
   devicesKnown: boolean;
   deviceIds: readonly string[];
@@ -272,6 +273,7 @@ export function assembleStoryFacts(input: {
     hasBattery: input.links.battery,
     hasGrid,
     linked: input.links.linked,
+    manualWithoutImport: input.manualSource && importKwh == null,
     solarKwh,
     loadKwh,
     importKwh,

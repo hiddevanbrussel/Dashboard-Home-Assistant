@@ -47,8 +47,8 @@ function Glow({ tone }: { tone: "sun" | "grid" | "gas" | "batt" | "dear" | "bran
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute -left-8 -top-16 h-64 w-64"
-      style={{ background: `radial-gradient(closest-side, ${color}, transparent)`, opacity: 0.45 }}
+      className="pointer-events-none absolute -left-8 -top-16 h-64 w-64 opacity-[0.27] dark:opacity-70"
+      style={{ background: `radial-gradient(closest-side, ${color}, transparent)` }}
     />
   );
 }
@@ -67,7 +67,7 @@ function Frame({
   return (
     <article
       data-story-card={kind}
-      className="glass-card relative flex h-full w-[280px] shrink-0 snap-start flex-col overflow-hidden p-6 portrait:w-[332px]"
+      className="glass-card relative flex min-h-0 w-[280px] shrink-0 snap-start flex-col self-stretch overflow-hidden p-6 portrait:w-[332px]"
     >
       <Glow tone={tone} />
       <div className="relative z-[1] flex min-h-0 flex-1 flex-col">
@@ -83,7 +83,12 @@ function Lead({ children }: { children: ReactNode }) {
 }
 
 function Big({ children, size }: { children: ReactNode; size: "hero" | "kwh" | "time" }) {
-  const type = size === "kwh" ? "text-[64px]" : size === "time" ? "whitespace-nowrap text-[32px]" : "text-[96px]";
+  const type =
+    size === "kwh"
+      ? "text-[64px]"
+      : size === "time"
+        ? "whitespace-nowrap text-[38px] portrait:text-[42px]"
+        : "text-[96px]";
   return <p className={cn(type, "font-bold leading-none tracking-tight text-[#111827] tabular-nums dark:text-[#f3f4f6]")}>{children}</p>;
 }
 
@@ -121,7 +126,7 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
             </>
           }
         >
-          <svg aria-hidden viewBox="0 0 120 120" className="pointer-events-none absolute right-2 top-8 h-24 w-24 opacity-40">
+          <svg aria-hidden viewBox="0 0 120 120" className="pointer-events-none absolute -right-16 -top-16 h-24 w-24 opacity-40">
             {Array.from({ length: 12 }, (_, index) => {
               const angle = (index / 12) * Math.PI * 2;
               return (
@@ -145,7 +150,7 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
             <span className="ml-0.5 text-[40px] font-semibold">%</span>
           </Big>
           <Tail>{say(card.tail, lang)}</Tail>
-          <div className="pt-6">
+          <div className="mt-auto pt-6">
             <div className="flex h-5 gap-[3px]">
               {card.parts.map((part) => (
                 <span key={part.key} className={cn("rounded-sm", PART_CLASS[part.key])} style={{ width: `${part.pct}%` }} />
@@ -169,7 +174,7 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
           <Lead>{say(card.lead, lang)}</Lead>
           <Big size="kwh">{say(card.big, lang).replace(" kWh", "")}<span className="ml-1 text-[28px] font-semibold">kWh</span></Big>
           {card.tail ? <Tail>{say(card.tail, lang)}</Tail> : null}
-          <div className="space-y-2 pt-6">
+          <div className="mt-auto space-y-2 pt-6">
             {card.yesterdayKwh != null ? (
               <CompareRow label={t("energy.story.yesterday")} width={(card.yesterdayKwh / max) * 100} tone="muted" />
             ) : null}
@@ -187,7 +192,7 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
             <b className="font-semibold text-[#111827] dark:text-[#f3f4f6]">{say(card.sub, lang)}</b>
             {` · ${say(card.tail, lang)}`}
           </Tail>
-          <div className="pt-6">
+          <div className="mt-auto pt-6">
             <div className="flex h-20 items-end gap-[3px]">
               {card.bars.map((bar) => (
                 <span
@@ -227,7 +232,7 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
             <span className="ml-0.5 text-[40px] font-semibold">%</span>
           </Big>
           <Tail>{say(card.tail, lang)}</Tail>
-          <div className="pt-6">
+          <div className="mt-auto pt-6">
             <div className="h-11 overflow-hidden rounded-lg border-2 border-[#0369A1] dark:border-[#38BDF8]">
               <span className="block h-full bg-[#0369A1] dark:bg-[#38BDF8]" style={{ width: `${Math.max(4, card.soc)}%` }} />
             </div>
@@ -244,7 +249,7 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
           <Lead>{say(card.lead, lang)}</Lead>
           <Big size="kwh">{say(card.big, lang).replace(" kWh", "")}<span className="ml-1 text-[28px] font-semibold">kWh</span></Big>
           <Tail>{say(card.tail, lang)}</Tail>
-          <div className="space-y-1 pt-6">
+          <div className="mt-auto space-y-1 pt-6">
             {card.rows.map((row) => (
               <div key={say(row.name, lang)} className="flex h-[34px] items-center gap-2 text-sm text-[#111827] dark:text-[#f3f4f6]">
                 <Plug className="h-[18px] w-[18px] shrink-0" aria-hidden />
@@ -279,11 +284,11 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
           <Lead>{say(card.lead, lang)}</Lead>
           <Big size="kwh">{say(card.big, lang).replace(" kWh", "")}<span className="ml-1 text-[28px] font-semibold">kWh</span></Big>
           {card.tail ? <Tail>{say(card.tail, lang)}</Tail> : null}
-          <div className="mt-6 flex h-[104px] items-end gap-2.5">
+          <div className="mt-auto flex h-[104px] items-end gap-2.5 pt-6">
             {card.days.map((day) => (
               <div key={`${day.weekday}-${day.current ? "now" : "past"}`} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
                 <span
-                  className={cn("w-full rounded-md bg-[#4700B5] dark:bg-[#8357be]", day.current && "opacity-50")}
+                  className={cn("w-full rounded-md bg-[#4700B5] dark:bg-[#8357be]", day.current && "opacity-50 dark:opacity-70")}
                   style={{ height: Math.max(6, Math.round((day.kwh / max) * 80)) }}
                 />
                 <span className="text-[12px] text-[#4b5563] dark:text-[#b4b4bd]">{weekdayLabel(day.weekday, lang)}</span>
