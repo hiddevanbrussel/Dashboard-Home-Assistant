@@ -254,7 +254,7 @@ To create a long-lived token: in Home Assistant, open your **Profile** → **Lon
 
 ## Updating
 
-Images are published when a version tag `v*.*.*` is pushed. Each tag builds amd64 and arm64/aarch64 and moves `latest`. A push to `main` doesn't publish images.
+Images are published when a version tag `v*.*.*` is pushed. A stable tag (`vX.Y.Z`) builds amd64 and arm64/aarch64 for the app and the add-on, and moves `latest` and the minor tag (`X.Y`). A beta tag (`vX.Y.Z-beta.N`) publishes only the app tags `:X.Y.Z-beta.N` and `:beta`. It does not move `:latest` or `:X.Y`, and it does not build the add-on. A push to `main` doesn't publish images. See [RELEASING.md](RELEASING.md).
 
 - **Docker Compose:**
   ```bash
@@ -322,7 +322,7 @@ Worth knowing:
 - Voice requests go through your Home Assistant Assist pipeline.
 
 **Does it run on a Raspberry Pi or Home Assistant Green?**
-Yes. From v0.5.0 every release is published for amd64 and arm64/aarch64, for both the add-on and the Docker image.
+Yes. From v0.5.0 every stable release is published for amd64 and arm64/aarch64, for both the add-on and the Docker image. A beta tag publishes the Docker image only (`:X.Y.Z-beta.N` and `:beta`), not the add-on. See [RELEASING.md](RELEASING.md).
 
 **Do I need Home Assistant?**
 Yes, for everything except the Family/Tasks page.
