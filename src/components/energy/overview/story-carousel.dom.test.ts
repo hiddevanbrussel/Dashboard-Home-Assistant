@@ -136,7 +136,18 @@ describe("story carousel", () => {
     expect(section?.getAttribute("aria-label")).toBe("Verhaal");
     expect(section?.textContent).not.toContain("Verhaal");
     expect(storyIndex()).toBe("0");
-    expect(document.querySelector("[data-story-scroller]")?.className).toContain("overflow-x-auto");
+    const scroller = document.querySelector("[data-story-scroller]");
+    expect(scroller?.className).toContain("overflow-x-auto");
+    expect(scroller?.className).toContain("snap-x");
+    expect(scroller?.className).toContain("snap-mandatory");
+    expect(scroller?.className).toContain("gap-3");
+    const card = document.querySelector("[data-story-card]");
+    expect(card?.className).toContain("w-[252px]");
+    expect(card?.className).toContain("h-[280px]");
+    expect(card?.className).toContain("portrait:w-[248px]");
+    expect(card?.className).toContain("portrait:h-[272px]");
+    expect(card?.className).not.toContain("shadow-glass");
+    expect((card as HTMLElement).style.boxShadow).toBe("none");
   });
 
   it("still has no pager chrome when one card is left", async () => {

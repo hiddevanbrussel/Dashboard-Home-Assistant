@@ -19,26 +19,25 @@ function useOverviewOrientation(): OverviewOrientation {
   return orientation;
 }
 
-/** Landscape: Nu on the left, 560px, full height. Portrait: Nu on top, 680×560, page scrolls. */
+/** Landscape: house box 560×424, cards centred on that row. Portrait: sentence under the house, cards 24px below. */
 export function EnergyOverview() {
   const { t } = useTranslation();
   const orientation = useOverviewOrientation();
   const story = useRef<StoryCarouselHandle>(null);
 
   return (
-    <div className="flex h-[calc(100dvh-5rem)] min-h-0 flex-row pt-14 portrait:h-auto portrait:min-h-[calc(100dvh-5rem)] portrait:flex-col">
-      <section
-        id={energyPanelId("overview")}
-        role="tabpanel"
-        aria-labelledby={energyTabId("overview")}
-        aria-label={t("energy.overview.now.region")}
-        className="h-full w-[560px] shrink-0 portrait:h-[560px] portrait:w-[680px]"
-      >
-        <NowHero
-          orientation={orientation}
-          onOpenCard={(kind: StoryOpenKind) => story.current?.open(kind)}
-        />
-      </section>
+    <div
+      id={energyPanelId("overview")}
+      role="tabpanel"
+      aria-labelledby={energyTabId("overview")}
+      aria-label={t("energy.overview.now.region")}
+      data-energy-overview
+      className="grid h-[calc(100dvh-5rem)] min-h-0 w-full grid-cols-[560px_minmax(0,1fr)] grid-rows-[auto_424px_auto] content-start pt-14 portrait:mx-auto portrait:h-auto portrait:min-h-[calc(100dvh-5rem)] portrait:w-[560px] portrait:grid-cols-[560px] portrait:grid-rows-[auto_424px_auto_auto]"
+    >
+      <NowHero
+        orientation={orientation}
+        onOpenCard={(kind: StoryOpenKind) => story.current?.open(kind)}
+      />
       <StoryCarousel ref={story} />
     </div>
   );

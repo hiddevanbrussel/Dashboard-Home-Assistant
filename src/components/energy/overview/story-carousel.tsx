@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StoryCardView } from "@/components/energy/overview/story-cards";
 import { useTranslation } from "@/hooks/use-translation";
 import { useEnergyOverviewData } from "@/hooks/use-energy-overview-data";
@@ -30,6 +30,42 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
   const [reduced, setReduced] = useState(false);
   const indexRef = useRef(0);
   indexRef.current = index;
+
+  useLayoutEffect(() => {
+    const node = section.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const query = window.matchMedia("(orientation: portrait)");
+    const apply = () => {
+      if (!query.matches) {
+        node.style.width = "";
+        node.style.marginRight = "";
+        return;
+      }
+      const house = node.closest("[data-energy-overview]")?.querySelector("[data-now-housebox]");
+      if (!(house instanceof HTMLElement)) {
+        node.style.width = "";
+        node.style.marginRight = "";
+        return;
+      }
+      const left = house.getBoundingClientRect().left;
+      const width = Math.max(house.offsetWidth, window.innerWidth - left);
+      node.style.width = `${width}px`;
+      const overflow = width - house.offsetWidth;
+      node.style.marginRight = overflow > 0 ? `${-overflow}px` : "";
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    const overview = node.closest("[data-energy-overview]");
+    if (overview) observer.observe(overview);
+    observer.observe(document.documentElement);
+    query.addEventListener("change", apply);
+    window.addEventListener("resize", apply);
+    return () => {
+      observer.disconnect();
+      query.removeEventListener("change", apply);
+      window.removeEventListener("resize", apply);
+    };
+  }, [cards.length]);
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -122,16 +158,17 @@ export const StoryCarousel = forwardRef<StoryCarouselHandle>(function StoryCarou
     <section
       ref={section}
       aria-label={t("energy.story.region")}
-      className="flex min-h-0 min-w-0 flex-1 flex-col portrait:w-[680px]"
+      data-story-carousel
+      className="col-start-2 row-start-2 flex min-w-0 flex-col self-center portrait:col-start-1 portrait:row-start-4 portrait:mt-6 portrait:justify-self-start portrait:self-start"
     >
       <div
         ref={scroller}
         data-story-scroller
         data-story-index={index}
         onScroll={onScroll}
-        className="relative flex min-h-0 flex-1 snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-px-4 px-4 pb-2 [scrollbar-width:none] portrait:scroll-px-0 portrait:px-0"
+        className="relative flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto pe-6 [scrollbar-width:none]"
       >
-        {status === "loading" && cards.length === 0 ? <div data-story-loading className="min-h-[148px] flex-1" /> : null}
+        {status === "loading" && cards.length === 0 ? <div data-story-loading className="h-[280px] flex-1 portrait:h-[272px]" /> : null}
         {cards.map((card) => (
           <StoryCardView key={`${cardKind(card)}-${card.kind === "hint" ? card.mode : card.kind}`} card={card} />
         ))}

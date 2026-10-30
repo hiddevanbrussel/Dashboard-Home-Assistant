@@ -230,6 +230,47 @@ export const FLOW_DOT_EDGE_OPACITY = 0.19;
 /** Stroke opacity of the mint line. Was 0.95. */
 export const FLOW_LINE_OPACITY = 0.52;
 
+/** First and last slice of the roof-to-inverter pass where a dot fades. */
+const FLOW_DOT_FADE = 0.1;
+
+export type FlowPoint = { x: number; y: number };
+
+export type FlowDotFrame = FlowPoint & { offset: number; opacity: number };
+
+/** Edge opacity at the roof and the inverter, full opacity along the middle. */
+export function flowDotOpacity(offset: number): number {
+  const t = Math.min(1, Math.max(0, offset));
+  if (t <= FLOW_DOT_FADE) {
+    return FLOW_DOT_EDGE_OPACITY + ((FLOW_DOT_OPACITY - FLOW_DOT_EDGE_OPACITY) * t) / FLOW_DOT_FADE;
+  }
+  if (t >= 1 - FLOW_DOT_FADE) {
+    return (
+      FLOW_DOT_OPACITY +
+      ((FLOW_DOT_EDGE_OPACITY - FLOW_DOT_OPACITY) * (t - (1 - FLOW_DOT_FADE))) / FLOW_DOT_FADE
+    );
+  }
+  return FLOW_DOT_OPACITY;
+}
+
+/**
+ * One forward pass along the sampled mint line.
+ * The frames are the path points in order. Nothing is rotated and the inverter is not joined back to the roof.
+ */
+export function flowDotFrames(points: readonly FlowPoint[]): FlowDotFrame[] {
+  if (points.length === 0) return [];
+  const last = points.length - 1;
+  return points.map((point, index) => {
+    const offset = last === 0 ? 0 : index / last;
+    return { x: point.x, y: point.y, offset, opacity: flowDotOpacity(offset) };
+  });
+}
+
+/** Later dots are already part-way along the same forward pass. */
+export function flowDotDelayMs(index: number, dotCount: number, durationMs: number): number {
+  if (dotCount <= 0 || index <= 0) return 0;
+  return -((index / dotCount) * durationMs);
+}
+
 export function strongestFlowKw(kilowatts: readonly (number | null)[]): number {
   let best = 0;
   for (const value of kilowatts) {

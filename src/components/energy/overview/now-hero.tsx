@@ -358,11 +358,12 @@ export function NowHero({
 
   return (
     <div
-      className="flex h-full min-h-0 w-full flex-col"
+      className="contents"
       data-now-hero={variant ?? "pending"}
       data-now-offline={presence.offline ? "1" : "0"}
       data-orientation={orientation}
     >
+      <div data-now-head className="col-start-1 row-start-1 mb-2">
       <p className="flex h-6 items-center gap-2 text-[15px] font-semibold text-[#374151] dark:text-[#d1d5db]">
         <span>{t("energy.overview.now.kicker")}</span>
         <span
@@ -410,13 +411,9 @@ export function NowHero({
           ? fill(t("energy.overview.now.houseAt"), { time: presence.time })
           : t("energy.overview.now.house")}
       </p>
-      <div className="flex min-h-0 w-full flex-1 items-center justify-center" style={{ containerType: "size" }}>
-        <div
-          ref={frameRef}
-          data-now-frame
-          className="relative mx-auto aspect-[960/727] max-h-full max-w-full"
-          style={{ width: "min(100cqw, calc(100cqh * 960 / 727))" }}
-        >
+      </div>
+      <div data-now-housebox className="relative col-start-1 row-start-2 h-[424px] w-[560px]">
+        <div ref={frameRef} data-now-frame className="relative h-full w-full">
           {variant ? (
             <picture>
               <source type="image/avif" srcSet={houseAssetPath(variant, "avif")} />
@@ -459,7 +456,10 @@ export function NowHero({
           ))}
         </div>
       </div>
-      <p data-now-sentence className="flex min-h-10 items-end justify-center text-center text-base leading-snug text-[#374151] dark:text-[#d1d5db]">
+      <p
+        data-now-sentence
+        className="col-start-1 row-start-3 mt-3 text-center text-base leading-snug text-[#374151] dark:text-[#d1d5db]"
+      >
         {sentence}
       </p>
     </div>

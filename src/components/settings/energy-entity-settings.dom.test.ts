@@ -121,6 +121,90 @@ describe("energy live power and tariff settings", () => {
     }
   });
 
+  it("stores solar yield and solar power when those sensors are chosen", () => {
+    act(() => {
+      root?.render(
+        createElement(EnergyEntitySettings, {
+          entities: [
+            {
+              entity_id: "sensor.solar_yield",
+              attributes: { friendly_name: "Zon vandaag", device_class: "energy", unit_of_measurement: "kWh" },
+            },
+            {
+              entity_id: "sensor.solar_yield_wh",
+              attributes: { friendly_name: "Zon uur", device_class: "energy", unit_of_measurement: "Wh" },
+            },
+            {
+              entity_id: "sensor.solar_power",
+              attributes: { friendly_name: "Zon vermogen", device_class: "power", unit_of_measurement: "W" },
+            },
+            {
+              entity_id: "sensor.solar_kw",
+              attributes: { friendly_name: "Zon kilowatt", device_class: "power", unit_of_measurement: "kW" },
+            },
+            {
+              entity_id: "sensor.panel_temp",
+              attributes: { friendly_name: "Paneel", device_class: "temperature", unit_of_measurement: "°C" },
+            },
+          ],
+        })
+      );
+    });
+    expect(document.body.textContent).toContain("Zonne-opbrengst vandaag (kWh)");
+    expect(document.body.textContent).toContain("Zonnevermogen (W)");
+    expect(document.body.textContent).toContain("Kies de sensoren hier.");
+    expect(document.body.textContent).not.toContain("zet bewerken aan");
+    const yieldSelect = document.getElementById("energy-solar-yield-today");
+    const powerSelect = document.getElementById("energy-solar-power");
+    if (!(yieldSelect instanceof HTMLSelectElement) || !(powerSelect instanceof HTMLSelectElement)) {
+      throw new Error("solar pickers missing");
+    }
+    const yieldIds = [...yieldSelect.options].map((option) => option.value);
+    const powerIds = [...powerSelect.options].map((option) => option.value);
+    expect(yieldIds).toEqual(expect.arrayContaining(["", "sensor.solar_yield", "sensor.solar_yield_wh"]));
+    expect(yieldIds).not.toContain("sensor.solar_power");
+    expect(yieldIds).not.toContain("sensor.solar_kw");
+    expect(yieldIds).not.toContain("sensor.panel_temp");
+    expect(powerIds).toEqual(expect.arrayContaining(["", "sensor.solar_power", "sensor.solar_kw"]));
+    expect(powerIds).not.toContain("sensor.solar_yield");
+    expect(powerIds).not.toContain("sensor.solar_yield_wh");
+    expect(powerIds).not.toContain("sensor.panel_temp");
+    act(() => {
+      yieldSelect.value = "sensor.solar_yield";
+      yieldSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(useEnergyStore.getState().entities.solarYieldTodayEntityId).toBe("sensor.solar_yield");
+    act(() => {
+      powerSelect.value = "sensor.solar_power";
+      powerSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(useEnergyStore.getState().entities.solarPowerEntityId).toBe("sensor.solar_power");
+    act(() => {
+      useLanguageStore.setState({ language: "en", ready: true });
+    });
+    act(() => {
+      root?.render(
+        createElement(EnergyEntitySettings, {
+          entities: [
+            {
+              entity_id: "sensor.solar_yield",
+              attributes: { friendly_name: "Zon vandaag", device_class: "energy", unit_of_measurement: "kWh" },
+            },
+            {
+              entity_id: "sensor.solar_power",
+              attributes: { friendly_name: "Zon vermogen", device_class: "power", unit_of_measurement: "W" },
+            },
+          ],
+        })
+      );
+    });
+    expect(document.body.textContent).toContain("Solar yield today (kWh)");
+    expect(document.body.textContent).toContain("Solar power (W)");
+    expect(document.body.textContent).toContain("Choose the sensors here.");
+    expect(useEnergyStore.getState().entities.solarYieldTodayEntityId).toBe("sensor.solar_yield");
+    expect(useEnergyStore.getState().entities.solarPowerEntityId).toBe("sensor.solar_power");
+  });
+
   it("shows the later price-sensor note only after dynamic is chosen", () => {
     render();
     const dynamic = [...document.querySelectorAll("button")].find((button) => button.textContent === "Dynamisch");

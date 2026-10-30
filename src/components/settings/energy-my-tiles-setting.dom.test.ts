@@ -40,7 +40,7 @@ describe("My tiles on Energy setting", () => {
     expect(button.getAttribute("aria-checked")).toBe("false");
     expect(button.className).toContain("opacity-40");
     expect(document.body.textContent).toContain("Mijn tegels op Energie");
-    expect(document.body.textContent).toContain("Voorlopig niet beschikbaar.");
+    expect(document.body.textContent).toContain("Nog niet beschikbaar.");
     expect(document.body.textContent).not.toContain("€");
     await act(async () => {
       button.click();
@@ -53,7 +53,7 @@ describe("My tiles on Energy setting", () => {
       root?.render(createElement(EnergyMyTilesSetting));
     });
     expect(document.body.textContent).toContain("My tiles on Energy");
-    expect(document.body.textContent).toContain("Unavailable for now.");
+    expect(document.body.textContent).toContain("Not available yet.");
     expect(document.body.textContent).not.toContain("€");
     const page = readFileSync(path.join(process.cwd(), "src/app/settings/page.tsx"), "utf8");
     expect(page).toContain("<EnergyMyTilesSetting />");
