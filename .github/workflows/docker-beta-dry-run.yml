@@ -1,0 +1,135 @@
+name: Docker tag dry-run
+
+# Checks the app tag rules without building or pushing.
+# Runs on pull requests and workflow_dispatch only. The publish workflow
+# stays limited to version tags, so this job cannot move an image tag.
+#
+# Simulated refs: refs/tags/v0.0.0-beta.1 and refs/tags/v0.0.0.
+# The tag block matches .github/workflows/docker.yml (flavor latest=false,
+# enable= on every tag). Keep the two lists in sync.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: hiddevanbrussel/dashboard-home-assistant
+
+jobs:
+  dry-run-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Classify simulated refs
+        id: classify
+        run: |
+          set -euo pipefail
+          classify() {
+            local ref="$1"
+            local prefix="$2"
+            local version prerelease
+            if [[ "${ref}" == refs/tags/v* ]]; then
+              version="${ref#refs/tags/v}"
+            else
+              echo "::error::simulated ref is not a version tag: ${ref}"
+              exit 1
+            fi
+            # Same rule as the version job in docker.yml.
+            if [[ "${ref}" == refs/tags/* && "${ref}" == *-* ]]; then
+              prerelease=true
+            else
+              prerelease=false
+            fi
+            echo "${prefix}_version=${version}" >> "$GITHUB_OUTPUT"
+            echo "${prefix}_prerelease=${prerelease}" >> "$GITHUB_OUTPUT"
+            echo "${prefix}: ref=${ref} version=${version} prerelease=${prerelease}"
+          }
+          classify "refs/tags/v0.0.0-beta.1" beta
+          classify "refs/tags/v0.0.0" stable
+
+      - name: Metadata for refs/tags/v0.0.0-beta.1
+        id: beta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        env:
+          GITHUB_REF: refs/tags/v0.0.0-beta.1
+          GITHUB_REF_NAME: v0.0.0-beta.1
+          GITHUB_REF_TYPE: tag
+          GITHUB_EVENT_NAME: push
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
+          tags: |
+            type=semver,pattern={{version}},enable=true
+            type=semver,pattern={{major}}.{{minor}},enable=${{ steps.classify.outputs.beta_prerelease == 'false' }}
+            type=raw,value=${{ steps.classify.outputs.beta_version }},enable=true
+            type=raw,value=latest,enable=${{ steps.classify.outputs.beta_prerelease == 'false' }}
+            type=raw,value=beta,enable=${{ steps.classify.outputs.beta_prerelease == 'true' }}
+
+      - name: Metadata for refs/tags/v0.0.0
+        id: stable
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        env:
+          GITHUB_REF: refs/tags/v0.0.0
+          GITHUB_REF_NAME: v0.0.0
+          GITHUB_REF_TYPE: tag
+          GITHUB_EVENT_NAME: push
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
+          tags: |
+            type=semver,pattern={{version}},enable=true
+            type=semver,pattern={{major}}.{{minor}},enable=${{ steps.classify.outputs.stable_prerelease == 'false' }}
+            type=raw,value=${{ steps.classify.outputs.stable_version }},enable=true
+            type=raw,value=latest,enable=${{ steps.classify.outputs.stable_prerelease == 'false' }}
+            type=raw,value=beta,enable=${{ steps.classify.outputs.stable_prerelease == 'true' }}
+
+      - name: Assert tag sets
+        env:
+          BETA_JSON: ${{ steps.beta.outputs.json }}
+          STABLE_JSON: ${{ steps.stable.outputs.json }}
+          BETA_PRERELEASE: ${{ steps.classify.outputs.beta_prerelease }}
+          STABLE_PRERELEASE: ${{ steps.classify.outputs.stable_prerelease }}
+        run: |
+          set -euo pipefail
+          if [[ "${BETA_PRERELEASE}" != "true" || "${STABLE_PRERELEASE}" != "false" ]]; then
+            echo "::error::prerelease classification failed (beta=${BETA_PRERELEASE}, stable=${STABLE_PRERELEASE})"
+            exit 1
+          fi
+
+          names() {
+            jq -r '.tags[]' <<<"$1" | awk -F: '{print $NF}' | sort -u
+          }
+
+          beta="$(names "${BETA_JSON}")"
+          stable="$(names "${STABLE_JSON}")"
+          echo "beta tags:"
+          printf '%s\n' "${beta}"
+          echo "stable tags:"
+          printf '%s\n' "${stable}"
+
+          beta_want="$(printf '%s\n' "0.0.0-beta.1" "beta" | sort -u)"
+          stable_want="$(printf '%s\n' "0.0.0" "0.0" "latest" | sort -u)"
+
+          if [[ "${beta}" != "${beta_want}" ]]; then
+            echo "::error::beta tags must be exactly 0.0.0-beta.1 and beta (no latest, no X.Y)"
+            exit 1
+          fi
+          if [[ "${stable}" != "${stable_want}" ]]; then
+            echo "::error::stable tags must be exactly 0.0.0, 0.0 and latest"
+            exit 1
+          fi
+
+          if grep -Eq '^(latest|[0-9]+\.[0-9]+)$' <<<"${beta}"; then
+            echo "::error::beta published latest or X.Y"
+            exit 1
+          fi
+          if ! grep -qx "latest" <<<"${stable}" || ! grep -Eq '^[0-9]+\.[0-9]+$' <<<"${stable}"; then
+            echo "::error::stable release is missing latest or X.Y"
+            exit 1
+          fi
+          echo "dry-run passed; nothing was pushed"

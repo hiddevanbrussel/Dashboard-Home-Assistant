@@ -1,9 +1,14 @@
 name: Build & Push Docker
 
-# Publishing runs only when a version tag vX.Y.Z is pushed.
-# That tag builds amd64 and arm64/aarch64 for the app and the add-on.
-# An existing version tag is refused (not overwritten). `latest` moves only on these tags.
-# Pushes to main do not publish images.
+# Publishing runs only when a version tag is pushed.
+# Stable tags (vX.Y.Z) build amd64 and arm64/aarch64 for the app and the add-on.
+# They publish the version, the minor tag (X.Y) and latest.
+# An existing version tag is refused (not overwritten). latest may move.
+# Prerelease tags (the tag name contains "-", for example v0.5.12-beta.1)
+# publish only the app tags X.Y.Z-beta.N and beta. They do not move latest or X.Y,
+# and the add-on jobs do not run.
+# Pushes to main do not publish images. Do not push a -beta tag until this
+# workflow is on main.
 
 on:
   push:
@@ -20,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -27,13 +33,26 @@ jobs:
         id: version
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+            version="${GITHUB_REF#refs/tags/v}"
           else
-            echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+            version="$(node -p "require('./package.json').version")"
           fi
+          # A prerelease tag is any v* tag whose name contains "-".
+          if [[ "${GITHUB_REF}" == refs/tags/* && "${GITHUB_REF}" == *-* ]]; then
+            prerelease=true
+          else
+            prerelease=false
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "prerelease=${prerelease}" >> "$GITHUB_OUTPUT"
+          echo "version=${version} prerelease=${prerelease}"
 
   # ---------------------------------------------------------------------------
   # App image (Docker / Unraid)
+  # Tag block (keep identical in the app jobs and docker-beta-dry-run.yml):
+  # flavor latest=false, so latest is only the explicit raw tag below.
+  # Stable: version, X.Y, latest. Prerelease: version and beta.
+  # Every tag sets enable=; do not rely on metadata-action defaults.
   # ---------------------------------------------------------------------------
   build-app-amd64:
     needs: version
@@ -60,14 +79,51 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=${{ needs.version.outputs.version }}
+            type=semver,pattern={{version}},enable=true
+            type=semver,pattern={{major}}.{{minor}},enable=${{ needs.version.outputs.prerelease == 'false' }}
+            type=raw,value=${{ needs.version.outputs.version }},enable=true
+            type=raw,value=latest,enable=${{ needs.version.outputs.prerelease == 'false' }}
+            type=raw,value=beta,enable=${{ needs.version.outputs.prerelease == 'true' }}
 
-      # Push by digest; merge-app creates the multi-arch tag, including latest.
-      - name: Build and push (amd64 by digest)
+      # Push by digest; merge-app creates the multi-arch tag, including latest or beta.
+      - name: Guard prerelease tags
         if: github.ref_type == 'tag'
+        env:
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          if [[ "${PRERELEASE}" != "true" ]]; then
+            echo "Stable release; prerelease tag guard skipped"
+            exit 0
+          fi
+          if [[ -z "${DOCKER_METADATA_OUTPUT_JSON:-}" ]]; then
+            echo "::error::Prerelease tag guard did not receive Docker metadata"
+            exit 1
+          fi
+          mapfile -t refs < <(jq -r '.tags[]' <<<"${DOCKER_METADATA_OUTPUT_JSON}")
+          if [[ "${#refs[@]}" -eq 0 ]]; then
+            echo "::error::Prerelease produced no image tags"
+            exit 1
+          fi
+          fail=0
+          for ref in "${refs[@]}"; do
+            tag="${ref##*:}"
+            if [[ "${tag}" == "latest" || "${tag}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Prerelease must not publish ${tag} (${ref})"
+              fail=1
+            fi
+          done
+          if [[ "${fail}" -ne 0 ]]; then
+            exit 1
+          fi
+          echo "Prerelease tag guard passed"
+          printf '%s\n' "${refs[@]}"
+
+      - name: Build and push (amd64 by digest)
+        if: success() && github.ref_type == 'tag'
         id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -82,14 +138,14 @@ jobs:
           cache-to: type=gha,mode=max,scope=app-amd64
 
       - name: Export digest
-        if: github.ref_type == 'tag'
+        if: success() && github.ref_type == 'tag'
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
-        if: github.ref_type == 'tag'
+        if: success() && github.ref_type == 'tag'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: app-digests-amd64
@@ -123,10 +179,46 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=${{ needs.version.outputs.version }}
+            type=semver,pattern={{version}},enable=true
+            type=semver,pattern={{major}}.{{minor}},enable=${{ needs.version.outputs.prerelease == 'false' }}
+            type=raw,value=${{ needs.version.outputs.version }},enable=true
+            type=raw,value=latest,enable=${{ needs.version.outputs.prerelease == 'false' }}
+            type=raw,value=beta,enable=${{ needs.version.outputs.prerelease == 'true' }}
+
+      - name: Guard prerelease tags
+        env:
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          if [[ "${PRERELEASE}" != "true" ]]; then
+            echo "Stable release; prerelease tag guard skipped"
+            exit 0
+          fi
+          if [[ -z "${DOCKER_METADATA_OUTPUT_JSON:-}" ]]; then
+            echo "::error::Prerelease tag guard did not receive Docker metadata"
+            exit 1
+          fi
+          mapfile -t refs < <(jq -r '.tags[]' <<<"${DOCKER_METADATA_OUTPUT_JSON}")
+          if [[ "${#refs[@]}" -eq 0 ]]; then
+            echo "::error::Prerelease produced no image tags"
+            exit 1
+          fi
+          fail=0
+          for ref in "${refs[@]}"; do
+            tag="${ref##*:}"
+            if [[ "${tag}" == "latest" || "${tag}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Prerelease must not publish ${tag} (${ref})"
+              fail=1
+            fi
+          done
+          if [[ "${fail}" -ne 0 ]]; then
+            exit 1
+          fi
+          echo "Prerelease tag guard passed"
+          printf '%s\n' "${refs[@]}"
 
       - name: Build and push (arm64 by digest)
         id: build
@@ -186,11 +278,46 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=${{ needs.version.outputs.version }}
-            type=raw,value=latest
+            type=semver,pattern={{version}},enable=true
+            type=semver,pattern={{major}}.{{minor}},enable=${{ needs.version.outputs.prerelease == 'false' }}
+            type=raw,value=${{ needs.version.outputs.version }},enable=true
+            type=raw,value=latest,enable=${{ needs.version.outputs.prerelease == 'false' }}
+            type=raw,value=beta,enable=${{ needs.version.outputs.prerelease == 'true' }}
+
+      - name: Guard prerelease tags
+        env:
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          if [[ "${PRERELEASE}" != "true" ]]; then
+            echo "Stable release; prerelease tag guard skipped"
+            exit 0
+          fi
+          if [[ -z "${DOCKER_METADATA_OUTPUT_JSON:-}" ]]; then
+            echo "::error::Prerelease tag guard did not receive Docker metadata"
+            exit 1
+          fi
+          mapfile -t refs < <(jq -r '.tags[]' <<<"${DOCKER_METADATA_OUTPUT_JSON}")
+          if [[ "${#refs[@]}" -eq 0 ]]; then
+            echo "::error::Prerelease produced no image tags"
+            exit 1
+          fi
+          fail=0
+          for ref in "${refs[@]}"; do
+            tag="${ref##*:}"
+            if [[ "${tag}" == "latest" || "${tag}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Prerelease must not publish ${tag} (${ref})"
+              fail=1
+            fi
+          done
+          if [[ "${fail}" -ne 0 ]]; then
+            exit 1
+          fi
+          echo "Prerelease tag guard passed"
+          printf '%s\n' "${refs[@]}"
 
       - name: Refuse to overwrite an existing version tag
         run: |
@@ -208,13 +335,17 @@ jobs:
       - name: Create multi-arch manifest
         working-directory: /tmp/digests
         run: |
+          # shellcheck disable=SC2046
+          # Word splitting is intentional: each tag is a separate -t argument.
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 
   # ---------------------------------------------------------------------------
   # Addon images — HA pulls ghcr.io/.../addon/{arch}:version
+  # Prerelease tags skip these jobs entirely, so they push nothing.
   # ---------------------------------------------------------------------------
   build-addon-amd64:
+    if: needs.version.outputs.prerelease == 'false'
     needs: version
     runs-on: ubuntu-latest
     permissions:
@@ -280,7 +411,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=addon-amd64
 
   build-addon-arm64:
-    if: github.ref_type == 'tag'
+    if: needs.version.outputs.prerelease == 'false'
     needs: version
     runs-on: ubuntu-24.04-arm
     permissions:
