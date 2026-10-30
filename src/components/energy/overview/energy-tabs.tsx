@@ -3,7 +3,7 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
 import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
 import { useTranslation } from "@/hooks/use-translation";
-import type { EnergyTab } from "@/lib/energy-tab";
+import { ENERGY_MY_TILES_ENABLED, type EnergyTab } from "@/lib/energy-tab";
 import { cn } from "@/lib/utils";
 import { useEnergyTab } from "@/stores/energy-overview-store";
 
@@ -18,6 +18,11 @@ export function energyPanelId(tab: EnergyTab): string {
 }
 
 export function EnergyTabs() {
+  if (!ENERGY_MY_TILES_ENABLED) return null;
+  return <EnergyTabList />;
+}
+
+export function EnergyTabList() {
   const { t } = useTranslation();
   const { tab, ready, setTab } = useEnergyTab();
   const moveFocus = useRef(false);

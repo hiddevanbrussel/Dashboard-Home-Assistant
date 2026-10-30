@@ -1,7 +1,12 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   batteryIsLinked,
   dayNightPair,
+  FLOW_DOT_EDGE_OPACITY,
+  FLOW_DOT_OPACITY,
+  FLOW_LINE_OPACITY,
   flowDurationMs,
   flowStep,
   formatLivePower,
@@ -97,8 +102,21 @@ describe("shouldAnimate", () => {
     expect(flowStep(0.2)).toBe(1);
     expect(flowStep(0.8)).toBe(2);
     expect(flowStep(3)).toBe(3);
+    expect(flowDurationMs(1)).toBe(8400);
+    expect(flowDurationMs(2)).toBe(4800);
+    expect(flowDurationMs(3)).toBe(2800);
     expect(flowDurationMs(1)).toBeGreaterThan(flowDurationMs(2));
     expect(flowDurationMs(2)).toBeGreaterThan(flowDurationMs(3));
+    expect(FLOW_DOT_OPACITY).toBe(0.55);
+    expect(FLOW_DOT_EDGE_OPACITY).toBe(0.19);
+    expect(FLOW_LINE_OPACITY).toBe(0.52);
+    const layers = readFileSync(path.join(process.cwd(), "src/components/energy/overview/now-hero-layers.tsx"), "utf8");
+    expect(layers).toContain("FLOW_DOT_OPACITY");
+    expect(layers).toContain("FLOW_DOT_EDGE_OPACITY");
+    expect(layers).toContain("FLOW_LINE_OPACITY");
+    expect(layers).toContain("flowDurationMs(step)");
+    expect(layers).not.toContain("opacity: 0.35");
+    expect(layers).not.toContain("opacity={0.95}");
     expect(powerIsFlowing([0, null, 0.01])).toBe(false);
     expect(powerIsFlowing([null, -0.2])).toBe(true);
   });

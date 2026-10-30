@@ -64,6 +64,7 @@ describe("story card view", () => {
     expect(document.body.textContent).toContain("Welk apparaat verbruikt het meest?");
     expect(document.body.textContent).toContain("Apparaten kiezen");
     expect(document.querySelector("[data-story-card='hint']")).toBeTruthy();
+    expect((document.querySelector("[data-story-card='hint']") as HTMLElement).style.boxShadow).toBe("none");
     expect(document.querySelector("[data-story-close]")).toBeNull();
     expect(document.querySelector("a")?.getAttribute("href")).toContain("apparaten=1");
     expect(document.querySelector("a")?.className).toContain("h-11");
@@ -128,6 +129,7 @@ describe("overview refresh", () => {
     expect(cards).toContain("#C2410C");
     expect(cards).toContain("#DC2626");
     expect(cards).toContain("opacity-[0.27]");
+    expect(cards).toContain('boxShadow: "none"');
     expect(cards).toContain("dark:opacity-90");
   });
 });

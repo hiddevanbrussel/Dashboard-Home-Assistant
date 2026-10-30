@@ -55,6 +55,7 @@ import { isWidgetTypeTemporarilyDisabled } from "@/lib/disabled-widget-types";
 import { EnergyPageBackground } from "@/components/energy/energy-page-background";
 import { EnergyOverview } from "@/components/energy/overview/energy-overview";
 import { energyPanelId, energyTabId, EnergyTabs } from "@/components/energy/overview/energy-tabs";
+import { ENERGY_MY_TILES_ENABLED, energyPageView } from "@/lib/energy-tab";
 import { useEnergyTab } from "@/stores/energy-overview-store";
 import { EditPanelModal } from "./edit-panel";
 
@@ -317,6 +318,7 @@ const STORAGE_SCOPE = "energy";
 export default function EnergyPage() {
   const { t } = useTranslation();
   const { tab, ready: energyTabReady } = useEnergyTab();
+  const energyView = energyPageView(tab, energyTabReady);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
@@ -742,7 +744,7 @@ export default function EnergyPage() {
 
   if (isLoading || error) {
     return (
-      <AppShell activeTab="/energy" headerFixed headerCenterAction={<EnergyTabs />}>
+      <AppShell activeTab="/energy" headerFixed headerCenterAction={ENERGY_MY_TILES_ENABLED ? <EnergyTabs /> : undefined}>
         <div className="relative min-h-[calc(100dvh-5rem)]">
           <EnergyPageBackground />
           <div className="relative z-[1] flex flex-col items-center justify-center gap-4 pt-14 py-12 px-4">
@@ -768,17 +770,17 @@ export default function EnergyPage() {
     <AppShell
       activeTab="/energy"
       headerFixed
-      headerEndAction={tab === "tiles" ? headerEndAction : undefined}
+      headerEndAction={energyView === "tiles" ? headerEndAction : undefined}
       welcomeTitle={welcomeTitle || undefined}
       welcomeSubtitle={welcomeSubtitle || undefined}
       hideWelcome={!editMode}
       welcomeEditable={editMode}
       onWelcomeChange={editMode ? ({ title, subtitle }) => { setWelcomeTitle(title); setWelcomeSubtitle(subtitle); } : undefined}
-      headerCenterAction={<EnergyTabs />}
+      headerCenterAction={ENERGY_MY_TILES_ENABLED ? <EnergyTabs /> : undefined}
     >
-      {!energyTabReady ? (
+      {energyView === "pending" ? (
         <div className="relative min-h-[calc(100dvh-5rem)]" data-energy-tab-pending />
-      ) : tab === "overview" ? (
+      ) : energyView === "overview" ? (
         <EnergyOverview />
       ) : (
       <div

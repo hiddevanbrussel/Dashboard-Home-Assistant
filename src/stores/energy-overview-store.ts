@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { create } from "zustand";
-import { readEnergyTab, writeEnergyTab, type EnergyTab } from "@/lib/energy-tab";
+import { ENERGY_MY_TILES_ENABLED, readEnergyTab, writeEnergyTab, type EnergyTab } from "@/lib/energy-tab";
 
 type EnergyOverviewStore = {
   tab: EnergyTab;
@@ -21,7 +21,8 @@ export const useEnergyOverviewStore = create<EnergyOverviewStore>((set, get) => 
   },
   hydrate: () => {
     if (get().ready) return;
-    set({ tab: readEnergyTab(), ready: true });
+    const stored = readEnergyTab();
+    set({ tab: ENERGY_MY_TILES_ENABLED ? stored : "overview", ready: true });
   },
 }));
 

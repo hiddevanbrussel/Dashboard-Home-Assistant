@@ -21,12 +21,6 @@ import { cn } from "@/lib/utils";
 export const ENERGY_SETTINGS_HREF = "/settings?sectie=paginas&page=energy";
 export const ENERGY_DEVICES_HREF = "/settings?sectie=paginas&page=energy&apparaten=1";
 
-function fill(template: string, vars: Record<string, string>): string {
-  let out = template;
-  for (const [key, value] of Object.entries(vars)) out = out.split(`{${key}}`).join(value);
-  return out;
-}
-
 function weekdayLabel(weekday: number, language: "nl" | "en"): string {
   const monday = new Date(Date.UTC(2026, 0, 5 + weekday));
   return new Intl.DateTimeFormat(language === "nl" ? "nl-NL" : "en-GB", {
@@ -83,7 +77,8 @@ function Frame({
   return (
     <article
       data-story-card={kind}
-      className="glass-card relative flex min-h-0 w-[280px] shrink-0 snap-start flex-col self-stretch overflow-hidden p-6 portrait:w-[332px]"
+      style={{ boxShadow: "none" }}
+      className="glass-card relative flex min-h-0 w-[280px] shrink-0 snap-start flex-col self-stretch overflow-hidden p-6 shadow-none portrait:w-[332px]"
     >
       <Glow tone={tone} />
       <div className="relative z-[1] flex min-h-0 flex-1 flex-col">
@@ -346,8 +341,4 @@ function CompareRow({ label, width, tone }: { label: string; width: number; tone
       />
     </div>
   );
-}
-
-export function storyDotLabel(template: string, index: number, total: number): string {
-  return fill(template, { n: String(index + 1), total: String(total) });
 }
