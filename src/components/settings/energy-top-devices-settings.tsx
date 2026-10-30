@@ -1053,7 +1053,7 @@ export function EnergyTopDevicesEntry({
         data-entry-card
         className={cn(
           "overflow-hidden rounded-[18px] border border-[rgba(17,24,39,0.08)] bg-white dark:border-white/10 dark:bg-[#1b1a21]",
-          choiceStatus === "error" && "min-h-[148px]"
+          choiceStatus !== "ready" && "min-h-[148px]"
         )}
       >
         <button

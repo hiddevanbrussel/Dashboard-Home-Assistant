@@ -821,7 +821,7 @@ describe("largest consumer picker", () => {
     expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
   });
 
-  it("does not reserve the error height while the choice is loading", () => {
+  it("reserves the error height while the choice is loading so the row does not jump", () => {
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
@@ -839,7 +839,7 @@ describe("largest consumer picker", () => {
     }
     renderStatus("loading");
     expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
-    expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
+    expect(document.querySelector("[data-entry-card]")?.className).toContain("min-h-[148px]");
     renderStatus("ready");
     expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
     expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
