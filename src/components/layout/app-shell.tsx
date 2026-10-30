@@ -568,7 +568,7 @@ export function AppShell({
                   ) : null}
                   <div className="ml-auto flex min-w-0 items-center justify-end gap-2 sm:gap-3">
                     {headerStatPills}
-                    <HeaderEnergyStats contentLight={headerContentLight} />
+                    {activeTab === "/energy" ? null : <HeaderEnergyStats contentLight={headerContentLight} />}
                     {newsEnabled && rssUrls.length > 0 && (
                       <button
                         type="button"

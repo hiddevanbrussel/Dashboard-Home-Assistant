@@ -71,6 +71,7 @@ describe("mock-ha script", () => {
       expect(list.status).toBe(200);
       const states = (await list.json()) as Array<{
         entity_id: string;
+        state?: string;
         attributes: Record<string, unknown>;
       }>;
       const fridge = states.find((item) => item.entity_id === "sensor.fridge");
@@ -84,6 +85,16 @@ describe("mock-ha script", () => {
       expect(one.status).toBe(200);
       expect(await one.json()).toMatchObject({ entity_id: "sensor.fridge" });
       expect((await fetch(`${baseUrl}/api/states/sensor.missing`)).status).toBe(404);
+      const sun = states.find((item) => item.entity_id === "sun.sun");
+      const solar = states.find((item) => item.entity_id === "sensor.solar_power");
+      expect(sun?.state).toBe("above_horizon");
+      expect(solar).toMatchObject({
+        state: "1650",
+        attributes: { device_class: "power", unit_of_measurement: "W" },
+      });
+      const source = readFileSync(scriptPath, "utf8");
+      expect(source).toContain('set === "no-solar"');
+      expect(source).toContain('set === "no-battery"');
     } finally {
       child.kill();
       await new Promise((resolve) => child.once("exit", resolve));

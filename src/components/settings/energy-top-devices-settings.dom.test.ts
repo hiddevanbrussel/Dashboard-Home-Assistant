@@ -674,4 +674,177 @@ describe("largest consumer picker", () => {
     });
     expect(document.body.textContent).not.toContain("Niet gevonden");
   });
+
+  it("focuses the setup heading after retry when search and the chosen heading are absent", async () => {
+    prefsDevices = [];
+    let dashboardOk = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const target = String(url);
+        if (target.includes("/api/ha/energy/prefs")) {
+          return {
+            ok: true,
+            json: async () => ({
+              source: "manual",
+              deviceConsumption: [],
+              deviceConsumptionWater: [],
+              energySources: [],
+            }),
+          };
+        }
+        if (target.includes("/api/ha/energy/statistics")) {
+          return { ok: true, json: async () => ({ devices: { items: [] } }) };
+        }
+        if (!dashboardOk) return { ok: false, status: 502, json: async () => ({ error: "down" }) };
+        return { ok: true, json: async () => ({ id: "ed1", topDeviceIds: [] }) };
+      })
+    );
+
+    function Harness() {
+      const [status, setStatus] = useState<"loading" | "ready" | "error">("error");
+      const [attempt, setAttempt] = useState(0);
+      useEffect(() => {
+        let cancelled = false;
+        fetch("/api/energy-dashboard", { cache: "no-store" })
+          .then(async (response) => {
+            if (!response.ok) throw new Error("fail");
+            return response.json() as Promise<unknown>;
+          })
+          .then(() => {
+            if (!cancelled) setStatus("ready");
+          })
+          .catch(() => {
+            if (!cancelled) setStatus("error");
+          });
+        return () => {
+          cancelled = true;
+        };
+      }, [attempt]);
+      return createElement(EnergyTopDevicesSettings, {
+        dashboardId: "ed1",
+        entityIds: [],
+        entities: devices(4),
+        entitiesStatus: "ready",
+        onEntityIds: () => undefined,
+        onRefreshEntities: () => undefined,
+        choiceStatus: status,
+        onRetryChoice: () => setAttempt((value) => value + 1),
+      });
+    }
+
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root?.render(createElement(Harness));
+    });
+    const retry = [...document.querySelectorAll("button")].find((button) => button.textContent === "Opnieuw proberen");
+    if (!(retry instanceof HTMLButtonElement)) throw new Error("retry missing");
+    dashboardOk = true;
+    await act(async () => {
+      retry.click();
+    });
+    await until(() => {
+      expect(document.body.textContent).toContain("Zo stel je het in");
+      expect(document.activeElement).toBe(document.querySelector("[data-setup-heading]"));
+      expect(document.activeElement).not.toBe(document.body);
+    });
+  });
+
+  it("labels a nameless device that exists only in device consumption as not found", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          source: "prefs",
+          deviceConsumption: [{ statConsumption: "sensor.qa_e2b_naamloos", name: null }],
+          deviceConsumptionWater: [],
+          energySources: [],
+        }),
+      }))
+    );
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root?.render(
+        createElement(EnergyTopDevicesEntry, {
+          entityIds: ["sensor.qa_e2b_naamloos"],
+          entities: [],
+          onOpen: () => undefined,
+          choiceStatus: "ready",
+        })
+      );
+    });
+    await until(() => {
+      expect(document.querySelector("[data-entry-names]")?.textContent).toContain("Niet gevonden");
+    });
+    expect(document.body.textContent).not.toContain("Energiesensor");
+    expect(document.body.textContent).not.toContain("sensor.qa_e2b_naamloos");
+  });
+
+  it("returns focus to the entry row after retry and keeps the sub-line height", async () => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    function Harness() {
+      const [status, setStatus] = useState<"loading" | "ready" | "error">("error");
+      return createElement(EnergyTopDevicesEntry, {
+        entityIds: [],
+        entities: [],
+        onOpen: () => undefined,
+        choiceStatus: status,
+        onRetry: () => setStatus("ready"),
+      });
+    }
+    await act(async () => {
+      root?.render(createElement(Harness));
+    });
+    const subline = document.querySelector("[data-entry-subline]");
+    expect(subline?.className).toContain("h-5");
+    expect(document.querySelector("[data-entry-card]")?.className).toContain("min-h-[148px]");
+    expect(subline?.textContent?.trim()).toBe("");
+    const retry = [...document.querySelectorAll("button")].find((button) => button.textContent === "Opnieuw proberen");
+    if (!(retry instanceof HTMLButtonElement)) throw new Error("retry missing");
+    await act(async () => {
+      retry.click();
+    });
+    await until(() => {
+      const opener = document.querySelector("[data-entry-subline]")?.closest("button");
+      expect(opener).toBeInstanceOf(HTMLButtonElement);
+      expect(document.activeElement).toBe(opener);
+      expect(document.activeElement).not.toBe(document.body);
+    });
+    expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
+    expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
+  });
+
+  it("does not reserve the error height while the choice is loading", () => {
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    function renderStatus(status: "loading" | "ready" | "error") {
+      act(() => {
+        root?.render(
+          createElement(EnergyTopDevicesEntry, {
+            entityIds: [],
+            entities: [],
+            onOpen: () => undefined,
+            choiceStatus: status,
+          })
+        );
+      });
+    }
+    renderStatus("loading");
+    expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
+    expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
+    renderStatus("ready");
+    expect(document.querySelector("[data-entry-card]")?.className).not.toContain("min-h-[148px]");
+    expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
+    renderStatus("error");
+    expect(document.querySelector("[data-entry-card]")?.className).toContain("min-h-[148px]");
+    expect(document.querySelector("[data-entry-subline]")?.className).toContain("h-5");
+  });
 });

@@ -22,7 +22,7 @@ type HaEntity = {
 };
 
 const choice = cn(
-  "inline-flex h-11 min-w-[44px] items-center justify-center gap-2 rounded-xl border px-4 text-[15px] font-semibold outline-none",
+  "relative inline-flex h-11 min-w-[44px] items-center justify-center rounded-xl border px-8 text-[15px] font-semibold outline-none",
   FOCUS_RING_BRAND
 );
 
@@ -79,8 +79,8 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             onClick={() => chooseMode("signed")}
             className={cn(choice, mode === "signed" ? choiceSelected : choiceIdle)}
           >
-            <Check className={cn("h-4 w-4 shrink-0", mode !== "signed" && "invisible")} aria-hidden />
-            {t("settings.energy.liveGridSigned")}
+            <Check className={cn("pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2", mode !== "signed" && "invisible")} aria-hidden />
+            <span className="text-center">{t("settings.energy.liveGridSigned")}</span>
           </button>
           <button
             type="button"
@@ -89,8 +89,8 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             onClick={() => chooseMode("split")}
             className={cn(choice, mode === "split" ? choiceSelected : choiceIdle)}
           >
-            <Check className={cn("h-4 w-4 shrink-0", mode !== "split" && "invisible")} aria-hidden />
-            {t("settings.energy.liveGridSplit")}
+            <Check className={cn("pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2", mode !== "split" && "invisible")} aria-hidden />
+            <span className="text-center">{t("settings.energy.liveGridSplit")}</span>
           </button>
         </div>
         {mode === "signed" ? (
@@ -166,8 +166,8 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             onClick={() => chooseTariff("fixed")}
             className={cn(choice, tariffMode === "fixed" ? choiceSelected : choiceIdle)}
           >
-            <Check className={cn("h-4 w-4 shrink-0", tariffMode !== "fixed" && "invisible")} aria-hidden />
-            {t("settings.energy.tariffFixed")}
+            <Check className={cn("pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2", tariffMode !== "fixed" && "invisible")} aria-hidden />
+            <span className="text-center">{t("settings.energy.tariffFixed")}</span>
           </button>
           <button
             type="button"
@@ -176,8 +176,8 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
             onClick={() => chooseTariff("dynamic")}
             className={cn(choice, tariffMode === "dynamic" ? choiceSelected : choiceIdle)}
           >
-            <Check className={cn("h-4 w-4 shrink-0", tariffMode !== "dynamic" && "invisible")} aria-hidden />
-            {t("settings.energy.tariffDynamic")}
+            <Check className={cn("pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2", tariffMode !== "dynamic" && "invisible")} aria-hidden />
+            <span className="text-center">{t("settings.energy.tariffDynamic")}</span>
           </button>
         </div>
         {tariffMode === "dynamic" ? (
