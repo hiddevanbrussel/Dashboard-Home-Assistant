@@ -63,4 +63,4 @@ docker buildx imagetools inspect ghcr.io/hiddevanbrussel/dashboard-home-assistan
 
 `:beta` and `:0.5.12-beta.1` should share a digest. `:latest` and `:0.5` should still show the digests you recorded before the beta tag. The add-on repositories are not part of a beta publish.
 
-Pull requests and manual runs of [`.github/workflows/docker-beta-dry-run.yml`](.github/workflows/docker-beta-dry-run.yml) check this tag math for `refs/tags/v0.0.0-beta.1` and `refs/tags/v0.0.0`. That job pushes nothing.
+Pull requests and manual runs of [`.github/workflows/docker-beta-dry-run.yml`](.github/workflows/docker-beta-dry-run.yml) check this tag math for `refs/tags/v0.5.12-beta.1` and `refs/tags/v0.5.12`. A pull request cannot replace `GITHUB_REF`, so the dry-run passes those tags through metadata-action's semver `value` attribute. That job pushes nothing.

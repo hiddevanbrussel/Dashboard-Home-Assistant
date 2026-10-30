@@ -4,9 +4,15 @@ name: Docker tag dry-run
 # Runs on pull requests and workflow_dispatch only. The publish workflow
 # stays limited to version tags, so this job cannot move an image tag.
 #
-# Simulated refs: refs/tags/v0.0.0-beta.1 and refs/tags/v0.0.0.
+# Simulated refs: refs/tags/v0.5.12-beta.1 and refs/tags/v0.5.12.
 # The tag block matches .github/workflows/docker.yml (flavor latest=false,
 # enable= on every tag). Keep the two lists in sync.
+#
+# A step cannot overwrite GITHUB_* (GitHub variables reference), so this job's
+# context.ref stays the pull request. metadata-action then skips semver entries
+# whose value is empty. The semver value attribute is the documented way to
+# pass a tag that is not the workflow ref. A real publish leaves value empty
+# and reads refs/tags/v*.
 
 on:
   pull_request:
@@ -43,47 +49,40 @@ jobs:
             else
               prerelease=false
             fi
-            echo "${prefix}_version=${version}" >> "$GITHUB_OUTPUT"
-            echo "${prefix}_prerelease=${prerelease}" >> "$GITHUB_OUTPUT"
+            {
+              echo "${prefix}_version=${version}"
+              echo "${prefix}_git_tag=v${version}"
+              echo "${prefix}_prerelease=${prerelease}"
+            } >> "$GITHUB_OUTPUT"
             echo "${prefix}: ref=${ref} version=${version} prerelease=${prerelease}"
           }
-          classify "refs/tags/v0.0.0-beta.1" beta
-          classify "refs/tags/v0.0.0" stable
+          classify "refs/tags/v0.5.12-beta.1" beta
+          classify "refs/tags/v0.5.12" stable
 
-      - name: Metadata for refs/tags/v0.0.0-beta.1
+      - name: Metadata for refs/tags/v0.5.12-beta.1
         id: beta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        env:
-          GITHUB_REF: refs/tags/v0.0.0-beta.1
-          GITHUB_REF_NAME: v0.0.0-beta.1
-          GITHUB_REF_TYPE: tag
-          GITHUB_EVENT_NAME: push
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: |
             latest=false
           tags: |
-            type=semver,pattern={{version}},enable=true
-            type=semver,pattern={{major}}.{{minor}},enable=${{ steps.classify.outputs.beta_prerelease == 'false' }}
+            type=semver,pattern={{version}},enable=true,value=${{ steps.classify.outputs.beta_git_tag }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ steps.classify.outputs.beta_prerelease == 'false' }},value=${{ steps.classify.outputs.beta_git_tag }}
             type=raw,value=${{ steps.classify.outputs.beta_version }},enable=true
             type=raw,value=latest,enable=${{ steps.classify.outputs.beta_prerelease == 'false' }}
             type=raw,value=beta,enable=${{ steps.classify.outputs.beta_prerelease == 'true' }}
 
-      - name: Metadata for refs/tags/v0.0.0
+      - name: Metadata for refs/tags/v0.5.12
         id: stable
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        env:
-          GITHUB_REF: refs/tags/v0.0.0
-          GITHUB_REF_NAME: v0.0.0
-          GITHUB_REF_TYPE: tag
-          GITHUB_EVENT_NAME: push
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: |
             latest=false
           tags: |
-            type=semver,pattern={{version}},enable=true
-            type=semver,pattern={{major}}.{{minor}},enable=${{ steps.classify.outputs.stable_prerelease == 'false' }}
+            type=semver,pattern={{version}},enable=true,value=${{ steps.classify.outputs.stable_git_tag }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ steps.classify.outputs.stable_prerelease == 'false' }},value=${{ steps.classify.outputs.stable_git_tag }}
             type=raw,value=${{ steps.classify.outputs.stable_version }},enable=true
             type=raw,value=latest,enable=${{ steps.classify.outputs.stable_prerelease == 'false' }}
             type=raw,value=beta,enable=${{ steps.classify.outputs.stable_prerelease == 'true' }}
@@ -112,15 +111,15 @@ jobs:
           echo "stable tags:"
           printf '%s\n' "${stable}"
 
-          beta_want="$(printf '%s\n' "0.0.0-beta.1" "beta" | sort -u)"
-          stable_want="$(printf '%s\n' "0.0.0" "0.0" "latest" | sort -u)"
+          beta_want="$(printf '%s\n' "0.5.12-beta.1" "beta" | sort -u)"
+          stable_want="$(printf '%s\n' "0.5.12" "0.5" "latest" | sort -u)"
 
           if [[ "${beta}" != "${beta_want}" ]]; then
-            echo "::error::beta tags must be exactly 0.0.0-beta.1 and beta (no latest, no X.Y)"
+            echo "::error::beta tags must be exactly 0.5.12-beta.1 and beta (no latest, no X.Y)"
             exit 1
           fi
           if [[ "${stable}" != "${stable_want}" ]]; then
-            echo "::error::stable tags must be exactly 0.0.0, 0.0 and latest"
+            echo "::error::stable tags must be exactly 0.5.12, 0.5 and latest"
             exit 1
           fi
 
