@@ -58,6 +58,12 @@ describe("energy store localStorage from main", () => {
     const storedEntities = JSON.parse(localStorage.getItem("dashboard.energy.entities") ?? "{}") as Record<string, string>;
     expect(storedEntities).toEqual(ENTITIES);
     expect(storedEntities).not.toHaveProperty("gridPowerEntityId");
+    expect(state.lighting).toEqual({
+      livingRoomEntityId: "",
+      upstairsEntityId: "",
+      outdoorEntityId: "",
+    });
+    expect(localStorage.getItem("dashboard.energy.lighting")).toBeNull();
   });
 
   it("defaults tariff to fixed and keeps an explicit dynamic choice", () => {
@@ -71,5 +77,32 @@ describe("energy store localStorage from main", () => {
     localStorage.setItem("dashboard.energy.tariffMode", "later");
     hydrateEnergyStore();
     expect(useEnergyStore.getState().tariffMode).toBe("fixed");
+  });
+
+  it("stores house lights beside the energy sensors and reloads them", () => {
+    hydrateEnergyStore();
+    useEnergyStore.getState().setEntity("solarPowerEntityId", "sensor.solar_power");
+    useEnergyStore.getState().setLightingEntity("livingRoomEntityId", " light.woonkamer ");
+    useEnergyStore.getState().setLightingEntity("upstairsEntityId", "sensor.overloop");
+    useEnergyStore.getState().setLightingEntity("outdoorEntityId", "light.buiten");
+    expect(JSON.parse(localStorage.getItem("dashboard.energy.lighting") ?? "{}")).toEqual({
+      livingRoomEntityId: "light.woonkamer",
+      upstairsEntityId: "",
+      outdoorEntityId: "light.buiten",
+    });
+    expect(useEnergyStore.getState().entities.solarPowerEntityId).toBe("sensor.solar_power");
+    expect(JSON.parse(localStorage.getItem("dashboard.energy.entities") ?? "{}")).not.toHaveProperty(
+      "livingRoomEntityId"
+    );
+    useEnergyStore.setState({
+      lighting: { livingRoomEntityId: "", upstairsEntityId: "", outdoorEntityId: "" },
+    });
+    hydrateEnergyStore();
+    expect(useEnergyStore.getState().lighting).toEqual({
+      livingRoomEntityId: "light.woonkamer",
+      upstairsEntityId: "",
+      outdoorEntityId: "light.buiten",
+    });
+    expect(useEnergyStore.getState().entities.solarPowerEntityId).toBe("sensor.solar_power");
   });
 });

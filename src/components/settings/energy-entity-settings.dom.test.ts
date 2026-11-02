@@ -227,4 +227,94 @@ describe("energy live power and tariff settings", () => {
     );
     expect(dynamicEn?.querySelector("svg")).toBeTruthy();
   });
+
+  it("links one light per zone and keeps Buiten disabled", () => {
+    act(() => {
+      root?.render(
+        createElement(EnergyEntitySettings, {
+          entities: [
+            {
+              entity_id: "sensor.solar_power",
+              attributes: { friendly_name: "Zon vermogen", device_class: "power", unit_of_measurement: "W" },
+            },
+            { entity_id: "light.zolder", attributes: { friendly_name: "Zolder" } },
+            { entity_id: "light.leeslamp", attributes: { friendly_name: "Leeslamp" } },
+            { entity_id: "switch.lamp", attributes: { friendly_name: "Schakelaar" } },
+            { entity_id: "light.plafond", attributes: { friendly_name: "Woonkamer plafond" } },
+          ],
+        })
+      );
+    });
+    expect(document.body.textContent).toContain("Verlichting op het huis");
+    expect(document.body.textContent).toContain(
+      "Kies per zone een lamp. Is de lamp uit, dan wordt die zone op het huis donker getoond."
+    );
+    expect(document.body.textContent).toContain(
+      "Geen lamp gekozen: het huis wordt gewoon getoond, zonder verlichtingslaag."
+    );
+    expect(document.body.textContent).not.toContain("Komt later.");
+    const groups = [...document.querySelectorAll("p")].map((node) => node.textContent);
+    const sensorsAt = groups.indexOf("Energiesensoren");
+    const lightsAt = groups.indexOf("Verlichting op het huis");
+    expect(sensorsAt).toBeGreaterThanOrEqual(0);
+    expect(lightsAt).toBeGreaterThan(sensorsAt);
+
+    const living = document.getElementById("energy-light-living-room");
+    const upstairs = document.getElementById("energy-light-upstairs");
+    const outside = document.getElementById("energy-light-outside");
+    if (!(living instanceof HTMLSelectElement) || !(upstairs instanceof HTMLSelectElement) || !(outside instanceof HTMLSelectElement)) {
+      throw new Error("light pickers missing");
+    }
+    for (const select of [living, upstairs, outside]) {
+      expect(select.className).toContain("h-11");
+      expect(select.className).not.toContain("h-12");
+      expect(select.className).toContain("border-[#767b85]");
+      expect(select.className).toContain("focus-visible:ring-2");
+    }
+    expect([...living.options].map((option) => option.value)).toEqual([
+      "",
+      "light.leeslamp",
+      "light.plafond",
+      "light.zolder",
+    ]);
+    expect(living.options[0]?.textContent).toBe("Niet ingesteld");
+    expect([...living.options].map((option) => option.value)).not.toContain("sensor.solar_power");
+    expect([...living.options].map((option) => option.value)).not.toContain("switch.lamp");
+    expect(outside.disabled).toBe(true);
+    expect(outside.value).toBe("");
+    expect([...outside.options].map((option) => option.value)).toEqual([""]);
+    expect(outside.labels?.[0]?.textContent).toContain("Buiten");
+    expect(outside.labels?.[0]?.textContent).toContain("Later");
+    expect(document.getElementById("energy-solar-power")?.className).toContain("h-12");
+
+    act(() => {
+      living.value = "light.plafond";
+      living.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(useEnergyStore.getState().lighting.livingRoomEntityId).toBe("light.plafond");
+    expect(document.querySelector("[data-house-lights-empty]")).toBeNull();
+    expect(JSON.parse(localStorage.getItem("dashboard.energy.lighting") ?? "{}")).toMatchObject({
+      livingRoomEntityId: "light.plafond",
+    });
+    expect(useEnergyStore.getState().entities.solarPowerEntityId).toBe("");
+
+    act(() => {
+      useLanguageStore.setState({ language: "en", ready: true });
+    });
+    act(() => {
+      root?.render(
+        createElement(EnergyEntitySettings, {
+          entities: [
+            { entity_id: "light.plafond", attributes: { friendly_name: "Woonkamer plafond" } },
+          ],
+        })
+      );
+    });
+    expect(document.body.textContent).toContain("Lights on the house");
+    expect(document.body.textContent).toContain("Living room");
+    expect(document.body.textContent).toContain("Outside");
+    expect(document.body.textContent).toContain("Later");
+    expect(document.body.textContent).not.toContain("Komt later.");
+    expect(document.body.textContent).not.toContain("Geen lamp gekozen");
+  });
 });

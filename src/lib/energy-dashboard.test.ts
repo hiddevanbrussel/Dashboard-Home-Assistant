@@ -12,6 +12,7 @@ import {
   energyImpact,
   entityLabel,
   filterEnergySensors,
+  filterLightEntities,
   formatEnergyValue,
   hasLinkedEnergyEntities,
   heatmapTones,
@@ -273,6 +274,35 @@ describe("energy dashboard entities", () => {
       ).map((e) => e.entity_id)
     ).toEqual(["sensor.zonnepanelen_solis_energy_today"]);
     expect(entityLabel(entities[1])).toBe("PV today");
+  });
+
+  it("lists only lights, sorted by label, and keeps a chosen light that is still present", () => {
+    const entities = [
+      { entity_id: "sensor.pv_power", attributes: { friendly_name: "PV power" } },
+      { entity_id: "light.zolder", attributes: { friendly_name: "Zolder" } },
+      { entity_id: "light.a", attributes: { friendly_name: "Leeslamp" } },
+      { entity_id: "switch.lamp", attributes: { friendly_name: "Schakelaar" } },
+      { entity_id: "light.woonkamer", attributes: { friendly_name: "Woonkamer plafond" } },
+    ];
+    expect(filterLightEntities(entities).map((entity) => entity.entity_id)).toEqual([
+      "light.a",
+      "light.woonkamer",
+      "light.zolder",
+    ]);
+    expect(filterLightEntities(entities, "sensor.pv_power").map((entity) => entity.entity_id)).not.toContain(
+      "sensor.pv_power"
+    );
+    expect(filterLightEntities(entities, "light.gone").map((entity) => entity.entity_id)).not.toContain("light.gone");
+    const kept = { entity_id: "light.kept", attributes: { friendly_name: "Bewaard" } };
+    const withChosen = [...entities, kept];
+    const chosen = filterLightEntities(withChosen, "light.kept");
+    expect(chosen.filter((entity) => entity.entity_id === "light.kept")).toEqual([kept]);
+    expect(chosen.map((entity) => entity.entity_id)).toEqual([
+      "light.kept",
+      "light.a",
+      "light.woonkamer",
+      "light.zolder",
+    ]);
   });
 
   it("merges hourly history into a 24-hour chart", () => {

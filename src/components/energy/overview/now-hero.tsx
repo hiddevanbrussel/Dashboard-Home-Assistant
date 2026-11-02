@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Battery, House, Sun, UtilityPole } from "lucide-react";
 import { HouseLabel } from "@/components/energy/overview/house-labels";
+import { HouseLightTint } from "@/components/energy/overview/house-light-tint";
 import { NowHeroLayers, type HouseLineSpec } from "@/components/energy/overview/now-hero-layers";
 import { useTranslation } from "@/hooks/use-translation";
 import { ENERGY_MY_TILES_ENABLED } from "@/lib/energy-tab";
@@ -28,6 +29,7 @@ import {
   type ManualLiveEntities,
 } from "@/lib/energy-live";
 import {
+  activeHouseLights,
   batteryIsLinked,
   dayNightPair,
   consumptionIsLinked,
@@ -36,6 +38,7 @@ import {
   gridExportIsLinked,
   gridImportIsLinked,
   houseAssetPath,
+  houseLightZoneNameKey,
   houseVariant,
   nowSentenceKey,
   overviewIsLinked,
@@ -62,6 +65,19 @@ function fill(template: string, vars: Record<string, string>): string {
     out = out.split(`{${key}}`).join(value);
   }
   return out;
+}
+
+function lightSpeechKey(spoken: "on" | "off"): string {
+  switch (spoken) {
+    case "on":
+      return "energy.house.lightOn";
+    case "off":
+      return "energy.house.lightOff";
+    default: {
+      const neverSpoken: never = spoken;
+      return neverSpoken;
+    }
+  }
 }
 
 function asModel(value: unknown): EnergyModel | null {
@@ -158,6 +174,7 @@ export function NowHero({
   const locale = language === "nl" ? "nl" : "en";
   const theme = useThemeStore((state) => state.resolved);
   const entities = useEnergyStore((state) => state.entities);
+  const lighting = useEnergyStore((state) => state.lighting);
   const gridPowerInverted = useEnergyStore((state) => state.gridPowerInverted);
   const states = useEntityStateStore((state) => state.states);
   const haError = useEntityStateStore((state) => state.error);
@@ -342,6 +359,18 @@ export function NowHero({
   flowRef.current = presence.offline ? flowRef.current : flowing;
   const motion = useMotionFlags(frameRef);
   const animate = presence.offline ? false : shouldAnimate({ ...motion, flowing });
+  const houseLights = activeHouseLights(lighting, states);
+  const houseLightStatus =
+    variant == null
+      ? ""
+      : houseLights
+          .map((zone) =>
+            fill(t(lightSpeechKey(zone.spoken)), {
+              zone: t(houseLightZoneNameKey(zone.id)),
+            })
+          )
+          .join(". ");
+  const houseLightStatusText = houseLightStatus ? `${houseLightStatus}.` : "";
   const dark = theme === "dark";
   const frame = stage ?? fallbackEnergyStage(orientation);
   const powerText = (value: number | null) => (value == null ? null : formatLivePower(Math.abs(value), locale));
@@ -481,6 +510,14 @@ export function NowHero({
                 className="h-full w-full object-contain"
               />
             </picture>
+          ) : null}
+          {variant ? (
+            <HouseLightTint theme={dark ? "dark" : "light"} reducedMotion={motion.reducedMotion} zones={houseLights} />
+          ) : null}
+          {houseLightStatusText ? (
+            <p className="pointer-events-none sr-only" data-house-light-status="">
+              {houseLightStatusText}
+            </p>
           ) : null}
           {variant ? <NowHeroLayers specs={specs} sig={labelSig} /> : null}
           {solarParts ? (
