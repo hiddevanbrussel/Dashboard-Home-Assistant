@@ -1,22 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import {
-  BatteryCharging,
-  BatteryMedium,
-  ChevronRight,
-  House,
-  Moon,
-  Sun,
-  UtilityPole,
-} from "lucide-react";
-import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
-import { NowHeroLayers } from "@/components/energy/overview/now-hero-layers";
-import type { StoryOpenKind } from "@/components/energy/overview/story-carousel";
+import { Battery, House, Sun, UtilityPole } from "lucide-react";
+import { HouseLabel } from "@/components/energy/overview/house-labels";
+import { NowHeroLayers, type HouseLineSpec } from "@/components/energy/overview/now-hero-layers";
 import { useTranslation } from "@/hooks/use-translation";
 import { ENERGY_MY_TILES_ENABLED } from "@/lib/energy-tab";
 import { heroOfflineState, offlinePowerText } from "@/lib/energy-story/offline";
-import { type HeroLabelKind, type OverviewOrientation } from "@/lib/energy-house-anchors";
+import { type OverviewOrientation } from "@/lib/energy-house-anchors";
+import {
+  fallbackEnergyStage,
+  flowRunsTowardHouse,
+  houseAriaName,
+  labelAccent,
+  labelAnchor,
+  labelFlowEnabled,
+  labelPosition,
+  type EnergyStage,
+  type HouseLabelKind,
+} from "@/lib/energy-house-labels";
 import {
   batteryPowerNow,
   gridPowerNow,
@@ -28,7 +30,6 @@ import {
 import {
   batteryIsLinked,
   dayNightPair,
-  flowStep,
   consumptionIsLinked,
   formatLivePower,
   formatSoc,
@@ -44,7 +45,6 @@ import {
   splitLivePower,
   stepHeroGates,
   stepPowerFlowing,
-  strongestFlowKw,
   type HeroGates,
   type HouseVariantId,
 } from "@/lib/energy-now";
@@ -145,10 +145,14 @@ function useMotionFlags(frame: RefObject<HTMLElement | null>) {
 
 export function NowHero({
   orientation,
-  onOpenCard,
+  stage,
+  onOpenLabel,
+  labelOpens,
 }: {
   orientation: OverviewOrientation;
-  onOpenCard?: (kind: StoryOpenKind) => void;
+  stage?: EnergyStage | null;
+  onOpenLabel?: (kind: HouseLabelKind, source: HTMLElement) => void;
+  labelOpens?: (kind: HouseLabelKind) => boolean;
 }) {
   const { t, language } = useTranslation();
   const locale = language === "nl" ? "nl" : "en";
@@ -288,11 +292,6 @@ export function NowHero({
   const gates = stepHeroGates(gatesRef.current, { solarKw, gridKw, batteryKw: batteryPower });
   gatesRef.current = gates;
 
-  const kinds: HeroLabelKind[] = [];
-  if (solarLinked && solarKw != null) kinds.push("solar");
-  if (gridLinked && gridKw != null && gates.grid) kinds.push("grid");
-  if (batteryLinked && batteryPower != null) kinds.push("battery");
-
   const hasMeasurement = [solarKw, gridKw, batteryPower, houseKw].some((value) => value != null && Number.isFinite(value));
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIME_ZONE;
   const presence = heroOfflineState({
@@ -343,18 +342,82 @@ export function NowHero({
   flowRef.current = presence.offline ? flowRef.current : flowing;
   const motion = useMotionFlags(frameRef);
   const animate = presence.offline ? false : shouldAnimate({ ...motion, flowing });
-  const step = flowStep(strongestFlowKw([solarKw, gridKw, batteryPower, houseKw]));
-  const holdGlow = motion.reducedMotion || motion.glassOff;
-  const panelGlow = !presence.offline && Boolean(variant?.startsWith("dag-")) && gates.solar && !holdGlow;
-  const batteryGlow = !presence.offline && batteryLinked && gates.battery && !holdGlow;
-  const houseParts = presence.houseDash || houseKw == null ? null : splitLivePower(Math.max(houseKw, 0), locale);
-  const quiet = presence.offline ? "text-[#4b5563] dark:text-[#b4b4bd]" : "";
-  const labelSig = [
-    `solar:${solarKw ?? ""}:${gates.solar ? 0 : 1}`,
-    `grid:${gridKw ?? ""}:${gates.grid ? 0 : 1}`,
-    `battery:${batteryPower ?? ""}:${gates.battery ? 0 : 1}:${soc ?? ""}`,
-  ].join("|");
   const dark = theme === "dark";
+  const frame = stage ?? fallbackEnergyStage(orientation);
+  const powerText = (value: number | null) => (value == null ? null : formatLivePower(Math.abs(value), locale));
+  const shownPower = (value: number | null) => {
+    if (value == null || !Number.isFinite(value)) return null;
+    if (presence.offline && value === 0) return null;
+    return splitLivePower(Math.abs(value), locale);
+  };
+  const solarVisible = solarLinked && solarPillOn({ night, solarKw, gate: gates.solar });
+  const solarParts = solarVisible ? shownPower(solarKw) : null;
+  const housePartsShown = consumptionLinked ? shownPower(houseKw) : null;
+  const gridParts = gridLinked ? shownPower(gridKw) : null;
+  const socText = soc == null ? "" : formatSoc(soc, locale).replace("%", "");
+  const flowInput = {
+    animate,
+    solarOn: gates.solar,
+    gridOn: gates.grid,
+    batteryOn: gates.battery,
+    houseKw,
+  };
+  const directionInput = { gridKw, batteryKw: batteryPower };
+  const charging = gates.battery && (batteryPower ?? 0) < 0;
+  const supplying = gates.battery && (batteryPower ?? 0) > 0;
+  const batteryStatus =
+    presence.offline && !charging && !supplying
+      ? t("energy.overview.now.offlineBattery")
+      : charging
+        ? fill(t("energy.overview.now.batteryCharge"), { kw: powerText(batteryPower) ?? "" })
+        : supplying
+          ? fill(t("energy.overview.now.batterySupply"), { kw: powerText(batteryPower) ?? "" })
+          : t("energy.overview.now.batteryIdle");
+  const labelSig = [
+    `solar:${solarParts?.value ?? ""}`,
+    `house:${housePartsShown?.value ?? ""}`,
+    `grid:${gridParts?.value ?? ""}:${gridKw ?? ""}`,
+    `battery:${socText}:${batteryPower ?? ""}:${gates.battery ? 1 : 0}`,
+    `flow:${animate ? 1 : 0}:${dark ? 1 : 0}:${orientation}`,
+  ].join("|");
+  const specs: HouseLineSpec[] = [];
+  if (solarParts) {
+    specs.push({
+      kind: "solar",
+      accent: labelAccent("solar", dark),
+      anchor: labelAnchor("solar", orientation),
+      towardHouse: flowRunsTowardHouse("solar", directionInput),
+      flow: labelFlowEnabled("solar", flowInput),
+    });
+  }
+  if (housePartsShown) {
+    specs.push({
+      kind: "house",
+      accent: labelAccent("house", dark),
+      anchor: labelAnchor("house", orientation),
+      towardHouse: true,
+      flow: labelFlowEnabled("house", flowInput),
+    });
+  }
+  if (gridParts) {
+    specs.push({
+      kind: "grid",
+      accent: labelAccent("grid", dark),
+      anchor: labelAnchor("grid", orientation),
+      towardHouse: flowRunsTowardHouse("grid", directionInput),
+      flow: labelFlowEnabled("grid", flowInput),
+    });
+  }
+  if (batteryLinked && soc != null) {
+    specs.push({
+      kind: "battery",
+      accent: labelAccent("battery", dark),
+      anchor: labelAnchor("battery", orientation),
+      towardHouse: flowRunsTowardHouse("battery", directionInput),
+      flow: labelFlowEnabled("battery", flowInput),
+    });
+  }
+  const interactive = (kind: HouseLabelKind) => Boolean(labelOpens?.(kind));
 
   return (
     <div
@@ -363,9 +426,20 @@ export function NowHero({
       data-now-offline={presence.offline ? "1" : "0"}
       data-orientation={orientation}
     >
-      <div data-now-head className="col-start-1 row-start-1 mb-2">
-      <p className="flex h-6 items-center gap-2 text-[15px] font-semibold text-[#374151] dark:text-[#d1d5db]">
-        <span>{t("energy.overview.now.kicker")}</span>
+      <p
+        data-now-head
+        className="absolute z-10 flex h-6 items-center gap-2 text-[15px] font-semibold text-[#374151] dark:text-[#d1d5db]"
+        style={{ top: frame.kickerTop, left: frame.padLeft }}
+      >
+        {presence.offline ? (
+          <span>
+            {presence.time
+              ? fill(t("energy.story.offlineBadge"), { time: presence.time })
+              : t("energy.story.offlineOnly")}
+          </span>
+        ) : (
+          <span>{t("energy.overview.now.kicker")}</span>
+        )}
         <span
           data-now-live={presence.badge}
           className={cn(
@@ -376,43 +450,24 @@ export function NowHero({
           )}
           aria-hidden
         />
-        <span
-          className={cn(
-            "text-sm font-semibold",
-            presence.offline ? "text-[#374151] dark:text-[#d1d5db]" : "text-[#047857] dark:text-[#6EE7B7]"
-          )}
-        >
-          {presence.offline
-            ? presence.time
-              ? fill(t("energy.story.offlineBadge"), { time: presence.time })
-              : t("energy.story.offlineOnly")
-            : t("energy.overview.now.live")}
-        </span>
-      </p>
-      <p data-now-house className={cn("mt-1 text-[64px] font-bold leading-none tabular-nums tracking-tight text-[#111827] portrait:text-[56px] dark:text-[#f3f4f6]", quiet)}>
-        {houseParts ? (
-          <>
-            {houseParts.value}
-            <small className={cn("ml-1 text-[26px] font-semibold tracking-normal text-[#374151] dark:text-[#d1d5db]", quiet)}>{houseParts.unit}</small>
-          </>
-        ) : (
-          "–"
+        {presence.offline ? null : (
+          <span className="text-sm font-semibold text-[#047857] dark:text-[#6EE7B7]">
+            {t("energy.overview.now.live")}
+          </span>
         )}
       </p>
-      <p className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold text-[#374151] dark:text-[#d1d5db]">
-        <House
-          className={cn(
-            "h-4 w-4",
-            presence.offline ? "text-[#4b5563] dark:text-[#b4b4bd]" : "text-[#4700B5] dark:text-[#c4b5fd]"
-          )}
-          aria-hidden
-        />
-        {presence.offline && presence.time
-          ? fill(t("energy.overview.now.houseAt"), { time: presence.time })
-          : t("energy.overview.now.house")}
-      </p>
-      </div>
-      <div data-now-housebox className="relative col-start-1 row-start-2 h-[424px] w-[560px]">
+      <div
+        data-now-housebox
+        data-house-width={frame.houseWidth}
+        data-house-height={frame.houseHeight}
+        className="absolute"
+        style={{
+          top: frame.houseTop,
+          left: frame.houseLeft,
+          width: frame.houseWidth,
+          height: frame.houseHeight,
+        }}
+      >
         <div ref={frameRef} data-now-frame className="relative h-full w-full">
           {variant ? (
             <picture>
@@ -427,38 +482,77 @@ export function NowHero({
               />
             </picture>
           ) : null}
-          {variant ? (
-            <NowHeroLayers
-              variant={variant}
-              animate={animate}
-              step={step}
-              panelGlow={panelGlow}
-              batteryGlow={batteryGlow}
-              dark={dark}
+          {variant ? <NowHeroLayers specs={specs} sig={labelSig} /> : null}
+          {solarParts ? (
+            <HouseLabel
+              kind="solar"
+              value={solarParts.value}
+              unit={solarParts.unit}
+              accent={labelAccent("solar", dark)}
+              left={labelPosition("solar", orientation).left}
+              top={labelPosition("solar", orientation).top}
+              ariaLabel={`${t("energy.story.sun")}, ${powerText(solarKw) ?? ""}, ${t("energy.overview.now.solarRoof")}`}
+              interactive={interactive("solar")}
               offline={presence.offline}
-              labelSig={labelSig}
+              active
+              icon={<Sun className="h-4 w-4" aria-hidden />}
+              onOpen={(source) => onOpenLabel?.("solar", source)}
             />
           ) : null}
-          {kinds.map((kind) => (
-            <HeroPill
-              key={kind}
-              kind={kind}
-              solarKw={solarKw}
-              gridKw={gridKw}
-              batteryPower={batteryPower}
-              soc={soc}
-              night={night}
-              solarOn={gates.solar}
-              batteryOn={gates.battery}
+          {housePartsShown ? (
+            <HouseLabel
+              kind="house"
+              value={housePartsShown.value}
+              unit={housePartsShown.unit}
+              accent={labelAccent("house", dark)}
+              left={labelPosition("house", orientation).left}
+              top={labelPosition("house", orientation).top}
+              ariaLabel={`${houseAriaName(locale)}, ${powerText(houseKw) ?? ""}, ${t("energy.overview.now.house")}`}
+              interactive={interactive("house")}
               offline={presence.offline}
-              onOpen={() => onOpenCard?.(kind)}
+              active={labelFlowEnabled("house", flowInput)}
+              icon={<House className="h-4 w-4" aria-hidden />}
+              onOpen={(source) => onOpenLabel?.("house", source)}
             />
-          ))}
+          ) : null}
+          {gridParts ? (
+            <HouseLabel
+              kind="grid"
+              value={gridParts.value}
+              unit={gridParts.unit}
+              accent={labelAccent("grid", dark)}
+              left={labelPosition("grid", orientation).left}
+              top={labelPosition("grid", orientation).top}
+              ariaLabel={`${t("energy.story.gridLabel")}, ${powerText(gridKw) ?? ""}, ${(gridKw ?? 0) < 0 ? t("energy.overview.now.gridBack") : t("energy.overview.now.gridFrom")}`}
+              interactive={interactive("grid")}
+              offline={presence.offline}
+              active={gates.grid}
+              icon={<UtilityPole className="h-4 w-4" aria-hidden />}
+              onOpen={(source) => onOpenLabel?.("grid", source)}
+            />
+          ) : null}
+          {batteryLinked && soc != null ? (
+            <HouseLabel
+              kind="battery"
+              value={socText}
+              unit="%"
+              accent={labelAccent("battery", dark)}
+              left={labelPosition("battery", orientation).left}
+              top={labelPosition("battery", orientation).top}
+              ariaLabel={`${t("energy.story.battery")}, ${formatSoc(soc, locale)}, ${batteryStatus}`}
+              interactive={interactive("battery")}
+              offline={presence.offline}
+              active={gates.battery}
+              icon={<Battery className="h-4 w-4" aria-hidden />}
+              onOpen={(source) => onOpenLabel?.("battery", source)}
+            />
+          ) : null}
         </div>
       </div>
       <p
         data-now-sentence
-        className="col-start-1 row-start-3 mt-3 text-center text-base leading-snug text-[#374151] dark:text-[#d1d5db]"
+        className="absolute truncate text-center text-[16px] leading-[22px] text-[#374151] dark:text-[#d1d5db]"
+        style={{ top: frame.sentenceTop, left: frame.padLeft, width: frame.columnWidth, height: 22 }}
       >
         {sentence}
       </p>
@@ -466,124 +560,3 @@ export function NowHero({
   );
 }
 
-function HeroPill({
-  kind,
-  solarKw,
-  gridKw,
-  batteryPower,
-  soc,
-  night,
-  solarOn,
-  batteryOn,
-  offline,
-  onOpen,
-}: {
-  kind: HeroLabelKind;
-  solarKw: number | null;
-  gridKw: number | null;
-  batteryPower: number | null;
-  soc: number | null;
-  night: boolean;
-  solarOn: boolean;
-  batteryOn: boolean;
-  offline: boolean;
-  onOpen: () => void;
-}) {
-  const { t, language } = useTranslation();
-  const locale = language === "nl" ? "nl" : "en";
-  const power = (value: number | null) => (value == null ? null : formatLivePower(Math.abs(value), locale));
-  let value = "";
-  let sub = "";
-  let tone = "text-[#111827] dark:text-[#f3f4f6]";
-  let off = false;
-  let iconName: "sun" | "moon" | "grid" | "battery" = "sun";
-  let icon = <Sun className="h-[19px] w-[19px]" aria-hidden />;
-  switch (kind) {
-    case "solar": {
-      const producing = solarPillOn({ night, solarKw, gate: solarOn });
-      const shown = offline ? offlinePowerText(solarKw, true, (kw) => power(kw) ?? "") : null;
-      value = offline
-        ? (shown ?? "–")
-        : producing
-          ? (power(solarKw) ?? "")
-          : night
-            ? t("energy.overview.now.solarDown")
-            : (power(solarKw ?? 0) ?? "");
-      sub = t("energy.overview.now.solarRoof");
-      tone = "text-[#92400E] dark:text-[#FCD34D]";
-      off = !producing;
-      iconName = producing || !night ? "sun" : "moon";
-      icon = iconName === "sun" ? <Sun className="h-[19px] w-[19px]" aria-hidden /> : <Moon className="h-[19px] w-[19px]" aria-hidden />;
-      break;
-    }
-    case "grid": {
-      const exporting = (gridKw ?? 0) < 0;
-      const shown = offline ? offlinePowerText(gridKw, true, (kw) => power(kw) ?? "") : null;
-      value = offline ? (shown ?? "–") : (power(gridKw) ?? "");
-      sub = offline
-        ? t("energy.overview.now.offlineGrid")
-        : exporting
-          ? t("energy.overview.now.gridBack")
-          : t("energy.overview.now.gridFrom");
-      tone = exporting ? "text-[#047857] dark:text-[#6EE7B7]" : "text-[#4700B5] dark:text-[#c4b5fd]";
-      iconName = "grid";
-      icon = <UtilityPole className="h-[19px] w-[19px]" aria-hidden />;
-      break;
-    }
-    case "battery": {
-      if (batteryPower == null) return null;
-      const charging = batteryOn && batteryPower < 0;
-      const supplying = batteryOn && batteryPower > 0;
-      value = soc == null ? "–" : formatSoc(soc, locale);
-      sub = offline
-        ? t("energy.overview.now.offlineBattery")
-        : charging
-          ? fill(t("energy.overview.now.batteryCharge"), { kw: power(batteryPower) ?? "" })
-          : supplying
-            ? fill(t("energy.overview.now.batterySupply"), { kw: power(batteryPower) ?? "" })
-            : t("energy.overview.now.batteryIdle");
-      tone = "text-[#075985] dark:text-[#7DD3FC]";
-      off = !charging && !supplying;
-      iconName = "battery";
-      icon = charging ? (
-        <BatteryCharging className="h-[19px] w-[19px]" aria-hidden />
-      ) : (
-        <BatteryMedium className="h-[19px] w-[19px]" aria-hidden />
-      );
-      break;
-    }
-    default: {
-      const neverKind: never = kind;
-      return neverKind;
-    }
-  }
-  const place = kind === "solar" ? "right-0 top-0" : kind === "grid" ? "bottom-0 left-0" : "bottom-0 right-0";
-  return (
-    <button
-      type="button"
-      data-now-label={kind}
-      data-now-off={off ? "1" : "0"}
-      onClick={onOpen}
-      className={cn(
-        "absolute z-[5] inline-flex min-h-[50px] min-w-11 items-center gap-[9px] rounded-[16px] border border-[rgba(17,24,39,0.08)] bg-[var(--glass-strong)] py-[5px] pl-[6px] pr-[10px] text-left text-[#111827] shadow-[0_8px_22px_-12px_rgba(15,10,40,0.40)] outline-none dark:border-white/10 dark:bg-[rgba(27,26,33,0.88)] dark:text-[#f3f4f6]",
-        place,
-        FOCUS_RING_BRAND
-      )}
-    >
-      <span
-        className={cn(
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,currentColor_14%,transparent)]",
-          tone
-        )}
-        data-now-icon={iconName}
-      >
-        {icon}
-      </span>
-      <span className="flex flex-col leading-none">
-        <b className={cn("text-[20px] font-bold tabular-nums tracking-tight", (off || offline) && "text-[#4b5563] dark:text-[#b4b4bd]")}>{value}</b>
-        <small className="mt-0.5 text-[13px] font-medium text-[#374151] dark:text-[#d1d5db]">{sub}</small>
-      </span>
-      <ChevronRight className="h-[15px] w-[15px] shrink-0 text-[#4b5563] dark:text-[#b4b4bd]" aria-hidden />
-    </button>
-  );
-}
