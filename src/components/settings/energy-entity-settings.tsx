@@ -11,7 +11,7 @@ import {
   SettingsSelect,
 } from "@/components/settings/settings-panel";
 import { useTranslation } from "@/hooks/use-translation";
-import { entityLabel, filterEnergySensors, type EnergyTariffMode } from "@/lib/energy-dashboard";
+import { entityLabel, filterEnergySensors, filterLightEntities, type EnergyTariffMode } from "@/lib/energy-dashboard";
 import { cn } from "@/lib/utils";
 import { useEnergyStore } from "@/stores/energy-store";
 
@@ -31,6 +31,12 @@ const choiceSelected =
 
 const choiceIdle = "border-[#767b85] text-[#111827] dark:border-[#6b6b75] dark:text-[#f3f4f6]";
 
+const lightSelectClass = cn(
+  "h-11 border-[#767b85] outline-none focus-visible:!outline-none dark:border-[#a1a1aa]",
+  "disabled:cursor-not-allowed disabled:opacity-100 disabled:text-[#374151] dark:disabled:text-[#d1d5db]",
+  FOCUS_RING_BRAND
+);
+
 export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
   const { t } = useTranslation();
   const panelTempEntityIds = useEnergyStore((s) => s.panelTempEntityIds);
@@ -41,6 +47,8 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
   const setGridPowerInverted = useEnergyStore((s) => s.setGridPowerInverted);
   const tariffMode = useEnergyStore((s) => s.tariffMode);
   const setTariffMode = useEnergyStore((s) => s.setTariffMode);
+  const lighting = useEnergyStore((s) => s.lighting);
+  const setLightingEntity = useEnergyStore((s) => s.setLightingEntity);
   const [panelSearch, setPanelSearch] = useState("");
   const storedSplit = Boolean(energyEntities.gridImportPowerEntityId || energyEntities.gridExportPowerEntityId);
   const [modeChoice, setModeChoice] = useState<"signed" | "split" | null>(null);
@@ -52,6 +60,16 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
   );
   const powerOptions = useMemo(() => filterEnergySensors(entities, "power"), [entities]);
   const energyOptions = useMemo(() => filterEnergySensors(entities, "energy"), [entities]);
+  const livingLightOptions = useMemo(
+    () => filterLightEntities(entities, lighting.livingRoomEntityId),
+    [entities, lighting.livingRoomEntityId]
+  );
+  const upstairsLightOptions = useMemo(
+    () => filterLightEntities(entities, lighting.upstairsEntityId),
+    [entities, lighting.upstairsEntityId]
+  );
+  const lightsEmpty =
+    !lighting.livingRoomEntityId && !lighting.upstairsEntityId && !lighting.outdoorEntityId;
 
   function chooseMode(next: "signed" | "split") {
     setModeChoice(next);
@@ -86,6 +104,40 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
           noneLabel={t("settings.energy.entityNone")}
           onChange={(value) => setEntity("solarPowerEntityId", value)}
         />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.energy.lights.title")} description={t("settings.energy.lights.description")}>
+        <LightZoneSelect
+          id="energy-light-living-room"
+          label={t("settings.energy.lights.zone.livingRoom")}
+          value={lighting.livingRoomEntityId}
+          entities={livingLightOptions}
+          noneLabel={t("settings.energy.entityNone")}
+          onChange={(value) => setLightingEntity("livingRoomEntityId", value)}
+        />
+        <LightZoneSelect
+          id="energy-light-upstairs"
+          label={t("settings.energy.lights.zone.upstairs")}
+          value={lighting.upstairsEntityId}
+          entities={upstairsLightOptions}
+          noneLabel={t("settings.energy.entityNone")}
+          onChange={(value) => setLightingEntity("upstairsEntityId", value)}
+        />
+        <LightZoneSelect
+          id="energy-light-outside"
+          label={t("settings.energy.lights.zone.outside")}
+          badge={t("settings.energy.lights.later")}
+          value=""
+          entities={[]}
+          noneLabel={t("settings.energy.entityNone")}
+          disabled
+          onChange={() => undefined}
+        />
+        {lightsEmpty ? (
+          <p className="text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]" data-house-lights-empty="">
+            {t("settings.energy.lights.emptyHint")}
+          </p>
+        ) : null}
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.energy.liveGrid")} description={t("settings.energy.liveGridHint")}>
@@ -238,6 +290,53 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
         )}
       </SettingsGroup>
     </>
+  );
+}
+
+function LightZoneSelect({
+  id,
+  label,
+  badge,
+  value,
+  entities,
+  noneLabel,
+  disabled = false,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  badge?: string;
+  value: string;
+  entities: HaEntity[];
+  noneLabel: string;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <SettingsField label={label} htmlFor={id} badge={badge}>
+      <SettingsSelect
+        id={id}
+        value={disabled ? "" : value}
+        disabled={disabled}
+        onChange={(event) => {
+          if (disabled) return;
+          onChange(event.target.value);
+        }}
+        className={lightSelectClass}
+      >
+        <option value="">{noneLabel}</option>
+        {disabled
+          ? null
+          : entities.map((entity) => (
+              <option key={entity.entity_id} value={entity.entity_id}>
+                {entityLabel(entity)}
+              </option>
+            ))}
+        {!disabled && value && !entities.some((entity) => entity.entity_id === value) ? (
+          <option value={value}>{value}</option>
+        ) : null}
+      </SettingsSelect>
+    </SettingsField>
   );
 }
 

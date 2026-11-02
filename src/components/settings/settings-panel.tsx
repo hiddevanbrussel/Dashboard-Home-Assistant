@@ -120,17 +120,31 @@ export function SettingsField({
   label,
   hint,
   htmlFor,
+  badge,
   children,
 }: {
   label: string;
   hint?: string;
   htmlFor?: string;
+  /** Short status next to the label, such as a zone that is not available yet. */
+  badge?: string;
   children: ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-[15px] font-medium text-[#111827] dark:text-[#f3f4f6]">
+      <label
+        htmlFor={htmlFor}
+        className={cn(
+          "text-[15px] font-medium text-[#111827] dark:text-[#f3f4f6]",
+          badge ? "inline-flex items-center gap-2" : "block"
+        )}
+      >
         {label}
+        {badge ? (
+          <span className="inline-flex items-center rounded-[10px] border border-[#767b85] px-2 py-0.5 text-xs font-semibold leading-4 text-[#374151] dark:border-[#a1a1aa] dark:text-[#d1d5db]">
+            {badge}
+          </span>
+        ) : null}
       </label>
       {children}
       {hint ? <p className="text-sm leading-snug text-[#4b5563] dark:text-[#c4c4cc]">{hint}</p> : null}

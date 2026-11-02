@@ -11,6 +11,7 @@ import { useEntityStateStore, type EntityState } from "@/stores/entity-state-sto
 import { hydrateEnergyStore, useEnergyStore } from "@/stores/energy-store";
 import { useEnergyOverviewStore } from "@/stores/energy-overview-store";
 import { useLanguageStore } from "@/stores/language-store";
+import { useThemeStore } from "@/stores/theme-store";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -380,6 +381,145 @@ describe("Nu hero live values", () => {
     expect(grid?.textContent).not.toContain("terug");
     expect(grid?.getAttribute("aria-label")).toContain("terug naar het net");
     expect(grid?.tagName).toBe("DIV");
+  });
+
+  it("draws no window tint until a light with a known state is linked", async () => {
+    useEntityStateStore.getState().setStates([
+      sun,
+      solarState("1650"),
+      { entity_id: "light.woonkamer", state: "off", attributes: {} },
+    ]);
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape" }));
+    });
+    await until(() => {
+      expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-hero")).not.toBe("pending");
+    });
+    expect(document.querySelector("[data-house-light-tint]")).toBeNull();
+    expect(document.querySelector("[data-house-light-status]")).toBeNull();
+    expect(document.querySelector("[data-now-sentence]")).toBeTruthy();
+  });
+
+  it("tints only the off zone, stays under the lines, and speaks each known light once", async () => {
+    useEnergyStore.getState().setLightingEntity("livingRoomEntityId", "light.woonkamer");
+    useEnergyStore.getState().setLightingEntity("upstairsEntityId", "light.boven");
+    useEntityStateStore.getState().setStates([
+      sun,
+      solarState("1650"),
+      { entity_id: "light.woonkamer", state: "on", attributes: {} },
+      { entity_id: "light.boven", state: "off", attributes: { brightness: 255 } },
+      { entity_id: "light.buiten", state: "unavailable", attributes: {} },
+    ]);
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape" }));
+    });
+    await until(() => {
+      expect(document.querySelector("[data-house-light-zone='upstairs']")).toBeTruthy();
+    });
+    const frame = document.querySelector("[data-now-frame]");
+    const order = [...(frame?.children ?? [])].map((node) => node.tagName + (node.getAttribute("data-house-light-tint") != null ? ":tint" : "") + (node.getAttribute("data-house-light-status") != null ? ":status" : "") + (node.getAttribute("data-now-layers") != null ? ":layers" : ""));
+    const tintAt = order.findIndex((name) => name.includes(":tint"));
+    const statusAt = order.findIndex((name) => name.includes(":status"));
+    const layersAt = order.findIndex((name) => name.includes(":layers"));
+    expect(order[0]).toBe("PICTURE");
+    expect(tintAt).toBeGreaterThan(0);
+    expect(statusAt).toBeGreaterThan(tintAt);
+    expect(layersAt).toBeGreaterThan(statusAt);
+
+    const tint = document.querySelector("[data-house-light-tint]");
+    expect(tint?.getAttribute("aria-hidden")).toBe("true");
+    expect(tint?.getAttribute("aria-live")).toBeNull();
+    expect(tint?.tagName).toBe("svg");
+    expect(tint?.getAttribute("class")).toContain("pointer-events-none");
+    expect(tint?.querySelector("button")).toBeNull();
+    expect(tint?.querySelector("feGaussianBlur")?.getAttribute("stdDeviation")).toBe("0.35");
+
+    const opacityOf = (node: Element | null | undefined) =>
+      Number(/opacity:\s*([0-9.]+)/.exec(node?.getAttribute("style") ?? "")?.[1]);
+    const upstairs = document.querySelector("[data-house-light-zone='upstairs']");
+    expect(upstairs?.getAttribute("data-house-light-factor")).toBe("1");
+    const upstairsPolys = [...(upstairs?.querySelectorAll("polygon") ?? [])];
+    expect(upstairsPolys).toHaveLength(6);
+    expect(upstairsPolys[0]?.getAttribute("fill")).toBe("#1f2a44");
+    expect(opacityOf(upstairsPolys[0])).toBeCloseTo(0.62, 5);
+    expect(upstairsPolys[0]?.getAttribute("style")).toContain("600ms");
+    expect(upstairsPolys[0]?.getAttribute("filter")).toContain("house-light-tint-blur");
+    expect(upstairsPolys[1]?.getAttribute("fill")).toBe("#3b4a6b");
+    expect(opacityOf(upstairsPolys[1])).toBeCloseTo(0.14, 5);
+    expect(upstairsPolys[1]?.getAttribute("filter")).toBeNull();
+
+    const living = document.querySelector("[data-house-light-zone='livingRoom']");
+    expect(living?.getAttribute("data-house-light-factor")).toBe("0");
+    expect(opacityOf(living?.querySelector("polygon"))).toBe(0);
+    expect(document.querySelector("[data-house-light-zone='outdoor']")).toBeNull();
+
+    const status = document.querySelector("[data-house-light-status]");
+    expect(status?.getAttribute("aria-live")).toBeNull();
+    expect(status?.getAttribute("role")).toBeNull();
+    expect(status?.textContent).toBe("Woonkamer, licht aan. Boven, licht uit.");
+    expect(document.querySelector("[data-now-label='solar'] [data-now-value]")?.textContent).toBe("1,65");
+    expect(document.querySelector("[data-now-sentence]")?.getAttribute("data-house-light-status")).toBeNull();
+  });
+
+  it("uses the dark tint and drops a zone that is unavailable", async () => {
+    useThemeStore.setState({ mode: "dark", resolved: "dark" });
+    useEnergyStore.getState().setLightingEntity("livingRoomEntityId", "light.woonkamer");
+    useEnergyStore.getState().setLightingEntity("upstairsEntityId", "light.boven");
+    useEntityStateStore.getState().setStates([
+      sun,
+      solarState("1650"),
+      { entity_id: "light.woonkamer", state: "on", attributes: { brightness: 128 } },
+      { entity_id: "light.boven", state: "unavailable", attributes: {} },
+    ]);
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "portrait" }));
+    });
+    await until(() => {
+      expect(document.querySelector("[data-house-light-zone='livingRoom']")).toBeTruthy();
+    });
+    expect(document.querySelector("[data-house-light-zone='upstairs']")).toBeNull();
+    const poly = document.querySelector("[data-house-light-zone='livingRoom'] polygon");
+    expect(poly?.getAttribute("fill")).toBe("#0b1020");
+    const opacity = Number(/opacity:\s*([0-9.]+)/.exec(poly?.getAttribute("style") ?? "")?.[1]);
+    expect(opacity).toBeCloseTo(0.78 * (1 - 128 / 255), 5);
+    expect(document.querySelector("[data-house-light-status]")?.textContent).toBe("Woonkamer, licht aan.");
+    act(() => {
+      useThemeStore.setState({ mode: "light", resolved: "light" });
+    });
+  });
+
+  it("skips the opacity transition when reduced motion is on", async () => {
+    const spy = vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
+      matches: query.includes("prefers-reduced-motion"),
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }));
+    try {
+      useEnergyStore.getState().setLightingEntity("upstairsEntityId", "light.boven");
+      useEntityStateStore.getState().setStates([
+        sun,
+        solarState("1650"),
+        { entity_id: "light.boven", state: "off", attributes: {} },
+      ]);
+      await act(async () => {
+        root?.render(createElement(NowHero, { orientation: "landscape" }));
+      });
+      await until(() => {
+        expect(document.querySelector("[data-house-light-motion]")?.getAttribute("data-house-light-motion")).toBe(
+          "reduce"
+        );
+      });
+      const style = document.querySelector("[data-house-light-zone='upstairs'] polygon")?.getAttribute("style") ?? "";
+      expect(style).toContain("transition: none");
+      expect(style).not.toContain("600ms");
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 

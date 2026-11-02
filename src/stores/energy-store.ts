@@ -10,6 +10,7 @@ import {
   type EnergyEntityKey,
   type EnergyTariffMode,
 } from "@/lib/energy-dashboard";
+import { parseHouseLighting, type HouseLighting, type HouseLightingKey } from "@/lib/energy-now";
 
 const STORAGE_KEY_ENABLED = "dashboard.energy.enabled";
 const STORAGE_KEY_COST_PER_KWH = "dashboard.energy.costPerKwh";
@@ -19,6 +20,7 @@ const STORAGE_KEY_GAS_COST_PER_M3 = "dashboard.energy.gasCostPerM3";
 const STORAGE_KEY_GAS_NETBEHEER = "dashboard.energy.gasNetbeheerkostenPerDag";
 const STORAGE_KEY_GAS_VASTE_LEVERING = "dashboard.energy.gasVasteLeveringskostenPerMaand";
 const STORAGE_KEY_ENTITIES = "dashboard.energy.entities";
+const STORAGE_KEY_LIGHTING = "dashboard.energy.lighting";
 const STORAGE_KEY_PANEL_TEMPS = "dashboard.energy.panelTempEntityIds";
 const STORAGE_KEY_GRID_INVERTED = "dashboard.energy.gridPowerInverted";
 const STORAGE_KEY_TARIFF = "dashboard.energy.tariffMode";
@@ -72,6 +74,16 @@ function readEntities(): EnergyEntities {
   });
 }
 
+function readLighting(): HouseLighting {
+  return getStored(STORAGE_KEY_LIGHTING, parseHouseLighting(null), (v) => {
+    try {
+      return parseHouseLighting(JSON.parse(v));
+    } catch {
+      return parseHouseLighting(null);
+    }
+  });
+}
+
 function readPanelTempEntityIds(): string[] {
   return getStored(STORAGE_KEY_PANEL_TEMPS, [], (v) => parseEntityIdList(v));
 }
@@ -107,6 +119,8 @@ type EnergyStore = {
   setGasVasteLeveringskostenPerMaand: (v: number | undefined) => void;
   entities: EnergyEntities;
   setEntity: (key: EnergyEntityKey, value: string) => void;
+  lighting: HouseLighting;
+  setLightingEntity: (key: HouseLightingKey, value: string) => void;
   panelTempEntityIds: string[];
   setPanelTempEntityIds: (ids: string[]) => void;
   /** Flip the sign of the manual grid power sensor. Positive stays import unless this is on. */
@@ -179,6 +193,14 @@ export const useEnergyStore = create<EnergyStore>((set) => ({
       return { entities };
     });
   },
+  lighting: readLighting(),
+  setLightingEntity: (key, value) => {
+    set((state) => {
+      const lighting = parseHouseLighting({ ...state.lighting, [key]: value });
+      setStoredJson(STORAGE_KEY_LIGHTING, lighting);
+      return { lighting };
+    });
+  },
   panelTempEntityIds: readPanelTempEntityIds(),
   setPanelTempEntityIds: (ids) => {
     const panelTempEntityIds = parseEntityIdList(ids);
@@ -233,6 +255,7 @@ export function hydrateEnergyStore() {
       return Number.isNaN(n) ? undefined : n;
     }),
     entities: readEntities(),
+    lighting: readLighting(),
     panelTempEntityIds: readPanelTempEntityIds(),
     gridPowerInverted: readGridPowerInverted(),
     tariffMode: readTariffMode(),

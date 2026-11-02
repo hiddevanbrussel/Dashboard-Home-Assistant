@@ -2,9 +2,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mintLine, samplePolyline } from "./energy-house-anchors";
+import { getTranslations } from "./i18n";
 import {
+  activeHouseLights,
   batteryIsLinked,
   dayNightPair,
+  EMPTY_HOUSE_LIGHTING,
   FLOW_DOT_EDGE_OPACITY,
   FLOW_DOT_OPACITY,
   FLOW_LINE_OPACITY,
@@ -15,8 +18,13 @@ import {
   formatLivePower,
   gridExportIsLinked,
   gridImportIsLinked,
+  HOUSE_LIGHT_TINT,
+  HOUSE_LIGHT_ZONES,
+  houseLightTint,
   houseVariant,
   nowSentenceKey,
+  parseHouseLighting,
+  parseLightEntityId,
   consumptionIsLinked,
   overviewIsLinked,
   powerIsFlowing,
@@ -354,6 +362,134 @@ describe("now sentence", () => {
         houseKw: null,
       })
     ).toBeNull();
+  });
+});
+
+describe("house light tint", () => {
+  it("uses the full tint when the light is off", () => {
+    expect(houseLightTint({ state: "off" })).toBe(1);
+    expect(houseLightTint({ state: "off", attributes: { brightness: 255, brightness_pct: 100 } })).toBe(1);
+  });
+
+  it("scales an on light with brightness and prefers brightness_pct", () => {
+    expect(houseLightTint({ state: "on", attributes: { brightness: 0 } })).toBe(1);
+    expect(houseLightTint({ state: "on", attributes: { brightness: 128 } })).toBeCloseTo(1 - 128 / 255, 10);
+    expect(houseLightTint({ state: "on", attributes: { brightness: 255 } })).toBe(0);
+    expect(houseLightTint({ state: "on", attributes: { brightness_pct: 50, brightness: 255 } })).toBe(0.5);
+    expect(houseLightTint({ state: "on", attributes: { brightness_pct: 0 } })).toBe(1);
+    expect(houseLightTint({ state: "on", attributes: { brightness_pct: 100 } })).toBe(0);
+    expect(houseLightTint({ state: "on", attributes: { brightness: 400 } })).toBe(0);
+    expect(houseLightTint({ state: "on", attributes: { brightness_pct: -20 } })).toBe(1);
+  });
+
+  it("draws no tint for a non-dimmable on light or a value that is not a number", () => {
+    expect(houseLightTint({ state: "on" })).toBe(0);
+    expect(houseLightTint({ state: "on", attributes: {} })).toBe(0);
+    expect(houseLightTint({ state: "on", attributes: { brightness: Number.NaN } })).toBe(0);
+    expect(houseLightTint({ state: "on", attributes: { brightness_pct: "50" } })).toBe(0);
+    expect(houseLightTint({ state: "on", attributes: { brightness: "128" } })).toBe(0);
+  });
+
+  it("skips unavailable, unknown and a missing entity", () => {
+    expect(houseLightTint({ state: "unavailable", attributes: { brightness: 0 } })).toBeNull();
+    expect(houseLightTint({ state: "unknown" })).toBeNull();
+    expect(houseLightTint(null)).toBeNull();
+    expect(houseLightTint(undefined)).toBeNull();
+    expect(houseLightTint({ state: "" })).toBeNull();
+  });
+
+  it("keeps one polygon set and the theme opacities from the brief", () => {
+    expect(HOUSE_LIGHT_ZONES.livingRoom).toHaveLength(2);
+    expect(HOUSE_LIGHT_ZONES.upstairs).toHaveLength(3);
+    expect(HOUSE_LIGHT_ZONES.outdoor).toHaveLength(0);
+    expect(HOUSE_LIGHT_ZONES.livingRoom[0]?.[0]).toEqual([21.5, 51]);
+    expect(HOUSE_LIGHT_ZONES.upstairs[2]?.[1]).toEqual([69.8, 43]);
+    expect(HOUSE_LIGHT_TINT.light.multiply).toEqual({ fill: "#1f2a44", opacity: 0.62 });
+    expect(HOUSE_LIGHT_TINT.light.screen).toEqual({ fill: "#3b4a6b", opacity: 0.14 });
+    expect(HOUSE_LIGHT_TINT.dark.multiply).toEqual({ fill: "#0b1020", opacity: 0.78 });
+    expect(HOUSE_LIGHT_TINT.dark.screen).toEqual({ fill: "#3b4a6b", opacity: 0.18 });
+  });
+});
+
+describe("house lighting parser", () => {
+  it("keeps a trimmed light id and drops everything else", () => {
+    expect(parseLightEntityId("  light.woonkamer  ")).toBe("light.woonkamer");
+    expect(parseLightEntityId("light.")).toBe("light.");
+    expect(parseLightEntityId("sensor.woonkamer")).toBe("");
+    expect(parseLightEntityId("Light.woonkamer")).toBe("");
+    expect(parseLightEntityId("")).toBe("");
+    expect(parseLightEntityId("   ")).toBe("");
+    expect(parseLightEntityId(12)).toBe("");
+    expect(parseLightEntityId(null)).toBe("");
+    expect(
+      parseHouseLighting({
+        livingRoomEntityId: " light.woonkamer ",
+        upstairsEntityId: "sensor.overloop",
+        outdoorEntityId: "light.buiten",
+        extra: "light.ignored",
+      })
+    ).toEqual({
+      livingRoomEntityId: "light.woonkamer",
+      upstairsEntityId: "",
+      outdoorEntityId: "light.buiten",
+    });
+    expect(parseHouseLighting(null)).toEqual(EMPTY_HOUSE_LIGHTING);
+    expect(parseHouseLighting("light.woonkamer")).toEqual(EMPTY_HOUSE_LIGHTING);
+    expect(parseHouseLighting(["light.woonkamer"])).toEqual(EMPTY_HOUSE_LIGHTING);
+    expect(parseHouseLighting({ livingRoomEntityId: 4 })).toEqual(EMPTY_HOUSE_LIGHTING);
+  });
+
+  it("reports on and off zones and skips a zone without a known state", () => {
+    const lighting = parseHouseLighting({
+      livingRoomEntityId: "light.woonkamer",
+      upstairsEntityId: "light.boven",
+      outdoorEntityId: "light.buiten",
+    });
+    expect(
+      activeHouseLights(lighting, {
+        "light.woonkamer": { state: "on", attributes: { brightness_pct: 50 } },
+        "light.boven": { state: "off" },
+        "light.buiten": { state: "unavailable" },
+      })
+    ).toEqual([
+      { id: "livingRoom", factor: 0.5, spoken: "on" },
+      { id: "upstairs", factor: 1, spoken: "off" },
+    ]);
+    expect(activeHouseLights(EMPTY_HOUSE_LIGHTING, { "light.woonkamer": { state: "off" } })).toEqual([]);
+  });
+
+  it("uses only the agreed Dutch and English copy", () => {
+    const nl = getTranslations("nl");
+    const en = getTranslations("en");
+    expect(nl["settings.energy.lights.title"]).toBe("Verlichting op het huis");
+    expect(en["settings.energy.lights.title"]).toBe("Lights on the house");
+    expect(nl["settings.energy.lights.description"]).toBe(
+      "Kies per zone een lamp. Is de lamp uit, dan wordt die zone op het huis donker getoond."
+    );
+    expect(en["settings.energy.lights.description"]).toBe(
+      "Pick a light per zone. When it's off, that part of the house is shown dark."
+    );
+    expect(nl["settings.energy.lights.zone.livingRoom"]).toBe("Woonkamer");
+    expect(en["settings.energy.lights.zone.livingRoom"]).toBe("Living room");
+    expect(nl["settings.energy.lights.zone.upstairs"]).toBe("Boven");
+    expect(en["settings.energy.lights.zone.upstairs"]).toBe("Upstairs");
+    expect(nl["settings.energy.lights.zone.outside"]).toBe("Buiten");
+    expect(en["settings.energy.lights.zone.outside"]).toBe("Outside");
+    expect(nl["settings.energy.lights.later"]).toBe("Later");
+    expect(en["settings.energy.lights.later"]).toBe("Later");
+    expect(nl["settings.energy.lights.emptyHint"]).toBe(
+      "Geen lamp gekozen: het huis wordt gewoon getoond, zonder verlichtingslaag."
+    );
+    expect(en["settings.energy.lights.emptyHint"]).toBe(
+      "No light chosen: the house is shown as is, without a lighting layer."
+    );
+    expect(nl["energy.house.lightOn"]).toBe("{zone}, licht aan");
+    expect(en["energy.house.lightOn"]).toBe("{zone}, light on");
+    expect(nl["energy.house.lightOff"]).toBe("{zone}, licht uit");
+    expect(en["energy.house.lightOff"]).toBe("{zone}, light off");
+    expect(nl["settings.energy.entityNone"]).toBe("Niet ingesteld");
+    expect(Object.values(nl)).not.toContain("Komt later.");
+    expect(Object.values(en)).not.toContain("Komt later.");
   });
 });
 

@@ -90,6 +90,170 @@ export function houseAssetPath(variant: HouseVariantId, ext: "avif" | "webp"): s
   return `/energy/house/huis-${variant}.${ext}`;
 }
 
+export type HouseLightZoneId = "livingRoom" | "upstairs" | "outdoor";
+
+export type HouseLightPoint = readonly [number, number];
+
+/**
+ * Window polygons in percent of the 960×727 render.
+ * One set for every house variant and both orientations. Outdoor has no polygons yet.
+ */
+export const HOUSE_LIGHT_ZONES: Record<HouseLightZoneId, readonly (readonly HouseLightPoint[])[]> = {
+  livingRoom: [
+    [
+      [21.5, 51],
+      [35.5, 57.5],
+      [35.5, 73.5],
+      [22, 67],
+    ],
+    [
+      [40.3, 60.5],
+      [42.6, 61.5],
+      [42.6, 72],
+      [40.3, 71],
+    ],
+  ],
+  upstairs: [
+    [
+      [24, 33.5],
+      [34, 37.5],
+      [34, 50],
+      [24, 46],
+    ],
+    [
+      [40.3, 45],
+      [42.6, 46],
+      [42.6, 54],
+      [40.3, 53],
+    ],
+    [
+      [63.8, 45.5],
+      [69.8, 43],
+      [69.8, 48.5],
+      [63.8, 51],
+    ],
+  ],
+  outdoor: [],
+};
+
+/** Full-tint colours. Each polygon draws the multiply layer, then the screen layer, at these opacities times f. */
+export const HOUSE_LIGHT_TINT = {
+  light: {
+    multiply: { fill: "#1f2a44", opacity: 0.62 },
+    screen: { fill: "#3b4a6b", opacity: 0.14 },
+  },
+  dark: {
+    multiply: { fill: "#0b1020", opacity: 0.78 },
+    screen: { fill: "#3b4a6b", opacity: 0.18 },
+  },
+} as const;
+
+/** User-space blur on the multiply layer. The viewBox is 0 0 100 100. */
+export const HOUSE_LIGHT_BLUR = 0.35;
+
+export const HOUSE_LIGHT_TINT_TRANSITION_MS = 600;
+
+export type HouseLightingKey = "livingRoomEntityId" | "upstairsEntityId" | "outdoorEntityId";
+
+export type HouseLighting = Record<HouseLightingKey, string>;
+
+export const EMPTY_HOUSE_LIGHTING: HouseLighting = {
+  livingRoomEntityId: "",
+  upstairsEntityId: "",
+  outdoorEntityId: "",
+};
+
+/** A light entity id, or "" when the value is missing or not in the light domain. */
+export function parseLightEntityId(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const id = value.trim();
+  return id.startsWith("light.") ? id : "";
+}
+
+export function parseHouseLighting(raw: unknown): HouseLighting {
+  const source =
+    raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  return {
+    livingRoomEntityId: parseLightEntityId(source.livingRoomEntityId),
+    upstairsEntityId: parseLightEntityId(source.upstairsEntityId),
+    outdoorEntityId: parseLightEntityId(source.outdoorEntityId),
+  };
+}
+
+export type HouseLightReading = {
+  state?: string;
+  attributes?: Record<string, unknown>;
+};
+
+function tintFactor(raw: unknown, scale: number): number {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return 0;
+  const factor = 1 - raw / scale;
+  if (factor < 0) return 0;
+  if (factor > 1) return 1;
+  return factor;
+}
+
+/**
+ * Window-tint factor for one light.
+ * 1 is the full tint (off). 0 is no tint (on, fully bright or not dimmable).
+ * null draws nothing: the entity is missing, unavailable or unknown.
+ * brightness_pct wins when that attribute is present.
+ */
+export function houseLightTint(state: HouseLightReading | null | undefined): number | null {
+  if (!state || typeof state.state !== "string") return null;
+  if (state.state === "off") return 1;
+  if (state.state !== "on") return null;
+  const attributes = state.attributes;
+  if (attributes && "brightness_pct" in attributes) return tintFactor(attributes.brightness_pct, 100);
+  if (attributes && "brightness" in attributes) return tintFactor(attributes.brightness, 255);
+  return 0;
+}
+
+export type ActiveHouseLight = {
+  id: HouseLightZoneId;
+  factor: number;
+  spoken: "on" | "off";
+};
+
+const HOUSE_LIGHT_ENTITY_KEYS: readonly { id: HouseLightZoneId; key: HouseLightingKey }[] = [
+  { id: "livingRoom", key: "livingRoomEntityId" },
+  { id: "upstairs", key: "upstairsEntityId" },
+  { id: "outdoor", key: "outdoorEntityId" },
+];
+
+/** Linked zones whose state is on or off, in living room, upstairs, outdoor order. */
+export function activeHouseLights(
+  lighting: HouseLighting,
+  states: Readonly<Record<string, HouseLightReading | undefined>>
+): ActiveHouseLight[] {
+  const active: ActiveHouseLight[] = [];
+  for (const zone of HOUSE_LIGHT_ENTITY_KEYS) {
+    const entityId = lighting[zone.key];
+    if (!entityId) continue;
+    const reading = states[entityId];
+    const factor = houseLightTint(reading);
+    if (factor == null || !reading) continue;
+    if (reading.state !== "on" && reading.state !== "off") continue;
+    active.push({ id: zone.id, factor, spoken: reading.state });
+  }
+  return active;
+}
+
+export function houseLightZoneNameKey(id: HouseLightZoneId): string {
+  switch (id) {
+    case "livingRoom":
+      return "settings.energy.lights.zone.livingRoom";
+    case "upstairs":
+      return "settings.energy.lights.zone.upstairs";
+    case "outdoor":
+      return "settings.energy.lights.zone.outside";
+    default: {
+      const neverId: never = id;
+      return neverId;
+    }
+  }
+}
+
 export function solarIsLinked(model: EnergyModel | null, manualPowerId: string, manualYieldId: string): boolean {
   if (manualPowerId.trim() || manualYieldId.trim()) return true;
   if (!model) return false;

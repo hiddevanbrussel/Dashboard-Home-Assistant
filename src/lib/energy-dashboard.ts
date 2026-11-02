@@ -675,6 +675,18 @@ export function filterEnergySensors(
   return fallback;
 }
 
+/** Light-domain entities, sorted by label. A chosen light.* that is still in `entities` stays in the list. */
+export function filterLightEntities<T extends NamedEntity>(entities: readonly T[], selectedId = ""): T[] {
+  const lights = entities.filter((entity) => entity.entity_id.startsWith("light."));
+  lights.sort((a, b) => entityLabel(a).localeCompare(entityLabel(b), undefined, { sensitivity: "base" }));
+  const selected = selectedId.trim();
+  if (selected.startsWith("light.") && !lights.some((entity) => entity.entity_id === selected)) {
+    const extra = entities.find((entity) => entity.entity_id === selected);
+    if (extra) lights.unshift(extra);
+  }
+  return lights;
+}
+
 /** Largest-consumer choice: sensor ids only, in the order the user picked. */
 export const TOP_DEVICE_MAX = 5;
 export const TOP_DEVICE_ID_RE = /^sensor\.[a-z0-9_]+$/;

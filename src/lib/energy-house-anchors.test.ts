@@ -89,24 +89,66 @@ describe("now hero source", () => {
     expect(overview).not.toContain("Verhaal volgt");
   });
 
-  it("leaves app-shell unchanged because the energy header condition is already on main", () => {
+  it("leaves app-shell, widgets, history, the websocket and the house renders unchanged", () => {
+    const paths = [
+      "src/components/layout/app-shell.tsx",
+      "src/components/widgets",
+      "src/app/api/ha/history/route.ts",
+      "src/lib/ha/ws-commands.ts",
+      "public/energy/house",
+    ].join(" ");
+    const command = `git diff origin/main -- ${paths}`;
     let diff = "";
     try {
-      diff = execSync(
-        "git diff origin/main -- src/components/layout/app-shell.tsx src/components/widgets src/stores/energy-store.ts src/app/api/ha/history/route.ts src/lib/ha/ws-commands.ts",
-        { cwd: process.cwd(), encoding: "utf8" }
-      );
+      diff = execSync(command, { cwd: process.cwd(), encoding: "utf8" });
     } catch {
       execSync("git fetch origin main", { cwd: process.cwd() });
-      diff = execSync(
-        "git diff origin/main -- src/components/layout/app-shell.tsx src/components/widgets src/stores/energy-store.ts src/app/api/ha/history/route.ts src/lib/ha/ws-commands.ts",
-        { cwd: process.cwd(), encoding: "utf8" }
-      );
+      diff = execSync(command, { cwd: process.cwd(), encoding: "utf8" });
     }
     const lines = diff
       .split("\n")
       .filter((line) => (line.startsWith("+") || line.startsWith("-")) && !line.startsWith("+++") && !line.startsWith("---"));
     expect(lines).toEqual([]);
+  });
+
+  it("adds house lighting to the energy store and does not change the other fields", () => {
+    const command = "git diff origin/main -- src/stores/energy-store.ts";
+    let diff = "";
+    try {
+      diff = execSync(command, { cwd: process.cwd(), encoding: "utf8" });
+    } catch {
+      execSync("git fetch origin main", { cwd: process.cwd() });
+      diff = execSync(command, { cwd: process.cwd(), encoding: "utf8" });
+    }
+    const lines = diff
+      .split("\n")
+      .filter((line) => (line.startsWith("+") || line.startsWith("-")) && !line.startsWith("+++") && !line.startsWith("---"));
+    expect(lines.filter((line) => line.startsWith("-"))).toEqual([]);
+    expect(lines.map((line) => line.slice(1))).toEqual([
+      'import { parseHouseLighting, type HouseLighting, type HouseLightingKey } from "@/lib/energy-now";',
+      'const STORAGE_KEY_LIGHTING = "dashboard.energy.lighting";',
+      "function readLighting(): HouseLighting {",
+      "  return getStored(STORAGE_KEY_LIGHTING, parseHouseLighting(null), (v) => {",
+      "    try {",
+      "      return parseHouseLighting(JSON.parse(v));",
+      "    } catch {",
+      "      return parseHouseLighting(null);",
+      "    }",
+      "  });",
+      "}",
+      "",
+      "  lighting: HouseLighting;",
+      "  setLightingEntity: (key: HouseLightingKey, value: string) => void;",
+      "  lighting: readLighting(),",
+      "  setLightingEntity: (key, value) => {",
+      "    set((state) => {",
+      "      const lighting = parseHouseLighting({ ...state.lighting, [key]: value });",
+      "      setStoredJson(STORAGE_KEY_LIGHTING, lighting);",
+      "      return { lighting };",
+      "    });",
+      "  },",
+      "    lighting: readLighting(),",
+    ]);
   });
 
   it("renders the hero without solar or battery labels when nothing is linked", () => {
