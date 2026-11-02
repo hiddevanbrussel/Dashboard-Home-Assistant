@@ -62,15 +62,15 @@ describe("Nu hero live values", () => {
       root?.render(createElement(NowHero, { orientation: "landscape" }));
     });
     await until(() => {
-      expect(document.querySelector("[data-now-label='solar'] b")?.textContent).toBe("1,65 kW");
+      expect(document.querySelector("[data-now-label='solar'] [data-now-value]")?.textContent).toBe("1,65");
+      expect(document.querySelector("[data-now-label='solar'] [data-now-unit]")?.textContent).toBe("kW");
     });
     await act(async () => {
       useEntityStateStore.getState().setStates([solarState("0"), sun]);
     });
     await until(() => {
-      const value = document.querySelector("[data-now-label='solar'] b")?.textContent ?? "";
-      expect(value).toBe("0 W");
-      expect(value).not.toContain("0,83");
+      expect(document.querySelector("[data-now-label='solar']")).toBeNull();
+      expect(document.body.textContent).not.toContain("0,83");
     });
   });
 
@@ -105,7 +105,7 @@ describe("Nu hero live values", () => {
     await until(() => {
       expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-hero")).not.toBe("pending");
     });
-    expect(document.querySelector("[data-now-house]")?.textContent).toContain("–");
+    expect(document.querySelector("[data-now-house]")).toBeNull();
     expect(document.querySelector("[data-now-label='solar']")).toBeNull();
     expect(document.querySelector("[data-now-label='battery']")).toBeNull();
     expect(document.body.textContent).not.toContain("rust");
@@ -117,9 +117,11 @@ describe("Nu hero live values", () => {
       ]);
     });
     await until(() => {
-      const battery = document.querySelector("[data-now-label='battery']")?.textContent ?? "";
-      expect(battery).toContain("56%");
-      expect(battery).toContain("laadt");
+      const battery = document.querySelector("[data-now-label='battery']");
+      expect(battery?.textContent).toContain("56");
+      expect(battery?.textContent).toContain("%");
+      expect(battery?.textContent).not.toContain("laadt");
+      expect(battery?.getAttribute("aria-label")).toContain("laadt");
     });
     await act(async () => {
       useEntityStateStore.getState().setStates([
@@ -129,10 +131,11 @@ describe("Nu hero live values", () => {
       ]);
     });
     await until(() => {
-      const battery = document.querySelector("[data-now-label='battery']")?.textContent ?? "";
-      expect(battery).toContain("40%");
-      expect(battery).toContain("levert");
-      expect(battery).not.toContain("laadt");
+      const battery = document.querySelector("[data-now-label='battery']");
+      expect(battery?.textContent).toContain("40");
+      expect(battery?.textContent).not.toContain("levert");
+      expect(battery?.textContent).not.toContain("laadt");
+      expect(battery?.getAttribute("aria-label")).toContain("levert");
     });
   });
 
@@ -147,9 +150,10 @@ describe("Nu hero live values", () => {
       root?.render(createElement(NowHero, { orientation: "landscape" }));
     });
     await until(() => {
-      const pill = document.querySelector("[data-now-label='solar'] b")?.textContent ?? "";
+      const pill = document.querySelector("[data-now-label='solar'] [data-now-value]")?.textContent ?? "";
       const sentence = document.querySelector("[data-now-sentence]")?.textContent ?? "";
-      expect(pill).toBe("420 W");
+      expect(pill).toBe("420");
+      expect(document.querySelector("[data-now-label='solar'] [data-now-unit]")?.textContent).toBe("W");
       expect(sentence).toContain("420 W");
       expect(sentence).not.toContain("423");
     });
@@ -168,8 +172,8 @@ describe("Nu hero live values", () => {
     await until(() => {
       expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-hero")).not.toBe("pending");
     });
-    expect(document.querySelector("[data-now-house]")?.textContent).toContain("–");
-    expect(document.querySelector("[data-now-label='solar'] b")?.textContent).toBe("1,65 kW");
+    expect(document.querySelector("[data-now-house]")).toBeNull();
+    expect(document.querySelector("[data-now-label='solar'] [data-now-value]")?.textContent).toBe("1,65");
     const sentence = document.querySelector("[data-now-sentence]")?.textContent ?? "";
     expect(sentence.trim()).toBe("");
     expect(sentence).not.toContain("van de");
@@ -196,8 +200,9 @@ describe("Nu hero live values", () => {
         root?.render(createElement(NowHero, { orientation: "landscape" }));
       });
       await until(() => {
-        const paths = [...document.querySelectorAll("[data-now-leader] path")].map((node) => node.getAttribute("d") ?? "");
-        expect(paths.some((path) => path.startsWith("M478.5 "))).toBe(true);
+        expect(document.querySelector("[data-now-flow='battery']")?.getAttribute("d")).toBe("M369.6 228.0 L460.5 400.0");
+        expect(document.querySelector("[data-now-line='battery']")?.getAttribute("d")).toBe("M460.5 400.0 L369.6 228.0");
+        expect(document.querySelector("[data-now-line='battery'] circle")).toBeNull();
       });
       batteryRect = new DOMRect(469.9, 480, 202.1, 50);
       await act(async () => {
@@ -209,10 +214,9 @@ describe("Nu hero live values", () => {
         ]);
       });
       await until(() => {
-        const dashed = [...document.querySelectorAll("[data-now-leader] path")].find(
-          (node) => node.getAttribute("stroke-dasharray") === "3 4"
-        );
-        expect(dashed?.getAttribute("d") ?? "").toMatch(/^M487\.9 /);
+        expect(document.querySelector("[data-now-flow='battery']")).toBeNull();
+        expect(document.querySelector("[data-now-line='battery']")?.getAttribute("d")).toBe("M469.9 400.0 L369.6 228.0");
+        expect(document.querySelector("[stroke-dasharray='3 4']")).toBeNull();
       });
     } finally {
       HTMLElement.prototype.getBoundingClientRect = original;
@@ -257,7 +261,8 @@ describe("Nu hero live values", () => {
       expect(document.querySelector("[data-now-label='solar']")?.getAttribute("data-now-off")).toBe("0");
     });
     expect(document.querySelector("[data-now-icon]")?.getAttribute("data-now-icon")).toBe("sun");
-    expect(document.querySelector("[data-now-label='solar'] b")?.textContent).toBe("50 W");
+    expect(document.querySelector("[data-now-label='solar'] [data-now-value]")?.textContent).toBe("50");
+    expect(document.querySelector("[data-now-label='solar'] [data-now-unit]")?.textContent).toBe("W");
   });
 
   it("goes offline without a zero, a mint line or the word rust", async () => {
@@ -275,7 +280,7 @@ describe("Nu hero live values", () => {
     const sentence = document.querySelector("[data-now-sentence]")?.textContent ?? "";
     expect(sentence).toContain("Home Assistant is even niet bereikbaar");
     expect(sentence).toMatch(/\d{2}:\d{2}/);
-    expect(document.querySelector("[data-now-house]")?.textContent).not.toContain("0 W");
+    expect(document.querySelector("[data-now-house]")?.textContent ?? "").not.toContain("0 W");
     expect(document.body.textContent).not.toContain("rust");
     expect(document.querySelector("[data-now-layers] polyline")).toBeNull();
     expect(document.querySelector("[stroke='#10B981']")).toBeNull();
@@ -300,20 +305,23 @@ describe("Nu hero live values", () => {
     });
     await until(() => {
       expect(document.querySelector("[data-now-offline]")?.getAttribute("data-now-offline")).toBe("1");
-      expect(document.querySelector("[data-now-label='grid'] small")?.textContent).toBe("net");
+      expect(document.querySelector("[data-now-label='grid'] [data-now-unit]")?.textContent).toBe("W");
     });
-    expect(document.querySelector("[data-now-label='battery'] small")?.textContent).toBe("batterij");
-    expect(document.querySelector("[data-now-label='solar'] small")?.textContent).toBe("zon op het dak");
+    expect(document.querySelector("[data-now-label='battery'] [data-now-unit]")?.textContent).toBe("%");
+    expect(document.querySelector("[data-now-label='solar']")?.getAttribute("aria-label")).toContain("zon op het dak");
     for (const kind of ["solar", "grid", "battery"]) {
       const pill = document.querySelector(`[data-now-label='${kind}']`);
-      expect(pill?.querySelectorAll("svg").length).toBeGreaterThanOrEqual(2);
-      const sub = pill?.querySelector("small")?.textContent ?? "";
-      expect(sub).not.toContain("terug");
-      expect(sub).not.toContain("van het net");
-      expect(sub).not.toContain("laadt");
-      expect(sub).not.toContain("levert");
-      expect(sub).not.toContain("rust");
+      expect(pill?.querySelectorAll("svg").length).toBe(1);
+      const visible = pill?.textContent ?? "";
+      expect(visible).not.toContain("terug");
+      expect(visible).not.toContain("van het net");
+      expect(visible).not.toContain("laadt");
+      expect(visible).not.toContain("levert");
+      expect(visible).not.toContain("rust");
+      expect(visible).not.toContain("zon op het dak");
     }
+    expect(document.querySelector("[data-now-label='grid']")?.getAttribute("aria-label")).toContain("terug naar het net");
+    expect(document.querySelector("[data-now-label='battery']")?.getAttribute("aria-label")).toContain("levert");
   });
 
   it("treats a consumption-only sensor as linked and does not ask to connect sensors", async () => {
@@ -338,6 +346,40 @@ describe("Nu hero live values", () => {
     expect(document.querySelector("[data-now-label='solar']")).toBeNull();
     expect(document.querySelector("[data-now-label='grid']")).toBeNull();
     expect(document.querySelector("[data-now-label='battery']")).toBeNull();
+  });
+
+  it("keeps Huis in the aria label only and hides the sun label at night", async () => {
+    useEnergyStore.getState().setEntity("consumptionEntityId", "sensor.house_power");
+    useEnergyStore.getState().setEntity("gridPowerEntityId", "sensor.grid_power");
+    useEntityStateStore.getState().setStates([
+      { entity_id: "sun.sun", state: "below_horizon", attributes: {} },
+      solarState("0"),
+      { entity_id: "sensor.house_power", state: "700", attributes: { unit_of_measurement: "W", device_class: "power" } },
+      { entity_id: "sensor.grid_power", state: "-250", attributes: { unit_of_measurement: "W", device_class: "power" } },
+    ]);
+    await act(async () => {
+      root?.render(
+        createElement(NowHero, {
+          orientation: "landscape",
+          labelOpens: (kind) => kind === "house",
+          onOpenLabel: () => undefined,
+        })
+      );
+    });
+    await until(() => {
+      expect(document.querySelector("[data-now-house]")?.getAttribute("aria-label")).toContain("Huis");
+    });
+    const house = document.querySelector("[data-now-house]");
+    expect(house?.textContent).not.toContain("Huis");
+    expect(house?.textContent).toContain("700");
+    expect(house?.tagName).toBe("BUTTON");
+    expect(house?.getAttribute("type")).toBe("button");
+    expect(document.querySelector("[data-now-label='solar']")).toBeNull();
+    const grid = document.querySelector("[data-now-label='grid']");
+    expect(grid?.textContent).not.toContain("-");
+    expect(grid?.textContent).not.toContain("terug");
+    expect(grid?.getAttribute("aria-label")).toContain("terug naar het net");
+    expect(grid?.tagName).toBe("DIV");
   });
 });
 

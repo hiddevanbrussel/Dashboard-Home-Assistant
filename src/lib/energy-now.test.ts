@@ -125,11 +125,9 @@ describe("shouldAnimate", () => {
     expect(FLOW_DOT_EDGE_OPACITY).toBe(0.19);
     expect(FLOW_LINE_OPACITY).toBe(0.52);
     const layers = readFileSync(path.join(process.cwd(), "src/components/energy/overview/now-hero-layers.tsx"), "utf8");
-    expect(layers).toContain("FLOW_DOT_OPACITY");
-    expect(layers).toContain("FLOW_LINE_OPACITY");
-    expect(layers).toContain("flowDurationMs(step)");
-    expect(layers).toContain("flowDotFrames(path)");
-    expect(layers).toContain("flowDotDelayMs(index, DOTS, duration)");
+    expect(layers).toContain("energy-label-flow");
+    expect(layers).toContain("strokeWidth={1.5}");
+    expect(layers).not.toContain("<circle");
     expect(layers).not.toContain("function cycle");
     expect(layers).not.toContain("opacity: 0.35");
     expect(layers).not.toContain("opacity={0.95}");

@@ -83,7 +83,8 @@ describe("now hero source", () => {
     expect(hero).toContain("decoding=\"async\"");
     expect(hero).not.toContain('loading="lazy"');
     expect(hero).toContain("requestIdleCallback");
-    expect(overview).toContain("StoryCarousel");
+    expect(overview).toContain("EnergyStorySheet");
+    expect(overview).not.toContain("StoryCarousel");
     expect(overview).not.toContain("NEXT_PUBLIC_ENERGY_STORY_DEV");
     expect(overview).not.toContain("Verhaal volgt");
   });
@@ -91,16 +92,16 @@ describe("now hero source", () => {
   it("leaves app-shell unchanged because the energy header condition is already on main", () => {
     let diff = "";
     try {
-      diff = execSync("git diff origin/main -- src/components/layout/app-shell.tsx", {
-        cwd: process.cwd(),
-        encoding: "utf8",
-      });
+      diff = execSync(
+        "git diff origin/main -- src/components/layout/app-shell.tsx src/components/widgets src/stores/energy-store.ts src/app/api/ha/history/route.ts src/lib/ha/ws-commands.ts",
+        { cwd: process.cwd(), encoding: "utf8" }
+      );
     } catch {
       execSync("git fetch origin main", { cwd: process.cwd() });
-      diff = execSync("git diff origin/main -- src/components/layout/app-shell.tsx", {
-        cwd: process.cwd(),
-        encoding: "utf8",
-      });
+      diff = execSync(
+        "git diff origin/main -- src/components/layout/app-shell.tsx src/components/widgets src/stores/energy-store.ts src/app/api/ha/history/route.ts src/lib/ha/ws-commands.ts",
+        { cwd: process.cwd(), encoding: "utf8" }
+      );
     }
     const lines = diff
       .split("\n")

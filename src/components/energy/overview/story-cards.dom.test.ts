@@ -79,7 +79,14 @@ describe("story card view", () => {
     });
     expect(document.body.textContent).toContain("Koppel je energiesensoren");
     expect(document.body.textContent).toContain("Naar instellingen");
-    expect(document.body.textContent).toContain("Verbruikers");
+    expect(document.body.textContent).toContain("Net");
+    expect(document.body.textContent).not.toContain("Verbruikers");
+    act(() => {
+      useLanguageStore.setState({ language: "en", ready: true });
+    });
+    expect(document.body.textContent).toContain("Link your energy sensors");
+    expect(document.body.textContent).toContain("Grid");
+    expect(document.body.textContent).not.toContain("Devices");
   });
 });
 
@@ -145,12 +152,13 @@ describe("overview refresh", () => {
     expect(cards).not.toContain("* 52");
     expect(cards).toContain("mt-4");
     const overview = readFileSync(path.join(process.cwd(), "src/components/energy/overview/energy-overview.tsx"), "utf8");
-    expect(overview).toContain("grid-cols-[560px_minmax(0,1fr)]");
-    expect(overview).toContain("grid-rows-[auto_424px_auto]");
-    expect(overview).toContain("portrait:grid-rows-[auto_424px_auto_auto]");
+    expect(overview).toContain("EnergyStorySheet");
+    expect(overview).toContain("DayBand");
+    expect(overview).not.toContain("StoryCarousel");
     const hero = readFileSync(path.join(process.cwd(), "src/components/energy/overview/now-hero.tsx"), "utf8");
     expect(hero).toContain('className="contents"');
-    expect(hero).toContain("h-[424px] w-[560px]");
+    expect(hero).toContain("object-contain");
+    expect(hero).toContain("data-now-housebox");
     expect(carousel).toContain("portrait:mt-6");
     expect(carousel).toContain('reduced ? "auto" : "smooth"');
     expect(carousel).toContain("snap-x snap-mandatory");

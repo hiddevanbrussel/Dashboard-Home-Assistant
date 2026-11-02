@@ -748,3 +748,88 @@ html.dark[data-dashboard-edit] [data-header-statpill-id] .tile-kebab-hit::before
 [data-header-statpill-id] .tile-kebab-hit > svg {
   position: relative;
 }
+
+/* Energy overview V6c: glass labels on the house, and the day band. */
+.energy-house-label {
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+}
+
+.energy-house-label::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--label-accent);
+}
+
+.energy-house-label::after {
+  content: "";
+  position: absolute;
+  inset: -4px -2px;
+}
+
+.energy-day-band {
+  background: rgba(255, 255, 255, var(--glass-opacity));
+  border: 1px solid var(--glass-border-light);
+  border-radius: 22px;
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+}
+
+.dark .energy-day-band {
+  background: rgb(var(--glass-fill) / calc(0.40 + 0.38 * var(--glass-opacity-dark)));
+  border-color: var(--glass-border-dark);
+  box-shadow: none;
+}
+
+html[data-glass-density="off"] .energy-house-label,
+html[data-glass-density="off"] .energy-day-band {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@keyframes energy-label-flow {
+  from {
+    stroke-dashoffset: 518;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.energy-label-flow {
+  stroke-dasharray: 18 500;
+  animation: energy-label-flow 9s linear infinite;
+  opacity: 0.85;
+}
+
+@keyframes energy-story-sheet-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.energy-story-sheet-in {
+  animation: energy-story-sheet-in 0.28s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .energy-label-flow {
+    animation: none;
+    display: none;
+  }
+
+  .energy-story-sheet-in {
+    animation: none !important;
+  }
+}
