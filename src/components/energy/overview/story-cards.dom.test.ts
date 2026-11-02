@@ -141,6 +141,8 @@ describe("overview refresh", () => {
     expect(cards).not.toContain("radial-gradient");
     expect(cards).toContain('boxShadow: "none"');
     expect(cards).toContain("dark:opacity-90");
+    expect(cards).toContain("* 36");
+    expect(cards).not.toContain("* 52");
     expect(cards).toContain("mt-4");
     const overview = readFileSync(path.join(process.cwd(), "src/components/energy/overview/energy-overview.tsx"), "utf8");
     expect(overview).toContain("grid-cols-[560px_minmax(0,1fr)]");

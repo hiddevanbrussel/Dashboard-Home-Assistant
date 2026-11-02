@@ -407,7 +407,7 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
                 <div key={`${day.weekday}-${day.current ? "now" : "past"}`} className="flex flex-1 flex-col items-center justify-end gap-1">
                   <span
                     className={cn("w-full rounded-md", ACCENT.grid, day.current && "opacity-50 dark:opacity-90")}
-                    style={{ height: Math.max(4, Math.round((day.kwh / max) * 52)) }}
+                    style={{ height: Math.max(4, Math.round((day.kwh / max) * 36)) }}
                   />
                   <span className="text-[12px] text-[#374151] dark:text-[#d1d5db]">{weekdayLabel(day.weekday, lang)}</span>
                 </div>
