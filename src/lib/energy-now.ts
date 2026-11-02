@@ -197,14 +197,20 @@ function tintFactor(raw: unknown, scale: number): number {
  * Window-tint factor for one light.
  * 1 is the full tint (off). 0 is no tint (on, fully bright or not dimmable).
  * null draws nothing: the entity is missing, unavailable or unknown.
- * brightness_pct wins when that attribute is present.
+ * brightness_pct wins only when it is a finite number; otherwise brightness is used.
  */
 export function houseLightTint(state: HouseLightReading | null | undefined): number | null {
   if (!state || typeof state.state !== "string") return null;
   if (state.state === "off") return 1;
   if (state.state !== "on") return null;
   const attributes = state.attributes;
-  if (attributes && "brightness_pct" in attributes) return tintFactor(attributes.brightness_pct, 100);
+  if (
+    attributes &&
+    typeof attributes.brightness_pct === "number" &&
+    Number.isFinite(attributes.brightness_pct)
+  ) {
+    return tintFactor(attributes.brightness_pct, 100);
+  }
   if (attributes && "brightness" in attributes) return tintFactor(attributes.brightness, 255);
   return 0;
 }

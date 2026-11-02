@@ -382,6 +382,14 @@ describe("house light tint", () => {
     expect(houseLightTint({ state: "on", attributes: { brightness_pct: -20 } })).toBe(1);
   });
 
+  it("falls back to brightness when brightness_pct is not a finite number", () => {
+    expect(houseLightTint({ state: "on", attributes: { brightness_pct: null, brightness: 128 } })).toBeCloseTo(
+      1 - 128 / 255,
+      10
+    );
+    expect(houseLightTint({ state: "on", attributes: { brightness: 0 } })).toBe(1);
+  });
+
   it("draws no tint for a non-dimmable on light or a value that is not a number", () => {
     expect(houseLightTint({ state: "on" })).toBe(0);
     expect(houseLightTint({ state: "on", attributes: {} })).toBe(0);
