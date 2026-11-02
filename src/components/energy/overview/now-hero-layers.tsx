@@ -11,9 +11,10 @@ import {
   type Point,
 } from "@/lib/energy-house-anchors";
 import {
-  FLOW_DOT_EDGE_OPACITY,
   FLOW_DOT_OPACITY,
   FLOW_LINE_OPACITY,
+  flowDotDelayMs,
+  flowDotFrames,
   flowDurationMs,
   type HouseVariantId,
 } from "@/lib/energy-now";
@@ -23,14 +24,6 @@ const SAMPLES = 16;
 
 function scale(point: Point, width: number, height: number): Point {
   return { x: (point.x / 100) * width, y: (point.y / 100) * height };
-}
-
-function cycle(points: readonly Point[], offset: number): Point[] {
-  if (points.length === 0) return [];
-  const start = offset % points.length;
-  const spun = [...points.slice(start), ...points.slice(0, start)];
-  const first = spun[0];
-  return first ? [...spun, first] : spun;
 }
 
 /**
@@ -145,6 +138,12 @@ export function NowHeroLayers({
       node.style.transform = `translate(${point.x}px, ${point.y}px)`;
       node.style.opacity = opacity;
     };
+    const duration = flowDurationMs(step);
+    const frames = flowDotFrames(path).map((frame) => ({
+      offset: frame.offset,
+      transform: `translate(${frame.x}px, ${frame.y}px)`,
+      opacity: frame.opacity,
+    }));
     dotRefs.current.forEach((dot, index) => {
       const point = rest[index];
       if (!dot || !point) return;
@@ -152,11 +151,14 @@ export function NowHeroLayers({
         place(dot, point, String(FLOW_DOT_OPACITY));
         return;
       }
-      const frames = cycle(path, index * 2).map((frame, frameIndex, all) => ({
-        transform: `translate(${frame.x}px, ${frame.y}px)`,
-        opacity: frameIndex === 0 || frameIndex === all.length - 1 ? FLOW_DOT_EDGE_OPACITY : FLOW_DOT_OPACITY,
-      }));
-      track(dot.animate(frames, { duration: flowDurationMs(step), iterations: Infinity, easing: "linear" }));
+      track(
+        dot.animate(frames, {
+          duration,
+          delay: flowDotDelayMs(index, DOTS, duration),
+          iterations: Infinity,
+          easing: "linear",
+        })
+      );
     });
     const glow = glowRef.current;
     if (glow) {

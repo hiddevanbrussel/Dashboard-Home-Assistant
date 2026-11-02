@@ -1,12 +1,15 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { mintLine, samplePolyline } from "./energy-house-anchors";
 import {
   batteryIsLinked,
   dayNightPair,
   FLOW_DOT_EDGE_OPACITY,
   FLOW_DOT_OPACITY,
   FLOW_LINE_OPACITY,
+  flowDotDelayMs,
+  flowDotFrames,
   flowDurationMs,
   flowStep,
   formatLivePower,
@@ -22,9 +25,20 @@ import {
   solarPillOn,
   stepHeroGates,
   stepPowerFlowing,
+  type FlowPoint,
   type HeroGates,
 } from "./energy-now";
 import { emptyManualModel, parseEnergyPrefs } from "./energy-prefs";
+
+function arcLengths(points: readonly FlowPoint[]): number[] {
+  const lengths = [0];
+  for (let index = 1; index < points.length; index += 1) {
+    const prev = points[index - 1] as FlowPoint;
+    const next = points[index] as FlowPoint;
+    lengths.push((lengths[index - 1] ?? 0) + Math.hypot(next.x - prev.x, next.y - prev.y));
+  }
+  return lengths;
+}
 
 const idle = {
   reducedMotion: false,
@@ -112,9 +126,11 @@ describe("shouldAnimate", () => {
     expect(FLOW_LINE_OPACITY).toBe(0.52);
     const layers = readFileSync(path.join(process.cwd(), "src/components/energy/overview/now-hero-layers.tsx"), "utf8");
     expect(layers).toContain("FLOW_DOT_OPACITY");
-    expect(layers).toContain("FLOW_DOT_EDGE_OPACITY");
     expect(layers).toContain("FLOW_LINE_OPACITY");
     expect(layers).toContain("flowDurationMs(step)");
+    expect(layers).toContain("flowDotFrames(path)");
+    expect(layers).toContain("flowDotDelayMs(index, DOTS, duration)");
+    expect(layers).not.toContain("function cycle");
     expect(layers).not.toContain("opacity: 0.35");
     expect(layers).not.toContain("opacity={0.95}");
     expect(powerIsFlowing([0, null, 0.01])).toBe(false);
@@ -139,6 +155,72 @@ describe("shouldAnimate", () => {
     expect(flowing).toBe(true);
     expect(stepPowerFlowing(true, [0.03])).toBe(false);
     vi.useRealTimers();
+  });
+});
+
+describe("solar flow dots", () => {
+  it("walks every keyframe forward along the path and never back to the roof", () => {
+    const path = samplePolyline(mintLine("dag-licht"), 16);
+    const frames = flowDotFrames(path);
+    expect(path.length).toBeGreaterThan(2);
+    expect(frames).toHaveLength(path.length);
+    const lengths = arcLengths(path);
+    expect(lengths[lengths.length - 1]).toBeGreaterThan(0);
+    let previous = -1;
+    frames.forEach((frame, index) => {
+      const point = path[index] as FlowPoint;
+      expect(frame.x).toBe(point.x);
+      expect(frame.y).toBe(point.y);
+      expect(frame.offset).toBeCloseTo(index / (path.length - 1));
+      const distance = lengths[index] ?? 0;
+      expect(distance).toBeGreaterThanOrEqual(previous);
+      previous = distance;
+    });
+    const start = path[0] as FlowPoint;
+    const end = path[path.length - 1] as FlowPoint;
+    expect(end.x === start.x && end.y === start.y).toBe(false);
+    expect(frames[frames.length - 1]).toMatchObject({ x: end.x, y: end.y });
+    expect(frames.some((frame, index) => index > 0 && frame.x === start.x && frame.y === start.y)).toBe(false);
+    const wrapped = [...path, start];
+    const returnJump = Math.hypot(start.x - end.x, start.y - end.y);
+    expect(returnJump).toBeGreaterThan(0);
+    expect(wrapped).toHaveLength(path.length + 1);
+    expect(frames).toHaveLength(path.length);
+
+    const bend: FlowPoint[] = [
+      { x: 0, y: 0 },
+      { x: 10, y: 4 },
+      { x: 8, y: 12 },
+      { x: 3, y: 20 },
+    ];
+    const bent = flowDotFrames(bend);
+    expect(bent.map((frame) => frame.x)).toEqual([0, 10, 8, 3]);
+    const bentLengths = arcLengths(bent);
+    for (let index = 1; index < bentLengths.length; index += 1) {
+      expect(bentLengths[index]).toBeGreaterThan(bentLengths[index - 1] ?? 0);
+    }
+    expect(bent[2]?.x).toBeLessThan(bent[1]?.x ?? 0);
+
+    expect(frames[0]?.opacity).toBeCloseTo(FLOW_DOT_EDGE_OPACITY);
+    expect(frames[frames.length - 1]?.opacity).toBeCloseTo(FLOW_DOT_EDGE_OPACITY);
+    expect(frames[Math.floor(frames.length / 2)]?.opacity).toBeCloseTo(FLOW_DOT_OPACITY);
+
+    const fade = flowDotFrames(Array.from({ length: 11 }, (_, index) => ({ x: index, y: 0 })));
+    expect(fade[0]?.opacity).toBeCloseTo(FLOW_DOT_EDGE_OPACITY);
+    expect(fade[1]?.offset).toBeCloseTo(0.1);
+    expect(fade[1]?.opacity).toBeCloseTo(FLOW_DOT_OPACITY);
+    expect(fade[9]?.offset).toBeCloseTo(0.9);
+    expect(fade[9]?.opacity).toBeCloseTo(FLOW_DOT_OPACITY);
+    expect(fade[10]?.opacity).toBeCloseTo(FLOW_DOT_EDGE_OPACITY);
+    const halfway = flowDotFrames(Array.from({ length: 21 }, (_, index) => ({ x: index, y: 0 })));
+    expect(halfway[1]?.offset).toBeCloseTo(0.05);
+    expect(halfway[1]?.opacity).toBeCloseTo(
+      FLOW_DOT_EDGE_OPACITY + (FLOW_DOT_OPACITY - FLOW_DOT_EDGE_OPACITY) * 0.5
+    );
+
+    expect(flowDotDelayMs(0, 8, flowDurationMs(1))).toBe(0);
+    expect(flowDotDelayMs(3, 8, flowDurationMs(1))).toBeCloseTo(-(3 / 8) * 8400);
+    expect(flowDotDelayMs(7, 8, flowDurationMs(2))).toBeLessThan(0);
   });
 });
 

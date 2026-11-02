@@ -51,6 +51,7 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
     [entities, panelSearch]
   );
   const powerOptions = useMemo(() => filterEnergySensors(entities, "power"), [entities]);
+  const energyOptions = useMemo(() => filterEnergySensors(entities, "energy"), [entities]);
 
   function chooseMode(next: "signed" | "split") {
     setModeChoice(next);
@@ -68,7 +69,24 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
 
   return (
     <>
-      <SettingsGroup title={t("settings.energy.entities")} description={t("settings.energy.bindOnPage")} />
+      <SettingsGroup title={t("settings.energy.entities")} description={t("settings.energy.bindOnPage")}>
+        <PowerSelect
+          id="energy-solar-yield-today"
+          label={t("settings.energy.solarYieldToday")}
+          value={energyEntities.solarYieldTodayEntityId}
+          entities={energyOptions}
+          noneLabel={t("settings.energy.entityNone")}
+          onChange={(value) => setEntity("solarYieldTodayEntityId", value)}
+        />
+        <PowerSelect
+          id="energy-solar-power"
+          label={t("settings.energy.solarPower")}
+          value={energyEntities.solarPowerEntityId}
+          entities={powerOptions}
+          noneLabel={t("settings.energy.entityNone")}
+          onChange={(value) => setEntity("solarPowerEntityId", value)}
+        />
+      </SettingsGroup>
 
       <SettingsGroup title={t("settings.energy.liveGrid")} description={t("settings.energy.liveGridHint")}>
         <div role="radiogroup" aria-label={t("settings.energy.liveGrid")} className="flex flex-wrap gap-2">

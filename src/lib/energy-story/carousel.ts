@@ -1,7 +1,7 @@
 /** Scroll position of the story carousel. One step per card, no loop, no autoplay. */
 
 export const STORY_IDLE_MS = 120_000;
-export const STORY_CARD_WIDTH = { landscape: 280, portrait: 332 } as const;
+export const STORY_CARD_WIDTH = { landscape: 252, portrait: 248 } as const;
 
 export function clampStoryIndex(index: number, count: number): number {
   if (count <= 0) return 0;
