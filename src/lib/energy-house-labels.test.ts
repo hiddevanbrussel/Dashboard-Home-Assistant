@@ -40,7 +40,7 @@ describe("energy stage", () => {
     expect(labelAnchor("grid", "portrait")).toEqual({ x: 45, y: 72 });
     expect(labelAnchor("battery", "landscape")).toEqual({ x: 66, y: 57 });
     expect(flowRunsTowardHouse("solar", { gridKw: 0.2, batteryKw: null })).toBe(true);
-    expect(flowRunsTowardHouse("solar", { gridKw: -0.2, batteryKw: null })).toBe(false);
+    expect(flowRunsTowardHouse("solar", { gridKw: -0.2, batteryKw: null })).toBe(true);
     expect(flowRunsTowardHouse("grid", { gridKw: -0.25, batteryKw: null })).toBe(false);
     expect(flowRunsTowardHouse("battery", { gridKw: null, batteryKw: -0.7 })).toBe(false);
     expect(flowRunsTowardHouse("battery", { gridKw: null, batteryKw: 0.5 })).toBe(true);
@@ -50,6 +50,14 @@ describe("energy stage", () => {
     expect(flowPath(edge, { x: 369.6, y: 228 }, false)).toBe("M369.6 228.0 L460.5 400.0");
     expect(houseAriaName("nl")).toBe("Huis");
     expect(houseAriaName("en")).toBe("House");
+  });
+
+  it("keeps the solar flow toward the house, including export", () => {
+    expect(flowRunsTowardHouse("solar", { gridKw: 1.2, batteryKw: 0.4 })).toBe(true);
+    expect(flowRunsTowardHouse("solar", { gridKw: -0.2, batteryKw: null })).toBe(true);
+    expect(flowRunsTowardHouse("solar", { gridKw: -1.4, batteryKw: -0.5 })).toBe(true);
+    expect(flowRunsTowardHouse("solar", { gridKw: null, batteryKw: null })).toBe(true);
+    expect(flowRunsTowardHouse("grid", { gridKw: -0.2, batteryKw: null })).toBe(false);
   });
 
   it("keeps the flow rules in css, including reduced motion", () => {

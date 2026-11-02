@@ -147,7 +147,8 @@ export function labelEdgePoint(
 
 /**
  * True when the dash travels from the label toward the anchor on the house.
- * Export and charging run the other way: from the house out to the connection.
+ * Solar always runs from the roof to the house, including while exporting.
+ * Grid export and battery charging run the other way: from the house out to the connection.
  */
 export function flowRunsTowardHouse(
   kind: HouseLabelKind,
@@ -155,6 +156,7 @@ export function flowRunsTowardHouse(
 ): boolean {
   switch (kind) {
     case "solar":
+      return true;
     case "grid":
       return (input.gridKw ?? 0) >= 0;
     case "battery":
