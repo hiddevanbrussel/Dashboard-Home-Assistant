@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bandCells, cardForHouseLabel, storySheetLabelKey } from "./energy-day-band";
+import { getTranslations } from "./i18n";
 import type { StoryFacts } from "./energy-story/types";
 
 function facts(patch: Partial<StoryFacts> = {}): StoryFacts {
@@ -79,6 +80,11 @@ describe("day band", () => {
 
     const manual = facts({ manualWithoutImport: true, importKwh: null, hasGrid: false });
     expect(cardForHouseLabel(manual, "grid")?.kind).toBe("link");
+    const linkTitleKey = storySheetLabelKey(cardForHouseLabel(manual, "grid")!);
+    expect(linkTitleKey).toBe("energy.story.gridLabel");
+    expect(getTranslations("nl")[linkTitleKey]).toBe("Net");
+    expect(getTranslations("en")[linkTitleKey]).toBe("Grid");
+    expect(linkTitleKey).not.toBe("energy.story.devices");
     expect(cardForHouseLabel(facts({ soc: null }), "battery")).toBeNull();
     expect(bandCells(facts({ linked: false }), "nl")).toEqual([]);
   });

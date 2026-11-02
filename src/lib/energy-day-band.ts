@@ -43,8 +43,9 @@ export function storySheetLabelKey(card: StoryCardModel): string {
       return "energy.story.battery";
     case "devices":
     case "hint":
-    case "link":
       return "energy.story.devices";
+    case "link":
+      return "energy.story.gridLabel";
     case "week":
       return "energy.story.week";
     default: {

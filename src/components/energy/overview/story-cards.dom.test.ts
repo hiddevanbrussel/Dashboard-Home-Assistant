@@ -79,7 +79,14 @@ describe("story card view", () => {
     });
     expect(document.body.textContent).toContain("Koppel je energiesensoren");
     expect(document.body.textContent).toContain("Naar instellingen");
-    expect(document.body.textContent).toContain("Verbruikers");
+    expect(document.body.textContent).toContain("Net");
+    expect(document.body.textContent).not.toContain("Verbruikers");
+    act(() => {
+      useLanguageStore.setState({ language: "en", ready: true });
+    });
+    expect(document.body.textContent).toContain("Link your energy sensors");
+    expect(document.body.textContent).toContain("Grid");
+    expect(document.body.textContent).not.toContain("Devices");
   });
 });
 

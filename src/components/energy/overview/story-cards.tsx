@@ -425,7 +425,7 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
           label={
             <>
               <Plug className={ICON} strokeWidth={2} aria-hidden />
-              {t("energy.story.devices")}
+              {t("energy.story.gridLabel")}
             </>
           }
         >
