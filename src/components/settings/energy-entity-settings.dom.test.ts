@@ -152,7 +152,7 @@ describe("energy live power and tariff settings", () => {
     });
     expect(document.body.textContent).toContain("Zonne-opbrengst vandaag (kWh)");
     expect(document.body.textContent).toContain("Zonnevermogen (W)");
-    expect(document.body.textContent).toContain("Kies de sensoren hier.");
+    expect(document.body.textContent).toContain("Kies hier je energiesensoren.");
     expect(document.body.textContent).not.toContain("zet bewerken aan");
     const yieldSelect = document.getElementById("energy-solar-yield-today");
     const powerSelect = document.getElementById("energy-solar-power");
@@ -200,7 +200,7 @@ describe("energy live power and tariff settings", () => {
     });
     expect(document.body.textContent).toContain("Solar yield today (kWh)");
     expect(document.body.textContent).toContain("Solar power (W)");
-    expect(document.body.textContent).toContain("Choose the sensors here.");
+    expect(document.body.textContent).toContain("Choose your energy sensors here.");
     expect(useEnergyStore.getState().entities.solarYieldTodayEntityId).toBe("sensor.solar_yield");
     expect(useEnergyStore.getState().entities.solarPowerEntityId).toBe("sensor.solar_power");
   });
