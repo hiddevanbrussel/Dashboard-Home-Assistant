@@ -104,7 +104,7 @@ export type HouseLightPoint = readonly [number, number];
 /**
  * Window polygons in percent of the 960×727 render.
  * One set per side, for every variant of that side and both orientations.
- * Outdoor, the front side window and the extension side window have no polygons.
+ * Outdoor and the front side window have no polygons.
  */
 export const HOUSE_LIGHT_ZONES: Record<
   HouseSide,
