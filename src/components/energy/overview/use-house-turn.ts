@@ -39,6 +39,7 @@ export function useHouseTurn(frameRef: RefObject<HTMLElement | null>, motion: Mo
   const reducedRef = useRef(motion.reducedMotion);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const restoreFocus = useRef(false);
+  const pendingFocus = useRef(false);
   const phase = useRef<"idle" | "swap">("idle");
   const turnToRef = useRef<(next: HouseSide) => void>(() => undefined);
   const snapFrontRef = useRef<() => void>(() => undefined);
@@ -75,7 +76,7 @@ export function useHouseTurn(frameRef: RefObject<HTMLElement | null>, motion: Mo
     restFrame();
     busyRef.current = false;
     setBusy(false);
-    if (restoreFocus.current) buttonRef.current?.focus();
+    if (restoreFocus.current) pendingFocus.current = true;
   }
 
   function snapFront() {
@@ -84,17 +85,20 @@ export function useHouseTurn(frameRef: RefObject<HTMLElement | null>, motion: Mo
     clearTimers();
     applySide("front");
     restFrame();
+    restoreFocus.current = false;
+    pendingFocus.current = false;
     busyRef.current = false;
     setBusy(false);
   }
 
-  function turnTo(next: HouseSide) {
+  function turnTo(next: HouseSide, viaButton = false) {
     if (busyRef.current || next === sideRef.current) return;
     const reduced = reducedRef.current;
     generation.current += 1;
     const generationAtStart = generation.current;
     busyRef.current = true;
-    restoreFocus.current = document.activeElement === buttonRef.current;
+    const hadFocus = document.activeElement === buttonRef.current;
+    restoreFocus.current = hadFocus || viaButton;
     setBusy(true);
     clearTimers();
 
@@ -139,8 +143,20 @@ export function useHouseTurn(frameRef: RefObject<HTMLElement | null>, motion: Mo
     });
   }
 
+  function activate() {
+    if (busyRef.current) return;
+    turnTo(sideRef.current === "front" ? "back" : "front", true);
+  }
+
   turnToRef.current = turnTo;
   snapFrontRef.current = snapFront;
+
+  useEffect(() => {
+    if (busy || !pendingFocus.current) return;
+    pendingFocus.current = false;
+    restoreFocus.current = false;
+    buttonRef.current?.focus();
+  }, [busy]);
 
   useLayoutEffect(() => {
     if (flip === 0 || phase.current !== "swap") return;
@@ -202,5 +218,5 @@ export function useHouseTurn(frameRef: RefObject<HTMLElement | null>, motion: Mo
 
   useEffect(() => () => clearTimers(), []);
 
-  return { side, busy, overlays, frameStyle, turnTo, buttonRef };
+  return { side, busy, busyRef, overlays, frameStyle, turnTo, activate, buttonRef };
 }

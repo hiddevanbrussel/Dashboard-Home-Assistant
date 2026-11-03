@@ -77,17 +77,19 @@ describe("house turn", () => {
     expect(button().getAttribute("aria-label")).toBe("Draai naar de achterkant");
     expect(button().className).toContain("h-11");
     expect(button().disabled).toBe(false);
+    expect(button().getAttribute("aria-disabled")).not.toBe("true");
     expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-side")).toBe("front");
     button().focus();
     vi.useFakeTimers();
     await act(async () => {
       button().click();
     });
-    expect(button().disabled).toBe(true);
+    expect(button().disabled).toBe(false);
+    expect(button().getAttribute("aria-disabled")).toBe("true");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(80);
     });
-    expect(button().disabled).toBe(true);
+    expect(button().getAttribute("aria-disabled")).toBe("true");
     expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-side")).toBe("front");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(470);
@@ -96,8 +98,40 @@ describe("house turn", () => {
     expect(button().textContent).toContain("Voorkant");
     expect(button().getAttribute("aria-label")).toBe("Draai naar de voorkant");
     expect(button().disabled).toBe(false);
+    expect(button().getAttribute("aria-disabled")).not.toBe("true");
     expect(document.activeElement).toBe(button());
     expect(document.querySelector("[data-now-frame]")?.getAttribute("style") ?? "").not.toContain("rotateY");
+  });
+
+  it("keeps focus after Enter or click, turns again on Space, and ignores a second activation", async () => {
+    await showFront();
+    button().focus();
+    vi.useFakeTimers();
+    await act(async () => {
+      button().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+    });
+    expect(button().getAttribute("aria-disabled")).toBe("true");
+    expect(document.activeElement).toBe(button());
+    await act(async () => {
+      button().dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true }));
+      button().click();
+    });
+    expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-side")).toBe("front");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(550);
+    });
+    expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-side")).toBe("back");
+    expect(document.activeElement).toBe(button());
+    expect(button().getAttribute("aria-disabled")).not.toBe("true");
+    await act(async () => {
+      button().dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(550);
+    });
+    expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-side")).toBe("front");
+    expect(document.activeElement).toBe(button());
+    expect(button().textContent).toContain("Achterkant");
   });
 
   it("ignores a second press while the house is turning", async () => {
@@ -160,7 +194,8 @@ describe("house turn", () => {
     await act(async () => {
       button().click();
     });
-    expect(button().disabled).toBe(true);
+    expect(button().disabled).toBe(false);
+    expect(button().getAttribute("aria-disabled")).toBe("true");
     expect(frame?.getAttribute("style") ?? "").not.toContain("rotateY");
     expect(["", "none", "matrix(1, 0, 0, 1, 0, 0)"]).toContain(getComputedStyle(frame as Element).transform);
     await act(async () => {
