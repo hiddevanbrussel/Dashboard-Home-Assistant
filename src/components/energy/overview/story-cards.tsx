@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
+  AirVent,
   Battery,
   BatteryCharging,
   CalendarDays,
@@ -15,13 +16,14 @@ import {
 } from "lucide-react";
 import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
 import { useTranslation } from "@/hooks/use-translation";
+import { formatKwh } from "@/lib/energy-story/format";
 import { line, type StoryCardModel, type StoryLine } from "@/lib/energy-story/types";
 import { cn } from "@/lib/utils";
 
 export const ENERGY_SETTINGS_HREF = "/settings?sectie=paginas&page=energy";
 export const ENERGY_DEVICES_HREF = "/settings?sectie=paginas&page=energy&apparaten=1";
 
-type StoryTone = "sun" | "grid" | "peak" | "batt" | "devices";
+type StoryTone = "sun" | "grid" | "peak" | "batt" | "devices" | "aircon";
 
 const ZONE_STOPS: Record<StoryTone, { light: readonly [string, string]; dark: readonly [string, string] }> = {
   sun: { light: ["#B45309", "#92400E"], dark: ["#B45309", "#92400E"] },
@@ -29,6 +31,7 @@ const ZONE_STOPS: Record<StoryTone, { light: readonly [string, string]; dark: re
   peak: { light: ["#C2410C", "#9A3412"], dark: ["#C2410C", "#9A3412"] },
   batt: { light: ["#0369A1", "#075985"], dark: ["#0369A1", "#075985"] },
   devices: { light: ["#DC2626", "#B91C1C"], dark: ["#DC2626", "#B91C1C"] },
+  aircon: { light: ["#0F766E", "#115E59"], dark: ["#0F766E", "#115E59"] },
 };
 
 const ACCENT = {
@@ -417,6 +420,27 @@ export function StoryCardView({ card }: { card: StoryCardModel }) {
         </Frame>
       );
     }
+    case "aircon":
+      return (
+        <Frame
+          kind="aircon"
+          tone="aircon"
+          label={
+            <>
+              <AirVent className={ICON} strokeWidth={2} aria-hidden />
+              {t("energy.story.aircon")}
+            </>
+          }
+          value={
+            <Big>
+              {kwhValue(formatKwh(card.todayKwh, lang))}
+              <Unit>kWh</Unit>
+            </Big>
+          }
+        >
+          <Lead>{t("energy.story.today")}</Lead>
+        </Frame>
+      );
     case "link":
       return (
         <Frame

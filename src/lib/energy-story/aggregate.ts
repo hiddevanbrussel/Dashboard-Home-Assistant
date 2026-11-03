@@ -175,6 +175,31 @@ export function emptySinceHour(iso: string | null, timeZone: string): number | n
   return zonedDecimalHour(date, timeZone);
 }
 
+const STATISTIC_SENSOR_ID = /^sensor\.[a-z0-9_]+$/;
+
+/** Chosen device ids plus the air-conditioning sensor, once, for the existing day-0 statistics call. */
+export function statisticDeviceIds(chosen: readonly string[], airconId: string): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  const push = (id: string) => {
+    if (!STATISTIC_SENSOR_ID.test(id) || seen.has(id)) return;
+    seen.add(id);
+    ids.push(id);
+  };
+  for (const id of chosen) push(id);
+  push(airconId.trim());
+  return ids;
+}
+
+/** Today's kWh for one device series. Null when the sensor has no known hour. */
+export function deviceTodayKwh(today: EnergyStatsResponse | null, id: string): number | null {
+  if (!id) return null;
+  const item = today?.devices?.items.find((entry) => entry.id === id);
+  if (!item) return null;
+  if (!item.perHour.some((value) => value != null && Number.isFinite(value))) return null;
+  return Number.isFinite(item.total) ? item.total : null;
+}
+
 export function deviceFacts(input: {
   ids: readonly string[];
   names: Readonly<Record<string, StoryLine>>;
@@ -222,6 +247,7 @@ export function assembleStoryFacts(input: {
   homeKw: number;
   gridImportKw: number;
   gridExportKw: number;
+  airconEntityId: string;
 }): StoryFacts {
   const hour = zonedDecimalHour(input.now, input.timeZone);
   const today = input.stats.today;
@@ -304,6 +330,7 @@ export function assembleStoryFacts(input: {
     weekDays: weekDays(input.stats.week),
     ltsDays,
     tariffFixed: input.tariffFixed,
+    airconKwh: deviceTodayKwh(today, input.airconEntityId),
     live: {
       solarKw: input.solarKw,
       homeKw: input.homeKw,

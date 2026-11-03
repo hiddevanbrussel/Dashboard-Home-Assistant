@@ -4,6 +4,7 @@ import {
   HOUSE_LIGHT_TINT_TRANSITION_MS,
   HOUSE_LIGHT_ZONES,
   type ActiveHouseLight,
+  type HouseSide,
   type HouseTheme,
 } from "@/lib/energy-now";
 
@@ -18,12 +19,15 @@ export function HouseLightTint({
   theme,
   reducedMotion,
   zones,
+  side,
 }: {
   theme: HouseTheme;
   reducedMotion: boolean;
   zones: readonly ActiveHouseLight[];
+  side: HouseSide;
 }) {
-  const drawn = zones.filter((zone) => HOUSE_LIGHT_ZONES[zone.id].length > 0);
+  const polygonsFor = HOUSE_LIGHT_ZONES[side];
+  const drawn = zones.filter((zone) => (polygonsFor[zone.id]?.length ?? 0) > 0);
   if (drawn.length === 0) return null;
   const palette = theme === "dark" ? HOUSE_LIGHT_TINT.dark : HOUSE_LIGHT_TINT.light;
   const transition = reducedMotion ? "none" : `opacity ${HOUSE_LIGHT_TINT_TRANSITION_MS}ms ease`;
@@ -44,7 +48,7 @@ export function HouseLightTint({
       </defs>
       {drawn.map((zone) => (
         <g key={zone.id} data-house-light-zone={zone.id} data-house-light-factor={String(zone.factor)}>
-          {HOUSE_LIGHT_ZONES[zone.id].map((polygon, index) => {
+          {(polygonsFor[zone.id] ?? []).map((polygon, index) => {
             const shape = polygonPoints(polygon);
             return (
               <g key={index}>

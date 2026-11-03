@@ -172,6 +172,10 @@ describe("energy dashboard entities", () => {
       "sensor.b",
     ]);
     expect(parseEnergyEntities({ solarPowerEntityId: "sensor.pv" }).gridPowerEntityId).toBe("");
+    expect(parseEnergyEntities(null).airconEnergyEntityId).toBe("");
+    expect(parseEnergyEntities({ airconEnergyEntityId: " sensor.airco_energy " }).airconEnergyEntityId).toBe(
+      "sensor.airco_energy"
+    );
     expect(parseEnergyEntities({ gridImportPowerEntityId: " sensor.import_w " }).gridImportPowerEntityId).toBe(
       "sensor.import_w"
     );

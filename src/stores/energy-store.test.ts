@@ -60,6 +60,9 @@ describe("energy store localStorage from main", () => {
     expect(storedEntities).not.toHaveProperty("gridPowerEntityId");
     expect(state.lighting).toEqual({
       livingRoomEntityId: "",
+      kitchenEntityId: "",
+      bathroomEntityId: "",
+      studyEntityId: "",
       upstairsEntityId: "",
       outdoorEntityId: "",
     });
@@ -87,6 +90,9 @@ describe("energy store localStorage from main", () => {
     useEnergyStore.getState().setLightingEntity("outdoorEntityId", "light.buiten");
     expect(JSON.parse(localStorage.getItem("dashboard.energy.lighting") ?? "{}")).toEqual({
       livingRoomEntityId: "light.woonkamer",
+      kitchenEntityId: "",
+      bathroomEntityId: "",
+      studyEntityId: "",
       upstairsEntityId: "",
       outdoorEntityId: "light.buiten",
     });
@@ -95,14 +101,40 @@ describe("energy store localStorage from main", () => {
       "livingRoomEntityId"
     );
     useEnergyStore.setState({
-      lighting: { livingRoomEntityId: "", upstairsEntityId: "", outdoorEntityId: "" },
+      lighting: {
+        livingRoomEntityId: "",
+        kitchenEntityId: "",
+        bathroomEntityId: "",
+        studyEntityId: "",
+        upstairsEntityId: "",
+        outdoorEntityId: "",
+      },
     });
     hydrateEnergyStore();
     expect(useEnergyStore.getState().lighting).toEqual({
       livingRoomEntityId: "light.woonkamer",
+      kitchenEntityId: "",
+      bathroomEntityId: "",
+      studyEntityId: "",
       upstairsEntityId: "",
       outdoorEntityId: "light.buiten",
     });
     expect(useEnergyStore.getState().entities.solarPowerEntityId).toBe("sensor.solar_power");
+  });
+
+  it("keeps an older lighting record and leaves the new rooms unset", () => {
+    localStorage.setItem(
+      "dashboard.energy.lighting",
+      JSON.stringify({ livingRoomEntityId: "light.woonkamer", upstairsEntityId: "light.boven" })
+    );
+    hydrateEnergyStore();
+    expect(useEnergyStore.getState().lighting).toEqual({
+      livingRoomEntityId: "light.woonkamer",
+      kitchenEntityId: "",
+      bathroomEntityId: "",
+      studyEntityId: "",
+      upstairsEntityId: "light.boven",
+      outdoorEntityId: "",
+    });
   });
 });

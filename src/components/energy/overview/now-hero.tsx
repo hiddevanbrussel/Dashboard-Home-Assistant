@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { Battery, House, Sun, UtilityPole } from "lucide-react";
+import { AirVent, Battery, House, RotateCw, Sun, UtilityPole } from "lucide-react";
 import { HouseLabel } from "@/components/energy/overview/house-labels";
 import { HouseLightTint } from "@/components/energy/overview/house-light-tint";
 import { NowHeroLayers, type HouseLineSpec } from "@/components/energy/overview/now-hero-layers";
+import { useHouseTurn } from "@/components/energy/overview/use-house-turn";
+import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
 import { useTranslation } from "@/hooks/use-translation";
 import { ENERGY_MY_TILES_ENABLED } from "@/lib/energy-tab";
-import { heroOfflineState, offlinePowerText } from "@/lib/energy-story/offline";
+import { formatKwh } from "@/lib/energy-story/format";
+import { heroOfflineState } from "@/lib/energy-story/offline";
 import { type OverviewOrientation } from "@/lib/energy-house-anchors";
 import {
   fallbackEnergyStage,
@@ -37,8 +40,10 @@ import {
   formatSoc,
   gridExportIsLinked,
   gridImportIsLinked,
+  HOUSE_RENDER_CONCEPT,
   houseAssetPath,
   houseLightZoneNameKey,
+  houseLightZonesForSide,
   houseVariant,
   nowSentenceKey,
   overviewIsLinked,
@@ -49,6 +54,7 @@ import {
   stepHeroGates,
   stepPowerFlowing,
   type HeroGates,
+  type HouseSide,
   type HouseVariantId,
 } from "@/lib/energy-now";
 import type { EnergyModel } from "@/lib/energy-prefs";
@@ -159,16 +165,24 @@ function useMotionFlags(frame: RefObject<HTMLElement | null>) {
   return { ...flags, tab };
 }
 
+function splitKwh(text: string): { value: string; unit: string } {
+  const splitAt = text.lastIndexOf(" ");
+  if (splitAt < 0) return { value: text, unit: "" };
+  return { value: text.slice(0, splitAt), unit: text.slice(splitAt + 1) };
+}
+
 export function NowHero({
   orientation,
   stage,
   onOpenLabel,
   labelOpens,
+  airconKwh = null,
 }: {
   orientation: OverviewOrientation;
   stage?: EnergyStage | null;
   onOpenLabel?: (kind: HouseLabelKind, source: HTMLElement) => void;
   labelOpens?: (kind: HouseLabelKind) => boolean;
+  airconKwh?: number | null;
 }) {
   const { t, language } = useTranslation();
   const locale = language === "nl" ? "nl" : "en";
@@ -285,22 +299,6 @@ export function NowHero({
       })
     : null;
 
-  useEffect(() => {
-    if (!variant) return;
-    const pair = dayNightPair(variant);
-    if (!pair) return;
-    const preload = () => {
-      const image = new Image();
-      image.src = houseAssetPath(pair, "avif");
-    };
-    if (typeof window.requestIdleCallback !== "function") {
-      preload();
-      return;
-    }
-    const id = window.requestIdleCallback(preload);
-    return () => window.cancelIdleCallback(id);
-  }, [variant]);
-
   const socId = batteryStatSoc(model) || entities.batterySocEntityId;
   const socRaw = Number(states[socId]?.state);
   const soc = Number.isFinite(socRaw) ? socRaw : null;
@@ -358,12 +356,37 @@ export function NowHero({
   const flowing = presence.offline ? false : stepPowerFlowing(flowRef.current, [solarKw, gridKw, batteryPower, houseKw]);
   flowRef.current = presence.offline ? flowRef.current : flowing;
   const motion = useMotionFlags(frameRef);
+  const turn = useHouseTurn(frameRef, motion);
+  const side: HouseSide = turn.side;
   const animate = presence.offline ? false : shouldAnimate({ ...motion, flowing });
+
+  useEffect(() => {
+    if (!variant) return;
+    const otherSide: HouseSide = side === "front" ? "back" : "front";
+    const urls = [houseAssetPath(variant, "avif", otherSide)];
+    const pair = dayNightPair(variant);
+    if (pair) urls.push(houseAssetPath(pair, "avif", side));
+    const preload = () => {
+      for (const src of urls) {
+        const image = new Image();
+        image.src = src;
+      }
+    };
+    if (typeof window.requestIdleCallback !== "function") {
+      preload();
+      return;
+    }
+    const id = window.requestIdleCallback(preload);
+    return () => window.cancelIdleCallback(id);
+  }, [side, variant]);
   const houseLights = activeHouseLights(lighting, states);
+  const visibleLights = houseLightZonesForSide(side)
+    .map((id) => houseLights.find((zone) => zone.id === id))
+    .filter((zone) => zone != null);
   const houseLightStatus =
     variant == null
       ? ""
-      : houseLights
+      : visibleLights
           .map((zone) =>
             fill(t(lightSpeechKey(zone.spoken)), {
               zone: t(houseLightZoneNameKey(zone.id)),
@@ -402,48 +425,61 @@ export function NowHero({
         : supplying
           ? fill(t("energy.overview.now.batterySupply"), { kw: powerText(batteryPower) ?? "" })
           : t("energy.overview.now.batteryIdle");
+  const linesShown = turn.overlays === "in";
+  const airconShown = side === "back" && airconKwh != null && Number.isFinite(airconKwh);
+  const airconParts = airconShown && airconKwh != null ? splitKwh(formatKwh(airconKwh, locale)) : null;
   const labelSig = [
     `solar:${solarParts?.value ?? ""}`,
     `house:${housePartsShown?.value ?? ""}`,
     `grid:${gridParts?.value ?? ""}:${gridKw ?? ""}`,
     `battery:${socText}:${batteryPower ?? ""}:${gates.battery ? 1 : 0}`,
-    `flow:${animate ? 1 : 0}:${dark ? 1 : 0}:${orientation}`,
+    `flow:${animate ? 1 : 0}:${dark ? 1 : 0}:${orientation}:${side}:${airconParts?.value ?? ""}`,
   ].join("|");
   const specs: HouseLineSpec[] = [];
   if (solarParts) {
     specs.push({
       kind: "solar",
       accent: labelAccent("solar", dark),
-      anchor: labelAnchor("solar", orientation),
+      anchor: labelAnchor("solar", orientation, side),
       towardHouse: flowRunsTowardHouse("solar", directionInput),
-      flow: labelFlowEnabled("solar", flowInput),
+      flow: side === "back" && linesShown && labelFlowEnabled("solar", flowInput),
+      ridge: side === "front",
     });
   }
   if (housePartsShown) {
     specs.push({
       kind: "house",
       accent: labelAccent("house", dark),
-      anchor: labelAnchor("house", orientation),
+      anchor: labelAnchor("house", orientation, side),
       towardHouse: true,
-      flow: labelFlowEnabled("house", flowInput),
+      flow: linesShown && labelFlowEnabled("house", flowInput),
     });
   }
   if (gridParts) {
     specs.push({
       kind: "grid",
       accent: labelAccent("grid", dark),
-      anchor: labelAnchor("grid", orientation),
+      anchor: labelAnchor("grid", orientation, side),
       towardHouse: flowRunsTowardHouse("grid", directionInput),
-      flow: labelFlowEnabled("grid", flowInput),
+      flow: linesShown && labelFlowEnabled("grid", flowInput),
     });
   }
   if (batteryLinked && soc != null) {
     specs.push({
       kind: "battery",
       accent: labelAccent("battery", dark),
-      anchor: labelAnchor("battery", orientation),
+      anchor: labelAnchor("battery", orientation, side),
       towardHouse: flowRunsTowardHouse("battery", directionInput),
-      flow: labelFlowEnabled("battery", flowInput),
+      flow: linesShown && labelFlowEnabled("battery", flowInput),
+    });
+  }
+  if (airconParts) {
+    specs.push({
+      kind: "aircon",
+      accent: labelAccent("aircon", dark),
+      anchor: labelAnchor("aircon", orientation, side),
+      towardHouse: true,
+      flow: false,
     });
   }
   const interactive = (kind: HouseLabelKind) => Boolean(labelOpens?.(kind));
@@ -452,6 +488,7 @@ export function NowHero({
     <div
       className="contents"
       data-now-hero={variant ?? "pending"}
+      data-now-side={side}
       data-now-offline={presence.offline ? "1" : "0"}
       data-orientation={orientation}
     >
@@ -495,14 +532,22 @@ export function NowHero({
           left: frame.houseLeft,
           width: frame.houseWidth,
           height: frame.houseHeight,
+          perspective: "1600px",
         }}
       >
-        <div ref={frameRef} data-now-frame className="relative h-full w-full">
+        <div
+          ref={frameRef}
+          data-now-frame
+          data-now-overlays={turn.overlays}
+          data-now-motion={motion.reducedMotion ? "reduce" : "full"}
+          className="relative h-full w-full"
+          style={turn.frameStyle}
+        >
           {variant ? (
             <picture>
-              <source type="image/avif" srcSet={houseAssetPath(variant, "avif")} />
+              <source type="image/avif" srcSet={houseAssetPath(variant, "avif", side)} />
               <img
-                src={houseAssetPath(variant, "webp")}
+                src={houseAssetPath(variant, "webp", side)}
                 width={960}
                 height={727}
                 alt=""
@@ -512,7 +557,12 @@ export function NowHero({
             </picture>
           ) : null}
           {variant ? (
-            <HouseLightTint theme={dark ? "dark" : "light"} reducedMotion={motion.reducedMotion} zones={houseLights} />
+            <HouseLightTint
+              theme={dark ? "dark" : "light"}
+              reducedMotion={motion.reducedMotion}
+              zones={houseLights}
+              side={side}
+            />
           ) : null}
           {houseLightStatusText ? (
             <p className="pointer-events-none sr-only" data-house-light-status="">
@@ -526,8 +576,8 @@ export function NowHero({
               value={solarParts.value}
               unit={solarParts.unit}
               accent={labelAccent("solar", dark)}
-              left={labelPosition("solar", orientation).left}
-              top={labelPosition("solar", orientation).top}
+              left={labelPosition("solar", orientation, side).left}
+              top={labelPosition("solar", orientation, side).top}
               ariaLabel={`${t("energy.story.sun")}, ${powerText(solarKw) ?? ""}, ${t("energy.overview.now.solarRoof")}`}
               interactive={interactive("solar")}
               offline={presence.offline}
@@ -542,8 +592,8 @@ export function NowHero({
               value={housePartsShown.value}
               unit={housePartsShown.unit}
               accent={labelAccent("house", dark)}
-              left={labelPosition("house", orientation).left}
-              top={labelPosition("house", orientation).top}
+              left={labelPosition("house", orientation, side).left}
+              top={labelPosition("house", orientation, side).top}
               ariaLabel={`${houseAriaName(locale)}, ${powerText(houseKw) ?? ""}, ${t("energy.overview.now.house")}`}
               interactive={interactive("house")}
               offline={presence.offline}
@@ -558,8 +608,8 @@ export function NowHero({
               value={gridParts.value}
               unit={gridParts.unit}
               accent={labelAccent("grid", dark)}
-              left={labelPosition("grid", orientation).left}
-              top={labelPosition("grid", orientation).top}
+              left={labelPosition("grid", orientation, side).left}
+              top={labelPosition("grid", orientation, side).top}
               ariaLabel={`${t("energy.story.gridLabel")}, ${powerText(gridKw) ?? ""}, ${(gridKw ?? 0) < 0 ? t("energy.overview.now.gridBack") : t("energy.overview.now.gridFrom")}`}
               interactive={interactive("grid")}
               offline={presence.offline}
@@ -574,8 +624,8 @@ export function NowHero({
               value={socText}
               unit="%"
               accent={labelAccent("battery", dark)}
-              left={labelPosition("battery", orientation).left}
-              top={labelPosition("battery", orientation).top}
+              left={labelPosition("battery", orientation, side).left}
+              top={labelPosition("battery", orientation, side).top}
               ariaLabel={`${t("energy.story.battery")}, ${formatSoc(soc, locale)}, ${batteryStatus}`}
               interactive={interactive("battery")}
               offline={presence.offline}
@@ -584,7 +634,45 @@ export function NowHero({
               onOpen={(source) => onOpenLabel?.("battery", source)}
             />
           ) : null}
+          {airconParts ? (
+            <HouseLabel
+              kind="aircon"
+              value={airconParts.value}
+              unit={airconParts.unit}
+              accent={labelAccent("aircon", dark)}
+              left={labelPosition("aircon", orientation, side).left}
+              top={labelPosition("aircon", orientation, side).top}
+              ariaLabel={`${t("energy.story.aircon")}, ${formatKwh(airconKwh ?? 0, locale)}, ${t("energy.overview.now.airconToday")}`}
+              interactive={interactive("aircon")}
+              offline={presence.offline}
+              active={false}
+              icon={<AirVent className="h-4 w-4" aria-hidden />}
+              onOpen={(source) => onOpenLabel?.("aircon", source)}
+            />
+          ) : null}
         </div>
+        {variant ? (
+          <button
+            ref={turn.buttonRef}
+            type="button"
+            data-now-turn
+            disabled={turn.busy}
+            aria-label={side === "front" ? t("energy.overview.house.turnToBack") : t("energy.overview.house.turnToFront")}
+            onClick={() => turn.turnTo(side === "front" ? "back" : "front")}
+            className={`energy-house-glass absolute bottom-0 right-0 z-[8] inline-flex h-11 min-w-11 items-center gap-2 rounded-full border border-[rgba(17,24,39,0.56)] bg-[rgba(255,255,255,0.62)] px-3 text-[15px] font-semibold text-[#111827] outline-none dark:border-[rgba(255,255,255,0.52)] dark:bg-[rgba(40,32,54,0.62)] dark:text-[#f3f4f6] ${FOCUS_RING_BRAND}`}
+          >
+            <RotateCw className="h-5 w-5 shrink-0 text-[#4700B5] dark:text-[#8357be]" aria-hidden />
+            {side === "front" ? t("energy.overview.house.back") : t("energy.overview.house.front")}
+          </button>
+        ) : null}
+        {variant && HOUSE_RENDER_CONCEPT ? (
+          <div
+            data-now-concept
+            className={`energy-house-glass pointer-events-none absolute left-0 z-[6] flex h-7 items-center rounded-full border border-dashed border-[rgba(17,24,39,0.56)] bg-[rgba(255,255,255,0.84)] px-2.5 text-[12px] font-semibold text-[#374151] dark:border-[rgba(255,255,255,0.52)] dark:bg-[rgba(28,22,38,0.86)] dark:text-[#d1d5db] ${orientation === "portrait" ? "bottom-2" : "-top-0.5"}`}
+          >
+            {t("energy.overview.house.conceptRender")}
+          </div>
+        ) : null}
       </div>
       <p
         data-now-sentence

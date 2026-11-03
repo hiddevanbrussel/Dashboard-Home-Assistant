@@ -247,7 +247,7 @@ describe("energy live power and tariff settings", () => {
     });
     expect(document.body.textContent).toContain("Verlichting op het huis");
     expect(document.body.textContent).toContain(
-      "Kies per zone een lamp. Is de lamp uit, dan wordt die zone op het huis donker getoond."
+      "Kies per ruimte een lamp. Is de lamp uit, dan wordt die ruimte op het huis donker getoond."
     );
     expect(document.body.textContent).toContain(
       "Geen lamp gekozen: het huis wordt gewoon getoond, zonder verlichtingslaag."
@@ -316,5 +316,86 @@ describe("energy live power and tariff settings", () => {
     expect(document.body.textContent).toContain("Later");
     expect(document.body.textContent).not.toContain("Komt later.");
     expect(document.body.textContent).not.toContain("Geen lamp gekozen");
+  });
+
+  it("orders the aircon energy sensor and the five rooms, and keeps an old lighting record", () => {
+    localStorage.setItem(
+      "dashboard.energy.lighting",
+      JSON.stringify({ livingRoomEntityId: "light.plafond", upstairsEntityId: "light.zolder" })
+    );
+    hydrateEnergyStore();
+    act(() => {
+      root?.render(
+        createElement(EnergyEntitySettings, {
+          entities: [
+            {
+              entity_id: "sensor.airco_energy",
+              attributes: { friendly_name: "Airco energie", device_class: "energy", unit_of_measurement: "kWh", state_class: "total_increasing" },
+            },
+            {
+              entity_id: "sensor.airco_power",
+              attributes: { friendly_name: "Airco vermogen", device_class: "power", unit_of_measurement: "W" },
+            },
+            { entity_id: "light.keuken", attributes: { friendly_name: "Keukenlamp" } },
+            { entity_id: "light.bad", attributes: { friendly_name: "Badkamerlamp" } },
+            { entity_id: "light.werk", attributes: { friendly_name: "Bureaulamp" } },
+            { entity_id: "light.plafond", attributes: { friendly_name: "Woonkamer plafond" } },
+            { entity_id: "light.zolder", attributes: { friendly_name: "Zolder" } },
+            { entity_id: "switch.keuken", attributes: { friendly_name: "Schakelaar" } },
+          ],
+        })
+      );
+    });
+    const solar = document.getElementById("energy-solar-power");
+    const aircon = document.getElementById("energy-aircon-energy");
+    if (!(solar instanceof HTMLSelectElement) || !(aircon instanceof HTMLSelectElement)) {
+      throw new Error("energy pickers missing");
+    }
+    expect(solar.compareDocumentPosition(aircon) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(aircon.labels?.[0]?.textContent).toBe("Airco (energie)");
+    expect([...aircon.options].map((option) => option.value)).toEqual(["", "sensor.airco_energy"]);
+    expect([...aircon.options].map((option) => option.value)).not.toContain("sensor.airco_power");
+    const roomIds = [
+      "energy-light-living-room",
+      "energy-light-kitchen",
+      "energy-light-bathroom",
+      "energy-light-study",
+      "energy-light-upstairs",
+      "energy-light-outside",
+    ];
+    const rooms = roomIds.map((id) => document.getElementById(id));
+    for (const room of rooms) {
+      if (!(room instanceof HTMLSelectElement)) throw new Error("room picker missing");
+    }
+    for (let index = 1; index < rooms.length; index += 1) {
+      const previous = rooms[index - 1] as HTMLSelectElement;
+      const current = rooms[index] as HTMLSelectElement;
+      expect(previous.compareDocumentPosition(current) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    const outside = rooms[5] as HTMLSelectElement;
+    expect(outside.disabled).toBe(true);
+    expect(outside.labels?.[0]?.textContent).toContain("Later");
+    const kitchen = rooms[1] as HTMLSelectElement;
+    expect([...kitchen.options].map((option) => option.value)).toEqual([
+      "",
+      "light.bad",
+      "light.werk",
+      "light.keuken",
+      "light.plafond",
+      "light.zolder",
+    ]);
+    expect([...kitchen.options].map((option) => option.value)).not.toContain("switch.keuken");
+    expect([...kitchen.options].map((option) => option.value)).not.toContain("sensor.airco_energy");
+    expect((rooms[0] as HTMLSelectElement).value).toBe("light.plafond");
+    expect((rooms[4] as HTMLSelectElement).value).toBe("light.zolder");
+    expect(kitchen.value).toBe("");
+    expect((rooms[2] as HTMLSelectElement).value).toBe("");
+    expect((rooms[3] as HTMLSelectElement).value).toBe("");
+    expect(document.querySelector("[data-house-lights-empty]")).toBeNull();
+    act(() => {
+      aircon.value = "sensor.airco_energy";
+      aircon.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(useEnergyStore.getState().entities.airconEnergyEntityId).toBe("sensor.airco_energy");
   });
 });

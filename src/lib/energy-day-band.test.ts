@@ -38,6 +38,7 @@ function facts(patch: Partial<StoryFacts> = {}): StoryFacts {
     weekDays: [{ weekday: 0, kwh: 2, current: true }],
     ltsDays: 8,
     tariffFixed: true,
+    airconKwh: null,
     live: { solarKw: 1.65, homeKw: 0.7, gridImportKw: 0, gridExportKw: 0.25, chargeKw: 0.7, dischargeKw: 0 },
     ...patch,
   };
@@ -86,6 +87,11 @@ describe("day band", () => {
     expect(getTranslations("en")[linkTitleKey]).toBe("Grid");
     expect(linkTitleKey).not.toBe("energy.story.devices");
     expect(cardForHouseLabel(facts({ soc: null }), "battery")).toBeNull();
+    expect(cardForHouseLabel(facts({ airconKwh: 2.4 }), "aircon")).toEqual({ kind: "aircon", todayKwh: 2.4 });
+    expect(cardForHouseLabel(facts({ airconKwh: null }), "aircon")).toBeNull();
+    expect(storySheetLabelKey({ kind: "aircon", todayKwh: 2.4 })).toBe("energy.story.aircon");
+    expect(getTranslations("nl")["energy.story.aircon"]).toBe("Airco");
+    expect(getTranslations("en")["energy.story.aircon"]).toBe("Air conditioning");
     expect(bandCells(facts({ linked: false }), "nl")).toEqual([]);
   });
 });

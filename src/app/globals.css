@@ -787,10 +787,31 @@ html.dark[data-dashboard-edit] [data-header-statpill-id] .tile-kebab-hit::before
   box-shadow: none;
 }
 
+.energy-house-glass {
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+}
+
 html[data-glass-density="off"] .energy-house-label,
+html[data-glass-density="off"] .energy-house-glass,
 html[data-glass-density="off"] .energy-day-band {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+[data-now-frame][data-now-overlays="out"] [data-now-label],
+[data-now-frame][data-now-overlays="out"] [data-now-layers] {
+  opacity: 0;
+  transition: opacity 80ms linear;
+}
+
+[data-now-frame][data-now-overlays="out"] [data-now-label] {
+  pointer-events: none;
+}
+
+[data-now-frame][data-now-overlays="in"] [data-now-label],
+[data-now-frame][data-now-overlays="in"] [data-now-layers] {
+  transition: opacity 150ms linear;
 }
 
 @keyframes energy-label-flow {

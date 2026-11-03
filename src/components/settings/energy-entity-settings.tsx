@@ -66,12 +66,29 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
     () => filterLightEntities(entities, lighting.livingRoomEntityId),
     [entities, lighting.livingRoomEntityId]
   );
+  const kitchenLightOptions = useMemo(
+    () => filterLightEntities(entities, lighting.kitchenEntityId),
+    [entities, lighting.kitchenEntityId]
+  );
+  const bathroomLightOptions = useMemo(
+    () => filterLightEntities(entities, lighting.bathroomEntityId),
+    [entities, lighting.bathroomEntityId]
+  );
+  const studyLightOptions = useMemo(
+    () => filterLightEntities(entities, lighting.studyEntityId),
+    [entities, lighting.studyEntityId]
+  );
   const upstairsLightOptions = useMemo(
     () => filterLightEntities(entities, lighting.upstairsEntityId),
     [entities, lighting.upstairsEntityId]
   );
   const lightsEmpty =
-    !lighting.livingRoomEntityId && !lighting.upstairsEntityId && !lighting.outdoorEntityId;
+    !lighting.livingRoomEntityId &&
+    !lighting.kitchenEntityId &&
+    !lighting.bathroomEntityId &&
+    !lighting.studyEntityId &&
+    !lighting.upstairsEntityId &&
+    !lighting.outdoorEntityId;
 
   function chooseMode(next: "signed" | "split") {
     setModeChoice(next);
@@ -106,6 +123,14 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
           noneLabel={t("settings.energy.entityNone")}
           onChange={(value) => setEntity("solarPowerEntityId", value)}
         />
+        <PowerSelect
+          id="energy-aircon-energy"
+          label={t("settings.energy.airconEnergy")}
+          value={energyEntities.airconEnergyEntityId}
+          entities={energyOptions}
+          noneLabel={t("settings.energy.entityNone")}
+          onChange={(value) => setEntity("airconEnergyEntityId", value)}
+        />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.energy.lights.title")} description={t("settings.energy.lights.description")}>
@@ -116,6 +141,30 @@ export function EnergyEntitySettings({ entities }: { entities: HaEntity[] }) {
           entities={livingLightOptions}
           noneLabel={t("settings.energy.entityNone")}
           onChange={(value) => setLightingEntity("livingRoomEntityId", value)}
+        />
+        <LightZoneSelect
+          id="energy-light-kitchen"
+          label={t("settings.energy.lights.zone.kitchen")}
+          value={lighting.kitchenEntityId}
+          entities={kitchenLightOptions}
+          noneLabel={t("settings.energy.entityNone")}
+          onChange={(value) => setLightingEntity("kitchenEntityId", value)}
+        />
+        <LightZoneSelect
+          id="energy-light-bathroom"
+          label={t("settings.energy.lights.zone.bathroom")}
+          value={lighting.bathroomEntityId}
+          entities={bathroomLightOptions}
+          noneLabel={t("settings.energy.entityNone")}
+          onChange={(value) => setLightingEntity("bathroomEntityId", value)}
+        />
+        <LightZoneSelect
+          id="energy-light-study"
+          label={t("settings.energy.lights.zone.study")}
+          value={lighting.studyEntityId}
+          entities={studyLightOptions}
+          noneLabel={t("settings.energy.entityNone")}
+          onChange={(value) => setLightingEntity("studyEntityId", value)}
         />
         <LightZoneSelect
           id="energy-light-upstairs"

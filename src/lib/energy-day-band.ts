@@ -6,6 +6,7 @@
 import { buildStoryCards } from "@/lib/energy-story/cards";
 import { line } from "@/lib/energy-story/types";
 import type { StoryCardModel, StoryFacts, StoryLine } from "@/lib/energy-story/types";
+import type { HouseLabelKind } from "@/lib/energy-house-labels";
 
 export type BandCellKind = "solar" | "grid" | "peak" | "week";
 
@@ -48,6 +49,8 @@ export function storySheetLabelKey(card: StoryCardModel): string {
       return "energy.story.gridLabel";
     case "week":
       return "energy.story.week";
+    case "aircon":
+      return "energy.story.aircon";
     default: {
       const neverCard: never = card;
       return neverCard;
@@ -55,7 +58,7 @@ export function storySheetLabelKey(card: StoryCardModel): string {
   }
 }
 
-export function cardForHouseLabel(facts: StoryFacts, kind: "solar" | "house" | "grid" | "battery"): StoryCardModel | null {
+export function cardForHouseLabel(facts: StoryFacts, kind: HouseLabelKind): StoryCardModel | null {
   const cards = buildStoryCards(facts);
   switch (kind) {
     case "solar":
@@ -70,6 +73,10 @@ export function cardForHouseLabel(facts: StoryFacts, kind: "solar" | "house" | "
     }
     case "battery":
       return cards.find((card) => card.kind === "battery") ?? null;
+    case "aircon":
+      return facts.airconKwh == null || !Number.isFinite(facts.airconKwh)
+        ? null
+        : { kind: "aircon", todayKwh: facts.airconKwh };
     default: {
       const neverKind: never = kind;
       return neverKind;
@@ -138,6 +145,7 @@ export function bandCells(facts: StoryFacts, language: "nl" | "en"): BandCellMod
       case "devices":
       case "hint":
       case "link":
+      case "aircon":
         break;
       default: {
         const neverCard: never = card;

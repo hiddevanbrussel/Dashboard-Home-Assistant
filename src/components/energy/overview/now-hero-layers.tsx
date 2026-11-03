@@ -9,6 +9,8 @@ export type HouseLineSpec = {
   anchor: { x: number; y: number };
   towardHouse: boolean;
   flow: boolean;
+  /** Front solar: dashed line over the ridge, no flow. */
+  ridge?: boolean;
 };
 
 type DrawnLine = {
@@ -16,6 +18,8 @@ type DrawnLine = {
   accent: string;
   staticPath: string;
   flowPath: string | null;
+  dashed: boolean;
+  dot: { x: number; y: number } | null;
 };
 
 /**
@@ -59,11 +63,27 @@ export function NowHeroLayers({ specs, sig }: { specs: readonly HouseLineSpec[];
           x: (spec.anchor.x / 100) * frameRect.width,
           y: (spec.anchor.y / 100) * frameRect.height,
         };
+        if (spec.ridge) {
+          const overX = anchor.x - frameRect.width * 0.025;
+          const overY = anchor.y - frameRect.height * 0.018;
+          const n = (value: number) => value.toFixed(1);
+          next.push({
+            kind: spec.kind,
+            accent: spec.accent,
+            staticPath: `M${n(edge.x)} ${n(edge.y)} L${n(anchor.x)} ${n(anchor.y)} L${n(overX)} ${n(overY)}`,
+            flowPath: null,
+            dashed: true,
+            dot: anchor,
+          });
+          continue;
+        }
         next.push({
           kind: spec.kind,
           accent: spec.accent,
           staticPath: flowPath(edge, anchor, true),
           flowPath: spec.flow ? flowPath(edge, anchor, spec.towardHouse) : null,
+          dashed: false,
+          dot: null,
         });
       }
       setLines(next);
@@ -88,7 +108,9 @@ export function NowHeroLayers({ specs, sig }: { specs: readonly HouseLineSpec[];
               stroke={line.accent}
               strokeWidth={1.5}
               strokeLinecap="round"
+              strokeDasharray={line.dashed ? "2 4" : undefined}
             />
+            {line.dot ? <circle data-now-ridge={line.kind} cx={line.dot.x} cy={line.dot.y} r={1.5} fill={line.accent} /> : null}
             {line.flowPath ? (
               <path
                 data-now-flow={line.kind}
