@@ -430,7 +430,7 @@ export function HouseLightSheet({
                 <span>{t("lightCard.brightness")}</span>
                 <span data-house-light-brightness-value="">{on ? `${brightness} %` : "–"}</span>
               </div>
-              <div className="relative h-14 rounded-full focus-within:ring-2 focus-within:ring-brand">
+              <div className="relative h-14 rounded-full focus-within:ring-2 focus-within:ring-brand dark:focus-within:ring-brand-muted">
                 <div className="absolute inset-0 rounded-full bg-[#eceaf1] dark:bg-white/10" />
                 <div
                   data-house-light-brightness-fill=""
@@ -478,7 +478,7 @@ export function HouseLightSheet({
                 <span>{t("lightCard.colorTemp")}</span>
                 <span>{kelvin} K</span>
               </div>
-              <div className="rounded-full focus-within:ring-2 focus-within:ring-brand">
+              <div className="rounded-full focus-within:ring-2 focus-within:ring-brand dark:focus-within:ring-brand-muted">
                 <input
                   data-house-light-kelvin=""
                   type="range"

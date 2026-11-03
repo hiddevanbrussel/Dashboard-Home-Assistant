@@ -268,6 +268,8 @@ describe("house light sheet", () => {
     const kelvin = document.querySelector("[data-house-light-kelvin]");
     expect(kelvin?.parentElement?.className).toContain("focus-within:ring-2");
     expect(kelvin?.parentElement?.className).toContain("focus-within:ring-brand");
+    expect(kelvin?.parentElement?.className).toContain("dark:focus-within:ring-brand-muted");
+    expect(slider?.parentElement?.className).toContain("dark:focus-within:ring-brand-muted");
 
     useLanguageStore.setState({ language: "en", ready: true });
     await act(async () => {
