@@ -239,4 +239,59 @@ describe("house light sheet", () => {
     expect(document.querySelector("[data-house-light-sheet-status]")?.textContent).toContain("groep, 3 lampen");
     expect(document.querySelector("[data-house-light-kelvin]")).toBeNull();
   });
+
+  it("shows a dash and a grey fill when the light is off, and says Uit instead of 1 percent", async () => {
+    useEnergyStore.getState().setLightingEntity("livingRoomEntityId", "light.woonkamer");
+    useEntityStateStore.getState().setStates([
+      light("light.woonkamer", "off", {
+        brightness: 0,
+        supported_color_modes: ["color_temp"],
+        color_temp_kelvin: 2700,
+        min_color_temp_kelvin: 2000,
+        max_color_temp_kelvin: 6500,
+      }),
+    ]);
+    await act(async () => {
+      root?.render(createElement(SheetHarness, { zoneId: "livingRoom" }));
+    });
+    expect(document.querySelector("[data-house-light-brightness-value]")?.textContent).toBe("–");
+    const fill = document.querySelector("[data-house-light-brightness-fill]");
+    expect(fill?.className).toContain("bg-[#9ca3af]");
+    expect(fill?.className).toContain("dark:bg-white/25");
+    expect(fill?.className).not.toContain("bg-[#4700B5]");
+    const track = document.querySelector("[data-house-light-switch-track]");
+    expect(track?.className).toContain("bg-[#6b7280]");
+    expect(track?.className).toContain("dark:bg-white/40");
+    const slider = document.querySelector("[data-house-light-brightness]");
+    expect(slider?.getAttribute("aria-valuetext")).toBe("Uit");
+    expect(slider?.getAttribute("aria-valuetext")).not.toContain("procent");
+    const kelvin = document.querySelector("[data-house-light-kelvin]");
+    expect(kelvin?.parentElement?.className).toContain("focus-within:ring-2");
+    expect(kelvin?.parentElement?.className).toContain("focus-within:ring-brand");
+
+    useLanguageStore.setState({ language: "en", ready: true });
+    await act(async () => {
+      root?.render(createElement(SheetHarness, { zoneId: "livingRoom" }));
+    });
+    expect(document.querySelector("[data-house-light-brightness]")?.getAttribute("aria-valuetext")).toBe("Off");
+    expect(document.querySelector("[data-house-light-brightness-value]")?.textContent).toBe("–");
+  });
+
+  it("keeps the last brightness on the grey fill and does not announce that percent while off", async () => {
+    useEnergyStore.getState().setLightingEntity("livingRoomEntityId", "light.woonkamer");
+    useEntityStateStore.getState().setStates([
+      light("light.woonkamer", "off", {
+        brightness_pct: 70,
+        supported_color_modes: ["brightness"],
+      }),
+    ]);
+    await act(async () => {
+      root?.render(createElement(SheetHarness, { zoneId: "livingRoom" }));
+    });
+    const fill = document.querySelector("[data-house-light-brightness-fill]");
+    expect(fill?.getAttribute("style")).toContain("70%");
+    expect(fill?.className).toContain("bg-[#9ca3af]");
+    expect(document.querySelector("[data-house-light-brightness-value]")?.textContent).toBe("–");
+    expect(document.querySelector("[data-house-light-brightness]")?.getAttribute("aria-valuetext")).toBe("Uit");
+  });
 });

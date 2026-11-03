@@ -414,9 +414,10 @@ export function HouseLightSheet({
               onClick={onSwitch}
             >
               <span
+                data-house-light-switch-track=""
                 className={cn(
                   "relative h-8 w-[52px] rounded-full",
-                  on && !unreachable ? "bg-[#4700B5] dark:bg-[#8357be]" : "bg-[#d1d5db] dark:bg-white/20"
+                  on && !unreachable ? "bg-[#4700B5] dark:bg-[#8357be]" : "bg-[#6b7280] dark:bg-white/40"
                 )}
               >
                 <span className={cn("absolute top-1 h-6 w-6 rounded-full bg-white", on ? "left-6" : "left-1")} />
@@ -427,12 +428,16 @@ export function HouseLightSheet({
             <div className="mt-4">
               <div className="mb-2 flex items-center justify-between text-[14px] text-[#374151] dark:text-[#d1d5db]">
                 <span>{t("lightCard.brightness")}</span>
-                <span>{brightness} %</span>
+                <span data-house-light-brightness-value="">{on ? `${brightness} %` : "–"}</span>
               </div>
               <div className="relative h-14 rounded-full focus-within:ring-2 focus-within:ring-brand">
                 <div className="absolute inset-0 rounded-full bg-[#eceaf1] dark:bg-white/10" />
                 <div
-                  className="absolute inset-y-0 left-0 rounded-full bg-[#4700B5] dark:bg-[#8357be]"
+                  data-house-light-brightness-fill=""
+                  className={cn(
+                    "absolute inset-y-0 left-0 rounded-full",
+                    on ? "bg-[#4700B5] dark:bg-[#8357be]" : "bg-[#9ca3af] dark:bg-white/25"
+                  )}
                   style={{ width: `${brightness}%` }}
                 />
                 <input
@@ -443,7 +448,7 @@ export function HouseLightSheet({
                   step={1}
                   value={brightness}
                   aria-label={t("lightCard.brightness")}
-                  aria-valuetext={`${brightness} ${percentWord}`}
+                  aria-valuetext={on ? `${brightness} ${percentWord}` : t("lightCard.off")}
                   aria-disabled={unreachable || undefined}
                   className="absolute inset-0 h-14 w-full cursor-pointer opacity-0"
                   onPointerDown={() => {
@@ -473,35 +478,37 @@ export function HouseLightSheet({
                 <span>{t("lightCard.colorTemp")}</span>
                 <span>{kelvin} K</span>
               </div>
-              <input
-                data-house-light-kelvin=""
-                type="range"
-                min={zone.minK}
-                max={zone.maxK}
-                step={1}
-                value={kelvin}
-                aria-label={t("lightCard.colorTemp")}
-                aria-valuetext={`${kelvin} kelvin`}
-                aria-disabled={unreachable || undefined}
-                className="house-light-kelvin w-full cursor-pointer"
-                onPointerDown={() => {
-                  dragging.current = "kelvin";
-                }}
-                onPointerUp={() => {
-                  if (dragging.current !== "kelvin") return;
-                  dragging.current = null;
-                  pushKelvin(kelvinRef.current, "end");
-                }}
-                onPointerCancel={() => {
-                  dragging.current = null;
-                }}
-                onChange={(event) => {
-                  if (fromKey.current) return;
-                  const value = clamp(Number(event.target.value), zone.minK, zone.maxK);
-                  pushKelvin(value, dragging.current === "kelvin" ? "drag" : "key");
-                }}
-                onKeyDown={(event) => onSliderKey(event, "kelvin")}
-              />
+              <div className="rounded-full focus-within:ring-2 focus-within:ring-brand">
+                <input
+                  data-house-light-kelvin=""
+                  type="range"
+                  min={zone.minK}
+                  max={zone.maxK}
+                  step={1}
+                  value={kelvin}
+                  aria-label={t("lightCard.colorTemp")}
+                  aria-valuetext={`${kelvin} kelvin`}
+                  aria-disabled={unreachable || undefined}
+                  className="house-light-kelvin w-full cursor-pointer"
+                  onPointerDown={() => {
+                    dragging.current = "kelvin";
+                  }}
+                  onPointerUp={() => {
+                    if (dragging.current !== "kelvin") return;
+                    dragging.current = null;
+                    pushKelvin(kelvinRef.current, "end");
+                  }}
+                  onPointerCancel={() => {
+                    dragging.current = null;
+                  }}
+                  onChange={(event) => {
+                    if (fromKey.current) return;
+                    const value = clamp(Number(event.target.value), zone.minK, zone.maxK);
+                    pushKelvin(value, dragging.current === "kelvin" ? "drag" : "key");
+                  }}
+                  onKeyDown={(event) => onSliderKey(event, "kelvin")}
+                />
+              </div>
             </div>
           ) : null}
           {onlyOnOff ? (

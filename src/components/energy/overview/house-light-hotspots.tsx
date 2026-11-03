@@ -25,6 +25,7 @@ function fill(template: string, vars: Record<string, string>): string {
 }
 
 const PRESS_CIRC = 2 * Math.PI * 24;
+const TAP_GAP_MS = 400;
 
 function HouseLightHit({
   zoneId,
@@ -238,6 +239,7 @@ export function HouseLightHotspots({
   const updateEntityState = useEntityStateStore((state) => state.updateEntityState);
   const revertEntityState = useEntityStateStore((state) => state.revertEntityState);
   const pendingRef = useRef(new Set<string>());
+  const acceptedTapAt = useRef(new Map<string, number>());
   const [pendingZones, setPendingZones] = useState<ReadonlySet<string>>(new Set());
   const mounted = useRef(true);
   const hits = houseLightHitRects(side, frameWidth, frameHeight);
@@ -268,6 +270,10 @@ export function HouseLightHotspots({
       onNotice(fill(t("energy.overview.light.unavailable"), { zone: name }));
       return;
     }
+    const now = Date.now();
+    const lastTap = acceptedTapAt.current.get(id) ?? 0;
+    if (now - lastTap < TAP_GAP_MS) return;
+    acceptedTapAt.current.set(id, now);
     const next = zone.status === "on" ? "off" : "on";
     const previous = useEntityStateStore.getState().states[zone.entityId];
     pendingRef.current.add(id);
@@ -305,7 +311,8 @@ export function HouseLightHotspots({
       {hits.map((zone) => {
         const reading = houseLightZoneState(lighting, states, zone.id);
         if (reading.status === "unlinked") return null;
-        const adjustable = reading.supportsBrightness || reading.supportsColorTemp;
+        const adjustable =
+          reading.status !== "unavailable" && (reading.supportsBrightness || reading.supportsColorTemp);
         const hint = t(adjustable ? "energy.overview.light.hint" : "energy.overview.light.hintOnOff");
         const hintId = `house-light-hint-${zone.id}`;
         const label = fill(t("energy.overview.light.label"), { zone: zoneLabel(zone.id) });

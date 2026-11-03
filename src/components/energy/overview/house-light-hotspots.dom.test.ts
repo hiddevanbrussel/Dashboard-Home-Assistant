@@ -377,4 +377,104 @@ describe("house light hotspots", () => {
     );
     expect(document.querySelectorAll("[role='switch']").length).toBe(2);
   });
+
+  it("does not mention brightness in the hidden hint of an unavailable light", async () => {
+    linkRooms();
+    useEntityStateStore.getState().setStates([
+      sun,
+      solarState("1650"),
+      light("light.woonkamer", "unavailable", { supported_color_modes: ["brightness"], brightness: 180 }),
+      light("light.boven", "off"),
+    ]);
+    await show();
+    const hint = document.getElementById(primary("livingRoom").getAttribute("aria-describedby") ?? "");
+    expect(hint?.textContent).toBe("Lang indrukken of Shift+F10 voor details");
+    expect(hint?.textContent?.toLowerCase()).not.toContain("helderheid");
+    await act(async () => {
+      useLanguageStore.setState({ language: "en", ready: true });
+    });
+    const hintEn = document.getElementById(primary("livingRoom").getAttribute("aria-describedby") ?? "");
+    expect(hintEn?.textContent).toBe("Long press or Shift+F10 for details");
+    expect(hintEn?.textContent?.toLowerCase()).not.toContain("brightness");
+  });
+
+  it("ignores a second tap on the same window within 400ms and while the call is running", async () => {
+    linkRooms();
+    useEntityStateStore.getState().setStates([
+      sun,
+      solarState("1650"),
+      light("light.woonkamer", "off", { brightness: 180 }),
+      light("light.boven", "off"),
+    ]);
+    await show();
+    vi.useFakeTimers();
+    await act(async () => {
+      pointer(primary("livingRoom"), "pointerdown", 20, 20);
+      pointer(primary("livingRoom"), "pointerup", 20, 20);
+    });
+    expect(serviceCalls()).toHaveLength(1);
+    expect(serviceCalls()[0]?.body).toMatchObject({ entity_id: "light.woonkamer", service: "turn_on" });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(96);
+      pointer(primary("livingRoom"), "pointerdown", 20, 20);
+      pointer(primary("livingRoom"), "pointerup", 20, 20);
+    });
+    expect(serviceCalls()).toHaveLength(1);
+    await act(async () => {
+      pointer(primary("upstairs"), "pointerdown", 30, 30);
+      pointer(primary("upstairs"), "pointerup", 30, 30);
+    });
+    expect(serviceCalls()).toHaveLength(2);
+    expect(serviceCalls()[1]?.body).toMatchObject({ entity_id: "light.boven", service: "turn_on" });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+      pointer(primary("livingRoom"), "pointerdown", 20, 20);
+      pointer(primary("livingRoom"), "pointerup", 20, 20);
+    });
+    expect(serviceCalls()).toHaveLength(3);
+    expect(serviceCalls()[2]?.body).toMatchObject({ entity_id: "light.woonkamer", service: "turn_off" });
+  });
+
+  it("ignores another tap on the same window while call-service is still running", async () => {
+    linkRooms();
+    useEntityStateStore.getState().setStates([
+      sun,
+      solarState("1650"),
+      light("light.woonkamer", "off"),
+      light("light.boven", "off"),
+    ]);
+    let release: ((value: { ok: boolean; status: number; json: () => Promise<unknown> }) => void) | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        if (String(url).includes("call-service")) {
+          return new Promise((resolve) => {
+            release = resolve;
+          });
+        }
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+      })
+    );
+    await show();
+    vi.useFakeTimers();
+    await act(async () => {
+      pointer(primary("livingRoom"), "pointerdown", 12, 18);
+      pointer(primary("livingRoom"), "pointerup", 12, 18);
+    });
+    expect(serviceCalls()).toHaveLength(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700);
+      pointer(primary("livingRoom"), "pointerdown", 12, 18);
+      pointer(primary("livingRoom"), "pointerup", 12, 18);
+    });
+    expect(serviceCalls()).toHaveLength(1);
+    await act(async () => {
+      release?.({ ok: true, status: 200, json: async () => ({}) });
+    });
+    await act(async () => {
+      pointer(primary("livingRoom"), "pointerdown", 12, 18);
+      pointer(primary("livingRoom"), "pointerup", 12, 18);
+    });
+    expect(serviceCalls()).toHaveLength(2);
+  });
 });
