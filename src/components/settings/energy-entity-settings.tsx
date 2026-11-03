@@ -34,7 +34,7 @@ const choiceIdle = "border-[#767b85] text-[#111827] dark:border-[#6b6b75] dark:t
 const lightSelectClass = cn(
   "h-11 border-[#767b85] outline-none focus-visible:!outline-none dark:border-[#a1a1aa]",
   "disabled:cursor-not-allowed disabled:opacity-100",
-  "disabled:bg-[#f3f4f6] dark:disabled:bg-white/[0.04] disabled:border-dashed disabled:text-[#4b5563] dark:disabled:text-[#c4c4cc]",
+  "disabled:bg-[#f3f4f6] dark:disabled:bg-[#6d6c71] disabled:border-dashed disabled:text-[#4b5563] dark:disabled:text-white",
   "disabled:appearance-none disabled:bg-none",
   FOCUS_RING_BRAND
 );
