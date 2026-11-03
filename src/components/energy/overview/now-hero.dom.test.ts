@@ -521,6 +521,44 @@ describe("Nu hero live values", () => {
       spy.mockRestore();
     }
   });
+
+  it("places window targets under the labels, and a label opens its sheet without switching a light", async () => {
+    const opened: string[] = [];
+    useEnergyStore.getState().setLightingEntity("livingRoomEntityId", "light.woonkamer");
+    useEntityStateStore.getState().setStates([
+      sun,
+      solarState("1650"),
+      { entity_id: "light.woonkamer", state: "off", attributes: {} },
+    ]);
+    await act(async () => {
+      root?.render(
+        createElement(NowHero, {
+          orientation: "landscape",
+          labelOpens: () => true,
+          onOpenLabel: (kind) => opened.push(kind),
+        })
+      );
+    });
+    await until(() => {
+      expect(document.querySelector("[data-house-light-hotspots]")).toBeTruthy();
+      expect(document.querySelector("[data-now-label='solar']")).toBeTruthy();
+    });
+    const layer = document.querySelector("[data-house-light-hotspots]");
+    const label = document.querySelector("[data-now-label='solar']");
+    if (!(layer instanceof HTMLElement) || !(label instanceof HTMLElement)) throw new Error("layer missing");
+    expect(layer.className).toContain("z-[4]");
+    expect(label.className).toContain("z-[5]");
+    expect(label.compareDocumentPosition(layer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(layer?.getAttribute("aria-live")).toBeNull();
+    expect(document.querySelector("[data-house-light-status]")?.getAttribute("aria-live")).toBeNull();
+    await act(async () => {
+      label?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(opened).toEqual(["solar"]);
+    const calls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.map((call) => String(call[0]));
+    expect(calls.some((url) => url.includes("call-service"))).toBe(false);
+    expect(useEntityStateStore.getState().states["light.woonkamer"]?.state).toBe("off");
+  });
 });
 
 describe("stored energy tab while my tiles are hidden", () => {

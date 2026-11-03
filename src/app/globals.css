@@ -879,6 +879,72 @@ html[data-glass-density="off"] .energy-day-band {
   animation: energy-story-sheet-in 0.28s ease-out;
 }
 
+@keyframes house-light-ripple {
+  from {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0.55;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1.4);
+    opacity: 0;
+  }
+}
+
+.house-light-ripple {
+  animation: house-light-ripple 300ms ease-out forwards;
+}
+
+@keyframes house-light-press-arc {
+  from {
+    stroke-dashoffset: var(--press-circ);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.house-light-press-arc {
+  animation: house-light-press-arc 350ms linear forwards;
+}
+
+@keyframes house-light-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.house-light-spin {
+  animation: house-light-spin 800ms linear infinite;
+  transform-origin: center;
+}
+
+.house-light-kelvin {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 44px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f59e0b 0%, #fff7ed 50%, #60a5fa 100%);
+  outline: none;
+}
+
+.house-light-kelvin::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid #111827;
+}
+
+.house-light-kelvin::-moz-range-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid #111827;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .energy-label-flow {
     animation: none;
@@ -887,6 +953,16 @@ html[data-glass-density="off"] .energy-day-band {
 
   .energy-story-sheet-in {
     animation: none !important;
+  }
+
+  .house-light-ripple {
+    animation: none;
+    display: none;
+  }
+
+  .house-light-press-arc,
+  .house-light-spin {
+    animation: none;
   }
 
   .energy-band-roll[data-band-motion="on"] .energy-band-roll-layer {

@@ -212,6 +212,150 @@ export const HOUSE_LIGHT_TINT = {
 export const HOUSE_LIGHT_BLUR = 0.35;
 
 export const HOUSE_LIGHT_TINT_TRANSITION_MS = 600;
+/** Tint duration after a tap or a slider move on this house. */
+export const HOUSE_LIGHT_TINT_FAST_MS = 200;
+/** Smallest window target, in CSS pixels. */
+export const HOUSE_LIGHT_HIT_MIN_PX = 44;
+
+export type HouseLightHitRect = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+export type HouseLightHits = {
+  id: HouseLightZoneId;
+  /** Bounding boxes in percent of the house frame. Grown to 44px when the window is smaller. */
+  rects: HouseLightHitRect[];
+  /** Index of the largest window. That one is the focusable control. */
+  primary: number;
+};
+
+function polygonBounds(polygon: readonly HouseLightPoint[]): HouseLightHitRect {
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  for (const [x, y] of polygon) {
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+  return { left: minX, top: minY, width: maxX - minX, height: maxY - minY };
+}
+
+function growHitRect(rect: HouseLightHitRect, frameW: number, frameH: number): HouseLightHitRect {
+  let { left, top, width, height } = rect;
+  if (frameW > 0 && (width / 100) * frameW < HOUSE_LIGHT_HIT_MIN_PX) {
+    const next = (HOUSE_LIGHT_HIT_MIN_PX / frameW) * 100;
+    left -= (next - width) / 2;
+    width = next;
+  }
+  if (frameH > 0 && (height / 100) * frameH < HOUSE_LIGHT_HIT_MIN_PX) {
+    const next = (HOUSE_LIGHT_HIT_MIN_PX / frameH) * 100;
+    top -= (next - height) / 2;
+    height = next;
+  }
+  return { left, top, width, height };
+}
+
+/** Hit rectangles for the rooms drawn on this side. Percentages are of the frame. */
+export function houseLightHitRects(side: HouseSide, frameW: number, frameH: number): HouseLightHits[] {
+  const hits: HouseLightHits[] = [];
+  for (const id of houseLightZonesForSide(side)) {
+    const polygons = HOUSE_LIGHT_ZONES[side][id];
+    if (!polygons || polygons.length === 0) continue;
+    let primary = 0;
+    let bestArea = -1;
+    const rects = polygons.map((polygon, index) => {
+      const bounds = polygonBounds(polygon);
+      const area = bounds.width * bounds.height;
+      if (area > bestArea) {
+        bestArea = area;
+        primary = index;
+      }
+      return growHitRect(bounds, frameW, frameH);
+    });
+    hits.push({ id, rects, primary });
+  }
+  return hits;
+}
+
+export type HouseLightZoneStatus = "on" | "off" | "unavailable" | "unlinked";
+
+export type HouseLightZoneState = {
+  entityId: string;
+  status: HouseLightZoneStatus;
+  brightnessPct: number;
+  supportsBrightness: boolean;
+  supportsColorTemp: boolean;
+  minK: number;
+  maxK: number;
+  kelvin: number;
+  /** Null when the entity is not a light group. */
+  groupSize: number | null;
+};
+
+function finiteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** What the room light can do, and whether a tap may call Home Assistant. */
+export function houseLightZoneState(
+  lighting: HouseLighting,
+  states: Readonly<Record<string, HouseLightReading | undefined>>,
+  id: HouseLightZoneId
+): HouseLightZoneState {
+  const linked = HOUSE_LIGHT_ENTITY_KEYS.find((zone) => zone.id === id);
+  const entityId = linked ? lighting[linked.key] : "";
+  const reading = entityId ? states[entityId] : undefined;
+  const attributes = reading?.attributes ?? {};
+  const modes = Array.isArray(attributes.supported_color_modes)
+    ? attributes.supported_color_modes.filter((mode): mode is string => typeof mode === "string")
+    : [];
+  const features = finiteNumber(attributes.supported_features) ?? 0;
+  const supportsBrightness = modes.length > 0 ? modes.some((mode) => mode !== "onoff") : (features & 1) !== 0;
+  const supportsColorTemp = modes.includes("color_temp");
+  const minK = finiteNumber(attributes.min_color_temp_kelvin) ?? 2000;
+  const maxK = finiteNumber(attributes.max_color_temp_kelvin) ?? 6500;
+  const kelvinRaw = finiteNumber(attributes.color_temp_kelvin);
+  const kelvin = kelvinRaw == null ? minK : Math.min(maxK, Math.max(minK, kelvinRaw));
+  const pctRaw = finiteNumber(attributes.brightness_pct);
+  const brightnessRaw = finiteNumber(attributes.brightness);
+  const brightnessPct =
+    pctRaw != null ? Math.round(pctRaw) : brightnessRaw != null ? Math.round((brightnessRaw / 255) * 100) : reading?.state === "on" ? 100 : 0;
+  const groupSize = Array.isArray(attributes.entity_id) ? attributes.entity_id.length : null;
+  if (!entityId) {
+    return {
+      entityId: "",
+      status: "unlinked",
+      brightnessPct,
+      supportsBrightness,
+      supportsColorTemp,
+      minK,
+      maxK,
+      kelvin,
+      groupSize,
+    };
+  }
+  const raw = reading?.state;
+  let status: HouseLightZoneStatus = "unavailable";
+  if (raw === "on") status = "on";
+  else if (raw === "off") status = "off";
+  return {
+    entityId,
+    status,
+    brightnessPct,
+    supportsBrightness,
+    supportsColorTemp,
+    minK,
+    maxK,
+    kelvin,
+    groupSize,
+  };
+}
 
 export type HouseLightingKey =
   | "livingRoomEntityId"

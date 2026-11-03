@@ -20,12 +20,23 @@ type MotionFlags = {
   screensaver: boolean;
 };
 
+type HouseTurnOptions = {
+  /** Pause the two-minute return while a sheet is open. Releasing it starts a fresh 120 s. */
+  hold?: boolean;
+  /** Runs before a hidden page or the screensaver snaps back to the front. */
+  onBeforeSnap?: () => void;
+};
+
 /**
  * Local front/back state. Nothing is stored.
  * A full turn is 550 ms: labels out, rotate to the edge, swap, rotate back, labels in.
  * Reduced motion is a 200 ms opacity crossfade and never sets rotateY.
  */
-export function useHouseTurn(frameRef: RefObject<HTMLElement | null>, motion: MotionFlags) {
+export function useHouseTurn(
+  frameRef: RefObject<HTMLElement | null>,
+  motion: MotionFlags,
+  options?: HouseTurnOptions
+) {
   const [side, setSide] = useState<HouseSide>("front");
   const [busy, setBusy] = useState(false);
   const [overlays, setOverlays] = useState<"in" | "out">("in");
@@ -43,6 +54,9 @@ export function useHouseTurn(frameRef: RefObject<HTMLElement | null>, motion: Mo
   const phase = useRef<"idle" | "swap">("idle");
   const turnToRef = useRef<(next: HouseSide) => void>(() => undefined);
   const snapFrontRef = useRef<() => void>(() => undefined);
+  const onBeforeSnapRef = useRef(options?.onBeforeSnap);
+  onBeforeSnapRef.current = options?.onBeforeSnap;
+  const hold = options?.hold ?? false;
   reducedRef.current = motion.reducedMotion;
 
   function clearTimers() {
@@ -80,6 +94,7 @@ export function useHouseTurn(frameRef: RefObject<HTMLElement | null>, motion: Mo
   }
 
   function snapFront() {
+    onBeforeSnapRef.current?.();
     generation.current += 1;
     phase.current = "idle";
     clearTimers();
@@ -190,7 +205,7 @@ export function useHouseTurn(frameRef: RefObject<HTMLElement | null>, motion: Mo
   }, [fadeIn, frameRef]);
 
   useEffect(() => {
-    if (side !== "back") return;
+    if (side !== "back" || hold) return;
     let timer = window.setTimeout(() => turnToRef.current("front"), HOUSE_BACK_IDLE_MS);
     const reset = () => {
       window.clearTimeout(timer);
@@ -210,7 +225,7 @@ export function useHouseTurn(frameRef: RefObject<HTMLElement | null>, motion: Mo
       document.removeEventListener("wheel", reset);
       document.removeEventListener("visibilitychange", onHide);
     };
-  }, [side]);
+  }, [side, hold]);
 
   useEffect(() => {
     if (side === "back" && (motion.hidden || motion.screensaver)) snapFrontRef.current();

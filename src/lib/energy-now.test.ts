@@ -6,6 +6,9 @@ import { getTranslations } from "./i18n";
 import {
   activeHouseLights,
   batteryIsLinked,
+  HOUSE_LIGHT_HIT_MIN_PX,
+  houseLightHitRects,
+  houseLightZoneState,
   dayNightPair,
   EMPTY_HOUSE_LIGHTING,
   FLOW_DOT_EDGE_OPACITY,
@@ -576,6 +579,12 @@ describe("house lighting parser", () => {
     expect(en["settings.energy.lights.zone.kitchen"]).toBe("Kitchen");
     expect(nl["settings.energy.lights.zone.bathroom"]).toBe("Badkamer");
     expect(en["settings.energy.lights.zone.bathroom"]).toBe("Bathroom");
+    expect(nl["energy.overview.light.failedToggle"]).toBe("{zone}: licht schakelen mislukt");
+    expect(en["energy.overview.light.failedToggle"]).toBe("{zone}: couldn't switch the light");
+    expect(nl["energy.overview.light.unavailable"]).toBe("{zone}: lamp niet bereikbaar");
+    expect(en["energy.overview.light.unavailable"]).toBe("{zone}: light unavailable");
+    expect(nl["energy.overview.light.onlyOnOff"]).toBe("Deze lamp kan alleen aan en uit.");
+    expect(en["energy.overview.light.group"]).toBe("group, {count} lights");
     expect(nl["settings.energy.lights.zone.study"]).toBe("Werkkamer");
     expect(en["settings.energy.lights.zone.study"]).toBe("Study");
     expect(nl["settings.energy.airconEnergy"]).toBe("Airco (energie)");
@@ -595,6 +604,135 @@ describe("house lighting parser", () => {
     expect(nl["settings.energy.entityNone"]).toBe("Niet ingesteld");
     expect(Object.values(nl)).not.toContain("Komt later.");
     expect(Object.values(en)).not.toContain("Komt later.");
+  });
+});
+
+describe("house light hit rects", () => {
+  function pxBox(
+    rect: { left: number; top: number; width: number; height: number },
+    frameW: number,
+    frameH: number
+  ) {
+    return {
+      left: (rect.left / 100) * frameW,
+      top: (rect.top / 100) * frameH,
+      width: (rect.width / 100) * frameW,
+      height: (rect.height / 100) * frameH,
+    };
+  }
+
+  function overlaps(
+    a: { left: number; top: number; width: number; height: number },
+    b: { left: number; top: number; width: number; height: number }
+  ): boolean {
+    const width = Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left);
+    const height = Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top);
+    return width > 0.5 && height > 0.5;
+  }
+
+  it("grows every window to at least 44px and keeps zones apart", () => {
+    for (const [frameW, frameH] of [
+      [758, 574],
+      [680, 515],
+    ] as const) {
+      for (const side of ["front", "back"] as const) {
+        const zones = houseLightHitRects(side, frameW, frameH);
+        const boxes = zones.flatMap((zone) => zone.rects.map((rect) => pxBox(rect, frameW, frameH)));
+        for (const box of boxes) {
+          expect(box.width).toBeGreaterThanOrEqual(HOUSE_LIGHT_HIT_MIN_PX - 0.01);
+          expect(box.height).toBeGreaterThanOrEqual(HOUSE_LIGHT_HIT_MIN_PX - 0.01);
+        }
+        for (let i = 0; i < zones.length; i += 1) {
+          for (let j = i + 1; j < zones.length; j += 1) {
+            const left = zones[i];
+            const right = zones[j];
+            if (!left || !right) continue;
+            for (const a of left.rects) {
+              for (const b of right.rects) {
+                expect(overlaps(pxBox(a, frameW, frameH), pxBox(b, frameW, frameH))).toBe(false);
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it("gives the ridge window a 44px-wide target", () => {
+    const landscape = houseLightHitRects("back", 758, 574).find((zone) => zone.id === "upstairs");
+    const portrait = houseLightHitRects("back", 680, 515).find((zone) => zone.id === "upstairs");
+    expect(landscape?.rects).toHaveLength(1);
+    expect(portrait?.rects).toHaveLength(1);
+    const wide = pxBox(landscape!.rects[0]!, 758, 574);
+    const tall = pxBox(portrait!.rects[0]!, 680, 515);
+    expect(wide.width).toBeCloseTo(44, 4);
+    expect(wide.height).toBeCloseTo(119.392, 2);
+    expect(tall.width).toBeCloseTo(44, 4);
+    expect(tall.height).toBeCloseTo(107.12, 2);
+  });
+});
+
+describe("house light zone state", () => {
+  const lighting = parseHouseLighting({
+    livingRoomEntityId: "light.woonkamer",
+    upstairsEntityId: "light.boven",
+    bathroomEntityId: "light.badkamer",
+  });
+
+  it("reads on, off, unavailable, unlinked, onoff, colour temperature and a group", () => {
+    expect(
+      houseLightZoneState(lighting, { "light.woonkamer": { state: "on", attributes: { brightness: 178 } } }, "livingRoom")
+    ).toMatchObject({ entityId: "light.woonkamer", status: "on", brightnessPct: 70, supportsBrightness: false });
+    expect(houseLightZoneState(lighting, { "light.woonkamer": { state: "off" } }, "livingRoom").status).toBe("off");
+    expect(
+      houseLightZoneState(lighting, { "light.badkamer": { state: "unavailable" } }, "bathroom").status
+    ).toBe("unavailable");
+    expect(houseLightZoneState(lighting, { "light.badkamer": { state: "unknown" } }, "bathroom").status).toBe(
+      "unavailable"
+    );
+    expect(houseLightZoneState(lighting, {}, "kitchen")).toMatchObject({ entityId: "", status: "unlinked" });
+    expect(
+      houseLightZoneState(
+        lighting,
+        { "light.woonkamer": { state: "on", attributes: { supported_color_modes: ["onoff"] } } },
+        "livingRoom"
+      )
+    ).toMatchObject({ supportsBrightness: false, supportsColorTemp: false });
+    expect(
+      houseLightZoneState(
+        lighting,
+        {
+          "light.woonkamer": {
+            state: "on",
+            attributes: {
+              supported_color_modes: ["color_temp"],
+              color_temp_kelvin: 2700,
+              min_color_temp_kelvin: 2200,
+              max_color_temp_kelvin: 5000,
+            },
+          },
+        },
+        "livingRoom"
+      )
+    ).toMatchObject({
+      supportsBrightness: true,
+      supportsColorTemp: true,
+      kelvin: 2700,
+      minK: 2200,
+      maxK: 5000,
+    });
+    expect(
+      houseLightZoneState(
+        lighting,
+        {
+          "light.boven": {
+            state: "on",
+            attributes: { entity_id: ["light.a", "light.b", "light.c"], supported_color_modes: ["brightness"], brightness_pct: 100 },
+          },
+        },
+        "upstairs"
+      ).groupSize
+    ).toBe(3);
   });
 });
 
