@@ -787,6 +787,41 @@ html.dark[data-dashboard-edit] [data-header-statpill-id] .tile-kebab-hit::before
   box-shadow: none;
 }
 
+/* 34px value + 3px gap + 12px detail + 5px for descenders. The -5px keeps the band as tall as main. */
+.energy-band-roll {
+  display: grid;
+  height: 54px;
+  margin-top: 6px;
+  margin-bottom: -5px;
+  overflow: hidden;
+}
+
+.energy-band-roll-layer {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.energy-band-roll[data-band-motion="on"] .energy-band-roll-layer {
+  transition:
+    transform 360ms cubic-bezier(0.3, 0, 0.2, 1),
+    opacity 360ms cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+.energy-band-roll-layer[data-roll="show"] {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.energy-band-roll-layer[data-roll="out"] {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.energy-band-roll-layer[data-roll="in"] {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
 .energy-house-glass {
   -webkit-backdrop-filter: blur(18px) saturate(1.3);
   backdrop-filter: blur(18px) saturate(1.3);
@@ -852,5 +887,9 @@ html[data-glass-density="off"] .energy-day-band {
 
   .energy-story-sheet-in {
     animation: none !important;
+  }
+
+  .energy-band-roll[data-band-motion="on"] .energy-band-roll-layer {
+    transition: none;
   }
 }

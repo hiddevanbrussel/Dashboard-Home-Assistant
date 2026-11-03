@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AirVent, Battery, House, RotateCw, Sun, UtilityPole } from "lucide-react";
 import { HouseLabel } from "@/components/energy/overview/house-labels";
 import { HouseLightTint } from "@/components/energy/overview/house-light-tint";
 import { NowHeroLayers, type HouseLineSpec } from "@/components/energy/overview/now-hero-layers";
 import { useHouseTurn } from "@/components/energy/overview/use-house-turn";
 import { FOCUS_RING_BRAND } from "@/components/layout/tile-menu";
+import { useMotionFlags } from "@/hooks/use-energy-motion-flags";
 import { useTranslation } from "@/hooks/use-translation";
-import { ENERGY_MY_TILES_ENABLED } from "@/lib/energy-tab";
 import { formatKwh } from "@/lib/energy-story/format";
 import { heroOfflineState } from "@/lib/energy-story/offline";
 import { type OverviewOrientation } from "@/lib/energy-house-anchors";
@@ -60,7 +60,6 @@ import type { EnergyModel } from "@/lib/energy-prefs";
 import { cn } from "@/lib/utils";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useEnergyStore } from "@/stores/energy-store";
-import { useEnergyOverviewStore } from "@/stores/energy-overview-store";
 import { FALLBACK_TIME_ZONE } from "@/lib/local-date";
 import { useThemeStore } from "@/stores/theme-store";
 
@@ -112,56 +111,6 @@ function batteryStatSoc(model: EnergyModel | null): string {
     if (source.type === "battery" && source.statSoc) return source.statSoc;
   }
   return "";
-}
-
-function useMotionFlags(frame: RefObject<HTMLElement | null>) {
-  const storedTab = useEnergyOverviewStore((state) => state.tab);
-  const tab = ENERGY_MY_TILES_ENABLED ? storedTab : "overview";
-  const [flags, setFlags] = useState({
-    reducedMotion: false,
-    glassOff: false,
-    hidden: false,
-    visible: true,
-    screensaver: false,
-  });
-
-  useEffect(() => {
-    const read = () => {
-      setFlags((current) => ({
-        ...current,
-        reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-        glassOff: document.documentElement.getAttribute("data-glass-density") === "off",
-        hidden: document.hidden,
-        screensaver: Boolean(document.querySelector(".fixed.inset-0.z-\\[9999\\]")),
-      }));
-    };
-    read();
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    motion.addEventListener("change", read);
-    document.addEventListener("visibilitychange", read);
-    const glass = new MutationObserver(read);
-    glass.observe(document.documentElement, { attributes: true, attributeFilter: ["data-glass-density"] });
-    const body = new MutationObserver(read);
-    body.observe(document.body, { childList: true });
-    return () => {
-      motion.removeEventListener("change", read);
-      document.removeEventListener("visibilitychange", read);
-      glass.disconnect();
-      body.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    const node = frame.current;
-    if (!node || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(([entry]) => {
-      setFlags((current) => ({ ...current, visible: Boolean(entry?.isIntersecting) }));
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [frame]);
-
-  return { ...flags, tab };
 }
 
 function splitKwh(text: string): { value: string; unit: string } {

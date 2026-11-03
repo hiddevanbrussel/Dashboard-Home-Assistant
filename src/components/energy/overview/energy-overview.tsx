@@ -6,15 +6,17 @@ import { energyPanelId, energyTabId } from "@/components/energy/overview/energy-
 import { EnergyStorySheet } from "@/components/energy/overview/energy-story-sheet";
 import { NowHero } from "@/components/energy/overview/now-hero";
 import { useEnergyStage } from "@/components/energy/overview/use-energy-stage";
+import { useMotionFlags } from "@/hooks/use-energy-motion-flags";
 import { useTranslation } from "@/hooks/use-translation";
 import { useEnergyOverviewData } from "@/hooks/use-energy-overview-data";
-import { bandCells, cardForHouseLabel, storySheetLabelKey } from "@/lib/energy-day-band";
+import { bandCells, cardForHouseLabel, resolveSolarTodayKwh, storySheetLabelKey } from "@/lib/energy-day-band";
 import type { OverviewOrientation } from "@/lib/energy-house-anchors";
 import { fallbackEnergyStage, type HouseLabelKind } from "@/lib/energy-house-labels";
 import { FALLBACK_TIME_ZONE } from "@/lib/local-date";
 import { formatClockInstant } from "@/lib/energy-story/offline";
 import type { StoryCardModel } from "@/lib/energy-story/types";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { useEnergyStore } from "@/stores/energy-store";
 import { useThemeStore } from "@/stores/theme-store";
 
 function useOverviewOrientation(): OverviewOrientation {
@@ -59,11 +61,22 @@ export function EnergyOverview() {
   const dark = useThemeStore((state) => state.resolved) === "dark";
   const haError = useEntityStateStore((state) => state.error);
   const updatedAt = useEntityStateStore((state) => state.updatedAt);
+  const yieldId = useEnergyStore((state) => state.entities.solarYieldTodayEntityId);
+  const yieldState = useEntityStateStore((state) => (yieldId ? state.states[yieldId] : undefined));
   const reduced = useReducedMotion();
+  const motion = useMotionFlags(ref);
   const returnFocus = useRef<HTMLElement | null>(null);
   const [sheet, setSheet] = useState<StoryCardModel | null>(null);
   const lang = language === "nl" ? "nl" : "en";
-  const cells = facts ? bandCells(facts, lang) : [];
+  const unitRaw = yieldState?.attributes?.unit_of_measurement;
+  const solarTodayKwh = resolveSolarTodayKwh({
+    state: yieldState?.state,
+    unit: typeof unitRaw === "string" ? unitRaw : null,
+    factsKwh: facts?.hasSolar ? facts.solarKwh : null,
+  });
+  const cells = facts ? bandCells(facts, lang, { solarTodayKwh, reducedMotion: reduced }) : [];
+  const bandPaused =
+    sheet != null || motion.hidden || motion.screensaver || !motion.visible || motion.tab !== "overview";
   const showLink = status === "ready" && facts != null && cells.length === 0;
   const offline = haError != null;
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIME_ZONE;
@@ -108,6 +121,8 @@ export function EnergyOverview() {
         orientation={orientation}
         dark={dark}
         style={{ position: "absolute", top: frame.bandTop, left: frame.padLeft, width: frame.columnWidth }}
+        paused={bandPaused}
+        reducedMotion={reduced}
         onOpen={openCard}
       />
       <EnergyStorySheet
