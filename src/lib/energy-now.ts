@@ -104,7 +104,7 @@ export type HouseLightPoint = readonly [number, number];
 /**
  * Window polygons in percent of the 960×727 render.
  * One set per side, for every variant of that side and both orientations.
- * Outdoor, the front side window, the back gable window and the extension side window have no polygons.
+ * Outdoor and the front side window have no polygons.
  */
 export const HOUSE_LIGHT_ZONES: Record<
   HouseSide,
@@ -149,18 +149,18 @@ export const HOUSE_LIGHT_ZONES: Record<
   back: {
     kitchen: [
       [
-        [44.3, 56],
+        [51.1, 54.1],
         [69.6, 49],
         [69.6, 66.5],
-        [44.3, 74],
+        [51.1, 72.0],
       ],
     ],
     bathroom: [
       [
-        [34.9, 32.7],
-        [37.3, 33.8],
-        [37.3, 42.4],
-        [34.9, 41.6],
+        [46.9, 35.5],
+        [48.9, 35.1],
+        [48.9, 41.8],
+        [46.9, 42.3],
       ],
     ],
     study: [
@@ -169,6 +169,14 @@ export const HOUSE_LIGHT_ZONES: Record<
         [66, 36.1],
         [66, 39.6],
         [59, 40.4],
+      ],
+    ],
+    upstairs: [
+      [
+        [30.0, 18.3],
+        [30.8, 18.6],
+        [30.8, 39.1],
+        [30.0, 38.8],
       ],
     ],
   },
@@ -180,7 +188,7 @@ export function houseLightZonesForSide(side: HouseSide): readonly HouseLightZone
     case "front":
       return ["livingRoom", "upstairs"];
     case "back":
-      return ["kitchen", "bathroom", "study"];
+      return ["kitchen", "bathroom", "study", "upstairs"];
     default: {
       const neverSide: never = side;
       return neverSide;

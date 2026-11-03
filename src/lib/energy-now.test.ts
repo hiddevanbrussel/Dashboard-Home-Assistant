@@ -428,12 +428,19 @@ describe("house light tint", () => {
     expect(HOUSE_LIGHT_ZONES.back.study).toHaveLength(1);
     expect(HOUSE_LIGHT_ZONES.back.livingRoom).toBeUndefined();
     expect(HOUSE_LIGHT_ZONES.back.kitchen?.[0]).toEqual([
-      [44.3, 56],
+      [51.1, 54.1],
       [69.6, 49],
       [69.6, 66.5],
-      [44.3, 74],
+      [51.1, 72.0],
     ]);
-    expect(HOUSE_LIGHT_ZONES.back.bathroom?.[0]?.[0]).toEqual([34.9, 32.7]);
+    expect(HOUSE_LIGHT_ZONES.back.bathroom?.[0]).toEqual([
+      [46.9, 35.5],
+      [48.9, 35.1],
+      [48.9, 41.8],
+      [46.9, 42.3],
+    ]);
+    expect(HOUSE_LIGHT_ZONES.back.upstairs).toHaveLength(1);
+    expect(HOUSE_LIGHT_ZONES.back.upstairs?.[0]?.[0]).toEqual([30.0, 18.3]);
     expect(HOUSE_LIGHT_ZONES.back.study?.[0]?.[2]).toEqual([66, 39.6]);
     expect(HOUSE_LIGHT_TINT.light.multiply).toEqual({ fill: "#1f2a44", opacity: 0.62 });
     expect(HOUSE_LIGHT_TINT.light.screen).toEqual({ fill: "#3b4a6b", opacity: 0.14 });
@@ -533,7 +540,7 @@ describe("house lighting parser", () => {
       { id: "bathroom", factor: 0.6, spoken: "on" },
     ]);
     expect(houseLightZonesForSide("front")).toEqual(["livingRoom", "upstairs"]);
-    expect(houseLightZonesForSide("back")).toEqual(["kitchen", "bathroom", "study"]);
+    expect(houseLightZonesForSide("back")).toEqual(["kitchen", "bathroom", "study", "upstairs"]);
   });
 
   it("uses only the agreed Dutch and English copy", () => {
