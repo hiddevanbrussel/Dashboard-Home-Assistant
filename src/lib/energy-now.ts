@@ -21,9 +21,6 @@ export type HouseTheme = "light" | "dark";
 
 export type HouseSide = "front" | "back";
 
-/** Temporary. Turns off when the final renders are approved. */
-export const HOUSE_RENDER_CONCEPT = true;
-
 const FLOW_EPSILON_KW = 0.05;
 
 /** Panel glow and the solar “on” gate. */

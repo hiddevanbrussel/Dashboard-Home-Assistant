@@ -40,7 +40,6 @@ import {
   formatSoc,
   gridExportIsLinked,
   gridImportIsLinked,
-  HOUSE_RENDER_CONCEPT,
   houseAssetPath,
   houseLightZoneNameKey,
   houseLightZonesForSide,
@@ -673,14 +672,6 @@ export function NowHero({
             <RotateCw className="h-5 w-5 shrink-0 text-[#4700B5] dark:text-[#8357be]" aria-hidden />
             {side === "front" ? t("energy.overview.house.back") : t("energy.overview.house.front")}
           </button>
-        ) : null}
-        {variant && HOUSE_RENDER_CONCEPT ? (
-          <div
-            data-now-concept
-            className={`energy-house-glass pointer-events-none absolute left-0 z-[6] flex h-7 items-center rounded-full border border-dashed border-[rgba(17,24,39,0.56)] bg-[rgba(255,255,255,0.84)] px-2.5 text-[12px] font-semibold text-[#374151] dark:border-[rgba(255,255,255,0.52)] dark:bg-[rgba(28,22,38,0.86)] dark:text-[#d1d5db] ${orientation === "portrait" ? "bottom-2" : "-top-0.5"}`}
-          >
-            {t("energy.overview.house.conceptRender")}
-          </div>
         ) : null}
       </div>
       <p

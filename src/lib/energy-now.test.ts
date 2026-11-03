@@ -585,8 +585,6 @@ describe("house lighting parser", () => {
     expect(en["energy.story.aircon"]).toBe("Air conditioning");
     expect(nl["energy.overview.now.airconToday"]).toBe("vandaag");
     expect(en["energy.overview.now.airconToday"]).toBe("today");
-    expect(nl["energy.overview.house.conceptRender"]).toBe("Concept-render op basis van foto's");
-    expect(en["energy.overview.house.conceptRender"]).toBe("Concept render based on photos");
     expect(nl["settings.energy.entityNone"]).toBe("Niet ingesteld");
     expect(Object.values(nl)).not.toContain("Komt later.");
     expect(Object.values(en)).not.toContain("Komt later.");
