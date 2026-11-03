@@ -56,6 +56,7 @@ function storyFacts(patch: Partial<StoryFacts>): StoryFacts {
     weekDays: [{ weekday: 0, kwh: 2, current: true }],
     ltsDays: 8,
     tariffFixed: true,
+    airconKwh: null,
     live: { solarKw: 0, homeKw: 0.4, gridImportKw: 0.4, gridExportKw: 0, chargeKw: 0, dischargeKw: 0 },
     ...patch,
   };

@@ -59,6 +59,8 @@ export type StoryFacts = {
   weekDays: Array<{ weekday: number; kwh: number; current: boolean }>;
   ltsDays: number | null;
   tariffFixed: boolean;
+  /** Today’s air-conditioning energy, when the sensor is linked and the day total is known. */
+  airconKwh: number | null;
   live: {
     solarKw: number;
     homeKw: number;
@@ -117,7 +119,8 @@ export type StoryCardModel =
       tail: StoryLine | null;
       days: Array<{ weekday: number; kwh: number; current: boolean }>;
     }
-  | { kind: "link" };
+  | { kind: "link" }
+  | { kind: "aircon"; todayKwh: number };
 
 export function line(model: StoryLine, language: StoryLang): string {
   return model[language];

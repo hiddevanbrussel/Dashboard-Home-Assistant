@@ -19,6 +19,11 @@ export type HouseVariantId = (typeof HOUSE_VARIANTS)[number];
 
 export type HouseTheme = "light" | "dark";
 
+export type HouseSide = "front" | "back";
+
+/** Temporary. Turns off when the final renders are approved. */
+export const HOUSE_RENDER_CONCEPT = true;
+
 const FLOW_EPSILON_KW = 0.05;
 
 /** Panel glow and the solar “on” gate. */
@@ -86,55 +91,105 @@ export function dayNightPair(variant: HouseVariantId): HouseVariantId | null {
   }
 }
 
-export function houseAssetPath(variant: HouseVariantId, ext: "avif" | "webp"): string {
-  return `/energy/house/huis-${variant}.${ext}`;
+export function houseAssetPath(
+  variant: HouseVariantId,
+  ext: "avif" | "webp",
+  side: HouseSide = "front"
+): string {
+  const stem = side === "back" ? "achter" : "huis";
+  return `/energy/house/${stem}-${variant}.${ext}`;
 }
 
-export type HouseLightZoneId = "livingRoom" | "upstairs" | "outdoor";
+export type HouseLightZoneId = "livingRoom" | "kitchen" | "bathroom" | "study" | "upstairs" | "outdoor";
 
 export type HouseLightPoint = readonly [number, number];
 
 /**
  * Window polygons in percent of the 960×727 render.
- * One set for every house variant and both orientations. Outdoor has no polygons yet.
+ * One set per side, for every variant of that side and both orientations.
+ * Outdoor, the front side window, the back gable window and the extension side window have no polygons.
  */
-export const HOUSE_LIGHT_ZONES: Record<HouseLightZoneId, readonly (readonly HouseLightPoint[])[]> = {
-  livingRoom: [
-    [
-      [21.5, 51],
-      [35.5, 57.5],
-      [35.5, 73.5],
-      [22, 67],
+export const HOUSE_LIGHT_ZONES: Record<
+  HouseSide,
+  Partial<Record<HouseLightZoneId, readonly (readonly HouseLightPoint[])[]>>
+> = {
+  front: {
+    livingRoom: [
+      [
+        [21.5, 51],
+        [35.5, 57.5],
+        [35.5, 73.5],
+        [22, 67],
+      ],
+      [
+        [40.3, 60.5],
+        [42.6, 61.5],
+        [42.6, 72],
+        [40.3, 71],
+      ],
     ],
-    [
-      [40.3, 60.5],
-      [42.6, 61.5],
-      [42.6, 72],
-      [40.3, 71],
+    upstairs: [
+      [
+        [24, 33.5],
+        [34, 37.5],
+        [34, 50],
+        [24, 46],
+      ],
+      [
+        [40.3, 45],
+        [42.6, 46],
+        [42.6, 54],
+        [40.3, 53],
+      ],
+      [
+        [63.8, 45.5],
+        [69.8, 43],
+        [69.8, 48.5],
+        [63.8, 51],
+      ],
     ],
-  ],
-  upstairs: [
-    [
-      [24, 33.5],
-      [34, 37.5],
-      [34, 50],
-      [24, 46],
+  },
+  back: {
+    kitchen: [
+      [
+        [44.3, 56],
+        [69.6, 49],
+        [69.6, 66.5],
+        [44.3, 74],
+      ],
     ],
-    [
-      [40.3, 45],
-      [42.6, 46],
-      [42.6, 54],
-      [40.3, 53],
+    bathroom: [
+      [
+        [34.9, 32.7],
+        [37.3, 33.8],
+        [37.3, 42.4],
+        [34.9, 41.6],
+      ],
     ],
-    [
-      [63.8, 45.5],
-      [69.8, 43],
-      [69.8, 48.5],
-      [63.8, 51],
+    study: [
+      [
+        [59, 37.1],
+        [66, 36.1],
+        [66, 39.6],
+        [59, 40.4],
+      ],
     ],
-  ],
-  outdoor: [],
+  },
 };
+
+/** Rooms spoken and tinted on the side that is showing. */
+export function houseLightZonesForSide(side: HouseSide): readonly HouseLightZoneId[] {
+  switch (side) {
+    case "front":
+      return ["livingRoom", "upstairs"];
+    case "back":
+      return ["kitchen", "bathroom", "study"];
+    default: {
+      const neverSide: never = side;
+      return neverSide;
+    }
+  }
+}
 
 /** Full-tint colours. Each polygon draws the multiply layer, then the screen layer, at these opacities times f. */
 export const HOUSE_LIGHT_TINT = {
@@ -153,12 +208,21 @@ export const HOUSE_LIGHT_BLUR = 0.35;
 
 export const HOUSE_LIGHT_TINT_TRANSITION_MS = 600;
 
-export type HouseLightingKey = "livingRoomEntityId" | "upstairsEntityId" | "outdoorEntityId";
+export type HouseLightingKey =
+  | "livingRoomEntityId"
+  | "kitchenEntityId"
+  | "bathroomEntityId"
+  | "studyEntityId"
+  | "upstairsEntityId"
+  | "outdoorEntityId";
 
 export type HouseLighting = Record<HouseLightingKey, string>;
 
 export const EMPTY_HOUSE_LIGHTING: HouseLighting = {
   livingRoomEntityId: "",
+  kitchenEntityId: "",
+  bathroomEntityId: "",
+  studyEntityId: "",
   upstairsEntityId: "",
   outdoorEntityId: "",
 };
@@ -175,6 +239,9 @@ export function parseHouseLighting(raw: unknown): HouseLighting {
     raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
   return {
     livingRoomEntityId: parseLightEntityId(source.livingRoomEntityId),
+    kitchenEntityId: parseLightEntityId(source.kitchenEntityId),
+    bathroomEntityId: parseLightEntityId(source.bathroomEntityId),
+    studyEntityId: parseLightEntityId(source.studyEntityId),
     upstairsEntityId: parseLightEntityId(source.upstairsEntityId),
     outdoorEntityId: parseLightEntityId(source.outdoorEntityId),
   };
@@ -223,11 +290,14 @@ export type ActiveHouseLight = {
 
 const HOUSE_LIGHT_ENTITY_KEYS: readonly { id: HouseLightZoneId; key: HouseLightingKey }[] = [
   { id: "livingRoom", key: "livingRoomEntityId" },
+  { id: "kitchen", key: "kitchenEntityId" },
+  { id: "bathroom", key: "bathroomEntityId" },
+  { id: "study", key: "studyEntityId" },
   { id: "upstairs", key: "upstairsEntityId" },
   { id: "outdoor", key: "outdoorEntityId" },
 ];
 
-/** Linked zones whose state is on or off, in living room, upstairs, outdoor order. */
+/** Linked zones whose state is on or off, in living room, kitchen, bathroom, study, upstairs, outdoor order. */
 export function activeHouseLights(
   lighting: HouseLighting,
   states: Readonly<Record<string, HouseLightReading | undefined>>
@@ -249,6 +319,12 @@ export function houseLightZoneNameKey(id: HouseLightZoneId): string {
   switch (id) {
     case "livingRoom":
       return "settings.energy.lights.zone.livingRoom";
+    case "kitchen":
+      return "settings.energy.lights.zone.kitchen";
+    case "bathroom":
+      return "settings.energy.lights.zone.bathroom";
+    case "study":
+      return "settings.energy.lights.zone.study";
     case "upstairs":
       return "settings.energy.lights.zone.upstairs";
     case "outdoor":

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ENERGY_MY_TILES_ENABLED } from "@/lib/energy-tab";
-import { assembleStoryFacts, zonedDecimalHour, type StoryStatBundle } from "@/lib/energy-story/aggregate";
+import { assembleStoryFacts, statisticDeviceIds, zonedDecimalHour, type StoryStatBundle } from "@/lib/energy-story/aggregate";
 import type { StoryFacts, StoryLine } from "@/lib/energy-story/types";
 import {
   batteryPowerNow,
@@ -29,8 +29,6 @@ import { useEnergyStore } from "@/stores/energy-store";
 
 /** History refreshes every five minutes, and when the tab becomes visible again. Not on the 5s live poll. */
 export const OVERVIEW_REFRESH_MS = 5 * 60 * 1000;
-
-const SENSOR_ID = /^sensor\.[a-z0-9_]+$/;
 
 type LoadState = {
   model: EnergyModel | null;
@@ -104,6 +102,7 @@ export function useEnergyOverviewData(): { facts: StoryFacts | null; status: "lo
     solarId: entities.solarYieldTodayEntityId,
     exportId: entities.gridExportEntityId,
   });
+  const airconId = entities.airconEnergyEntityId;
 
   useEffect(() => {
     let cancelled = false;
@@ -123,7 +122,7 @@ export function useEnergyOverviewData(): { facts: StoryFacts | null; status: "lo
         for (const device of model?.deviceConsumption ?? []) {
           if (device.statConsumption && device.name) names[device.statConsumption] = device.name;
         }
-        const devices = deviceIds.filter((id) => SENSOR_ID.test(id)).join(",");
+        const devices = statisticDeviceIds(deviceIds, airconId).join(",");
         const manual = model?.source === "manual" ? manualKey : "";
         const [today, yesterday, week, lastWeek] = await Promise.all([
           readJson(statsPath("day", 0, false, devices, manual)),
@@ -171,7 +170,7 @@ export function useEnergyOverviewData(): { facts: StoryFacts | null; status: "lo
       document.removeEventListener("visibilitychange", arm);
       unsubscribe();
     };
-  }, [manualKey, tab]);
+  }, [airconId, manualKey, tab]);
 
   const model = loaded?.model ?? null;
   const manual: ManualLiveEntities = {
@@ -265,8 +264,10 @@ export function useEnergyOverviewData(): { facts: StoryFacts | null; status: "lo
       homeKw: house ?? 0,
       gridImportKw: gridKw > 0 ? gridKw : 0,
       gridExportKw: gridKw < 0 ? -gridKw : 0,
+      airconEntityId: airconId,
     });
   }, [
+    airconId,
     batteryKw,
     batteryLinked,
     consumptionLinked,

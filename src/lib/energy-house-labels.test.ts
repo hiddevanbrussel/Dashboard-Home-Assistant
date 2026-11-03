@@ -8,6 +8,7 @@ import {
   houseAriaName,
   labelAnchor,
   labelEdgePoint,
+  labelFlowEnabled,
   labelPosition,
 } from "./energy-house-labels";
 
@@ -50,6 +51,31 @@ describe("energy stage", () => {
     expect(flowPath(edge, { x: 369.6, y: 228 }, false)).toBe("M369.6 228.0 L460.5 400.0");
     expect(houseAriaName("nl")).toBe("Huis");
     expect(houseAriaName("en")).toBe("House");
+    expect(labelAnchor("solar", "landscape", "front")).toEqual({ x: 52, y: 10 });
+    expect(labelAnchor("solar", "portrait", "front")).toEqual({ x: 52, y: 10 });
+    expect(labelPosition("house", "landscape", "front")).toEqual({ left: 10, top: 24 });
+    expect(labelPosition("grid", "portrait", "front")).toEqual({ left: 4, top: 70 });
+    expect(labelPosition("battery", "portrait", "front")).toEqual({ left: 78, top: 66 });
+    expect(labelPosition("solar", "landscape", "back")).toEqual({ left: 74, top: 8 });
+    expect(labelPosition("solar", "portrait", "back")).toEqual({ left: 72, top: 3 });
+    expect(labelAnchor("solar", "landscape", "back")).toEqual({ x: 55, y: 20 });
+    expect(labelPosition("house", "landscape", "back")).toEqual({ left: 4, top: 18 });
+    expect(labelPosition("house", "portrait", "back")).toEqual({ left: 0, top: 14 });
+    expect(labelAnchor("house", "portrait", "back")).toEqual({ x: 42, y: 33 });
+    expect(labelPosition("grid", "landscape", "back")).toEqual({ left: 2, top: 80 });
+    expect(labelPosition("grid", "portrait", "back")).toEqual({ left: 0, top: 80 });
+    expect(labelAnchor("grid", "landscape", "back")).toEqual({ x: 16, y: 74 });
+    expect(labelPosition("battery", "landscape", "back")).toEqual({ left: 0, top: 44 });
+    expect(labelPosition("battery", "portrait", "back")).toEqual({ left: 0, top: 42 });
+    expect(labelAnchor("battery", "portrait", "back")).toEqual({ x: 19, y: 54 });
+    expect(labelPosition("aircon", "landscape", "back")).toEqual({ left: 69, top: 39 });
+    expect(labelPosition("aircon", "portrait", "back")).toEqual({ left: 70, top: 37 });
+    expect(labelAnchor("aircon", "landscape", "back")).toEqual({ x: 63.1, y: 42.8 });
+    expect(labelAnchor("aircon", "portrait", "back")).toEqual({ x: 63.1, y: 42.8 });
+    expect(
+      labelFlowEnabled("aircon", { animate: true, solarOn: true, gridOn: true, batteryOn: true, houseKw: 1 })
+    ).toBe(false);
+    expect(flowRunsTowardHouse("aircon", { gridKw: -1, batteryKw: -1 })).toBe(true);
   });
 
   it("keeps the solar flow toward the house, including export", () => {

@@ -60,6 +60,7 @@ function facts(): StoryFacts {
     weekDays: [{ weekday: 0, kwh: 2, current: true }],
     ltsDays: 8,
     tariffFixed: true,
+    airconKwh: null,
     live: { solarKw: 1.65, homeKw: 0.7, gridImportKw: 0, gridExportKw: 0.25, chargeKw: 0, dischargeKw: 0 },
   };
 }

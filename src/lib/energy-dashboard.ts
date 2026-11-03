@@ -122,7 +122,8 @@ export type EnergyEntityKey =
   | "batteryTempEntityId"
   | "gridPowerEntityId"
   | "gridImportPowerEntityId"
-  | "gridExportPowerEntityId";
+  | "gridExportPowerEntityId"
+  | "airconEnergyEntityId";
 
 export type EnergyEntities = Record<EnergyEntityKey, string>;
 
@@ -137,6 +138,7 @@ export const ENERGY_ENTITY_KEYS: EnergyEntityKey[] = [
   "gridPowerEntityId",
   "gridImportPowerEntityId",
   "gridExportPowerEntityId",
+  "airconEnergyEntityId",
 ];
 
 export const EMPTY_ENERGY_ENTITIES: EnergyEntities = {
@@ -150,6 +152,7 @@ export const EMPTY_ENERGY_ENTITIES: EnergyEntities = {
   gridPowerEntityId: "",
   gridImportPowerEntityId: "",
   gridExportPowerEntityId: "",
+  airconEnergyEntityId: "",
 };
 
 export type EnergyTariffMode = "fixed" | "dynamic";

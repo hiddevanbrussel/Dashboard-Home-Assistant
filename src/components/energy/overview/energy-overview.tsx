@@ -93,6 +93,7 @@ export function EnergyOverview() {
       <NowHero
         orientation={orientation}
         stage={frame}
+        airconKwh={facts?.airconKwh ?? null}
         labelOpens={(kind: HouseLabelKind) => (facts ? cardForHouseLabel(facts, kind) != null : false)}
         onOpenLabel={(kind, source) => {
           if (!facts) return;

@@ -88,6 +88,27 @@ describe("story card view", () => {
     expect(document.body.textContent).toContain("Grid");
     expect(document.body.textContent).not.toContain("Devices");
   });
+
+  it("shows today's aircon energy in kWh and no watts", () => {
+    act(() => {
+      root?.render(createElement(StoryCardView, { card: { kind: "aircon", todayKwh: 2.4 } }));
+    });
+    const card = document.querySelector("[data-story-card='aircon']");
+    expect(card?.textContent).toContain("Airco");
+    expect(card?.textContent).toContain("Vandaag");
+    expect(card?.textContent).toContain("2,4");
+    expect(card?.textContent).toContain("kWh");
+    expect(card?.textContent?.replaceAll("kWh", "")).not.toMatch(/kW|(^|\s)W(\s|$)/);
+    expect(card?.querySelector("[data-story-sentence]")).toBeNull();
+    expect(card?.textContent).not.toContain("€");
+    act(() => {
+      useLanguageStore.setState({ language: "en", ready: true });
+    });
+    expect(card?.textContent).toContain("Air conditioning");
+    expect(card?.textContent).toContain("Today");
+    expect(card?.textContent).toContain("2.4");
+    expect(card?.textContent?.replaceAll("kWh", "")).not.toMatch(/kW|(^|\s)W(\s|$)/);
+  });
 });
 
 describe("offline markup", () => {

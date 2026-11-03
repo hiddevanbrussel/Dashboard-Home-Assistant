@@ -4,9 +4,9 @@
  */
 
 import type { OverviewOrientation } from "@/lib/energy-house-anchors";
-import { FLOW_GATE_ON_KW } from "@/lib/energy-now";
+import { FLOW_GATE_ON_KW, type HouseSide } from "@/lib/energy-now";
 
-export const HOUSE_LABELS = ["solar", "house", "grid", "battery"] as const;
+export const HOUSE_LABELS = ["solar", "house", "grid", "battery", "aircon"] as const;
 
 export type HouseLabelKind = (typeof HOUSE_LABELS)[number];
 
@@ -36,9 +36,28 @@ export function houseAriaName(language: "nl" | "en"): string {
 
 export function labelPosition(
   kind: HouseLabelKind,
-  orientation: OverviewOrientation
+  orientation: OverviewOrientation,
+  side: HouseSide = "front"
 ): { left: number; top: number } {
   const portrait = orientation === "portrait";
+  if (side === "back") {
+    switch (kind) {
+      case "solar":
+        return portrait ? { left: 72, top: 3 } : { left: 74, top: 8 };
+      case "house":
+        return portrait ? { left: 0, top: 14 } : { left: 4, top: 18 };
+      case "grid":
+        return portrait ? { left: 0, top: 80 } : { left: 2, top: 80 };
+      case "battery":
+        return portrait ? { left: 0, top: 42 } : { left: 0, top: 44 };
+      case "aircon":
+        return portrait ? { left: 70, top: 37 } : { left: 69, top: 39 };
+      default: {
+        const neverKind: never = kind;
+        return neverKind;
+      }
+    }
+  }
   switch (kind) {
     case "solar":
       return portrait ? { left: 66, top: 6 } : { left: 67, top: 6 };
@@ -48,6 +67,8 @@ export function labelPosition(
       return portrait ? { left: 4, top: 70 } : { left: 8, top: 70 };
     case "battery":
       return portrait ? { left: 78, top: 66 } : { left: 80, top: 62 };
+    case "aircon":
+      return portrait ? { left: 70, top: 37 } : { left: 69, top: 39 };
     default: {
       const neverKind: never = kind;
       return neverKind;
@@ -58,17 +79,38 @@ export function labelPosition(
 /** Anchor on the render, in percent of the house box. */
 export function labelAnchor(
   kind: HouseLabelKind,
-  orientation: OverviewOrientation
+  orientation: OverviewOrientation,
+  side: HouseSide = "front"
 ): { x: number; y: number } {
+  if (side === "back") {
+    switch (kind) {
+      case "solar":
+        return { x: 55, y: 20 };
+      case "house":
+        return { x: 42, y: 33 };
+      case "grid":
+        return { x: 16, y: 74 };
+      case "battery":
+        return { x: 19, y: 54 };
+      case "aircon":
+        return { x: 63.1, y: 42.8 };
+      default: {
+        const neverKind: never = kind;
+        return neverKind;
+      }
+    }
+  }
   switch (kind) {
     case "solar":
-      return { x: 60, y: 24 };
+      return { x: 52, y: 10 };
     case "house":
       return { x: 30, y: 46 };
     case "grid":
       return orientation === "portrait" ? { x: 45, y: 72 } : { x: 37, y: 76 };
     case "battery":
       return { x: 66, y: 57 };
+    case "aircon":
+      return { x: 63.1, y: 42.8 };
     default: {
       const neverKind: never = kind;
       return neverKind;
@@ -81,6 +123,7 @@ export const LABEL_ACCENT: Record<HouseLabelKind, { light: string; dark: string 
   house: { light: "#C2410C", dark: "#FB923C" },
   grid: { light: "#4700B5", dark: "#A98AE0" },
   battery: { light: "#0369A1", dark: "#38BDF8" },
+  aircon: { light: "#0F766E", dark: "#5EEAD4" },
 };
 
 export function labelAccent(kind: HouseLabelKind, dark: boolean): string {
@@ -163,6 +206,8 @@ export function flowRunsTowardHouse(
       return (input.batteryKw ?? 0) >= 0;
     case "house":
       return true;
+    case "aircon":
+      return true;
     default: {
       const neverKind: never = kind;
       return neverKind;
@@ -190,6 +235,8 @@ export function labelFlowEnabled(
       return input.batteryOn;
     case "house":
       return input.houseKw != null && Math.abs(input.houseKw) >= FLOW_GATE_ON_KW;
+    case "aircon":
+      return false;
     default: {
       const neverKind: never = kind;
       return neverKind;
