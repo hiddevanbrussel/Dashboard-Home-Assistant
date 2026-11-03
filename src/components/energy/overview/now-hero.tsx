@@ -668,7 +668,7 @@ export function NowHero({
               if (turn.busyRef.current) return;
               turn.activate();
             }}
-            className={`energy-house-glass absolute bottom-0 right-0 z-[8] inline-flex h-11 min-w-11 items-center gap-2 rounded-full border border-[rgba(17,24,39,0.56)] bg-[rgba(255,255,255,0.62)] px-3 text-[15px] font-semibold text-[#111827] outline-none dark:border-[rgba(255,255,255,0.52)] dark:bg-[rgba(40,32,54,0.62)] dark:text-[#f3f4f6] ${FOCUS_RING_BRAND}`}
+            className={`energy-house-glass absolute bottom-0 right-0 z-[8] inline-flex h-11 min-w-11 items-center gap-2 rounded-full border-[2px] border-[rgba(17,24,39,0.66)] bg-[rgba(255,255,255,0.62)] px-[11px] text-[15px] font-semibold text-[#111827] outline-none dark:border-[rgba(255,255,255,0.52)] dark:bg-[rgba(40,32,54,0.62)] dark:text-[#f3f4f6] ${FOCUS_RING_BRAND}`}
           >
             <RotateCw className="h-5 w-5 shrink-0 text-[#4700B5] dark:text-[#8357be]" aria-hidden />
             {side === "front" ? t("energy.overview.house.back") : t("energy.overview.house.front")}
