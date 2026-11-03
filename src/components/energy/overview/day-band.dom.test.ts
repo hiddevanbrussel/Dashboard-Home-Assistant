@@ -3,7 +3,7 @@
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { act, createElement, useState } from "react";
+import { act, createElement, useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DayBand } from "@/components/energy/overview/day-band";
@@ -146,14 +146,19 @@ describe("solar band roll", () => {
     expect(button.textContent).not.toContain("0,0");
   });
 
-  it("holds the face while focused or paused, then snaps to the running phase", async () => {
+  it("holds the swap on keyboard focus (:focus-visible), then snaps when that focus leaves", async () => {
     await act(async () => {
       renderBand(root!);
     });
     const button = solarButton();
+    // happy-dom treats :focus-visible like :focus, so the stub stands in for Chrome: Tab matches.
+    stubFocusVisible(button, true);
     await act(async () => {
+      button.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
       button.focus();
     });
+    expect(document.activeElement).toBe(button);
+    expect(button.matches(":focus-visible")).toBe(true);
     await act(async () => {
       vi.advanceTimersByTime(8000);
     });
@@ -162,7 +167,60 @@ describe("solar band roll", () => {
       button.blur();
     });
     expect(button.getAttribute("data-band-swap")).toBe("kwh");
+  });
 
+  it("does not hold the swap after a pointer tap or opener.focus() when the sheet closes", async () => {
+    await act(async () => {
+      renderBand(root!);
+    });
+    const tapped = solarButton();
+    // A tap focuses the cell, but Chrome does not mark that focus :focus-visible.
+    stubFocusVisible(tapped, false);
+    await act(async () => {
+      tapped.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, pointerType: "touch" }));
+      tapped.focus();
+    });
+    expect(document.activeElement).toBe(tapped);
+    expect(tapped.matches(":focus-visible")).toBe(false);
+    await act(async () => {
+      vi.advanceTimersByTime(8000);
+    });
+    expect(document.activeElement).toBe(tapped);
+    expect(tapped.getAttribute("data-band-swap")).toBe("kwh");
+
+    await act(async () => {
+      root?.unmount();
+    });
+    resetSwapClockForTests();
+    vi.setSystemTime(0);
+    root = createRoot(host!);
+    const bandProps = {
+      cells: cellsFor(),
+      showLink: false,
+      orientation: "landscape" as const,
+      dark: false,
+      paused: false,
+      reducedMotion: false,
+      onOpen: () => {},
+    };
+    await act(async () => {
+      root?.render(createElement("div", null, createElement(DayBand, bandProps), createElement(SheetFocusReturn)));
+    });
+    const returned = solarButton();
+    stubFocusVisible(returned, false);
+    await act(async () => {
+      root?.render(createElement("div", null, createElement(DayBand, bandProps)));
+    });
+    expect(document.activeElement).toBe(returned);
+    expect(returned.matches(":focus-visible")).toBe(false);
+    await act(async () => {
+      vi.advanceTimersByTime(8000);
+    });
+    expect(document.activeElement).toBe(returned);
+    expect(solarButton().getAttribute("data-band-swap")).toBe("kwh");
+  });
+
+  it("holds the face while paused, then snaps to the running phase", async () => {
     await act(async () => {
       root?.unmount();
     });
@@ -318,6 +376,22 @@ describe("solar band roll", () => {
     style.remove();
   });
 });
+
+/** happy-dom reports :focus-visible for every focused element. Chrome does not, after a tap or opener.focus(). */
+function stubFocusVisible(element: HTMLElement, visible: boolean) {
+  const original = element.matches.bind(element);
+  element.matches = (selectors: string) => (selectors === ":focus-visible" ? visible : original(selectors));
+}
+
+/** Same cleanup as EnergyStorySheet: opener?.focus() when the sheet unmounts. */
+function SheetFocusReturn() {
+  useEffect(() => {
+    return () => {
+      document.querySelector<HTMLElement>("[data-band-cell='solar']")?.focus();
+    };
+  }, []);
+  return null;
+}
 
 function PauseHarness() {
   const [paused, setPaused] = useState(true);

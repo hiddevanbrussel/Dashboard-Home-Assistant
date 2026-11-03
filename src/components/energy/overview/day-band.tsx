@@ -295,7 +295,7 @@ function SolarBandCell({
       data-band-cell={cell.kind}
       data-band-swap={face}
       aria-label={cell.ariaLabel || undefined}
-      onFocus={() => setFocused(true)}
+      onFocus={(event) => setFocused(event.currentTarget.matches(":focus-visible"))}
       onBlur={() => setFocused(false)}
       onClick={(event) => onOpen(cell.card, event.currentTarget)}
       className={CELL_CLASS}
