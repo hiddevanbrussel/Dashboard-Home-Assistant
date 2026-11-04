@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AirVent, Battery, House, RotateCw, Sun, UtilityPole } from "lucide-react";
 import { HouseLabel } from "@/components/energy/overview/house-labels";
+import { HouseLightHotspots } from "@/components/energy/overview/house-light-hotspots";
+import { HouseLightNotice } from "@/components/energy/overview/house-light-notice";
+import { HouseLightSheet } from "@/components/energy/overview/house-light-sheet";
 import { HouseLightTint } from "@/components/energy/overview/house-light-tint";
 import { NowHeroLayers, type HouseLineSpec } from "@/components/energy/overview/now-hero-layers";
 import { useHouseTurn } from "@/components/energy/overview/use-house-turn";
@@ -43,6 +46,7 @@ import {
   houseAssetPath,
   houseLightZoneNameKey,
   houseLightZonesForSide,
+  type HouseLightZoneId,
   houseVariant,
   nowSentenceKey,
   overviewIsLinked,
@@ -124,12 +128,15 @@ export function NowHero({
   stage,
   onOpenLabel,
   labelOpens,
+  labelSheetOpen = false,
   airconKwh = null,
 }: {
   orientation: OverviewOrientation;
   stage?: EnergyStage | null;
   onOpenLabel?: (kind: HouseLabelKind, source: HTMLElement) => void;
   labelOpens?: (kind: HouseLabelKind) => boolean;
+  /** The story sheet is open. Window targets stay inert and the turn timer holds. */
+  labelSheetOpen?: boolean;
   airconKwh?: number | null;
 }) {
   const { t, language } = useTranslation();
@@ -144,6 +151,12 @@ export function NowHero({
   const [model, setModel] = useState<EnergyModel | null>(null);
   const [prefsStatus, setPrefsStatus] = useState<"loading" | "ready" | "error">("loading");
   const frameRef = useRef<HTMLDivElement | null>(null);
+  const lightReturnFocus = useRef<HTMLElement | null>(null);
+  const lightFlushRef = useRef<(() => void) | null>(null);
+  const tintFastTimer = useRef<number | null>(null);
+  const [lightSheet, setLightSheet] = useState<HouseLightZoneId | null>(null);
+  const [lightNotice, setLightNotice] = useState<string | null>(null);
+  const [tintFast, setTintFast] = useState(false);
   const gatesRef = useRef<HeroGates>({ solar: false, grid: false, battery: false });
   const flowRef = useRef(false);
 
@@ -304,7 +317,36 @@ export function NowHero({
   const flowing = presence.offline ? false : stepPowerFlowing(flowRef.current, [solarKw, gridKw, batteryPower, houseKw]);
   flowRef.current = presence.offline ? flowRef.current : flowing;
   const motion = useMotionFlags(frameRef);
-  const turn = useHouseTurn(frameRef, motion);
+  const turn = useHouseTurn(frameRef, motion, {
+    hold: labelSheetOpen || lightSheet != null,
+    onBeforeSnap: () => {
+      lightFlushRef.current?.();
+      setLightSheet(null);
+    },
+  });
+
+  useEffect(() => {
+    if (labelSheetOpen) setLightSheet(null);
+  }, [labelSheetOpen]);
+
+  useEffect(
+    () => () => {
+      if (tintFastTimer.current) window.clearTimeout(tintFastTimer.current);
+    },
+    []
+  );
+
+  function markTintFast() {
+    setTintFast(true);
+    if (tintFastTimer.current) window.clearTimeout(tintFastTimer.current);
+    tintFastTimer.current = window.setTimeout(() => setTintFast(false), 400);
+  }
+
+  function openLight(id: HouseLightZoneId, source: HTMLElement) {
+    if (labelSheetOpen) return;
+    lightReturnFocus.current = source;
+    setLightSheet(id);
+  }
   const side: HouseSide = turn.side;
   const animate = presence.offline ? false : shouldAnimate({ ...motion, flowing });
 
@@ -510,6 +552,7 @@ export function NowHero({
               reducedMotion={motion.reducedMotion}
               zones={houseLights}
               side={side}
+              fast={tintFast}
             />
           ) : null}
           {houseLightStatusText ? (
@@ -598,6 +641,21 @@ export function NowHero({
               onOpen={(source) => onOpenLabel?.("aircon", source)}
             />
           ) : null}
+          {variant && turn.overlays === "in" ? (
+            <HouseLightHotspots
+              side={side}
+              frameWidth={frame.houseWidth}
+              frameHeight={frame.houseHeight}
+              lighting={lighting}
+              reducedMotion={motion.reducedMotion}
+              dark={dark}
+              busy={turn.busy}
+              inert={labelSheetOpen || lightSheet != null}
+              onOpen={openLight}
+              onNotice={setLightNotice}
+              onUserAction={markTintFast}
+            />
+          ) : null}
         </div>
         {variant ? (
           <button
@@ -630,6 +688,23 @@ export function NowHero({
       >
         {sentence}
       </p>
+      {lightNotice && !lightSheet ? (
+        <HouseLightNotice message={lightNotice} placement="viewport" onDone={() => setLightNotice(null)} />
+      ) : null}
+      {lightSheet ? (
+        <HouseLightSheet
+          zoneId={lightSheet}
+          orientation={orientation}
+          reducedMotion={motion.reducedMotion}
+          returnFocus={lightReturnFocus}
+          notice={lightNotice}
+          flushRef={lightFlushRef}
+          onClose={() => setLightSheet(null)}
+          onNotice={setLightNotice}
+          onNoticeDone={() => setLightNotice(null)}
+          onUserAction={markTintFast}
+        />
+      ) : null}
     </div>
   );
 }

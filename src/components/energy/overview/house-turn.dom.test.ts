@@ -249,4 +249,34 @@ describe("house turn", () => {
     expect(document.querySelector("[data-now-label='aircon']")).toBeNull();
     expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-side")).toBe("back");
   });
+
+  it("does not return to the front while hold is set, then waits a fresh 120s", async () => {
+    await showFront();
+    vi.useFakeTimers();
+    await act(async () => {
+      button().click();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(550);
+    });
+    expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-side")).toBe("back");
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape", labelSheetOpen: true, airconKwh: null }));
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(HOUSE_BACK_IDLE_MS + 550);
+    });
+    expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-side")).toBe("back");
+    await act(async () => {
+      root?.render(createElement(NowHero, { orientation: "landscape", labelSheetOpen: false, airconKwh: null }));
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(HOUSE_BACK_IDLE_MS - 1000);
+    });
+    expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-side")).toBe("back");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000 + 550);
+    });
+    expect(document.querySelector("[data-now-hero]")?.getAttribute("data-now-side")).toBe("front");
+  });
 });

@@ -1,6 +1,7 @@
 import {
   HOUSE_LIGHT_BLUR,
   HOUSE_LIGHT_TINT,
+  HOUSE_LIGHT_TINT_FAST_MS,
   HOUSE_LIGHT_TINT_TRANSITION_MS,
   HOUSE_LIGHT_ZONES,
   type ActiveHouseLight,
@@ -20,17 +21,21 @@ export function HouseLightTint({
   reducedMotion,
   zones,
   side,
+  fast = false,
 }: {
   theme: HouseTheme;
   reducedMotion: boolean;
   zones: readonly ActiveHouseLight[];
   side: HouseSide;
+  /** 200 ms after a tap or slider on this house. Otherwise 600 ms. */
+  fast?: boolean;
 }) {
   const polygonsFor = HOUSE_LIGHT_ZONES[side];
   const drawn = zones.filter((zone) => (polygonsFor[zone.id]?.length ?? 0) > 0);
   if (drawn.length === 0) return null;
   const palette = theme === "dark" ? HOUSE_LIGHT_TINT.dark : HOUSE_LIGHT_TINT.light;
-  const transition = reducedMotion ? "none" : `opacity ${HOUSE_LIGHT_TINT_TRANSITION_MS}ms ease`;
+  const duration = fast ? HOUSE_LIGHT_TINT_FAST_MS : HOUSE_LIGHT_TINT_TRANSITION_MS;
+  const transition = reducedMotion ? "none" : `opacity ${duration}ms ease`;
 
   return (
     <svg

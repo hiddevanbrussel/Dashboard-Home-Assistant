@@ -107,6 +107,7 @@ export function EnergyOverview() {
         orientation={orientation}
         stage={frame}
         airconKwh={facts?.airconKwh ?? null}
+        labelSheetOpen={sheet != null}
         labelOpens={(kind: HouseLabelKind) => (facts ? cardForHouseLabel(facts, kind) != null : false)}
         onOpenLabel={(kind, source) => {
           if (!facts) return;
