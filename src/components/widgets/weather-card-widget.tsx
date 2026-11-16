@@ -92,8 +92,8 @@ async function loadDailyForecast(entityId: string): Promise<WeatherForecastItem[
 
 function MetricInline({ icon, value }: { icon: ReactNode; value: string }) {
   return (
-    <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-[#6B7A90] dark:text-white/55">
-      <span className="shrink-0 opacity-75">{icon}</span>
+    <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-[#435066] dark:text-white/80">
+      <span className="shrink-0 opacity-[0.85]">{icon}</span>
       <span className="truncate text-[13px] font-medium tabular-nums tracking-tight">{value}</span>
     </div>
   );
@@ -293,7 +293,7 @@ export function WeatherCardWidget({
               {title}
             </p>
             {showCondition && condition ? (
-              <p className="mt-0.5 truncate text-[0.95rem] font-medium text-[#8A96A8] dark:text-white/45">
+              <p className="mt-0.5 truncate text-[0.95rem] font-medium text-[#435066] dark:text-white/80">
                 {conditionLabel(condition, t)}
               </p>
             ) : null}
@@ -326,7 +326,7 @@ export function WeatherCardWidget({
               {formatTemp(temperature)}
             </p>
             {showHighLow ? (
-              <div className="mt-2 flex items-center gap-3.5 text-[0.95rem] font-medium text-[#6B7A90] dark:text-white/60">
+              <div className="mt-2 flex items-center gap-3.5 text-[0.95rem] font-medium text-[#435066] dark:text-white/80">
                 <span className="inline-flex items-center gap-0.5">
                   <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
                   {formatTemp(high)}
@@ -355,13 +355,13 @@ export function WeatherCardWidget({
         </div>
 
         {metrics.length > 0 && fitMetrics ? (
-          <div className="mt-2 flex shrink-0 items-center border-t border-[#1B2437]/08 pt-3 dark:border-white/10">
+          <div className="mt-2 flex shrink-0 items-center border-t border-[#1B2437]/10 pt-3 dark:border-white/[0.14]">
             {metrics.map((m, index) => (
               <div
                 key={m.key}
                 className={cn(
                   "min-w-0 flex-1",
-                  index > 0 && "border-l border-[#1B2437]/08 dark:border-white/10"
+                  index > 0 && "border-l border-[#1B2437]/10 dark:border-white/[0.14]"
                 )}
               >
                 {m.node}
