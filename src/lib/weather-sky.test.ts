@@ -171,13 +171,19 @@ describe("future particle parameters (data only)", () => {
   it("locks counts, timings and speeds", () => {
     expect(sky.PARTICLE_PARAMETERS.rain).toEqual({ counts: [40, 90, 160], speeds: [620, 820, 1050], speedVariation: 0.2, strokeLengths: [18, 18, 22], lineWidths: [1, 1.25, 1.5], fps: 30 });
     expect(sky.PARTICLE_PARAMETERS.snow).toEqual({ counts: [30, 60, 100], speeds: [28, 40, 58], radius: [1.4, 3.5], sway: [6, 14], sidewaysWindFactor: 0.3, fps: 24 });
-    expect(sky.PARTICLE_PARAMETERS.hail).toEqual({ counts: [0, 40, 60], radius: [2.5, 3.5], speed: 380, angle: 0, fps: 30 });
+    expect(sky.PARTICLE_PARAMETERS.hail).toEqual({ counts: [40, 40, 60], radius: [2.5, 3.5], speed: 380, angle: 0, fps: 30 });
     expect(sky.PARTICLE_PARAMETERS.fog).toEqual({ bands: 3, speeds: [8, 14], direction: "horizontal", fps: "compositor" });
     expect(sky.PARTICLE_PARAMETERS.lightning).toEqual({ intervalSeconds: [10, 16], rainyIntervalSeconds: [6, 12], minimumIntervalSeconds: 6, pulseMs: 180, doublePulse: true, peakOpacity: { light: 0.30, dark: 0.24 } });
     expect(sky.PARTICLE_PARAMETERS.wind).toEqual({ counts: [4, 6, 8], lengths: [50, 120], speedBase: 120, speedPerKmh: 6, fps: 30 });
     expect(sky.PARTICLE_PARAMETERS.prewarm).toBe(true);
     expect(sky.PARTICLE_COLOURS.light.rain).toBe("rgba(40,62,98,.42)");
     expect(sky.PARTICLE_COLOURS.dark.snow).toBe("rgba(235,242,255,.95)");
+  });
+  it("uses the moderate hail count for light hail, including compact tiles", () => {
+    const [light, moderate] = sky.PARTICLE_PARAMETERS.hail.counts;
+    expect(light).toBe(40);
+    expect(light).toBe(moderate);
+    expect(sky.particleCount(light, 320 * 160, true)).toBe(21);
   });
   it("converts HA wind units", () => {
     expect(sky.windSpeedKmh(10)).toBe(36);

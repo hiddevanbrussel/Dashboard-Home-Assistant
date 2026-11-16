@@ -189,7 +189,7 @@ export const PARTICLE_CAP = 200;
 export const PARTICLE_PARAMETERS = {
   rain: { counts: [40, 90, 160], speeds: [620, 820, 1050], speedVariation: 0.2, strokeLengths: [18, 18, 22], lineWidths: [1, 1.25, 1.5], fps: 30 },
   snow: { counts: [30, 60, 100], speeds: [28, 40, 58], radius: [1.4, 3.5], sway: [6, 14], sidewaysWindFactor: 0.3, fps: 24 },
-  hail: { counts: [0, 40, 60], radius: [2.5, 3.5], speed: 380, angle: 0, fps: 30 },
+  hail: { counts: [40, 40, 60], radius: [2.5, 3.5], speed: 380, angle: 0, fps: 30 },
   fog: { bands: 3, speeds: [8, 14], direction: "horizontal", fps: "compositor" },
   lightning: { intervalSeconds: [10, 16], rainyIntervalSeconds: [6, 12], minimumIntervalSeconds: 6, pulseMs: 180, doublePulse: true, peakOpacity: { light: 0.30, dark: 0.24 } },
   wind: { counts: [4, 6, 8], lengths: [50, 120], speedBase: 120, speedPerKmh: 6, fps: 30 },
