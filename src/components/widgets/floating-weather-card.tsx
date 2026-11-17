@@ -1,11 +1,13 @@
 "use client";
 
-import type { SkyMotion } from "@/lib/weather-sky";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { normalizeSkyMotion, type SkyMotion } from "@/lib/weather-sky";
+import { useState, useRef, useCallback, useEffect, useSyncExternalStore } from "react";
+import { getSkyPerformanceStep, subscribeSkyFrameStats } from "@/lib/sky/frame-loop";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
 import { TILE_HAIRLINE_DARK } from "@/lib/tile-hairline";
 import { WeatherCardWidget } from "./weather-card-widget";
+import { useSkyReducedMotion } from "@/components/weather/weather-sky";
 import { WeatherBottomSheet } from "@/components/weather/weather-bottom-sheet";
 import { isVacuumCardTap } from "@/lib/vacuum-card";
 import {
@@ -117,6 +119,29 @@ export function FloatingWeatherCard({
   const movedRef = useRef(false);
   const pressStart = useRef({ x: 0, y: 0 });
   const [sheetOpen, setSheetOpen] = useState(false);
+  const skyPlotRef = useRef<HTMLDivElement>(null);
+  const [skyPlotReady, setSkyPlotReady] = useState(false);
+  const skyReducedMotion = useSkyReducedMotion();
+  const skyPerformanceStep = useSyncExternalStore(subscribeSkyFrameStats, getSkyPerformanceStep, () => 0 as const);
+  const skyWantsMotion = normalizeSkyMotion(sky_motion) !== "off" && !skyReducedMotion && skyPerformanceStep < 2;
+  useEffect(() => {
+    const node = skyPlotRef.current;
+    if (!node || !skyWantsMotion || editMode) { setSkyPlotReady(true); return; }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const finish = () => { if (timer != null) clearTimeout(timer); setSkyPlotReady(true); };
+    const ended = (event: AnimationEvent) => {
+      if (event.target === node && event.animationName === "card-plot-in") finish();
+    };
+    const running = node.getAnimations?.().some((animation) =>
+      "animationName" in animation && animation.animationName === "card-plot-in" && animation.playState !== "finished");
+    if (node.classList.contains("card-plot-instant") || (node.classList.contains("card-plot-played") && running === false)) {
+      finish(); return;
+    }
+    setSkyPlotReady(false);
+    node.addEventListener("animationend", ended);
+    timer = setTimeout(finish, 800);
+    return () => { if (timer != null) clearTimeout(timer); node.removeEventListener("animationend", ended); };
+  }, [skyWantsMotion, editMode]);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimerRef.current != null) {
@@ -323,6 +348,7 @@ export function FloatingWeatherCard({
 
   return (
     <div
+      ref={skyPlotRef}
       className={cn(
         "card-plot-in fixed z-30 rounded-[1.75rem]",
         // shadow-tile is generated after shadow-none, so edit mode replaces the shadow.
@@ -375,6 +401,7 @@ export function FloatingWeatherCard({
           show_air_quality={show_air_quality}
           show_precipitation={show_precipitation}
           sky_motion={sky_motion}
+          skyPaused={editMode || isDragging || isResizing || sheetOpen || !skyPlotReady}
           air_quality_entity_id={air_quality_entity_id}
           size="md"
           height={totalHeight}

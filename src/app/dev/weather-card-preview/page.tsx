@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { WeatherCardWidget } from "@/components/widgets/weather-card-widget";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useLanguageStore } from "@/stores/language-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { DEFAULT_SUN_ENTITY_ID, normalizeSkyMotion, type SkyMotion, type SkyPhase } from "@/lib/weather-sky";
+import { useSkyReducedMotion } from "@/components/weather/weather-sky";
+import { getServerSkyFrameStats, getSkyFrameStats, subscribeSkyFrameStats } from "@/lib/sky/frame-loop";
+import { planParticles } from "@/lib/sky/particles";
+import { resolveSkyMode } from "@/lib/sky/sky-motion";
 import { cn } from "@/lib/utils";
 
 const ENTITY_ID = "weather.preview";
 const AQI_ID = "sensor.aqi_preview";
+const subscribeNoStats = () => () => {};
 
 const CONDITIONS = [
   "sunny",
@@ -21,6 +26,11 @@ const CONDITIONS = [
   "snowy",
   "lightning-rainy",
   "windy",
+  "hail",
+  "snowy-rainy",
+  "pouring",
+  "lightning",
+  "windy-variant",
 ] as const;
 
 /** Dev-only preview of the redesigned weather card (no Home Assistant required). */
@@ -34,6 +44,15 @@ export default function WeatherCardPreviewPage() {
   const [sun, setSun] = useState({ elevation: 7, rising: true });
   const [dimensions, setDimensions] = useState({ width: 320, height: 300 });
   const [motion, setMotion] = useState<SkyMotion>("on");
+  const [precipitation, setPrecipitation] = useState<number | null>(null);
+  const [wind, setWind] = useState(10);
+  const [bearing, setBearing] = useState(270);
+  const [freezeTime, setFreezeTime] = useState<number | undefined>();
+  const [seed, setSeed] = useState(1);
+  const [debug, setDebug] = useState(false);
+  const reducedMotion = useSkyReducedMotion();
+  const stats = useSyncExternalStore(debug ? subscribeSkyFrameStats : subscribeNoStats,
+    debug ? getSkyFrameStats : getServerSkyFrameStats, getServerSkyFrameStats);
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
@@ -52,6 +71,16 @@ export default function WeatherCardPreviewPage() {
     };
     setDimensions({ width: customSize("w", 320), height: customSize("h", query.get("size") === "compact" ? 160 : 300) });
     setMotion(normalizeSkyMotion(query.get("motion")));
+    const numberParam = (key: string, fallback: number) => {
+      const value = query.has(key) ? Number(query.get(key)) : NaN;
+      return Number.isFinite(value) ? value : fallback;
+    };
+    if (query.has("precip")) setPrecipitation(Math.max(0, numberParam("precip", 0)));
+    setWind(Math.max(0, numberParam("wind", 10)));
+    setBearing(numberParam("bearing", 270));
+    setSeed(numberParam("seed", 1));
+    if (query.has("t")) setFreezeTime(Math.max(0, Math.min(3600, numberParam("t", 0))));
+    setDebug(query.get("debug") === "1");
     const theme = query.get("theme");
     if (theme === "light" || theme === "dark") {
       setThemeMode(theme);
@@ -70,6 +99,14 @@ export default function WeatherCardPreviewPage() {
     return d.toISOString();
   }, []);
 
+  const precip = precipitation ?? (condition === "rainy" ? 1 : 0);
+  const debugPlan = useMemo(() => debug ? planParticles({ condition, precipitation: precip, windKmh: wind, bearing,
+    width: dimensions.width, height: dimensions.height,
+    compact: dimensions.height < 184 || !(showWind || showHumidity || showAqi || showPrecip),
+    mode: resolveSkyMode({ motion, reducedMotion, performanceStep: stats.performanceStep }),
+    performanceStep: stats.performanceStep,
+  }) : null, [debug, condition, precip, wind, bearing, dimensions, showWind, showHumidity, showAqi, showPrecip, motion, reducedMotion, stats.performanceStep]);
+
   const entities = useMemo(
     () => [
       {
@@ -83,10 +120,10 @@ export default function WeatherCardPreviewPage() {
         attributes: {
           temperature: 12,
           humidity: 77,
-          wind_speed: 3.5,
-          wind_bearing: 90,
-          wind_speed_unit: "m/s",
-          precipitation: 0,
+          wind_speed: wind,
+          wind_bearing: bearing,
+          wind_speed_unit: "km/h",
+          precipitation: precip,
           friendly_name: "Preview weather",
           forecast: [
             {
@@ -94,7 +131,7 @@ export default function WeatherCardPreviewPage() {
               condition,
               temperature: 12,
               templow: 8,
-              precipitation: 0,
+              precipitation: precip,
             },
           ],
         },
@@ -105,7 +142,7 @@ export default function WeatherCardPreviewPage() {
         attributes: { friendly_name: "Luchtkwaliteit" },
       },
     ],
-    [condition, today, sun]
+    [condition, today, sun, wind, bearing, precip]
   );
 
   useEffect(() => {
@@ -133,9 +170,9 @@ export default function WeatherCardPreviewPage() {
     >
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Weather card preview</h1>
-        <p className={cn("mt-1 text-sm", resolved === "dark" ? "text-white/60" : "text-gray-500")}>
-          Static weather sky with fictional data. All motion settings currently show the same still sky.
-        </p>
+        {debug && <p data-sky-debug className="mt-1 text-sm">
+          Particles: {freezeTime != null ? debugPlan?.total ?? 0 : stats.activeParticles}, fps: {stats.fps}, average work: {stats.averageWorkMs.toFixed(3)} ms
+        </p>}
 
         <div className="mt-4 flex flex-wrap gap-2">
           {CONDITIONS.map((value) => (
@@ -230,6 +267,7 @@ export default function WeatherCardPreviewPage() {
               show_air_quality={showAqi}
               show_precipitation={showPrecip}
               sky_motion={motion}
+              skyPreview={{ time: freezeTime, seed }}
               height={dimensions.height}
               air_quality_entity_id={AQI_ID}
               size="md"

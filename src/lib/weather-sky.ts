@@ -373,3 +373,8 @@ export function skyFogBands(look: SkyLook, theme: SkyTheme): string[] {
     return `radial-gradient(120% 22% at ${30 + index * 25}% ${30 + index * 26}%, ${colour} 0%, transparent 100%)`;
   });
 }
+
+/** Compositor drift only; keep the run B cloud layout and colours unchanged. */
+export function driftWindFactor(windKmh: number): number {
+  return clamp(Math.sqrt(Math.max(0, windKmh) / 10), 0.6, 2.2);
+}

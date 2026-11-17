@@ -10,6 +10,7 @@ import {
   Umbrella,
   Wind,
 } from "lucide-react";
+import { windSpeedKmh } from "@/lib/weather-sky";
 import { WeatherSky } from "@/components/weather/weather-sky";
 import type { WeatherCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
@@ -112,6 +113,8 @@ export function WeatherCardWidget({
   show_air_quality = false,
   show_precipitation = true,
   sky_motion,
+  skyPaused,
+  skyPreview,
   air_quality_entity_id,
   className,
   onMoreClick,
@@ -261,7 +264,9 @@ export function WeatherCardWidget({
         className
       )}
     >
-      <WeatherSky condition={condition} large={fitMetrics && metrics.length > 0} motion={sky_motion} />
+      <WeatherSky condition={condition} large={fitMetrics && metrics.length > 0} motion={sky_motion}
+        precipitation={precipMm} windKmh={windSpeedKmh(windSpeed ?? 0, windUnit)} bearing={windBearing ?? 0}
+        skyPaused={skyPaused} preview={skyPreview} />
 
       <div className="relative z-10 flex h-full min-h-0 flex-col px-5 pb-3.5 pt-4">
         <div className="flex items-start justify-between gap-2">
