@@ -125,6 +125,10 @@ export function SmartStackChild({
           show_air_quality={child.show_air_quality === true}
           show_precipitation={child.show_precipitation !== false}
           sky_motion={child.sky_motion}
+          show_planes={child.show_planes}
+          planes_entity_id={child.planes_entity_id}
+          inSmartStack
+          height={height}
           air_quality_entity_id={child.air_quality_entity_id}
           className={fill}
         />

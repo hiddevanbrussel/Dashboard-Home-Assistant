@@ -112,10 +112,13 @@ export type WeatherCardProps = WidgetBaseProps & {
   /** Neerslag in de metricsbalk (default true). */
   show_precipitation?: boolean;
   sky_motion?: SkyMotion;
+  show_planes?: boolean;
+  planes_entity_id?: string;
+  inSmartStack?: boolean;
   /** Pause sky motion while interacting with the surrounding floating card. */
   skyPaused?: boolean;
   /** Deterministic dev-preview seek; omitted in normal dashboards. */
-  skyPreview?: { time?: number; seed?: number };
+  skyPreview?: { time?: number; seed?: number; planesAt?: number };
   /** Optionele sensor voor luchtkwaliteit / AQI. */
   air_quality_entity_id?: string;
 };

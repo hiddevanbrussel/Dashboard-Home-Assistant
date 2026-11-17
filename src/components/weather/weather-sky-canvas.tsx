@@ -9,7 +9,7 @@ import {
   stepParticles, updateParticlePlan, type ParticlePlan, type ParticleSimulation,
 } from "@/lib/sky/particles";
 
-const SKY_CANVAS_MASK =
+export const SKY_CANVAS_MASK =
   "linear-gradient(100deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.35) max(50%, 200px), #000 75%), " +
   "linear-gradient(0deg, rgba(0,0,0,.35) 0, rgba(0,0,0,.35) 50px, #000 78px)";
 

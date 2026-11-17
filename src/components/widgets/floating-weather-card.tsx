@@ -72,6 +72,8 @@ export function FloatingWeatherCard({
   show_air_quality = false,
   show_precipitation = true,
   sky_motion,
+  show_planes,
+  planes_entity_id,
   air_quality_entity_id,
   width,
   height,
@@ -92,6 +94,8 @@ export function FloatingWeatherCard({
   show_air_quality?: boolean;
   show_precipitation?: boolean;
   sky_motion?: SkyMotion;
+  show_planes?: boolean;
+  planes_entity_id?: string;
   air_quality_entity_id?: string;
   width?: number;
   height?: number;
@@ -401,6 +405,8 @@ export function FloatingWeatherCard({
           show_air_quality={show_air_quality}
           show_precipitation={show_precipitation}
           sky_motion={sky_motion}
+          show_planes={show_planes}
+          planes_entity_id={planes_entity_id}
           skyPaused={editMode || isDragging || isResizing || sheetOpen || !skyPlotReady}
           air_quality_entity_id={air_quality_entity_id}
           size="md"
