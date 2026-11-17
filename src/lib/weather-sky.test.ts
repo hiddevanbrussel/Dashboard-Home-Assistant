@@ -98,13 +98,29 @@ describe("static sky helpers (run B)", () => {
     expect(large).toHaveLength(count);
     expect(large).toEqual(sky.skyClouds(look, "day", "light", true));
     large.forEach((cloud, i) => {
-      expect(cloud.width).toBeGreaterThanOrEqual(70 * scale);
-      expect(cloud.width).toBeLessThanOrEqual(110 * scale);
-      expect(cloud.height).toBeCloseTo(cloud.width * 0.42);
+      expect(cloud.width).toBeGreaterThanOrEqual(1.3 * 70 * scale);
+      expect(cloud.width).toBeLessThanOrEqual(1.3 * 110 * scale);
+      expect(cloud.height).toBeCloseTo((cloud.width / 1.3) * 0.75);
       expect(compact[i].width).toBeCloseTo(cloud.width * 0.8);
+      expect(compact[i].height).toBeCloseTo(cloud.height * 0.8);
       expect(cloud.background.match(/radial-gradient/g)).toHaveLength(3);
     });
     expect(large.map(({ x, y }) => [x, y])).toEqual([[78, 18], [30, 8], [96, 46], [55, 30], [12, 40]].slice(0, count));
+  });
+  it("uses the approved three-blob cloud geometry with unchanged colour stops", () => {
+    for (const look of sky.SKY_LOOKS) for (const phase of sky.SKY_PHASES) {
+      for (const theme of THEMES) for (const large of [true, false]) {
+        for (const cloud of sky.skyClouds(look, phase, theme, large, "partlycloudy")) {
+          const stops = `${cloud.colour} 0%, ${cloud.colour} 45%, transparent 100%`;
+          expect(cloud.background).toBe([
+            `radial-gradient(ellipse 21.5% 29.9% at 25% 60%, ${stops})`,
+            `radial-gradient(ellipse 27.7% 38.4% at 50% 40%, ${stops})`,
+            `radial-gradient(ellipse 21.5% 29.9% at 75% 60%, ${stops})`,
+          ].join(", "));
+          expect(cloud.height / cloud.width).toBeCloseTo(0.75 / 1.3);
+        }
+      }
+    }
   });
   it("applies twilight, night and partlycloudy cloud overrides", () => {
     expect(sky.skyClouds("cloudy", "night", "dark", true)).toHaveLength(3);

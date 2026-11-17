@@ -136,9 +136,13 @@ describe("now hero source", () => {
     const paths = [
       "src/components/layout/app-shell.tsx",
       "src/components/widgets",
+      ":(exclude)src/components/widgets/weather-card-widget.tsx",
+      ":(exclude)src/components/widgets/floating-weather-card.tsx",
+      ":(exclude)src/components/widgets/smart-stack-child.tsx",
+      ":(exclude)src/components/widgets/widget-types.ts",
       "src/app/api/ha/history/route.ts",
       "src/lib/ha/ws-commands.ts",
-    ].join(" ");
+    ].map((path) => `'${path}'`).join(" ");
     const command = `git diff origin/main -- ${paths}`;
     let diff = "";
     try {

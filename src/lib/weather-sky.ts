@@ -358,9 +358,10 @@ export function skyClouds(look: SkyLook, phase: SkyPhase, theme: SkyTheme, large
   return Array.from({ length: count }, (_, index) => {
     const width = (70 + skySeed(index, 73) * 40) * scale * (large ? 1 : 0.8);
     const [x, y] = CLOUD_CENTRES[index];
-    const blob = (cx: number, cy: number) => `radial-gradient(ellipse 27% 38% at ${cx}% ${cy}%, ${colour} 0%, ${colour} 45%, transparent 100%)`;
-    return { x, y, width, height: width * 0.42, colour,
-      background: `${blob(28, 62)}, ${blob(52, 40)}, ${blob(73, 62)}` };
+    const blob = (rx: number, ry: number, cx: number, cy: number) =>
+      `radial-gradient(ellipse ${rx}% ${ry}% at ${cx}% ${cy}%, ${colour} 0%, ${colour} 45%, transparent 100%)`;
+    return { x, y, width: width * 1.3, height: width * 0.75, colour,
+      background: `${blob(21.5, 29.9, 25, 60)}, ${blob(27.7, 38.4, 50, 40)}, ${blob(21.5, 29.9, 75, 60)}` };
   });
 }
 
