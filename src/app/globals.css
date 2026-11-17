@@ -1012,3 +1012,41 @@ html[data-glass-density="off"] .energy-day-band {
   .weather-sky { --sky-duration: 600ms; --sky-easing: ease-in-out; }
   .weather-sky-gradient, .weather-sky-veil { transition: none; }
 }
+
+/* Run C: only weather-sky compositor motion. Static run B layers have no classes
+   from this section; no colour, geometry or opacity override applies to Off. */
+.weather-sky[data-change="mode"] { --sky-duration: 600ms; --sky-easing: ease-in-out; }
+.weather-sky .sky-cloud-motion {
+  animation-name: sky-cloud-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+@keyframes sky-cloud-drift {
+  from { transform: translate(calc(-50% + var(--sky-cloud-from)), -50%); }
+  to { transform: translate(calc(-50% + var(--sky-cloud-to)), -50%); }
+}
+.weather-sky .sky-star-motion { animation: sky-star-twinkle 6s ease-in-out infinite alternate; }
+@keyframes sky-star-twinkle {
+  from { opacity: var(--sky-star-alpha); }
+  to { opacity: calc(var(--sky-star-alpha) * .6); }
+}
+.weather-sky .sky-fog-motion {
+  animation-name: sky-fog-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+@keyframes sky-fog-drift { from { transform: translateX(-32px); } to { transform: translateX(32px); } }
+.weather-sky .sky-lightning {
+  background: radial-gradient(70% 60% at 85% 15%, #fff 0%, transparent 70%);
+  opacity: 0;
+}
+.weather-sky .sky-flash-active { animation: sky-lightning-flash 180ms linear both; }
+@keyframes sky-lightning-flash {
+  0%, 100% { opacity: 0; }
+  25%, 75% { opacity: var(--sky-flash-peak); }
+  50% { opacity: calc(var(--sky-flash-peak) * .3); }
+}
+.weather-sky[data-sky-paused="true"] .sky-motion { animation-play-state: paused; }
