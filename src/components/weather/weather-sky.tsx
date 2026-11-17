@@ -269,7 +269,7 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
       </div>
       {show_planes && planes_entity_id && dimensions.width > 0 && (
         <WeatherPlanes key={planes_entity_id} sensorId={planes_entity_id} calm={normalizeSkyMotion(motion) === "calm"} mode={mode} performanceStep={performanceStep}
-          paused={paused} compact={dimensions.height < 184} stacked={inSmartStack} condition={condition} precipitation={precipitation}
+          paused={paused} visible={flags.visible && !flags.hidden && !flags.screensaver} compact={dimensions.height < 184} stacked={inSmartStack} condition={condition} precipitation={precipitation}
           width={dimensions.width} height={dimensions.height} phase={phase} theme={theme} frozen={frozenTime != null ? preview?.planesAt ?? frozenTime : undefined}
           onLabel={onPlaneLabel} />
       )}

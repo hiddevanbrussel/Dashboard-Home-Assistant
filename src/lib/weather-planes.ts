@@ -51,7 +51,7 @@ export function planeWeather(condition: string, precipitation: number) {
 export function planeAllowed(flight: Flight, condition: string, precipitation: number): boolean {
   return flightHash(flight.id) % 100 < planeWeather(condition, precipitation).chance;
 }
-export function planeGeometry(flight: Flight, width: number, height: number, compact: boolean, otherLane?: number) {
+export function planeGeometry(flight: Flight, width: number, height: number, compact: boolean) {
   const radians = flight.heading * Math.PI / 180;
   const eastbound = Math.abs(Math.sin(radians)) <= Math.sin(Math.PI / 12) + 1e-12 ? flightHash(flight.id) % 2 === 0 : Math.sin(radians) >= 0;
   const altitude = flight.altitude ?? 3000;
@@ -59,8 +59,7 @@ export function planeGeometry(flight: Flight, width: number, height: number, com
   const silhouette = planeSilhouette(flight.aircraftCode);
   const length = ({ smal: 60, breed: 74, klein: 40 }[silhouette]) * scale * (compact ? 0.85 : 1);
   const low = compact ? 0.14 : 0.12, high = compact ? 0.28 : 0.26;
-  let lane = high - (high - low) * clamp(altitude / 36000, 0, 1);
-  if (otherLane != null && Math.abs(lane - otherLane) < 0.08) lane = clamp(otherLane + (otherLane <= (low + high) / 2 ? 0.08 : -0.08), low, high);
+  const lane = high - (high - low) * clamp(altitude / 36000, 0, 1);
   const slope = -Math.cos(radians) * 6;
   const pitch = clamp(slope + (flight.verticalSpeed > 500 ? 3 : flight.verticalSpeed < -500 ? -3 : 0), -9, 9);
   const startX = eastbound ? -length / 2 : width + length / 2;
@@ -76,8 +75,9 @@ export function planePalette(phase: SkyPhase, theme: SkyTheme) {
   const top = twilight ? dark ? "#C9C2CF" : "#FFF6F0" : dark ? "#E4EAF3" : "#FFFFFF";
   const under = twilight ? dark ? "#9F8E99" : "#E9C6B4" : dark ? "#8E9DB4" : "#9FB0C6";
   return { top, under, opacity: night ? dark ? 0.30 : 0.42 : dark && !twilight ? 0.85 : 1,
-    trail: twilight ? "rgba(255,190,155,.55)" : dark ? "rgba(255,255,255,.32)" : "rgba(255,255,255,.7)" };
+    trail: twilight ? dark ? "rgba(230,200,205,.32)" : "rgba(255,236,228,.7)" : dark ? "rgba(255,255,255,.32)" : "rgba(255,255,255,.7)" };
 }
+export function planeContrailLength(width: number, scale: number) { return Math.min(.42 * width, 140) * scale; }
 export function planeContrail(flight: Flight, condition: string, precipitation: number, phase: SkyPhase) {
   return phase !== "night" && (flight.altitude ?? 0) >= 25000 && planeWeather(condition, precipitation).contrail;
 }
@@ -97,25 +97,25 @@ export function resolvePlaneOptions(options: { show_planes?: boolean; planes_ent
   return { show_planes: candidates.length === 1, planes_entity_id: candidates.length === 1 ? candidates[0].entity_id : "" };
 }
 export type PlaneClock = { now: () => number; setTimeout: (fn: () => void, ms: number) => unknown; clearTimeout: (id: unknown) => void };
-export type PlanePolicy = { calm?: boolean; mode: SkyMode; performanceStep: number; paused: boolean; compact: boolean; stacked: boolean; condition: string; precipitation: number };
+export type PlanePolicy = { calm?: boolean; mode: SkyMode; performanceStep: number; paused: boolean; visible?: boolean; compact: boolean; stacked: boolean; condition: string; precipitation: number };
 /** No frame loop: one wake-up timer, state updates and animation finish events. */
-export function createPlanePlanner(clock: PlaneClock, events: { start: (flight: Flight) => void; remove: (id: string, fade: boolean) => void }) {
+export function createPlanePlanner(clock: PlaneClock, events: { start: (flight: Flight) => void; remove: (id: string, fade: boolean, duration?: number) => void }) {
   let policy: PlanePolicy = { mode: "static", performanceStep: 0, paused: true, compact: false, stacked: false, condition: "sunny", precipitation: 0 };
   let previous = new Set<string>(), cache = new Map<string, number>();
   let queue: { flight: Flight; expires: number; due: number } | undefined;
   let timer: unknown, first = true, pausedAt: number | undefined, lastStart = -Infinity;
   let starts: number[] = [];
   const active = new Map<string, Flight>();
-  const retiring = new Set<string>();
+  const retiring = new Map<string, number>();
   const clearTimer = () => { if (timer != null) clock.clearTimeout(timer); timer = undefined; };
   const prune = () => { const now = clock.now(); for (const [id, time] of cache) if (now - time >= 1800000) cache.delete(id); starts = starts.filter(t => now - t < 3600000); };
   const remember = (id: string) => { if (!cache.has(id)) cache.set(id, clock.now()); while (cache.size > 50) cache.delete(cache.keys().next().value!); };
-  const retire = (id: string) => { if (!retiring.has(id)) { retiring.add(id); events.remove(id, true); } };
-  const removeAll = (fade: boolean) => {
-    for (const id of active.keys()) { if (fade) retire(id); else events.remove(id, false); }
+  const retire = (id: string, duration = 1500) => { if (!retiring.has(id) || duration < retiring.get(id)!) { retiring.set(id, duration); events.remove(id, true, duration); } };
+  const removeAll = (fade: boolean, duration = 1500) => {
+    for (const id of active.keys()) { if (fade) retire(id, duration); else events.remove(id, false); }
     if (!fade) { active.clear(); retiring.clear(); }
   };
-  const longPause = () => { queue = undefined; first = false; removeAll(false); };
+  const longPause = () => { queue = undefined; first = false; removeAll(policy.visible === true, 300); };
   const pump = () => {
     clearTimer(); prune(); const now = clock.now();
     if (policy.mode === "static" || policy.performanceStep >= 2) { queue = undefined; removeAll(false); return; }
@@ -127,10 +127,9 @@ export function createPlanePlanner(clock: PlaneClock, events: { start: (flight: 
     if (queue && now >= queue.expires) queue = undefined;
     if (!queue) return;
     if (!planeAllowed(queue.flight, policy.condition, policy.precipitation)) { queue = undefined; return; }
-    const capacity = policy.mode === "animated-calm" || policy.performanceStep === 1 || policy.compact || policy.stacked ? 1 : 2;
-    // The approved strict 90s start spacing deliberately prevents paired starts.
+    // Strict spacing and one active crossing also cover unusually long passes.
     const due = Math.max(queue.due, lastStart + ((policy.calm ?? policy.mode === "animated-calm") ? 300000 : 90000), starts.length >= 12 ? starts[0] + 3600000 : 0);
-    if (now >= due && active.size < capacity) {
+    if (now >= due && active.size === 0) {
       const flight = queue.flight; queue = undefined; lastStart = now; starts.push(now); remember(flight.id); active.set(flight.id, flight); events.start(flight);
     } else timer = clock.setTimeout(pump, Math.max(1, Math.min(queue.expires, due > now ? due : queue.expires) - now));
   };

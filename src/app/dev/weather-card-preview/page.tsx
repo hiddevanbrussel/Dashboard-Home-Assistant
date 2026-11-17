@@ -52,6 +52,7 @@ export default function WeatherCardPreviewPage() {
   const [seed, setSeed] = useState(1);
   const [planesEnabled, setPlanesEnabled] = useState(false);
   const [showPlanes, setShowPlanes] = useState(true);
+  const [planesFlight, setPlanesFlight] = useState(1);
   const [planesAt, setPlanesAt] = useState<number | undefined>();
   const [debug, setDebug] = useState(false);
   const reducedMotion = useSkyReducedMotion();
@@ -85,6 +86,7 @@ export default function WeatherCardPreviewPage() {
     setSeed(numberParam("seed", 1));
     if (query.has("t")) setFreezeTime(Math.max(0, Math.min(3600, numberParam("t", 0))));
     setPlanesEnabled(query.get("planes") === "1");
+    setPlanesFlight(query.get("planesFlight") === "2" ? 2 : 1);
     setShowPlanes(query.get("showPlanes") !== "0");
     if (query.has("planesAt")) setPlanesAt(Math.max(0, numberParam("planesAt", 0)));
     setDebug(query.get("debug") === "1");
@@ -143,17 +145,17 @@ export default function WeatherCardPreviewPage() {
           ],
         },
       },
-      ...(planesEnabled ? [{ entity_id: PLANE_ID, state: "2", attributes: { flights: [
+      ...(planesEnabled ? [{ entity_id: PLANE_ID, state: "1", attributes: { flights: [
         { id: "fictional-alpha", callsign: "FKE1234", aircraft_code: "B738", altitude: 30000, heading: 90, ground_speed: 420, on_ground: 0 },
         { id: "fictional-beta", callsign: "FKE5678", aircraft_code: "A20N", altitude: 28000, heading: 270, ground_speed: 400, on_ground: 0 },
-      ] } }] : []),
+      ].slice(planesFlight - 1, planesFlight) } }] : []),
       {
         entity_id: AQI_ID,
         state: "goed",
         attributes: { friendly_name: "Luchtkwaliteit" },
       },
     ],
-    [condition, today, sun, wind, bearing, precip, planesEnabled]
+    [condition, today, sun, wind, bearing, precip, planesEnabled, planesFlight]
   );
 
   useEffect(() => {

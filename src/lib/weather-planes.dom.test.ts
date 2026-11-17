@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
-import { act, createElement } from "react";
+import { act, createElement, Profiler } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SKY_CANVAS_MASK } from "@/components/weather/weather-sky-canvas";
 import { WeatherCardWidget } from "@/components/widgets/weather-card-widget";
 import { WeatherSky } from "@/components/weather/weather-sky";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -83,7 +84,15 @@ describe("weather planes compositor lifecycle", () => {
     await advance(0);
     expect(host.querySelector(".weather-sky")?.getAttribute("data-sky-paused")).toBe("true");
     expect(animations.every(a => a.animation.playState === "paused")).toBe(true);
-    await advance(5001); expect(nodes()).toHaveLength(0);
+    await advance(5001);
+    if (reason === "external" || reason === "edit") {
+      expect(nodes()).toHaveLength(1);
+      const exits = animations.filter(a => a.options.duration === 300);
+      expect(exits.length).toBeGreaterThan(0);
+      expect(exits.every(a => a.animation.playState === "running")).toBe(true);
+      await act(async () => { for (const a of exits) a.animation.onfinish?.call(a.animation, {} as AnimationPlaybackEvent); });
+    }
+    expect(nodes()).toHaveLength(0);
   });
   it("resumes a short pause without restarting the crossing", async () => {
     await render(); await advance(3000); const node = nodes()[0]; const first = animations[0].animation;
@@ -101,6 +110,9 @@ describe("weather planes compositor lifecycle", () => {
     await render(); await advance(3000);
     await act(async () => { useEntityStateStore.getState().updateEntityState(sensorId, { state: "unavailable" }); });
     await render({ paused: true }); await advance(5001);
+    const exit = animations.find(a => a.options.duration === 300)!;
+    expect(exit.animation.playState).toBe("running");
+    await act(async () => { exit.animation.onfinish?.call(exit.animation, {} as AnimationPlaybackEvent); });
     expect(nodes()).toHaveLength(0); expect(animations.every(a => a.animation.playState === "idle")).toBe(true);
   });
   it.each(["pouring", "fog"])("fades when weather becomes %s", async condition => {
@@ -144,6 +156,70 @@ describe("weather planes compositor lifecycle", () => {
     expect((Number(fade.frames[2].offset) - Number(fade.frames[1].offset)) * duration).toBeCloseTo(600);
     expect((Number(fade.frames[4].offset) - Number(fade.frames[3].offset)) * duration).toBeCloseTo(600);
     expect(fade.frames.every(f => Number(f.offset) <= 1)).toBe(true);
+  });
+  it("holds invisible forwards-filled end states until plane and label unmount", async () => {
+    await act(async () => root.render(createElement(WeatherCardWidget, { title: "Preview weather", entity_id: "weather.preview", height: 300,
+      show_planes: true, planes_entity_id: sensorId, sky_motion: "on" })));
+    await advance(3000);
+    const label = host.querySelector<HTMLElement>("[data-weather-plane-label]")!;
+    const plane = nodes()[0] as HTMLElement;
+    expect(label).not.toBeNull(); expect(plane).toBeDefined();
+    await act(async () => {
+      for (const node of [label, plane]) {
+        const pair = animations.filter(a => a.node === node);
+        const motion = pair.find(a => "transform" in a.frames[0])!;
+        const opacity = pair.find(a => "opacity" in a.frames[0])!;
+        for (const a of pair) { a.animation.currentTime = Number(a.options.duration); Object.assign(a.animation, { playState: "finished" }); }
+        motion.animation.onfinish?.call(motion.animation, {} as AnimationPlaybackEvent);
+        if (node.isConnected) {
+          expect(opacity.frames.at(-1)?.opacity).toBe(0); expect(opacity.options.fill).toBe("forwards");
+          expect(opacity.animation.cancel).not.toHaveBeenCalled(); expect(motion.animation.cancel).not.toHaveBeenCalled();
+        }
+      }
+    });
+    expect(nodes()).toHaveLength(0); expect(host.querySelector("[data-weather-plane-label]")).toBeNull();
+    expect(animations.every(a => a.animation.playState === "idle")).toBe(true);
+  });
+  it("fades both the visible plane and its label during a long edit pause", async () => {
+    await act(async () => root.render(createElement(WeatherCardWidget, { title: "Preview weather", entity_id: "weather.preview", height: 300,
+      show_planes: true, planes_entity_id: sensorId, sky_motion: "on" })));
+    await advance(3000);
+    await act(async () => { document.documentElement.setAttribute("data-dashboard-edit", "true"); }); await advance(5001);
+    const exits = animations.filter(a => a.options.duration === 300);
+    expect(exits).toHaveLength(2); expect(exits.every(a => a.animation.playState === "running")).toBe(true);
+    await act(async () => {
+      for (const exit of exits.toReversed()) {
+        exit.animation.currentTime = 300; Object.assign(exit.animation, { playState: "finished" });
+        exit.animation.onfinish?.call(exit.animation, {} as AnimationPlaybackEvent);
+        if (exit.node.isConnected) { expect(exit.animation.cancel).not.toHaveBeenCalled(); expect(exit.frames.at(-1)?.opacity).toBe(0); }
+      }
+    });
+    expect(nodes()).toHaveLength(0); expect(host.querySelector("[data-weather-plane-label]")).toBeNull();
+  });
+  it.each([300, 160])("shares the particle mask only on the plane layer at height %s", async height => {
+    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockReturnValue({ width: 320, height, left: 0, top: 0, right: 320, bottom: height, x: 0, y: 0, toJSON() {} });
+    await act(async () => root.render(createElement(WeatherCardWidget, { title: "Preview weather", entity_id: "weather.preview", height,
+      show_planes: true, planes_entity_id: sensorId, sky_motion: "on", skyPreview: { time: 0, planesAt: 8 } })));
+    const layer = host.querySelector<HTMLElement>(".weather-planes")!;
+    expect(layer.style.maskImage).toBe(SKY_CANVAS_MASK); expect(layer.style.maskComposite).toBe("intersect");
+    const label = host.querySelector<HTMLElement>("[data-weather-plane-label]");
+    if (label) { expect(label.closest(".weather-planes")).toBeNull(); expect(label.style.maskImage).toBe(""); }
+    const trailWidth = parseFloat(host.querySelector<HTMLElement>(".weather-plane-contrail")!.style.width);
+    expect(trailWidth).toBeCloseTo(Math.min(.42 * 320, 140) * (1 - 27000 / 33000 * .35));
+  });
+  it.each([true, false])("does not re-render the widget on unrelated HA changes (auto=%s)", async automatic => {
+    const commits = vi.fn();
+    await act(async () => root.render(createElement(Profiler, { id: "weather", onRender: commits }, createElement(WeatherCardWidget, {
+      title: "Preview weather", entity_id: "weather.preview", height: 300, sky_motion: "on",
+      ...(automatic ? {} : { show_planes: true, planes_entity_id: sensorId }), skyPreview: { time: 0, planesAt: 8 },
+    }))));
+    expect(nodes()).toHaveLength(1); commits.mockClear();
+    await act(async () => { useEntityStateStore.getState().updateEntityState("light.fictional", { state: "on", attributes: {} }); });
+    expect(commits).not.toHaveBeenCalled();
+    if (automatic) {
+      await act(async () => { useEntityStateStore.getState().updateEntityState(sensorId + "_2", { state: "0", attributes: { flights: [] } }); });
+      expect(commits).toHaveBeenCalled(); expect(nodes()).toHaveLength(0);
+    }
   });
   it("assigns unique gradient identifiers to multiple SVG instances", async () => {
     await render({ frozen: 8 });

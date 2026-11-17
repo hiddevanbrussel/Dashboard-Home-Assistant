@@ -6911,8 +6911,6 @@ aria-label={t("editPanel.removeCondition")}
                     )}
                     {editTab === "weergave" && (
                       <section className="mt-4 flex flex-col gap-2">
-                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("editPanel.weatherPlanes.title")}</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.weatherPlanes.description")}</p>
                         <button type="button" role="switch" aria-checked={editForm.show_planes === true}
                           aria-label={t("editPanel.weatherPlanes.toggleAria")}
                           onClick={() => setEditForm(prev => ({ ...prev, show_planes: !prev.show_planes }))}
@@ -6922,6 +6920,7 @@ aria-label={t("editPanel.removeCondition")}
                             <span className={cn("block h-4 w-4 rounded-full bg-white", editForm.show_planes && "translate-x-5")} />
                           </span>
                         </button>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.weatherPlanes.description")}</p>
                         <EntitySelectWithSearch label={t("editPanel.weatherPlanes.entity")} entities={planeSensors(entities)}
                           value={editForm.planes_entity_id ?? ""}
                           onChange={value => setEditForm(prev => ({ ...prev, planes_entity_id: value, show_planes: !!value }))}

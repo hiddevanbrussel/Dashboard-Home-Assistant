@@ -2,13 +2,14 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-import { createPlanePlanner, parseFlights, planeAllowed, planeContrail, planeGeometry, planeLabel, planeLabelAllowed, planePalette, type Flight, type PlanePolicy } from "@/lib/weather-planes";
+import { createPlanePlanner, parseFlights, planeAllowed, planeContrail, planeContrailLength, planeGeometry, planeLabel, planeLabelAllowed, planePalette, type Flight, type PlanePolicy } from "@/lib/weather-planes";
 import type { SkyPhase, SkyTheme } from "@/lib/weather-sky";
+import { SKY_CANVAS_MASK } from "./weather-sky-canvas";
 import { PlaneBreed } from "./planes/plane-breed";
 import { PlaneKlein } from "./planes/plane-klein";
 import { PlaneSmal } from "./planes/plane-smal";
 
-type Crossing = { flight: Flight; geometry: ReturnType<typeof planeGeometry>; started: number; fading?: number };
+type Crossing = { flight: Flight; geometry: ReturnType<typeof planeGeometry>; started: number; fading?: number; fadeDuration?: number };
 export type PlaneLabelState = {
   crossing: Crossing; paused: boolean; phase: SkyPhase; theme: SkyTheme;
   width: number; height: number; frozen?: number;
@@ -27,13 +28,13 @@ export function WeatherPlanes(props: Props) {
     if (props.frozen != null) return;
     const instance = createPlanePlanner(clock, {
       start: flight => setCrossings(old => [...old, { flight, started: Date.now(), geometry: planeGeometry(flight,
-        latest.current.width, latest.current.height, latest.current.compact, old[0]?.geometry.lane) }]),
-      remove: (id, fade) => setCrossings(old => fade ? old.map(c => c.flight.id === id ? { ...c, fading: Date.now() } : c) : old.filter(c => c.flight.id !== id)),
+        latest.current.width, latest.current.height, latest.current.compact) }]),
+      remove: (id, fade, fadeDuration) => setCrossings(old => fade ? old.map(c => c.flight.id === id ? { ...c, fading: Date.now(), fadeDuration } : c) : old.filter(c => c.flight.id !== id)),
     });
     planner.current = instance;
     return () => { instance.dispose(); planner.current = null; setCrossings([]); };
   }, [props.sensorId, props.frozen]);
-  useEffect(() => { planner.current?.updatePolicy({ calm: props.calm, mode: props.mode, performanceStep: props.performanceStep, paused: props.paused, compact: props.compact, stacked: props.stacked, condition: props.condition, precipitation: props.precipitation }); }, [props.calm, props.mode, props.performanceStep, props.paused, props.compact, props.stacked, props.condition, props.precipitation, props.sensorId, props.frozen]); // props contains render-only data too
+  useEffect(() => { planner.current?.updatePolicy({ calm: props.calm, mode: props.mode, performanceStep: props.performanceStep, paused: props.paused, visible: props.visible, compact: props.compact, stacked: props.stacked, condition: props.condition, precipitation: props.precipitation }); }, [props.calm, props.mode, props.performanceStep, props.paused, props.visible, props.compact, props.stacked, props.condition, props.precipitation, props.sensorId, props.frozen]); // props contains render-only data too
   useEffect(() => { planner.current?.updateSensor(sensor); }, [sensor, props.sensorId, props.frozen]);
   const frozenFlight = props.frozen != null ? parseFlights(sensor).find(f => planeAllowed(f, props.condition, props.precipitation)) : undefined;
   const frozenCrossing = frozenFlight ? { flight: frozenFlight, geometry: planeGeometry(frozenFlight, props.width, props.height, props.compact), started: 0 } : undefined;
@@ -48,7 +49,8 @@ export function WeatherPlanes(props: Props) {
   }, [props.mode, props.performanceStep, crossings, frozenFlight?.id, props.width, props.height, props.stacked, props.paused, props.phase, props.theme, props.frozen, props.onLabel]);
   const finish = (id: string) => { setCrossings(old => old.filter(c => c.flight.id !== id)); planner.current?.finish(id); };
   if (!shown.length) return null;
-  return <div aria-hidden="true" className="weather-planes pointer-events-none absolute inset-0 z-[1]">
+  return <div aria-hidden="true" className="weather-planes pointer-events-none absolute inset-0 z-[1]"
+    style={{ maskImage: SKY_CANVAS_MASK, WebkitMaskImage: SKY_CANVAS_MASK, maskComposite: "intersect", WebkitMaskComposite: "source-in" }}>
     {shown.map(c => <PlaneSprite key={c.flight.id} crossing={c} {...props} finish={finish} />)}
   </div>;
 }
@@ -56,6 +58,7 @@ export function WeatherPlanes(props: Props) {
 function useCrossingAnimation(ref: React.RefObject<HTMLElement | null>, crossing: Crossing, paused: boolean, frozen: number | undefined,
   transforms: Keyframe[] | ((node: HTMLElement) => Keyframe[]), opacity: Keyframe[], finish?: () => void) {
   const animations = useRef<Animation[]>([]);
+  const exitAnimation = useRef<Animation | null>(null);
   const finished = useRef(finish); finished.current = finish;
   useLayoutEffect(() => {
     const node = ref.current;
@@ -66,22 +69,29 @@ function useCrossingAnimation(ref: React.RefObject<HTMLElement | null>, crossing
     animations.current = [motion, fade];
     const time = frozen != null ? frozen * 1000 : Math.max(0, Date.now() - crossing.started);
     for (const animation of animations.current) { animation.currentTime = time; if (paused || frozen != null) animation.pause(); }
-    motion.onfinish = () => { motion.cancel(); fade.cancel(); finished.current?.(); };
+    motion.onfinish = () => { finished.current?.(); };
     return () => { motion.onfinish = null; motion.cancel(); fade.cancel(); animations.current = []; };
   // Delays are sampled only on creation; pause changes retain WAAPI currentTime.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [crossing.flight.id, crossing.geometry, frozen]);
-  useLayoutEffect(() => { for (const a of animations.current) { if (paused || frozen != null) a.pause(); else a.play(); } }, [paused, frozen]);
+  useLayoutEffect(() => {
+    const terminal = crossing.fadeDuration === 300;
+    for (const a of animations.current) { if (paused || frozen != null || terminal) a.pause(); else a.play(); }
+    const exit = exitAnimation.current;
+    if (exit) { if ((paused || frozen != null) && !terminal) exit.pause(); else exit.play(); }
+  }, [paused, frozen, crossing.fadeDuration]);
   useLayoutEffect(() => {
     if (crossing.fading == null || !ref.current?.animate) return;
     const opacity = getComputedStyle(ref.current).opacity;
-    const fade = ref.current.animate([{ opacity }, { opacity: 0 }], { duration: 1500, fill: "forwards" });
-    animations.current.push(fade);
-    if (paused || frozen != null) fade.pause();
-    fade.onfinish = () => { fade.cancel(); finished.current?.(); };
-    return () => { fade.onfinish = null; fade.cancel(); };
+    const duration = crossing.fadeDuration ?? 1500;
+    const fade = ref.current.animate([{ opacity }, { opacity: 0 }], { duration, fill: "forwards" });
+    exitAnimation.current = fade;
+    // A visible long-pause exit must finish even while the crossing stays paused.
+    if ((paused || frozen != null) && duration !== 300) fade.pause();
+    fade.onfinish = () => { finished.current?.(); };
+    return () => { fade.onfinish = null; fade.cancel(); if (exitAnimation.current === fade) exitAnimation.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [crossing.fading, ref]);
+  }, [crossing.fading, crossing.fadeDuration, ref]);
 }
 function PlaneSprite({ crossing, finish, ...props }: Props & { crossing: Crossing; finish: (id: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -97,7 +107,7 @@ function PlaneSprite({ crossing, finish, ...props }: Props & { crossing: Crossin
   return <div ref={ref} aria-hidden="true" data-weather-plane={crossing.flight.id} className="weather-plane pointer-events-none absolute left-0 top-0"
     style={{ width: g.length, height: g.length * .3, "--plane-top": palette.top, "--plane-body": palette.top,
       "--plane-under": palette.under, "--plane-far": palette.under } as CSSProperties}>
-    {planeContrail(crossing.flight, props.condition, props.precipitation, props.phase) && <span className="weather-plane-contrail pointer-events-none" style={{ width: props.width * .42, background: `linear-gradient(to left, ${palette.trail}, transparent)` }} />}
+    {planeContrail(crossing.flight, props.condition, props.precipitation, props.phase) && <span className="weather-plane-contrail pointer-events-none" style={{ width: planeContrailLength(props.width, g.scale), background: `linear-gradient(to left, ${palette.trail}, transparent)` }} />}
     <span className="weather-plane-silhouette" style={{ opacity: palette.opacity }}>
       {g.silhouette === "breed" ? <PlaneBreed /> : g.silhouette === "klein" ? <PlaneKlein /> : <PlaneSmal />}
     </span>
@@ -144,5 +154,6 @@ export function WeatherPlaneLabel({ state }: { state: PlaneLabelState }) {
       { opacity: 1, offset: off, easing: "ease-in" }, { opacity: 0, offset: end }, { opacity: 0, offset: 1 }]);
   return <div ref={ref} aria-hidden="true" data-weather-plane-label className="weather-plane-label pointer-events-none absolute left-0 top-0 z-[11]"
     style={{ maxWidth: width * .48 - 24, color: state.theme === "dark" ? "rgba(255,255,255,.8)" : "#435066",
+      borderColor: state.theme === "dark" ? "rgba(255,255,255,.12)" : "rgba(27,36,55,.08)",
       backgroundColor: state.theme === "dark" ? "rgba(18,24,38,.86)" : "rgba(247,250,253,.90)" }}>{label}</div>;
 }

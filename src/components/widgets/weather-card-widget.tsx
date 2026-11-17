@@ -138,8 +138,11 @@ export function WeatherCardWidget({
     air_quality_entity_id ? s.getState(air_quality_entity_id) : undefined
   );
 
-  const planeSensors = useEntityStateStore(s => s.states);
-  const planeOptions = resolvePlaneOptions({ show_planes, planes_entity_id }, Object.values(planeSensors));
+  const autoLinkPlanes = show_planes === undefined && planes_entity_id === undefined;
+  const autoPlaneOptions = useEntityStateStore(s => autoLinkPlanes
+    ? JSON.stringify(resolvePlaneOptions({}, Object.values(s.states))) : "");
+  const planeOptions = autoLinkPlanes ? JSON.parse(autoPlaneOptions) as ReturnType<typeof resolvePlaneOptions>
+    : resolvePlaneOptions({ show_planes, planes_entity_id }, []);
   const [planeLabelState, setPlaneLabelState] = useState<PlaneLabelState | null>(null);
   const [stackHidden, setStackHidden] = useState(false);
   const condition = (entity?.state as string) ?? "";
