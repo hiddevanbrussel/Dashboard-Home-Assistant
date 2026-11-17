@@ -16,6 +16,8 @@ export type WeatherCardDisplayOptions = {
   show_air_quality?: boolean;
   show_precipitation?: boolean;
   sky_motion?: SkyMotion;
+  show_planes?: boolean;
+  planes_entity_id?: string;
 };
 
 export function isWeatherShowFlag(value: unknown, defaultValue = true): boolean {

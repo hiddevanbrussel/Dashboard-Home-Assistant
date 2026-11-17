@@ -13,6 +13,7 @@ import { resolveSkyMode } from "@/lib/sky/sky-motion";
 import { cn } from "@/lib/utils";
 
 const ENTITY_ID = "weather.preview";
+const PLANE_ID = "sensor.flightradar24_current_in_area";
 const AQI_ID = "sensor.aqi_preview";
 const subscribeNoStats = () => () => {};
 
@@ -49,6 +50,9 @@ export default function WeatherCardPreviewPage() {
   const [bearing, setBearing] = useState(270);
   const [freezeTime, setFreezeTime] = useState<number | undefined>();
   const [seed, setSeed] = useState(1);
+  const [planesEnabled, setPlanesEnabled] = useState(false);
+  const [showPlanes, setShowPlanes] = useState(true);
+  const [planesAt, setPlanesAt] = useState<number | undefined>();
   const [debug, setDebug] = useState(false);
   const reducedMotion = useSkyReducedMotion();
   const stats = useSyncExternalStore(debug ? subscribeSkyFrameStats : subscribeNoStats,
@@ -80,6 +84,9 @@ export default function WeatherCardPreviewPage() {
     setBearing(numberParam("bearing", 270));
     setSeed(numberParam("seed", 1));
     if (query.has("t")) setFreezeTime(Math.max(0, Math.min(3600, numberParam("t", 0))));
+    setPlanesEnabled(query.get("planes") === "1");
+    setShowPlanes(query.get("showPlanes") !== "0");
+    if (query.has("planesAt")) setPlanesAt(Math.max(0, numberParam("planesAt", 0)));
     setDebug(query.get("debug") === "1");
     const theme = query.get("theme");
     if (theme === "light" || theme === "dark") {
@@ -136,13 +143,17 @@ export default function WeatherCardPreviewPage() {
           ],
         },
       },
+      ...(planesEnabled ? [{ entity_id: PLANE_ID, state: "2", attributes: { flights: [
+        { id: "fictional-alpha", callsign: "FKE1234", aircraft_code: "B738", altitude: 30000, heading: 90, ground_speed: 420, on_ground: 0 },
+        { id: "fictional-beta", callsign: "FKE5678", aircraft_code: "A20N", altitude: 28000, heading: 270, ground_speed: 400, on_ground: 0 },
+      ] } }] : []),
       {
         entity_id: AQI_ID,
         state: "goed",
         attributes: { friendly_name: "Luchtkwaliteit" },
       },
     ],
-    [condition, today, sun, wind, bearing, precip]
+    [condition, today, sun, wind, bearing, precip, planesEnabled]
   );
 
   useEffect(() => {
@@ -267,7 +278,9 @@ export default function WeatherCardPreviewPage() {
               show_air_quality={showAqi}
               show_precipitation={showPrecip}
               sky_motion={motion}
-              skyPreview={{ time: freezeTime, seed }}
+              skyPreview={{ time: freezeTime, seed, planesAt }}
+              show_planes={planesEnabled && showPlanes}
+              planes_entity_id={PLANE_ID}
               height={dimensions.height}
               air_quality_entity_id={AQI_ID}
               size="md"

@@ -88,6 +88,7 @@ import {
   FloatingTrashCard,
 } from "@/components/widgets";
 import type { WidgetConfig as BaseWidgetConfig } from "@/stores/onboarding-store";
+import { planeCandidates, planeSensors, resolvePlaneOptions } from "@/lib/weather-planes";
 import type { WeatherCardDisplayOptions } from "@/lib/weather-card";
 import { normalizeSkyMotion, type SkyMotion } from "@/lib/weather-sky";
 import { useSkyReducedMotion } from "@/components/weather/weather-sky";
@@ -505,6 +506,8 @@ function WidgetByType({
   show_air_quality,
   show_precipitation,
   sky_motion,
+  show_planes,
+  planes_entity_id,
   air_quality_entity_id,
   show_team_names,
   show_form,
@@ -561,6 +564,8 @@ function WidgetByType({
   show_air_quality?: boolean;
   show_precipitation?: boolean;
   sky_motion?: SkyMotion;
+  show_planes?: boolean;
+  planes_entity_id?: string;
   air_quality_entity_id?: string;
   show_team_names?: boolean;
   show_form?: boolean;
@@ -738,6 +743,8 @@ function WidgetByType({
           show_air_quality={show_air_quality}
           show_precipitation={show_precipitation}
           sky_motion={sky_motion}
+          show_planes={show_planes}
+          planes_entity_id={planes_entity_id}
           air_quality_entity_id={air_quality_entity_id}
           size={sizeProp}
         />
@@ -1003,6 +1010,8 @@ export default function DashboardEditPage() {
     show_air_quality?: boolean;
     show_precipitation?: boolean;
     sky_motion?: SkyMotion;
+    show_planes?: boolean;
+    planes_entity_id?: string;
     air_quality_entity_id?: string;
     show_state?: boolean;
     script_ids?: string[];
@@ -1243,6 +1252,7 @@ export default function DashboardEditPage() {
           show_air_quality: child.show_air_quality === true,
           show_precipitation: child.show_precipitation !== false,
           sky_motion: normalizeSkyMotion(child.sky_motion),
+          ...resolvePlaneOptions(child, Object.values(useEntityStateStore.getState().states)),
           air_quality_entity_id: child.air_quality_entity_id ?? "",
           script_ids: child.script_ids ?? [],
           script_names: child.script_names ?? {},
@@ -1351,6 +1361,7 @@ export default function DashboardEditPage() {
         show_air_quality: editingWidget.show_air_quality === true,
         show_precipitation: editingWidget.show_precipitation !== false,
         sky_motion: normalizeSkyMotion(editingWidget.sky_motion),
+        ...resolvePlaneOptions(editingWidget, Object.values(useEntityStateStore.getState().states)),
         air_quality_entity_id: editingWidget.air_quality_entity_id ?? "",
         script_ids: editingWidget.script_ids ?? [],
         script_names: editingWidget.script_names ?? {},
@@ -2934,6 +2945,8 @@ export default function DashboardEditPage() {
                       show_air_quality={w.show_air_quality}
                       show_precipitation={w.show_precipitation}
                       sky_motion={w.sky_motion}
+                      show_planes={w.show_planes}
+                      planes_entity_id={w.planes_entity_id}
                       air_quality_entity_id={w.air_quality_entity_id}
                       script_ids={w.script_ids}
                       script_names={w.script_names}
@@ -3327,6 +3340,8 @@ export default function DashboardEditPage() {
               show_air_quality={firstWeather.show_air_quality}
               show_precipitation={firstWeather.show_precipitation}
               sky_motion={firstWeather.sky_motion}
+              show_planes={firstWeather.show_planes}
+              planes_entity_id={firstWeather.planes_entity_id}
               air_quality_entity_id={firstWeather.air_quality_entity_id}
               width={firstWeather.width}
               height={firstWeather.height}
@@ -6894,6 +6909,30 @@ aria-label={t("editPanel.removeCondition")}
                         </p>
                       </section>
                     )}
+                    {editTab === "weergave" && (
+                      <section className="mt-4 flex flex-col gap-2">
+                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("editPanel.weatherPlanes.title")}</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.weatherPlanes.description")}</p>
+                        <button type="button" role="switch" aria-checked={editForm.show_planes === true}
+                          aria-label={t("editPanel.weatherPlanes.toggleAria")}
+                          onClick={() => setEditForm(prev => ({ ...prev, show_planes: !prev.show_planes }))}
+                          className="flex min-h-[44px] items-center justify-between gap-3 rounded-lg px-2 text-sm dark:text-gray-200">
+                          {t("editPanel.weatherPlanes.title")}
+                          <span aria-hidden="true" className={cn("h-6 w-11 rounded-full p-1", editForm.show_planes ? "bg-[#4700B5]" : "bg-gray-300 dark:bg-gray-600")}>
+                            <span className={cn("block h-4 w-4 rounded-full bg-white", editForm.show_planes && "translate-x-5")} />
+                          </span>
+                        </button>
+                        <EntitySelectWithSearch label={t("editPanel.weatherPlanes.entity")} entities={planeSensors(entities)}
+                          value={editForm.planes_entity_id ?? ""}
+                          onChange={value => setEditForm(prev => ({ ...prev, planes_entity_id: value, show_planes: !!value }))}
+                          inputClassName="min-h-[44px]" selectClassName="min-h-[44px] w-full rounded-lg border border-gray-200 bg-white px-3 text-sm dark:border-white/10 dark:bg-gray-900 dark:text-gray-200" />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.weatherPlanes.entityHint")}</p>
+                        {planeCandidates(entities).length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400">{t("editPanel.weatherPlanes.noSensor")}</p>}
+                        {(reducedSkyMotion || normalizeSkyMotion(editForm.sky_motion) !== "on") && <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {t(reducedSkyMotion ? "editPanel.weatherPlanes.reducedMotionHint" : normalizeSkyMotion(editForm.sky_motion) === "off" ? "editPanel.weatherPlanes.offHint" : "editPanel.weatherPlanes.calmHint")}
+                        </p>}
+                      </section>
+                    )}
                   </>
                 )}
                 {editFormType === "chore_card" && (
@@ -7425,7 +7464,7 @@ aria-label={t("editPanel.removeCondition")}
                         child={{
                           ...editingStackChild,
                           ...stripSmartStackChildSize(
-                            buildSmartStackChildUpdates(editingStackChild.type, editForm)
+                            { ...buildSmartStackChildUpdates(editingStackChild.type, editForm), ...(editingStackChild.type === "weather_card" && { show_planes: editForm.show_planes === true, planes_entity_id: editForm.planes_entity_id || undefined }) }
                           ),
                           id: editingStackChild.id,
                           type: editingStackChild.type,
@@ -7592,7 +7631,7 @@ aria-label={t("editPanel.removeCondition")}
                             const child = (editingWidget.children ?? []).find((c) => c.id === editingGroupChildId);
                             if (!child) return;
                             const updates = stripSmartStackChildSize(
-                              buildSmartStackChildUpdates(child.type, editForm)
+                              { ...buildSmartStackChildUpdates(child.type, editForm), ...(child.type === "weather_card" && { show_planes: editForm.show_planes === true, planes_entity_id: editForm.planes_entity_id || undefined }) }
                             );
                             const nextChildren = (editingWidget.children ?? []).map((c) =>
                               c.id === editingGroupChildId
@@ -7853,6 +7892,8 @@ aria-label={t("editPanel.removeCondition")}
                           show_air_quality: editForm.show_air_quality === true,
                           show_precipitation: editForm.show_precipitation !== false,
                           sky_motion: normalizeSkyMotion(editForm.sky_motion),
+                          show_planes: editForm.show_planes === true,
+                          planes_entity_id: editForm.planes_entity_id || undefined,
                           air_quality_entity_id: editForm.air_quality_entity_id || undefined,
                           width: editForm.width != null && editForm.width > 0 ? clampWeatherCardWidth(editForm.width) : undefined,
                           height: editForm.height != null && editForm.height > 0 ? clampWeatherCardHeight(editForm.height) : undefined,

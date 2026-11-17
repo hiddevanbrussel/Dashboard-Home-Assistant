@@ -1050,3 +1050,14 @@ html[data-glass-density="off"] .energy-day-band {
   50% { opacity: calc(var(--sky-flash-peak) * .3); }
 }
 .weather-sky[data-sky-paused="true"] .sky-motion { animation-play-state: paused; }
+
+/* Weather planes stay within the existing tile clip; only compositor motion. */
+.weather-plane, .weather-plane-label { pointer-events: none; will-change: transform, opacity; }
+.weather-plane-silhouette, .weather-plane-art, .weather-plane-art svg { display: block; width: 100%; height: 100%; }
+.weather-plane-contrail { position: absolute; right: 95%; top: 48%; height: 2px; }
+.weather-plane-light { position: absolute; width: 2.5px; height: 2.5px; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 4px 1px currentColor; color: inherit; }
+.weather-plane-beacon { animation: weather-plane-beacon 1s linear infinite; }
+.weather-plane-strobe { background: white; color: white; animation: weather-plane-strobe 1.2s linear infinite; }
+@keyframes weather-plane-beacon { 0%, 9.99% { opacity: var(--plane-beacon-peak, 1); } 10%, 100% { opacity: 0; } }
+@keyframes weather-plane-strobe { 0%, 4.99%, 10%, 14.99% { opacity: 1; } 5%, 9.99%, 15%, 100% { opacity: 0; } }
+.weather-plane-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border: 1px solid rgba(130,145,165,.25); border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 600; line-height: 16px; }

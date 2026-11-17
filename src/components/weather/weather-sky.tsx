@@ -15,6 +15,7 @@ import {
   skyClouds, skyFogBands, skyGlow, skyStars, weatherEffects, weatherSkyLook,
   type SkySet, type SkyTheme,
 } from "@/lib/weather-sky";
+import { WeatherPlanes, type PlaneLabelState } from "./weather-planes";
 import { WeatherSkyCanvas } from "./weather-sky-canvas";
 
 const VEIL_MASK = "linear-gradient(100deg, #000 0%, #000 max(50%, 200px), rgba(0,0,0,.86) 60%, rgba(0,0,0,.6) 70%, rgba(0,0,0,.36) 80%, rgba(0,0,0,.2) 90%, rgba(0,0,0,.14) 100%)";
@@ -105,9 +106,10 @@ function Veil({ scene }: { scene: Scene }) {
 }
 
 /** All motion remains inside the weather tile. Static is the unchanged run B sky. */
-export function WeatherSky({ condition, large, motion, precipitation = 0, windKmh = 0, bearing = 0, skyPaused = false, preview }: {
+export function WeatherSky({ condition, large, motion, precipitation = 0, windKmh = 0, bearing = 0, skyPaused = false, preview, show_planes, planes_entity_id, inSmartStack = false, onPlaneLabel }: {
   condition: string; large: boolean; motion?: unknown; precipitation?: number; windKmh?: number;
-  bearing?: number; skyPaused?: boolean; preview?: { time?: number; seed?: number };
+  bearing?: number; skyPaused?: boolean; preview?: { time?: number; seed?: number; planesAt?: number };
+  show_planes?: boolean; planes_entity_id?: string; inSmartStack?: boolean; onPlaneLabel?: (state: PlaneLabelState | null) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const sun = useEntityStateStore((s) => s.getState(DEFAULT_SUN_ENTITY_ID));
@@ -154,6 +156,7 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
   }, []);
   const mode = ready ? resolveSkyMode({ motion, reducedMotion, performanceStep }) : "static";
   const animated = mode !== "static";
+  useEffect(() => { if (!animated || !show_planes || !planes_entity_id) onPlaneLabel?.(null); }, [animated, show_planes, planes_entity_id, onPlaneLabel]);
   const modeRef = useRef(animated);
   modeRef.current = animated;
   const frozenTime = preview?.time;
@@ -264,6 +267,12 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
       <div key={scene.key} className={outgoing && !fullScene ? "weather-sky-incoming absolute inset-0" : "absolute inset-0"}>
         <Details scene={scene} elapsedAtMount={elapsedForLayers} />
       </div>
+      {show_planes && planes_entity_id && dimensions.width > 0 && (
+        <WeatherPlanes key={planes_entity_id} sensorId={planes_entity_id} calm={normalizeSkyMotion(motion) === "calm"} mode={mode} performanceStep={performanceStep}
+          paused={paused} compact={dimensions.height < 184} stacked={inSmartStack} condition={condition} precipitation={precipitation}
+          width={dimensions.width} height={dimensions.height} phase={phase} theme={theme} frozen={frozenTime != null ? preview?.planesAt ?? frozenTime : undefined}
+          onLabel={onPlaneLabel} />
+      )}
       {animated && plan.total > 0 && dimensions.width > 0 && dimensions.height > 0 && (
         <WeatherSkyCanvas plan={plan} theme={theme} dpr={dimensions.dpr} paused={paused}
           freezeTime={frozenTime} seed={preview?.seed} captureOnStop={captureOnStop} onSnapshot={captureSnapshot} />

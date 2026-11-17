@@ -11,6 +11,8 @@ import {
   Wind,
 } from "lucide-react";
 import { windSpeedKmh } from "@/lib/weather-sky";
+import { resolvePlaneOptions } from "@/lib/weather-planes";
+import { WeatherPlaneLabel, type PlaneLabelState } from "@/components/weather/weather-planes";
 import { WeatherSky } from "@/components/weather/weather-sky";
 import type { WeatherCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
@@ -113,6 +115,9 @@ export function WeatherCardWidget({
   show_air_quality = false,
   show_precipitation = true,
   sky_motion,
+  show_planes,
+  planes_entity_id,
+  inSmartStack = false,
   skyPaused,
   skyPreview,
   air_quality_entity_id,
@@ -133,6 +138,10 @@ export function WeatherCardWidget({
     air_quality_entity_id ? s.getState(air_quality_entity_id) : undefined
   );
 
+  const planeSensors = useEntityStateStore(s => s.states);
+  const planeOptions = resolvePlaneOptions({ show_planes, planes_entity_id }, Object.values(planeSensors));
+  const [planeLabelState, setPlaneLabelState] = useState<PlaneLabelState | null>(null);
+  const [stackHidden, setStackHidden] = useState(false);
   const condition = (entity?.state as string) ?? "";
   const temperature = parseAttrNumber(entity?.attributes?.temperature);
   const humidity = parseAttrNumber(entity?.attributes?.humidity);
@@ -170,6 +179,16 @@ export function WeatherCardWidget({
     return () => ro.disconnect();
   }, []);
   // Below 184px card height the metrics row drops out; everything else stays.
+  useEffect(() => {
+    if (!inSmartStack || !shellRef.current) return;
+    const node = shellRef.current;
+    const read = () => setStackHidden(!!node.closest('[aria-hidden="true"]'));
+    read();
+    const observer = new MutationObserver(read);
+    const stack = node.parentElement?.parentElement;
+    if (stack) observer.observe(stack, { subtree: true, attributes: true, attributeFilter: ["aria-hidden"] });
+    return () => observer.disconnect();
+  }, [inSmartStack]);
   const fitMetrics = weatherCardFitsMetrics(cardH);
 
   const [daily, setDaily] = useState<WeatherForecastItem[]>(() =>
@@ -266,7 +285,9 @@ export function WeatherCardWidget({
     >
       <WeatherSky condition={condition} large={fitMetrics && metrics.length > 0} motion={sky_motion}
         precipitation={precipMm} windKmh={windSpeedKmh(windSpeed ?? 0, windUnit)} bearing={windBearing ?? 0}
-        skyPaused={skyPaused} preview={skyPreview} />
+        skyPaused={skyPaused || stackHidden} preview={skyPreview} {...planeOptions} inSmartStack={inSmartStack} onPlaneLabel={setPlaneLabelState} />
+
+      {planeLabelState && <WeatherPlaneLabel state={planeLabelState} />}
 
       <div className="relative z-10 flex h-full min-h-0 flex-col px-5 pb-3.5 pt-4">
         <div className="flex items-start justify-between gap-2">
