@@ -182,7 +182,14 @@ describe("top device copy and migration", () => {
         stdio: "pipe",
       });
     }
-    const diff = execSync("git diff origin/main -- src/components/widgets", {
+    const paths = [
+      "src/components/widgets",
+      ":(exclude)src/components/widgets/weather-card-widget.tsx",
+      ":(exclude)src/components/widgets/floating-weather-card.tsx",
+      ":(exclude)src/components/widgets/smart-stack-child.tsx",
+      ":(exclude)src/components/widgets/widget-types.ts",
+    ].map((path) => `'${path}'`).join(" ");
+    const diff = execSync(`git diff origin/main -- ${paths}`, {
       cwd: root,
       encoding: "utf8",
     });

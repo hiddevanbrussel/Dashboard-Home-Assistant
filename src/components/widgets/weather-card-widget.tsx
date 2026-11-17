@@ -10,6 +10,7 @@ import {
   Umbrella,
   Wind,
 } from "lucide-react";
+import { WeatherSky } from "@/components/weather/weather-sky";
 import type { WeatherCardProps } from "./widget-types";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/lib/base-path";
@@ -110,6 +111,7 @@ export function WeatherCardWidget({
   show_humidity = true,
   show_air_quality = false,
   show_precipitation = true,
+  sky_motion,
   air_quality_entity_id,
   className,
   onMoreClick,
@@ -249,10 +251,8 @@ export function WeatherCardWidget({
     <div
       ref={shellRef}
       className={cn(
-        "relative flex h-full min-h-[140px] w-full flex-col overflow-hidden rounded-[1.75rem]",
-        "bg-[linear-gradient(165deg,#F7FAFD_0%,#EEF4FA_42%,#E4EDF6_100%)]",
+        "relative isolate flex h-full min-h-[140px] w-full flex-col overflow-hidden rounded-[1.75rem]",
         "shadow-[0_14px_40px_rgba(15,23,42,0.08)]",
-        "dark:bg-[linear-gradient(165deg,rgba(36,48,68,0.92)_0%,rgba(22,30,46,0.94)_100%)]",
         "dark:shadow-[0_14px_40px_rgba(0,0,0,0.4)]",
         "text-[#1B2437] dark:text-white",
         size === "sm" && "text-sm",
@@ -261,23 +261,7 @@ export function WeatherCardWidget({
         className
       )}
     >
-      {/* Soft cloud atmosphere (matches mockup wash) */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_78%_28%,rgba(255,255,255,0.85)_0%,rgba(255,255,255,0)_62%)] dark:bg-[radial-gradient(90%_70%_at_78%_28%,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_62%)]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-6 top-2 h-[72%] w-[58%] opacity-[0.22] dark:opacity-[0.12]"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={withBasePath(weatherIconSrc("exceptional"))}
-          alt=""
-          draggable={false}
-          className="h-full w-full scale-125 object-contain blur-[1px]"
-        />
-      </div>
+      <WeatherSky condition={condition} large={fitMetrics && metrics.length > 0} motion={sky_motion} />
 
       <div className="relative z-10 flex h-full min-h-0 flex-col px-5 pb-3.5 pt-4">
         <div className="flex items-start justify-between gap-2">
@@ -328,11 +312,11 @@ export function WeatherCardWidget({
             {showHighLow ? (
               <div className="mt-2 flex items-center gap-3.5 text-[0.95rem] font-medium text-[#435066] dark:text-white/80">
                 <span className="inline-flex items-center gap-0.5">
-                  <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                  <ArrowUp className="h-3.5 w-3.5 opacity-[0.85]" aria-hidden />
                   {formatTemp(high)}
                 </span>
                 <span className="inline-flex items-center gap-0.5">
-                  <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                  <ArrowDown className="h-3.5 w-3.5 opacity-[0.85]" aria-hidden />
                   {formatTemp(low)}
                 </span>
               </div>

@@ -1,5 +1,7 @@
 /** Smart Stack (slimme stapel): slideshow of nested dashboard cards. */
 
+import { normalizeSkyMotion, type SkyMotion } from "@/lib/weather-sky";
+import type { WeatherCardDisplayOptions } from "@/lib/weather-card";
 import { normalizeClimateDisplayMode } from "@/lib/climate-card";
 import { isCalendarShowUpcoming } from "@/lib/calendar-card";
 import { normalizeNutsAccent, normalizeNutsPeriod } from "@/lib/nuts-card";
@@ -110,6 +112,7 @@ export type SmartStackChildEditFields = {
   show_humidity?: boolean;
   show_air_quality?: boolean;
   show_precipitation?: boolean;
+  sky_motion?: SkyMotion;
   air_quality_entity_id?: string;
   show_state?: boolean;
   show_title?: boolean;
@@ -146,7 +149,7 @@ export type SmartStackChildEditFields = {
 export function buildSmartStackChildUpdates(
   childType: string,
   form: SmartStackChildEditFields
-): Partial<WidgetConfig> {
+): Partial<WidgetConfig> & WeatherCardDisplayOptions {
   if (!isSmartStackChildType(childType)) {
     return {
       title: form.title ?? "",
@@ -187,6 +190,7 @@ export function buildSmartStackChildUpdates(
         show_humidity: form.show_humidity !== false,
         show_air_quality: form.show_air_quality === true,
         show_precipitation: form.show_precipitation !== false,
+        ...(form.sky_motion !== undefined && { sky_motion: normalizeSkyMotion(form.sky_motion) }),
         air_quality_entity_id: form.air_quality_entity_id || undefined,
       };
     case "vacuum_card_2":

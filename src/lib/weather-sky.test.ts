@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as sky from "./weather-sky";
 import type { SkyTheme, SkyLook, SkyPhase } from "./weather-sky";
+import { buildSmartStackChildUpdates } from "./smart-stack";
 
 // Independent design oracle from the run A specification.
 const ORACLE = `
@@ -70,6 +71,111 @@ describe("OKLab sky derivation", () => {
     expect(sky.toNight("#7DB9EE", "light")).toBe("#375482");
     expect(() => sky.hexToRgb("red")).toThrow();
     expect(sky.skyGradient(sky.deriveSky("sunny", "day", "light"))).toBe("linear-gradient(180deg, #7DB9EE 0%, #B4DAF7 55%, #E6F3FC 100%)");
+  });
+});
+
+describe("static sky helpers (run B)", () => {
+  it("preserves each motion choice in smart-stack weather form updates", () => {
+    for (const motion of ["on", "calm", "off"] as const) {
+      expect(buildSmartStackChildUpdates("weather_card", { sky_motion: motion }).sky_motion).toBe(motion);
+    }
+    const legacy = buildSmartStackChildUpdates("weather_card", {});
+    expect(legacy).not.toHaveProperty("sky_motion");
+    expect(sky.normalizeSkyMotion(legacy.sky_motion)).toBe("on");
+  });
+  it.each([undefined, null, "", "invalid", "ON", false, 0, {}, []])("defaults invalid motion %s to on", (value) => {
+    expect(sky.normalizeSkyMotion(value)).toBe("on");
+  });
+  it.each(["on", "calm", "off"] as const)("preserves motion %s", (value) => {
+    expect(sky.normalizeSkyMotion(value)).toBe(value);
+  });
+  it.each([
+    ["sunny", 1, 0.55], ["cloudy", 4, 0.9], ["rain", 4, 0.9], ["storm", 5, 1],
+    ["snow", 3, 0.8], ["fog", 2, 0.5], ["clear-night", 0, 1], ["windy", 3, 0.75],
+  ] as const)("lays out %s clouds without randomness", (look, count, scale) => {
+    const large = sky.skyClouds(look, "day", "light", true);
+    const compact = sky.skyClouds(look, "day", "light", false);
+    expect(large).toHaveLength(count);
+    expect(large).toEqual(sky.skyClouds(look, "day", "light", true));
+    large.forEach((cloud, i) => {
+      expect(cloud.width).toBeGreaterThanOrEqual(1.3 * 70 * scale);
+      expect(cloud.width).toBeLessThanOrEqual(1.3 * 110 * scale);
+      expect(cloud.height).toBeCloseTo((cloud.width / 1.3) * 0.75);
+      expect(compact[i].width).toBeCloseTo(cloud.width * 0.8);
+      expect(compact[i].height).toBeCloseTo(cloud.height * 0.8);
+      expect(cloud.background.match(/radial-gradient/g)).toHaveLength(3);
+    });
+    expect(large.map(({ x, y }) => [x, y])).toEqual([[78, 18], [30, 8], [96, 46], [55, 30], [12, 40]].slice(0, count));
+  });
+  it("uses the approved three-blob cloud geometry with unchanged colour stops", () => {
+    for (const look of sky.SKY_LOOKS) for (const phase of sky.SKY_PHASES) {
+      for (const theme of THEMES) for (const large of [true, false]) {
+        for (const cloud of sky.skyClouds(look, phase, theme, large, "partlycloudy")) {
+          const stops = `${cloud.colour} 0%, ${cloud.colour} 45%, transparent 100%`;
+          expect(cloud.background).toBe([
+            `radial-gradient(ellipse 21.5% 29.9% at 25% 60%, ${stops})`,
+            `radial-gradient(ellipse 27.7% 38.4% at 50% 40%, ${stops})`,
+            `radial-gradient(ellipse 21.5% 29.9% at 75% 60%, ${stops})`,
+          ].join(", "));
+          expect(cloud.height / cloud.width).toBeCloseTo(0.75 / 1.3);
+        }
+      }
+    }
+  });
+  it("applies twilight, night and partlycloudy cloud overrides", () => {
+    expect(sky.skyClouds("cloudy", "night", "dark", true)).toHaveLength(3);
+    for (const phase of ["dawn", "dusk"] as const) expect(sky.skyClouds("sunny", phase, "light", true)).toHaveLength(2);
+    expect(sky.skyClouds("sunny", "day", "light", true, "PARTLYCLOUDY")).toHaveLength(3);
+    expect(sky.skyClouds("clear-night", "night", "dark", true, "partlycloudy")).toHaveLength(2);
+    expect(sky.skyClouds("rain", "night", "light", true)[0].colour).toBe("rgba(120,135,158,.40)");
+    expect(sky.skyClouds("storm", "dawn", "dark", true)[0].colour).toBe("rgba(120,132,155,.30)");
+    expect(sky.skyClouds("cloudy", "night", "dark", true)[0].colour).toBe("rgba(150,165,200,.14)");
+    expect(sky.skyClouds("sunny", "dawn", "light", true)[0].colour).toBe("rgba(255,240,240,.62)");
+  });
+  it("seeds 34/20 clear-night stars and 10 cloudy stars in their height bands", () => {
+    const stars = sky.skyStars("clear-night", "night", true);
+    expect(stars).toHaveLength(34);
+    expect(sky.skyStars("clear-night", "night", false)).toHaveLength(20);
+    expect(stars).toEqual(sky.skyStars("clear-night", "night", true));
+    expect(stars.filter((star) => star.size === 1.6)).toHaveLength(5);
+    for (const star of stars) {
+      expect(star.y).toBeLessThanOrEqual(78);
+      expect(star.x).toBeGreaterThanOrEqual(0);
+      expect(star.x).toBeLessThanOrEqual(100);
+      expect(star.alpha).toBeGreaterThanOrEqual(0.35);
+      expect(star.alpha).toBeLessThanOrEqual(0.9);
+    }
+    for (const large of [true, false]) {
+      const cloudy = sky.skyStars("cloudy", "night", large);
+      expect(cloudy).toHaveLength(10);
+      expect(cloudy.every((star) => star.y <= 40)).toBe(true);
+    }
+    for (const look of sky.SKY_LOOKS) {
+      for (const phase of ["day", "dawn", "dusk"] as const) expect(sky.skyStars(look, phase, true)).toEqual([]);
+      if (look !== "clear-night" && look !== "cloudy") expect(sky.skyStars(look, "night", true)).toEqual([]);
+    }
+  });
+  it("selects glow by look, phase and theme without sun or moon discs", () => {
+    expect(sky.skyGlow("sunny", "day", "light", 7)).toBe("radial-gradient(60% 55% at 80% 30%, rgba(255,236,170,.75) 0%, transparent 70%)");
+    expect(sky.skyGlow("cloudy", "day", "dark", 7)).toContain("rgba(255,214,140,.28)");
+    expect(sky.skyGlow("snow", "day", "dark", 7)).toContain("rgba(255,255,255,.10)");
+    for (const look of ["rain", "storm", "fog", "windy", "clear-night"] as const) expect(sky.skyGlow(look, "day", "light", 7)).toBeNull();
+    for (const look of sky.SKY_LOOKS) {
+      expect(sky.skyGlow(look, "dawn", "light", 0)).toContain("72% 100%, rgba(255,214,170,.9)");
+      expect(sky.skyGlow(look, "dusk", "dark", null)).toContain("78% 108%, rgba(255,140,90,.38)");
+      expect(sky.skyGlow(look, "night", "dark", -7)).toContain("79% 34%, rgba(170,190,255,.16)");
+    }
+  });
+  it("adds exactly three fog bands only to fog", () => {
+    for (const look of sky.SKY_LOOKS) {
+      for (const theme of ["light", "dark"] as const) expect(sky.skyFogBands(look, theme)).toHaveLength(look === "fog" ? 3 : 0);
+    }
+    expect(sky.skyFogBands("fog", "light")).toEqual([
+      "radial-gradient(120% 22% at 30% 30%, rgba(255,255,255,0.45) 0%, transparent 100%)",
+      "radial-gradient(120% 22% at 55% 56%, rgba(255,255,255,0.6) 0%, transparent 100%)",
+      "radial-gradient(120% 22% at 80% 82%, rgba(255,255,255,0.7) 0%, transparent 100%)",
+    ]);
+    expect(sky.skyFogBands("fog", "dark")[2]).toContain("rgba(190,198,210,0.28)");
   });
 });
 
