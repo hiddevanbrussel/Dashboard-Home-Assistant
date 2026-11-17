@@ -1,3 +1,5 @@
+import type { SkyMotion } from "@/lib/weather-sky";
+
 import type { WidgetConfig } from "@/stores/onboarding-store";
 
 export type WidgetBaseProps = {
@@ -109,6 +111,7 @@ export type WeatherCardProps = WidgetBaseProps & {
   show_air_quality?: boolean;
   /** Neerslag in de metricsbalk (default true). */
   show_precipitation?: boolean;
+  sky_motion?: SkyMotion;
   /** Optionele sensor voor luchtkwaliteit / AQI. */
   air_quality_entity_id?: string;
 };

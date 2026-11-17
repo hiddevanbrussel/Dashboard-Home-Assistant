@@ -1,5 +1,6 @@
 "use client";
 
+import type { SkyMotion } from "@/lib/weather-sky";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { snapToGrid, floatingPositionFromElement } from "@/lib/floating-card-grid";
@@ -68,6 +69,7 @@ export function FloatingWeatherCard({
   show_humidity = true,
   show_air_quality = false,
   show_precipitation = true,
+  sky_motion,
   air_quality_entity_id,
   width,
   height,
@@ -87,6 +89,7 @@ export function FloatingWeatherCard({
   show_humidity?: boolean;
   show_air_quality?: boolean;
   show_precipitation?: boolean;
+  sky_motion?: SkyMotion;
   air_quality_entity_id?: string;
   width?: number;
   height?: number;
@@ -371,6 +374,7 @@ export function FloatingWeatherCard({
           show_humidity={show_humidity}
           show_air_quality={show_air_quality}
           show_precipitation={show_precipitation}
+          sky_motion={sky_motion}
           air_quality_entity_id={air_quality_entity_id}
           size="md"
           height={totalHeight}

@@ -1,3 +1,5 @@
+import type { SkyMotion } from "./weather-sky";
+
 export const WEATHER_CARD_DEFAULT_WIDTH = 320;
 export const WEATHER_CARD_DEFAULT_HEIGHT = 300;
 export const WEATHER_CARD_MIN_WIDTH = 200;
@@ -13,6 +15,7 @@ export type WeatherCardDisplayOptions = {
   show_humidity?: boolean;
   show_air_quality?: boolean;
   show_precipitation?: boolean;
+  sky_motion?: SkyMotion;
 };
 
 export function isWeatherShowFlag(value: unknown, defaultValue = true): boolean {

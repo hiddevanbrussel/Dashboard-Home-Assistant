@@ -283,3 +283,92 @@ export function skyContrast(stop: string, veilAlpha: number, theme: SkyTheme) {
     ui: contrastRatio(compositeHex(text.secondary, background, text.secondaryAlpha * 0.85), background),
   };
 }
+
+export type SkyMotion = "on" | "calm" | "off";
+
+/** Movement is reserved for run C; every mode currently renders a static sky. */
+export function normalizeSkyMotion(value: unknown): SkyMotion {
+  return value === "calm" || value === "off" ? value : "on";
+}
+
+export function skyGlow(look: SkyLook, phase: SkyPhase, theme: SkyTheme, elevation: number | null): string | null {
+  const light = theme === "light";
+  if (phase === "night") {
+    const colour = light ? "rgba(200,210,255,.30)" : "rgba(170,190,255,.16)";
+    return `radial-gradient(45% 40% at 79% 34%, ${colour} 0%, transparent 70%)`;
+  }
+  if (phase === "dawn" || phase === "dusk") {
+    const x = phase === "dawn" ? 72 : 78;
+    const y = elevation == null ? 108 : twilightGlowHeight(elevation);
+    const colour = phase === "dawn"
+      ? (light ? "rgba(255,214,170,.9)" : "rgba(255,170,140,.35)")
+      : (light ? "rgba(255,170,110,.75)" : "rgba(255,140,90,.38)");
+    return `radial-gradient(90% 55% at ${x}% ${y}%, ${colour} 0%, transparent 70%)`;
+  }
+  if (look === "snow") {
+    const colour = light ? "rgba(255,255,255,.6)" : "rgba(255,255,255,.10)";
+    return `radial-gradient(60% 50% at 80% 25%, ${colour} 0%, transparent 70%)`;
+  }
+  if (look === "sunny" || look === "cloudy") {
+    const colour = light ? "rgba(255,236,170,.75)" : "rgba(255,214,140,.28)";
+    return `radial-gradient(60% 55% at 80% 30%, ${colour} 0%, transparent 70%)`;
+  }
+  return null;
+}
+
+/** Small deterministic integer hash; no render-time randomness or browser APIs. */
+function skySeed(index: number, salt: number): number {
+  let value = Math.imul(index + 1, 0x45d9f3b) ^ salt;
+  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
+  return ((value ^ (value >>> 16)) >>> 0) / 0x100000000;
+}
+
+export function skyStars(look: SkyLook, phase: SkyPhase, large: boolean) {
+  const count = phase !== "night" ? 0 : look === "clear-night" ? (large ? 34 : 20) : look === "cloudy" ? 10 : 0;
+  const topLimit = look === "cloudy" ? 40 : 78;
+  return Array.from({ length: count }, (_, index) => ({
+    x: 2 + skySeed(index, 17) * 96,
+    y: 2 + skySeed(index, 911) * (topLimit - 2),
+    size: index % 7 === 0 ? 1.6 : 1,
+    alpha: 0.35 + skySeed(index, 413) * 0.55,
+  }));
+}
+
+const SKY_CLOUDS = {
+  sunny: [1, 0.55], cloudy: [4, 0.9], rain: [4, 0.9], storm: [5, 1],
+  snow: [3, 0.8], fog: [2, 0.5], "clear-night": [0, 1], windy: [3, 0.75],
+} as const;
+const CLOUD_CENTRES = [[78, 18], [30, 8], [96, 46], [55, 30], [12, 40]] as const;
+
+export function skyClouds(look: SkyLook, phase: SkyPhase, theme: SkyTheme, large: boolean, state = "") {
+  let count: number = SKY_CLOUDS[look][0];
+  if (look === "cloudy" && phase === "night") count = 3;
+  if (look === "sunny" && (phase === "dawn" || phase === "dusk")) count = 2;
+  if (normalizeState(state) === "partlycloudy") {
+    count = phase === "night" ? 2 : phase === "day" ? 3 : 2;
+  }
+  const light = theme === "light";
+  const colour = look === "storm" ? (light ? "rgba(70,80,100,.42)" : "rgba(120,132,155,.30)")
+    : look === "rain" ? (light ? "rgba(120,135,158,.40)" : "rgba(150,165,190,.20)")
+    : phase === "night" ? (light ? "rgba(170,180,210,.30)" : "rgba(150,165,200,.14)")
+    : phase === "dawn" || phase === "dusk" ? (light ? "rgba(255,240,240,.62)" : "rgba(240,190,200,.16)")
+    : light ? "rgba(255,255,255,.78)" : "rgba(185,200,225,.18)";
+  // Partly cloudy at night has clouds on the otherwise cloud-free clear-night set.
+  const scale = look === "clear-night" && count > 0 ? 0.55 : SKY_CLOUDS[look][1];
+  return Array.from({ length: count }, (_, index) => {
+    const width = (70 + skySeed(index, 73) * 40) * scale * (large ? 1 : 0.8);
+    const [x, y] = CLOUD_CENTRES[index];
+    const blob = (cx: number, cy: number) => `radial-gradient(ellipse 27% 38% at ${cx}% ${cy}%, ${colour} 0%, ${colour} 45%, transparent 100%)`;
+    return { x, y, width, height: width * 0.42, colour,
+      background: `${blob(28, 62)}, ${blob(52, 40)}, ${blob(73, 62)}` };
+  });
+}
+
+export function skyFogBands(look: SkyLook, theme: SkyTheme): string[] {
+  if (look !== "fog") return [];
+  const alphas = theme === "light" ? [0.45, 0.60, 0.70] : [0.16, 0.22, 0.28];
+  return alphas.map((alpha, index) => {
+    const colour = theme === "light" ? `rgba(255,255,255,${alpha})` : `rgba(190,198,210,${alpha})`;
+    return `radial-gradient(120% 22% at ${30 + index * 25}% ${30 + index * 26}%, ${colour} 0%, transparent 100%)`;
+  });
+}

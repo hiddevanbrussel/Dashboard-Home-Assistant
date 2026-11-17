@@ -969,3 +969,46 @@ html[data-glass-density="off"] .energy-day-band {
     transition: none;
   }
 }
+
+
+/* Weather sky: colour interpolation and finite cross-fades only, no drift. */
+@property --sky-1 {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #B3C1D2;
+}
+@property --sky-2 {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #CED8E3;
+}
+@property --sky-3 {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #EBF0F5;
+}
+.weather-sky {
+  --sky-duration: 1.2s;
+  --sky-easing: cubic-bezier(.4,0,.2,1);
+}
+.weather-sky[data-change="phase"] { --sky-duration: 2s; --sky-easing: ease-in-out; }
+.weather-sky[data-change="theme"] { --sky-duration: 300ms; --sky-easing: ease-in-out; }
+.weather-sky-gradient {
+  background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 55%, var(--sky-3) 100%);
+  transition: --sky-1 var(--sky-duration) var(--sky-easing), --sky-2 var(--sky-duration) var(--sky-easing), --sky-3 var(--sky-duration) var(--sky-easing);
+}
+.weather-sky-veil { transition: background-color var(--sky-duration) var(--sky-easing); }
+.weather-sky-incoming { animation: weather-sky-in var(--sky-duration) var(--sky-easing) both; }
+.weather-sky-outgoing { animation: weather-sky-out var(--sky-duration) var(--sky-easing) both; }
+/* Normal outgoing details remain beneath the current veil. A reduced-motion
+   snapshot includes its own veil and fades once over the complete new scene. */
+.weather-sky-outgoing[data-full-scene="true"] { z-index: 7; }
+@keyframes weather-sky-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes weather-sky-out { from { opacity: 1; } to { opacity: 0; } }
+.weather-sky[data-reduced-motion="true"] { --sky-duration: 600ms; --sky-easing: ease-in-out; }
+.weather-sky[data-reduced-motion="true"] .weather-sky-gradient,
+.weather-sky[data-reduced-motion="true"] .weather-sky-veil { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .weather-sky { --sky-duration: 600ms; --sky-easing: ease-in-out; }
+  .weather-sky-gradient, .weather-sky-veil { transition: none; }
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import type { WeatherCardDisplayOptions } from "@/lib/weather-card";
 import type { WidgetConfig } from "@/stores/onboarding-store";
 import { ClimateCard2Widget } from "./climate-card-2-widget";
 import { NutsCardWidget } from "./nuts-card-widget";
@@ -36,7 +37,7 @@ export function SmartStackChild({
   height,
   className,
 }: {
-  child: WidgetConfig;
+  child: WidgetConfig & WeatherCardDisplayOptions;
   width: number;
   height: number;
   className?: string;
@@ -123,6 +124,7 @@ export function SmartStackChild({
           show_humidity={child.show_humidity !== false}
           show_air_quality={child.show_air_quality === true}
           show_precipitation={child.show_precipitation !== false}
+          sky_motion={child.sky_motion}
           air_quality_entity_id={child.air_quality_entity_id}
           className={fill}
         />

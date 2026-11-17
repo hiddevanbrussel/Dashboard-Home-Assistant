@@ -5,6 +5,7 @@ import { WeatherCardWidget } from "@/components/widgets/weather-card-widget";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useLanguageStore } from "@/stores/language-store";
 import { useThemeStore } from "@/stores/theme-store";
+import { DEFAULT_SUN_ENTITY_ID, normalizeSkyMotion, type SkyMotion, type SkyPhase } from "@/lib/weather-sky";
 import { cn } from "@/lib/utils";
 
 const ENTITY_ID = "weather.preview";
@@ -29,7 +30,34 @@ export default function WeatherCardPreviewPage() {
   const setThemeMode = useThemeStore((s) => s.setMode);
   const setResolved = useThemeStore((s) => s.setResolved);
   const resolved = useThemeStore((s) => s.resolved);
-  const [condition, setCondition] = useState<(typeof CONDITIONS)[number]>("partlycloudy");
+  const [condition, setCondition] = useState<string>("partlycloudy");
+  const [sun, setSun] = useState({ elevation: 7, rising: true });
+  const [dimensions, setDimensions] = useState({ width: 320, height: 300 });
+  const [motion, setMotion] = useState<SkyMotion>("on");
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (query.has("condition")) setCondition(query.get("condition") ?? "");
+    const phase = query.get("phase") as SkyPhase | null;
+    const elevations = { day: 7, dawn: 0, dusk: 0, night: -7 };
+    const phaseElevation = phase && Object.prototype.hasOwnProperty.call(elevations, phase) ? elevations[phase] : 7;
+    const customElevation = query.has("elevation") ? Number(query.get("elevation")) : NaN;
+    setSun({
+      elevation: Number.isFinite(customElevation) ? customElevation : phaseElevation,
+      rising: query.has("rising") ? ["true", "1"].includes(query.get("rising") ?? "") : phase !== "dusk" && phase !== "night",
+    });
+    const customSize = (key: string, fallback: number) => {
+      const value = Number(query.get(key));
+      return Number.isFinite(value) && value > 0 ? Math.min(1000, value) : fallback;
+    };
+    setDimensions({ width: customSize("w", 320), height: customSize("h", query.get("size") === "compact" ? 160 : 300) });
+    setMotion(normalizeSkyMotion(query.get("motion")));
+    const theme = query.get("theme");
+    if (theme === "light" || theme === "dark") {
+      setThemeMode(theme);
+      setResolved(theme);
+    }
+  }, [setThemeMode, setResolved]);
   const [showWind, setShowWind] = useState(true);
   const [showHumidity, setShowHumidity] = useState(true);
   const [showAqi, setShowAqi] = useState(false);
@@ -45,6 +73,11 @@ export default function WeatherCardPreviewPage() {
   const entities = useMemo(
     () => [
       {
+        entity_id: DEFAULT_SUN_ENTITY_ID,
+        state: sun.elevation > 0 ? "above_horizon" : "below_horizon",
+        attributes: { elevation: sun.elevation, rising: sun.rising },
+      },
+      {
         entity_id: ENTITY_ID,
         state: condition,
         attributes: {
@@ -54,7 +87,7 @@ export default function WeatherCardPreviewPage() {
           wind_bearing: 90,
           wind_speed_unit: "m/s",
           precipitation: 0,
-          friendly_name: "Madeliefje",
+          friendly_name: "Preview weather",
           forecast: [
             {
               datetime: today,
@@ -72,7 +105,7 @@ export default function WeatherCardPreviewPage() {
         attributes: { friendly_name: "Luchtkwaliteit" },
       },
     ],
-    [condition, today]
+    [condition, today, sun]
   );
 
   useEffect(() => {
@@ -101,7 +134,7 @@ export default function WeatherCardPreviewPage() {
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Weather card preview</h1>
         <p className={cn("mt-1 text-sm", resolved === "dark" ? "text-white/60" : "text-gray-500")}>
-          Mockup layout with 3D condition icons. Toggle details like the edit panel switches.
+          Static weather sky with fictional data. All motion settings currently show the same still sky.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -138,6 +171,24 @@ export default function WeatherCardPreviewPage() {
           </button>
         </div>
 
+        <div className="mt-4 flex flex-wrap gap-2">
+          {(["day", "dawn", "dusk", "night"] as const).map((phase) => (
+            <button key={phase} type="button" className="min-h-[44px] rounded-lg border px-3"
+              onClick={() => setSun({ elevation: phase === "day" ? 7 : phase === "night" ? -7 : 0, rising: phase === "day" || phase === "dawn" })}>
+              {phase}
+            </button>
+          ))}
+          <select aria-label="Preview tile size" className="min-h-[44px] rounded-lg bg-transparent px-3"
+            value={dimensions.height === 160 ? "compact" : "large"}
+            onChange={(event) => setDimensions({ width: 320, height: event.target.value === "compact" ? 160 : 300 })}>
+            <option value="large">Large</option><option value="compact">Compact</option>
+          </select>
+          <select aria-label="Preview sky motion" className="min-h-[44px] rounded-lg bg-transparent px-3"
+            value={motion} onChange={(event) => setMotion(normalizeSkyMotion(event.target.value))}>
+            <option value="on">On</option><option value="calm">Calm</option><option value="off">Off</option>
+          </select>
+        </div>
+
         <div
           className={cn(
             "mt-4 flex flex-wrap gap-3 text-sm",
@@ -167,9 +218,9 @@ export default function WeatherCardPreviewPage() {
         </div>
 
         <div className="mt-8 flex justify-center">
-          <div className="h-[320px] w-[340px]">
+          <div data-weather-preview style={dimensions}>
             <WeatherCardWidget
-              title="Madeliefje"
+              title="Preview weather"
               entity_id={ENTITY_ID}
               show_icon
               show_condition
@@ -178,6 +229,8 @@ export default function WeatherCardPreviewPage() {
               show_humidity={showHumidity}
               show_air_quality={showAqi}
               show_precipitation={showPrecip}
+              sky_motion={motion}
+              height={dimensions.height}
               air_quality_entity_id={AQI_ID}
               size="md"
               className="h-full"

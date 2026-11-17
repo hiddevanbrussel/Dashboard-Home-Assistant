@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -55,6 +57,7 @@ jobs:
           npm run build
 
   docker:
+    if: github.event_name != 'push'
     # arm64 builds on the native runner used by docker.yml. amd64 stays on ubuntu-latest.
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     timeout-minutes: 180
