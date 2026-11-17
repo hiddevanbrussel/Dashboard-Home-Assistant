@@ -50,6 +50,7 @@ export function createFrameLoop(clock: FrameClock) {
   const listeners = new Set<() => void>();
   const work = new Samples();
   const intervals = new Samples();
+  const frameWork = new Samples();
   let pending: number | null = null;
   let inFrame = false;
   let last: number | null = null;
@@ -79,6 +80,7 @@ export function createFrameLoop(clock: FrameClock) {
     const elapsedMs = last == null ? 0 : Math.max(0, time - last);
     last = time;
     work.prune(time);
+    frameWork.prune(time);
     intervals.prune(time);
     if (elapsedMs > 250) {
       windowMs = 0;
@@ -86,17 +88,7 @@ export function createFrameLoop(clock: FrameClock) {
     } else if (elapsedMs > 0) {
       intervals.add(time, elapsedMs);
       windowMs += elapsedMs;
-      if (windowMs >= 3000) {
-        const next = nextPerformanceStep(performanceStep, windowMs, intervals.average());
-        const changed = next !== performanceStep;
-        performanceStep = next;
-        if (changed) {
-          // Step 2 needs a full new window. A healthy step-0 window keeps
-          // rolling instead of delaying detection until another fixed block.
-          windowMs = 0;
-          publish(time, true);
-        }
-      }
+      let ownWork = 0;
       for (const entry of subscribers) {
         const dt = 1 / entry.subscriber.fps;
         entry.accumulator = Math.min(entry.accumulator + elapsedMs / 1000, dt * 2);
@@ -110,7 +102,21 @@ export function createFrameLoop(clock: FrameClock) {
         }
         if (subscribers.has(entry)) {
           entry.subscriber.draw();
-          work.add(time, Math.max(0, clock.now() - start));
+          const measured = Math.max(0, clock.now() - start);
+          ownWork += measured;
+          work.add(time, measured);
+        }
+      }
+      frameWork.add(time, ownWork);
+      if (windowMs >= 3000) {
+        const next = nextPerformanceStep(performanceStep, windowMs, intervals.average(), frameWork.average());
+        const changed = next !== performanceStep;
+        performanceStep = next;
+        if (changed) {
+          // Step 2 needs a full new window. A healthy step-0 window keeps
+          // rolling instead of delaying detection until another fixed block.
+          windowMs = 0;
+          publish(time, true);
         }
       }
     }
@@ -136,6 +142,7 @@ export function createFrameLoop(clock: FrameClock) {
           pending = last = null;
           windowMs = 0;
           work.clear();
+          frameWork.clear();
           intervals.clear();
         }
         publish(clock.now(), true);

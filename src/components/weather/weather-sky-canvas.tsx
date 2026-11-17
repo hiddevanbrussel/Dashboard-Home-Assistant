@@ -9,6 +9,10 @@ import {
   stepParticles, updateParticlePlan, type ParticlePlan, type ParticleSimulation,
 } from "@/lib/sky/particles";
 
+const SKY_CANVAS_MASK =
+  "linear-gradient(100deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.35) max(50%, 200px), #000 75%), " +
+  "linear-gradient(0deg, rgba(0,0,0,.35) 0, rgba(0,0,0,.35) 50px, #000 78px)";
+
 const STYLES = {
   light: { rain: PARTICLE_COLOURS.light.rain, wind: "rgba(40,62,98,.21)" },
   dark: { rain: PARTICLE_COLOURS.dark.rain, wind: "rgba(210,225,255,.19)" },
@@ -88,7 +92,7 @@ export function WeatherSkyCanvas({ plan, theme, dpr, paused, freezeTime, seed, c
       const at = i * STRIDE;
       if (b[at + FIELD.kind] !== SNOW && b[at + FIELD.kind] !== HAIL) continue;
       const depth = b[at + FIELD.depth];
-      const radius = b[at + FIELD.size] * depth;
+      const radius = b[at + FIELD.size] * (b[at + FIELD.kind] === HAIL ? 1 : depth);
       ctx.globalAlpha = depth;
       ctx.drawImage(sprite, b[at + FIELD.x] - radius, b[at + FIELD.y] - radius, radius * 2, radius * 2);
     }
@@ -139,5 +143,6 @@ export function WeatherSkyCanvas({ plan, theme, dpr, paused, freezeTime, seed, c
   }, []);
 
   return <canvas ref={canvas} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[4] h-full w-full"
+    style={{ maskImage: SKY_CANVAS_MASK, WebkitMaskImage: SKY_CANVAS_MASK, maskComposite: "intersect", WebkitMaskComposite: "source-in" }}
     data-sky-particles={plan.total} data-sky-fps={plan.fps} data-sky-frozen={freezeTime != null} />;
 }

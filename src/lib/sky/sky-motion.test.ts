@@ -103,11 +103,14 @@ describe("lightning scheduler", () => {
 
 describe("session performance steps", () => {
   it("requires a full 3s window and a strictly greater than 22ms average", () => {
-    expect(nextPerformanceStep(0, 2999, 40)).toBe(0);
-    expect(nextPerformanceStep(0, 3000, 22)).toBe(0);
-    expect(nextPerformanceStep(0, 3000, 22.01)).toBe(1);
-    expect(nextPerformanceStep(1, 3000, 23)).toBe(2);
-    expect(nextPerformanceStep(1, 3000, 10)).toBe(1);
-    expect(nextPerformanceStep(2, 3000, 10)).toBe(2);
+    expect(nextPerformanceStep(0, 3000, 33, 1)).toBe(0);
+    expect(nextPerformanceStep(0, 3000, 33, 4)).toBe(0);
+    expect(nextPerformanceStep(0, 3000, 33, 6)).toBe(1);
+    expect(nextPerformanceStep(0, 2999, 40, 6)).toBe(0);
+    expect(nextPerformanceStep(0, 3000, 22, 6)).toBe(0);
+    expect(nextPerformanceStep(0, 3000, 22.01, 6)).toBe(1);
+    expect(nextPerformanceStep(1, 3000, 23, 6)).toBe(2);
+    expect(nextPerformanceStep(1, 3000, 10, 6)).toBe(1);
+    expect(nextPerformanceStep(2, 3000, 10, 6)).toBe(2);
   });
 });

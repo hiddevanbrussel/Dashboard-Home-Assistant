@@ -7,7 +7,7 @@ import { useSkyMotionFlags, useSkyReducedMotionPreference } from "@/hooks/use-mo
 import { getSkyPerformanceStep, subscribeSkyFrameStats } from "@/lib/sky/frame-loop";
 import { planParticles } from "@/lib/sky/particles";
 import {
-  TWINKLE, cloudDuration, cloudTravel, fogDuration, frozenLightningPhase,
+  TWINKLE, cloudDuration, cloudTravel, cloudProgress, retimeCloud, type CloudTimeline, fogDuration, frozenLightningPhase,
   horizontalWindDirection, isSkyPaused, resolveSkyMode, scheduleLightning,
 } from "@/lib/sky/sky-motion";
 import {
@@ -30,7 +30,7 @@ type Scene = {
   key: string; condition: string; theme: SkyTheme; set: SkySet;
   glow: string | null; stars: ReturnType<typeof skyStars>; clouds: ReturnType<typeof skyClouds>;
   fog: string[]; large: boolean; animated: boolean; fixedTime?: number;
-  width: number; windKmh: number; bearing: number;
+  width: number; windKmh: number; bearing: number; cloudTimelines: CloudTimeline[];
 };
 
 function Colours({ scene }: { scene: Scene }) {
@@ -56,21 +56,10 @@ function Details({ scene, elapsedAtMount }: { scene: Scene; elapsedAtMount: numb
         ))}
       </div>
       <div className="absolute inset-0 z-[2]">
-        {scene.clouds.map((cloud, index) => {
-          let animation: CSSProperties | undefined;
-          if (scene.animated) {
-            const duration = cloudDuration(index, driftWindFactor(scene.windKmh), scene.condition);
-            const travel = cloudTravel(scene.width, cloud.width, cloud.x, horizontalWindDirection(scene.bearing));
-            animation = { "--sky-cloud-from": `${travel.from}px`, "--sky-cloud-to": `${travel.to}px`,
-              animationDuration: `${duration}s`, animationDelay: `${-duration * travel.initialPhase - elapsed}s` } as CSSProperties;
-          }
-          return <span key={index} className={scene.animated
-            ? "sky-cloud-motion sky-motion absolute -translate-x-1/2 -translate-y-1/2"
-            : "absolute -translate-x-1/2 -translate-y-1/2"} style={{
-            left: `${cloud.x}%`, top: `${cloud.y}%`, width: cloud.width, height: cloud.height,
-            backgroundImage: cloud.background, ...animation,
-          }} />;
-        })}
+        {scene.clouds.map((cloud, index) => (
+          <Cloud key={`${index}:${scene.cloudTimelines[index]?.revision ?? 0}`} cloud={cloud}
+            track={scene.cloudTimelines[index]} elapsed={scene.fixedTime ?? elapsedAtMount} />
+        ))}
       </div>
       <div className="absolute inset-0 z-[3]">
         {scene.fog.map((backgroundImage, index) => {
@@ -88,6 +77,20 @@ function Details({ scene, elapsedAtMount }: { scene: Scene; elapsedAtMount: numb
       </div>
     </>
   );
+}
+
+function Cloud({ cloud, track, elapsed }: {
+  cloud: Scene["clouds"][number]; track?: CloudTimeline; elapsed: number;
+}) {
+  // CSS advances from this delay until a retime remounts this cloud alone.
+  const [delay] = useState(() => track ? -cloudProgress(track, elapsed) * track.duration : 0);
+  return <span className={track ? "sky-cloud-motion sky-motion absolute -translate-x-1/2 -translate-y-1/2"
+    : "absolute -translate-x-1/2 -translate-y-1/2"} style={{
+    left: `${cloud.x}%`, top: `${cloud.y}%`, width: cloud.width, height: cloud.height,
+    backgroundImage: cloud.background,
+    ...(track && { "--sky-cloud-from": `${track.from}px`, "--sky-cloud-to": `${track.to}px`,
+      animationDuration: `${track.duration}s`, animationDelay: `${delay}s` }),
+  } as CSSProperties} />;
 }
 
 function Veil({ scene }: { scene: Scene }) {
@@ -177,20 +180,26 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
   // when phase layers remount, including during a long hidden/edit interval.
   const elapsedForLayers = frozenTime ?? timeline.current.elapsed;
   const { phase, rising, elevation, fallback } = resolveSunPhase(sun, clock);
+  const cloudTimelines = useRef<CloudTimeline[]>([]);
   const scene = useMemo<Scene>(() => {
     const look = weatherSkyLook(condition, phase);
     const set = fallback || elevation == null ? deriveSky(look, phase, theme) : blendSky(look, elevation, rising, theme);
+    const width = dimensions.width || 320;
+    const clouds = skyClouds(look, phase, theme, large, condition);
+    cloudTimelines.current = animated ? clouds.map((cloud, index) => retimeCloud(cloudTimelines.current[index],
+      cloudDuration(index, driftWindFactor(windKmh), condition),
+      cloudTravel(width, cloud.width, cloud.x, horizontalWindDirection(bearing)), width * cloud.x / 100,
+      elapsedForLayers)) : [];
     return {
       key: [condition, phase, theme, large, elevation, animated,
         animated ? frozenTime : undefined,
-        animated ? dimensions.width : 0, animated ? windKmh : 0, animated ? bearing : 0,
         ...set.stops, set.veilAlpha].join(":"),
       condition, theme, set, large, animated, fixedTime: frozenTime,
       width: dimensions.width || 320, windKmh, bearing,
       glow: skyGlow(look, phase, theme, elevation), stars: skyStars(look, phase, large),
-      clouds: skyClouds(look, phase, theme, large, condition), fog: skyFogBands(look, theme),
+      clouds, cloudTimelines: cloudTimelines.current, fog: skyFogBands(look, theme),
     };
-  }, [condition, phase, theme, large, fallback, elevation, rising, animated, frozenTime, dimensions.width, windKmh, bearing]);
+  }, [condition, phase, theme, large, fallback, elevation, rising, animated, frozenTime, dimensions.width, windKmh, bearing, elapsedForLayers]);
   const plan = useMemo(() => planParticles({ condition, precipitation, windKmh, bearing,
     width: dimensions.width, height: dimensions.height, compact: !large, mode, performanceStep,
   }), [condition, precipitation, windKmh, bearing, dimensions.width, dimensions.height, large, mode, performanceStep]);
@@ -206,7 +215,7 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
   const transitionKind = pendingScene ? kindOfChange(pendingScene) : change;
   useEffect(() => {
     const old = lastScene.current;
-    if (old.key === scene.key && !previousRef.current) return;
+    if (old.key === scene.key && !previousRef.current) { lastScene.current = scene; return; }
     const kind = old.animated !== scene.animated ? "mode"
       : old.theme !== scene.theme ? "theme" : old.condition !== scene.condition ? "weather" : "phase";
     if (old.key !== scene.key) {

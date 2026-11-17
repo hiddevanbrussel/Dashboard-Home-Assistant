@@ -166,7 +166,47 @@ describe("weather sky motion DOM", () => {
     expect(incoming).toBeCloseTo(initial - 1, 2);
     expect(pending.size).toBe(0);
   });
+  it("retimes wind, direction and width without a scene fade or a cloud position jump", async () => {
+    const paint = async (windKmh: number, bearing = 270) => act(async () => {
+      root.render(createElement(WeatherSky, { condition: "rainy", large: true, motion: "on", windKmh, bearing,
+        preview: { time: 35, seed: 42 } }));
+    });
+    const positions = () => [...host.querySelectorAll<HTMLElement>(".sky-cloud-motion")].map(node => {
+      const from = parseFloat(node.style.getPropertyValue("--sky-cloud-from"));
+      const to = parseFloat(node.style.getPropertyValue("--sky-cloud-to"));
+      const p = -parseFloat(node.style.animationDelay) / parseFloat(node.style.animationDuration);
+      return parseFloat(node.style.left) / 100 * (sky().clientWidth || width) + from + (to - from) * p;
+    });
+    let width = 320;
+    await paint(10); await act(async () => { vi.advanceTimersByTime(600); });
+    const before = positions(); expect(before.length).toBeGreaterThan(0);
+    for (const [wind, bearing] of [[12, 270], [12, 90], [10, 90]]) {
+      await paint(wind, bearing);
+      positions().forEach((x, i) => expect(Math.abs(x - before[i])).toBeLessThan(1));
+      expect(host.querySelector(".weather-sky-outgoing")).toBeNull();
+    }
+    width = 400; await act(async () => { resizeSky(width, 300); });
+    positions().forEach((x, i) => expect(Math.abs(x - before[i])).toBeLessThan(1));
+    expect(host.querySelector(".weather-sky-outgoing")).toBeNull();
+  });
+  it.each([true, false])("masks animated particles in both layouts (large=%s)", async (large) => {
+    await act(async () => { root.render(createElement(WeatherSky, { condition: "hail", precipitation: 3, large,
+      motion: "on", preview: { time: 3, seed: 42 } })); });
+    const node = host.querySelector("canvas")!;
+    expect(node.style.maskImage).toContain("max(50%, 200px)");
+    expect(node.style.maskImage).toContain("50px, #000 78px");
+    expect(node.style.maskComposite).toBe("intersect");
+    const ctx = node.getContext("2d")!;
+    const calls = vi.mocked(ctx.drawImage).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const call of calls) {
+      expect(call[3]).toBeGreaterThanOrEqual(5);
+      expect(call[3]).toBeLessThanOrEqual(7);
+    }
+  });
   it("applies the global performance fallback and never re-enables it in the session", async () => {
+    const context = document.createElement("canvas").getContext("2d")!;
+    vi.mocked(context.clearRect).mockImplementation(() => { vi.advanceTimersByTime(12); });
     await render("on");
     const tick = async (time: number, advance = 25) => act(async () => {
       vi.advanceTimersByTime(advance);

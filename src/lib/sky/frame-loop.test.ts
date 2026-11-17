@@ -75,7 +75,7 @@ describe("shared sky frame loop", () => {
   });
   it("degrades only after consecutive complete 3s raw-interval windows", () => {
     const fake = fakeClock(); const loop = createFrameLoop(fake.clock);
-    let stop = loop.subscribe({ fps: 30, step() {}, draw() {} }); fake.advance(0);
+    let stop = loop.subscribe({ fps: 30, step() {}, draw() { fake.work(8); } }); fake.advance(0);
     for (let i = 0; i < 119; i++) fake.advance(25);
     expect(loop.getStats().performanceStep).toBe(0);
     fake.advance(25); expect(loop.getStats().performanceStep).toBe(1);
@@ -88,12 +88,18 @@ describe("shared sky frame loop", () => {
   });
   it("keeps a rolling window after a healthy window instead of waiting for fixed blocks", () => {
     const fake = fakeClock(); const loop = createFrameLoop(fake.clock);
-    loop.subscribe({ fps: 30, step() {}, draw() {} }); fake.advance(0);
+    loop.subscribe({ fps: 30, step() {}, draw() { fake.work(10); } }); fake.advance(0);
     for (let i = 0; i < 120; i++) fake.advance(1000 / 60);
     for (let i = 0; i < 25; i++) fake.advance(40);
     expect(loop.getStats().performanceStep).toBe(0);
     for (let i = 0; i < 25; i++) fake.advance(40);
     expect(loop.getStats().performanceStep).toBe(1);
+  });
+  it.each([1, 6])("gates fallback on own work at 30Hz (%sms)", (ms) => {
+    const fake = fakeClock(); const loop = createFrameLoop(fake.clock);
+    loop.subscribe({ fps: 30, step() {}, draw() { fake.work(ms); } }); fake.advance(0);
+    for (let i = 0; i < 184; i++) fake.advance(33);
+    expect(loop.getStats().performanceStep).toBe(ms > 4 ? 2 : 0);
   });
   it("does not create a second loop for a subscription added during a draw", () => {
     const fake = fakeClock(); const loop = createFrameLoop(fake.clock); let added = false;

@@ -33,8 +33,8 @@ export function isSkyPaused(flags: MotionFlags, skyPaused = false): boolean {
 }
 
 /** Evaluate a full rolling raw-rAF window; callers gate the next step for 3s. */
-export function nextPerformanceStep(step: PerformanceStep, windowMs: number, averageIntervalMs: number): PerformanceStep {
-  if (!Number.isFinite(windowMs) || windowMs < 3000 || averageIntervalMs <= 22 || !Number.isFinite(averageIntervalMs)) return step;
+export function nextPerformanceStep(step: PerformanceStep, windowMs: number, averageIntervalMs: number, averageWorkMs: number): PerformanceStep {
+  if (!Number.isFinite(windowMs) || windowMs < 3000 || averageWorkMs <= 4 || !Number.isFinite(averageWorkMs) || averageIntervalMs <= 22 || !Number.isFinite(averageIntervalMs)) return step;
   return step === 0 ? 1 : 2;
 }
 
@@ -73,6 +73,24 @@ export function cloudTravel(width: number, cloudWidth: number, centrePercent: nu
   const from = direction < 0 ? right : left;
   const to = direction < 0 ? left : right;
   return { from, to, initialPhase: -from / (to - from) };
+}
+
+export type CloudTimeline = {
+  duration: number; from: number; to: number; centre: number;
+  phase: number; at: number; revision: number;
+};
+export function cloudProgress(track: CloudTimeline, elapsed: number): number {
+  return ((track.phase + (elapsed - track.at) / track.duration) % 1 + 1) % 1;
+}
+
+/** Retiming preserves the current screen position, including direction flips. */
+export function retimeCloud(old: CloudTimeline | undefined, duration: number,
+  travel: ReturnType<typeof cloudTravel>, centre: number, elapsed: number): CloudTimeline {
+  if (old && old.duration === duration && old.from === travel.from && old.to === travel.to && old.centre === centre) return old;
+  const position = old ? old.centre + old.from + (old.to - old.from) * cloudProgress(old, elapsed) : 0;
+  return { duration, from: travel.from, to: travel.to, centre,
+    phase: old ? (position - centre - travel.from) / (travel.to - travel.from) : travel.initialPhase,
+    at: old ? elapsed : 0, revision: (old?.revision ?? -1) + 1 };
 }
 
 export function lightningDelay(condition: string, random: () => number): number {
