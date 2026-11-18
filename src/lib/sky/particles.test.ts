@@ -1,3 +1,4 @@
+import { withParticleOverflow } from "./particles";
 import { describe, expect, it } from "vitest";
 import { FIELD, HAIL, RAIN, SNOW, STRIDE, WIND, createParticles, freezeParticles, planParticles, resetParticles, stepParticles, updateParticlePlan } from "./particles";
 import { createSkyRandom } from "./sky-motion";
@@ -139,5 +140,45 @@ describe("fixed-storage particle simulation", () => {
     const wind = createParticles(planParticles({ ...input, condition: "windy", windKmh: 0 }));
     wind.buffer[FIELD.x] = 100; wind.buffer[FIELD.y] = 100; wind.buffer[FIELD.phase] = 0;
     stepParticles(wind, 1.5 / 4); expect(wind.buffer[FIELD.y]).toBeCloseTo(103);
+  });
+});
+
+
+describe("overflow particle extension", () => {
+  const margins = { left: 8, right: 8, bottom: 40 };
+  it.each([[320, 300, false, 190], [320, 160, true, 112], [500, 420, false, 200]])("shares a single capped pool at %sx%s", (width, height, compact, total) => {
+    const base = planParticles({ ...input, width: Number(width), height: Number(height), compact: Boolean(compact), precipitation: 3 });
+    const extended = withParticleOverflow(base, margins);
+    expect(extended.total).toBe(total); expect(extended.counts.reduce((a, b) => a + b, 0)).toBe(total);
+    expect(base.overflow).toBeUndefined(); expect(extended.width).toBe(base.width); expect(extended.height).toBe(base.height);
+  });
+  it("caps mixed precipitation and prewarms the whole expanded area", () => {
+    const plan = withParticleOverflow(planParticles({ ...input, condition: "snowy-rainy", width: 500, height: 420 }), margins);
+    expect(plan.total).toBeLessThanOrEqual(200); expect(plan.counts[RAIN]).toBeGreaterThan(0); expect(plan.counts[SNOW]).toBeGreaterThan(0);
+    const sim = createParticles(plan, createSkyRandom(42)); let outside = 0;
+    for (let i = 0; i < sim.active; i++) {
+      const x = sim.buffer[i * STRIDE + FIELD.x], y = sim.buffer[i * STRIDE + FIELD.y];
+      expect(x).toBeGreaterThanOrEqual(-8); expect(x).toBeLessThanOrEqual(508);
+      expect(y).toBeGreaterThanOrEqual(0); expect(y).toBeLessThanOrEqual(460);
+      if (x < 0 || x > 500 || y > 420) outside++;
+    }
+    expect(outside).toBeGreaterThan(0);
+  });
+  it.each(["rainy", "snowy-rainy"])("retains all existing positions and the buffer when toggling %s", condition => {
+    const base = planParticles({ ...input, condition }); const sim = createParticles(base, createSkyRandom(42));
+    const buffer = sim.buffer, count = sim.active;
+    const positions = Array.from({ length: count }, (_, i) => [buffer[i * STRIDE + FIELD.x], buffer[i * STRIDE + FIELD.y]]);
+    updateParticlePlan(sim, withParticleOverflow(base, margins));
+    expect(sim.buffer).toBe(buffer); expect(sim.rampSeconds).toBe(2);
+    for (let i = 0; i < count; i++) expect([buffer[i * STRIDE + FIELD.x], buffer[i * STRIDE + FIELD.y]]).toEqual(positions[i]);
+    updateParticlePlan(sim, base);
+    for (let i = 0; i < count; i++) expect([buffer[i * STRIDE + FIELD.x], buffer[i * STRIDE + FIELD.y]]).toEqual(positions[i]);
+  });
+  it("respawns below the entire bottom extension and wraps at its side edges", () => {
+    const sim = createParticles(withParticleOverflow(planParticles(input), margins), createSkyRandom(42));
+    const b = sim.buffer; b[FIELD.y] = 340 + b[FIELD.size] - .1; b[FIELD.x] = -9;
+    stepParticles(sim, 0); expect(b[FIELD.y]).toBeGreaterThan(340); expect(b[FIELD.x]).toBe(328);
+    b[FIELD.y] = 340 + b[FIELD.size] + 1; stepParticles(sim, 0);
+    expect(b[FIELD.y]).toBe(-24); expect(b[FIELD.x]).toBeGreaterThanOrEqual(-8); expect(b[FIELD.x]).toBeLessThanOrEqual(328);
   });
 });

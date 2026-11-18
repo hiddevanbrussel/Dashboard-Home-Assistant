@@ -231,7 +231,7 @@ export function rainAngle(windKmh: number): number {
 
 /** HA bearing is where wind comes FROM (90° east → lee on the left). */
 export function overflowMargins(angleDegrees: number, windBearing: number) {
-  const lee = Math.min(24, Math.tan(clamp(Math.abs(angleDegrees), 0, 25) * Math.PI / 180) * 40 + 6);
+  const lee = Math.round(Math.min(24, Math.tan(clamp(Math.abs(angleDegrees), 0, 25) * Math.PI / 180) * 40 + 6));
   const horizontal = Math.sin(windBearing * Math.PI / 180);
   return { top: 0, bottom: 40, left: horizontal > 1e-10 ? Math.max(8, lee) : 8, right: horizontal < -1e-10 ? Math.max(8, lee) : 8, fullStrength: 12, fade: 28 };
 }

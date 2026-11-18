@@ -124,6 +124,7 @@ export function FloatingWeatherCard({
   const pressStart = useRef({ x: 0, y: 0 });
   const [sheetOpen, setSheetOpen] = useState(false);
   const skyPlotRef = useRef<HTMLDivElement>(null);
+  const skyPlotPlayed = useRef(false);
   const [skyPlotReady, setSkyPlotReady] = useState(false);
   const skyReducedMotion = useSkyReducedMotion();
   const skyPerformanceStep = useSyncExternalStore(subscribeSkyFrameStats, getSkyPerformanceStep, () => 0 as const);
@@ -132,13 +133,13 @@ export function FloatingWeatherCard({
     const node = skyPlotRef.current;
     if (!node || !skyWantsMotion || editMode) { setSkyPlotReady(true); return; }
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const finish = () => { if (timer != null) clearTimeout(timer); setSkyPlotReady(true); };
+    const finish = () => { if (timer != null) clearTimeout(timer); skyPlotPlayed.current = true; setSkyPlotReady(true); };
     const ended = (event: AnimationEvent) => {
       if (event.target === node && event.animationName === "card-plot-in") finish();
     };
-    const running = node.getAnimations?.().some((animation) =>
+    const running = node.getAnimations?.().some(animation =>
       "animationName" in animation && animation.animationName === "card-plot-in" && animation.playState !== "finished");
-    if (node.classList.contains("card-plot-instant") || (node.classList.contains("card-plot-played") && running === false)) {
+    if (skyPlotPlayed.current || node.classList.contains("card-plot-instant") || (node.classList.contains("card-plot-played") && running !== true)) {
       finish(); return;
     }
     setSkyPlotReady(false);
@@ -407,6 +408,8 @@ export function FloatingWeatherCard({
           sky_motion={sky_motion}
           show_planes={show_planes}
           planes_entity_id={planes_entity_id}
+          skyOverflow={{ anchor: skyPlotRef, left: position.left, bottom: position.bottom, editMode, dragging: isDragging,
+            resizing: isResizing, plotIn: !skyPlotReady, sheetOpen }}
           skyPaused={editMode || isDragging || isResizing || sheetOpen || !skyPlotReady}
           air_quality_entity_id={air_quality_entity_id}
           size="md"

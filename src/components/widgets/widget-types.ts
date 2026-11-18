@@ -1,3 +1,4 @@
+import type { SkyOverflowPlacement } from "@/components/weather/weather-sky-overflow";
 import type { SkyMotion } from "@/lib/weather-sky";
 
 import type { WidgetConfig } from "@/stores/onboarding-store";
@@ -117,6 +118,7 @@ export type WeatherCardProps = WidgetBaseProps & {
   inSmartStack?: boolean;
   /** Pause sky motion while interacting with the surrounding floating card. */
   skyPaused?: boolean;
+  skyOverflow?: SkyOverflowPlacement;
   /** Deterministic dev-preview seek; omitted in normal dashboards. */
   skyPreview?: { time?: number; seed?: number; planesAt?: number };
   /** Optionele sensor voor luchtkwaliteit / AQI. */

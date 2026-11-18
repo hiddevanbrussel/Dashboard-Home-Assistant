@@ -1061,3 +1061,6 @@ html[data-glass-density="off"] .energy-day-band {
 @keyframes weather-plane-beacon { 0%, 9.99% { opacity: var(--plane-beacon-peak, 1); } 10%, 100% { opacity: 0; } }
 @keyframes weather-plane-strobe { 0%, 4.99%, 10%, 14.99% { opacity: 1; } 5%, 9.99%, 15%, 100% { opacity: 0; } }
 .weather-plane-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border: 1px solid rgba(27,36,55,.08); border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 600; line-height: 16px; }
+
+/* Run D: same containing block as floating tiles, always below z-30. */
+.weather-sky-overflow { transition: opacity 300ms ease-out; }

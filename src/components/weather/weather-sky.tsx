@@ -1,18 +1,21 @@
 "use client";
 
+import { flushSync } from "react-dom";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { useSkyMotionFlags, useSkyReducedMotionPreference } from "@/hooks/use-motion-flags";
 import { getSkyPerformanceStep, subscribeSkyFrameStats } from "@/lib/sky/frame-loop";
-import { planParticles } from "@/lib/sky/particles";
+import { overflowEnabled } from "@/lib/sky/overflow";
+import { createOverflowTarget, WeatherSkyOverflow, type SkyOverflowPlacement } from "./weather-sky-overflow";
+import { planParticles, withParticleOverflow } from "@/lib/sky/particles";
 import {
   TWINKLE, cloudDuration, cloudTravel, cloudProgress, retimeCloud, type CloudTimeline, fogDuration, frozenLightningPhase,
   horizontalWindDirection, isSkyPaused, resolveSkyMode, scheduleLightning,
 } from "@/lib/sky/sky-motion";
 import {
   DEFAULT_SUN_ENTITY_ID, PARTICLE_PARAMETERS, blendSky, deriveSky, driftWindFactor, normalizeSkyMotion, resolveSunPhase,
-  skyClouds, skyFogBands, skyGlow, skyStars, weatherEffects, weatherSkyLook,
+  overflowMargins, rainAngle, skyClouds, skyFogBands, skyGlow, skyStars, weatherEffects, weatherSkyLook,
   type SkySet, type SkyTheme,
 } from "@/lib/weather-sky";
 import { WeatherPlanes, type PlaneLabelState } from "./weather-planes";
@@ -106,9 +109,10 @@ function Veil({ scene }: { scene: Scene }) {
 }
 
 /** All motion remains inside the weather tile. Static is the unchanged run B sky. */
-export function WeatherSky({ condition, large, motion, precipitation = 0, windKmh = 0, bearing = 0, skyPaused = false, preview, show_planes, planes_entity_id, inSmartStack = false, onPlaneLabel }: {
+export function WeatherSky({ condition, large, motion, precipitation = 0, windKmh = 0, bearing = 0, skyPaused = false, preview, show_planes, planes_entity_id, inSmartStack = false, onPlaneLabel, overflow }: {
   condition: string; large: boolean; motion?: unknown; precipitation?: number; windKmh?: number;
   bearing?: number; skyPaused?: boolean; preview?: { time?: number; seed?: number; planesAt?: number };
+  overflow?: SkyOverflowPlacement;
   show_planes?: boolean; planes_entity_id?: string; inSmartStack?: boolean; onPlaneLabel?: (state: PlaneLabelState | null) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
@@ -128,7 +132,7 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
   useEffect(() => {
     const node = root.current;
     if (!node) return;
-    const read = (box?: Pick<DOMRectReadOnly, "width" | "height">) => {
+    const read = (box?: Pick<DOMRectReadOnly, "width" | "height">, synchronous = false) => {
       const rect = node.getBoundingClientRect();
       // Entrance/swipe transforms must not shrink the simulation's CSS area.
       const width = box?.width ?? (node.clientWidth || rect.width);
@@ -137,19 +141,20 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
       // simulation instead of unmounting/reallocating them during the pause.
       if (width <= 0 || height <= 0) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      setDimensions((old) => old.width === width && old.height === height && old.dpr === dpr ? old : { width, height, dpr });
+      const update = () => setDimensions((old) => old.width === width && old.height === height && old.dpr === dpr ? old : { width, height, dpr });
+      if (synchronous) flushSync(update); else update();
     };
     read();
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver((entries) => read(entries[0]?.contentRect));
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver((entries) => read(entries[0]?.contentRect, true));
     observer?.observe(node);
-    const resize = () => read();
+    const resize = () => read(undefined, true);
     let resolution: MediaQueryList | null = null;
     const watchResolution = () => {
       resolution?.removeEventListener("change", changedResolution);
       resolution = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
       resolution.addEventListener("change", changedResolution);
     };
-    const changedResolution = () => { read(); watchResolution(); };
+    const changedResolution = () => { read(undefined, true); watchResolution(); };
     watchResolution();
     window.addEventListener("resize", resize);
     return () => { observer?.disconnect(); resolution?.removeEventListener("change", changedResolution); window.removeEventListener("resize", resize); };
@@ -160,7 +165,16 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
   const modeRef = useRef(animated);
   modeRef.current = animated;
   const frozenTime = preview?.time;
-  const basePaused = isSkyPaused(flags, skyPaused);
+  const [overflowPageHidden, setOverflowPageHidden] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [overflowActive, setOverflowActive] = useState(false);
+  const [overflowTarget] = useState(createOverflowTarget);
+  const basePaused = isSkyPaused(flags, skyPaused) || popupOpen || overflowPageHidden;
+  const overflowGate = overflowEnabled({ mode, performanceStep, condition, floating: !!overflow, stacked: inSmartStack,
+    reducedMotion, paused: basePaused, hidden: flags.hidden, visible: flags.visible && !overflowPageHidden, screensaver: flags.screensaver,
+    editMode: flags.editMode || overflow?.editMode, dragging: overflow?.dragging, resizing: overflow?.resizing,
+    plotIn: overflow?.plotIn, sheetOpen: overflow?.sheetOpen, popupOpen });
+  const margins = useMemo(() => overflowMargins(condition === "hail" ? 0 : rainAngle(windKmh), bearing), [condition, windKmh, bearing]);
   const paused = !animated || basePaused || frozenTime != null;
   const timeline = useRef({ running: false, epoch: 0, pausedAt: null as number | null, elapsed: 0 });
   const now = ready ? performance.now() : 0;
@@ -203,9 +217,10 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
       clouds, cloudTimelines: cloudTimelines.current, fog: skyFogBands(look, theme),
     };
   }, [condition, phase, theme, large, fallback, elevation, rising, animated, frozenTime, dimensions.width, windKmh, bearing, elapsedForLayers]);
-  const plan = useMemo(() => planParticles({ condition, precipitation, windKmh, bearing,
+  const plan = useMemo(() => { const tilePlan = planParticles({ condition, precipitation, windKmh, bearing,
     width: dimensions.width, height: dimensions.height, compact: !large, mode, performanceStep,
-  }), [condition, precipitation, windKmh, bearing, dimensions.width, dimensions.height, large, mode, performanceStep]);
+  }); return overflowActive && overflowGate !== "off" ? withParticleOverflow(tilePlan, margins) : tilePlan;
+  }, [condition, precipitation, windKmh, bearing, dimensions.width, dimensions.height, large, mode, performanceStep, overflowActive, overflowGate, margins]);
   const lastScene = useRef(scene);
   const previousRef = useRef<Scene | null>(null);
   const [previous, setPrevious] = useState<Scene | null>(null);
@@ -263,6 +278,11 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
       data-change={transitionKind} data-motion={normalizeSkyMotion(motion)} data-reduced-motion={reducedMotion}
       data-look={weatherSkyLook(condition, phase)} data-phase={phase} data-theme={theme} data-large={large}
       data-sky-mode={mode} data-sky-paused={paused} data-sky-frozen={frozenTime != null} data-sky-performance-step={performanceStep}>
+      {overflow && mode === "animated-full" && performanceStep === 0 && !inSmartStack && (
+        <WeatherSkyOverflow placement={overflow} target={overflowTarget} gate={overflowGate} margins={margins}
+          width={dimensions.width} height={dimensions.height} dpr={dimensions.dpr} frozen={frozenTime != null}
+          onActive={setOverflowActive} onPopup={setPopupOpen} onPageHidden={setOverflowPageHidden} />
+      )}
       <Colours scene={scene} />
       <div key={scene.key} className={outgoing && !fullScene ? "weather-sky-incoming absolute inset-0" : "absolute inset-0"}>
         <Details scene={scene} elapsedAtMount={elapsedForLayers} />
@@ -274,7 +294,7 @@ export function WeatherSky({ condition, large, motion, precipitation = 0, windKm
           onLabel={onPlaneLabel} />
       )}
       {animated && plan.total > 0 && dimensions.width > 0 && dimensions.height > 0 && (
-        <WeatherSkyCanvas plan={plan} theme={theme} dpr={dimensions.dpr} paused={paused}
+        <WeatherSkyCanvas overflow={overflowTarget} plan={plan} theme={theme} dpr={dimensions.dpr} paused={paused}
           freezeTime={frozenTime} seed={preview?.seed} captureOnStop={captureOnStop} onSnapshot={captureSnapshot} />
       )}
       {animated && lightning && <div ref={flash} aria-hidden="true" className="sky-lightning sky-motion pointer-events-none absolute inset-0 z-[5]"
