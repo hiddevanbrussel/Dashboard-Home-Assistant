@@ -318,7 +318,7 @@ describe("future particle parameters (data only)", () => {
     expect(sky.overflowMargins(25, 270).right).toBe(24);
     expect(sky.overflowMargins(25, 0).left).toBe(8);
     expect(sky.overflowMargins(25, 180).right).toBe(8);
-    expect(sky.overflowMargins(10, 90).left).toBeCloseTo(Math.tan(Math.PI / 18) * 40 + 6);
+    expect(sky.overflowMargins(10, 90).left).toBe(Math.round(Math.tan(Math.PI / 18) * 40 + 6));
     expect(sky.overflowMargins(0, 90).left).toBe(8);
   });
   it("keeps effect types distinct and unknown weather static", () => {

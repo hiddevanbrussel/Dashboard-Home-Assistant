@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { overflowMask, writeOccluders, type OverflowGate, type OverflowMargins, type Rect } from "@/lib/sky/overflow";
 
@@ -49,6 +49,9 @@ export function WeatherSkyOverflow({ placement, target, gate, width, height, dpr
   const [paint, setPaint] = useState({ width, height, dpr, margins, left: placement.left, bottom: placement.bottom });
   const [opaque, setOpaque] = useState(false);
   const node = useRef<HTMLCanvasElement>(null);
+  const currentGate = useRef(gate); currentGate.current = gate;
+  const exitPending = useRef(false);
+  const exitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pageRef = useRef<HTMLElement | null>(null);
   const last = useRef({ left: placement.left, bottom: placement.bottom, width, height, blocked: false });
   const notify = useRef({ onActive, onPopup, onPageHidden }); notify.current = { onActive, onPopup, onPageHidden };
@@ -72,33 +75,44 @@ export function WeatherSkyOverflow({ placement, target, gate, width, height, dpr
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["role", "aria-modal"] });
     return () => { observer.disconnect(); notify.current.onPopup(false); };
   }, []);
+  const finishFadeOut = useCallback(() => {
+    if (!exitPending.current) return;
+    exitPending.current = false;
+    if (exitTimer.current != null) clearTimeout(exitTimer.current);
+    target.active = false; target.drawing = false; clearOverflow(target);
+    setMounted(false); notify.current.onActive(false);
+  }, [target]);
   useLayoutEffect(() => {
     const old = last.current;
     const moved = old.left !== placement.left || old.bottom !== placement.bottom || old.width !== width || old.height !== height;
     last.current = { left: placement.left, bottom: placement.bottom, width, height, blocked: gate !== "on" };
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let paint: ReturnType<typeof setTimeout> | undefined;
     if (!slot || gate === "off") {
+      exitPending.current = false;
+      if (exitTimer.current != null) clearTimeout(exitTimer.current);
       target.active = false; target.drawing = false; clearOverflow(target); setOpaque(false); setMounted(false); notify.current.onActive(false); publishWork(0);
     } else if (gate === "fading-out") {
       target.drawing = false; setOpaque(false);
-      timer = setTimeout(() => {
-        target.active = false; target.drawing = false; clearOverflow(target); setMounted(false); notify.current.onActive(false);
-      }, 150);
+      // transitionend owns normal removal; this only covers missing events.
+      exitPending.current = true;
+      if (exitTimer.current != null) clearTimeout(exitTimer.current);
+      exitTimer.current = setTimeout(finishFadeOut, 200);
     } else {
       const show = () => {
+        exitPending.current = false;
+        if (exitTimer.current != null) clearTimeout(exitTimer.current);
         setPaint({ width, height, dpr, margins, left: placement.left, bottom: placement.bottom });
         setMounted(true);
-        // A second commit gives opacity:0 a painted starting state.
-        paint = setTimeout(() => { measureRef.current(); setOpaque(true); }, 0);
       };
       if (moved || old.blocked) {
-        target.active = false; target.drawing = false; clearOverflow(target); notify.current.onActive(false); setOpaque(false); setMounted(false);
+        target.active = false; target.drawing = false; notify.current.onActive(false); setOpaque(false);
+        // A quick return must not cut an already-running exit transition short.
+        if (!exitPending.current) { clearOverflow(target); setMounted(false); }
         timer = setTimeout(show, 400);
       } else show();
     }
-    return () => { if (timer != null) clearTimeout(timer); if (paint != null) clearTimeout(paint); };
-  }, [gate, slot, placement.left, placement.bottom, width, height, dpr, margins, target]);
+    return () => { if (timer != null) clearTimeout(timer); };
+  }, [gate, slot, placement.left, placement.bottom, width, height, dpr, margins, target, finishFadeOut]);
   useLayoutEffect(() => {
     const canvas = node.current;
     if (!canvas || !mounted) return;
@@ -112,6 +126,16 @@ export function WeatherSkyOverflow({ placement, target, gate, width, height, dpr
     measureRef.current();
     target.active = true; target.drawing = true; notify.current.onActive(true);
   }, [mounted, paint, target]);
+  useLayoutEffect(() => {
+    const canvas = node.current;
+    if (!canvas || !mounted || currentGate.current !== "on") return;
+    // Commit and resolve opacity:0 before the following React update starts
+    // the transition. No rAF is needed, including for frozen previews.
+    void canvas.offsetHeight;
+    measureRef.current();
+    setOpaque(true);
+  }, [mounted]);
+  useLayoutEffect(() => () => { if (exitTimer.current != null) clearTimeout(exitTimer.current); }, []);
   useLayoutEffect(() => {
     const canvas = node.current;
     if (!canvas || !mounted) return;
@@ -172,7 +196,9 @@ export function WeatherSkyOverflow({ placement, target, gate, width, height, dpr
     };
   }, [mounted, placement.anchor, target, gate]);
   if (!slot || !mounted) return null;
-  return createPortal(<canvas ref={node} aria-hidden="true" className="weather-sky-overflow fixed" data-sky-overflow-frozen={frozen}
+  return createPortal(<canvas ref={node} onTransitionEnd={event => {
+    if (event.target === event.currentTarget && event.propertyName === "opacity") finishFadeOut();
+  }} aria-hidden="true" className="weather-sky-overflow fixed" data-sky-overflow-frozen={frozen}
     style={{ zIndex: 29, pointerEvents: "none", left: paint.left - paint.margins.left, bottom: paint.bottom - paint.margins.bottom,
       width: paint.width + paint.margins.left + paint.margins.right, height: paint.height + paint.margins.bottom, opacity: opaque ? 1 : 0,
       transitionDuration: gate === "fading-out" ? "150ms" : "300ms", maskImage: overflowMask(paint.width, paint.height, paint.margins),

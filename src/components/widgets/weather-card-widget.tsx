@@ -97,7 +97,7 @@ async function loadDailyForecast(entityId: string): Promise<WeatherForecastItem[
 function MetricInline({ icon, value }: { icon: ReactNode; value: string }) {
   return (
     <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-[#435066] dark:text-white/80">
-      <span className="shrink-0 opacity-[0.85]">{icon}</span>
+      <span className="shrink-0 opacity-[0.92] dark:opacity-[0.85]">{icon}</span>
       <span className="truncate text-[13px] font-medium tabular-nums tracking-tight">{value}</span>
     </div>
   );

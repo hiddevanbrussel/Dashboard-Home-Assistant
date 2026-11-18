@@ -2,6 +2,7 @@
 import { act, createElement, useRef } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { FloatingWeatherCard } from "@/components/widgets/floating-weather-card";
 import { WeatherSky } from "@/components/weather/weather-sky";
 import { drawParticles } from "@/components/weather/weather-sky-canvas";
 import { useEntityStateStore } from "@/stores/entity-state-store";
@@ -62,6 +63,9 @@ function Fixture({ motion = "on", stacked = false, slot = true, edit = false, fr
 const render = async (options: Options = {}) => act(async () => root.render(createElement(Fixture, options)));
 const advance = async (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 const overflow = () => host.querySelector<HTMLCanvasElement>("canvas.weather-sky-overflow");
+async function transitionEnd(node: Element, propertyName = "opacity") {
+  await act(async () => { const event = new Event("transitionend", { bubbles: true }); Object.defineProperty(event, "propertyName", { value: propertyName }); node.dispatchEvent(event); });
+}
 describe("weather overflow portal lifecycle", () => {
   it.each(["off", "calm", "reduced", "stack", "no-slot", "wind"])("mounts no overflow for %s", async flag => {
     reduced = flag === "reduced";
@@ -96,10 +100,10 @@ describe("weather overflow portal lifecycle", () => {
   it("fades edit/popup exits in 150ms, then waits 400ms before returning", async () => {
     await render(); await advance(1); const node = overflow()!;
     await render({ edit: true }); expect(overflow()).toBe(node); expect(node.style.opacity).toBe("0"); expect(node.style.transitionDuration).toBe("150ms");
-    await advance(150); expect(overflow()).toBeNull(); expect(node.width).toBe(0);
+    await advance(150); expect(overflow()).toBe(node); await transitionEnd(node); expect(overflow()).toBeNull(); expect(node.width).toBe(0);
     await render(); await advance(399); expect(overflow()).toBeNull(); await advance(2); expect(overflow()).not.toBeNull();
     const dialog = document.createElement("div"); dialog.setAttribute("role", "dialog");
-    await act(async () => { document.body.append(dialog); }); await advance(150); expect(overflow()).toBeNull();
+    await act(async () => { document.body.append(dialog); }); await advance(150); await transitionEnd(overflow()!); expect(overflow()).toBeNull();
     await act(async () => dialog.remove()); await advance(401); expect(overflow()).not.toBeNull();
   });
   it("flushes resize geometry before returning and delays overflow repositioning", async () => {
@@ -119,7 +123,7 @@ describe("weather overflow portal lifecycle", () => {
     const clears = ctx.clearRect.mock.calls.length;
     await render({ edit: true, left: 200 });
     expect(node.style.left).toBe("92px"); expect(ctx.clearRect.mock.calls).toHaveLength(clears);
-    await advance(150); await render({ left: 200 }); await advance(399); expect(overflow()).toBeNull();
+    await advance(150); await transitionEnd(node); await render({ left: 200 }); await advance(399); expect(overflow()).toBeNull();
     await advance(2); expect(overflow()!.style.left).toBe("192px");
   });
   it("does not reallocate the backing store when a bearing flip preserves its size", async () => {
@@ -140,6 +144,43 @@ describe("weather overflow portal lifecycle", () => {
     expect(layout).not.toHaveBeenCalled(); expect(canvasLayout).not.toHaveBeenCalled(); expect(pending.size).toBe(0);
     await render({ edit: true }); await act(async () => host.dispatchEvent(new Event("scroll")));
     expect(pending.size).toBe(0);
+  });
+  it("commits opacity zero and reflows before starting a remount fade-in", async () => {
+    const samples: string[] = [];
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains("weather-sky-overflow")) samples.push(getComputedStyle(this).opacity);
+      return 300;
+    });
+    await render(); await advance(1); await render({ edit: true });
+    await transitionEnd(overflow()!); samples.length = 0;
+    await render(); await advance(399); expect(overflow()).toBeNull();
+    await advance(1); expect(samples).toContain("0");
+    expect(overflow()!.style.opacity).toBe("1"); expect(overflow()!.style.transitionDuration).toBe("300ms");
+  });
+  it("uses transitionend for removal, ignores unrelated events and has a safety fallback", async () => {
+    await render(); await advance(1); const node = overflow()!;
+    await render({ edit: true }); await advance(150); expect(overflow()).toBe(node);
+    await transitionEnd(node, "transform"); expect(overflow()).toBe(node);
+    await transitionEnd(node); expect(overflow()).toBeNull(); expect(node.width).toBe(0);
+    await render(); await advance(401); await render({ edit: true });
+    await advance(199); expect(overflow()).not.toBeNull(); await advance(1); expect(overflow()).toBeNull();
+  });
+  it("finishes a fade-out even when editing closes before its transition ends", async () => {
+    await render(); await advance(1); const node = overflow()!;
+    await render({ edit: true }); await advance(40); await render();
+    expect(overflow()).toBe(node); await transitionEnd(node); expect(overflow()).toBeNull();
+    await advance(399); expect(overflow()).toBeNull(); await advance(1); expect(overflow()).not.toBeNull();
+  });
+  it("does not replay the plot-in fallback after the floating tile returns from editing", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ forecast: [] }) })));
+    useEntityStateStore.getState().updateEntityState("weather.preview", { state: "rainy", attributes: { precipitation: 3 } });
+    const floating = async (editMode: boolean) => act(async () => root.render(createElement("section", { "data-dashboard-page": true },
+      createElement("div", { "data-sky-overflow-slot": true, style: { display: "contents" } }),
+      createElement(FloatingWeatherCard, { title: "Preview weather", entity_id: "weather.preview", sky_motion: "on", width: 320, height: 300, editMode, storageScope: "run-d-fix-test" }))));
+    await floating(false); await advance(800); await advance(401); expect(overflow()).not.toBeNull();
+    await floating(true); await transitionEnd(overflow()!); expect(overflow()).toBeNull();
+    await floating(false); await advance(399); expect(overflow()).toBeNull();
+    await advance(1); expect(overflow()).not.toBeNull();
   });
   it("filters fully in-tile particles and never paints wind on the second target", () => {
     const plan = withParticleOverflow(planParticles({ condition: "rainy", precipitation: 3, windKmh: 0, bearing: 0, width: 320, height: 300, compact: false, mode: "animated-full", performanceStep: 0 }), { left: 8, right: 8, bottom: 40 });

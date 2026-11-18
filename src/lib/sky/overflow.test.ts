@@ -18,7 +18,7 @@ describe("overflow geometry and occlusion", () => {
     expect(overflowMargins(25, 90).left).toBe(24); expect(overflowMargins(25, 90).right).toBe(8);
     expect(overflowMargins(25, 270).right).toBe(24); expect(overflowMargins(25, 270).left).toBe(8);
     expect(overflowMargins(25, 0).left).toBe(8); expect(overflowMargins(25, NaN).right).toBe(8);
-    expect(overflowMargins(rainAngle(10), 90).left).toBeCloseTo(Math.max(8, Math.min(24, Math.tan(6 * Math.PI / 180) * 40 + 6)));
+    expect(overflowMargins(rainAngle(10), 90).left).toBe(Math.max(8, Math.round(Math.min(24, Math.tan(6 * Math.PI / 180) * 40 + 6))));
   });
   it.each([300, 160])("builds the U and bottom corner squares for height %s", height => {
     expect(overflowRect({ x: 100, y: 20, width: 320, height }, margins)).toEqual({ x: 92, y: 20, width: 336, height: height + 40 });
@@ -56,4 +56,14 @@ describe("overflow geometry and occlusion", () => {
     expect(overflowParticleCount(85, 320, 160, { ...margins, right: 24 })).toBe(117);
     expect(overflowParticleCount(200, 500, 420, { ...margins, left: 24 })).toBe(200);
   });
+});
+
+
+it("rounds fractional lee margins on both wind sides", () => {
+  expect(overflowMargins(18, 90).left).toBe(19);
+  expect(overflowMargins(18, 270).right).toBe(19);
+  for (let angle = 0; angle <= 25; angle += .25) {
+    expect(Number.isInteger(overflowMargins(angle, 90).left)).toBe(true);
+    expect(Number.isInteger(overflowMargins(angle, 270).right)).toBe(true);
+  }
 });
