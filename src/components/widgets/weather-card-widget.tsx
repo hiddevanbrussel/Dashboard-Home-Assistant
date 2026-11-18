@@ -119,6 +119,7 @@ export function WeatherCardWidget({
   planes_entity_id,
   inSmartStack = false,
   skyPaused,
+  skyOverflow,
   skyPreview,
   air_quality_entity_id,
   className,
@@ -288,7 +289,7 @@ export function WeatherCardWidget({
     >
       <WeatherSky condition={condition} large={fitMetrics && metrics.length > 0} motion={sky_motion}
         precipitation={precipMm} windKmh={windSpeedKmh(windSpeed ?? 0, windUnit)} bearing={windBearing ?? 0}
-        skyPaused={skyPaused || stackHidden} preview={skyPreview} {...planeOptions} inSmartStack={inSmartStack} onPlaneLabel={setPlaneLabelState} />
+        overflow={skyOverflow} skyPaused={skyPaused || stackHidden} preview={skyPreview} {...planeOptions} inSmartStack={inSmartStack} onPlaneLabel={setPlaneLabelState} />
 
       {planeLabelState && <WeatherPlaneLabel state={planeLabelState} />}
 

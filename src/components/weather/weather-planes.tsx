@@ -9,7 +9,7 @@ import { PlaneBreed } from "./planes/plane-breed";
 import { PlaneKlein } from "./planes/plane-klein";
 import { PlaneSmal } from "./planes/plane-smal";
 
-type Crossing = { flight: Flight; geometry: ReturnType<typeof planeGeometry>; started: number; fading?: number; fadeDuration?: number };
+type Crossing = { flight: Flight; geometry: ReturnType<typeof planeGeometry>; started: number; fading?: number; fadeDuration?: number; exit?: "pause" };
 export type PlaneLabelState = {
   crossing: Crossing; paused: boolean; phase: SkyPhase; theme: SkyTheme;
   width: number; height: number; frozen?: number;
@@ -29,7 +29,7 @@ export function WeatherPlanes(props: Props) {
     const instance = createPlanePlanner(clock, {
       start: flight => setCrossings(old => [...old, { flight, started: Date.now(), geometry: planeGeometry(flight,
         latest.current.width, latest.current.height, latest.current.compact) }]),
-      remove: (id, fade, fadeDuration) => setCrossings(old => fade ? old.map(c => c.flight.id === id ? { ...c, fading: Date.now(), fadeDuration } : c) : old.filter(c => c.flight.id !== id)),
+      remove: (id, fade, fadeDuration, exit) => setCrossings(old => fade ? old.map(c => c.flight.id === id ? { ...c, fading: Date.now(), fadeDuration, exit } : c) : old.filter(c => c.flight.id !== id)),
     });
     planner.current = instance;
     return () => { instance.dispose(); planner.current = null; setCrossings([]); };
@@ -75,11 +75,11 @@ function useCrossingAnimation(ref: React.RefObject<HTMLElement | null>, crossing
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [crossing.flight.id, crossing.geometry, frozen]);
   useLayoutEffect(() => {
-    const terminal = crossing.fadeDuration === 300;
+    const terminal = crossing.exit === "pause";
     for (const a of animations.current) { if (paused || frozen != null || terminal) a.pause(); else a.play(); }
     const exit = exitAnimation.current;
     if (exit) { if ((paused || frozen != null) && !terminal) exit.pause(); else exit.play(); }
-  }, [paused, frozen, crossing.fadeDuration]);
+  }, [paused, frozen, crossing.exit]);
   useLayoutEffect(() => {
     if (crossing.fading == null || !ref.current?.animate) return;
     const opacity = getComputedStyle(ref.current).opacity;
@@ -87,7 +87,7 @@ function useCrossingAnimation(ref: React.RefObject<HTMLElement | null>, crossing
     const fade = ref.current.animate([{ opacity }, { opacity: 0 }], { duration, fill: "forwards" });
     exitAnimation.current = fade;
     // A visible long-pause exit must finish even while the crossing stays paused.
-    if ((paused || frozen != null) && duration !== 300) fade.pause();
+    if ((paused || frozen != null) && crossing.exit !== "pause") fade.pause();
     fade.onfinish = () => { finished.current?.(); };
     return () => { fade.onfinish = null; fade.cancel(); if (exitAnimation.current === fade) exitAnimation.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps

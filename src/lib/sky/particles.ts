@@ -1,6 +1,7 @@
 import {
   PARTICLE_CAP, PARTICLE_PARAMETERS, particleCount, precipitationIntensity, rainAngle, weatherEffects,
 } from "../weather-sky";
+import { overflowParticleCount, type OverflowMargins } from "./overflow";
 import { createSkyRandom, horizontalWindDirection, skyDensity, skyFps, type PerformanceStep, type SkyMode } from "./sky-motion";
 
 export const RAIN = 0;
@@ -17,6 +18,7 @@ export type ParticlePlan = {
   rainSpeed: number; snowSpeed: number; hailSpeed: number; windSpeed: number;
   rainAngle: number; rainDirection: number; snowSideways: number; windDirection: number;
   rainLength: number; rainWidth: number;
+  overflow?: OverflowMargins;
 };
 
 function apportion(counts: Counts, target: number): Counts {
@@ -66,6 +68,15 @@ export function planParticles(input: {
   };
 }
 
+/** Scale the existing tile plan once; both canvases share this single capped pool. */
+export function withParticleOverflow(plan: ParticlePlan, margins: OverflowMargins): ParticlePlan {
+  const total = overflowParticleCount(plan.total, plan.width, plan.height, margins);
+  const counts = plan.counts.map(count => Math.floor(count * total / Math.max(1, plan.total))) as Counts;
+  let remaining = total - counts.reduce((sum, count) => sum + count, 0);
+  for (let i = 0; remaining > 0; i = (i + 1) % 4) if (plan.counts[i]) { counts[i]++; remaining--; }
+  return { ...plan, counts, total, overflow: margins };
+}
+
 export type ParticleSimulation = {
   readonly buffer: Float32Array;
   plan: ParticlePlan;
@@ -91,8 +102,8 @@ function initialize(sim: ParticleSimulation, index: number, kind: number) {
   const at = index * STRIDE;
   const random = sim.random;
   b[at + FIELD.kind] = kind;
-  b[at + FIELD.x] = random() * sim.plan.width;
-  b[at + FIELD.y] = random() * sim.plan.height;
+  b[at + FIELD.x] = random() * (sim.plan.width + (sim.plan.overflow?.left ?? 0) + (sim.plan.overflow?.right ?? 0)) - (sim.plan.overflow?.left ?? 0);
+  b[at + FIELD.y] = random() * (sim.plan.height + (sim.plan.overflow?.bottom ?? 0));
   b[at + FIELD.depth] = index % 2 === 0 ? 0.55 + random() * 0.2 : 0.8 + random() * 0.2;
   b[at + FIELD.variation] = 1 - PARTICLE_PARAMETERS.rain.speedVariation + random() * PARTICLE_PARAMETERS.rain.speedVariation * 2;
   b[at + FIELD.phase] = random() * Math.PI * 2;
@@ -137,7 +148,11 @@ export function updateParticlePlan(sim: ParticleSimulation, next: ParticlePlan):
   for (let i = 0; i < count; i++) {
     const at = i * STRIDE;
     if (i >= oldCount || (i < next.total && sim.buffer[at + FIELD.kind] !== kindAt(next, i))) {
+      const x = sim.buffer[at + FIELD.x], y = sim.buffer[at + FIELD.y];
       initialize(sim, i, kindAt(next, i));
+      if (i < oldCount && old.condition === next.condition && old.overflow !== next.overflow) {
+        sim.buffer[at + FIELD.x] = x; sim.buffer[at + FIELD.y] = y;
+      }
     } else {
       sim.buffer[at + FIELD.x] *= next.width / old.width;
       sim.buffer[at + FIELD.y] *= next.height / old.height;
@@ -185,12 +200,15 @@ export function stepParticles(sim: ParticleSimulation, dt: number): void {
       if (kind === RAIN) b[at + FIELD.x] += speed * rainX * dt;
       if (kind === SNOW) b[at + FIELD.x] += p.snowSideways * depth * dt
         + b[at + FIELD.amplitude] * (Math.sin(phase) - Math.sin(oldPhase));
-      if (b[at + FIELD.y] > p.height + 24) {
+      const extension = p.overflow ? p.overflow.bottom + b[at + FIELD.size] : 24;
+      if (b[at + FIELD.y] > p.height + extension) {
         b[at + FIELD.y] = -24;
-        b[at + FIELD.x] = sim.random() * p.width;
+        b[at + FIELD.x] = sim.random() * (p.width + (p.overflow?.left ?? 0) + (p.overflow?.right ?? 0)) - (p.overflow?.left ?? 0);
       }
-      if (b[at + FIELD.x] < -24) b[at + FIELD.x] = p.width + 24;
-      if (b[at + FIELD.x] > p.width + 24) b[at + FIELD.x] = -24;
+      const left = p.overflow ? -p.overflow.left : -24;
+      const right = p.width + (p.overflow ? p.overflow.right : 24);
+      if (b[at + FIELD.x] < left) b[at + FIELD.x] = right;
+      if (b[at + FIELD.x] > right) b[at + FIELD.x] = left;
     }
   }
 }

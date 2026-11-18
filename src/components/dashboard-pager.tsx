@@ -234,10 +234,14 @@ export function DashboardPager({
                 className="pointer-events-none"
                 style={{ height: `calc(100% - ${verticalOverflowPx}px)`, transform: "translateZ(0)" }}
               >
+                <div data-sky-overflow-slot style={{ display: "contents" }} />
                 {children(index)}
               </div>
             ) : (
-              children(index)
+              <>
+                <div data-sky-overflow-slot style={{ display: "contents" }} />
+                {children(index)}
+              </>
             )}
           </section>
         ))}

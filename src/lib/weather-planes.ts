@@ -99,7 +99,7 @@ export function resolvePlaneOptions(options: { show_planes?: boolean; planes_ent
 export type PlaneClock = { now: () => number; setTimeout: (fn: () => void, ms: number) => unknown; clearTimeout: (id: unknown) => void };
 export type PlanePolicy = { calm?: boolean; mode: SkyMode; performanceStep: number; paused: boolean; visible?: boolean; compact: boolean; stacked: boolean; condition: string; precipitation: number };
 /** No frame loop: one wake-up timer, state updates and animation finish events. */
-export function createPlanePlanner(clock: PlaneClock, events: { start: (flight: Flight) => void; remove: (id: string, fade: boolean, duration?: number) => void }) {
+export function createPlanePlanner(clock: PlaneClock, events: { start: (flight: Flight) => void; remove: (id: string, fade: boolean, duration?: number, reason?: "pause") => void }) {
   let policy: PlanePolicy = { mode: "static", performanceStep: 0, paused: true, compact: false, stacked: false, condition: "sunny", precipitation: 0 };
   let previous = new Set<string>(), cache = new Map<string, number>();
   let queue: { flight: Flight; expires: number; due: number } | undefined;
@@ -110,12 +110,12 @@ export function createPlanePlanner(clock: PlaneClock, events: { start: (flight: 
   const clearTimer = () => { if (timer != null) clock.clearTimeout(timer); timer = undefined; };
   const prune = () => { const now = clock.now(); for (const [id, time] of cache) if (now - time >= 1800000) cache.delete(id); starts = starts.filter(t => now - t < 3600000); };
   const remember = (id: string) => { if (!cache.has(id)) cache.set(id, clock.now()); while (cache.size > 50) cache.delete(cache.keys().next().value!); };
-  const retire = (id: string, duration = 1500) => { if (!retiring.has(id) || duration < retiring.get(id)!) { retiring.set(id, duration); events.remove(id, true, duration); } };
-  const removeAll = (fade: boolean, duration = 1500) => {
-    for (const id of active.keys()) { if (fade) retire(id, duration); else events.remove(id, false); }
+  const retire = (id: string, duration = 1500, reason?: "pause") => { if (!retiring.has(id) || duration < retiring.get(id)!) { retiring.set(id, duration); if (reason) events.remove(id, true, duration, reason); else events.remove(id, true, duration); } };
+  const removeAll = (fade: boolean, duration = 1500, reason?: "pause") => {
+    for (const id of active.keys()) { if (fade) retire(id, duration, reason); else events.remove(id, false); }
     if (!fade) { active.clear(); retiring.clear(); }
   };
-  const longPause = () => { queue = undefined; first = false; removeAll(policy.visible === true, 300); };
+  const longPause = () => { queue = undefined; first = false; removeAll(policy.visible === true, 300, "pause"); };
   const pump = () => {
     clearTimer(); prune(); const now = clock.now();
     if (policy.mode === "static" || policy.performanceStep >= 2) { queue = undefined; removeAll(false); return; }

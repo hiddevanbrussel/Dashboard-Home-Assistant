@@ -407,6 +407,8 @@ export function FloatingWeatherCard({
           sky_motion={sky_motion}
           show_planes={show_planes}
           planes_entity_id={planes_entity_id}
+          skyOverflow={{ anchor: skyPlotRef, left: position.left, bottom: position.bottom, editMode, dragging: isDragging,
+            resizing: isResizing, plotIn: !skyPlotReady, sheetOpen }}
           skyPaused={editMode || isDragging || isResizing || sheetOpen || !skyPlotReady}
           air_quality_entity_id={air_quality_entity_id}
           size="md"

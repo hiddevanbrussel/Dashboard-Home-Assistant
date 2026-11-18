@@ -148,7 +148,7 @@ describe("timer-only plane planner", () => {
   it("requests one visible 300ms pause exit, then cancels immediately if it becomes hidden", () => {
     const { p, remove } = planner({ visible: true }); p.updateSensor(sensor([raw()])); vi.advanceTimersByTime(3000);
     p.updatePolicy({ ...policy, visible: true, paused: true }); vi.advanceTimersByTime(5001);
-    expect(remove).toHaveBeenCalledWith(flight().id, true, 300);
+    expect(remove).toHaveBeenCalledWith(flight().id, true, 300, "pause");
     const count = remove.mock.calls.length; p.updatePolicy({ ...policy, visible: true, paused: true });
     expect(remove).toHaveBeenCalledTimes(count);
     p.updatePolicy({ ...policy, visible: false, paused: true });
@@ -179,5 +179,17 @@ describe("timer-only plane planner", () => {
     const { p } = planner(); p.updateSensor(sensor(Array.from({ length: 60 }, (_, i) => raw(`fictional-${i}`))));
     expect(p.inspect().cache).toHaveLength(50); expect(p.inspect().cache[0]).toBe("fictional-10");
     vi.advanceTimersByTime(1803000); p.updateSensor(sensor([])); expect(p.inspect().cache).toHaveLength(0);
+  });
+});
+
+
+describe("plane pause exit reason", () => {
+  it("marks long-pause exits explicitly, without marking unavailable-sensor exits", () => {
+    const { p, remove } = planner({ visible: true }); p.updateSensor(sensor([raw()])); vi.advanceTimersByTime(3000);
+    p.updatePolicy({ ...policy, visible: true, paused: true }); vi.advanceTimersByTime(5001);
+    expect(remove).toHaveBeenLastCalledWith(flight().id, true, 300, "pause");
+    const other = planner(); other.p.updateSensor(sensor([raw()])); vi.advanceTimersByTime(3000);
+    other.p.updateSensor(sensor([], "unavailable"));
+    expect(other.remove).toHaveBeenLastCalledWith(flight().id, true, 1500);
   });
 });

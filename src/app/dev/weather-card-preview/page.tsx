@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { getSkyOverflowWorkMs, subscribeSkyOverflowWork } from "@/components/weather/weather-sky-overflow";
 import { WeatherCardWidget } from "@/components/widgets/weather-card-widget";
 import { useEntityStateStore } from "@/stores/entity-state-store";
 import { useLanguageStore } from "@/stores/language-store";
 import { useThemeStore } from "@/stores/theme-store";
-import { DEFAULT_SUN_ENTITY_ID, normalizeSkyMotion, type SkyMotion, type SkyPhase } from "@/lib/weather-sky";
+import { DEFAULT_SUN_ENTITY_ID, normalizeSkyMotion, overflowMargins, rainAngle, type SkyMotion, type SkyPhase } from "@/lib/weather-sky";
 import { useSkyReducedMotion } from "@/components/weather/weather-sky";
 import { getServerSkyFrameStats, getSkyFrameStats, subscribeSkyFrameStats } from "@/lib/sky/frame-loop";
-import { planParticles } from "@/lib/sky/particles";
+import { planParticles, withParticleOverflow } from "@/lib/sky/particles";
+import { overflowEnabled } from "@/lib/sky/overflow";
 import { resolveSkyMode } from "@/lib/sky/sky-motion";
 import { cn } from "@/lib/utils";
 
@@ -54,8 +56,15 @@ export default function WeatherCardPreviewPage() {
   const [showPlanes, setShowPlanes] = useState(true);
   const [planesFlight, setPlanesFlight] = useState(1);
   const [planesAt, setPlanesAt] = useState<number | undefined>();
+  const previewTile = useRef<HTMLDivElement>(null);
+  const [previewOverflow, setPreviewOverflow] = useState(false);
+  const [previewEdge, setPreviewEdge] = useState(false);
+  const [previewStack, setPreviewStack] = useState(false);
+  const [neighbours, setNeighbours] = useState("both");
+  const previewBottom = previewEdge ? 0 : 60;
   const [debug, setDebug] = useState(false);
   const reducedMotion = useSkyReducedMotion();
+  const overflowWork = useSyncExternalStore(debug ? subscribeSkyOverflowWork : subscribeNoStats, getSkyOverflowWorkMs, () => 0);
   const stats = useSyncExternalStore(debug ? subscribeSkyFrameStats : subscribeNoStats,
     debug ? getSkyFrameStats : getServerSkyFrameStats, getServerSkyFrameStats);
 
@@ -89,6 +98,10 @@ export default function WeatherCardPreviewPage() {
     setPlanesFlight(query.get("planesFlight") === "2" ? 2 : 1);
     setShowPlanes(query.get("showPlanes") !== "0");
     if (query.has("planesAt")) setPlanesAt(Math.max(0, numberParam("planesAt", 0)));
+    setPreviewOverflow(query.get("overflow") === "1");
+    setPreviewEdge(query.get("edge") === "1");
+    setPreviewStack(query.get("stack") === "1");
+    setNeighbours(["none", "solid", "glass", "both"].includes(query.get("neighbours") ?? "") ? query.get("neighbours")! : "both");
     setDebug(query.get("debug") === "1");
     const theme = query.get("theme");
     if (theme === "light" || theme === "dark") {
@@ -109,12 +122,16 @@ export default function WeatherCardPreviewPage() {
   }, []);
 
   const precip = precipitation ?? (condition === "rainy" ? 1 : 0);
-  const debugPlan = useMemo(() => debug ? planParticles({ condition, precipitation: precip, windKmh: wind, bearing,
+  const debugPlan = useMemo(() => { if (!debug) return null; const mode = resolveSkyMode({ motion, reducedMotion, performanceStep: stats.performanceStep });
+    const plan = planParticles({ condition, precipitation: precip, windKmh: wind, bearing,
     width: dimensions.width, height: dimensions.height,
     compact: dimensions.height < 184 || !(showWind || showHumidity || showAqi || showPrecip),
-    mode: resolveSkyMode({ motion, reducedMotion, performanceStep: stats.performanceStep }),
+    mode,
     performanceStep: stats.performanceStep,
-  }) : null, [debug, condition, precip, wind, bearing, dimensions, showWind, showHumidity, showAqi, showPrecip, motion, reducedMotion, stats.performanceStep]);
+  });
+    return overflowEnabled({ mode, condition, performanceStep: stats.performanceStep, floating: previewOverflow, stacked: previewStack,
+      reducedMotion, paused: false }) === "on" ? withParticleOverflow(plan, overflowMargins(condition === "hail" ? 0 : rainAngle(wind), bearing)) : plan;
+  }, [debug, condition, precip, wind, bearing, dimensions, showWind, showHumidity, showAqi, showPrecip, motion, reducedMotion, stats.performanceStep, previewOverflow, previewStack]);
 
   const entities = useMemo(
     () => [
@@ -184,7 +201,7 @@ export default function WeatherCardPreviewPage() {
       <div className="mx-auto max-w-3xl">
         <h1 className="text-lg font-semibold">Weather card preview</h1>
         {debug && <p data-sky-debug className="mt-1 text-sm">
-          Particles: {freezeTime != null ? debugPlan?.total ?? 0 : stats.activeParticles}, fps: {stats.fps}, average work: {stats.averageWorkMs.toFixed(3)} ms
+          Particles: {freezeTime != null ? debugPlan?.total ?? 0 : stats.activeParticles}, fps: {stats.fps}, average work: {stats.averageWorkMs.toFixed(3)} ms, overflow: {overflowWork.toFixed(3)} ms
         </p>}
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -268,7 +285,11 @@ export default function WeatherCardPreviewPage() {
         </div>
 
         <div className="mt-8 flex justify-center">
-          <div data-weather-preview style={dimensions}>
+          <div data-dashboard-page={previewOverflow ? true : undefined} data-weather-overflow-preview={previewOverflow ? true : undefined}
+            style={previewOverflow ? { position: "relative", width: dimensions.width + 120, height: dimensions.height + (previewEdge ? 0 : 100), overflow: "hidden", isolation: "isolate" } : undefined}>
+          {previewOverflow && <div data-sky-overflow-slot style={{ display: "contents" }} />}
+          <div ref={previewTile} data-weather-preview className={previewOverflow ? "card-plot-in card-plot-instant absolute z-30" : undefined}
+            style={previewOverflow ? { ...dimensions, left: 48, bottom: previewBottom } : dimensions}>
             <WeatherCardWidget
               title="Preview weather"
               entity_id={ENTITY_ID}
@@ -279,6 +300,8 @@ export default function WeatherCardPreviewPage() {
               show_humidity={showHumidity}
               show_air_quality={showAqi}
               show_precipitation={showPrecip}
+              inSmartStack={previewStack}
+              skyOverflow={previewOverflow ? { anchor: previewTile, left: 48, bottom: previewBottom } : undefined}
               sky_motion={motion}
               skyPreview={{ time: freezeTime, seed, planesAt }}
               show_planes={planesEnabled && showPlanes}
@@ -288,6 +311,11 @@ export default function WeatherCardPreviewPage() {
               size="md"
               className="h-full"
             />
+          </div>
+          {previewOverflow && ["solid", "both"].includes(neighbours) && <div className="card-plot-in card-plot-instant absolute z-30 rounded-2xl bg-slate-700 p-2 text-xs text-white"
+            style={{ left: 98, bottom: Math.max(0, previewBottom - 44), width: 120, height: 40 }}>Mock tile</div>}
+          {previewOverflow && ["glass", "both"].includes(neighbours) && <div className="card-plot-in card-plot-instant glass-card absolute z-30 rounded-2xl p-2 text-xs backdrop-blur-md"
+            style={{ left: 48 + dimensions.width + 4, bottom: previewBottom + 40, width: 72, height: 120 }}>Mock tile</div>}
           </div>
         </div>
       </div>
