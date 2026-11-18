@@ -2,6 +2,7 @@
 
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { PARTICLE_COLOURS, type SkyTheme } from "@/lib/weather-sky";
+import { canvasBacking } from "@/lib/sky/backing";
 import { subscribeSkyFrames } from "@/lib/sky/frame-loop";
 import { touchesOverflow } from "@/lib/sky/overflow";
 import { clearOverflow, recordOverflowWork, type OverflowTarget } from "./weather-sky-overflow";
@@ -153,13 +154,12 @@ export function WeatherSkyCanvas({ plan, theme, dpr, paused, freezeTime, seed, c
   useLayoutEffect(() => {
     const node = canvas.current;
     if (!node) return;
-    const width = Math.max(1, Math.round(plan.width * dpr));
-    const height = Math.max(1, Math.round(plan.height * dpr));
+    const { width, height, scaleX, scaleY } = canvasBacking(plan.width, plan.height, dpr);
     if (node.width !== width) node.width = width;
     if (node.height !== height) node.height = height;
     const ctx = node.getContext("2d");
     if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
     renderer.current.ctx = ctx;
     renderer.current.theme = theme;
     renderer.current.sprite = snowSprite(theme);

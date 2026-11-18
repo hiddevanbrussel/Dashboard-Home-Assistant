@@ -204,6 +204,14 @@ describe("weather sky motion DOM", () => {
       expect(call[3]).toBeLessThanOrEqual(7);
     }
   });
+  it("fits an odd tile backing without changing its CSS-pixel drawing area", async () => {
+    vi.stubGlobal("devicePixelRatio", 1.5);
+    await render("on");
+    await act(async () => { resizeSky(321, 160); });
+    const canvas = host.querySelector<HTMLCanvasElement>(".weather-sky canvas")!;
+    expect(canvas.width).toBe(482); expect(canvas.height).toBe(240);
+    expect(canvas.getContext("2d")!.setTransform).toHaveBeenLastCalledWith(482 / 321, 0, 0, 1.5, 0, 0);
+  });
   it("applies the global performance fallback and never re-enables it in the session", async () => {
     const context = document.createElement("canvas").getContext("2d")!;
     vi.mocked(context.clearRect).mockImplementation(() => { vi.advanceTimersByTime(12); });

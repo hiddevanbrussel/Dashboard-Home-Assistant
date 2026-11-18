@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { canvasBacking } from "@/lib/sky/backing";
 import { overflowMask, writeOccluders, type OverflowGate, type OverflowMargins, type Rect } from "@/lib/sky/overflow";
 
 export type SkyOverflowPlacement = {
@@ -117,12 +118,12 @@ export function WeatherSkyOverflow({ placement, target, gate, width, height, dpr
     const canvas = node.current;
     if (!canvas || !mounted) return;
     target.canvas = canvas; target.width = paint.width; target.height = paint.height; target.dpr = Math.min(paint.dpr, 1.5); target.margins = paint.margins;
-    const backingWidth = Math.round((paint.width + paint.margins.left + paint.margins.right) * target.dpr);
-    const backingHeight = Math.round((paint.height + paint.margins.bottom) * target.dpr);
+    const { width: backingWidth, height: backingHeight, scaleX, scaleY } = canvasBacking(
+      paint.width + paint.margins.left + paint.margins.right, paint.height + paint.margins.bottom, target.dpr);
     if (canvas.width !== backingWidth) canvas.width = backingWidth;
     if (canvas.height !== backingHeight) canvas.height = backingHeight;
     target.context = canvas.getContext("2d", { alpha: true });
-    target.context?.setTransform(target.dpr, 0, 0, target.dpr, 0, 0);
+    target.context?.setTransform(scaleX, 0, 0, scaleY, 0, 0);
     measureRef.current();
     target.active = true; target.drawing = true; notify.current.onActive(true);
   }, [mounted, paint, target]);
