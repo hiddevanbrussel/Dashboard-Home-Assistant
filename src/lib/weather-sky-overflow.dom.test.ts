@@ -182,6 +182,20 @@ describe("weather overflow portal lifecycle", () => {
     await floating(false); await advance(399); expect(overflow()).toBeNull();
     await advance(1); expect(overflow()).not.toBeNull();
   });
+  it("fits a 347px overflow backing at a rounded 19px lee margin", async () => {
+    vi.stubGlobal("devicePixelRatio", 1.5);
+    await render({ wind: 30, bearing: 90 }); await advance(1);
+    const node = overflow()!;
+    expect(node.style.width).toBe("347px"); expect(node.width).toBe(521); expect(node.height).toBe(510);
+    expect(contexts.get(node)!.setTransform).toHaveBeenLastCalledWith(521 / 347, 0, 0, 1.5, 0, 0);
+  });
+  it("retains the exact DPR transform at an even overflow width", async () => {
+    vi.stubGlobal("devicePixelRatio", 1.5);
+    await render({ wind: 0 }); await advance(1);
+    const node = overflow()!;
+    expect(node.width).toBe(504); expect(node.height).toBe(510);
+    expect(contexts.get(node)!.setTransform).toHaveBeenLastCalledWith(1.5, 0, 0, 1.5, 0, 0);
+  });
   it("filters fully in-tile particles and never paints wind on the second target", () => {
     const plan = withParticleOverflow(planParticles({ condition: "rainy", precipitation: 3, windKmh: 0, bearing: 0, width: 320, height: 300, compact: false, mode: "animated-full", performanceStep: 0 }), { left: 8, right: 8, bottom: 40 });
     const sim = createParticles(plan); sim.active = 1; sim.buffer[FIELD.x] = 100; sim.buffer[FIELD.y] = 100;

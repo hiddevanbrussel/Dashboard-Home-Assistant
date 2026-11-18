@@ -1,6 +1,11 @@
 import { precipitationIntensity, type SkyPhase, type SkyTheme } from "./weather-sky";
 import type { SkyMode } from "./sky/sky-motion";
 
+export const PLANE_LABEL_COLORS = {
+  light: { text: "#404C62", border: "rgba(27,36,55,.08)", background: "rgba(247,250,253,.90)" },
+  dark: { text: "rgba(255,255,255,.8)", border: "rgba(255,255,255,.12)", background: "rgba(18,24,38,.86)" },
+} as const;
+
 export type Flight = {
   id: string; callsign: string; aircraftCode: string; altitude?: number;
   heading: number; groundSpeed: number; verticalSpeed: number;

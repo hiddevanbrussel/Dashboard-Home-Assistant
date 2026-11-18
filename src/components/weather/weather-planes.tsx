@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useEntityStateStore } from "@/stores/entity-state-store";
-import { createPlanePlanner, parseFlights, planeAllowed, planeContrail, planeContrailLength, planeGeometry, planeLabel, planeLabelAllowed, planePalette, type Flight, type PlanePolicy } from "@/lib/weather-planes";
+import { PLANE_LABEL_COLORS, createPlanePlanner, parseFlights, planeAllowed, planeContrail, planeContrailLength, planeGeometry, planeLabel, planeLabelAllowed, planePalette, type Flight, type PlanePolicy } from "@/lib/weather-planes";
 import type { SkyPhase, SkyTheme } from "@/lib/weather-sky";
 import { SKY_CANVAS_MASK } from "./weather-sky-canvas";
 import { PlaneBreed } from "./planes/plane-breed";
@@ -127,6 +127,7 @@ export function WeatherPlaneLabel({ state }: { state: PlaneLabelState }) {
   const { crossing, width, height, paused, frozen } = state;
   const g = crossing.geometry;
   const label = planeLabel(crossing.flight);
+  const colors = PLANE_LABEL_COLORS[state.theme === "dark" ? "dark" : "light"];
   const path = (node: HTMLElement): Keyframe[] => {
     const pillWidth = node.offsetWidth || Math.min(label.length * 7 + 18, width * .48 - 24);
     const shell = node.parentElement?.getBoundingClientRect();
@@ -153,7 +154,7 @@ export function WeatherPlaneLabel({ state }: { state: PlaneLabelState }) {
     [{ opacity: 0, offset: 0 }, { opacity: 0, offset: start, easing: "ease-out" }, { opacity: 1, offset: on, easing: "linear" },
       { opacity: 1, offset: off, easing: "ease-in" }, { opacity: 0, offset: end }, { opacity: 0, offset: 1 }]);
   return <div ref={ref} aria-hidden="true" data-weather-plane-label className="weather-plane-label pointer-events-none absolute left-0 top-0 z-[11]"
-    style={{ maxWidth: width * .48 - 24, color: state.theme === "dark" ? "rgba(255,255,255,.8)" : "#435066",
-      borderColor: state.theme === "dark" ? "rgba(255,255,255,.12)" : "rgba(27,36,55,.08)",
-      backgroundColor: state.theme === "dark" ? "rgba(18,24,38,.86)" : "rgba(247,250,253,.90)" }}>{label}</div>;
+    style={{ maxWidth: width * .48 - 24, color: colors.text,
+      borderColor: colors.border,
+      backgroundColor: colors.background }}>{label}</div>;
 }

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
-  createPlanePlanner, flightHash, parseFlights, planeAllowed, planeContrail, planeGeometry,
+  PLANE_LABEL_COLORS, createPlanePlanner, flightHash, parseFlights, planeAllowed, planeContrail, planeGeometry,
   planeLabel, planeLabelAllowed, planeContrailLength, planePalette, planeSensors, planeSilhouette, planeWeather,
   resolvePlaneOptions, type Flight, type PlanePolicy, type PlaneSensor,
 } from "./weather-planes";
@@ -99,8 +99,19 @@ describe("plane geometry, assets and weather", () => {
   it("keeps the label at WCAG text contrast on worst-case backgrounds", () => {
     const light = compositeHex("#F7FAFD", "#000000", .90);
     const dark = compositeHex("#121826", "#FFFFFF", .86);
-    expect(contrastRatio("#435066", light)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(PLANE_LABEL_COLORS.light.text, light)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(compositeHex("#FFFFFF", dark, .8), dark)).toBeGreaterThanOrEqual(4.5);
+  });
+  it("clears the calibrated light-label contrast target", () => {
+    // This equivalent backdrop is calibrated to the designer's measured 7.25
+    // for the previous #435066 text, rather than a claim about every real frame.
+    const pill = compositeHex("#F7FAFD", "#AAAAAA", .90);
+    expect(contrastRatio(PLANE_LABEL_COLORS.light.text, pill)).toBeGreaterThanOrEqual(7.6);
+  });
+  it("preserves the dark label and the light pill border/background literally", () => {
+    expect(PLANE_LABEL_COLORS.dark).toEqual({ text: "rgba(255,255,255,.8)", border: "rgba(255,255,255,.12)", background: "rgba(18,24,38,.86)" });
+    expect(PLANE_LABEL_COLORS.light.border).toBe("rgba(27,36,55,.08)");
+    expect(PLANE_LABEL_COLORS.light.background).toBe("rgba(247,250,253,.90)");
   });
   it("uses deterministic weather chance and limits contrails to approved phases and conditions", () => {
     expect(planeAllowed(flight(), "sunny", 0)).toBe(true);
