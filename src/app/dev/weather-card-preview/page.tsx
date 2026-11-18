@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { getSkyOverflowWorkMs, subscribeSkyOverflowWork } from "@/components/weather/weather-sky-overflow";
 import { WeatherCardWidget } from "@/components/widgets/weather-card-widget";
 import { useEntityStateStore } from "@/stores/entity-state-store";
+import { ServerLanguageContext } from "@/components/language-bootstrap";
+import { previewLanguage } from "@/lib/dev-preview-language";
+import { LANGUAGE_COOKIE, languageCookie, parseLanguage, readPersistedLanguage } from "@/lib/language";
 import { useLanguageStore } from "@/stores/language-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { DEFAULT_SUN_ENTITY_ID, normalizeSkyMotion, overflowMargins, rainAngle, type SkyMotion, type SkyPhase } from "@/lib/weather-sky";
@@ -39,7 +42,8 @@ const CONDITIONS = [
 /** Dev-only preview of the redesigned weather card (no Home Assistant required). */
 export default function WeatherCardPreviewPage() {
   const updateEntityState = useEntityStateStore((s) => s.updateEntityState);
-  const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const serverLanguage = useContext(ServerLanguageContext);
+  const [language, setPreviewLanguage] = useState<"en" | "nl">("nl");
   const setThemeMode = useThemeStore((s) => s.setMode);
   const setResolved = useThemeStore((s) => s.setResolved);
   const resolved = useThemeStore((s) => s.resolved);
@@ -70,6 +74,7 @@ export default function WeatherCardPreviewPage() {
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
+    setPreviewLanguage(previewLanguage(query.get("lang")));
     if (query.has("condition")) setCondition(query.get("condition") ?? "");
     const phase = query.get("phase") as SkyPhase | null;
     const elevations = { day: 7, dawn: 0, dusk: 0, night: -7 };
@@ -168,16 +173,33 @@ export default function WeatherCardPreviewPage() {
       ].slice(planesFlight - 1, planesFlight) } }] : []),
       {
         entity_id: AQI_ID,
-        state: "goed",
-        attributes: { friendly_name: "Luchtkwaliteit" },
+        state: language === "en" ? "good" : "goed",
+        attributes: { friendly_name: language === "en" ? "Air quality" : "Luchtkwaliteit" },
       },
     ],
-    [condition, today, sun, wind, bearing, precip, planesEnabled, planesFlight]
+    [condition, today, sun, wind, bearing, precip, planesEnabled, planesFlight, language]
   );
 
   useEffect(() => {
-    setLanguage("nl");
-  }, [setLanguage]);
+    const store = useLanguageStore.getState();
+    const storageKey = useLanguageStore.persist.getOptions().name ?? LANGUAGE_COOKIE;
+    const cookie = document.cookie.split("; ").find((value) => value.startsWith(`${LANGUAGE_COOKIE}=`))?.slice(LANGUAGE_COOKIE.length + 1);
+    let stored: string | null = null;
+    try { stored = localStorage.getItem(storageKey); } catch { /* Storage may be unavailable. */ }
+    const previous = store.ready ? store.language : parseLanguage(cookie) ?? readPersistedLanguage(stored) ?? serverLanguage ?? store.language;
+    const htmlLanguage = document.documentElement.lang;
+    store.setLanguage(previewLanguage(new URLSearchParams(window.location.search).get("lang")));
+    return () => {
+      store.setLanguage(previous);
+      // Restore the preference, including its absence, rather than saving the preview mode.
+      document.cookie = cookie == null ? `${LANGUAGE_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax` : languageCookie(previous);
+      document.documentElement.lang = htmlLanguage;
+      try {
+        if (stored == null) localStorage.removeItem(storageKey);
+        else localStorage.setItem(storageKey, stored);
+      } catch { /* Storage may be unavailable. */ }
+    };
+  }, [serverLanguage]);
 
   useEffect(() => {
     // Use optimistic updates so the global HA state poll cannot wipe mock entities.
@@ -264,11 +286,11 @@ export default function WeatherCardPreviewPage() {
         >
           {(
             [
-              ["Hoog/laag", showHighLow, setShowHighLow],
+              [language === "en" ? "High/low" : "Hoog/laag", showHighLow, setShowHighLow],
               ["Wind", showWind, setShowWind],
-              ["Vochtigheid", showHumidity, setShowHumidity],
-              ["Luchtkwaliteit", showAqi, setShowAqi],
-              ["Neerslag", showPrecip, setShowPrecip],
+              [language === "en" ? "Humidity" : "Vochtigheid", showHumidity, setShowHumidity],
+              [language === "en" ? "Air quality" : "Luchtkwaliteit", showAqi, setShowAqi],
+              [language === "en" ? "Precipitation" : "Neerslag", showPrecip, setShowPrecip],
             ] as const
           ).map(([label, on, setOn]) => (
             <label
